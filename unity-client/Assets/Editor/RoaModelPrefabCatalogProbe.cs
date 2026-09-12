@@ -10,14 +10,25 @@ namespace RealmOfAshes.EditorTools
 {
     public static class RoaModelPrefabCatalogProbe
     {
-        private const int ExpectedModelCount = 202;
         private const int ExpectedRuntimeCount = 15;
 
+        [MenuItem("Realm of Ashes/Models/Check model prefabs")]
         public static void Run()
         {
             string[] sources = RealmOfAshes.Editor.RoaModelPrefabGenerator.FindModelPaths();
-            Require(sources.Length == ExpectedModelCount,
-                "expected " + ExpectedModelCount + " package GLBs, found " + sources.Length);
+            RealmOfAshes.Editor.RoaModelPrefabGenerator.ValidateSourceInventory(sources);
+            string[] expectedPrefabs = sources.Select(source =>
+                    RealmOfAshes.Editor.RoaModelPrefabGenerator.PrefabRoot + "/"
+                    + System.IO.Path.ChangeExtension(source.Substring(
+                        RealmOfAshes.Editor.RoaModelPrefabGenerator.PackageRoot.Length).TrimStart('/'),
+                        ".prefab").Replace('\\', '/'))
+                .OrderBy(file => file, StringComparer.Ordinal).ToArray();
+            string[] actualPrefabs = AssetDatabase.FindAssets("t:Prefab",
+                    new[] { RealmOfAshes.Editor.RoaModelPrefabGenerator.PrefabRoot })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .OrderBy(file => file, StringComparer.Ordinal).ToArray();
+            Require(expectedPrefabs.SequenceEqual(actualPrefabs, StringComparer.Ordinal),
+                "prefab paths do not exactly mirror all canonical GLBs");
 
             int animated = 0;
             int skinned = 0;

@@ -10,9 +10,39 @@ const { monitorEventLoopDelay, performance } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
 const {
+  KROMKA_DAMAGE_TYPES,
+  resolveDamageMitigation,
+  resolveWeaponDamage
+} = require('./src/server/kromka-combat-contract');
+const {
+  deathLootPolicy,
+  persistedDownedState,
+  restoreDownedState,
+  resolveDeathLootTransaction
+} = require('./src/server/kromka-death-loot');
+const {
+  fieldRecipeCatalogIndexes,
+  itemCatalogIndexes,
+  normalizeFieldRecipeCatalog,
+  normalizeItemCatalog,
+  publicFieldRecipeCatalog,
+  publicItemCatalog
+} = require('./src/server/kromka-items');
+const {
+  beginInventoryMutation,
+  commitInventoryMutation,
+  sanitizeInventoryMutationLedger
+} = require('./src/server/kromka-inventory-transactions');
+const {
+  beginCriticalAction,
+  commitCriticalAction,
+  sanitizeCriticalActionLedger
+} = require('./src/server/kromka-critical-actions');
+const {
   createWastelandSimulation,
   worldSiteLocationSeed
 } = require('./src/server/wasteland-sim');
+const { settlementSceneVariant } = require('./src/server/wasteland-refugees');
 const {
   RELEASED_LOCATION_IDS,
   isReleasedLocationId,
@@ -26,7 +56,6 @@ const {
 } = require('./src/server/global-infrastructure');
 const {
   loadModelColliderCatalog,
-  modelColliderCatalogEntry,
   modelColliderRadius,
   transformedBounds,
   transformedModelBlockers
@@ -50,6 +79,122 @@ const {
   selectRoutinePackage
 } = require('./src/server/npc-routines');
 const { mergeAuthoredGlobalMap } = require('./src/server/global-map-merge');
+const { migrateSavedStateToKromka } = require('./src/server/kromka-save-migration');
+const {
+  CHARACTER_PROGRESSION_MODEL_VERSION,
+  normalizeCharacterProgressionCatalog,
+  publicCharacterProgressionCatalog,
+  resolveQuickStart: resolveCharacterQuickStart,
+  validateCharacterDraft
+} = require('./src/server/kromka-character-progression');
+const {
+  KROMKA_FACTION_IDS,
+  PLAYER_FACTION_MODEL_VERSION,
+  canonicalKromkaFactionId,
+  migrateKromkaPlayerFactionState,
+  sanitizeKromkaContracts,
+  sanitizeKromkaReputation
+} = require('./src/server/kromka-faction-contracts');
+const { createAnomalySystem } = require('./src/server/anomalies');
+const {
+  sanitizeArtifactRuntime, isArtifactStunned, artifactApMultiplier, startArtifactStim,
+  consumableProblem, consumeArtifactProvision, tickArtifactRuntime, applyArtifactElectricHit,
+  isWetEnvironment, displaceArtifactPlayer, artifactFootstep, publicArtifactRuntime
+} = require('./src/server/artifact-runtime');
+const {
+  artifactIndexes,
+  beltCapacity: serverArtifactBeltCapacity,
+  calculateArtifactEffects,
+  sanitizeArtifactLoadout,
+  sanitizeArtifactRecords,
+  claimedArtifactIdsFromSaves
+} = require('./src/server/artifact-effects');
+const { createShiftCycle } = require('./src/server/shift-cycle');
+const {
+  pickupArtifact: serverPickupArtifact,
+  publicArtifactsForPlayer,
+  reconcileArtifactSpawns
+} = require('./src/server/artifact-spawns');
+const {
+  publicPersonalBase,
+  sanitizePersonalBase
+} = require('./src/server/personal-bases');
+const {
+  placeObject: serverPlaceBaseObject,
+  removeObject: serverRemoveBaseObject,
+  tierProfile: serverBaseTierProfile
+} = require('./src/server/base-construction');
+const {
+  claimBaseJob: serverClaimBaseJob,
+  startBaseJob: serverStartBaseJob
+} = require('./src/server/base-jobs');
+const {
+  applyResidentAction: serverApplyResidentAction,
+  calculateResidentBonuses,
+  publicResidents: publicBaseResidents,
+  sanitizeResidentState
+} = require('./src/server/base-residents');
+const {
+  advanceQuest: advanceKromkaQuest,
+  chooseQuestOutcome: chooseKromkaQuestOutcome,
+  initialQuestState: initialKromkaQuestState,
+  objectiveEventMatches: kromkaObjectiveEventMatches,
+  publicQuestJournal: publicKromkaQuestJournal,
+  recordQuestObjectiveProgress: recordKromkaQuestObjectiveProgress,
+  sanitizeQuestState: sanitizeKromkaQuestState,
+  startQuest: startKromkaQuest,
+  turnInQuest: turnInKromkaQuest
+} = require('./src/server/kromka-quests');
+const {
+  canManage: serverCanManageClan,
+  claimBase: serverClaimClanBase,
+  ensureClan: serverEnsureKromkaClan,
+  installModule: serverInstallClanModule,
+  publicClanState: publicKromkaClanState,
+  releaseInactiveBases: serverReleaseInactiveClanBases,
+  sanitizeClanStore
+} = require('./src/server/kromka-clans');
+const {
+  benefitOrdersForProfile: serverClanBenefitOrders,
+  claimWeeklyBaseGrant: serverClaimWeeklyClanBaseGrant,
+  clanCaravanSpeedMultiplier: serverClanCaravanSpeedMultiplier,
+  commitClanCraftBenefit: serverCommitClanCraftBenefit,
+  markBenefitOrderCompleted: serverMarkClanBenefitOrderCompleted,
+  ownedClanBaseContext: serverOwnedClanBaseContext,
+  previewClanCraftBenefit: serverPreviewClanCraftBenefit,
+  weeklyGrantForProfile: serverWeeklyClanBaseGrant
+} = require('./src/server/kromka-clan-benefits');
+const {
+  fixedRoomId: serverSiegeRoomId,
+  nextChallengeWindow,
+  sanitizeSiegeStore,
+  siegeEventId,
+  upcomingWindows: upcomingSiegeWindows
+} = require('./src/server/siege-scheduler');
+const {
+  addChallenge: serverAddSiegeChallenge,
+  isRegistered: serverSiegeIsRegistered,
+  lockRosters: serverLockSiegeRosters,
+  registerMember: serverRegisterSiegeMember,
+  sideAllowed: serverSiegeSideAllowed,
+  unregisterMember: serverUnregisterSiegeMember
+} = require('./src/server/siege-qualification');
+const {
+  applyObjective: serverApplySiegeObjective,
+  applyResolutionOnce: serverApplySiegeResolutionOnce,
+  consumeRespawnWave: serverConsumeSiegeRespawnWave,
+  createSiegeEvent,
+  tickSiege: tickServerSiege
+} = require('./src/server/siege-resolution');
+const {
+  advanceKromkaOnboarding,
+  initialKromkaOnboarding,
+  recordOnboardingEvidence,
+  publicKromkaOnboarding,
+  sanitizeKromkaOnboarding,
+  skipKromkaTutorial
+} = require('./src/server/kromka-onboarding');
+const { beginCaravanCinematic, caravanCinematicHeld, finishCaravanCinematic } = require('./src/server/kromka-caravan-cinematic');
 const {
   buildActivitySlotCatalog,
   buildActivitySlotIndexes,
@@ -100,6 +245,7 @@ const {
   devEditorIsAvailable
 } = require('./src/server/dev-access');
 const { createCoalescedWriter } = require('./src/server/coalesced-writer');
+const { createKromkaStateStore } = require('./src/server/kromka-state-store');
 const {
   buildPasswordResetEmail,
   createPasswordResetRecord,
@@ -138,7 +284,7 @@ const {
   onsitePartyWorkOffset,
   orientOnsitePartyOffset
 } = require('./src/server/onsite-party-formation');
-const { buildStartingLoadout } = require('./src/server/starting-loadout');
+const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -205,7 +351,7 @@ const {
   resolveCriticalShot
 } = require('./src/server/combat-critical');
 
-const GAME_NAME = 'Realm of Ashes';
+const GAME_NAME = 'Кромка';
 
 const PORT = Number(process.env.PORT || 3000);
 const TICK_RATE = Number(process.env.TICK_RATE || 20);
@@ -412,8 +558,26 @@ const BUNDLED_LOCATIONS_DIR = path.join(BUNDLED_DATA_DIR, 'locations');
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : BUNDLED_DATA_DIR;
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SAVES_FILE = path.join(DATA_DIR, 'saves.json');
+const KROMKA_STATE_JOURNAL_FILE = path.join(DATA_DIR, '.kromka-state-transaction.json');
 const LOCATIONS_DIR = path.join(DATA_DIR, 'locations');
 const GLOBAL_MAP_FILE = path.join(DATA_DIR, 'global-map.json');
+const KROMKA_SAVE_MIGRATION_FILE = path.join(BUNDLED_DATA_DIR, 'generated', 'kromka', 'save-migration.json');
+const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.json');
+const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
+const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
+const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
+const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
+const KROMKA_MUTANTS_FILE = path.join(BUNDLED_DATA_DIR, 'mutants.json');
+const KROMKA_ARTIFACTS_FILE = path.join(BUNDLED_DATA_DIR, 'artifacts.json');
+const KROMKA_BASE_BUILDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'base-building.json');
+const KROMKA_BASE_RESIDENTS_FILE = path.join(BUNDLED_DATA_DIR, 'base-residents.json');
+const KROMKA_QUESTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'quests.json');
+const KROMKA_CLAN_BASES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'clan-bases.json');
+const KROMKA_SIEGES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'sieges.json');
+const KROMKA_WORLD_SIMULATION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'world-simulation.json');
+const KROMKA_CHARACTER_PROGRESSION_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'character-progression.json');
+const KROMKA_ITEMS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'items.json');
+const KROMKA_FIELD_RECIPES_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'field-recipes.json');
 const WASTELAND_SIM_FILE = path.join(DATA_DIR, 'wasteland-sim.json');
 const TRADER_PROFILES_FILE = path.join(DATA_DIR, 'traders.json');
 const NPC_ROUTINES_FILE = path.join(DATA_DIR, 'npc-routines.json');
@@ -457,6 +621,16 @@ function readJson(file, fallback) {
     return fallback;
   }
 }
+
+// Authored gameplay catalogs are initialized before any sanitizer tables so
+// equipment, carry weight, prices and crafting all derive from the same rows.
+const KROMKA_ITEM_CATALOG = normalizeItemCatalog(readJson(KROMKA_ITEMS_FILE, { items: [] }));
+const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
+const KROMKA_FIELD_RECIPE_CATALOG = normalizeFieldRecipeCatalog(
+  readJson(KROMKA_FIELD_RECIPES_FILE, { recipes: [] }),
+  KROMKA_ITEM_CATALOG
+);
+const KROMKA_FIELD_RECIPE_INDEXES = fieldRecipeCatalogIndexes(KROMKA_FIELD_RECIPE_CATALOG);
 
 function sameFilePath(left, right) {
   const normalize = value => {
@@ -655,33 +829,45 @@ function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19
 
 const LOCATION_PVP_MODES = new Set(['peaceful', 'pvp', 'pvpFullDrop']);
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
-  settlement: 'old_klim',
-  scrapTown: 'scrap_union',
-  relayStation: 'relay_order',
-  caravanCamp: 'caravans'
+  sluiceCity: 'uprava',
+  scrapTown: 'free_artels',
+  relayStation: 'contour',
+  caravanCamp: 'tract_league',
+  secondHaven: 'seconds',
+  balanceBunker: 'continuity'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
 const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
 const SERVER_FACTION_CAPITAL_STORAGE = {
-  settlement: {
+  sluiceCity: {
     x: -5,
     z: 11,
-    name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u0421\u0442\u0430\u0440\u043e\u0433\u043e \u041a\u043b\u0438\u043c\u0430'
+    name: 'Хранилище Управы'
   },
   scrapTown: {
     x: -5,
     z: 11,
-    name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u0421\u0432\u0430\u043b\u043e\u0447\u043d\u043e\u0433\u043e \u0441\u043e\u044e\u0437\u0430'
+    name: 'Хранилище Вольных артелей'
   },
   relayStation: {
     x: 5,
     z: 11,
-    name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u041e\u0440\u0434\u0435\u043d\u0430 \u0420\u0435\u0442\u0440\u0430\u043d\u0441\u043b\u044f\u0442\u043e\u0440\u0430'
+    name: 'Хранилище Контура'
   },
   caravanCamp: {
     x: -5,
     z: 11,
-    name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u0432\u043e\u043b\u044c\u043d\u044b\u0445 \u043a\u0430\u0440\u0430\u0432\u0430\u043d\u043e\u0432'
+    name: 'Хранилище Лиги Тракта'
+  },
+  secondHaven: {
+    x: 5,
+    z: 11,
+    name: 'Хранилище Вторых'
+  },
+  balanceBunker: {
+    x: 0,
+    z: 8,
+    name: 'Хранилище Комитета'
   }
 };
 const LOCATION_PVP_LABELS = {
@@ -727,11 +913,10 @@ function locationCapitalStorageObject(loc = {}) {
     id: `capital_storage_${faction}`,
     model: 'storageChest',
     name: def.name,
-    url: '/assets/models/wasteland/storage_chest.glb',
     position: { x: def.x, y: 0, z: def.z },
     rotation: { x: 0, y: -0.08, z: 0 },
     scale: { x: 1, y: 1, z: 1 },
-    collision: 'solid',
+    collision: 'none',
     tags: ['interactive', 'storage', 'container', 'personal-storage', 'capital-storage'],
     footprint: { x: 2, z: 2 },
     placement: { anchor: 'cell-center', gridStep: 2, cells: { x: 1, z: 1 } },
@@ -745,7 +930,14 @@ function locationCapitalStorageObject(loc = {}) {
   };
 }
 function locationAllowsPvp(loc = {}) { return locationPvpMode(loc) !== 'peaceful'; }
-function locationAllowsNpcCombat(loc = {}) { return !locationIsFactionCapital(loc); }
+function locationAllowsNpcCombat(loc = {}) {
+  return !locationIsFactionCapital(loc) && loc.safe !== true;
+}
+function roomPvpMode(room = null) {
+  if (!room) return 'peaceful';
+  const override = String(room.pvpModeOverride || '');
+  return override ? normalizeLocationPvpMode(override, true) : locationPvpMode(roomLocation(room));
+}
 function roomAllowsNpcCombat(room = null) {
   if (!room) return false;
   if (locationIsFactionCapital(roomLocation(room))) return false;
@@ -753,7 +945,7 @@ function roomAllowsNpcCombat(room = null) {
 }
 function locationHasFullInventoryDrop(loc = {}) { return locationPvpMode(loc) === 'pvpFullDrop'; }
 
-const GLOBAL_MAP_GRID_DEFAULT = { cols: 30, rows: 30, cellPoints: 30, cellKm: 10 };
+const GLOBAL_MAP_GRID_DEFAULT = { cols: 38, rows: 30, cellPoints: 10, cellKm: 10 };
 const DEFAULT_GLOBAL_MAP_CONFIG = {
   schema: 'realm.globalMap.v1',
   version: 1,
@@ -766,16 +958,16 @@ const DEFAULT_GLOBAL_MAP_CONFIG = {
   infrastructure: [],
   objects: [],
   encounters: [
-    { id: 'ghoul_pack', title: 'Стая гулей', text: 'Из низины тянет гнилью. Впереди движение между камнями.', kind: 'hostile' },
-    { id: 'radscorpion_nest', title: 'Гнездо радскорпионов', text: 'Песок шевелится у старых костей. Радскорпионы перекрыли проход.', kind: 'hostile' },
-    { id: 'mutant_ant_swarm', title: 'Рой мутировавших муравьёв', text: 'Из трещин в земле вылезает крупный муравьиный рой.', kind: 'hostile' },
-    { id: 'super_mutant_lair', title: 'Логово супермутантов', text: 'В руинах слышны тяжелые шаги. Супермутанты заняли точку и тащат туда добычу.', kind: 'hostile' },
-    { id: 'gecko_pack', title: 'Гекконы пустоши', text: 'На горячих камнях мелькают большие мутировавшие ящерицы.', kind: 'hostile' },
-    { id: 'fire_gecko_ambush', title: 'Огненные гекконы', text: 'Воздух дрожит от жара. Впереди рыщут огненные гекконы.', kind: 'hostile' },
+    { id: 'ghoul_pack', title: 'Сорванные Выжженные', text: 'Впереди спорят знакомыми голосами. Слова человеческие, движения уже нет.', kind: 'hostile' },
+    { id: 'radscorpion_nest', title: 'Лежка Рыхляков', text: 'Грунт вздымается под белыми костяными щитами. Проход занят.', kind: 'hostile' },
+    { id: 'mutant_ant_swarm', title: 'Колония Пыльников', text: 'Ржавая пыль движется против ветра и уже пробует крепёж на вкус.', kind: 'hostile' },
+    { id: 'super_mutant_lair', title: 'Тканевый выводок', text: 'В руинах медленно складывается и распрямляется что-то многослойное.', kind: 'hostile' },
+    { id: 'gecko_pack', title: 'Гнездо Слухачей', text: 'Впереди тихо. Настолько тихо, что лучше не проверять выстрелом.', kind: 'hostile' },
+    { id: 'fire_gecko_ambush', title: 'Чужие голоса', text: 'Кто-то из тумана зовёт вас по имени. Никто в караване этого имени не знает.', kind: 'hostile' },
     { id: 'peaceful_caravan', title: 'Мирный караван', text: 'На старой трассе остановился торговец с охраной. Можно торговать, уйти или напасть.', kind: 'caravan' },
-    { id: 'caravan_patrol_vs_ghouls', title: 'Патруль против гулей', text: 'Патруль Старого Клима отбивается от гулей. Можно уйти, помочь или добить всех.', kind: 'battle' },
-    { id: 'ants_vs_geckos', title: 'Муравьи против гекконов', text: 'Две стаи мутантов сцепились у сухого русла. Можно пройти мимо или вмешаться.', kind: 'battle' },
-    { id: 'radscorpions_vs_patrol', title: 'Патруль против радскорпионов', text: 'Охрана Старого Клима держит круговую оборону от радскорпионов.', kind: 'battle' }
+    { id: 'caravan_patrol_vs_ghouls', title: 'Дозор против Выжженных', text: 'Люди Управы отбиваются от людей, которых Управа уже вычеркнула.', kind: 'battle' },
+    { id: 'ants_vs_geckos', title: 'Пыльники против Слухачей', text: 'Две разновидности плохой новости сцепились у сухого русла.', kind: 'battle' },
+    { id: 'radscorpions_vs_patrol', title: 'Дозор против Рыхляков', text: 'Дозор Управы держит круговую оборону от костяной стены.', kind: 'battle' }
   ],
   randomLocations: [
     { id: 'randomAshGrove', weight: 4 },
@@ -810,6 +1002,7 @@ function normalizeGlobalMapConfig(raw = {}) {
   };
   const maxX = grid.cols * grid.cellPoints;
   const maxY = grid.rows * grid.cellPoints;
+  const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1';
   const centerOnCell = (x, y) => {
     const px = clamp(Number(x || 0), 0, Math.max(0, maxX - 0.001));
     const py = clamp(Number(y || 0), 0, Math.max(0, maxY - 0.001));
@@ -821,7 +1014,12 @@ function normalizeGlobalMapConfig(raw = {}) {
     };
   };
   const nodes = (Array.isArray(src.nodes) ? src.nodes : []).slice(0, 80).map((node, index) => {
-    const point = centerOnCell(node?.x, node?.y);
+    const point = preserveAuthoredNodePoints
+      ? {
+        x: clamp(Math.round(Number(node?.x || 0)), 0, maxX),
+        y: clamp(Math.round(Number(node?.y || 0)), 0, maxY)
+      }
+      : centerOnCell(node?.x, node?.y);
     return {
       id: safeLocationFileId(node?.id || `world_node_${index + 1}`),
       x: point.x,
@@ -833,11 +1031,18 @@ function normalizeGlobalMapConfig(raw = {}) {
       locationId: safeLocationFileId(node?.locationId || node?.id || ''),
       capital: node?.capital === true,
       capitalFaction: String(node?.capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
+      // Authored nodes may deliberately sit on a road. Keep the explicit flag
+      // when the server normalizes and persists the map, otherwise a restart
+      // turns valid junctions into world-data overlap errors.
+      roadAccess: node?.roadAccess === true,
       danger: clamp(Number(node?.danger || 0), 0, 10),
       model: String(node?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       modelScale: clamp(Number(node?.modelScale || 1), 0.4, 4),
       rotationY: clamp(Number(node?.rotationY || 0), 0, 360),
-      note: String(node?.note || '').slice(0, 240)
+      note: String(node?.note || '').slice(0, 240),
+      macroRegion: String(node?.macroRegion || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
+      visualProfile: String(node?.visualProfile || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96),
+      worldRevision: String(node?.worldRevision || src.worldRevision || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
     };
   }).filter(node => node.id);
   const objects = (Array.isArray(src.objects) ? src.objects : []).slice(0, 300).map((object, index) => {
@@ -881,6 +1086,7 @@ function normalizeGlobalMapConfig(raw = {}) {
       chance: clamp(Math.round(Number(value.chance || 0)), 0, 100),
       difficulty: clamp(Math.round(Number(value.difficulty || 1)), 1, 5),
       texture: String(value.texture || value.textureId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
+      macroRegion: String(value.macroRegion || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       fill: String(value.fill || '').slice(0, 48),
       encounters: normalizeGlobalMapWeightRows(value.encounters || [], encounterIds),
       randomLocations: normalizeGlobalMapWeightRows(value.randomLocations || []).map(row => ({ id: safeLocationFileId(row.id), weight: row.weight }))
@@ -890,6 +1096,9 @@ function normalizeGlobalMapConfig(raw = {}) {
   return {
     schema: 'realm.globalMap.v1',
     version: Math.max(1, Math.round(Number(src.version || 1))),
+    worldRevision: String(src.worldRevision || 'legacy').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
+    unityScene: String(src.unityScene || '').replace(/[^a-zA-Z0-9_./-]/g, '').slice(0, 180),
+    legacyCoastline: src.legacyCoastline !== false,
     grid,
     nodes,
     infrastructure,
@@ -1072,13 +1281,24 @@ function publicLocationFileSummary(loc, file = '') {
   };
 }
 
+const KROMKA_STATE_STORE = createKromkaStateStore({
+  fs,
+  writeJsonAtomic,
+  journalFile: KROMKA_STATE_JOURNAL_FILE,
+  usersFile: USERS_FILE,
+  savesFile: SAVES_FILE
+});
+KROMKA_STATE_STORE.recover();
 const usersDb = readJson(USERS_FILE, { version: 1, users: {}, sessions: {} });
 const savesDb = readJson(SAVES_FILE, { version: 2, characters: {} });
 if (!usersDb.users) usersDb.users = {};
 if (!usersDb.sessions) usersDb.sessions = {};
 if (!savesDb.characters) savesDb.characters = {};
+if (!savesDb.personalBases) savesDb.personalBases = {};
+if (!savesDb.kromkaClans) savesDb.kromkaClans = { version: 1, clans: {}, bases: {} };
+if (!savesDb.kromkaSieges) savesDb.kromkaSieges = { version: 1, events: {} };
 const usersPersistWriter = createCoalescedWriter(
-  () => writeJsonAtomic(USERS_FILE, usersDb),
+  () => KROMKA_STATE_STORE.commit({ users: usersDb }, 'accounts'),
   {
     delayMs: USER_SESSION_TOUCH_PERSIST_MS,
     onDeferredError: error => console.error('Deferred users persistence failed:', error)
@@ -1116,7 +1336,7 @@ function pruneStaleSessions(login = '') {
 
 function persistUsers() { return usersPersistWriter.flush(); }
 function schedulePersistUsers() { return usersPersistWriter.schedule(); }
-function persistSaves() { writeJsonAtomic(SAVES_FILE, savesDb); }
+function persistSaves() { KROMKA_STATE_STORE.commit({ saves: savesDb }, 'world-and-characters'); }
 
 function normalizeLogin(login) {
   return String(login || '').trim().toLowerCase();
@@ -1575,15 +1795,17 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
 
-// Основной клиент — Unity WebGL (public/unity/, собирается при деплое: Realm of Ashes → Build WebGL).
-// Пока сборки нет (dev-окружение, CI), корень отдаёт прежний браузерный клиент; он же
-// всегда доступен по /legacy/ как источник правды для check:unity-parity.
+// Основной клиент — Unity WebGL (public/unity/, собирается при деплое: Кромка → Build WebGL).
+// Пока сборки нет (dev-окружение, CI), корень отдаёт нейтральную страницу ожидания.
+// Замороженный браузерный клиент доступен только по /legacy/ как источник правды
+// для check:unity-parity и не является частью пользовательского бренда «Кромки».
 const UNITY_INDEX_FILE = path.join(__dirname, 'public', 'unity', 'index.html');
 const LEGACY_INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+const UNITY_UNAVAILABLE_FILE = path.join(__dirname, 'public', 'unity-unavailable.html');
 app.get('/', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   if (fs.existsSync(UNITY_INDEX_FILE)) return res.sendFile(UNITY_INDEX_FILE);
-  return res.sendFile(LEGACY_INDEX_FILE);
+  return res.sendFile(UNITY_UNAVAILABLE_FILE);
 });
 app.get(['/legacy', '/legacy/', '/legacy/index.html'], (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
@@ -1685,7 +1907,7 @@ app.get('/api/locations', (_, res) => {
   const locations = {};
   for (const loc of Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})) {
     if (!loc || !loc.id) continue;
-    locations[loc.id] = loc;
+    locations[loc.id] = kromkaPublicLocationDefinition(loc);
   }
   res.json({
     ok: true,
@@ -1700,6 +1922,21 @@ app.get('/api/quests', (_, res) => {
     ok: true,
     file: path.relative(__dirname, QUESTS_FILE).replace(/\\/g, '/'),
     quests: QUEST_DEFINITIONS
+  });
+});
+
+app.get('/api/kromka/character-progression', (_, res) => {
+  res.json({
+    ok: true,
+    catalog: publicCharacterProgressionCatalog(KROMKA_CHARACTER_PROGRESSION_CATALOG)
+  });
+});
+
+app.get('/api/kromka/items', (_, res) => {
+  res.json({
+    ok: true,
+    catalog: publicItemCatalog(KROMKA_ITEM_CATALOG),
+    fieldRecipes: publicFieldRecipeCatalog(KROMKA_FIELD_RECIPE_CATALOG)
   });
 });
 
@@ -1753,7 +1990,12 @@ function sendJsonBuffer(res, body, gzipped = null) {
   res.end(payload);
 }
 
-function invalidateWastelandPublicCache() {
+function invalidateWastelandPublicCache(force = false) {
+  // A simulation tick may land between two back-to-back HTTP reads. Keep the
+  // already serialized snapshot until its short TTL ends so one polling burst
+  // sees one coherent world revision. Mutations are still visible within at
+  // most WASTELAND_PUBLIC_CACHE_MS (one second by default).
+  if (!force && wastelandPublicCache && Date.now() < Number(wastelandPublicCache.expiresAt || 0)) return;
   wastelandPublicCache = null;
 }
 
@@ -1762,7 +2004,11 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     wastelandPublicCacheHits += 1;
     return { ...wastelandPublicCache, hit: true };
   }
-  const body = Buffer.from(JSON.stringify({ ok: true, sim: WASTELAND_SIM.publicState() }), 'utf8');
+  const body = Buffer.from(JSON.stringify({
+    ok: true,
+    sim: WASTELAND_SIM.publicState(),
+    factions: publicKromkaFactionCatalog()
+  }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
     body,
@@ -1848,11 +2094,47 @@ app.post('/api/dev/wasteland/reset', (_, res) => {
   res.json({ ok: true, sim });
 });
 
+function publicKromkaOperationsMetrics(now = Date.now()) {
+  const personalBases = Object.values(savesDb.personalBases || {});
+  const clanBases = Object.values(savesDb.kromkaClans?.bases || {});
+  const siegeEvents = Object.values(savesDb.kromkaSieges?.events || {});
+  const activeArtifacts = [...rooms.values()].reduce((sum, room) => sum + (room.kromkaArtifactState?.artifacts || [])
+    .filter(row => row && !row.pickedUp).length, 0);
+  const phaseCounts = siegeEvents.reduce((out, event) => {
+    const status = String(event?.status || 'unknown');
+    out[status] = Number(out[status] || 0) + 1;
+    return out;
+  }, {});
+  const activeSiegeParticipants = [...players.values()].filter(player => {
+    const event = siegeEvents.find(row => row?.roomId === player?.roomId && row?.status === 'active');
+    return !!event;
+  }).length;
+  return {
+    worldRevision: 'kromka-1',
+    shift: serverCurrentShiftState(now),
+    artifacts: { active: activeArtifacts, claimed: KROMKA_CLAIMED_ARTIFACT_IDS.size },
+    personalBases: {
+      total: personalBases.length,
+      activeRooms: [...rooms.values()].filter(room => room?.locationId === 'personalBase').length,
+      residents: personalBases.reduce((sum, base) => sum + Object.keys(base?.residents || {}).length, 0),
+      queuedJobs: personalBases.reduce((sum, base) => sum + (base?.jobs || []).length, 0)
+    },
+    clans: {
+      total: Object.keys(savesDb.kromkaClans?.clans || {}).length,
+      basesOwned: clanBases.filter(base => !!base?.ownerClanId).length,
+      basesNeutral: clanBases.filter(base => !base?.ownerClanId).length
+    },
+    sieges: { total: siegeEvents.length, activeParticipants: activeSiegeParticipants, byStatus: phaseCounts },
+    persistence: KROMKA_STATE_STORE.metrics()
+  };
+}
+
 app.get('/health', (_, res) => {
   res.json({
     ok: true,
     name: GAME_NAME,
     version: GAME_VERSION,
+    characterProgressionCatalogVersion: KROMKA_CHARACTER_PROGRESSION_CATALOG.version,
     uptimeSec: Math.round(process.uptime()),
     players: players.size,
     locationRealities: rooms.size,
@@ -1863,6 +2145,7 @@ app.get('/health', (_, res) => {
     wastelandTickMs: wastelandTickMetrics,
     realtimeNetwork: publicRealtimeNetworkMetrics(),
     activePlayerPersistence: publicActivePlayerPersistenceMetrics(),
+    kromka: publicKromkaOperationsMetrics(Date.now()),
     wastelandPublicCache: {
       ttlMs: WASTELAND_PUBLIC_CACHE_MS,
       bytes: Number(wastelandPublicCache?.bytes || 0),
@@ -2341,10 +2624,8 @@ app.get('/vendor/GLTFLoader.js', (req, res) => {
 function findClientHtml() {
   const candidates = [
     process.env.CLIENT_HTML,
-    path.join(__dirname, 'public', 'index.html'),
-    path.join(__dirname, 'public', 'game.html'),
-    path.join(__dirname, 'game.html'),
-    path.join(__dirname, 'index.html')
+    UNITY_INDEX_FILE,
+    UNITY_UNAVAILABLE_FILE
   ].filter(Boolean);
   return candidates.find(file => fs.existsSync(file)) || '';
 }
@@ -2738,14 +3019,24 @@ function currentGameDayIndex(now = Date.now()) {
 }
 function safeName(name) { return String(name || 'Wanderer').slice(0, 24).replace(/[<>]/g, ''); }
 
-const VALID_HAND_EQUIPMENT = new Set(['pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower', 'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'fists', 'medkit', 'stim', 'doctorBag', 'antibiotics', 'pickaxe', 'axe', 'handPump']);
+function serverCatalogItemIdsForSlot(slot = '', includeEmpty = false) {
+  const ids = KROMKA_ITEM_CATALOG.items
+    .filter(item => slot === 'offhand' ? item.compatibleSlots.includes(slot) : item.slot === slot)
+    .map(item => item.id);
+  if (includeEmpty) ids.push('');
+  return new Set(ids);
+}
+
+const VALID_HAND_EQUIPMENT = serverCatalogItemIdsForSlot('weapon');
 const VALID_EQUIPMENT = {
   weapon: VALID_HAND_EQUIPMENT,
-  offhand: new Set([...VALID_HAND_EQUIPMENT, '']),
-  armor: new Set(['leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', '']),
-  helmet: new Set(['weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet', 'preWarHelmet', '']),
-  boots: new Set(['boots', 'scoutBoots', 'reinforcedBoots', 'assaultBoots', '']),
-  backpack: new Set(['backpack', ''])
+  offhand: serverCatalogItemIdsForSlot('offhand', true),
+  armor: serverCatalogItemIdsForSlot('armor', true),
+  helmet: serverCatalogItemIdsForSlot('helmet', true),
+  boots: serverCatalogItemIdsForSlot('boots', true),
+  backpack: serverCatalogItemIdsForSlot('backpack', true),
+  detector: serverCatalogItemIdsForSlot('detector', true),
+  artifactBelt: serverCatalogItemIdsForSlot('artifactBelt', true)
 };
 
 function sanitizeEquipment(input = {}, fallback = {}) {
@@ -2757,7 +3048,9 @@ function sanitizeEquipment(input = {}, fallback = {}) {
     armor: serverBaseItemId(src.armor ?? base.armor ?? ''),
     helmet: serverBaseItemId(src.helmet ?? base.helmet ?? ''),
     boots: serverBaseItemId(src.boots ?? base.boots ?? ''),
-    backpack: serverBaseItemId(src.backpack ?? base.backpack ?? '')
+    backpack: serverBaseItemId(src.backpack ?? base.backpack ?? ''),
+    detector: serverBaseItemId(src.detector ?? base.detector ?? ''),
+    artifactBelt: serverBaseItemId(src.artifactBelt ?? base.artifactBelt ?? '')
   };
   Object.keys(out).forEach(slot => {
     if (!VALID_EQUIPMENT[slot] || !VALID_EQUIPMENT[slot].has(out[slot])) out[slot] = slot === 'weapon' ? 'fists' : '';
@@ -2908,6 +3201,67 @@ function limitSkillRanksByBudget(ranks = {}, budget = 0, p = {}) {
   return out;
 }
 
+function sanitizeServerProgressionLedger(input = {}, p = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const stepsSource = source.skillSteps && typeof source.skillSteps === 'object'
+    && !Array.isArray(source.skillSteps) ? source.skillSteps : {};
+  const skillSteps = {};
+  for (const id of SERVER_SKILL_IDS) {
+    const steps = clamp(Math.floor(Number(stepsSource[id] || 0)), 0, 16);
+    if (steps > 0) skillSteps[id] = steps;
+  }
+  return {
+    version: CHARACTER_PROGRESSION_MODEL_VERSION,
+    skillSteps
+  };
+}
+
+function deriveServerProgressionLedger(p = {}, ranks = {}) {
+  const skillSteps = {};
+  for (const id of SERVER_SKILL_IDS) {
+    const base = serverSkillBasePercent(p, id);
+    const raw = Number(ranks?.[id]);
+    if (!Number.isFinite(raw)) continue;
+    const steps = clamp(Math.ceil((Math.max(base, raw) - base) / 5), 0, 16);
+    if (steps > 0) skillSteps[id] = steps;
+  }
+  return { version: CHARACTER_PROGRESSION_MODEL_VERSION, skillSteps };
+}
+
+function ensureServerProgressionLedger(p = {}) {
+  const source = p.progressionLedger;
+  const hasLedger = !!source && typeof source === 'object'
+    && Number(source.version || 0) >= CHARACTER_PROGRESSION_MODEL_VERSION
+    && source.skillSteps && typeof source.skillSteps === 'object';
+  p.progressionLedger = hasLedger
+    ? sanitizeServerProgressionLedger(source, p)
+    : deriveServerProgressionLedger(p, p.skillRanks || {});
+  return p.progressionLedger;
+}
+
+function limitServerSkillStepsByBudget(steps = {}, budget = 0) {
+  let remaining = Math.max(0, Math.floor(Number(budget || 0)));
+  const out = {};
+  for (const id of SERVER_SKILL_IDS) {
+    const accepted = Math.min(clamp(Math.floor(Number(steps?.[id] || 0)), 0, 16), remaining);
+    if (accepted > 0) out[id] = accepted;
+    remaining -= accepted;
+  }
+  return out;
+}
+
+function serverSyncSkillRanksFromLedger(p = {}) {
+  const ledger = ensureServerProgressionLedger(p);
+  const out = {};
+  for (const id of SERVER_SKILL_IDS) {
+    const steps = Math.max(0, Math.floor(Number(ledger.skillSteps[id] || 0)));
+    if (steps <= 0) continue;
+    out[id] = Math.min(100, serverSkillBasePercent(p, id) + steps * 5);
+  }
+  p.skillRanks = out;
+  return out;
+}
+
 function serverTalentBudgetOrder() {
   const ids = [...SERVER_TALENT_IDS];
   return ids.filter(id => id.startsWith('special')).concat(ids.filter(id => !id.startsWith('special')));
@@ -2959,25 +3313,36 @@ function limitTalentRanksByBudget(ranks = {}, budget = 0, p = {}) {
   return out;
 }
 
+function limitExistingTalentRanksByBudget(ranks = {}, budget = 0) {
+  let remaining = Math.max(0, Math.floor(Number(budget || 0)));
+  const out = {};
+  for (const id of serverTalentBudgetOrder()) {
+    const rank = Math.min(serverTalentRankFrom(ranks, id), remaining);
+    if (rank > 0) out[id] = rank;
+    remaining -= rank;
+  }
+  return out;
+}
+
 function enforceServerProgressionBudget(p = {}) {
   p.level = Math.max(1, Math.min(200, Math.floor(Number(p.level || 1))));
   p.traits = sanitizeTraits(p.traits || []);
   p.taggedSkills = sanitizeTaggedSkills(p.taggedSkills || []);
   const perkBudget = serverPerkBudgetFor(p.level);
-  p.talentRanks = limitTalentRanksByBudget(p.talentRanks || {}, perkBudget, p);
-  p.skillRanks = limitSkillRanksByBudget(p.skillRanks || {}, serverSkillBudgetFor(p.level, p.traits), p);
-  p.talentRanks = limitTalentRanksByBudget(p.talentRanks || {}, perkBudget, p);
+  p.talentRanks = limitExistingTalentRanksByBudget(sanitizeTalentRanks(p.talentRanks || {}), perkBudget);
+  const ledger = ensureServerProgressionLedger(p);
+  ledger.skillSteps = limitServerSkillStepsByBudget(
+    ledger.skillSteps,
+    serverSkillBudgetFor(p.level, p.traits)
+  );
+  serverSyncSkillRanksFromLedger(p);
   return p;
 }
 
 function serverSpentSkillPoints(p = {}) {
-  let spent = 0;
-  for (const id of SERVER_SKILL_IDS) {
-    const base = serverSkillBasePercent(p, id);
-    const value = serverSkillRankFrom(p.skillRanks || {}, id, p) ?? base;
-    spent += Math.max(0, Math.ceil((value - base) / 5));
-  }
-  return spent;
+  const ledger = ensureServerProgressionLedger(p);
+  return Object.values(ledger.skillSteps || {})
+    .reduce((sum, value) => sum + Math.max(0, Math.floor(Number(value || 0))), 0);
 }
 
 function serverSpentPerkPoints(p = {}) {
@@ -3005,10 +3370,6 @@ function serverGrantXp(p = {}, amount = 0) {
   enforceServerProgressionBudget(p);
   serverUpdateFreeProgressionPoints(p);
   serverApplyDerivedVitals(p);
-  if (levels > 0) {
-    p.hp = p.maxHp;
-    p.ap = p.maxAp;
-  }
   return { gained, levels, level: p.level, xp: p.xp, xpNeeded: p.xpNeeded };
 }
 
@@ -3046,7 +3407,7 @@ const DEFAULT_LOCATIONS = {
     kind: 'settlement', city: true, settlement: true, respawnAllowed: true,
     spawn: { tx: 19, tz: 25 }, respawn: { tx: 19, tz: 25 }, entryFromWasteland: { tx: 19, tz: 5 },
     exit: { tx: 19, tz: 3, to: 'wasteland', label: 'Путь в Пепельный лес' },
-    trader: { tx: 15, tz: 20, name: 'Старый Клим' },
+    trader: { tx: 15, tz: 20, name: 'Ирена «Верста» Белова' },
     storage: { tx: 23, tz: 20, name: 'Общий ящик' },
     containers: [
       { id: 'settlement_supply_1', tx: 12, tz: 22, name: 'Ящик выживальщика', tier: 'survival' },
@@ -3161,7 +3522,7 @@ const DEFAULT_LOCATIONS = {
 };
 function applyLocationTraderProfiles(locations = {}) {
   const profiles = {
-    settlement: { id: 'old_klim', dialogueProfile: 'klim', caps: 720, quests: ['klimSupplies', 'klimTerminal'] },
+    settlement: { id: 'irena_versta_belova', dialogueProfile: 'caravan', caps: 720, quests: [] },
     scrapTown: { id: 'scrap_gratch', dialogueProfile: 'scrap', caps: 460, quests: ['scrapParts'] },
     relayStation: { id: 'relay_rada', dialogueProfile: 'relay', caps: 640, quests: ['relayCalibration'] }
   };
@@ -3191,65 +3552,396 @@ const FILE_GLOBAL_MAP_FALLBACK = {
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
+const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
+  safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
+});
+const KROMKA_FACTION_CATALOG = readJson(KROMKA_FACTIONS_FILE, { factions: [] });
+const KROMKA_LOCATION_CATALOG = readJson(KROMKA_LOCATIONS_FILE, { locations: [] });
+const KROMKA_NPC_CATALOG = readJson(KROMKA_NPCS_FILE, { npcs: [] });
+const KROMKA_ANOMALY_CATALOG = readJson(KROMKA_ANOMALIES_FILE, { types: [], bolt: {} });
+const KROMKA_ONBOARDING_CATALOG = readJson(KROMKA_ONBOARDING_FILE, {});
+const KROMKA_MUTANT_CATALOG = readJson(KROMKA_MUTANTS_FILE, { types: [], legacyAliases: {} });
+const KROMKA_ARTIFACT_CATALOG = readJson(KROMKA_ARTIFACTS_FILE, { types: [], detectors: [], belts: [], shift: {} });
+const KROMKA_BASE_BUILDING_CATALOG = readJson(KROMKA_BASE_BUILDING_FILE, { tiers: [], objects: [], jobs: [], rightsQuest: {} });
+const KROMKA_BASE_RESIDENT_CATALOG = readJson(KROMKA_BASE_RESIDENTS_FILE, { residents: [], loyaltyThreshold: 35 });
+const KROMKA_QUEST_CATALOG = readJson(KROMKA_QUESTS_FILE, { campaign: [], factionQuests: [], mechanicQuests: [], personalQuests: [], repeatableTemplates: [] });
+KROMKA_QUEST_CATALOG.locationLabels = Object.fromEntries((KROMKA_LOCATION_CATALOG.locations || [])
+  .map(row => [String(row.id || ''), String(row.displayName || row.name || row.id || '')]).filter(([id]) => id));
+KROMKA_QUEST_CATALOG.npcLabels = Object.fromEntries((KROMKA_NPC_CATALOG.npcs || [])
+  .map(row => [String(row.id || ''), String(row.displayName || row.id || '')]).filter(([id]) => id));
+const KROMKA_CLAN_BASE_CATALOG = readJson(KROMKA_CLAN_BASES_FILE, { bases: [], modules: [], moduleSockets: [] });
+const KROMKA_SIEGE_CATALOG = readJson(KROMKA_SIEGES_FILE, {});
+const KROMKA_CHARACTER_PROGRESSION_CATALOG = normalizeCharacterProgressionCatalog(
+  readJson(KROMKA_CHARACTER_PROGRESSION_FILE, {})
+);
+
+const KROMKA_NPC_QUEST_ALIASES = Object.freeze({
+  irena_versta_belova: ['irena_versta_belova', 'versta'],
+  marina_velskaya: ['marina_velskaya', 'velskaya'],
+  nika_reznik: ['nika_reznik', 'reznik'],
+  timur_arsenyev: ['timur_arsenyev', 'arsenyev'],
+  sofia_sych: ['sofia_sych', 'sych'],
+  yara_koval: ['yara_koval', 'koval'],
+  nikolai_severov: ['nikolai_severov', 'severov', 'unknown_curator'],
+  arkady_aktov: ['arkady_aktov', 'aktov'],
+  rada_menshova: ['rada_menshova', 'menshova'],
+  lev_kartsev: ['lev_kartsev', 'kartsev']
+});
+
+const KROMKA_QUEST_DIALOGUE_OBJECTIVES = Object.freeze({});
+
+const KROMKA_QUEST_LOCATION_OBJECTIVES = Object.freeze({
+  settlement: ['reach_keys'],
+  relayOutpost: ['reach_damaged_post'],
+  relayStation: ['reach_illegal_transmitter'],
+  resourceIronMine: ['search_three_shifts'],
+  scrapOutpost: ['reach_runaway_workers'],
+  oldDepot: ['inspect_burned_convoy'],
+  secondHaven: ['cross_chalk_storm', 'reach_threatened_settlement'],
+  vectorLab: ['enter_sanitary_annex'],
+  balanceBunker: ['open_balance_bunker', 'enter_sealed_archive'],
+  cascadeRegenerator: ['open_cascade_route']
+});
+
+const KROMKA_BOUND_DIALOGUE_OBJECTIVES = Object.freeze(Object.entries(KROMKA_QUEST_CATALOG.objectiveBindings || {})
+  .reduce((out, [objective, binding]) => {
+    if (String(binding?.type || '') !== 'dialogue') return out;
+    for (const npcId of Array.isArray(binding.npcIds) ? binding.npcIds : []) {
+      const id = String(npcId || '');
+      if (!id) continue;
+      out[id] = [...new Set([...(out[id] || []), objective])];
+    }
+    return out;
+  }, Object.fromEntries(Object.entries(KROMKA_QUEST_DIALOGUE_OBJECTIVES).map(([id, values]) => [id, [...values]]))));
+
+const KROMKA_BOUND_LOCATION_OBJECTIVES = Object.freeze(Object.entries(KROMKA_QUEST_CATALOG.objectiveBindings || {})
+  .reduce((out, [objective, binding]) => {
+    if (String(binding?.type || '') !== 'location') return out;
+    const ids = [binding.locationId, ...(Array.isArray(binding.locationIds) ? binding.locationIds : [])]
+      .map(id => String(id || '')).filter(Boolean);
+    for (const id of ids) out[id] = [...new Set([...(out[id] || []), objective])];
+    return out;
+  }, Object.fromEntries(Object.entries(KROMKA_QUEST_LOCATION_OBJECTIVES).map(([id, values]) => [id, [...values]]))));
+
+function kromkaNpcQuestAliases(npcId = '') {
+  const id = String(npcId || '').toLowerCase();
+  const npc = (KROMKA_NPC_CATALOG.npcs || []).find(row => String(row?.id || '').toLowerCase() === id);
+  const authored = Array.isArray(npc?.questAliases)
+    ? npc.questAliases.map(alias => String(alias || '').toLowerCase()).filter(Boolean)
+    : [];
+  return new Set([id, ...authored, ...(KROMKA_NPC_QUEST_ALIASES[id] || [])]);
+}
+
+function kromkaQuestIdsForNpc(npcId = '') {
+  const aliases = kromkaNpcQuestAliases(npcId);
+  return [
+    ...(KROMKA_QUEST_CATALOG.campaign || []),
+    ...(KROMKA_QUEST_CATALOG.factionQuests || []),
+    ...(KROMKA_QUEST_CATALOG.mechanicQuests || []),
+    ...(KROMKA_QUEST_CATALOG.personalQuests || [])
+  ].filter(quest => {
+    const owner = String(quest.giverNpcId || quest.npcId || '').toLowerCase();
+    return owner && aliases.has(owner);
+  }).map(quest => String(quest.id));
+}
+sanitizeClanStore(savesDb.kromkaClans);
+sanitizeSiegeStore(savesDb.kromkaSieges);
+const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
+const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
+const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
+const ANOMALY_SYSTEM = createAnomalySystem({
+  catalog: KROMKA_ANOMALY_CATALOG,
+  locations: KROMKA_LOCATION_CATALOG
+});
+
+function publicKromkaFactionCatalog() {
+  return (Array.isArray(KROMKA_FACTION_CATALOG?.factions) ? KROMKA_FACTION_CATALOG.factions : [])
+    .filter(row => row && row.visibility !== 'hidden')
+    .map(row => ({
+      id: serverWorldFactionKey(row.id || ''),
+      displayName: String(row.displayName || row.id || '').slice(0, 80),
+      leaderId: String(row.leaderId || '').slice(0, 64),
+      capitalLocationId: String(row.capitalLocationId || '').slice(0, 64),
+      promise: String(row.promise || '').slice(0, 400),
+      price: String(row.price || '').slice(0, 400),
+      patrolDoctrine: String(row.patrolDoctrine || '').slice(0, 400),
+      economicPlan: String(row.economicPlan || '').slice(0, 400),
+      contractFamilies: Array.isArray(row.contractFamilies) ? row.contractFamilies.slice(0, 8) : [],
+      colors: Array.isArray(row.colors) ? row.colors.slice(0, 3) : [],
+      joinable: false,
+      membership: 'temporary-contract'
+    }))
+    .filter(row => row.id);
+}
+
+const KROMKA_PUBLIC_FACTION_ALIASES = Object.freeze({
+  old_klim: 'uprava',
+  klim_patrol: 'uprava',
+  scrap: 'free_artels',
+  scrap_town: 'free_artels',
+  scrap_union: 'free_artels',
+  relay: 'contour',
+  relay_station: 'contour',
+  relay_order: 'contour',
+  caravan: 'tract_league',
+  caravans: 'tract_league'
+});
+
+function kromkaPublicFactionId(value = '') {
+  const id = String(value || '').toLowerCase();
+  return KROMKA_PUBLIC_FACTION_ALIASES[id] || id;
+}
+
+function kromkaPublicText(value = '') {
+  return String(value || '')
+    .replace(/Дорожный аванпост Старого Клима/giu, 'Застава 17')
+    .replace(/Старый военный склад/giu, 'Арсенал №6')
+    .replace(/Караванный двор Старого Клима/giu, 'Ключи')
+    .replace(/Старого Клима/giu, 'Управы')
+    .replace(/Старый Клим/giu, 'Управа')
+    .replace(/Свалочного союза/giu, 'Вольных артелей')
+    .replace(/Свалочный союз/giu, 'Вольные артели')
+    .replace(/Свалочного поста/giu, 'Раздолья')
+    .replace(/Свалочный пост/giu, 'Раздолье')
+    .replace(/станци(?:я|и) Ретранслятор/giu, match => match.toLowerCase().endsWith('и ретранслятор') ? 'станции Контур-3' : 'станция Контур-3')
+    .replace(/Ретранслятора/giu, 'Контура')
+    .replace(/Ретранслятор/giu, 'Контур')
+    .replace(/Вольные караваны/giu, 'Лига Тракта')
+    .replace(/вольных караванов/giu, 'Лиги Тракта');
+}
+
+function transformKromkaPublicValue(value, key = '') {
+  if (Array.isArray(value)) return value.map(row => transformKromkaPublicValue(row));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [
+      childKey,
+      transformKromkaPublicValue(childValue, childKey)
+    ]));
+  }
+  if (typeof value !== 'string') return value;
+  if (['owner', 'faction', 'factionId', 'ownerFaction', 'ownerFactionId', 'wastelandOwnerFaction',
+    'capitalFaction', 'joinPartyFaction', 'controlThreatFaction', 'lastRaidFaction'].includes(key)) {
+    return kromkaPublicFactionId(value);
+  }
+  return kromkaPublicText(value);
+}
+
+function kromkaGlobalNode(locationId = '') {
+  return (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])
+    .find(row => String(row?.locationId || row?.id || '') === String(locationId || '')) || null;
+}
+
+function kromkaLocationLore(locationId = '') {
+  return (Array.isArray(KROMKA_LOCATION_CATALOG?.locations) ? KROMKA_LOCATION_CATALOG.locations : [])
+    .find(row => String(row?.id || '') === String(locationId || '')) || null;
+}
+
+function kromkaPublicLocationDefinition(location = {}) {
+  const next = transformKromkaPublicValue(location);
+  const lore = kromkaLocationLore(next.id);
+  const node = kromkaGlobalNode(next.id);
+  if (lore?.displayName) next.name = lore.displayName;
+  if (node?.note || lore?.ambientProfile) {
+    next.description = String(node?.note || lore.ambientProfile);
+    next.lore = String(lore?.ambientProfile || node?.note || '');
+  }
+  if (lore) {
+    next.kromkaWorldRevision = 'kromka-1';
+    next.macroRegion = lore.macroRegion;
+    next.kromkaVisualProfile = lore.visualProfile;
+    next.ambientProfile = lore.ambientProfile;
+    next.anomalyDensity = lore.anomalyDensity;
+  }
+  return next;
+}
+
+function kromkaVirtualCapital(locationId, factionId, stockpile = {}) {
+  const node = kromkaGlobalNode(locationId) || {};
+  const lore = kromkaLocationLore(locationId) || {};
+  return {
+    id: locationId,
+    type: 'settlement',
+    name: lore.displayName || locationId,
+    x: Number(node.x || 0),
+    y: Number(node.y || 0),
+    owner: factionId,
+    pvpMode: 'peaceful',
+    capital: true,
+    capitalFaction: factionId,
+    locationId,
+    note: `Столица стороны «${KROMKA_FACTION_CATALOG.factions?.find(row => row.id === factionId)?.displayName || factionId}».`,
+    description: lore.ambientProfile || '',
+    stockpile: { silver: 360, water: 18, food: 12, blue: 0, ...stockpile },
+    output: {},
+    production: {},
+    security: 55,
+    prosperity: 34,
+    danger: Number(node.danger || 1),
+    controlPressure: 0,
+    workers: [],
+    productionCapabilities: []
+  };
+}
+
+function kromkaPublicWastelandSnapshot(raw = {}) {
+  const snapshot = transformKromkaPublicValue(raw);
+  const locationById = new Map((KROMKA_LOCATION_CATALOG.locations || []).map(row => [row.id, row]));
+  snapshot.worldRevision = 'kromka-1';
+  snapshot.factions = Object.fromEntries([
+    ...(KROMKA_FACTION_CATALOG.factions || [])
+      .filter(row => row?.visibility !== 'hidden')
+      .map(row => [row.id, {
+        id: row.id,
+        name: row.displayName,
+        color: row.colors?.[0] || '#9da3a0',
+        relations: { ...(SERVER_DEFAULT_FACTION_RELATIONS[row.id] || {}) }
+      }]),
+    ...Object.entries(snapshot.factions || {})
+      .filter(([id]) => ['raiders', 'mutants', 'wild', 'neutral'].includes(kromkaPublicFactionId(id)))
+      .map(([id, row]) => [kromkaPublicFactionId(id), row])
+  ]);
+
+  const visibleSites = (Array.isArray(snapshot.sites) ? snapshot.sites : []).map(site => {
+    const lore = locationById.get(site.locationId) || locationById.get(site.id);
+    const node = kromkaGlobalNode(site.locationId || site.id);
+    const next = { ...site };
+    if (lore?.displayName) next.name = lore.displayName;
+    if (lore) {
+      next.macroRegion = lore.macroRegion;
+      next.visualProfile = lore.visualProfile;
+      next.ambientProfile = lore.ambientProfile;
+      next.anomalyDensity = lore.anomalyDensity;
+    }
+    if (node) {
+      next.x = Number(node.x || 0);
+      next.y = Number(node.y || 0);
+    }
+    if (next.locationId === 'settlement' || next.id === 'settlement') {
+      next.owner = 'neutral';
+      next.capital = false;
+      next.capitalFaction = '';
+    }
+    const capitalFaction = SERVER_FACTION_CAPITAL_LOCATIONS[next.locationId] || SERVER_FACTION_CAPITAL_LOCATIONS[next.id];
+    if (capitalFaction) {
+      next.owner = capitalFaction;
+      next.capital = true;
+      next.capitalFaction = capitalFaction;
+    }
+    return next;
+  });
+
+  const byLocation = new Set(visibleSites.map(site => site.locationId || site.id));
+  const requiredCapitals = [
+    kromkaVirtualCapital('sluiceCity', 'uprava', { blue: 18 }),
+    kromkaVirtualCapital('scrapTown', 'free_artels', { scrap: 42, blue: 8 }),
+    kromkaVirtualCapital('relayStation', 'contour', { electronics: 28, blue: 12 }),
+    kromkaVirtualCapital('caravanCamp', 'tract_league', { food: 16, blue: 6 }),
+    kromkaVirtualCapital('secondHaven', 'seconds', { medicine: 10, blue: 4 })
+  ];
+  for (const capital of requiredCapitals) {
+    if (!byLocation.has(capital.locationId)) visibleSites.push(capital);
+  }
+  snapshot.sites = visibleSites;
+  return snapshot;
+}
 // Файл в DATA_DIR переписывается и когда подмешалось новое содержимое, иначе
 // оператор увидит на карте то, чего нет в его файле, и следующая правка через
 // редактор снова это потеряет.
 try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) {
   console.error('Failed to persist global map file:', err);
 }
+const KROMKA_MUTANT_TYPE_ORDER = Object.freeze([
+  'burned', 'fold', 'gari', 'rykhlyak', 'dustling', 'listener', 'mourner', 'lantern'
+]);
+const KROMKA_MUTANT_BY_ID = Object.freeze(Object.fromEntries(
+  (Array.isArray(KROMKA_MUTANT_CATALOG.types) ? KROMKA_MUTANT_CATALOG.types : [])
+    .filter(row => row && row.id)
+    .map(row => [String(row.id), row])
+));
+
+function serverEnemyTypeFromKromkaCreature(creatureTypeId) {
+  const row = KROMKA_MUTANT_BY_ID[String(creatureTypeId || '')] || {};
+  const stats = row.stats || {};
+  const senses = row.senses || {};
+  return {
+    creatureTypeId: String(row.id || creatureTypeId || ''),
+    name: String(row.displayName || creatureTypeId || 'Существо'),
+    pluralName: String(row.pluralName || row.displayName || creatureTypeId || 'Существа'),
+    classification: String(row.classification || 'natural_mutant'),
+    faction: String(row.faction || 'wild'),
+    role: String(row.role || 'animal'),
+    hostileByDefault: row.hostileByDefault !== false,
+    modelKey: String(row.modelKey || ''),
+    visual: String(row.visual || row.id || ''),
+    lootTier: String(row.id || creatureTypeId || ''),
+    attackProfile: Array.isArray(row.attacks) ? row.attacks : [],
+    resistances: row.resistances && typeof row.resistances === 'object' ? { ...row.resistances } : {},
+    injuryProfile: row.injuryProfile && typeof row.injuryProfile === 'object' ? { ...row.injuryProfile } : {},
+    lootProfile: String(row.loot?.table || ''),
+    trophyQty: Math.max(0, Math.floor(Number(row.loot?.trophyQty || 0))),
+    hp: Math.max(1, Number(stats.hp || 40)),
+    atk: Math.max(0, Number(stats.attack || 5)),
+    speed: Math.max(0.1, Number(stats.speed || 2)),
+    xp: Math.max(0, Number(stats.xp || 10)),
+    scale: Math.max(0.1, Number(stats.scale || 1)),
+    visionRange: Math.max(0, Number(senses.visionRange || 8)),
+    hearingShotRange: Math.max(0, Number(senses.hearingShotRange || 10)),
+    hearingHarvestRange: Math.max(0, Number(senses.hearingHarvestRange || 5)),
+    memoryMs: Math.max(0, Number(senses.memoryMs || 3200)),
+    investigateMs: Math.max(0, Number(senses.investigateMs || 3800)),
+    senseIntervalMs: Math.max(100, Number(senses.senseIntervalMs || 350)),
+    noiseReaction: clamp(Number(senses.noiseReaction ?? 0.65), 0, 1),
+    noiseScatter: Math.max(0, Number(senses.noiseScatter || 1.3)),
+    separationRadius: Math.max(0.3, Number(senses.separationRadius || 1))
+  };
+}
+
 const SERVER_ENEMY_TYPES = [
-  // v7.36: у каждого типа свои чувства. Значения в world units: TILE=2,
-  // поэтому visionRange 10 = примерно 5 клеток. Игрок с обычной
-  // внимательностью видит немного дальше, чем большинство мобов.
-  { name: 'Рейдер', lootTier: 'raider', hp: 55, atk: 9, speed: 2.45, xp: 25, startingCaps: 5, scale: 1.0,
+  { name: 'Налётчик', lootTier: 'raider', hp: 55, atk: 9, speed: 2.45, xp: 25, startingCaps: 5, scale: 1.0,
     visionRange: 10.0, hearingShotRange: 12.5, hearingHarvestRange: 5.5, memoryMs: 3400, investigateMs: 4200, senseIntervalMs: 340, noiseReaction: 0.72, noiseScatter: 1.2, separationRadius: 1.15 },
-  { name: 'Гуль', lootTier: 'ghoul', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92,
-    visionRange: 8.2, hearingShotRange: 10.5, hearingHarvestRange: 4.5, memoryMs: 2600, investigateMs: 3300, senseIntervalMs: 410, noiseReaction: 0.56, noiseScatter: 1.6, separationRadius: 1.05 },
-  { name: 'Супермутант', lootTier: 'superMutant', hp: 120, atk: 18, speed: 1.75, xp: 70, startingCaps: 14, scale: 1.32,
-    visionRange: 8.8, hearingShotRange: 14.0, hearingHarvestRange: 7.0, memoryMs: 4700, investigateMs: 5200, senseIntervalMs: 430, noiseReaction: 0.66, noiseScatter: 1.35, separationRadius: 1.45 },
-  { name: 'Пепельный волк', lootTier: 'ashWolf', hp: 36, atk: 8, speed: 3.15, xp: 20, scale: 0.82,
-    visionRange: 11.2, hearingShotRange: 13.0, hearingHarvestRange: 6.0, memoryMs: 3200, investigateMs: 3900, senseIntervalMs: 260, noiseReaction: 0.68, noiseScatter: 1.75, separationRadius: 1.0 },
-  { name: 'Радскорпион', lootTier: 'radScorpion', hp: 76, atk: 14, speed: 1.9, xp: 36, scale: 1.05,
-    visionRange: 9.4, hearingShotRange: 10.8, hearingHarvestRange: 6.8, memoryMs: 4100, investigateMs: 4700, senseIntervalMs: 340, noiseReaction: 0.62, noiseScatter: 1.15, separationRadius: 1.2 },
-  { name: 'Большой мутировавший муравей', lootTier: 'mutantAnt', hp: 52, atk: 10, speed: 2.55, xp: 24, scale: 0.9,
-    visionRange: 8.8, hearingShotRange: 12.2, hearingHarvestRange: 7.2, memoryMs: 3000, investigateMs: 3600, senseIntervalMs: 290, noiseReaction: 0.7, noiseScatter: 1.55, separationRadius: 0.82 },
-  { name: 'Геккон пустоши', lootTier: 'gecko', hp: 46, atk: 9, speed: 2.7, xp: 22, scale: 0.92,
-    visionRange: 10.6, hearingShotRange: 11.8, hearingHarvestRange: 5.6, memoryMs: 3300, investigateMs: 3900, senseIntervalMs: 270, noiseReaction: 0.66, noiseScatter: 1.65, separationRadius: 0.92 },
-  { name: 'Огненный геккон', lootTier: 'fireGecko', hp: 62, atk: 12, speed: 2.42, xp: 34, scale: 1.02,
-    visionRange: 10.2, hearingShotRange: 12.4, hearingHarvestRange: 6.0, memoryMs: 3800, investigateMs: 4300, senseIntervalMs: 300, noiseReaction: 0.68, noiseScatter: 1.45, separationRadius: 1.0 }
+  ...KROMKA_MUTANT_TYPE_ORDER.map(serverEnemyTypeFromKromkaCreature)
 ];
 const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   raider: 'enemyRaider',
   enemyraider: 'enemyRaider',
   enemy_raider: 'enemyRaider',
-  ghoul: 'enemyGhoul',
-  enemyghoul: 'enemyGhoul',
-  enemy_ghoul: 'enemyGhoul',
-  mutant: 'enemySuperMutant',
-  supermutant: 'enemySuperMutant',
-  super_mutant: 'enemySuperMutant',
-  enemysupermutant: 'enemySuperMutant',
-  enemy_super_mutant: 'enemySuperMutant',
-  wolf: 'enemyAshWolf',
-  ashwolf: 'enemyAshWolf',
-  ash_wolf: 'enemyAshWolf',
-  enemyashwolf: 'enemyAshWolf',
-  enemy_ash_wolf: 'enemyAshWolf',
-  radscorpion: 'enemyRadscorpion',
-  rad_scorpion: 'enemyRadscorpion',
-  enemyradscorpion: 'enemyRadscorpion',
-  enemy_radscorpion: 'enemyRadscorpion',
-  mutantant: 'enemyMutantAnt',
-  mutant_ant: 'enemyMutantAnt',
-  enemymutantant: 'enemyMutantAnt',
-  enemy_mutant_ant: 'enemyMutantAnt',
-  gecko: 'enemyGecko',
-  enemygecko: 'enemyGecko',
-  enemy_gecko: 'enemyGecko',
-  firegecko: 'enemyFireGecko',
-  fire_gecko: 'enemyFireGecko',
-  enemyfiregecko: 'enemyFireGecko',
-  enemy_fire_gecko: 'enemyFireGecko',
+  burned: 'kromkaBurned',
+  fold: 'kromkaFold',
+  gari: 'kromkaGari',
+  rykhlyak: 'kromkaRykhlyak',
+  dustling: 'kromkaDustling',
+  listener: 'kromkaListener',
+  mourner: 'kromkaMourner',
+  lantern: 'kromkaLantern',
+  // Legacy aliases are accepted only when old saves and old world contacts migrate.
+  ghoul: 'kromkaBurned',
+  enemyghoul: 'kromkaBurned',
+  enemy_ghoul: 'kromkaBurned',
+  supermutant: 'kromkaFold',
+  super_mutant: 'kromkaFold',
+  mutant: 'kromkaFold',
+  enemysupermutant: 'kromkaFold',
+  enemy_super_mutant: 'kromkaFold',
+  wolf: 'kromkaGari',
+  ashwolf: 'kromkaGari',
+  ash_wolf: 'kromkaGari',
+  enemyashwolf: 'kromkaGari',
+  enemy_ash_wolf: 'kromkaGari',
+  radscorpion: 'kromkaRykhlyak',
+  rad_scorpion: 'kromkaRykhlyak',
+  enemyradscorpion: 'kromkaRykhlyak',
+  enemy_radscorpion: 'kromkaRykhlyak',
+  mutantant: 'kromkaDustling',
+  mutant_ant: 'kromkaDustling',
+  enemymutantant: 'kromkaDustling',
+  enemy_mutant_ant: 'kromkaDustling',
+  gecko: 'kromkaListener',
+  enemygecko: 'kromkaListener',
+  enemy_gecko: 'kromkaListener',
+  firegecko: 'kromkaMourner',
+  fire_gecko: 'kromkaMourner',
+  enemyfiregecko: 'kromkaMourner',
+  enemy_fire_gecko: 'kromkaMourner',
   brahmin: 'friendlyBrahmin',
   animal: 'friendlyBrahmin',
   friendlybrahmin: 'friendlyBrahmin',
@@ -3267,8 +3959,6 @@ const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
 };
 
 const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
-  storageChest: 'storage_chest.glb',
-  crate: 'crate.glb',
   traderNpc: 'trader_npc.glb',
   brahmin: 'brahmin.glb',
   friendlyBrahmin: 'brahmin.glb',
@@ -3276,12 +3966,6 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   caravanGuard: 'npc_caravan_guard.glb',
   klimPatrolGuard: 'npc_klim_guard.glb',
   wastelandSettler: 'npc_wasteland_settler.glb',
-  craftStationAmmo: 'craft_station_ammo.glb',
-  craftStationWeapon: 'craft_station_weapon.glb',
-  craftStationTools: 'craft_station_tools.glb',
-  craftStationRepair: 'craft_station_repair.glb',
-  craftStationEnergy: 'craft_station_energy.glb',
-  craftStationChem: 'craft_station_chem.glb',
   enemyRaider: 'npc_raider.glb',
   enemyGhoul: 'npc_ghoul.glb',
   enemySuperMutant: 'npc_super_mutant.glb',
@@ -3290,6 +3974,14 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   enemyMutantAnt: 'npc_mutant_ant.glb',
   enemyGecko: 'npc_gecko.glb',
   enemyFireGecko: 'npc_fire_gecko.glb'
+  ,kromkaBurned: 'npc_ghoul.glb'
+  ,kromkaFold: 'npc_ghoul.glb'
+  ,kromkaGari: 'npc_ash_wolf.glb'
+  ,kromkaRykhlyak: 'npc_radscorpion.glb'
+  ,kromkaDustling: 'npc_mutant_ant.glb'
+  ,kromkaListener: 'npc_gecko.glb'
+  ,kromkaMourner: 'npc_fire_gecko.glb'
+  ,kromkaLantern: 'brahmin.glb'
 });
 const SERVER_MODEL_KEY_BY_FILE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_MODEL_FILE_BY_KEY)
@@ -3310,6 +4002,14 @@ const SERVER_APPROVED_ACTOR_MODEL_KEYS = new Set([
   'enemyMutantAnt',
   'enemyGecko',
   'enemyFireGecko'
+  ,'kromkaBurned'
+  ,'kromkaFold'
+  ,'kromkaGari'
+  ,'kromkaRykhlyak'
+  ,'kromkaDustling'
+  ,'kromkaListener'
+  ,'kromkaMourner'
+  ,'kromkaLantern'
 ]);
 
 function serverApprovedActorModelKey(modelKey = '') {
@@ -3334,6 +4034,16 @@ function serverModelKeyForExplicitRef(modelRef = '') {
   const raw = String(modelRef || '').trim();
   if (!raw) return '';
   const explicit = raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  const legacyCreatureModelAliases = {
+    enemyGhoul: 'kromkaBurned',
+    enemySuperMutant: 'kromkaFold',
+    enemyAshWolf: 'kromkaGari',
+    enemyRadscorpion: 'kromkaRykhlyak',
+    enemyMutantAnt: 'kromkaDustling',
+    enemyGecko: 'kromkaListener',
+    enemyFireGecko: 'kromkaMourner'
+  };
+  if (legacyCreatureModelAliases[explicit]) return legacyCreatureModelAliases[explicit];
   const explicitAlias = serverEnemyModelKeyForVisual(explicit);
   if (explicitAlias) return explicitAlias;
   const explicitActorKey = serverApprovedActorModelKey(explicit);
@@ -3343,7 +4053,8 @@ function serverModelKeyForExplicitRef(modelRef = '') {
   try { decoded = decodeURIComponent(raw); } catch (_) {}
   const pathOnly = decoded.split(/[?#]/, 1)[0].replace(/\\/g, '/');
   const filename = String(pathOnly.split('/').pop() || '').toLowerCase();
-  return serverApprovedActorModelKey(SERVER_MODEL_KEY_BY_FILE[filename]);
+  const fileModelKey = serverApprovedActorModelKey(SERVER_MODEL_KEY_BY_FILE[filename]);
+  return legacyCreatureModelAliases[fileModelKey] || fileModelKey;
 }
 
 function serverEnemyModelKeyForIdentity(actor = {}, fallbackVisual = '') {
@@ -3385,14 +4096,14 @@ function serverEnemyModelKeyForIdentity(actor = {}, fallbackVisual = '') {
     return 'caravanGuard';
   }
   if (role === 'civilian' || role === 'settler' || role === 'worker') return 'wastelandSettler';
-  if (compact.includes('firegecko') || (text.includes('огнен') && text.includes('геккон'))) return 'enemyFireGecko';
-  if (compact.includes('radscorpion') || text.includes('скорпион')) return 'enemyRadscorpion';
-  if (compact.includes('mutantant') || text.includes('мурав')) return 'enemyMutantAnt';
-  if (compact.includes('ashwolf') || text.includes('wolf') || text.includes('волк')) return 'enemyAshWolf';
+  if (compact.includes('firegecko') || (text.includes('огнен') && text.includes('геккон'))) return 'kromkaMourner';
+  if (compact.includes('radscorpion') || text.includes('скорпион')) return 'kromkaRykhlyak';
+  if (compact.includes('mutantant') || text.includes('мурав')) return 'kromkaDustling';
+  if (compact.includes('ashwolf') || text.includes('wolf') || text.includes('волк')) return 'kromkaGari';
   if (compact.includes('brahmin') || text.includes('брамин') || role === 'animal') return 'friendlyBrahmin';
-  if (compact.includes('supermutant') || text.includes('супермутант')) return 'enemySuperMutant';
-  if (compact.includes('ghoul') || text.includes('гул')) return 'enemyGhoul';
-  if (compact.includes('gecko') || text.includes('геккон')) return 'enemyGecko';
+  if (compact.includes('supermutant') || text.includes('супермутант')) return 'kromkaFold';
+  if (compact.includes('ghoul') || text.includes('гул')) return 'kromkaBurned';
+  if (compact.includes('gecko') || text.includes('геккон')) return 'kromkaListener';
   if (compact.includes('raider') || text.includes('рейдер') || role === 'raider') return 'enemyRaider';
   return '';
 }
@@ -3412,19 +4123,19 @@ const SERVER_ENEMY_FACTION_BY_LOOT_TIER = {
   fireGecko: 'geckos'
 };
 const SERVER_FACTION_ALLIES = new Set([
-  'caravan|klim_patrol',
-  'klim_patrol|caravan'
+  'tract_league|uprava',
+  'uprava|tract_league'
 ]);
-const SERVER_JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order']);
+const SERVER_JOINABLE_WORLD_FACTIONS = new Set([
+  'uprava', 'free_artels', 'contour', 'tract_league', 'seconds', 'continuity'
+]);
 const SERVER_DEFAULT_FACTION_RELATIONS = {
-  old_klim: { caravans: 70, scrap_union: 35, relay_order: 55, raiders: -100, mutants: -80, wild: -55, neutral: 20 },
-  caravans: { old_klim: 70, scrap_union: 55, relay_order: 55, raiders: -100, mutants: -80, wild: -45, neutral: 20 },
-  scrap_union: { old_klim: 35, caravans: 55, relay_order: 25, raiders: -95, mutants: -75, wild: -50, neutral: 20 },
-  relay_order: { old_klim: 55, caravans: 55, scrap_union: 25, raiders: -90, mutants: -80, wild: -45, neutral: 25 },
-  raiders: { old_klim: -100, caravans: -100, scrap_union: -95, relay_order: -90, mutants: -70, wild: -40, neutral: -70 },
-  mutants: { old_klim: -80, caravans: -80, scrap_union: -75, relay_order: -80, raiders: -70, wild: -55, neutral: -70 },
-  wild: { old_klim: -55, caravans: -45, scrap_union: -50, relay_order: -45, raiders: -40, mutants: -55, neutral: -35 },
-  neutral: { old_klim: 20, caravans: 20, scrap_union: 20, relay_order: 25, raiders: -70, mutants: -70, wild: -35 }
+  uprava: { free_artels: -20, contour: 45, tract_league: 25, seconds: -35, continuity: 10 },
+  free_artels: { uprava: -20, contour: -10, tract_league: 40, seconds: 30, continuity: -45 },
+  contour: { uprava: 45, free_artels: -10, tract_league: 20, seconds: -15, continuity: 35 },
+  tract_league: { uprava: 25, free_artels: 40, contour: 20, seconds: 15, continuity: 5 },
+  seconds: { uprava: -35, free_artels: 30, contour: -15, tract_league: 15, continuity: -70 },
+  continuity: { uprava: 10, free_artels: -45, contour: 35, tract_league: 5, seconds: -70 }
 };
 
 function serverFactionKey(faction = '') {
@@ -3432,83 +4143,21 @@ function serverFactionKey(faction = '') {
 }
 
 function serverWorldFactionKey(faction = '') {
-  let key = serverFactionKey(faction);
-  if (key === 'klim_patrol' || key === 'old_klim') key = 'old_klim';
-  else if (key === 'scrap' || key === 'scrap_town' || key === 'scrap_union') key = 'scrap_union';
-  else if (key === 'relay' || key === 'relay_station' || key === 'relay_order') key = 'relay_order';
-  return SERVER_JOINABLE_WORLD_FACTIONS.has(key) ? key : '';
+  return canonicalKromkaFactionId(serverFactionKey(faction));
 }
 
 function sanitizeServerWorldFactionReputation(input = {}) {
-  const out = {};
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  for (const [rawFaction, rawValue] of Object.entries(source)) {
-    const factionId = serverWorldFactionKey(rawFaction);
-    if (!factionId) continue;
-    out[factionId] = clamp(Math.floor(Number(rawValue || 0)), 0, 9999);
-  }
-  return out;
+  return sanitizeKromkaReputation(input);
 }
 
-const SERVER_PLAYER_FACTION_MODEL_VERSION = 2;
+const SERVER_PLAYER_FACTION_MODEL_VERSION = PLAYER_FACTION_MODEL_VERSION;
 
-function sanitizeArchivedIndependentReputation(...sources) {
-  const out = {};
-  for (const source of sources) {
-    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
-    for (const [rawFaction, rawValue] of Object.entries(source)) {
-      const key = serverFactionKey(rawFaction);
-      if (key !== 'caravan' && key !== 'caravans') continue;
-      out.caravans = Math.max(
-        Number(out.caravans || 0),
-        clamp(Math.floor(Number(rawValue || 0)), 0, 9999)
-      );
-    }
-  }
-  return out;
+function sanitizeServerFactionContracts(input = {}, now = Date.now()) {
+  return sanitizeKromkaContracts(input, now);
 }
 
 function sanitizePersistedPlayerFactionState(state = {}) {
-  if (!state || typeof state !== 'object' || Array.isArray(state)) return state;
-  const profile = state.characterProfile && typeof state.characterProfile === 'object'
-    ? state.characterProfile
-    : (state.characterProfile = {});
-  const rawFactionId = profile.worldFactionId || profile.factionId || '';
-  const factionId = serverWorldFactionKey(rawFactionId);
-  profile.factionId = factionId;
-  profile.worldFactionId = factionId;
-  if (!factionId) {
-    delete profile.factionJoinedAt;
-    delete profile.factionName;
-  }
-
-  const rawStateReputation = state.worldFactionReputation && typeof state.worldFactionReputation === 'object'
-    ? state.worldFactionReputation
-    : {};
-  const rawProfileReputation = profile.worldFactionReputation && typeof profile.worldFactionReputation === 'object'
-    ? profile.worldFactionReputation
-    : {};
-  const archived = sanitizeArchivedIndependentReputation(
-    state.archivedWorldFactionReputation,
-    profile.archivedWorldFactionReputation,
-    rawStateReputation,
-    rawProfileReputation
-  );
-  const reputation = sanitizeServerWorldFactionReputation({
-    ...rawProfileReputation,
-    ...rawStateReputation
-  });
-  state.worldFactionReputation = reputation;
-  profile.worldFactionReputation = { ...reputation };
-  if (Object.keys(archived).length) {
-    state.archivedWorldFactionReputation = archived;
-    profile.archivedWorldFactionReputation = { ...archived };
-  } else {
-    delete state.archivedWorldFactionReputation;
-    delete profile.archivedWorldFactionReputation;
-  }
-  state.worldFactionModelVersion = SERVER_PLAYER_FACTION_MODEL_VERSION;
-  return state;
+  return migrateKromkaPlayerFactionState(state);
 }
 
 function migrateStoredPlayerFactionModel() {
@@ -3550,6 +4199,12 @@ migrateStoredPlayerFactionModel();
 
 const SERVER_ALWAYS_HOSTILE_FACTION_GROUPS = new Set([
   'raiders',
+  'skladni',
+  'gari',
+  'rykhlyaki',
+  'slukhachi',
+  'plakalshchiki',
+  'pylniki',
   'mutants',
   'ghouls',
   'radscorpions',
@@ -3561,6 +4216,13 @@ const SERVER_ALWAYS_HOSTILE_FACTION_GROUPS = new Set([
 ]);
 
 const SERVER_WILD_FACTION_GROUPS = new Set([
+  'skladni',
+  'gari',
+  'rykhlyaki',
+  'slukhachi',
+  'plakalshchiki',
+  'fonarniki',
+  'pylniki',
   'ghouls',
   'radscorpions',
   'mutant_ants',
@@ -3573,10 +4235,10 @@ const SERVER_WILD_FACTION_GROUPS = new Set([
 function serverCombatFactionGroup(faction = '') {
   const key = serverFactionKey(faction);
   if (!key || key === 'neutral') return key || 'neutral';
-  if (key === 'caravan' || key === 'caravans') return 'caravans';
-  if (key === 'klim_patrol' || key === 'old_klim') return 'old_klim';
-  if (key === 'scrap' || key === 'scrap_town' || key === 'scrap_union') return 'scrap_union';
-  if (key === 'relay' || key === 'relay_station' || key === 'relay_order') return 'relay_order';
+  if (key === 'caravan' || key === 'caravans' || key === 'tract_league') return 'tract_league';
+  if (key === 'klim_patrol' || key === 'old_klim' || key === 'uprava') return 'uprava';
+  if (key === 'scrap' || key === 'scrap_town' || key === 'scrap_union' || key === 'free_artels') return 'free_artels';
+  if (key === 'relay' || key === 'relay_station' || key === 'relay_order' || key === 'contour') return 'contour';
   if (key === 'raider' || key === 'raiders') return 'raiders';
   if (key === 'super_mutant' || key === 'super_mutants' || key === 'mutant' || key === 'mutants') return 'mutants';
   if (key === 'ghoul' || key === 'ghouls') return 'ghouls';
@@ -3611,6 +4273,7 @@ function sanitizeServerGlobalMapPoint(input = null) {
 function serverDefaultFactionForEnemyType(type = {}, opts = {}) {
   if (opts.faction) return serverFactionKey(opts.faction);
   if (opts.role === 'guard' || opts.role === 'merchant') return 'neutral';
+  if (type.creatureTypeId && type.faction) return serverFactionKey(type.faction);
   return SERVER_ENEMY_FACTION_BY_LOOT_TIER[type.lootTier] || 'wild';
 }
 
@@ -3666,6 +4329,56 @@ function serverActorHostileToPlayer(actor = null, player = null) {
   return serverFactionsHostile(actorGroup, playerGroup);
 }
 
+function serverCombatFactionsAllied(leftFaction = '', rightFaction = '') {
+  if (!leftFaction || !rightFaction) return false;
+  const left = serverCombatFactionGroup(leftFaction);
+  const right = serverCombatFactionGroup(rightFaction);
+  return left === right || SERVER_FACTION_ALLIES.has(`${left}|${right}`);
+}
+
+function serverPlayersAllied(attacker = {}, target = {}) {
+  const left = sanitizeServerSocialState(attacker.socialState || {});
+  const right = sanitizeServerSocialState(target.socialState || {});
+  if (left.clan.id && left.clan.id === right.clan.id) return true;
+  if (left.friends.some(row => row.id === (target.characterId || target.id))
+    || right.friends.some(row => row.id === (attacker.characterId || attacker.id))) return true;
+  if (serverCombatFactionsAllied(
+    serverWorldFactionKey(attacker.worldFactionId || attacker.factionId || ''),
+    serverWorldFactionKey(target.worldFactionId || target.factionId || '')
+  )) return true;
+  const attachment = serverWorldPartyAttachmentForPlayer(attacker);
+  return !!attachment && (attachment.party.playerMembers || [])
+    .some(member => playerMatchesWorldPartyMember(target, member));
+}
+
+function serverPlayerCanDamageNpc(player, enemy, room) {
+  if (!enemy || enemy.dead || !roomAllowsNpcCombat(room)
+    || serverNpcIsKromkaOnboardingProtected(enemy)
+    || !serverActorHostileToPlayer(enemy, player)) return false;
+  if (serverCombatFactionsAllied(
+    serverWorldFactionKey(player.worldFactionId || player.factionId || ''), enemy.faction
+  )) return false;
+  const attachment = serverWorldPartyAttachmentForPlayer(player);
+  if (attachment && (enemy.onsitePartyId === attachment.party.id
+    || (room.worldPartyId === attachment.party.id && enemy.encounterRole === 'guard'))) return false;
+  return true;
+}
+
+function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
+  return locationAllowsPvp(roomLocation(room))
+    && !serverPlayersAllied(attacker, target)
+    && !serverPlayerHasProtectedClanRally(target, room, now);
+}
+
+function serverProtectedAttackAck(player, spend, weapon, targetState = {}) {
+  return {
+    ok: true, protected: true, hit: false, hits: [], damage: 0, killed: false,
+    weapon: weapon.id, mode: spend.mode, fallback: !!spend.fallback,
+    combat: spend.combat, combats: spend.combats,
+    self: publicAuthoritativePlayerState(player), ...targetState
+  };
+}
+
 const SERVER_ENEMY_VARIANTS = [
   {
     id: 'scarred',
@@ -3718,7 +4431,9 @@ const SERVER_ENEMY_VARIANTS = [
     ]
   }
 ];
-const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet','boots','scoutBoots','reinforcedBoots','assaultBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
+const SERVER_ITEM_IDS = new Set(Object.keys(KROMKA_ITEM_INDEXES.byId));
+const SERVER_ITEM_BASE_PRICES = KROMKA_ITEM_INDEXES.basePrices;
+const SERVER_ITEM_CATEGORIES = KROMKA_ITEM_INDEXES.categories;
 // ===== СИЛА: тиры экипировки =====
 // Чистое железо: только предметы, их состояние и модификации. Очки тиров
 // растут нелинейно, чтобы скачок тира ощущался; состояние входит множителем —
@@ -3760,37 +4475,12 @@ function serverGearPower(p = {}) {
   return Math.round(total);
 }
 
-const SERVER_ITEM_STACK_LIMITS = {
-  silver: 200000,
-  ammo9: 1200,
-  ammo556: 900,
-  energyCell: 800,
-  napalm: 500,
-  shotgunShell: 600,
-  rocketAmmo: 80,
-  ore: 250,
-  wood: 250,
-  scrap: 250,
-  oil: 200,
-  chemicals: 160,
-  medicine: 120,
-  electronics: 120,
-  ammoParts: 250,
-  food: 160,
-  weaponParts: 120,
-  water: 120,
-  trophy: 50,
-  medkit: 50,
-  stim: 60,
-  doctorBag: 25,
-  antibiotics: 60,
-  repairKit: 40
-};
+const SERVER_ITEM_STACK_LIMITS = KROMKA_ITEM_INDEXES.stackLimits;
 
 function serverItemStackLimit(itemId = '') {
   const id = serverBaseItemId(itemId);
   if (!id || id === 'fists' || !SERVER_ITEM_IDS.has(id)) return 0;
-  return SERVER_ITEM_STACK_LIMITS[id] || 12;
+  return SERVER_ITEM_STACK_LIMITS[id] || 0;
 }
 
 function normalizeServerTraderStock(stock = []) {
@@ -3862,6 +4552,7 @@ const SERVER_NPC_ROUTINES = normalizeServerNpcRoutines(
 
 const WASTELAND_SIM = createWastelandSimulation({
   stateFile: WASTELAND_SIM_FILE,
+  worldSimulationFile: KROMKA_WORLD_SIMULATION_FILE,
   gameDayRealMs: GAME_DAY_REAL_MS,
   saveIntervalMs: WASTELAND_SIM_SAVE_INTERVAL_MS,
   getGlobalMap: () => GLOBAL_MAP,
@@ -3869,8 +4560,17 @@ const WASTELAND_SIM = createWastelandSimulation({
   itemIds: SERVER_ITEM_IDS,
   traderProfiles: SERVER_TRADER_PROFILES,
   publicSiteIds: RELEASED_LOCATION_IDS,
-  locationRelease: publicLocationRelease()
+  locationRelease: publicLocationRelease(),
+  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || []
 });
+const rawWastelandPublicState = WASTELAND_SIM.publicState.bind(WASTELAND_SIM);
+const rawWastelandPublicWorldTasks = typeof WASTELAND_SIM.publicWorldTasks === 'function'
+  ? WASTELAND_SIM.publicWorldTasks.bind(WASTELAND_SIM)
+  : null;
+WASTELAND_SIM.publicState = () => kromkaPublicWastelandSnapshot(rawWastelandPublicState());
+if (rawWastelandPublicWorldTasks) {
+  WASTELAND_SIM.publicWorldTasks = ids => rawWastelandPublicWorldTasks(ids).map(task => transformKromkaPublicValue(task));
+}
 
 function reconcileSavedWorldPartyMembers() {
   if (typeof WASTELAND_SIM.reconcileWorldPartyMembers !== 'function') return { removed: 0, kept: 0 };
@@ -4143,7 +4843,7 @@ const NPC_SOCIAL_LINES = {
   ],
   merchant: [
     'Если найдёшь лом, тащи ко мне.',
-    'Крышки любят терпеливых.',
+    'Марки любят терпеливых.',
     'Слухи тоже товар.',
     'Сегодня беру медикаменты дороже.'
   ],
@@ -4151,7 +4851,7 @@ const NPC_SOCIAL_LINES = {
     'Товар не залежится.',
     'Хорошие детали всегда в цене.',
     'Спроси позже, будет новая партия.',
-    'Без крышек разговор короткий.'
+    'Без марок разговор короткий.'
   ],
   quartermaster: [
     'Склад любит порядок.',
@@ -4209,17 +4909,32 @@ const SERVER_CONTEXT_ITEM_LABELS = {
   napalm: 'напалма',
   food: 'еды',
   weaponParts: 'оружейных деталей',
-  silver: 'крышек'
+  silver: 'марок Тракта',
+  blue: 'кассет сини'
 };
 
 const SERVER_CONTEXT_FACTION_LABELS = {
-  old_klim: 'Старого Клима',
-  klim_patrol: 'Старого Клима',
-  scrap_union: 'Свалочного союза',
+  uprava: 'Управы',
+  free_artels: 'Вольных артелей',
+  contour: 'Контура',
+  tract_league: 'Лиги Тракта',
+  seconds: 'Вторых',
+  continuity: 'Комитета преемственности',
+  old_klim: 'Управы',
+  klim_patrol: 'Управы',
+  scrap_union: 'Вольных артелей',
   relay_order: 'Ретранслятора',
   caravans: 'караванщиков',
   caravan: 'караванщиков',
   raiders: 'рейдеров',
+  burned: 'Выжженных',
+  skladni: 'Складней',
+  gari: 'Гарей',
+  rykhlyaki: 'Рыхляков',
+  slukhachi: 'Слухачей',
+  plakalshchiki: 'Плакальщиков',
+  fonarniki: 'Фонарников',
+  pylniki: 'Пыльников',
   mutants: 'супермутантов',
   super_mutants: 'супермутантов',
   ghouls: 'гулей',
@@ -4534,6 +5249,7 @@ function normalizeServerEncounterActor(row = {}) {
     tx,
     tz,
     chance,
+    creatureTypeId: KROMKA_MUTANT_BY_ID[String(row.creatureTypeId || '')] ? String(row.creatureTypeId) : '',
     typeIndex: Number.isFinite(Number(row.typeIndex)) ? clamp(Math.floor(Number(row.typeIndex)), 0, SERVER_ENEMY_TYPES.length - 1) : undefined,
     typeName: String(row.typeName || '').slice(0, 80),
     name: String(row.name || '').slice(0, 80),
@@ -4580,21 +5296,7 @@ function normalizeServerEncounterDefinitions(raw = {}) {
 
 const ENCOUNTER_DEFINITIONS = normalizeServerEncounterDefinitions(readAuthoredDataJson(ENCOUNTERS_FILE, { encounters: {} }));
 
-const SERVER_ITEM_WEIGHTS = {
-  pistol: 1.5, rifle: 4.0, assaultRifle: 4.8, machineGun: 8.8, laserPistol: 2.2,
-  flamethrower: 7.4, plasmaRifle: 5.1, shotgun: 4.2, rocketLauncher: 9.6,
-  knife: 0.5, fists: 0,
-  leather: 3.0, metalArmor: 7.5, ballisticVest: 5.5, combatArmor: 9.0,
-  hazmatSuit: 4.2, heavyArmor: 14.0, energySuit: 6.8,
-  weldedHelmet: 2.4, helmet: 2.0, tacticalHelmet: 1.9, assaultHelmet: 2.8, preWarHelmet: 2.6, assaultBoots: 2.6,
-  boots: 1.5, scoutBoots: 1.1, reinforcedBoots: 2.2, backpack: 1.2,
-  ammo9: 0.025, ammo556: 0.04, energyCell: 0.03, napalm: 0.08, shotgunShell: 0.05, rocketAmmo: 0.85,
-  medkit: 0.6, stim: 0.2, doctorBag: 0.9, antibiotics: 0.15,
-  ore: 2.0, wood: 1.2, scrap: 1.4, oil: 1.5,
-  chemicals: 0.45, medicine: 0.35, electronics: 0.6, ammoParts: 0.18, food: 0.65, weaponParts: 0.85,
-  silver: 0, trophy: 0.5, water: 1.0,
-  pickaxe: 3.0, axe: 2.5, handPump: 2.7, repairKit: 1.5
-};
+const SERVER_ITEM_WEIGHTS = KROMKA_ITEM_INDEXES.weights;
 
 function normalizeServerLootTableRows(rows = []) {
   return (Array.isArray(rows) ? rows : [])
@@ -4803,11 +5505,9 @@ function serverDualWieldPistolPair(player = {}) {
 const SERVER_COMBAT_AP_EPSILON = 0.0001;
 const SERVER_COMBAT_COOLDOWN_EPSILON_MS = 2;
 const SERVER_EQUIPMENT_SLOT_AP_COST = 1;
-const SERVER_REPAIRABLE_ITEM_IDS = new Set([
-  ...Object.keys(SERVER_WEAPONS).filter(id => id !== 'fists'),
-  'leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit',
-  'helmet', 'tacticalHelmet', 'assaultHelmet', 'boots', 'scoutBoots', 'reinforcedBoots', 'backpack'
-]);
+const SERVER_REPAIRABLE_ITEM_IDS = new Set(KROMKA_ITEM_CATALOG.items
+  .filter(item => item.conditionMode !== 'none')
+  .map(item => item.id));
 const SERVER_SALVAGE_RULES = {
   pistol: { chance: 0.44, out: { ore: 1 } }, rifle: { chance: 0.42, out: { ore: 2, wood: 1 } },
   assaultRifle: { chance: 0.36, out: { ore: 3, wood: 1 } }, machineGun: { chance: 0.30, out: { ore: 5, wood: 1 } },
@@ -4826,68 +5526,30 @@ const SERVER_SALVAGE_RULES = {
 };
 const SERVER_NPC_AMMO_ITEM_IDS = new Set(['ammo9', 'ammo556', 'energyCell', 'napalm', 'shotgunShell', 'rocketAmmo']);
 const SERVER_NPC_WEAPON_ITEM_IDS = new Set(Object.keys(SERVER_WEAPONS).filter(id => id !== 'fists'));
-const SERVER_SKILL_POINTS_PER_LEVEL = 5;
-const SERVER_PERK_LEVEL_INTERVAL = 3;
-const SERVER_TAGGED_SKILL_BONUS_PERCENT = 5;
-const SERVER_SKILL_IDS = new Set(['lightWeapons','heavyWeapons','energyWeapons','throwing','melee','unarmed','doctor','firstAid','stealth','lockpick','traps','science','repair','speech','barter','wanderer']);
-const SERVER_TALENT_IDS = new Set(['gunslinger','automaticMan','heavyShooter','machineGunner','pyromaniac','energyTech','grenadier','meleeBreaker','unarmedFighter','sharpshooter','ambush','vigilance','awareness','ghost','fieldMedic','quickTreatment','surgeon','immunologist','fieldSurgeon','quickHands','engineer','merchant','diplomat','scrounger','cacheSense','weaponSmith','recycler','actionBoy','toughness','armorTraining','steadfastness','lucky','secondChance','ironBones','specialStr','specialPer','specialEnd','specialCha','specialInt','specialAgi','specialLuck']);
-const SERVER_TALENT_MAX_RANKS = {
-  gunslinger: 3, automaticMan: 3, heavyShooter: 3, machineGunner: 3, pyromaniac: 3, energyTech: 3,
-  grenadier: 2, meleeBreaker: 2, unarmedFighter: 2, sharpshooter: 2, ambush: 2,
-  vigilance: 2, awareness: 1, ghost: 2,
-  fieldMedic: 2, quickTreatment: 2, surgeon: 2, immunologist: 2, fieldSurgeon: 2,
-  quickHands: 3, engineer: 2, merchant: 3, diplomat: 2, scrounger: 3,
-  cacheSense: 2, weaponSmith: 2, recycler: 2,
-  actionBoy: 3, toughness: 3, armorTraining: 3, steadfastness: 2, lucky: 2, secondChance: 2, ironBones: 2,
-  specialStr: 3, specialPer: 3, specialEnd: 3, specialCha: 3, specialInt: 3, specialAgi: 3, specialLuck: 3
-};
-const SERVER_TALENT_REQUIREMENTS = {
-  gunslinger: { level: 3, per: 6, skill: { lightWeapons: 40 } },
-  automaticMan: { level: 6, skill: { lightWeapons: 50 } },
-  heavyShooter: { level: 6, str: 6, skill: { heavyWeapons: 50 } },
-  machineGunner: { level: 9, str: 7, skill: { heavyWeapons: 65 } },
-  pyromaniac: { level: 6, str: 6, skill: { heavyWeapons: 50 } },
-  energyTech: { level: 6, int: 6, skill: { energyWeapons: 50 } },
-  grenadier: { level: 6, skill: { throwing: 50 } },
-  meleeBreaker: { level: 6, str: 6, skill: { melee: 50 } },
-  unarmedFighter: { level: 6, skill: { unarmed: 50 } },
-  sharpshooter: { level: 12, per: 7, luck: 5 },
-  ambush: { level: 9, agi: 6, skill: { stealth: 60 } },
-  vigilance: { level: 3, per: 6 },
-  awareness: { level: 3, per: 5 },
-  ghost: { level: 6, agi: 6, skill: { stealth: 60 } },
-  fieldMedic: { level: 3, skill: { firstAid: 50 } },
-  quickTreatment: { level: 6, agi: 5, skill: { firstAid: 60 } },
-  surgeon: { level: 9, int: 6, skill: { doctor: 60 } },
-  immunologist: { level: 9, end: 6, skill: { doctor: 50 } },
-  fieldSurgeon: { level: 12, int: 7, skill: { doctor: 70 } },
-  quickHands: { level: 3, agi: 5 },
-  engineer: { level: 6, int: 6, skill: { repair: 50 } },
-  merchant: { level: 3, cha: 5, skill: { barter: 50 } },
-  diplomat: { level: 6, cha: 6, skill: { speech: 50 } },
-  scrounger: { level: 6, luck: 6 },
-  cacheSense: { level: 9, luck: 6, skill: { wanderer: 50 } },
-  weaponSmith: { level: 6, int: 6, skill: { repair: 55 } },
-  recycler: { level: 6, int: 5, skill: { repair: 45 } },
-  actionBoy: { level: 6, agi: 6 },
-  toughness: { level: 3, end: 6 },
-  armorTraining: { level: 9, skill: { repair: 60 } },
-  steadfastness: { level: 6, end: 7 },
-  lucky: { level: 3, luck: 6 },
-  secondChance: { level: 12, luck: 7 },
-  ironBones: { level: 12, end: 8 },
-  specialStr: { level: 3 },
-  specialPer: { level: 3 },
-  specialEnd: { level: 3 },
-  specialCha: { level: 3 },
-  specialInt: { level: 3 },
-  specialAgi: { level: 3 },
-  specialLuck: { level: 3 }
-};
-const SERVER_START_TRAITS = new Set(['trainedEye','bruiser','scavengerStart','traderStart','craftsmanStart','educatedStart']);
+const SERVER_SKILL_POINTS_PER_LEVEL = KROMKA_CHARACTER_PROGRESSION_CATALOG.skills.pointsPerLevel;
+const SERVER_PERK_LEVEL_INTERVAL = KROMKA_CHARACTER_PROGRESSION_CATALOG.perks.levelInterval;
+const SERVER_TAGGED_SKILL_BONUS_PERCENT = KROMKA_CHARACTER_PROGRESSION_CATALOG.taggedSkills.bonusPercent;
+const SERVER_SKILL_IDS = new Set(KROMKA_CHARACTER_PROGRESSION_CATALOG.skills.items.map(row => row.id));
+const SERVER_TALENT_IDS = new Set(KROMKA_CHARACTER_PROGRESSION_CATALOG.perks.items.map(row => row.id));
+const SERVER_TALENT_MAX_RANKS = Object.fromEntries(
+  KROMKA_CHARACTER_PROGRESSION_CATALOG.perks.items.map(row => [row.id, row.maxRank])
+);
+const SERVER_TALENT_REQUIREMENTS = Object.fromEntries(
+  KROMKA_CHARACTER_PROGRESSION_CATALOG.perks.items.map(row => [row.id, row.requirements])
+);
+const SERVER_START_TRAITS = new Set(KROMKA_CHARACTER_PROGRESSION_CATALOG.startTraits.items.map(row => row.id));
 
-const DAMAGE_TYPES = ['ballistic', 'explosive', 'energy', 'fire', 'radiation', 'toxic'];
-const DAMAGE_TYPE_LABELS = { ballistic: 'баллистический', explosive: 'взрывной', energy: 'энергетический', fire: 'огненный', radiation: 'радиационный', toxic: 'токсичный' };
+const DAMAGE_TYPES = [...KROMKA_DAMAGE_TYPES];
+const DAMAGE_TYPE_LABELS = {
+  ballistic: 'баллистический',
+  explosive: 'взрывной',
+  energy: 'энергетический',
+  fire: 'огненный',
+  electric: 'электрический',
+  toxic: 'токсичный',
+  radiation: 'радиационный',
+  anomalous: 'аномальный'
+};
 const SERVER_ARMOR_ITEMS = {
   leather: { protection: { ballistic: 0.08, fire: 0.03 }, thresholds: { ballistic: 1 } },
   metalArmor: { protection: { ballistic: 0.16, explosive: 0.06, fire: 0.08 }, thresholds: { ballistic: 2, explosive: 1 } },
@@ -4903,11 +5565,11 @@ const SERVER_ARMOR_ITEMS = {
   preWarHelmet: { protection: { ballistic: 0.14, explosive: 0.06, energy: 0.06, fire: 0.06, radiation: 0.02 }, thresholds: { ballistic: 2, explosive: 1, energy: 1 } }
 };
 
-const SERVER_SPECIAL_KEYS = ['str','per','end','cha','int','agi','luck'];
-const SERVER_SPECIAL_MIN = 1;
-const SERVER_SPECIAL_MAX = 10;
-const SERVER_SPECIAL_TOTAL = 40;
-const SERVER_SPECIAL_EFFECTIVE_MAX = 15;
+const SERVER_SPECIAL_KEYS = KROMKA_CHARACTER_PROGRESSION_CATALOG.special.stats.map(row => row.id);
+const SERVER_SPECIAL_MIN = KROMKA_CHARACTER_PROGRESSION_CATALOG.special.min;
+const SERVER_SPECIAL_MAX = KROMKA_CHARACTER_PROGRESSION_CATALOG.special.max;
+const SERVER_SPECIAL_TOTAL = KROMKA_CHARACTER_PROGRESSION_CATALOG.special.budget;
+const SERVER_SPECIAL_EFFECTIVE_MAX = KROMKA_CHARACTER_PROGRESSION_CATALOG.special.effectiveMax;
 
 function sanitizeSpecial(input = {}) {
   const src = input && typeof input === 'object' ? input : {};
@@ -4944,25 +5606,19 @@ function serverArmorProfile(p = {}, damageType = 'ballistic') {
     threshold += serverTalentLevel(p, 'armorTraining');
   }
   const endurance = serverStatValue(p, 'end');
-  protection += Math.max(0, endurance) * 0.0035; // выносливость даёт небольшую защиту от всех типов
-  return { type, protection: clamp(protection, 0, 0.85), threshold: Math.max(0, threshold) };
+  let resistance = Math.max(0, endurance) * 0.0035;
+  const artifactEffects = serverArtifactEffects(p);
+  resistance += Number(artifactEffects.resistances?.[type] || 0);
+  return {
+    type,
+    protection: clamp(protection, -0.5, 0.85),
+    resistance: clamp(resistance, -0.5, 0.85),
+    threshold: Math.max(0, threshold)
+  };
 }
 
 function serverMitigateDamage(rawDamage, p = {}, damageType = 'ballistic') {
-  const raw = Math.max(0, Number(rawDamage || 0));
-  if (raw <= 0) return { raw: 0, damage: 0, type: damageType, protection: 0, threshold: 0, absorbed: 0 };
-  const profile = serverArmorProfile(p, damageType);
-  const minimum = Math.max(1, Math.floor(raw * 0.12));
-  const afterThreshold = Math.max(0, raw - profile.threshold);
-  const mitigated = Math.max(minimum, Math.round(afterThreshold * (1 - profile.protection)));
-  return {
-    raw,
-    damage: Math.max(1, mitigated),
-    type: profile.type,
-    protection: profile.protection,
-    threshold: profile.threshold,
-    absorbed: Math.max(0, raw - Math.max(1, mitigated))
-  };
+  return resolveDamageMitigation(rawDamage, serverArmorProfile(p, damageType), damageType);
 }
 
 function serverArmorValue(p = {}) {
@@ -5016,6 +5672,10 @@ function serverNaturalCreatureText(type = {}, opts = {}) {
 }
 
 function serverNaturalCreatureKind(type = {}, opts = {}) {
+  const creatureTypeId = String(opts.creatureTypeId || type.creatureTypeId || '').trim();
+  if (creatureTypeId && KROMKA_MUTANT_BY_ID[creatureTypeId]) {
+    return KROMKA_MUTANT_BY_ID[creatureTypeId].classification === 'human' ? '' : creatureTypeId;
+  }
   const text = serverNaturalCreatureText(type, opts);
   const compact = text.replace(/[^a-z0-9]+/g, '');
   const cyr = text.toLowerCase();
@@ -5178,8 +5838,12 @@ function rollServerNaturalCreatureLoot(room, type = {}, opts = {}) {
     addLootStack(loot, 'trophy', 1);
     return loot;
   }
+  const explicitType = KROMKA_MUTANT_BY_ID[String(opts.creatureTypeId || type.creatureTypeId || '')];
   const tier = String(type?.lootTier || opts?.lootTier || '').toLowerCase();
-  const trophyQty = ['radscorpion', 'firegecko', 'supermutant'].includes(tier) ? 2 : 1;
+  const trophyQty = explicitType
+    ? Math.max(0, Math.floor(Number(explicitType.loot?.trophyQty || 0)))
+    : (['radscorpion', 'firegecko', 'supermutant'].includes(tier) ? 2 : 1);
+  if (trophyQty <= 0) return [];
   addLootStack(loot, 'trophy', trophyQty);
   return stripServerCreatureInventoryRows(loot);
 }
@@ -5367,6 +6031,7 @@ function serverNpcShotgunDamageMultiplier(shooter = {}, target = {}, weapon = nu
 
 function serverNpcArmorProfile(enemy = {}, damageType = 'ballistic') {
   const type = DAMAGE_TYPES.includes(damageType) ? damageType : 'ballistic';
+  const creature = KROMKA_MUTANT_BY_ID[String(enemy?.creatureTypeId || '')];
   const eq = enemy?.equipment || {};
   const slots = [eq.armor, eq.helmet].filter(Boolean);
   let protection = 0;
@@ -5377,24 +6042,20 @@ function serverNpcArmorProfile(enemy = {}, damageType = 'ballistic') {
     protection += Number(item.protection?.[type] || 0);
     threshold += Number(item.thresholds?.[type] || 0);
   }
-  return { type, protection: clamp(protection, 0, 0.7), threshold: Math.max(0, threshold) };
+  const resistanceKey = type === 'anomalous' ? 'anomaly' : type;
+  const resistance = creature?.resistances && typeof creature.resistances === 'object'
+    ? Number(creature.resistances[resistanceKey] || 0)
+    : 0;
+  return {
+    type,
+    protection: clamp(protection, 0, 0.7),
+    resistance: clamp(resistance, -0.5, 0.85),
+    threshold: Math.max(0, threshold)
+  };
 }
 
 function serverMitigateNpcDamage(rawDamage, enemy = {}, damageType = 'ballistic') {
-  const raw = Math.max(0, Number(rawDamage || 0));
-  if (raw <= 0) return { raw: 0, damage: 0, type: damageType, protection: 0, threshold: 0, absorbed: 0 };
-  const profile = serverNpcArmorProfile(enemy, damageType);
-  const minimum = Math.max(1, Math.floor(raw * 0.12));
-  const afterThreshold = Math.max(0, raw - profile.threshold);
-  const mitigated = Math.max(minimum, Math.round(afterThreshold * (1 - profile.protection)));
-  return {
-    raw,
-    damage: Math.max(1, mitigated),
-    type: profile.type,
-    protection: profile.protection,
-    threshold: profile.threshold,
-    absorbed: Math.max(0, raw - Math.max(1, mitigated))
-  };
+  return resolveDamageMitigation(rawDamage, serverNpcArmorProfile(enemy, damageType), damageType);
 }
 
 function serverNpcLineOfFireClear(room, shooter = {}, target = {}) {
@@ -5445,10 +6106,14 @@ function emitServerNpcShot(room, shooter = {}, target = {}, weapon = null, opts 
 function emitServerNpcMelee(room, attacker = {}, target = {}, weapon = null, opts = {}) {
   const w = weapon || serverNpcWeaponDef(attacker);
   if (!room || !attacker || !target || w?.ammoType) return;
+  const attackProfile = serverEnemyAttackProfile(attacker);
   io.to(room.id).emit('enemyMelee', {
     locationId: room.locationId,
     enemyId: attacker.id,
     enemyName: attacker.name,
+    creatureTypeId: String(attacker.creatureTypeId || ''),
+    attackId: String(attackProfile.attackId || ''),
+    attackEffect: String(attackProfile.effect || ''),
     targetId: target.id || '',
     weapon: w?.id || 'fists',
     equipment: serverNpcEquipmentSnapshot(attacker.equipment),
@@ -5466,10 +6131,26 @@ function serverItemWeight(id) {
   return Math.max(0, Number(SERVER_ITEM_WEIGHTS[base] || 0));
 }
 
+function serverArtifactEffects(p = {}) {
+  const effects = calculateArtifactEffects(p, KROMKA_ARTIFACT_CATALOG);
+  const residentBonuses = serverResidentBonusesForPlayer(p, false);
+  const penaltyReduction = clamp(-Number(residentBonuses.artifactPenaltyPct || 0), 0, 0.5);
+  if (penaltyReduction <= 0) return effects;
+  const adjusted = { ...effects, resistances: { ...(effects.resistances || {}) } };
+  for (const [key, value] of Object.entries(adjusted)) {
+    if (typeof value === 'number' && value < 0) adjusted[key] = Number((value * (1 - penaltyReduction)).toFixed(6));
+  }
+  for (const [key, value] of Object.entries(adjusted.resistances)) {
+    if (Number(value) < 0) adjusted.resistances[key] = Number((Number(value) * (1 - penaltyReduction)).toFixed(6));
+  }
+  return adjusted;
+}
+
 function serverCarryCapacity(p = {}) {
   let capacity = 30 + serverStatValue(p, 'str') * 8;
   const backpackId = serverBaseItemId(p.equipment?.backpack || '');
   if (backpackId === 'backpack') capacity += 20;
+  capacity += serverArtifactEffects(p).carryKg;
   return Math.max(1, capacity);
 }
 
@@ -5817,7 +6498,7 @@ function ensureServerFactionStorages(player = {}) {
   if (!player.factionStorages || typeof player.factionStorages !== 'object' || Array.isArray(player.factionStorages)) {
     const legacy = sanitizeServerInventorySnapshot(player.storage || [], { includeEquipped: true });
     player.factionStorages = {};
-    if (legacy.length) player.factionStorages.old_klim = legacy;
+    if (legacy.length) player.factionStorages.uprava = legacy;
   }
   for (const faction of SERVER_FACTION_STORAGE_IDS) {
     player.factionStorages[faction] = sanitizeServerInventorySnapshot(
@@ -5832,6 +6513,25 @@ function serverFactionStorageRows(player = {}, factionId = '') {
   const faction = serverStorageFactionKey(factionId);
   if (!faction) return [];
   return ensureServerFactionStorages(player)[faction];
+}
+
+function ensureServerFactionStorageRuntime(player = {}) {
+  const source = player.factionStorageRuntime && typeof player.factionStorageRuntime === 'object'
+    && !Array.isArray(player.factionStorageRuntime) ? player.factionStorageRuntime : {};
+  player.factionStorageRuntime = {};
+  for (const faction of SERVER_FACTION_STORAGE_IDS) {
+    player.factionStorageRuntime[faction] = sanitizeServerWeaponRuntimeStore(source[faction] || {});
+  }
+  return player.factionStorageRuntime;
+}
+
+function serverFactionStorageWeaponRuntimeSnapshot(player = {}, factionId = '') {
+  const faction = serverStorageFactionKey(factionId);
+  if (!faction) return [];
+  return Object.values(ensureServerFactionStorageRuntime(player)[faction] || {})
+    .map(record => sanitizeServerWeaponRuntimeRecord(record, record?.baseId || ''))
+    .filter(Boolean)
+    .sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0) || a.id.localeCompare(b.id));
 }
 
 function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
@@ -5849,14 +6549,24 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   const source = direction === 'deposit' ? nextInventory : nextStorage;
   const destination = direction === 'deposit' ? nextStorage : nextInventory;
   const runtimeRemovals = [];
+  const runtimeWithdrawals = [];
+  let nextRuntimeStore = { ...ensureServerFactionStorageRuntime(player)[storageFaction] };
   for (const row of rows) {
     if (serverInventoryQty(source, row.id) < row.qty) {
       return { ok: false, error: 'Часть выбранных предметов уже недоступна.' };
     }
     if (direction === 'deposit') {
-      const validation = serverValidateWeaponRuntimeRemoval(player, row);
+      const validation = serverValidateWeaponRuntimeRemoval(player, row, { releaseLoadedAmmo: true });
       if (!validation.ok) return { ok: false, error: validation.error };
-      runtimeRemovals.push({ row, validation });
+      runtimeRemovals.push({
+        row,
+        validation,
+        records: serverCaptureWeaponRuntimeRecords(player, row, validation)
+      });
+    } else if (SERVER_WEAPONS[row.id]?.ammoType || KROMKA_ARTIFACT_INDEXES.byItem[row.id]) {
+      const taken = serverTakeWeaponRuntimeStoreRecords(nextRuntimeStore, row.id, row.qty, row.itemRuntimeIds);
+      nextRuntimeStore = taken.store;
+      runtimeWithdrawals.push({ row, records: taken.records });
     }
     if (serverInventoryQty(destination, row.id) + row.qty > serverItemStackLimit(row.id)) {
       return { ok: false, error: 'Для одного из предметов достигнут предел стака.' };
@@ -5874,7 +6584,7 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   }
 
   const weight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
-  const capacity = serverCarryCapacity(player);
+  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, nextInventory, runtimeRemovals);
   if (weight > capacity + 0.0001) {
     return { ok: false, error: `Перегруз: ${weight.toFixed(1)}/${capacity.toFixed(1)} кг.` };
   }
@@ -5884,7 +6594,17 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   player.storageFaction = storageFaction;
   player.inventoryUpdatedAt = Date.now();
   for (const removal of runtimeRemovals) {
+    for (const record of removal.records || []) nextRuntimeStore[record.id] = record;
     serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
+  }
+  ensureServerFactionStorageRuntime(player)[storageFaction] = sanitizeServerWeaponRuntimeStore(nextRuntimeStore);
+  for (const withdrawal of runtimeWithdrawals) {
+    const missing = Math.max(0, Number(withdrawal.row?.qty || 0) - Number(withdrawal.records?.length || 0));
+    for (let i = 0; i < missing; i++) {
+      const record = sanitizeServerWeaponRuntimeRecord({ baseId: withdrawal.row.id }, withdrawal.row.id);
+      if (record) withdrawal.records.push(record);
+    }
+    serverRestoreWeaponRuntimeRecords(player, withdrawal.records);
   }
   player.carry = {
     weight: Number(weight.toFixed(3)),
@@ -5899,6 +6619,7 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
     rows,
     inventory: player.inventory,
     storage: player.storage,
+    storageWeaponRuntime: serverFactionStorageWeaponRuntimeSnapshot(player, storageFaction),
     carry: player.carry,
     self: publicAuthoritativePlayerState(player)
   };
@@ -5972,11 +6693,33 @@ function serverSalvageChance(player = {}, itemId = '') {
 }
 
 function performServerRepairItem(player = {}, data = {}) {
-  const id = serverBaseItemId(data.itemId || data.id || '');
+  const requestedRawId = String(data.itemRuntimeId || data.itemId || data.id || '');
+  const id = serverBaseItemId(requestedRawId);
   if (!SERVER_REPAIRABLE_ITEM_IDS.has(id) || !serverPlayerOwnsBaseItem(player, id)) {
     return { ok: false, error: 'Этот предмет нельзя починить или его нет у персонажа.' };
   }
-  const before = serverPlayerItemCondition(player, id);
+  let repairedWeapon = null;
+  if (SERVER_WEAPONS[id]?.ammoType) {
+    const owned = serverCanonicalWeaponInventoryPresentation(player, {});
+    const equipped = serverEquippedWeaponRuntimeEntries(player).find(entry => entry.baseId === id);
+    const effectiveRequest = requestedRawId === id
+      ? equipped?.itemKey || serverWeaponInventoryRuntimeSnapshot(player).find(row => row.baseId === id)?.id || id
+      : requestedRawId;
+    const itemKey = serverRuntimeItemKey(effectiveRequest, id);
+    if (!itemKey || (requestedRawId !== id && itemKey !== requestedRawId)
+        || !owned[itemKey])
+      return { ok: false, error: 'Выбранный экземпляр оружия недоступен.' };
+    const combat = serverEnsureCombatState(player);
+    repairedWeapon = combat.weapons[itemKey] || (combat.weapons[itemKey] = {
+      weaponId: id, loaded: 0, ammoType: SERVER_WEAPONS[id].ammoType,
+      condition: serverPlayerItemCondition(player, id), weaponMods: {}, updatedAt: Date.now()
+    });
+  }
+  const before = repairedWeapon ? Number(repairedWeapon.condition ?? 100) : serverPlayerItemCondition(player, id);
+  if (id === 'pistol' && player.locationId === 'tutorialCaravanYard'
+      && player.kromkaOnboarding?.phase === 'tutorial' && !player.kromkaOnboarding.evidence?.weaponRepaired
+      && (!player.kromkaOnboarding.evidence?.kitCrafted || serverInventoryQty(player.inventory || [], 'repairKit') < 1))
+    return { ok: false, error: 'Для учебного ремонта сначала добудьте ресурсы и создайте ремкомплект на верстаке.' };
   if (before >= 99.995) return { ok: false, error: 'Состояние предмета уже 100%.' };
   const weaponOrTool = !!SERVER_WEAPONS[id];
   const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(id);
@@ -5998,7 +6741,14 @@ function performServerRepairItem(player = {}, data = {}) {
   } else {
     return { ok: false, error: 'Нужен ремкомплект или 1 руда + 1 древесина.' };
   }
-  const condition = serverSetPlayerItemCondition(player, id, Math.min(100, before + restored));
+  const residentBonuses = serverResidentBonusesForPlayer(player, true);
+  restored = Math.round(restored * (1 + Math.max(0, -Number(residentBonuses.repairCostPct || 0))));
+  const condition = Number(Math.min(100, before + restored).toFixed(2));
+  if (repairedWeapon) { repairedWeapon.condition = condition; repairedWeapon.updatedAt = Date.now(); }
+  else serverSetPlayerItemCondition(player, id, condition);
+  if (id === 'pistol' && mode === 'repairKit' && condition > before
+      && player.kromkaOnboarding?.evidence?.kitCrafted)
+    serverRecordTutorialFact(player, 'weaponRepaired');
   sanitizeCarrySnapshot(player);
   return { ok: true, action: 'repair', itemId: id, mode, condition, inventory: player.inventory, self: publicAuthoritativePlayerState(player) };
 }
@@ -6186,6 +6936,7 @@ function serverNpcQuestActor(player = {}, enemyId = '', questId = '') {
   const actor = room.enemies?.get(id);
   if (!actor || actor.dead || actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return null;
   if (Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0)) > 5.2) return null;
+  if (!serverInteractionHasLineOfSight(room, player, actor)) return null;
   const quests = Array.isArray(actor.traderQuests) ? actor.traderQuests.map(String) : [];
   return quests.includes(String(questId || '')) ? actor : null;
 }
@@ -6319,6 +7070,40 @@ function serverPlayerHasActiveFactionCommitment(player = {}) {
   if (!accepted.length) return false;
   const tasks = Array.isArray(WASTELAND_SIM.state()?.worldTasks) ? WASTELAND_SIM.state().worldTasks : [];
   return tasks.some(task => accepted.includes(String(task?.id || '')) && task?.status === 'active' && serverWorldTaskRequiredFaction(task, WASTELAND_SIM.state()));
+}
+
+function serverPlayerFactionReputation(player = {}, factionId = '') {
+  const id = serverWorldFactionKey(factionId);
+  if (!id) return 0;
+  const reputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
+  return Number(reputation[id] || 0);
+}
+
+function ensureServerFactionContracts(player = {}) {
+  player.factionContracts = sanitizeServerFactionContracts(player.factionContracts || {});
+  return player.factionContracts;
+}
+
+function grantServerFactionContract(player = {}, factionId = '', taskId = '', now = Date.now()) {
+  const id = serverWorldFactionKey(factionId);
+  if (!id) return null;
+  const contracts = ensureServerFactionContracts(player);
+  contracts[id] = {
+    taskId: String(taskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
+    issuedAt: now,
+    expiresAt: now + 48 * 60 * 60 * 1000,
+    source: 'world-task'
+  };
+  return contracts[id];
+}
+
+function revokeServerFactionContract(player = {}, factionId = '', taskId = '') {
+  const id = serverWorldFactionKey(factionId);
+  const contracts = ensureServerFactionContracts(player);
+  if (!id || !contracts[id]) return false;
+  if (taskId && contracts[id].taskId && contracts[id].taskId !== taskId) return false;
+  delete contracts[id];
+  return true;
 }
 
 function serverPlayerActiveWorldPartyTask(player = {}, exceptTaskId = '') {
@@ -6627,7 +7412,9 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     if (!serverPlayerAtWorldSite(player, issuer)) return { ok: false, error: 'Нужно подойти к доске работ в точке выдачи.' };
     }
     const requiredFaction = serverWorldTaskRequiredFaction(task, state);
-    if (requiredFaction && serverWorldFactionKey(player.worldFactionId || player.factionId || '') !== requiredFaction) return { ok: false, error: 'Эта работа доступна только участникам нужной фракции.' };
+    if (requiredFaction && serverPlayerFactionReputation(player, requiredFaction) < -25) {
+      return { ok: false, error: 'Эта сторона вам не доверяет. Сначала восстановите репутацию.' };
+    }
     if (isWorldPartyTask(task)) {
       const activeGroupTask = serverPlayerActiveWorldPartyTask(player, id);
       if (activeGroupTask) return { ok: false, error: 'Сначала отмените текущую работу с отрядом пустоши.' };
@@ -6638,11 +7425,12 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       const joined = WASTELAND_SIM.joinWorldParty({
         taskId: id, partyId: task.partyId, socketId: player.id, playerId: player.id,
         userId: player.userId || '', characterId: player.characterId || '',
-        factionId: player.worldFactionId || '', worldFactionId: player.worldFactionId || '', name: player.name || ''
+        factionId: requiredFaction || '', worldFactionId: requiredFaction || '', name: player.name || ''
       });
       if (!joined?.ok) return { ok: false, error: joined?.error || 'Группа больше не принимает участников.' };
     }
     player.worldTaskAccepted.push(id);
+    if (requiredFaction) grantServerFactionContract(player, requiredFaction, id);
     if (helpSignalForTask(task, Date.now())) {
       player.worldActivityJoinSourceTaskId = id;
       player.worldActivityJoinSource = 'help_signal';
@@ -6667,6 +7455,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       });
     }
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
+    revokeServerFactionContract(player, serverWorldTaskRequiredFaction(task, state), id);
     if (String(player.worldActivityJoinSourceTaskId || '') === id) {
       player.worldActivityJoinSourceTaskId = '';
       player.worldActivityJoinSource = '';
@@ -6723,7 +7512,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     const reputation = reputationFactionId
       ? Math.max(0, Math.floor(Number(task.reward?.reputation || 0)))
       : 0;
-    if (serverInventoryQty(player.inventory || [], 'silver') + caps > serverItemStackLimit('silver')) return { ok: false, error: 'Достигнут предел крышек в рюкзаке.' };
+    if (serverInventoryQty(player.inventory || [], 'silver') + caps > serverItemStackLimit('silver')) return { ok: false, error: 'Достигнут предел марок в рюкзаке.' };
     if (caps > 0) serverInventoryAdd(player, 'silver', caps);
     if (xp > 0) serverGrantXp(player, xp);
     player.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
@@ -6736,6 +7525,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     }
     player.worldTaskRewardClaims.push(id);
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
+    revokeServerFactionContract(player, reputationFactionId || serverWorldTaskRequiredFaction(task, state), id);
     if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
     sanitizeCarrySnapshot(player);
     const reward = { xp, caps, reputation, reputationFactionId };
@@ -6791,7 +7581,7 @@ function settleServerWorldActivityPlayers(taskIds = []) {
             playerChanged = setServerWorldActivityResult(player, task, {
               reward: task.reward || {},
               rewardClaimed: false,
-              reason: claimed?.error === 'Достигнут предел крышек в рюкзаке.'
+              reason: claimed?.error === 'Достигнут предел марок в рюкзаке.'
                 ? 'reward_inventory_full'
                 : 'reward_pending'
             }) || playerChanged;
@@ -6865,6 +7655,18 @@ function serverRequestedWeaponRuntimeIds(row = {}, baseId = '') {
 
 function serverValidateWeaponRuntimeRemoval(player = {}, row = {}, options = {}) {
   const baseId = serverBaseItemId(row?.id || row?.itemId || '');
+  if (KROMKA_ARTIFACT_INDEXES.byItem[baseId]) {
+    sanitizeArtifactLoadout(player, KROMKA_ARTIFACT_CATALOG);
+    const requested = new Set([row.itemRuntimeId, ...(Array.isArray(row.itemRuntimeIds) ? row.itemRuntimeIds : [])].filter(Boolean));
+    const candidates = player.artifactRecords.filter(record => record.itemId === baseId);
+    if ([...requested].some(id => !candidates.some(record => record.id === id)))
+      return { ok: false, error: 'Выбранный артефакт недоступен.' };
+    candidates.sort((a, b) => Number(requested.has(b.id)) - Number(requested.has(a.id))
+      || Number(player.artifactSlots.includes(a.id)) - Number(player.artifactSlots.includes(b.id)));
+    const qty = Math.max(1, Math.floor(Number(row.qty ?? row.count ?? 1)));
+    if (candidates.length < qty) return { ok: false, error: 'Не хватает артефактов для передачи.' };
+    return { ok: true, baseId, runtimeIds: candidates.slice(0, qty).map(record => record.id), ammoReturns: [] };
+  }
   const weapon = SERVER_WEAPONS[baseId];
   if (!weapon?.ammoType) return { ok: true, baseId, runtimeIds: [], ammoReturns: [] };
   const combat = serverEnsureCombatState(player, Date.now());
@@ -6978,6 +7780,12 @@ function serverPruneWeaponRuntimeToOwnership(player = {}, baseId = '') {
 
 function serverFinalizeWeaponRuntimeRemoval(player = {}, row = {}, validation = null) {
   const baseId = serverBaseItemId(validation?.baseId || row?.id || row?.itemId || '');
+  if (KROMKA_ARTIFACT_INDEXES.byItem[baseId]) {
+    const removed = new Set(validation?.runtimeIds || []);
+    player.artifactRecords = (player.artifactRecords || []).filter(record => !removed.has(record.id));
+    player.artifactSlots = (player.artifactSlots || []).filter(id => !removed.has(id));
+    return;
+  }
   if (!SERVER_WEAPONS[baseId]) return;
   const combat = serverEnsureCombatState(player, Date.now());
   for (const itemKey of validation?.runtimeIds || []) {
@@ -6986,6 +7794,137 @@ function serverFinalizeWeaponRuntimeRemoval(player = {}, row = {}, validation = 
     }
   }
   serverPruneWeaponRuntimeToOwnership(player, baseId);
+}
+
+function serverNewWeaponRuntimeId(baseId = '') {
+  const base = serverBaseItemId(baseId);
+  if (!SERVER_WEAPONS[base] || !SERVER_WEAPONS[base].ammoType) return '';
+  return `ui_${base}_${Date.now().toString(36)}_${crypto.randomBytes(4).toString('hex')}`;
+}
+
+function sanitizeServerWeaponRuntimeRecord(input = {}, fallbackBaseId = '') {
+  const baseId = serverBaseItemId(input?.baseId || fallbackBaseId || input?.id || input?.itemRuntimeId || '');
+  if (KROMKA_ARTIFACT_INDEXES.byItem[baseId]) {
+    const artifact = sanitizeArtifactRecords([input.artifact], KROMKA_ARTIFACT_CATALOG)[0];
+    return artifact?.itemId === baseId ? { id: artifact.id, itemRuntimeId: artifact.id, baseId, artifact, createdAt: artifact.acquiredAt } : null;
+  }
+  const baseWeapon = SERVER_WEAPONS[baseId];
+  if (!baseWeapon?.ammoType) return null;
+  const weaponMods = sanitizeServerWeaponModifications(input?.weaponMods || {}, baseWeapon);
+  const weapon = serverApplyWeaponModificationEffects(baseWeapon, weaponMods);
+  const requestedId = serverRuntimeItemKey(input?.id || input?.itemRuntimeId || '', baseId);
+  const id = requestedId && requestedId !== baseId ? requestedId : serverNewWeaponRuntimeId(baseId);
+  if (!id) return null;
+  return {
+    id,
+    itemRuntimeId: id,
+    baseId,
+    loaded: clamp(Math.floor(Number(input?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0))),
+    condition: Number(clamp(Number(input?.condition ?? 100), 1, 100).toFixed(2)),
+    weaponMods,
+    createdAt: Number.isFinite(Number(input?.createdAt)) ? Number(input.createdAt) : Date.now()
+  };
+}
+
+function serverCaptureWeaponRuntimeRecords(player = {}, row = {}, validation = null) {
+  const baseId = serverBaseItemId(validation?.baseId || row?.id || row?.itemId || '');
+  if (KROMKA_ARTIFACT_INDEXES.byItem[baseId]) {
+    const selected = new Set(validation?.runtimeIds || []);
+    return (player.artifactRecords || []).filter(record => record.itemId === baseId && selected.has(record.id))
+      .map(artifact => sanitizeServerWeaponRuntimeRecord({ baseId, artifact })).filter(Boolean);
+  }
+  const baseWeapon = SERVER_WEAPONS[baseId];
+  if (!baseWeapon?.ammoType) return [];
+  const qty = Math.max(1, Math.floor(Number(row?.qty ?? row?.count ?? 1)));
+  const combat = serverEnsureCombatState(player, Date.now());
+  const records = [];
+  for (const rawId of Array.isArray(validation?.runtimeIds) ? validation.runtimeIds : []) {
+    const itemKey = serverRuntimeItemKey(rawId, baseId);
+    const state = combat.weapons?.[itemKey];
+    if (!itemKey || itemKey === baseId || !state) continue;
+    const record = sanitizeServerWeaponRuntimeRecord({
+      id: itemKey,
+      baseId,
+      loaded: state.loaded,
+      condition: state.condition ?? serverPlayerItemCondition(player, baseId) ?? 100,
+      weaponMods: state.weaponMods || {},
+      createdAt: state.createdAt
+    }, baseId);
+    if (record) records.push(record);
+    if (records.length >= qty) break;
+  }
+  while (records.length < qty) {
+    const record = sanitizeServerWeaponRuntimeRecord({
+      baseId,
+      loaded: 0,
+      condition: serverPlayerItemCondition(player, baseId) ?? 100,
+      weaponMods: {},
+      createdAt: Date.now()
+    }, baseId);
+    if (!record) break;
+    records.push(record);
+  }
+  return records;
+}
+
+function serverRestoreWeaponRuntimeRecords(player = {}, records = []) {
+  const combat = serverEnsureCombatState(player, Date.now());
+  const restored = [];
+  for (const rawRecord of Array.isArray(records) ? records : []) {
+    let record = sanitizeServerWeaponRuntimeRecord(rawRecord, rawRecord?.baseId || '');
+    if (!record) continue;
+    if (record.artifact) {
+      player.artifactRecords = (player.artifactRecords || []).filter(artifact => artifact.id !== record.id);
+      player.artifactRecords.push({ ...record.artifact, ownerCharacterId: String(player.characterId || '') });
+      restored.push(record);
+      continue;
+    }
+    if (combat.weapons?.[record.id]) {
+      record = sanitizeServerWeaponRuntimeRecord({ ...record, id: '' }, record.baseId);
+    }
+    if (!record) continue;
+    const baseWeapon = SERVER_WEAPONS[record.baseId];
+    const weapon = serverApplyWeaponModificationEffects(baseWeapon, record.weaponMods || {});
+    combat.weapons[record.id] = {
+      weaponId: record.baseId,
+      loaded: clamp(Math.floor(Number(record.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0))),
+      reserve: serverInventoryQty(player.inventory || [], weapon.ammoType),
+      ammoType: weapon.ammoType,
+      condition: Number(clamp(Number(record.condition ?? 100), 1, 100).toFixed(2)),
+      weaponMods: sanitizeServerWeaponModifications(record.weaponMods || {}, baseWeapon),
+      createdAt: record.createdAt,
+      updatedAt: Date.now()
+    };
+    restored.push(record);
+  }
+  return restored;
+}
+
+function sanitizeServerWeaponRuntimeStore(input = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const out = {};
+  for (const [rawId, rawRecord] of Object.entries(source)) {
+    const record = sanitizeServerWeaponRuntimeRecord({ ...rawRecord, id: rawId }, rawRecord?.baseId || '');
+    if (record) out[record.id] = record;
+  }
+  return out;
+}
+
+function serverTakeWeaponRuntimeStoreRecords(storeInput = {}, baseId = '', qty = 1, requestedIds = []) {
+  const store = sanitizeServerWeaponRuntimeStore(storeInput);
+  const base = serverBaseItemId(baseId);
+  const requested = new Set((Array.isArray(requestedIds) ? requestedIds : [])
+    .map(id => KROMKA_ARTIFACT_INDEXES.byItem[base] ? String(id) : serverRuntimeItemKey(id, base))
+    .filter(id => id && id !== base));
+  const matching = Object.values(store)
+    .filter(record => record.baseId === base)
+    .sort((a, b) => {
+      const requestedDelta = Number(requested.has(b.id)) - Number(requested.has(a.id));
+      return requestedDelta || Number(a.createdAt || 0) - Number(b.createdAt || 0) || a.id.localeCompare(b.id);
+    });
+  const taken = matching.slice(0, Math.max(0, Math.floor(Number(qty || 0))));
+  for (const record of taken) delete store[record.id];
+  return { store, records: taken };
 }
 
 function serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals = []) {
@@ -7303,12 +8242,24 @@ function serverFactionStoragesFromState(state = {}) {
     && typeof state.factionStorages === 'object'
     && !Array.isArray(state.factionStorages);
   const source = hasFactionStorages ? state.factionStorages : {};
+  const aliases = {
+    uprava: ['uprava', 'old_klim'],
+    free_artels: ['free_artels', 'scrap_union'],
+    contour: ['contour', 'relay_order'],
+    tract_league: ['tract_league', 'caravans'],
+    seconds: ['seconds'],
+    continuity: ['continuity']
+  };
   const out = {};
   for (const faction of SERVER_FACTION_STORAGE_IDS) {
-    out[faction] = sanitizeServerInventorySnapshot(source[faction] || [], { includeEquipped: true });
+    const merged = [];
+    for (const alias of aliases[faction] || [faction]) {
+      merged.push(...sanitizeServerInventorySnapshot(source[alias] || [], { includeEquipped: true }));
+    }
+    out[faction] = sanitizeServerInventorySnapshot(merged, { includeEquipped: true });
   }
   if (!hasFactionStorages) {
-    out.old_klim = sanitizeServerInventorySnapshot(state?.storage || [], { includeEquipped: true });
+    out.uprava = sanitizeServerInventorySnapshot(state?.storage || [], { includeEquipped: true });
   }
   return out;
 }
@@ -7323,8 +8274,26 @@ function serverFactionStoragesToState(input = {}) {
   return out;
 }
 
-function serverStorageRowsFromState(state = {}, factionId = 'old_klim') {
-  const faction = serverStorageFactionKey(factionId) || 'old_klim';
+function serverFactionStorageRuntimeFromState(state = {}) {
+  const source = state?.factionStorageRuntime && typeof state.factionStorageRuntime === 'object'
+    && !Array.isArray(state.factionStorageRuntime) ? state.factionStorageRuntime : {};
+  const out = {};
+  for (const faction of SERVER_FACTION_STORAGE_IDS) {
+    out[faction] = sanitizeServerWeaponRuntimeStore(source[faction] || {});
+  }
+  return out;
+}
+
+function serverFactionStorageRuntimeToState(input = {}) {
+  const out = {};
+  for (const faction of SERVER_FACTION_STORAGE_IDS) {
+    out[faction] = sanitizeServerWeaponRuntimeStore(input?.[faction] || {});
+  }
+  return out;
+}
+
+function serverStorageRowsFromState(state = {}, factionId = 'uprava') {
+  const faction = serverStorageFactionKey(factionId) || 'uprava';
   return serverFactionStoragesFromState(state)[faction];
 }
 
@@ -7337,19 +8306,51 @@ function activePlayerForCharacter(userId = '', characterId = '') {
   return null;
 }
 
-function initialServerCharacterState(data = {}, characterId = '') {
+function serverCharacterDraftFromInput(data = {}) {
+  const source = data && typeof data === 'object' ? data : {};
+  const requestedPreset = source.quickStartId || source.presetId
+    || (source.entryMode === 'quick' ? 'quick' : '');
+  const preset = resolveCharacterQuickStart(KROMKA_CHARACTER_PROGRESSION_CATALOG, requestedPreset);
+  if (!preset) return source;
+  return {
+    ...source,
+    special: source.special && typeof source.special === 'object' ? source.special : preset.special,
+    taggedSkills: Array.isArray(source.taggedSkills) ? source.taggedSkills : preset.taggedSkills,
+    traits: Array.isArray(source.traits) ? source.traits : preset.traits,
+    quickStartId: preset.id
+  };
+}
+
+function initialServerCharacterState(data = {}, characterId = '', options = {}) {
+  data = serverCharacterDraftFromInput(data);
   const id = normalizeCharacterId(characterId) || makeCharacterId();
   const traits = sanitizeTraits(data.traits || []);
   const taggedSkills = sanitizeTaggedSkills(data.taggedSkills || []);
   const special = sanitizeSpecial(data.special || {});
   const appearance = sanitizeCharacterAppearance(data.appearance || {});
   const now = Date.now();
-  const startingLoadout = buildStartingLoadout({ special, taggedSkills, traits }, now);
+  const startingLoadout = buildTutorialStartingLoadout();
   const equipment = startingLoadout.equipment;
   const inventory = serverInventoryRowsToObject(startingLoadout.inventory);
-  const spawn = playerSpawnWorld('settlement', 'spawn');
+  const startLocationId = 'tutorialCaravanYard';
+  const testSkipOnboarding = process.env.NODE_ENV === 'test' && process.env.KROMKA_TEST_SKIP_ONBOARDING === '1';
+  const effectiveStartLocationId = testSkipOnboarding ? 'settlement' : startLocationId;
+  const spawn = playerSpawnWorld(effectiveStartLocationId, 'spawn');
+  const onboarding = initialKromkaOnboarding(KROMKA_ONBOARDING_CATALOG, {
+    accountCompleted: options.accountCompleted === true,
+    now
+  });
+  if (testSkipOnboarding) {
+    onboarding.phase = 'complete';
+    onboarding.stepId = '';
+    onboarding.completedTutorialSteps = (KROMKA_ONBOARDING_CATALOG.tutorial?.steps || []).map(row => row.id);
+    onboarding.completedMissionSteps = (KROMKA_ONBOARDING_CATALOG.firstMission?.steps || []).map(row => row.id);
+    onboarding.tutorialCompleted = true;
+    onboarding.missionCompleted = true;
+  }
   return {
     version: 4,
+    worldRevision: 'kromka-1',
     savedAt: now,
     characterProfile: {
       name: safeName(data.name || 'Странник'),
@@ -7360,7 +8361,8 @@ function initialServerCharacterState(data = {}, characterId = '') {
       createdAt: now,
       lastVisitedSettlementId: 'settlement',
       serverCharacterId: id,
-      worldFactionReputation: {}
+      worldFactionReputation: {},
+      factionContracts: {}
     },
     lastVisitedSettlementId: 'settlement',
     player: {
@@ -7378,22 +8380,42 @@ function initialServerCharacterState(data = {}, characterId = '') {
       skillPoints: traits.includes('educatedStart') ? SERVER_SKILL_POINTS_PER_LEVEL : 0,
       injuries: {}
     },
-    currentLocationId: 'settlement',
+    currentLocationId: effectiveStartLocationId,
     inventory,
     storage: {},
     factionStorages: {
-      old_klim: {},
-      scrap_union: {},
-      relay_order: {}
+      uprava: {},
+      free_artels: {},
+      contour: {},
+      tract_league: {},
+      seconds: {},
+      continuity: {}
+    },
+    factionStorageRuntime: {
+      uprava: {},
+      free_artels: {},
+      contour: {},
+      tract_league: {},
+      seconds: {},
+      continuity: {}
     },
     equipment,
     talentRanks: {},
     skillRanks: {},
+    progressionLedger: { version: CHARACTER_PROGRESSION_MODEL_VERSION, skillSteps: {} },
+    inventoryMutationLedger: [],
+    criticalActionLedger: [],
     npcQuests: defaultServerNpcQuestState(),
     worldTaskAccepted: [],
     worldTaskTrackedId: '',
     worldTaskRewardClaims: [],
     worldFactionReputation: {},
+    factionContracts: {},
+    knownFactionSecrets: {},
+    kromkaQuestState: initialKromkaQuestState(),
+    artifactRecords: [],
+    artifactSlots: [],
+    kromkaOnboarding: onboarding,
     socialState: sanitizeServerSocialState(),
     quickbarSlots: [],
     itemRuntime: startingLoadout.itemRuntime,
@@ -7407,7 +8429,9 @@ function ensureServerCharacterForJoin(auth = {}, data = {}, characterId = '') {
   if (!id || !auth?.user?.id) return null;
   const store = ensureUserCharacterStore(auth.user.id);
   if (store[id]) return store[id];
-  const state = initialServerCharacterState(data, id);
+  const state = initialServerCharacterState(data, id, {
+    accountCompleted: Number(auth.user.kromkaTutorialCompletedAt || 0) > 0
+  });
   const now = Date.now();
   store[id] = {
     id,
@@ -7422,6 +8446,7 @@ function ensureServerCharacterForJoin(auth = {}, data = {}, characterId = '') {
 }
 
 function newServerCharacterSelectionError(data = {}) {
+  data = serverCharacterDraftFromInput(data);
   const rawAppearance = data.appearance;
   const rawSex = String(rawAppearance?.sex || '').toLowerCase();
   const appearanceIds = SERVER_CHARACTER_APPEARANCE_IDS[rawSex];
@@ -7433,17 +8458,8 @@ function newServerCharacterSelectionError(data = {}) {
     || !SERVER_CHARACTER_HAIR_COLOR_IDS.has(String(rawAppearance.hairColorId || '').toLowerCase())) {
     return 'При создании персонажа выберите пол, телосложение, лицо, причёску и цвет волос.';
   }
-  const rawTaggedSkills = Array.isArray(data.taggedSkills) ? data.taggedSkills : [];
-  const taggedSkills = sanitizeTaggedSkills(rawTaggedSkills);
-  if (rawTaggedSkills.length < 1 || rawTaggedSkills.length > 2 || taggedSkills.length !== rawTaggedSkills.length) {
-    return 'При создании персонажа выберите от одного до двух разных основных навыков.';
-  }
-
-  const rawTraits = Array.isArray(data.traits) ? data.traits : [];
-  const traits = sanitizeTraits(rawTraits);
-  if (rawTraits.length < 1 || rawTraits.length > 2 || traits.length !== rawTraits.length) {
-    return 'При создании персонажа выберите от одного до двух разных стартовых перков.';
-  }
+  const draft = validateCharacterDraft(data, KROMKA_CHARACTER_PROGRESSION_CATALOG);
+  if (!draft.ok) return draft.error;
   return '';
 }
 
@@ -7531,7 +8547,7 @@ function serverWeaponInventoryRuntimeSnapshot(player = {}) {
         loaded: weapon.ammoType
           ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
           : 0,
-        condition: Number(serverPlayerItemCondition(player, baseId) ?? 100),
+        condition: Number(combatRow?.condition ?? serverPlayerItemCondition(player, baseId) ?? 100),
         weaponMods: sanitizeServerWeaponModifications(combatRow?.weaponMods || {}, baseWeapon)
       };
     });
@@ -7549,6 +8565,7 @@ function serverWeaponModificationSnapshot(player = {}) {
       return {
         id: itemKey,
         baseId,
+        condition: Number(row.condition ?? serverPlayerItemCondition(player, baseId) ?? 100),
         weaponMods: sanitizeServerWeaponModifications(row.weaponMods || {}, weapon)
       };
     })
@@ -7827,53 +8844,138 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
   });
 }
 
-function serverApplyProgressionRequest(player = {}, data = {}) {
-  if (!player || !data || typeof data !== 'object') return false;
-  const before = JSON.stringify({ skills: player.skillRanks || {}, talents: player.talentRanks || {} });
+function serverProgressionDisplayName(id = '') {
+  const skill = KROMKA_CHARACTER_PROGRESSION_CATALOG.skills.items.find(row => row.id === id);
+  if (skill) return skill.name;
+  const perk = KROMKA_CHARACTER_PROGRESSION_CATALOG.perks.items.find(row => row.id === id);
+  return perk?.name || id;
+}
+
+function cloneServerProgressionPlayer(player = {}) {
+  return {
+    ...player,
+    skillRanks: { ...(player.skillRanks || {}) },
+    talentRanks: { ...(player.talentRanks || {}) },
+    progressionLedger: {
+      version: CHARACTER_PROGRESSION_MODEL_VERSION,
+      skillSteps: { ...(ensureServerProgressionLedger(player).skillSteps || {}) }
+    }
+  };
+}
+
+function serverApplyProgressionProposal(player = {}, data = {}, options = {}) {
+  const strict = options.strict === true;
+  if (!player || !data || typeof data !== 'object') {
+    return { ok: false, changed: false, error: 'Некорректный запрос развития персонажа.' };
+  }
   enforceServerProgressionBudget(player);
   serverUpdateFreeProgressionPoints(player);
+  const before = JSON.stringify({
+    skills: player.skillRanks || {}, talents: player.talentRanks || {},
+    ledger: player.progressionLedger || {}
+  });
+  const trial = cloneServerProgressionPlayer(player);
 
-  if (data.skillRanks && typeof data.skillRanks === 'object') {
-    const requested = sanitizeSkillRanks(data.skillRanks, player.skillRanks || {});
-    const accepted = { ...(player.skillRanks || {}) };
-    let remaining = Math.max(0, Math.floor(Number(player.skillPoints || 0)));
-    for (const id of SERVER_SKILL_IDS) {
-      const base = serverSkillBasePercent(player, id);
-      const current = serverSkillRankFrom(accepted, id, player) ?? base;
-      const wanted = serverSkillRankFrom(requested, id, player) ?? current;
-      const wantedSteps = Math.max(0, Math.ceil((wanted - current) / 5));
-      const capacitySteps = Math.max(0, Math.ceil((100 - current) / 5));
-      const steps = Math.min(wantedSteps, capacitySteps, remaining);
-      if (steps <= 0) continue;
-      accepted[id] = Math.min(100, current + steps * 5);
-      remaining -= steps;
+  if (data.skillRanks && typeof data.skillRanks === 'object' && !Array.isArray(data.skillRanks)) {
+    if (strict) {
+      const unknown = Object.keys(data.skillRanks).find(id => !SERVER_SKILL_IDS.has(id));
+      if (unknown) return { ok: false, changed: false, error: `Неизвестный навык: ${unknown}.` };
     }
-    player.skillRanks = accepted;
-    serverUpdateFreeProgressionPoints(player);
+    let remaining = Math.max(0, Math.floor(Number(trial.skillPoints || 0)));
+    for (const id of SERVER_SKILL_IDS) {
+      if (!Object.prototype.hasOwnProperty.call(data.skillRanks, id)) continue;
+      const raw = Number(data.skillRanks[id]);
+      const current = serverSkillPercent(trial, id);
+      if (!Number.isFinite(raw) || !Number.isInteger(raw)) {
+        if (strict) return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)}: значение навыка должно быть целым.` };
+        continue;
+      }
+      if (raw < current) {
+        if (strict) return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)} нельзя понизить.` };
+        continue;
+      }
+      const wanted = Math.min(100, raw);
+      const delta = wanted - current;
+      if (delta <= 0) continue;
+      if (strict && delta % 5 !== 0) {
+        return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)} повышается шагами по 5%.` };
+      }
+      const wantedSteps = Math.max(0, Math.ceil(delta / 5));
+      if (strict && wantedSteps > remaining) {
+        return { ok: false, changed: false, error: `Не хватает очков навыков: нужно ${wantedSteps}, доступно ${remaining}.` };
+      }
+      const steps = Math.min(wantedSteps, remaining, Math.max(0, Math.ceil((100 - current) / 5)));
+      if (steps <= 0) continue;
+      trial.progressionLedger.skillSteps[id] = Math.max(0, Number(trial.progressionLedger.skillSteps[id] || 0)) + steps;
+      remaining -= steps;
+      serverSyncSkillRanksFromLedger(trial);
+    }
+    serverUpdateFreeProgressionPoints(trial);
   }
 
-  if (data.talentRanks && typeof data.talentRanks === 'object') {
-    const requested = sanitizeTalentRanks(data.talentRanks, player.talentRanks || {});
-    const accepted = { ...(player.talentRanks || {}) };
-    let remaining = Math.max(0, Math.floor(Number(player.perkPoints || 0)));
+  if (data.talentRanks && typeof data.talentRanks === 'object' && !Array.isArray(data.talentRanks)) {
+    if (strict) {
+      const unknown = Object.keys(data.talentRanks).find(id => !SERVER_TALENT_IDS.has(id));
+      if (unknown) return { ok: false, changed: false, error: `Неизвестный перк: ${unknown}.` };
+    }
+    let remaining = Math.max(0, Math.floor(Number(trial.perkPoints || 0)));
     for (const id of serverTalentBudgetOrder()) {
-      const wanted = serverTalentRankFrom(requested, id);
-      let current = serverTalentRankFrom(accepted, id);
+      if (!Object.prototype.hasOwnProperty.call(data.talentRanks, id)) continue;
+      const raw = Number(data.talentRanks[id]);
+      let current = serverTalentRankFrom(trial.talentRanks, id);
+      if (!Number.isFinite(raw) || !Number.isInteger(raw)) {
+        if (strict) return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)}: ранг должен быть целым.` };
+        continue;
+      }
+      if (raw < current) {
+        if (strict) return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)} нельзя понизить.` };
+        continue;
+      }
+      const maxRank = SERVER_TALENT_MAX_RANKS[id] || 1;
+      if (strict && raw > maxRank) {
+        return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)}: максимальный ранг ${maxRank}.` };
+      }
+      const wanted = Math.min(maxRank, raw);
+      if (strict && wanted - current > remaining) {
+        return { ok: false, changed: false, error: `Не хватает очков перков: нужно ${wanted - current}, доступно ${remaining}.` };
+      }
       while (current < wanted && remaining > 0) {
-        const nextRanks = { ...accepted, [id]: current + 1 };
-        if (!serverTalentRequirementsMet(player, id, nextRanks)) break;
+        const nextRanks = { ...trial.talentRanks, [id]: current + 1 };
+        if (!serverTalentRequirementsMet(trial, id, nextRanks)) {
+          if (strict) {
+            const requirements = SERVER_TALENT_REQUIREMENTS[id] || {};
+            return {
+              ok: false,
+              changed: false,
+              error: `${serverProgressionDisplayName(id)}: не выполнены требования каталога (уровень ${requirements.level || 1}).`
+            };
+          }
+          break;
+        }
         current += 1;
-        accepted[id] = current;
+        trial.talentRanks[id] = current;
         remaining -= 1;
       }
     }
-    player.talentRanks = accepted;
   }
 
-  enforceServerProgressionBudget(player);
-  serverUpdateFreeProgressionPoints(player);
+  enforceServerProgressionBudget(trial);
+  serverUpdateFreeProgressionPoints(trial);
+  player.skillRanks = trial.skillRanks;
+  player.talentRanks = trial.talentRanks;
+  player.progressionLedger = trial.progressionLedger;
+  player.skillPoints = trial.skillPoints;
+  player.perkPoints = trial.perkPoints;
   serverApplyDerivedVitals(player);
-  return before !== JSON.stringify({ skills: player.skillRanks || {}, talents: player.talentRanks || {} });
+  const changed = before !== JSON.stringify({
+    skills: player.skillRanks || {}, talents: player.talentRanks || {},
+    ledger: player.progressionLedger || {}
+  });
+  return { ok: true, changed, error: '' };
+}
+
+function serverApplyProgressionRequest(player = {}, data = {}) {
+  return serverApplyProgressionProposal(player, data, { strict: false }).changed;
 }
 
 function serverStateHasProgressionProfile(data = {}) {
@@ -7943,6 +9045,10 @@ function serverMovementPacketBudgetDecision(player = {}, data = {}, now = Date.n
 }
 
 function serverApplyEmergencyMovementTransition(player = {}, data = {}) {
+  if (player.dead || player.downed || isArtifactStunned(player)) {
+    player.moving = false; player.vx = 0; player.vz = 0;
+    return false;
+  }
   let changed = false;
   if (Object.prototype.hasOwnProperty.call(data, 'moving') && !!data.moving !== !!player.moving) {
     player.moving = !!data.moving;
@@ -7964,22 +9070,38 @@ function serverApplyEmergencyMovementTransition(player = {}, data = {}) {
 }
 
 function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
+  if (player.dead || player.downed || isArtifactStunned(player, now)) return { accepted: false, corrected: true };
   const proposedX = Number(data.x);
   const proposedZ = Number(data.z);
   if (!Number.isFinite(proposedX) || !Number.isFinite(proposedZ)) return { accepted: false, corrected: false };
   const previousAt = Number(player.lastMovementProposalAt || now - 50);
   const elapsed = clamp((now - previousAt) / 1000, 0.016, 0.75);
   player.lastMovementProposalAt = now;
-  const fromX = Number(player.x || 0);
-  const fromZ = Number(player.z || 0);
+  const room = rooms.get(player.roomId);
+  const closedBounds = serverClosedLocationMovementBounds(player, room, PLAYER_COLLISION_RADIUS);
+  let fromX = Number(player.x || 0);
+  let fromZ = Number(player.z || 0);
+  let boundaryCorrected = false;
+  if (closedBounds) {
+    const safeX = clamp(fromX, closedBounds.minX, closedBounds.maxX);
+    const safeZ = clamp(fromZ, closedBounds.minZ, closedBounds.maxZ);
+    boundaryCorrected = Math.hypot(safeX - fromX, safeZ - fromZ) > 0.001;
+    fromX = safeX;
+    fromZ = safeZ;
+    if (boundaryCorrected) {
+      player.x = safeX;
+      player.z = safeZ;
+    }
+  }
   const dx = clamp(proposedX, -MAP_SIZE, MAP_SIZE) - fromX;
   const dz = clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - fromZ;
   const distance = Math.hypot(dx, dz);
-  const maxDistance = PLAYER_SPEED * elapsed * 1.35 + 0.22;
+  const artifactSpeed = 1 + serverArtifactEffects(player).speedPct;
+  const maxDistance = PLAYER_SPEED * artifactSpeed * elapsed * 1.35 + 0.22;
   const scale = distance > maxDistance && distance > 0 ? maxDistance / distance : 1;
-  const room = rooms.get(player.roomId);
   const moveAllowed = (toX, toZ) => !room || (
-    isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
+    (!closedBounds || serverPointInsideClosedLocationBounds(toX, toZ, closedBounds))
+    && isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
     && roomStaticCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
     && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
   );
@@ -8003,7 +9125,7 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
     clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - player.z
   );
   const moved = Math.hypot(player.x - fromX, player.z - fromZ) > 0.0001;
-  return { accepted: moved || divergence <= 0.001, corrected: divergence > 0.6 };
+  return { accepted: moved || divergence <= 0.001 || boundaryCorrected, corrected: boundaryCorrected || divergence > 0.6 };
 }
 
 function sanitizeServerLocationContext(input = {}, fallbackLocationId = '') {
@@ -8067,13 +9189,11 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   profile.taggedSkills = sanitizeTaggedSkills(previousProfile.taggedSkills || clientProfile.taggedSkills || []);
   profile.appearance = sanitizeCharacterAppearance(previousProfile.appearance || clientProfile.appearance || {});
   if (!player) {
-    const worldFactionId = serverWorldFactionKey(
-      previousProfile.worldFactionId || previousProfile.factionId || ''
-    );
+    const worldFactionId = '';
     next.characterProfile = {
       ...previousProfile,
       serverCharacterId: id,
-      name: safeName(previousProfile.name || 'РЎС‚СЂР°РЅРЅРёРє'),
+      name: safeName(previousProfile.name || 'Странник'),
       special: sanitizeSpecial(previousProfile.special || {}),
       traits: sanitizeTraits(previousProfile.traits || []),
       taggedSkills: sanitizeTaggedSkills(previousProfile.taggedSkills || []),
@@ -8087,6 +9207,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     next.inventory = previousState.inventory || {};
     next.storage = previousState.storage || {};
     next.factionStorages = previousState.factionStorages || {};
+    next.factionStorageRuntime = serverFactionStorageRuntimeFromState(previousState);
     next.equipment = previousState.equipment || {};
     next.itemRuntime = previousState.itemRuntime || {};
     next.player = previousState.player || clientState.player || {};
@@ -8096,6 +9217,9 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     );
     next.skillRanks = previousState.skillRanks || {};
     next.talentRanks = previousState.talentRanks || {};
+    next.progressionLedger = previousState.progressionLedger || null;
+    next.inventoryMutationLedger = sanitizeInventoryMutationLedger(previousState.inventoryMutationLedger || []);
+    next.criticalActionLedger = sanitizeCriticalActionLedger(previousState.criticalActionLedger || []);
     next.socialState = sanitizeServerSocialState(previousState.socialState || {});
     next.npcQuests = previousState.npcQuests || defaultServerNpcQuestState();
     next.worldTaskAccepted = previousState.worldTaskAccepted || [];
@@ -8103,6 +9227,23 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(previousState.worldTaskRewardClaims || []);
     next.worldFactionReputation = sanitizeServerWorldFactionReputation(
       previousState.worldFactionReputation || previousProfile.worldFactionReputation || {}
+    );
+    next.factionContracts = sanitizeServerFactionContracts(
+      previousState.factionContracts || previousProfile.factionContracts || {}
+    );
+    next.knownFactionSecrets = previousState.knownFactionSecrets || {};
+    next.kromkaQuestState = sanitizeKromkaQuestState(previousState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+    next.artifactRecords = previousState.artifactRecords || [];
+    next.artifactSlots = previousState.artifactSlots || [];
+    next.artifactRuntime = sanitizeArtifactRuntime(previousState.artifactRuntime);
+    next.artifactBloodkinCooldownUntil = Number(previousState.artifactBloodkinCooldownUntil) || 0;
+    next.artifactBloodkinHealingUntil = Number(previousState.artifactBloodkinHealingUntil) || 0;
+    next.radiation = Math.max(0, Number(previousState.radiation) || 0);
+    next.lastServerDamageAt = Math.max(0, Number(previousState.lastServerDamageAt) || 0);
+    next.kromkaOnboarding = sanitizeKromkaOnboarding(
+      previousState.kromkaOnboarding || {
+        phase: 'complete', tutorialCompleted: true, missionCompleted: true
+      }, KROMKA_ONBOARDING_CATALOG
     );
     next.characterProfile.worldFactionReputation = next.worldFactionReputation;
     next.globalMap = previousState.globalMap || null;
@@ -8119,17 +9260,23 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   profile.traits = sanitizeTraits(player.traits || profile.traits || []);
   profile.taggedSkills = sanitizeTaggedSkills(player.taggedSkills || profile.taggedSkills || []);
   profile.appearance = sanitizeCharacterAppearance(player.appearance || previousProfile.appearance || profile.appearance || {});
-  profile.factionId = serverWorldFactionKey(player.worldFactionId || player.factionId || '');
-  profile.worldFactionId = profile.factionId;
+  profile.factionId = '';
+  profile.worldFactionId = '';
   profile.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
+  profile.factionContracts = sanitizeServerFactionContracts(player.factionContracts || {});
   next.characterProfile = profile;
   next.lastVisitedSettlementId = normalizeRespawnSettlementId(player.lastVisitedSettlementId || previousState.lastVisitedSettlementId || 'settlement');
-  next.currentLocationId = normalizeLocationId(player.locationId || previousState.currentLocationId || 'settlement');
+  const visitingGuestBase = player.locationId === 'personalBase'
+    && serverPersonalBaseHostAccountId(player) !== String(player.userId || '');
+  next.currentLocationId = visitingGuestBase
+    ? normalizeRespawnSettlementId(player.lastVisitedSettlementId || previousState.lastVisitedSettlementId || 'settlement')
+    : normalizeLocationId(player.locationId || previousState.currentLocationId || 'settlement');
+  const persistedPosition = visitingGuestBase ? playerSpawnWorld(next.currentLocationId, 'spawn') : null;
   next.player = {
     ...previousPlayer,
     ...clientPlayer,
-    x: Number(player.x || 0),
-    z: Number(player.z || 0),
+    x: Number(persistedPosition?.x ?? player.x ?? 0),
+    z: Number(persistedPosition?.z ?? player.z ?? 0),
     angle: Number(player.angle || 0),
     hp: Math.max(0, Number(player.hp || 0)),
     ap: Math.max(0, Number(player.ap || 0)),
@@ -8138,6 +9285,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     xp: Math.max(0, Math.floor(Number(player.xp || 0))),
     xpNeeded: Math.max(1, Math.floor(Number(player.xpNeeded || 100))),
     level: Math.max(1, Math.floor(Number(player.level || 1))),
+    ...persistedDownedState(player),
     injuries: sanitizeInjuries(player.injuries || {}),
     itemConditions: sanitizeServerItemConditions(player.itemConditions || {})
   };
@@ -8146,6 +9294,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.itemRuntime = serverCombatRuntimeForSave(presentation.itemRuntime, player);
   const activeStorageFaction = serverPlayerStorageFaction(player);
   next.factionStorages = serverFactionStoragesToState(ensureServerFactionStorages(player));
+  next.factionStorageRuntime = serverFactionStorageRuntimeToState(ensureServerFactionStorageRuntime(player));
   next.storage = serverInventoryRowsToObject(
     activeStorageFaction ? serverFactionStorageRows(player, activeStorageFaction) : []
   );
@@ -8154,11 +9303,31 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.worldTaskTrackedId = String(player.worldTaskTrackedId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
   next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []);
   next.worldFactionReputation = profile.worldFactionReputation;
+  next.factionContracts = profile.factionContracts;
+  next.knownFactionSecrets = player.knownFactionSecrets || previousState.knownFactionSecrets || {};
+  next.kromkaQuestState = sanitizeKromkaQuestState(player.kromkaQuestState || previousState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+  sanitizeArtifactLoadout(player, KROMKA_ARTIFACT_CATALOG);
+  next.artifactRecords = player.artifactRecords;
+  next.artifactSlots = player.artifactSlots;
+  next.artifactRuntime = sanitizeArtifactRuntime(player.artifactRuntime);
+  next.artifactBloodkinCooldownUntil = Number(player.artifactBloodkinCooldownUntil || 0);
+  next.artifactBloodkinHealingUntil = Number(player.artifactBloodkinHealingUntil || 0);
+  next.radiation = Math.max(0, Number(player.radiation) || 0);
+  next.lastServerDamageAt = Math.max(0, Number(player.lastServerDamageAt) || 0);
+  next.kromkaOnboarding = sanitizeKromkaOnboarding(
+    player.kromkaOnboarding || previousState.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
+  );
+  next.worldRevision = 'kromka-1';
   next.skillRanks = sanitizeSkillRanks(player.skillRanks || {});
   next.talentRanks = sanitizeTalentRanks(player.talentRanks || {});
+  next.progressionLedger = sanitizeServerProgressionLedger(player.progressionLedger || {}, player);
+  next.inventoryMutationLedger = sanitizeInventoryMutationLedger(player.inventoryMutationLedger || []);
+  next.criticalActionLedger = sanitizeCriticalActionLedger(player.criticalActionLedger || []);
   next.socialState = sanitizeServerSocialState(player.socialState || previousState.socialState || {});
   next.globalMap = serverAuthoritativeGlobalMapState(player);
-  next.serverLocationContext = serverLocationContextFromPlayer(player);
+  next.serverLocationContext = visitingGuestBase
+    ? sanitizeServerLocationContext({}, next.currentLocationId)
+    : serverLocationContextFromPlayer(player);
   next.savedAt = Date.now();
   return safeSaveState(next);
 }
@@ -8252,22 +9421,23 @@ function serverStatValue(p = {}, key = '') {
 
 function serverPlayerMaxHp(p = {}) {
   const levelBonus = Math.max(0, Math.floor(Number(p.level || 1)) - 1) * 12;
-  return Math.max(1, 55 + serverStatValue(p, 'end') * 9 + levelBonus + (serverHasTrait(p, 'bruiser') ? 18 : 0) + serverTalentLevel(p, 'toughness') * 12);
+  const artifactBonus = serverArtifactEffects(p).maxHpFlat;
+  return Math.max(1, 55 + serverStatValue(p, 'end') * 9 + levelBonus + (serverHasTrait(p, 'bruiser') ? 18 : 0) + serverTalentLevel(p, 'toughness') * 12 + artifactBonus);
 }
 
 function serverPlayerMaxAp(p = {}) {
-  return clamp(Math.max(5, 5 + Math.floor(serverStatValue(p, 'agi') / 2)) + serverTalentLevel(p, 'actionBoy'), 1, 99);
+  const base = Math.max(5, 5 + Math.floor(serverStatValue(p, 'agi') / 2)) + serverTalentLevel(p, 'actionBoy');
+  const multiplier = 1 + serverArtifactEffects(p).maxApPct;
+  return clamp(Math.round(base * multiplier), 1, 99);
 }
 
 function serverApplyDerivedVitals(p = {}) {
-  const previousMaxHp = Number(p.maxHp);
   const previousHp = Number(p.hp);
   const maxHp = serverPlayerMaxHp(p);
   const maxAp = serverPlayerMaxAp(p);
   p.maxHp = maxHp;
   p.maxAp = maxAp;
   if (!Number.isFinite(previousHp)) p.hp = maxHp;
-  else if (Number.isFinite(previousMaxHp) && previousMaxHp > 0 && previousHp >= previousMaxHp - 0.5 && maxHp > previousMaxHp) p.hp = maxHp;
   else p.hp = clampPlayerHp(previousHp, maxHp);
   p.ap = clamp(Number(p.ap ?? maxAp), 0, maxAp);
   return p;
@@ -8277,9 +9447,12 @@ function serverDoctorSuccessChance(p = {}) {
   return clamp(0.35 + serverSkillNorm(p, 'doctor') * 0.55 + Math.max(0, serverStatValue(p, 'int') - 5) * 0.025 + serverTalentLevel(p, 'surgeon') * 0.08, 0.35, 0.98);
 }
 
-function serverFirstAidAmount(p = {}, itemId = 'medkit') {
+function serverFirstAidAmount(p = {}, itemId = 'medkit', recipient = p) {
   const base = itemId === 'stim' ? 18 : 35;
-  return clamp(base + serverTalentLevel(p, 'fieldMedic') * 8 + Math.round(serverSkillNorm(p, 'firstAid') * 24), 1, 95);
+  const artifactMultiplier = itemId === 'medkit'
+    ? 1 + serverArtifactEffects(recipient).medkitEffectPct
+    : 1;
+  return clamp(Math.round((base + serverTalentLevel(p, 'fieldMedic') * 8 + Math.round(serverSkillNorm(p, 'firstAid') * 24)) * artifactMultiplier), 1, 95);
 }
 
 function serverDoctorBagPreserved(p = {}) {
@@ -8306,6 +9479,7 @@ function serverMedicalItemXp(itemId = 'medkit', result = {}) {
 }
 
 function serverPrepareFixedActionAp(p = {}, data = {}, apCost = 1, now = Date.now(), label = 'действие') {
+  if (isArtifactStunned(p, now)) return { ok: false, error: 'Персонаж оглушён.' };
   serverApplyDerivedVitals(p);
   serverRegenPlayerAp(p, now);
   const cost = Math.max(1, Math.round(Number(apCost || 1)));
@@ -8321,6 +9495,272 @@ function serverMedicalApAck(p = {}) {
     ap: Number(Number(p.ap || 0).toFixed(2)),
     maxAp: Number(Number(p.maxAp || 0).toFixed(2))
   };
+}
+
+const SERVER_MEDICAL_CONSENT_TTL_MS = 15000;
+const SERVER_MEDICAL_CONSENTS = new Map();
+const SERVER_PLAYER_TRADE_TTL_MS = 120000;
+const SERVER_PLAYER_TRADES = new Map();
+
+function pruneServerMedicalConsents(now = Date.now()) {
+  for (const [id, record] of SERVER_MEDICAL_CONSENTS.entries()) {
+    if (!record || Number(record.expiresAt || 0) <= now) SERVER_MEDICAL_CONSENTS.delete(id);
+  }
+}
+
+function matchingServerMedicalConsent(healer = {}, target = {}, itemId = '', now = Date.now()) {
+  pruneServerMedicalConsents(now);
+  return [...SERVER_MEDICAL_CONSENTS.values()].find(record => record
+    && record.healerId === healer.id
+    && record.targetId === target.id
+    && record.roomId === healer.roomId
+    && record.itemId === itemId
+    && record.approved === true
+    && Number(record.expiresAt || 0) > now) || null;
+}
+
+function requestServerMedicalConsent(healer = {}, target = {}, itemId = '', now = Date.now()) {
+  pruneServerMedicalConsents(now);
+  const existing = [...SERVER_MEDICAL_CONSENTS.values()].find(record => record
+    && record.healerId === healer.id
+    && record.targetId === target.id
+    && record.roomId === healer.roomId
+    && record.itemId === itemId
+    && record.approved !== false
+    && Number(record.expiresAt || 0) > now);
+  if (existing) return existing;
+  const record = {
+    id: makeServerEntityId('medical_consent'),
+    healerId: healer.id,
+    healerName: String(healer.name || 'Игрок').slice(0, 48),
+    targetId: target.id,
+    targetName: String(target.name || 'Игрок').slice(0, 48),
+    roomId: healer.roomId,
+    locationId: healer.locationId || target.locationId || 'settlement',
+    itemId,
+    approved: null,
+    createdAt: now,
+    expiresAt: now + SERVER_MEDICAL_CONSENT_TTL_MS
+  };
+  SERVER_MEDICAL_CONSENTS.set(record.id, record);
+  return record;
+}
+
+function serverPlayerTradeRows(input = []) {
+  const totals = new Map();
+  for (const row of Array.isArray(input) ? input.slice(0, 32) : []) {
+    const id = serverBaseItemId(row?.id || row?.itemId || '');
+    const qty = Math.max(0, Math.floor(Number(row?.qty ?? row?.count ?? 0)));
+    if (!id || id === 'fists' || !SERVER_ITEM_IDS.has(id) || qty <= 0) continue;
+    const current = totals.get(id) || { id, qty: 0, itemRuntimeIds: [] };
+    current.qty = Math.min(serverItemStackLimit(id), Number(current.qty || 0) + qty);
+    current.itemRuntimeIds.push(...serverRequestedWeaponRuntimeIds(row, id));
+    current.itemRuntimeIds = [...new Set(current.itemRuntimeIds)].slice(0, current.qty);
+    totals.set(id, current);
+  }
+  return [...totals.values()];
+}
+
+function serverPublicPlayerTradeOffer(ownerId = '', input = []) {
+  const rows = serverPlayerTradeRows(input);
+  const owner = players.get(ownerId);
+  if (!owner) return rows;
+  const runtimeById = new Map(serverWeaponInventoryRuntimeSnapshot(owner)
+    .map(record => [String(record?.id || ''), record]));
+  return rows.map(row => ({
+    ...row,
+    itemRuntimeRecords: (row.itemRuntimeIds || [])
+      .map(id => runtimeById.get(String(id || '')))
+      .filter(Boolean)
+      .map(record => ({
+        id: record.id,
+        baseId: record.baseId,
+        loaded: Math.max(0, Math.floor(Number(record.loaded || 0))),
+        condition: Number(clamp(Number(record.condition ?? 100), 1, 100).toFixed(2)),
+        weaponMods: sanitizeServerWeaponModifications(record.weaponMods || {}, SERVER_WEAPONS[record.baseId])
+      }))
+  }));
+}
+
+function pruneServerPlayerTrades(now = Date.now()) {
+  for (const [id, session] of SERVER_PLAYER_TRADES.entries()) {
+    if (!session || Number(session.expiresAt || 0) <= now) {
+      SERVER_PLAYER_TRADES.delete(id);
+      for (const playerId of session?.playerIds || []) {
+        io.to(playerId).emit('playerTradeUpdated', { state: null, reason: 'expired', message: 'Предложение торговли истекло.' });
+      }
+    }
+  }
+}
+
+function serverPlayerTradeFor(playerId = '', tradeId = '') {
+  pruneServerPlayerTrades(Date.now());
+  const requested = String(tradeId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
+  if (requested) {
+    const session = SERVER_PLAYER_TRADES.get(requested);
+    return session?.playerIds?.includes(playerId) ? session : null;
+  }
+  return [...SERVER_PLAYER_TRADES.values()].find(session => session?.playerIds?.includes(playerId)) || null;
+}
+
+function publicServerPlayerTrade(session = null, viewerId = '') {
+  if (!session || !session.playerIds?.includes(viewerId)) return null;
+  const otherId = session.playerIds.find(id => id !== viewerId) || '';
+  return {
+    id: session.id,
+    status: session.status,
+    inviterId: session.inviterId,
+    selfId: viewerId,
+    otherId,
+    otherName: session.names?.[otherId] || 'Игрок',
+    ownOffer: serverPublicPlayerTradeOffer(viewerId, session.offers?.[viewerId] || []),
+    otherOffer: serverPublicPlayerTradeOffer(otherId, session.offers?.[otherId] || []),
+    ownAccepted: session.accepted?.[viewerId] === true,
+    otherAccepted: session.accepted?.[otherId] === true,
+    createdAt: session.createdAt,
+    expiresAt: session.expiresAt
+  };
+}
+
+function emitServerPlayerTrade(session = null, reason = 'updated', message = '') {
+  if (!session) return;
+  for (const playerId of session.playerIds || []) {
+    io.to(playerId).emit('playerTradeUpdated', {
+      state: publicServerPlayerTrade(session, playerId),
+      reason,
+      message,
+      t: Date.now()
+    });
+  }
+}
+
+function cancelServerPlayerTrade(session = null, reason = 'cancelled', message = 'Торговля отменена.') {
+  if (!session) return;
+  SERVER_PLAYER_TRADES.delete(session.id);
+  for (const playerId of session.playerIds || []) {
+    io.to(playerId).emit('playerTradeUpdated', { state: null, reason, message, t: Date.now() });
+  }
+}
+
+function requestServerPlayerTrade(inviter = {}, target = {}, now = Date.now()) {
+  pruneServerPlayerTrades(now);
+  const existing = serverPlayerTradeFor(inviter.id) || serverPlayerTradeFor(target.id);
+  if (existing) return { ok: false, error: 'Один из игроков уже участвует в другой сделке.' };
+  const session = {
+    id: makeServerEntityId('player_trade'),
+    status: 'pending',
+    inviterId: inviter.id,
+    playerIds: [inviter.id, target.id],
+    names: {
+      [inviter.id]: String(inviter.name || 'Игрок').slice(0, 48),
+      [target.id]: String(target.name || 'Игрок').slice(0, 48)
+    },
+    offers: { [inviter.id]: [], [target.id]: [] },
+    accepted: { [inviter.id]: false, [target.id]: false },
+    roomId: inviter.roomId,
+    locationId: inviter.locationId || target.locationId || 'settlement',
+    createdAt: now,
+    expiresAt: now + SERVER_PLAYER_TRADE_TTL_MS
+  };
+  SERVER_PLAYER_TRADES.set(session.id, session);
+  emitServerPlayerTrade(session, 'requested', `${session.names[inviter.id]} предлагает безопасную торговлю.`);
+  return { ok: true, session };
+}
+
+function serverTradeInventoryAfter(player = {}, removals = [], additions = []) {
+  let inventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
+  for (const row of removals) {
+    if (serverInventoryQty(inventory, row.id) < row.qty) return { ok: false, error: `Не хватает предмета «${row.id}» для сделки.` };
+    inventory = serverInventorySetRows(inventory, row.id, serverInventoryQty(inventory, row.id) - row.qty);
+  }
+  for (const row of additions) {
+    if (serverInventoryQty(inventory, row.id) + row.qty > serverItemStackLimit(row.id)) {
+      return { ok: false, error: `Недостаточно места в стеке «${row.id}».` };
+    }
+    inventory = serverInventorySetRows(inventory, row.id, serverInventoryQty(inventory, row.id) + row.qty);
+  }
+  const weight = serverInventoryWeightWithEquipment(inventory, player.equipment || {});
+  const artifactRemovals = removals.filter(row => KROMKA_ARTIFACT_INDEXES.byItem[row.id])
+    .map(row => ({ validation: serverValidateWeaponRuntimeRemoval(player, row) }));
+  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, inventory, artifactRemovals);
+  if (weight > capacity + 0.0001) return { ok: false, error: `Перегруз после сделки: ${weight.toFixed(1)}/${capacity.toFixed(1)} кг.` };
+  return { ok: true, inventory, weight, capacity };
+}
+
+function completeServerPlayerTrade(session = null) {
+  if (!session || session.status !== 'active') return { ok: false, error: 'Сделка ещё не активна.' };
+  const [aId, bId] = session.playerIds || [];
+  const a = players.get(aId);
+  const b = players.get(bId);
+  if (!a || !b || a.roomId !== session.roomId || b.roomId !== session.roomId || a.dead || b.dead) {
+    return { ok: false, error: 'Один из игроков больше не доступен для сделки.' };
+  }
+  if (Math.hypot(Number(a.x || 0) - Number(b.x || 0), Number(a.z || 0) - Number(b.z || 0)) > 5.5) {
+    return { ok: false, error: 'Игроки отошли слишком далеко друг от друга.' };
+  }
+  const aOffer = serverPlayerTradeRows(session.offers?.[aId] || []);
+  const bOffer = serverPlayerTradeRows(session.offers?.[bId] || []);
+  const aNext = serverTradeInventoryAfter(a, aOffer, bOffer);
+  if (!aNext.ok) return { ok: false, error: `${a.name || 'Игрок'}: ${aNext.error}` };
+  const bNext = serverTradeInventoryAfter(b, bOffer, aOffer);
+  if (!bNext.ok) return { ok: false, error: `${b.name || 'Игрок'}: ${bNext.error}` };
+
+  const capture = (owner, offer) => offer.map(row => {
+    const validation = serverValidateWeaponRuntimeRemoval(owner, row, { releaseLoadedAmmo: true });
+    return { row, validation, records: validation.ok ? serverCaptureWeaponRuntimeRecords(owner, row, validation) : [] };
+  });
+  const aRuntime = capture(a, aOffer);
+  const bRuntime = capture(b, bOffer);
+  const invalid = [...aRuntime, ...bRuntime].find(entry => !entry.validation.ok);
+  if (invalid) return { ok: false, error: invalid.validation.error || 'Оружие в предложении изменилось.' };
+
+  const snapshot = player => ({
+    inventory: JSON.parse(JSON.stringify(player.inventory || [])),
+    artifactRecords: JSON.parse(JSON.stringify(player.artifactRecords || [])),
+    artifactSlots: [...(player.artifactSlots || [])],
+    combat: JSON.parse(JSON.stringify(player.combat || {})),
+    serverCombat: JSON.parse(JSON.stringify(player.serverCombat || {})),
+    carry: JSON.parse(JSON.stringify(player.carry || {})),
+    inventoryUpdatedAt: Number(player.inventoryUpdatedAt || 0)
+  });
+  const beforeA = snapshot(a);
+  const beforeB = snapshot(b);
+  a.inventory = aNext.inventory;
+  b.inventory = bNext.inventory;
+  for (const entry of aRuntime) serverFinalizeWeaponRuntimeRemoval(a, entry.row, entry.validation);
+  for (const entry of bRuntime) serverFinalizeWeaponRuntimeRemoval(b, entry.row, entry.validation);
+  serverRestoreWeaponRuntimeRecords(a, bRuntime.flatMap(entry => entry.records || []));
+  serverRestoreWeaponRuntimeRecords(b, aRuntime.flatMap(entry => entry.records || []));
+  const now = Date.now();
+  a.inventoryUpdatedAt = now;
+  b.inventoryUpdatedAt = now;
+  a.carry = { weight: Number(aNext.weight.toFixed(3)), capacity: Number(aNext.capacity.toFixed(3)), serverCapacity: Number(aNext.capacity.toFixed(3)), updatedAt: now };
+  b.carry = { weight: Number(bNext.weight.toFixed(3)), capacity: Number(bNext.capacity.toFixed(3)), serverCapacity: Number(bNext.capacity.toFixed(3)), updatedAt: now };
+  let persisted = false;
+  try {
+    persisted = persistActivePlayerStates([a, b]) === true;
+  } catch (error) {
+    console.error('Player trade persistence failed:', session.id, error);
+  }
+  if (!persisted) {
+    Object.assign(a, beforeA);
+    Object.assign(b, beforeB);
+    try {
+      persistActivePlayerStates([a, b]);
+    } catch (error) {
+      console.error('Player trade rollback persistence failed:', session.id, error);
+    }
+    emitAuthoritativePlayerState(a, { reason: 'playerTradeRollback' });
+    emitAuthoritativePlayerState(b, { reason: 'playerTradeRollback' });
+    return { ok: false, error: 'Сервер не смог надёжно сохранить сделку. Обмен отменён без передачи предметов.' };
+  }
+  SERVER_PLAYER_TRADES.delete(session.id);
+  emitAuthoritativePlayerState(a, { reason: 'playerTrade' });
+  emitAuthoritativePlayerState(b, { reason: 'playerTrade' });
+  for (const player of [a, b]) {
+    io.to(player.id).emit('playerTradeUpdated', { state: null, reason: 'completed', message: 'Обмен завершён сервером.', t: now });
+  }
+  return { ok: true };
 }
 
 function serverHarvestApCost() {
@@ -8363,6 +9803,20 @@ function serverApplyInjuriesFromHit(p = {}, damage = 0, damageType = 'ballistic'
   const luckGuard = Math.max(0, serverStatValue(p, 'luck') - 5) * (options.selfDamage ? 0.012 : 0.01)
     + serverTalentLevel(p, 'lucky') * (options.selfDamage ? 0.04 : 0.035);
   const ironBonesGuard = Math.max(0.35, 1 - serverTalentLevel(p, 'ironBones') * 0.28);
+
+  if (options.injuryProfile && typeof options.injuryProfile === 'object') {
+    const profile = options.injuryProfile;
+    const severity = clamp(dmg / 24, 0.35, 1.45);
+    const immuneGuard = Math.max(0.45, 1 - serverTalentLevel(p, 'immunologist') * 0.25);
+    if (Math.random() < clamp(Number(profile.infectionChance || 0) * severity * immuneGuard - enduranceGuard, 0, 0.92)) add('infection');
+    if (Math.random() < clamp(Number(profile.fractureChance || 0) * severity * ironBonesGuard - enduranceGuard, 0, 0.82)) {
+      add(Math.random() < 0.5 ? 'brokenLeg' : 'brokenArm');
+    }
+    if (options.attackEffect === 'stagger' || options.attackEffect === 'knockdown' || options.attackEffect === 'disorient') {
+      if (Math.random() < clamp(Number(options.effectChance || 0) * severity - luckGuard, 0, 0.88)) add('concussion');
+    }
+    return added;
+  }
 
   if (options.selfDamage) {
     const base = Math.max(0.06, Math.min(0.42, dmg / 105 - enduranceGuard - luckGuard));
@@ -8425,6 +9879,68 @@ function updateServerPlayerMedicalEffects(p = {}, now = Date.now()) {
     t: now
   });
   return true;
+}
+
+function updateServerArtifactRegeneration(p = {}, now = Date.now()) {
+  if (!p || p.dead || Number(p.hp || 0) <= 0) return false;
+  const effects = serverArtifactEffects(p);
+  const previousAt = Number(p.lastArtifactRegenAt || now);
+  p.lastArtifactRegenAt = now;
+  let healed = 0;
+  if (effects.regenHpPerSecond > 0
+    && now - Number(p.lastServerDamageAt || 0) >= Math.max(0, effects.regenDelaySeconds) * 1000) {
+    const before = Number(p.hp || 0);
+    const regenFrom = Math.max(previousAt, Number(p.lastServerDamageAt || 0) + effects.regenDelaySeconds * 1000);
+    const dt = clamp((now - regenFrom) / 1000, 0, 2.5);
+    p.hp = Math.min(Number(p.maxHp || before), before + effects.regenHpPerSecond * dt);
+    healed += Math.max(0, p.hp - before);
+  }
+  const lowHealth = effects.lowHealthHeal > 0
+    && Number(p.hp || 0) / Math.max(1, Number(p.maxHp || 1)) < effects.lowHealthThresholdPct;
+  if (lowHealth && now >= Number(p.artifactBloodkinCooldownUntil || 0)) {
+    p.artifactBloodkinHealingUntil = now + effects.lowHealthDurationSeconds * 1000;
+    p.artifactBloodkinCooldownUntil = now + effects.lowHealthCooldownSeconds * 1000;
+    p.radiation = Math.max(0, Number(p.radiation || 0) + effects.radiationOnTrigger);
+  }
+  if (effects.lowHealthHeal <= 0) p.artifactBloodkinHealingUntil = 0;
+  const healingUntil = Number(p.artifactBloodkinHealingUntil || 0);
+  const healingFrom = Math.max(previousAt, healingUntil - effects.lowHealthDurationSeconds * 1000);
+  const healingDt = clamp((Math.min(now, healingUntil) - healingFrom) / 1000, 0, 2.5);
+  if (healingDt > 0) {
+    const before = Number(p.hp || 0);
+    const rate = effects.lowHealthHeal / Math.max(1, effects.lowHealthDurationSeconds);
+    p.hp = Math.min(Number(p.maxHp || before), before + rate * healingDt);
+    healed += Math.max(0, p.hp - before);
+  }
+  if (healed > 0.001) {
+    io.to(p.id).emit('playerStatusEffect', {
+      effect: 'artifactRegeneration',
+      healed: Number(healed.toFixed(3)),
+      hp: Number(Number(p.hp || 0).toFixed(2)),
+      maxHp: Math.round(Number(p.maxHp || 1)),
+      t: now
+    });
+    return true;
+  }
+  return false;
+}
+
+function serverApplyArtifactImpact(player, room, source, damageType, displacement = 0, now = Date.now()) {
+  if (!room || player.dead || Number(player.hp || 0) <= 0) return;
+  const effects = serverArtifactEffects(player);
+  const stunned = applyArtifactElectricHit(player, damageType, effects, now);
+  const bounds = serverClosedLocationMovementBounds(player, room, PLAYER_COLLISION_RADIUS);
+  const moved = displaceArtifactPlayer(player, source, displacement, effects, (fromX, fromZ, x, z) =>
+    Math.abs(x) <= MAP_SIZE && Math.abs(z) <= MAP_SIZE
+    && (!bounds || serverPointInsideClosedLocationBounds(x, z, bounds))
+    && isRoomTerrainWalkableWorld(room, x, z, PLAYER_COLLISION_RADIUS)
+    && roomStaticCollisionMoveAllowed(room, fromX, fromZ, x, z, PLAYER_COLLISION_RADIUS)
+    && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, x, z, PLAYER_COLLISION_RADIUS));
+  if (stunned || moved > 0) {
+    // Forced movement is not a footstep and must reconcile the Unity controller.
+    delete player.artifactFootstepPosition;
+    emitAuthoritativePlayerState(player, { reason: 'movementCorrection' });
+  }
 }
 
 function serverAmbushLevel(p = {}, enemy = null, now = Date.now()) {
@@ -8496,24 +10012,25 @@ function serverWeaponModeInfo(p = {}, w = SERVER_WEAPONS.fists, preferred = '') 
 }
 
 function serverEnemyArmorProfile(enemy, type = 'ballistic') {
-  const name = String(enemy?.name || '').toLowerCase();
-  const safeType = DAMAGE_TYPES.includes(type) ? type : 'ballistic';
-  let protection = 0;
-  let threshold = 0;
-  if (name.includes('рейдер') && safeType === 'ballistic') { protection = 0.08; threshold = 1; }
-  else if (name.includes('супермутант') && safeType === 'ballistic') { protection = 0.10; threshold = 2; }
-  else if (name.includes('гуль') && safeType === 'radiation') { protection = 0.35; threshold = 1; }
-  return { type: safeType, protection, threshold };
+  return serverNpcArmorProfile(enemy, type);
 }
 
 function serverMitigateEnemyDamage(rawDamage, enemy, type = 'ballistic') {
-  const raw = Math.max(0, Number(rawDamage || 0));
-  if (raw <= 0) return { raw: 0, damage: 0, absorbed: 0, type };
-  const p = serverEnemyArmorProfile(enemy, type);
-  const minimum = Math.max(1, Math.floor(raw * 0.12));
-  const afterThreshold = Math.max(0, raw - p.threshold);
-  const damage = Math.max(minimum, Math.round(afterThreshold * (1 - p.protection)));
-  return { raw, damage: Math.max(1, damage), absorbed: Math.max(0, raw - Math.max(1, damage)), type: p.type, protection: p.protection, threshold: p.threshold };
+  return resolveDamageMitigation(rawDamage, serverEnemyArmorProfile(enemy, type), type);
+}
+
+function serverPublicCombatProtection(actor = {}, npc = false) {
+  const profileFor = npc ? serverNpcArmorProfile : serverArmorProfile;
+  const out = {};
+  for (const type of DAMAGE_TYPES) {
+    const profile = profileFor(actor, type);
+    out[type] = {
+      threshold: Number(Number(profile.threshold || 0).toFixed(2)),
+      protection: Number(Number(profile.protection || 0).toFixed(4)),
+      resistance: Number(Number(profile.resistance || 0).toFixed(4))
+    };
+  }
+  return out;
 }
 
 function serverDamageRoll(p = {}, w = SERVER_WEAPONS.fists, modeInfo = {}) {
@@ -8823,8 +10340,9 @@ function serverReloadApCost(p = {}, w = SERVER_WEAPONS.fists) {
   return Math.max(1, Math.round(base - serverTalentLevel(p, 'quickHands') + serverInjuryApPenalty(p, 'reload')));
 }
 
-function serverCombatApRegenRate(p = {}) {
-  return 1.8 + serverTalentLevel(p, 'actionBoy') * 0.35;
+function serverCombatApRegenRate(p = {}, now = Date.now()) {
+  const base = 1.8 + serverTalentLevel(p, 'actionBoy') * 0.35;
+  return base * (1 + serverArtifactEffects(p).apRegenPct) * artifactApMultiplier(p, now);
 }
 
 function serverEnsureCombatState(p = {}, now = Date.now()) {
@@ -8845,7 +10363,7 @@ function serverRegenPlayerAp(p = {}, now = Date.now()) {
   const maxAp = clamp(Number(p.maxAp || 0), 0, 99);
   const last = Number(p.serverCombat.lastApAt || now);
   const dt = clamp((now - last) / 1000, 0, 2.5);
-  if (dt > 0 && maxAp > 0) p.ap = Math.min(maxAp, Number(p.ap || 0) + dt * serverCombatApRegenRate(p));
+  if (dt > 0 && maxAp > 0) p.ap = Math.min(maxAp, Number(p.ap || 0) + dt * serverCombatApRegenRate(p, now));
   p.serverCombat.lastApAt = now;
   return p.ap;
 }
@@ -9007,6 +10525,9 @@ function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
 }
 
 function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS.fists, modeInfo = {}, now = Date.now(), providedPlan = null) {
+  if (isArtifactStunned(p, now)) return { ok: false, error: 'Персонаж оглушён.' };
+  if (caravanCinematicHeld(rooms.get(p.roomId), now))
+    return { ok: false, error: 'Дождитесь окончания кат-сцены или пропустите её.' };
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
   const token = serverCombatToken(data.attackToken || client.token || '');
   const combat = serverEnsureCombatState(p, now);
@@ -9184,14 +10705,36 @@ function serverApplyReload(p = {}, data = {}, now = Date.now()) {
   };
 }
 
+const SERVER_PVP_PROTECTED_ITEM_IDS = new Set([
+  'silver',
+  ...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),
+  ...KROMKA_ARTIFACT_CATALOG.detectors.map(row => row.itemId),
+  ...KROMKA_ARTIFACT_CATALOG.belts.map(row => row.itemId),
+  KROMKA_ARTIFACT_CATALOG.hotContainerItemId
+].filter(Boolean));
+
+function serverItemProtectedFromPvpDrop(itemId = '') {
+  const id = serverBaseItemId(itemId);
+  return SERVER_PVP_PROTECTED_ITEM_IDS.has(id) || /(?:^|_)(?:quest|story|key)(?:_|$)/i.test(id);
+}
+
 function serverDropPvpInventory(room, target, killer, now = Date.now()) {
   if (!room || !target) return [];
-  const drops = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
-  // Ground items currently carry base ids, not per-instance magazines. Preserve
-  // ammunition integrity on forced full-loot death by dropping bag magazines as
-  // loose ammo instead of silently deleting (or later resurrecting) their load.
-  drops.push(...serverReleaseBagWeaponMagazineAmmo(target));
+  const inventory = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
+  const drops = inventory.filter(entry => !serverItemProtectedFromPvpDrop(entry.id));
+  const protectedRows = inventory.filter(entry => serverItemProtectedFromPvpDrop(entry.id));
   if (!drops.length) return [];
+  const runtimeDrops = new Map();
+  for (const entry of drops) {
+    if (!SERVER_WEAPONS[entry.id]?.ammoType) continue;
+    const validation = serverValidateWeaponRuntimeRemoval(target, entry, { releaseLoadedAmmo: true });
+    if (!validation.ok) continue;
+    runtimeDrops.set(entry.id, {
+      row: entry,
+      validation,
+      records: serverCaptureWeaponRuntimeRecords(target, entry, validation)
+    });
+  }
   const created = [];
   let index = 0;
   for (const entry of drops) {
@@ -9210,14 +10753,18 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
       droppedBy: target.id,
       killerId: killer?.id || '',
       pvpDrop: true,
+      itemRuntimeRecords: runtimeDrops.get(entry.id)?.records || [],
       createdAt: now
     };
     room.groundItems.set(groundItem.id, groundItem);
     created.push(publicGroundItem(groundItem));
     index++;
   }
-  target.inventory = [];
+  target.inventory = protectedRows;
   target.inventoryUpdatedAt = now;
+  for (const removal of runtimeDrops.values()) {
+    serverFinalizeWeaponRuntimeRemoval(target, removal.row, removal.validation);
+  }
   if (created.length) {
     refreshRoomWorldState(room);
     io.to(room.id).emit('groundItemsSnapshot', {
@@ -9287,13 +10834,25 @@ function serverDropPvpConsumables(room, target, killer, now = Date.now()) {
 }
 
 function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
-  if (locationHasFullInventoryDrop(loc)) return serverDropPvpInventory(room, target, killer, now);
-  if (locationPvpMode(loc) === 'pvp') return serverDropPvpConsumables(room, target, killer, now);
-  return [];
+  if (!room || !target) return [];
+  const mode = locationPvpMode(loc);
+  const policy = deathLootPolicy(mode);
+  return resolveDeathLootTransaction(target, mode, now, () => {
+    if (policy.loss === 'inventory') return serverDropPvpInventory(room, target, killer, now);
+    if (policy.loss === 'consumables') return serverDropPvpConsumables(room, target, killer, now);
+    return [];
+  }).result;
 }
 
 function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), options = {}) {
-  if (!room || !enemy || !p || enemy.dead || Number(enemy.hp || 0) > 0) return false;
+  if (!room || !enemy || !p) return false;
+  if (serverNpcIsKromkaOnboardingProtected(enemy)) {
+    enemy.dead = false;
+    enemy.hp = Math.max(1, Number(enemy.maxHp || 100));
+    enemy.hostileToPlayer = false;
+    return false;
+  }
+  if (enemy.dead || Number(enemy.hp || 0) > 0) return false;
   const sourceX = Number.isFinite(Number(options.sourceX))
     ? Number(options.sourceX) : Number(p.x || enemy.x || 0);
   const sourceZ = Number.isFinite(Number(options.sourceZ))
@@ -9372,7 +10931,7 @@ function locationUsesSharedReality(locationOrId = '') {
   const loc = typeof locationOrId === 'object' && locationOrId
     ? locationOrId
     : LOCATIONS[normalizeLocationId(locationOrId)];
-  return !!loc && !loc.randomTemplate && !loc.encounterOnly;
+  return !!loc && !loc.randomTemplate && !loc.encounterOnly && loc.privateInstance !== true;
 }
 
 function isSettlementLocationId(locationId = '') {
@@ -9553,6 +11112,43 @@ function findRoomSafeSpawnWorld(room, x, z, opts = {}) {
   return safe ? tileToWorld(safe.tx, safe.tz) : null;
 }
 
+function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, preferredTz, opts = {}) {
+  const origin = findRoomSafeSpawnTile(room, originTx, originTz, {
+    maxRadius: Math.max(2, Number(opts.originSearchRadius || 8)),
+    radius: Number(opts.radius ?? 0.42),
+    minEnemyDistance: 0,
+    minPlayerDistance: 0
+  });
+  if (!origin) return null;
+  const key = (tx, tz) => `${tx},${tz}`;
+  const queue = [origin];
+  const visited = new Set([key(origin.tx, origin.tz)]);
+  const originPoint = tileToWorld(origin.tx, origin.tz);
+  let best = null;
+  for (let index = 0; index < queue.length; index++) {
+    const tile = queue[index];
+    const point = tileToWorld(tile.tx, tile.tz);
+    const visibleFromOrigin = opts.requireOriginLineOfSight !== true
+      || (Math.hypot(point.x - originPoint.x, point.z - originPoint.z) <= Number(opts.maxOriginDistance || 12)
+        && roomHasHighLineOfSight(room, originPoint.x, originPoint.z, point.x, point.z));
+    if (visibleFromOrigin && isRoomSpawnSafeTile(room, tile.tx, tile.tz, opts)) {
+      const distance = Math.hypot(tile.tx - Number(preferredTx || 0), tile.tz - Number(preferredTz || 0));
+      if (!best || distance < best.distance) best = { tx: tile.tx, tz: tile.tz, distance };
+    }
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const tx = tile.tx + dx;
+      const tz = tile.tz + dz;
+      const id = key(tx, tz);
+      if (visited.has(id) || !inBounds(tx, tz)) continue;
+      const point = tileToWorld(tx, tz);
+      if (!isRoomWalkableTile(room, tx, tz) || !isRoomWalkableWorld(room, point.x, point.z, Number(opts.radius ?? 0.42))) continue;
+      visited.add(id);
+      queue.push({ tx, tz });
+    }
+  }
+  return best ? { tx: best.tx, tz: best.tz } : null;
+}
+
 function ensurePlayerOutsideRoomGeometry(p, room) {
   if (!p || !room || !room.worldReady) return false;
   if (isRoomWalkableWorld(room, p.x, p.z, PLAYER_COLLISION_RADIUS)) return false;
@@ -9630,6 +11226,26 @@ function serverEnemyAttackProfile(enemy = {}) {
       injurySource: weapon.name || enemy.name || 'attack',
       weapon: weapon.id,
       ranged: !!weapon.ammoType
+    };
+  }
+  const creature = KROMKA_MUTANT_BY_ID[String(enemy.creatureTypeId || '')];
+  const authoredAttack = Array.isArray(creature?.attacks) ? creature.attacks[0] : null;
+  if (authoredAttack) {
+    const rawDamageType = String(authoredAttack.damageType || 'physical');
+    const damageType = rawDamageType === 'physical' ? 'ballistic'
+      : rawDamageType === 'psychic' ? 'anomalous'
+        : (DAMAGE_TYPES.includes(rawDamageType) ? rawDamageType : 'ballistic');
+    return {
+      attackId: String(authoredAttack.id || ''),
+      damageType,
+      injurySource: `${creature.displayName}: ${String(authoredAttack.id || 'удар').replace(/_/g, ' ')}`,
+      effect: String(authoredAttack.effect || ''),
+      effectChance: clamp(Number(authoredAttack.effectChance || 0), 0, 1),
+      injuryProfile: creature.injuryProfile && typeof creature.injuryProfile === 'object'
+        ? { ...creature.injuryProfile }
+        : {},
+      weapon: 'fists',
+      ranged: false
     };
   }
   const name = String(enemy.name || enemyTypeDef(enemy).name || '').toLowerCase();
@@ -9802,6 +11418,15 @@ function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
     if (isRoomFullVisionBlocker(room, tile.tx, tile.tz)) return false;
   }
   return true;
+}
+function serverInteractionHasLineOfSight(room, actor = {}, target = {}) {
+  const fromX = Number(actor.x);
+  const fromZ = Number(actor.z);
+  const toX = Number(target.x);
+  const toZ = Number(target.z);
+  if (![fromX, fromZ, toX, toZ].every(Number.isFinite)) return false;
+  if (Math.hypot(toX - fromX, toZ - fromZ) <= 0.08) return true;
+  return roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ);
 }
 function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   if (!room || !enemy || !p || p.dead || Number(p.hp || 0) <= 0) return false;
@@ -10809,6 +12434,7 @@ function roomEnemyCollisionPenalty(room, x, z, radius = PLAYER_COLLISION_RADIUS)
   const candidates = roomEnemySpatialCandidates(room, x, z, queryRadius);
   for (const enemy of candidates) {
     if (!enemy || enemy.dead || enemy._removed) continue;
+    if (String(enemy.kromkaNamedNpcId || '') && enemy.hostileToPlayer === false) continue;
     const modelBlockers = enemyMovementCollisionBlockers(enemy);
     if (modelBlockers.length) {
       modelBlockers.forEach(blocker => {
@@ -11901,158 +13527,11 @@ function refreshWastelandWarehouseRoomsForLocation(locationId = '') {
   }
 }
 
-const SERVER_CRAFT_RECIPE_COSTS = {
-  ammo9craft: { ore: 1, wood: 1 },
-  ammo556craft: { ore: 2, wood: 1 },
-  energycellcraft: { ore: 2, wood: 1 },
-  napalmcraft: { oil: 2, scrap: 1, wood: 1 },
-  shellcraft: { ore: 2, wood: 1 },
-  rocketammocraft: { ore: 5, wood: 1, oil: 1, silver: 4 },
-  stimcraft: { medicine: 2, chemicals: 1 },
-  medkitcraft: { medicine: 4, chemicals: 1, scrap: 1 },
-  doctorbagcraft: { medicine: 5, electronics: 1, scrap: 2 },
-  antibioticscraft: { medicine: 3, chemicals: 2 },
-  // Базовые медикаменты как крафтовый ресурс: до этого их можно было только
-  // собрать топором в лесу или найти в луте, а все медрецепты их потребляли.
-  // Химикаты и вода качаются насосом на нефти — рецепт самодостаточен.
-  medicinecraft: { chemicals: 2, water: 1 },
-  repairkitcraft: { ore: 2, wood: 2 },
-  knifecraft: { ore: 2, wood: 1 },
-  pistolcraft: { weaponParts: 1, scrap: 4, ammoParts: 2 },
-  revolvercraft: { ore: 4, scrap: 4, wood: 2 },
-  sawedoffcraft: { scrap: 5, wood: 3 },
-  smgcraft: { scrap: 8, weaponParts: 3, wood: 2 },
-  riflecraft: { weaponParts: 2, scrap: 5, wood: 2 },
-  assaultcraft: { ore: 6, wood: 3 },
-  machineguncraft: { ore: 10, wood: 4 },
-  lasercraft: { ore: 5, wood: 2 },
-  flamercraft: { ore: 9, wood: 3, oil: 2 },
-  plasmacraft: { ore: 10, wood: 2, silver: 10 },
-  shotguncraft: { ore: 7, wood: 4 },
-  rocketcrafter: { ore: 14, wood: 4, silver: 14 },
-  leathercraft: { scrap: 5, chemicals: 1 },
-  metalarmorcraft: { scrap: 12, ore: 4 },
-  ballisticvestcraft: { scrap: 10, ammoParts: 5, chemicals: 2 },
-  combatarmorcraft: { scrap: 18, electronics: 6, chemicals: 4 },
-  hazmatsuitcraft: { chemicals: 10, scrap: 6 },
-  heavyarmorcraft: { scrap: 26, ore: 10, electronics: 6 },
-  energysuitcraft: { electronics: 16, chemicals: 8, scrap: 10 },
-  prewarhelmetcraft: { scrap: 6, electronics: 3 },
-  weldedhelmetcraft: { scrap: 4 },
-  helmetcraft: { scrap: 4 },
-  tacticalhelmetcraft: { scrap: 6, electronics: 2 },
-  assaulthelmetcraft: { scrap: 8, electronics: 3 },
-  bootscraft: { scrap: 3, chemicals: 1 },
-  scoutbootscraft: { scrap: 4, chemicals: 2 },
-  assaultbootscraft: { scrap: 5, wood: 1 },
-  reinforcedbootscraft: { scrap: 6, ore: 2 },
-  backpackcraft: { scrap: 5, chemicals: 1 },
-  pickaxecraft: { ore: 2, wood: 2 },
-  axecraft: { ore: 1, wood: 3 },
-  handpumpcraft: { ore: 3, wood: 1, scrap: 2 },
-  weaponpartscraft: { ore: 6, scrap: 5 },
-  electronicscraft: { scrap: 3, chemicals: 1 }
-};
+const SERVER_CRAFT_RECIPE_COSTS = KROMKA_FIELD_RECIPE_INDEXES.costs;
 
-const SERVER_CRAFT_RECIPE_OUTPUTS = {
-  ammo9craft: { id: 'ammo9', qty: 8 },
-  ammo556craft: { id: 'ammo556', qty: 5 },
-  energycellcraft: { id: 'energyCell', qty: 8 },
-  napalmcraft: { id: 'napalm', qty: 12 },
-  shellcraft: { id: 'shotgunShell', qty: 6 },
-  rocketammocraft: { id: 'rocketAmmo', qty: 2 },
-  stimcraft: { id: 'stim', qty: 3 },
-  medkitcraft: { id: 'medkit', qty: 2 },
-  doctorbagcraft: { id: 'doctorBag', qty: 1 },
-  antibioticscraft: { id: 'antibiotics', qty: 2 },
-  medicinecraft: { id: 'medicine', qty: 3 },
-  repairkitcraft: { id: 'repairKit', qty: 1 },
-  knifecraft: { id: 'knife', qty: 1 },
-  pistolcraft: { id: 'pistol', qty: 1 },
-  revolvercraft: { id: 'revolver', qty: 1 },
-  sawedoffcraft: { id: 'sawedOffShotgun', qty: 1 },
-  smgcraft: { id: 'smg', qty: 1 },
-  riflecraft: { id: 'rifle', qty: 1 },
-  assaultcraft: { id: 'assaultRifle', qty: 1 },
-  machineguncraft: { id: 'machineGun', qty: 1 },
-  lasercraft: { id: 'laserPistol', qty: 1 },
-  flamercraft: { id: 'flamethrower', qty: 1 },
-  plasmacraft: { id: 'plasmaRifle', qty: 1 },
-  shotguncraft: { id: 'shotgun', qty: 1 },
-  rocketcrafter: { id: 'rocketLauncher', qty: 1 },
-  leathercraft: { id: 'leather', qty: 1 },
-  metalarmorcraft: { id: 'metalArmor', qty: 1 },
-  ballisticvestcraft: { id: 'ballisticVest', qty: 1 },
-  combatarmorcraft: { id: 'combatArmor', qty: 1 },
-  hazmatsuitcraft: { id: 'hazmatSuit', qty: 1 },
-  heavyarmorcraft: { id: 'heavyArmor', qty: 1 },
-  energysuitcraft: { id: 'energySuit', qty: 1 },
-  prewarhelmetcraft: { id: 'preWarHelmet', qty: 1 },
-  weldedhelmetcraft: { id: 'weldedHelmet', qty: 1 },
-  helmetcraft: { id: 'helmet', qty: 1 },
-  tacticalhelmetcraft: { id: 'tacticalHelmet', qty: 1 },
-  assaulthelmetcraft: { id: 'assaultHelmet', qty: 1 },
-  bootscraft: { id: 'boots', qty: 1 },
-  scoutbootscraft: { id: 'scoutBoots', qty: 1 },
-  assaultbootscraft: { id: 'assaultBoots', qty: 1 },
-  reinforcedbootscraft: { id: 'reinforcedBoots', qty: 1 },
-  backpackcraft: { id: 'backpack', qty: 1 },
-  pickaxecraft: { id: 'pickaxe', qty: 1 },
-  axecraft: { id: 'axe', qty: 1 },
-  handpumpcraft: { id: 'handPump', qty: 1 },
-  weaponpartscraft: { id: 'weaponParts', qty: 2 },
-  electronicscraft: { id: 'electronics', qty: 2 }
-};
+const SERVER_CRAFT_RECIPE_OUTPUTS = KROMKA_FIELD_RECIPE_INDEXES.outputs;
 
-const SERVER_CRAFT_RECIPE_STATIONS = {
-  ammo9craft: 'ammo_bench',
-  ammo556craft: 'ammo_bench',
-  shellcraft: 'ammo_bench',
-  rocketammocraft: 'ammo_bench',
-  napalmcraft: 'chem_station',
-  stimcraft: 'chem_station',
-  medkitcraft: 'chem_station',
-  doctorbagcraft: 'chem_station',
-  antibioticscraft: 'chem_station',
-  medicinecraft: 'chem_station',
-  repairkitcraft: 'repair_bench',
-  knifecraft: 'weapon_bench',
-  pistolcraft: 'weapon_bench',
-  revolvercraft: 'weapon_bench',
-  sawedoffcraft: 'weapon_bench',
-  smgcraft: 'weapon_bench',
-  riflecraft: 'weapon_bench',
-  assaultcraft: 'weapon_bench',
-  machineguncraft: 'weapon_bench',
-  lasercraft: 'energy_bench',
-  flamercraft: 'weapon_bench',
-  plasmacraft: 'energy_bench',
-  shotguncraft: 'weapon_bench',
-  rocketcrafter: 'weapon_bench',
-  energycellcraft: 'energy_bench',
-  leathercraft: 'repair_bench',
-  metalarmorcraft: 'repair_bench',
-  ballisticvestcraft: 'repair_bench',
-  combatarmorcraft: 'repair_bench',
-  hazmatsuitcraft: 'chem_station',
-  heavyarmorcraft: 'repair_bench',
-  energysuitcraft: 'energy_bench',
-  prewarhelmetcraft: 'energy_bench',
-  weldedhelmetcraft: 'tool_bench',
-  helmetcraft: 'repair_bench',
-  tacticalhelmetcraft: 'repair_bench',
-  assaulthelmetcraft: 'repair_bench',
-  bootscraft: 'tool_bench',
-  scoutbootscraft: 'tool_bench',
-  assaultbootscraft: 'tool_bench',
-  reinforcedbootscraft: 'repair_bench',
-  backpackcraft: 'tool_bench',
-  pickaxecraft: 'tool_bench',
-  axecraft: 'tool_bench',
-  handpumpcraft: 'tool_bench',
-  weaponpartscraft: 'weapon_bench',
-  electronicscraft: 'energy_bench'
-};
+const SERVER_CRAFT_RECIPE_STATIONS = KROMKA_FIELD_RECIPE_INDEXES.stations;
 
 const SERVER_CRAFT_STATION_TOKENS = {
   ammo_bench: ['ammo_bench', 'ammo', 'munition'],
@@ -12073,10 +13552,8 @@ const SERVER_CRAFT_STATION_MODELS = {
 };
 
 function serverCraftStationFeeForRecipe(recipeId = '') {
-  const cost = SERVER_CRAFT_RECIPE_COSTS[String(recipeId || '')] || null;
-  if (!cost) return 0;
-  const total = Object.values(cost).reduce((sum, qty) => sum + Math.max(0, Number(qty || 0)), 0);
-  return Math.max(1, Math.ceil(total / 5));
+  const recipe = KROMKA_FIELD_RECIPE_INDEXES.byId[String(recipeId || '')] || null;
+  return recipe ? Math.max(0, Math.floor(Number(recipe.silverFee || 0))) : 0;
 }
 
 function serverCraftOutputQty(recipeId = '', actor = {}) {
@@ -12107,10 +13584,14 @@ function serverInventoryHasRequirements(rows = [], requirements = {}) {
   return Object.entries(requirements || {}).every(([id, qty]) => serverInventoryQty(rows, id) >= Math.max(0, Math.floor(Number(qty || 0))));
 }
 
-function serverInventoryApplyCraftTransaction(rows = [], recipeId = '', fee = 0, actor = {}) {
+function serverInventoryApplyCraftTransaction(rows = [], recipeId = '', fee = 0, actor = {}, options = {}) {
   const recipe = SERVER_CRAFT_RECIPE_OUTPUTS[String(recipeId || '')] || null;
   if (!recipe) return { ok: false, error: 'unknown_recipe' };
-  const requirements = serverCraftInventoryRequirements(recipeId, fee);
+  const requirements = options.requirements && typeof options.requirements === 'object'
+    ? Object.fromEntries(Object.entries(options.requirements)
+      .map(([id, qty]) => [serverBaseItemId(id), Math.max(0, Math.floor(Number(qty || 0)))])
+      .filter(([id, qty]) => id && SERVER_ITEM_IDS.has(id) && qty > 0))
+    : serverCraftInventoryRequirements(recipeId, fee);
   let next = sanitizeServerInventorySnapshot(rows, { includeEquipped: true });
   if (!serverInventoryHasRequirements(next, requirements)) {
     return { ok: false, error: 'missing_resources', requirements, inventory: next };
@@ -12118,7 +13599,12 @@ function serverInventoryApplyCraftTransaction(rows = [], recipeId = '', fee = 0,
   Object.entries(requirements).forEach(([id, qty]) => {
     next = serverInventorySetRows(next, id, serverInventoryQty(next, id) - Math.max(0, Math.floor(Number(qty || 0))));
   });
-  const output = { id: recipe.id, qty: serverCraftOutputQty(recipeId, actor) };
+  const output = {
+    id: recipe.id,
+    qty: options.outputQty === undefined
+      ? serverCraftOutputQty(recipeId, actor)
+      : Math.max(1, Math.floor(Number(options.outputQty || 1)))
+  };
   if (serverInventoryQty(next, output.id) + output.qty > serverItemStackLimit(output.id)) {
     return { ok: false, error: 'stack_limit', requirements, inventory: rows, output };
   }
@@ -12178,6 +13664,7 @@ function serverCraftingObjectMatchesStation(row = {}, stationId = '') {
   const explicit = serverCraftingObjectStationIds(row);
   if (explicit.length) {
     if (!explicit.includes(key)) return false;
+    if (row.unityAuthored === true && key === 'repair_bench' && row.model === 'craftStationRepair') return true;
     const modelFile = path.basename(locationObjectModelRef(row).replace(/\\/g, '/')).toLowerCase();
     return !SERVER_CRAFT_STATION_MODELS[key] || modelFile === SERVER_CRAFT_STATION_MODELS[key];
   }
@@ -12229,6 +13716,9 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   }
   const stationDist = Math.hypot(Number(player.x || 0) - stationPoint.x, Number(player.z || 0) - stationPoint.z);
   if (stationDist > 4.6) return { ok: false, error: 'too_far_from_station', requiredStation };
+  if (!serverInteractionHasLineOfSight(playerRoom, player, stationPoint)) {
+    return { ok: false, error: 'interaction_blocked', requiredStation };
+  }
   const explicitSiteId = String(stationObject?.worksiteId
     || stationObject?.stationSiteId
     || stationObject?.siteId
@@ -12241,14 +13731,27 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   const publicSites = wastelandSitesForLocation(loc, playerRoom).filter(wastelandSiteIsEconomic);
   const siteId = explicitSiteId || publicSites[0]?.id || '';
   const site = siteId ? simState?.sites?.[siteId] : null;
-  if (!site) return { ok: false, error: 'missing_site' };
+  const tutorialBench = locationId === 'tutorialCaravanYard' && stationObjectId === 'yard_repair_bench';
+  if (!site && !tutorialBench) return { ok: false, error: 'missing_site' };
   const actor = syncServerActionProgressionPlayer(player, data);
   syncServerInventorySnapshot(player, data);
-  const crafted = serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor);
+  const baseRequirements = serverCraftInventoryRequirements(recipeId, fee);
+  const baseOutput = {
+    id: SERVER_CRAFT_RECIPE_OUTPUTS[recipeId]?.id || '',
+    qty: serverCraftOutputQty(recipeId, actor)
+  };
+  const clanContext = serverClanBaseContextForPlayer(player, locationId);
+  const clanPreview = clanContext
+    ? serverPreviewClanCraftBenefit(clanContext.profile, clanContext.runtime, recipeId, baseRequirements, baseOutput)
+    : null;
+  const crafted = serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor, clanPreview ? {
+    requirements: clanPreview.requirements,
+    outputQty: clanPreview.output.qty
+  } : {});
   if (!crafted.ok) {
     const craftError = crafted.error === 'stack_limit'
       ? 'Для результата крафта достигнут предел стака.'
-      : (crafted.error === 'missing_resources' ? 'Ресурсы или крышки для крафта уже недоступны.' : (crafted.error || 'Не хватает ресурсов.'));
+      : (crafted.error === 'missing_resources' ? 'Ресурсы или марки для крафта уже недоступны.' : (crafted.error || 'Не хватает ресурсов.'));
     return {
       ok: false,
       error: craftError,
@@ -12267,6 +13770,16 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       carry: sanitizeCarrySnapshot(player)
     };
   }
+  if (clanContext && clanPreview) {
+    serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);
+    clanContext.runtime.lastCraftBenefit = {
+      recipeId,
+      playerCharacterId: String(player.characterId || '').slice(0, 80),
+      saved: { ...(clanPreview.applied?.saved || {}) },
+      bonus: { ...(clanPreview.applied?.bonus || {}) },
+      at: Date.now()
+    };
+  }
   player.inventory = crafted.inventory;
   player.inventoryUpdatedAt = Date.now();
   if (SERVER_REPAIRABLE_ITEM_IDS.has(serverBaseItemId(crafted.output?.id || ''))) {
@@ -12277,6 +13790,14 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
     serverSetPlayerItemCondition(player, crafted.output.id, clamp(Math.round(condition), 55, 100));
   }
   sanitizeCarrySnapshot(player);
+  if (tutorialBench) {
+    if (recipeId === 'repairkitcraft'
+        && Number(player.kromkaOnboarding?.evidence?.oreGathered || 0) >= 2
+        && Number(player.kromkaOnboarding?.evidence?.woodGathered || 0) >= 2)
+      serverRecordTutorialFact(player, 'kitCrafted');
+    return { ok: true, fee, inventory: player.inventory, output: crafted.output,
+      requirements: crafted.requirements, self: publicAuthoritativePlayerState(player) };
+  }
   site.stockpile = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
   site.stockpile.silver = Math.max(0, Math.floor(Number(site.stockpile.silver || 0))) + fee;
   site.lastCraftingFeeHour = Number(simState.worldHour || 0);
@@ -12299,44 +13820,21 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
     inventory: player.inventory,
     output: crafted.output,
     requirements: crafted.requirements,
+    clanBenefit: clanContext ? {
+      baseId: clanContext.profile.id,
+      displayName: clanContext.profile.displayName,
+      saved: { ...(clanPreview?.applied?.saved || {}) },
+      bonus: { ...(clanPreview?.applied?.bonus || {}) }
+    } : null,
     self: publicAuthoritativePlayerState(player)
   };
 }
 
-const SERVER_TRADE_MACHINE_SELL_PRICE_OVERRIDES = {
-  pistol: 28,
-  rifle: 38,
-  shotgun: 48,
-  rocketLauncher: 118,
-  machineGun: 72,
-  laserPistol: 60,
-  flamethrower: 78,
-  plasmaRifle: 92,
-  knife: 4,
-  leather: 12,
-  combatArmor: 42,
-  helmet: 8,
-  tacticalHelmet: 16,
-  assaultHelmet: 22,
-  boots: 7,
-  scoutBoots: 10,
-  reinforcedBoots: 13,
-  backpack: 15,
-  ammo9: 1,
-  ammo556: 2,
-  energyCell: 4,
-  napalm: 4,
-  shotgunShell: 2,
-  rocketAmmo: 10,
-  medkit: 10,
-  stim: 5,
-  doctorBag: 18,
-  antibiotics: 12,
-  water: 2,
-  ore: 3,
-  wood: 2,
-  trophy: 14
-};
+const SERVER_TRADE_MACHINE_SELL_PRICE_OVERRIDES = Object.freeze(Object.fromEntries(
+  Object.entries(SERVER_ITEM_BASE_PRICES)
+    .filter(([id, price]) => id !== 'silver' && Number(price || 0) > 0)
+    .map(([id, price]) => [id, Math.max(1, Math.floor(Number(price) * 0.45))])
+));
 
 function serverLocationObjectIsTradeMachine(row = {}) {
   const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
@@ -12457,13 +13955,8 @@ function serverTradeMachineRows(rows = []) {
 
 function serverTradeMachineItemCategory(itemId = '') {
   const id = serverBaseItemId(itemId);
-  if (['pickaxe', 'axe', 'handPump', 'repairKit'].includes(id)) return 'tools';
-  if (SERVER_NPC_WEAPON_ITEM_IDS.has(id) || id === 'knife') return 'weapons';
-  if (['leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', 'helmet', 'tacticalHelmet', 'assaultHelmet', 'boots', 'scoutBoots', 'reinforcedBoots', 'backpack'].includes(id)) return 'armor';
-  if (SERVER_NPC_AMMO_ITEM_IDS.has(id)) return 'ammo';
-  if (['medkit', 'stim', 'doctorBag', 'antibiotics'].includes(id)) return 'aid';
-  if (['ore', 'wood', 'scrap', 'oil', 'chemicals', 'medicine', 'electronics', 'ammoParts', 'weaponParts'].includes(id)) return 'materials';
-  return 'misc';
+  const category = String(SERVER_ITEM_CATEGORIES[id] || 'misc');
+  return ['currency', 'strategic', 'artifacts'].includes(category) ? 'misc' : category;
 }
 
 function serverTradeMachineBuyPrice(entry = {}, player = {}) {
@@ -12478,8 +13971,7 @@ function serverTradeMachineSellPrice(itemId = '', market = {}, player = {}) {
   if (!Number.isFinite(Number(base))) {
     if (stockEntry) base = Math.max(1, Math.floor(Number(stockEntry.price || 1) * 0.45));
     else {
-      const category = serverTradeMachineItemCategory(id);
-      base = category === 'weapons' ? 12 : category === 'armor' ? 8 : category === 'materials' ? 2 : id === 'trophy' ? 10 : 1;
+      base = Math.max(1, Math.floor(Number(SERVER_ITEM_BASE_PRICES[id] || 1) * 0.45));
     }
   }
   const charismaBonus = 1
@@ -12504,6 +13996,31 @@ function serverInventoryWeightWithEquipment(rows = [], equipment = {}) {
   return weight;
 }
 
+function serverCarryCapacityAfterRuntimeRemovals(player, inventory, removals) {
+  const removed = new Set(removals.flatMap(row => row.validation?.runtimeIds || []));
+  return serverCarryCapacity({ ...player, inventory,
+    artifactRecords: (player.artifactRecords || []).filter(record => !removed.has(record.id))
+  });
+}
+
+function serverCommitArtifactMarketTransfer(player, marketKey, buys, removals) {
+  if (!buys.some(row => KROMKA_ARTIFACT_INDEXES.byItem[row.id]) && !removals.some(row => row.artifactRecords?.length)) return;
+  savesDb.artifactMarketRuntime ||= {};
+  let store = sanitizeServerWeaponRuntimeStore(savesDb.artifactMarketRuntime[marketKey] || {});
+  const incoming = [];
+  for (const row of buys) {
+    if (!KROMKA_ARTIFACT_INDEXES.byItem[row.id]) continue;
+    const taken = serverTakeWeaponRuntimeStoreRecords(store, row.id, row.qty);
+    store = taken.store;
+    incoming.push(...taken.records);
+  }
+  for (const removal of removals) {
+    for (const record of removal.artifactRecords || []) store[record.id] = record;
+  }
+  savesDb.artifactMarketRuntime[marketKey] = store;
+  serverRestoreWeaponRuntimeRecords(player, incoming);
+}
+
 function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data = {}, player = null) {
   const market = serverTradeMachineMarket(room, loc, row);
   if (!market.ok) return market;
@@ -12521,7 +14038,8 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
     }
     const validation = serverValidateWeaponRuntimeRemoval(player, rowToSell, { releaseLoadedAmmo: true });
     if (!validation.ok) return { ok: false, error: validation.error, market };
-    runtimeRemovals.push({ row: rowToSell, validation });
+    runtimeRemovals.push({ row: rowToSell, validation, artifactRecords: KROMKA_ARTIFACT_INDEXES.byItem[rowToSell.id]
+      ? serverCaptureWeaponRuntimeRecords(player, rowToSell, validation) : [] });
   }
   let buyTotal = 0;
   for (const rowToBuy of buys) {
@@ -12538,14 +14056,14 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
   for (const rowToSell of sells) sellTotal += serverTradeMachineSellPrice(rowToSell.id, market, player) * rowToSell.qty;
   const net = buyTotal - sellTotal;
   if (net > 0 && serverInventoryQty(nextInventory, 'silver') < net) {
-    return { ok: false, error: 'Недостаточно крышек для обмена.', market };
+    return { ok: false, error: 'Недостаточно марок для обмена.', market };
   }
   if (net < 0 && market.caps < Math.abs(net)) {
-    return { ok: false, error: 'У производственной точки не хватает крышек для выкупа.', market };
+    return { ok: false, error: 'У производственной точки не хватает марок для выкупа.', market };
   }
   const nextSilver = serverInventoryQty(nextInventory, 'silver') - net;
   if (nextSilver > serverItemStackLimit('silver')) {
-    return { ok: false, error: 'В инвентаре достигнут предел крышек.', market };
+    return { ok: false, error: 'В инвентаре достигнут предел марок.', market };
   }
 
   const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
@@ -12553,7 +14071,7 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
   if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error, market };
   nextInventory = inventoryResult.inventory;
   const inventoryWeight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
-  const capacity = serverCarryCapacity(player);
+  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, nextInventory, runtimeRemovals);
   if (inventoryWeight > capacity + 0.0001) {
     return { ok: false, error: `Перегруз: ${inventoryWeight.toFixed(1)}/${capacity.toFixed(1)} кг.`, market };
   }
@@ -12572,7 +14090,7 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
   if (!applied?.ok) {
     const updatedMarket = serverTradeMachineMarket(room, loc, row);
     const error = applied?.error === 'insufficient_site_silver'
-      ? 'У производственной точки закончились крышки.'
+      ? 'У производственной точки закончились марки.'
       : 'Запас производственной точки изменился. Повторите обмен.';
     return { ok: false, error, market: updatedMarket };
   }
@@ -12588,6 +14106,7 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
     serverCapacity: Number(capacity.toFixed(3)),
     updatedAt: Date.now()
   };
+  serverCommitArtifactMarketTransfer(player, `machine:${market.marketKey || market.siteId}`, buys, runtimeRemovals);
   refreshWastelandWarehouseRoomsForLocation(loc.id || room?.locationId || '');
   return {
     ok: true,
@@ -12735,7 +14254,8 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
     if (serverInventoryQty(nextInventory, row.id) < row.qty) return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.' };
     const validation = serverValidateWeaponRuntimeRemoval(player, row, { releaseLoadedAmmo: true });
     if (!validation.ok) return { ok: false, error: validation.error };
-    runtimeRemovals.push({ row, validation });
+    runtimeRemovals.push({ row, validation, artifactRecords: KROMKA_ARTIFACT_INDEXES.byItem[row.id]
+      ? serverCaptureWeaponRuntimeRecords(player, row, validation) : [] });
   }
   let buyTotal = 0;
   for (const row of buys) {
@@ -12747,16 +14267,16 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   let sellTotal = 0;
   for (const row of sells) sellTotal += serverTradeMachineSellPrice(row.id, market, player) * row.qty;
   const net = buyTotal - sellTotal;
-  if (net > 0 && serverInventoryQty(nextInventory, 'silver') < net) return { ok: false, error: 'Недостаточно крышек для обмена.' };
-  if (net < 0 && market.caps < Math.abs(net)) return { ok: false, error: 'У торговца не хватает крышек для выкупа.' };
+  if (net > 0 && serverInventoryQty(nextInventory, 'silver') < net) return { ok: false, error: 'Недостаточно марок для обмена.' };
+  if (net < 0 && market.caps < Math.abs(net)) return { ok: false, error: 'У торговца не хватает марок для выкупа.' };
   const nextSilver = serverInventoryQty(nextInventory, 'silver') - net;
-  if (nextSilver > serverItemStackLimit('silver')) return { ok: false, error: 'В инвентаре достигнут предел крышек.' };
+  if (nextSilver > serverItemStackLimit('silver')) return { ok: false, error: 'В инвентаре достигнут предел марок.' };
   const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
   const inventoryResult = serverBuildTradeInventory(nextInventory, sells, buys, unloadedAmmo, nextSilver);
   if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error };
   nextInventory = inventoryResult.inventory;
   const weight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
-  const capacity = serverCarryCapacity(player);
+  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, nextInventory, runtimeRemovals);
   if (weight > capacity + 0.0001) return { ok: false, error: `Перегруз: ${weight.toFixed(1)}/${capacity.toFixed(1)} кг.` };
 
   const nextStock = market.stock.map(row => ({ ...row }));
@@ -12812,6 +14332,7 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   player.carry = { weight: Number(weight.toFixed(3)), capacity: Number(capacity.toFixed(3)), serverCapacity: Number(capacity.toFixed(3)), updatedAt: Date.now() };
 
   if (actor.personalTrade !== true && !persistentTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
+  serverCommitArtifactMarketTransfer(player, `npc:${actor.traderMarketKey || `${room?.locationId}:${actor.id}`}`, buys, runtimeRemovals);
   if (actor.personalTrade !== true && !persistentTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
   refreshRoomWorldState(room);
   return { ok: true, net, buyTotal, sellTotal, buys, sells, unloadedAmmo, inventory: player.inventory, carry: player.carry, market: serverNpcTradeMarket(actor), enemy: publicEnemy(actor), self: publicAuthoritativePlayerState(player) };
@@ -13146,32 +14667,9 @@ function roomStaticCollisionBlockersFromObject(row = {}) {
   if (authoredParts.length) return authoredParts.map((part, partIndex) => ({
     id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
     ...part,
-    modelRef: 'authored:collisionParts'
+    modelRef: String(row.model || 'authored-object')
   }));
-  const scale = locationObjectScale(row);
   const rotationY = locationObjectRotationY(row);
-  const modelRef = locationObjectModelRef(row);
-  const modelEntry = modelColliderCatalogEntry(SERVER_MODEL_COLLIDERS, modelRef);
-  const modelBlockers = transformedModelBlockers(SERVER_MODEL_COLLIDERS, modelRef, {
-    x: pos.x,
-    z: pos.z,
-    rotationY,
-    scaleX: scale.x,
-    scaleZ: scale.z
-  });
-  if (modelEntry && modelBlockers.length) return modelBlockers.map((modelBlocker, partIndex) => ({
-    id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
-    ...modelBlocker,
-    modelRef
-  }));
-  if (modelEntry) {
-    const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
-    const exactWidth = Number(exact.width || exact.x || 0);
-    const exactDepth = Number(exact.depth || exact.z || 0);
-    if (!(Number.isFinite(exactWidth) && exactWidth > 0 && Number.isFinite(exactDepth) && exactDepth > 0)) {
-      return [];
-    }
-  }
   const size = locationObjectCollisionSize(row);
   return [{
     id: String(row.id || row.model || '').slice(0, 64),
@@ -13179,68 +14677,9 @@ function roomStaticCollisionBlockersFromObject(row = {}) {
     z: pos.z,
     halfX: Math.max(0.2, size.width * 0.5),
     halfZ: Math.max(0.2, size.depth * 0.5),
-    rotationY: -rotationY
+    rotationY: -rotationY,
+    modelRef: String(row.model || 'authored-object')
   }];
-}
-
-function serverModelHash01(a, b = 0, c = 0) {
-  let value = Math.imul((a | 0) ^ 0x9e3779b9, 0x85ebca6b);
-  value ^= Math.imul((b | 0) + 0xc2b2ae35, 0x27d4eb2d);
-  value ^= Math.imul((c | 0) + 0x165667b1, 0x9e3779b1);
-  value ^= value >>> 15;
-  return ((value >>> 0) % 100000) / 100000;
-}
-
-const SERVER_TREE_MODEL_FILES = ['dead_tree_a.glb', 'dead_tree_b.glb', 'dead_tree_c.glb'];
-const SERVER_RUIN_MODEL_FILES = [
-  'car_wreck.glb',
-  'concrete_wall.glb',
-  'barrel_cluster.glb',
-  'tire_stack.glb',
-  'scrap_heap.glb',
-  'low_ruined_wall.glb',
-  'roadblock_barricade.glb'
-];
-
-function roomProceduralModelSpec(room, tx, tz) {
-  const type = room?.map?.[tz]?.[tx];
-  const locationId = String(roomLocation(room)?.id || room?.locationId || '');
-  if (locationId === 'settlement' && [TILE_TYPES.TREE, TILE_TYPES.ROCK, TILE_TYPES.RUIN].includes(type)) return null;
-  if (type === TILE_TYPES.TREE) {
-    const index = Math.floor(serverModelHash01(tx, tz, 77603) * SERVER_TREE_MODEL_FILES.length) % SERVER_TREE_MODEL_FILES.length;
-    return { modelRef: SERVER_TREE_MODEL_FILES[index], rotationY: serverModelHash01(tx, tz, 77601) * Math.PI * 2 };
-  }
-  if (type === TILE_TYPES.ROCK) return { modelRef: 'rubble_rock.glb', rotationY: serverModelHash01(tx, tz, 77720) * Math.PI * 2 };
-  if (type === TILE_TYPES.ORE) return { modelRef: 'ore_outcrop.glb', rotationY: serverModelHash01(tx, tz, 77720) * Math.PI * 2 };
-  if (type === TILE_TYPES.WOOD) return { modelRef: 'deadwood.glb', rotationY: serverModelHash01(tx, tz, 77780) * Math.PI * 2 };
-  if (type === TILE_TYPES.OIL) return { modelRef: 'oil_pump_jack.glb', rotationY: 0 };
-  if (type === TILE_TYPES.RUIN) {
-    const index = Math.floor(serverModelHash01(tx, tz, 77802) * SERVER_RUIN_MODEL_FILES.length) % SERVER_RUIN_MODEL_FILES.length;
-    return { modelRef: SERVER_RUIN_MODEL_FILES[index], rotationY: serverModelHash01(tx, tz, 77800) * Math.PI * 2 };
-  }
-  return null;
-}
-
-function roomStaticCollisionBlockersFromMap(room) {
-  const blockers = [];
-  for (let tz = 0; tz < MAP_H; tz++) {
-    for (let tx = 0; tx < MAP_W; tx++) {
-      const spec = roomProceduralModelSpec(room, tx, tz);
-      if (!spec) continue;
-      const pos = tileToWorld(tx, tz);
-      const modelBlockers = transformedModelBlockers(SERVER_MODEL_COLLIDERS, spec.modelRef, {
-        x: pos.x,
-        z: pos.z,
-        rotationY: spec.rotationY,
-        scaleX: 1,
-        scaleZ: 1
-      });
-      modelBlockers.forEach((blocker, partIndex) => {
-        blockers.push({ id: `tile_${tx}_${tz}:${partIndex}`, modelRef: spec.modelRef, ...blocker });
-      });
-    }
-  }
-  return blockers;
 }
 
 function roomStaticCollisionBlockersFromTrader(loc = {}) {
@@ -13304,7 +14743,7 @@ function roomStaticCollisionObjects(room) {
     }
     return room.staticCollisionObjects;
   }
-  const blockers = roomStaticCollisionBlockersFromMap(room);
+  const blockers = [];
   blockers.push(...roomStaticCollisionBlockersFromTrader(loc));
   if (Array.isArray(loc?.objects)) {
     loc.objects.forEach(row => {
@@ -13346,19 +14785,19 @@ function circleIntersectsRotatedBlocker(x, z, radius, blocker) {
 // Низкие укрытия простреливаются стоя. Список зеркалит клиентский
 // LOW_BALLISTIC_COVER_MODELS (02a_materials_static_models.js), но по именам
 // GLB-файлов, потому что серверные блокеры знают только modelRef.
-const SERVER_LOW_BALLISTIC_COVER_MODEL_FILES = new Set([
-  'crate.glb', 'cargo_stack.glb', 'storage_chest.glb', 'workshop_bench.glb', 'water_tank.glb',
-  'roadblock_barricade.glb', 'low_ruined_wall.glb', 'scrap_heap.glb', 'armory_rack.glb',
-  'cot_bed.glb', 'campfire_rest.glb', 'fence_segment.glb', 'perimeter_debris.glb',
-  'garden_patch.glb', 'ore_outcrop.glb', 'dry_bush.glb', 'deadwood.glb',
-  'tire_stack.glb', 'rust_barrel_v1.glb', 'brahmin_pen.glb', 'barrel_cluster.glb',
-  'trader_window_block.glb'
+const SERVER_LOW_BALLISTIC_COVER_MODEL_KEYS = new Set([
+  'crate', 'cargostack', 'storagechest', 'workshopbench', 'watertank',
+  'roadblockbarricade', 'lowruinedwall', 'scrapheap', 'armoryrack',
+  'cotbed', 'campfirerest', 'fencesegment', 'perimeterdebris',
+  'gardenpatch', 'oreoutcrop', 'drybush', 'deadwood',
+  'tirestack', 'rustbarrel', 'brahminpen', 'barrelcluster',
+  'traderwindowblock'
 ]);
 
 function serverBlockerIsLowBallisticCover(blocker = {}) {
-  const ref = String(blocker.modelRef || '').toLowerCase();
+  const ref = String(blocker.modelRef || '').replace(/[^a-zA-Z0-9]+/g, '').toLowerCase();
   if (!ref) return false;
-  return SERVER_LOW_BALLISTIC_COVER_MODEL_FILES.has(ref.split('/').pop());
+  return SERVER_LOW_BALLISTIC_COVER_MODEL_KEYS.has(ref);
 }
 
 function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius = 0.04, opts = {}) {
@@ -13840,8 +15279,15 @@ function authoredNpcMatchesWastelandOwner(row = {}, site = null, loc = {}) {
 
 function spawnAuthoredLocationActors(room, loc) {
   if (!room || !loc || !Array.isArray(loc.objects)) return 0;
+  const preservedQuestNpcIds = new Set();
   for (const [id, actor] of [...room.enemies.entries()]) {
-    if (actor?.authoredLocationId === loc.id) roomEnemyDelete(room, id);
+    if (actor?.authoredLocationId !== loc.id) continue;
+    const questNpcId = String(actor.kromkaNamedNpcId || '').slice(0, 96);
+    if (questNpcId && !actor.dead) {
+      preservedQuestNpcIds.add(questNpcId);
+      continue;
+    }
+    roomEnemyDelete(room, id);
   }
   const controllingSites = wastelandSitesForLocation(loc, room);
   const controllingSite = controllingSites.length === 1 ? controllingSites[0] : null;
@@ -13850,6 +15296,8 @@ function spawnAuthoredLocationActors(room, loc) {
     if (!locationDefinitionObjectIsNpc(row)) return;
     if (!authoredNpcMatchesWastelandOwner(row, controllingSite, loc)) return;
     const entity = locationDefinitionObjectEntity(row);
+    const authoredNpcId = String(entity.npcId || row.id || '').slice(0, 96);
+    if (authoredNpcId && preservedQuestNpcIds.has(authoredNpcId)) return;
     const point = normalizeLocationPoint(row, loc.spawn);
     const role = authoredNpcDefaultRole(row);
     const faction = authoredNpcDefaultFaction(row);
@@ -13871,7 +15319,7 @@ function spawnAuthoredLocationActors(room, loc) {
       modelKey: String(row.model || '').slice(0, 64),
       tags: locationDefinitionObjectTags(row),
       npcSeed: String(entity.npcId || row.id || `${loc.id}:npc_${index + 1}`).slice(0, 160),
-      npcId: String(entity.npcId || row.id || '').slice(0, 96),
+      npcId: authoredNpcId,
       routineId: String(entity.routineId || '').slice(0, 96),
       species: String(entity.species || visual || '').slice(0, 32),
       profile: String(entity.profile || '').slice(0, 64),
@@ -13944,6 +15392,185 @@ function spawnAuthoredLocationActors(room, loc) {
   return count;
 }
 
+function ensureKromkaNamedLocationActors(room, loc) {
+  if (!room || !loc || !room.enemies) return 0;
+  const guestNpcIds = String(loc.id || '') === 'cascadeRegenerator'
+    ? new Set(['nikolai_severov'])
+    : new Set();
+  const residents = (KROMKA_NPC_CATALOG.npcs || [])
+    .filter(npc => String(npc?.homeLocationId || '') === String(loc.id || '') || guestNpcIds.has(String(npc?.id || '')));
+  let created = 0;
+  residents.forEach((npc, index) => {
+    const npcId = String(npc.id || '').slice(0, 96);
+    if (!npcId) return;
+    const questIds = kromkaQuestIdsForNpc(npcId);
+    let actor = [...room.enemies.values()].find(candidate => !candidate?.dead && (
+      String(candidate?.npcId || '') === npcId
+      || String(candidate?.authoredLocationObjectId || '') === npcId
+      || String(candidate?.kromkaNamedNpcId || '') === npcId
+    ));
+    if (!actor) {
+      const spawn = loc.spawn || loc.entry || { tx: 19, tz: 19 };
+      const dialoguePosition = npc.dialoguePosition && typeof npc.dialoguePosition === 'object'
+        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0))
+        : null;
+      const tx = clamp(dialoguePosition?.tx
+        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, MAP_W - 3);
+      const tz = clamp(dialoguePosition?.tz
+        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, MAP_H - 3);
+      const reachableTile = findRoomReachableSpawnTile(room, spawn.tx ?? 19, spawn.tz ?? 19, tx, tz, {
+        radius: 0.48,
+        minEnemyDistance: 0.8,
+        minPlayerDistance: 0,
+        requireOriginLineOfSight: true,
+        maxOriginDistance: 5.2
+      });
+      if (!reachableTile) return;
+      const faction = canonicalKromkaFactionId(npc.factionId || '') || 'neutral';
+      const merchant = npcId === 'irena_versta_belova' || npcId === 'sofia_sych';
+      actor = spawnServerEnemy(room, {
+        force: true,
+        allowSafeLocation: true,
+        tx: reachableTile.tx,
+        tz: reachableTile.tz,
+        maxSpawnSearchRadius: 0,
+        minEnemyDistance: 0.8,
+        minPlayerDistance: 0,
+        typeIndex: 0,
+        visual: merchant ? 'caravanMerchant' : 'wastelandSettler',
+        modelKey: merchant ? 'caravanMerchant' : 'wastelandSettler',
+        tags: ['npc', 'living', 'friendly', 'unique', 'quest_giver', faction],
+        npcSeed: npcId,
+        npcId,
+        name: String(npc.displayName || npcId).slice(0, 96),
+        role: merchant ? 'merchant' : 'civilian',
+        faction,
+        hostileToPlayer: false,
+        stationary: true,
+        canDialogue: true,
+        equipment: merchant ? { weapon: 'pistol', armor: 'leather', boots: 'boots' } : { weapon: 'fists', armor: 'leather', boots: 'boots' },
+        dropEquipment: false,
+        loot: []
+      });
+      if (!actor) return;
+      actor.authoredLocationId = String(loc.id || '');
+      actor.authoredLocationObjectId = `kromka_named:${npcId}`;
+      created++;
+    }
+    actor.kromkaNamedNpcId = npcId;
+    actor.kromkaProjection = guestNpcIds.has(npcId);
+    actor.kromkaQuestIds = questIds;
+    actor.kromkaRoleDescription = String(npc.role || '').slice(0, 140);
+    actor.canDialogue = true;
+    actor.hostileToPlayer = false;
+  });
+  return created;
+}
+
+function ensureKromkaOnboardingLocationActors(room, loc) {
+  if (!room || !loc || !room.enemies) return 0;
+  const residents = (Array.isArray(KROMKA_ONBOARDING_CATALOG.npcs)
+    ? KROMKA_ONBOARDING_CATALOG.npcs : [])
+    .filter(npc => String(npc?.locationId || '') === String(loc.id || ''));
+  let changed = 0;
+  residents.forEach(npc => {
+    const npcId = String(npc?.id || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+    if (!npcId) return;
+    const targetX = Number(npc.x || 0);
+    const targetZ = Number(npc.z || 0);
+    let actor = [...room.enemies.values()].find(candidate => (
+      String(candidate?.kromkaOnboardingNpcId || '') === npcId
+    ));
+    if (actor && (actor.dead || Number(actor.hp || 0) <= 0)) {
+      roomEnemyDelete(room, actor.id);
+      actor = null;
+    }
+    if (!actor) {
+      const point = worldToTile(targetX, targetZ);
+      actor = spawnServerEnemy(room, {
+        force: true,
+        allowSafeLocation: true,
+        tx: clamp(point.tx, 2, MAP_W - 3),
+        tz: clamp(point.tz, 2, MAP_H - 3),
+        maxSpawnSearchRadius: 4,
+        minEnemyDistance: 0.65,
+        minPlayerDistance: 0,
+        typeIndex: 0,
+        visual: 'wastelandSettler',
+        modelKey: 'wastelandSettler',
+        tags: ['npc', 'living', 'friendly', 'unique', 'quest_giver', 'onboarding'],
+        npcSeed: `kromka_onboarding:${npcId}`,
+        npcId,
+        name: String(npc.displayName || npcId).slice(0, 96),
+        role: 'civilian',
+        faction: 'neutral',
+        hostileToPlayer: false,
+        stationary: true,
+        canDialogue: true,
+        equipment: { weapon: 'fists', armor: 'leather', boots: 'boots' },
+        dropEquipment: false,
+        loot: []
+      });
+      if (!actor) return;
+      if (npcId === 'yard_casualty_shurik') {
+        actor.kromkaOnboardingWounded = true;
+        actor.hp = Math.max(1, Number(actor.maxHp || 100) - 40);
+      }
+      changed++;
+    }
+    actor.kromkaOnboardingNpcId = npcId;
+    actor.kromkaOnboardingProtected = true;
+    actor.kromkaOnboardingAnchorX = targetX;
+    actor.kromkaOnboardingAnchorZ = targetZ;
+    actor.kromkaRoleDescription = String(npc.role || '').slice(0, 140);
+    actor.canDialogue = true;
+    actor.hostileToPlayer = false;
+    actor.stationary = true;
+    actor.dead = false;
+    if (!actor.kromkaOnboardingWounded) actor.hp = Math.max(1, Number(actor.maxHp || actor.hp || 100));
+    actor.homeX = targetX;
+    actor.homeZ = targetZ;
+
+    // A preferred spawn tile may be shifted when an encounter actor briefly
+    // occupies it. Story NPCs are permanent landmarks, so restore their exact
+    // authored position as soon as it is free. This is especially important
+    // for Asya: her anchor is the safe side of the locked northern exit.
+    const displaced = Math.hypot(Number(actor.x || 0) - targetX, Number(actor.z || 0) - targetZ) > 0.05;
+    if (displaced && isEnemyStepOpen(room, actor, targetX, targetZ, 0.32)) {
+      actor.x = targetX;
+      actor.z = targetZ;
+      actor.vx = 0;
+      actor.vz = 0;
+      actor.wanderTimer = 1.5;
+      invalidateEnemyPath(actor);
+      room.enemySpatialIndex = null;
+      changed++;
+    }
+  });
+  if (loc.id === 'tutorialCaravanYard' && ![...room.enemies.values()].some(actor => actor.trainingTarget)) {
+    const point = worldToTile(-10, 22);
+    const dummy = spawnServerEnemy(room, {
+      force: true, allowSafeLocation: true, tx: point.tx, tz: point.tz,
+      minPlayerDistance: 0, minEnemyDistance: 0, requirePreferredSpawn: true,
+      typeIndex: 0, name: 'Учебная мишень', role: 'trainingTarget', faction: 'neutral',
+      stationary: true, hostileToPlayer: false, canDialogue: false,
+      equipment: { weapon: 'fists' }, dropEquipment: false, loot: []
+    });
+    if (dummy) {
+      Object.assign(dummy, { trainingTarget: true, x: -10, z: 22, homeX: -10, homeZ: 22,
+        visual: 'trainingTarget', modelKey: 'trainingTarget', species: 'trainingTarget',
+        maxHp: 100, hp: 100, inventory: [], npcProfile: null, npcId: '', scale: 1 });
+      room.enemySpatialIndex = null;
+      changed++;
+    }
+  }
+  return changed;
+}
+
+function serverNpcIsKromkaOnboardingProtected(actor = {}) {
+  return actor?.kromkaOnboardingProtected === true || !!String(actor?.kromkaOnboardingNpcId || '');
+}
+
 function wastelandSitesForLocation(loc = {}, room = null) {
   const locId = String(loc?.id || '').trim();
   if (!locId) return [];
@@ -13988,7 +15615,8 @@ function wastelandLocationOccupantKey(loc = {}, room = null) {
       const workers = Array.isArray(site.workers)
         ? site.workers.map(row => `${row.role || ''}:${Math.round(Number(row.count || 0))}`).join(',')
         : '';
-      return `${site.id || ''}:${serverCombatFactionGroup(site.owner || 'neutral')}:${workers}`;
+      const scene = settlementSceneVariant(site, {}, WASTELAND_SIM.state()?.worldHour || 0);
+      return `${site.id || ''}:${serverCombatFactionGroup(site.owner || 'neutral')}:${workers}:${scene?.revisionKey || 'stable'}`;
     })
     .join('|');
 }
@@ -14559,6 +16187,8 @@ function npcSocialLookTarget(room, enemy) {
 
 function npcRoutineCombatActive(room, enemy) {
   if (!enemy || enemy.dead) return false;
+  if (enemy.kromkaProjection === true) return false;
+  if (String(enemy.kromkaNamedNpcId || '') && enemy.hostileToPlayer === false) return false;
   if (enemy.targetId || enemy.factionTargetId) return true;
   if (['combat', 'attack', 'chase', 'pressure', 'tactical', 'reload', 'retreat', 'stagger']
     .includes(String(enemy.aiState || '').toLowerCase())) return true;
@@ -14739,6 +16369,10 @@ function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.no
 
 function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   if (!room || !enemy || enemy.dead || serverNpcIsNaturalCreature(enemy, enemy)) return false;
+  // Named quest givers must remain at their authoritative conversation point.
+  // A generated daily routine can otherwise place them behind authored walls,
+  // making an active quest impossible to continue or turn in.
+  if (String(enemy.kromkaNamedNpcId || '')) return false;
   if (!enemy.npcProfile || typeof enemy.npcProfile !== 'object') {
     const seed = `${loc?.id || room.locationId || 'room'}:${enemy.name || 'npc'}:${enemy.role || ''}:${enemy.faction || ''}:${Math.round(Number(enemy.homeX || enemy.x || 0) * 10)}:${Math.round(Number(enemy.homeZ || enemy.z || 0) * 10)}`;
     enemy.npcProfile = createServerNpcProfile(seed, { role: enemy.role, faction: enemy.faction }, loc);
@@ -15046,12 +16680,24 @@ function spawnWastelandSiteWorkers(room, loc) {
   const maxTotal = loc.safe ? 14 : 10;
   sites.forEach((site, siteIndex) => {
     if (count >= maxTotal) return;
-    const workers = Array.isArray(site.workers) && site.workers.length ? site.workers : [];
+    const authoredWorkers = Array.isArray(site.workers) && site.workers.length ? site.workers : [];
+    const sceneVariant = settlementSceneVariant(site, {}, WASTELAND_SIM.state()?.worldHour || 0);
+    const sceneWorkers = (sceneVariant?.actors || []).map(row => ({
+      ...row,
+      sceneVariant: true,
+      count: row.count,
+      label: row.label || row.role
+    }));
+    const workers = [...authoredWorkers, ...sceneWorkers];
     workers.forEach((worker, workerIndex) => {
       if (count >= maxTotal) return;
       const role = String(worker.role || '').toLowerCase() || 'worker';
-      const laborWorker = wastelandSiteWorkerDoesLabor(role, site);
-      const spawnCount = role === 'guard'
+      const laborWorker = worker.sceneVariant
+        ? worker.activity === 'repair'
+        : wastelandSiteWorkerDoesLabor(role, site);
+      const spawnCount = worker.sceneVariant
+        ? Math.min(6, Math.max(1, Math.round(Number(worker.count || 1))))
+        : role === 'guard'
         ? Math.min(3, Math.max(1, Math.round(Number(worker.count || 1))))
         : role === 'worker'
           ? Math.min(3, Math.max(1, Math.round(Number(worker.count || 1) / 3)))
@@ -15103,6 +16749,8 @@ function spawnWastelandSiteWorkers(room, loc) {
         actor.wastelandOwnerLabel = ownerLabel;
         actor.wastelandWorkerRole = role;
         actor.wastelandWorkerLabor = laborWorker;
+        actor.wastelandSceneActivity = String(worker.activity || '').slice(0, 32);
+        actor.wastelandSceneVariant = !!worker.sceneVariant;
         actor.traderId = `${site.id || loc.id}_${role}`.slice(0, 64);
         actor.traderProfile = String(trade.traderProfile || role).slice(0, 64);
         actor.dialogueProfile = String(trade.dialogueProfile || role || '').slice(0, 64);
@@ -15157,6 +16805,8 @@ function buildAuthoredRoomWorld(room, loc) {
     spawnWastelandHostileOccupants(room, loc);
   } else {
     spawnAuthoredLocationActors(room, loc);
+    ensureKromkaNamedLocationActors(room, loc);
+    ensureKromkaOnboardingLocationActors(room, loc);
     spawnWastelandSiteWorkers(room, loc);
   }
   return true;
@@ -15483,9 +17133,11 @@ function publicEnemy(e, viewer = null) {
   const speechText = speechActive ? String(e.npcSpeechText || '').trim().slice(0, 96) : '';
   const modelKey = serverEnemyModelKeyForIdentity(e, e.visual || e.species || '');
   if (e.modelKey !== modelKey) e.modelKey = modelKey;
-  return {
+  return transformKromkaPublicValue({
     id: e.id,
     typeIndex: e.typeIndex,
+    creatureTypeId: String(e.creatureTypeId || '').slice(0, 32),
+    classification: String(e.classification || '').slice(0, 32),
     name: e.name,
     visual: String(e.visual || '').slice(0, 32),
     modelKey,
@@ -15504,6 +17156,8 @@ function publicEnemy(e, viewer = null) {
     scale: Number(Number(e.scale || 1).toFixed(3)),
     xp: Math.max(0, Math.round(Number(e.xp || 0))),
     atk: Math.max(0, Math.round(Number(e.atk || 0))),
+    combatProtection: serverPublicCombatProtection(e, true),
+    primaryAttackId: String(e.attackProfile?.[0]?.id || '').slice(0, 48),
     variantId: e.variantId || 'normal',
     variantName: e.variantName || '',
     faction: e.faction || 'wild',
@@ -15554,6 +17208,15 @@ function publicEnemy(e, viewer = null) {
     dialogueProfile: naturalCreature ? '' : String(e.dialogueProfile || '').slice(0, 64),
     personalTrade: !naturalCreature && e.personalTrade === true,
     traderQuests: naturalCreature ? [] : (Array.isArray(e.traderQuests) ? e.traderQuests.map(id => String(id || '').slice(0, 64)).filter(Boolean) : []),
+    kromkaNamedNpcId: naturalCreature ? '' : String(e.kromkaNamedNpcId || '').slice(0, 96),
+    kromkaOnboardingNpcId: naturalCreature ? '' : String(e.kromkaOnboardingNpcId || '').slice(0, 96),
+    kromkaOnboardingProtected: !naturalCreature && serverNpcIsKromkaOnboardingProtected(e),
+    trainingTarget: e.trainingTarget === true,
+    kromkaProjection: !naturalCreature && e.kromkaProjection === true,
+    kromkaRoleDescription: naturalCreature ? '' : String(e.kromkaRoleDescription || '').slice(0, 140),
+    kromkaQuestIds: naturalCreature ? [] : (Array.isArray(e.kromkaQuestIds)
+      ? e.kromkaQuestIds.map(id => String(id || '').slice(0, 96)).filter(Boolean)
+      : []),
     lookX: e.lookX !== null && e.lookX !== undefined && Number.isFinite(Number(e.lookX)) ? Number(Number(e.lookX).toFixed(3)) : null,
     lookZ: e.lookZ !== null && e.lookZ !== undefined && Number.isFinite(Number(e.lookZ)) ? Number(Number(e.lookZ).toFixed(3)) : null,
     traderStock: naturalCreature ? [] : (Array.isArray(e.traderStock) ? e.traderStock.map(row => ({
@@ -15577,7 +17240,7 @@ function publicEnemy(e, viewer = null) {
     dead: !!e.dead,
     loot: e.dead ? (e.loot || []).map(x => ({ id: x.id, qty: x.qty })) : [],
     looted: !!e.looted
-  };
+  });
 }
 
 function publicEnemySnapshotForViewer(enemy, viewer = null, sharedSnapshot = null) {
@@ -15875,6 +17538,9 @@ function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
 }
 
 function publicGroundItem(g) {
+  const itemRuntimeRecords = (Array.isArray(g?.itemRuntimeRecords) ? g.itemRuntimeRecords : [])
+    .map(record => sanitizeServerWeaponRuntimeRecord(record, g?.itemId || ''))
+    .filter(Boolean);
   return {
     id: g.id,
     itemId: g.itemId,
@@ -15882,6 +17548,7 @@ function publicGroundItem(g) {
     x: Number(Number(g.x || 0).toFixed(2)),
     z: Number(Number(g.z || 0).toFixed(2)),
     droppedBy: g.droppedBy || '',
+    itemRuntimeRecords,
     createdAt: Number(g.createdAt || Date.now())
   };
 }
@@ -16020,23 +17687,686 @@ function cleanupGroundItems(room, now = Date.now()) {
   }
   return changed;
 }
+
+function serverCurrentShiftState(now = Date.now(), player = null) {
+  const shift = KROMKA_SHIFT_CYCLE.state(now);
+  const locationId = String(player?.locationId || '');
+  const safeShelters = new Set(KROMKA_ARTIFACT_CATALOG.shift?.safeShelterLocationIds || []);
+  const residentBonuses = player ? serverResidentBonusesForPlayer(player, false) : {};
+  const clanBenefits = player ? serverClanBaseBenefitsForPlayer(player) : {};
+  const warningLeadSeconds = Math.max(
+    Math.max(0, Math.floor(Number(residentBonuses.shiftWarningLeadSeconds || 0))),
+    Math.max(0, Math.floor(Number(clanBenefits.earlyShiftForecastMinutes || 0) * 60))
+  );
+  const earlyWarningAt = Number(shift.nextShiftAt || 0) - Number(KROMKA_SHIFT_CYCLE.warningMs || 0) - warningLeadSeconds * 1000;
+  return {
+    ...shift,
+    warningLeadSeconds,
+    earlyWarning: warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt,
+    nearestShelterHint: residentBonuses.nearestShelterHint === true,
+    resourceMarksPerShift: Math.max(0, Math.floor(Number(residentBonuses.resourceMarksPerShift || 0))),
+    safeRoute: residentBonuses.safeRoute === true,
+    clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
+    sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true)
+  };
+}
+
+function serverEnsureRoomArtifacts(room, now = Date.now()) {
+  if (!room) return null;
+  const location = kromkaLocationLore(room.locationId) || { id: room.locationId, macroRegion: 'default', anomalyFields: [] };
+  const shift = KROMKA_SHIFT_CYCLE.state(now);
+  const opportunity = typeof WASTELAND_SIM.artifactOpportunityForLocation === 'function'
+    ? WASTELAND_SIM.artifactOpportunityForLocation(location.id || room.locationId, shift.shiftId)
+    : null;
+  const state = reconcileArtifactSpawns(
+    room,
+    location,
+    shift,
+    KROMKA_ARTIFACT_CATALOG,
+    location.anomalyFields || [],
+    now,
+    { causalArtifactRequired: true, opportunity }
+  );
+  for (const artifact of state?.artifacts || []) {
+    if (KROMKA_CLAIMED_ARTIFACT_IDS.has(String(artifact?.id || ''))) artifact.pickedUp = true;
+  }
+  return state;
+}
+
+function emitServerArtifactState(player = {}, reason = 'update') {
+  if (!player?.id || !player.roomId) return null;
+  const room = rooms.get(player.roomId);
+  if (!room) return null;
+  serverEnsureRoomArtifacts(room, Date.now());
+  const payload = {
+    roomId: room.id,
+    locationId: room.locationId,
+    reason,
+    shift: serverCurrentShiftState(Date.now(), player),
+    detector: KROMKA_ARTIFACT_INDEXES.detectors[String(player.equipment?.detector || '')] || null,
+    artifacts: publicArtifactsForPlayer(room, player, KROMKA_ARTIFACT_CATALOG),
+    artifactRuntime: publicArtifactRuntime(player),
+    t: Date.now()
+  };
+  io.to(player.id).emit('artifactState', payload);
+  return payload;
+}
+
+function serverPersonalBaseForAccount(accountId = '', create = true) {
+  const id = String(accountId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  if (!id) return null;
+  const current = savesDb.personalBases[id];
+  if (!current && !create) return null;
+  const normalized = sanitizePersonalBase(current || {}, id, KROMKA_BASE_BUILDING_CATALOG, Date.now());
+  if (!normalized.rights.granted) {
+    // Recover accounts charged by the old detached-reference bug. Only trusted
+    // persisted quest completion is evidence of payment; never charge again.
+    const completion = Object.values(savesDb.characters?.[id] || {})
+      .map(character => character?.state?.kromkaQuestState?.completed?.personal_aktov_air_rights)
+      .find(row => row && (KROMKA_BASE_BUILDING_CATALOG.rightsQuest?.outcomes || []).some(outcome => outcome.id === row.outcomeId));
+    if (completion) normalized.rights = {
+      granted: true, outcomeId: completion.outcomeId, questId: 'personal_aktov_air_rights',
+      grantedAt: Math.max(0, Number(completion.completedAt || 0))
+    };
+  }
+  // Nested bonus/state reads must not detach a transaction's base reference.
+  const base = current && typeof current === 'object' ? Object.assign(current, normalized) : normalized;
+  base.inventoryRuntime = sanitizeServerWeaponRuntimeStore(base.inventoryRuntime || {});
+  sanitizeResidentState(base, KROMKA_BASE_RESIDENT_CATALOG);
+  serverApplyResidentPassiveProduction(base, Date.now());
+  savesDb.personalBases[id] = base;
+  return base;
+}
+
+function serverApplyResidentPassiveProduction(base = {}, now = Date.now()) {
+  const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+  const scrapPerHour = Math.max(0, Number(bonuses.scrapPerHour || 0));
+  const lastAt = Math.max(0, Number(base.lastResidentProductionAt || 0));
+  if (!lastAt) {
+    base.lastResidentProductionAt = now;
+    return 0;
+  }
+  if (scrapPerHour <= 0) {
+    base.lastResidentProductionAt = now;
+    return 0;
+  }
+  const elapsed = Math.min(72 * 3600000, Math.max(0, now - lastAt));
+  const produced = Math.floor(elapsed / 3600000 * scrapPerHour);
+  if (produced <= 0) return 0;
+  base.inventory.scrap = Math.min(serverItemStackLimit('scrap'), Number(base.inventory.scrap || 0) + produced);
+  base.lastResidentProductionAt = lastAt + produced / scrapPerHour * 3600000;
+  base.updatedAt = now;
+  return produced;
+}
+
+function serverResidentBonusesForPlayer(player = {}, requireOwnBase = false) {
+  const base = serverPersonalBaseForAccount(player?.userId || '', false);
+  if (!base?.rights?.granted) return {};
+  if (requireOwnBase && (player.locationId !== 'personalBase' || serverPersonalBaseHostAccountId(player) !== String(player.userId || ''))) return {};
+  return calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+}
+
+function serverPersonalBaseHostAccountId(player = {}) {
+  const roomId = String(player?.roomId || '');
+  if (player?.locationId === 'personalBase' && roomId.startsWith('personalBase#')) {
+    return roomId.slice('personalBase#'.length).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  }
+  return String(player?.userId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+}
+
+function serverPersonalBaseAccess(base = {}, player = {}) {
+  const isOwner = String(base?.accountId || '') === String(player?.userId || '');
+  const permission = base?.permissions?.[String(player?.characterId || '')] || {};
+  return {
+    isOwner,
+    visit: isOwner || permission.visit === true,
+    build: isOwner || permission.build === true,
+    storage: isOwner || permission.storage === true,
+    stations: isOwner || permission.stations === true
+  };
+}
+
+function publicServerPersonalBase(player = {}, accountId = '') {
+  const hostAccountId = accountId || serverPersonalBaseHostAccountId(player);
+  const base = serverPersonalBaseForAccount(hostAccountId, false);
+  if (!base) return { rights: { granted: false, questId: 'personal_aktov_air_rights', outcomeId: '' }, available: false };
+  const access = serverPersonalBaseAccess(base, player);
+  const residentBonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+  const storageCapacity = Math.floor(500 * (1 + Math.max(0, Number(residentBonuses.storageCapacityPct || 0))));
+  const storageUsed = Object.values(base.inventory || {}).reduce((sum, value) => sum + Math.max(0, Number(value || 0)), 0);
+  return {
+    available: base.rights?.granted === true,
+    ownerAccountId: String(base.accountId || ''),
+    isOwner: access.isOwner,
+    access,
+    storageCapacity,
+    storageUsed: Math.floor(storageUsed),
+    ...publicPersonalBase(base, KROMKA_BASE_BUILDING_CATALOG, Date.now()),
+    residentPopulation: publicBaseResidents(base, KROMKA_BASE_RESIDENT_CATALOG, KROMKA_BASE_BUILDING_CATALOG),
+    catalog: {
+      tiers: KROMKA_BASE_BUILDING_CATALOG.tiers || [],
+      objects: KROMKA_BASE_BUILDING_CATALOG.objects || [],
+      jobs: KROMKA_BASE_BUILDING_CATALOG.jobs || [],
+      rightsQuest: KROMKA_BASE_BUILDING_CATALOG.rightsQuest || {}
+    },
+    permissions: access.isOwner ? { ...(base.permissions || {}) } : {}
+  };
+}
+
+function emitServerPersonalBaseState(player = {}, reason = 'update') {
+  if (!player?.id) return null;
+  const state = { reason, state: publicServerPersonalBase(player), t: Date.now() };
+  io.to(player.id).emit('personalBaseState', state);
+  return state;
+}
+
+function serverPlayerCanRetreatToBase(player = {}, now = Date.now()) {
+  if (!player || player.dead || player.downed || player.onGlobalMap || Number(player.hp || 0) <= 0) return false;
+  if (now - Number(player.lastServerDamageAt || 0) < 10000) return false;
+  if (now - Number(player.serverCombat?.lastAttackAt || 0) < 10000) return false;
+  const room = rooms.get(player.roomId);
+  const location = roomLocation(room);
+  return !!room && location?.safe === true && !room.worldActivity?.active;
+}
+
+function serverPlayerHasProtectedClanRally(player = {}, room = null, now = Date.now()) {
+  if (!player || Number(player.clanRallyProtectionUntil || 0) <= Number(now)) return false;
+  const currentRoom = room || rooms.get(String(player.roomId || ''));
+  if (!currentRoom) return false;
+  const context = serverClanBaseContextForPlayer(player, currentRoom.locationId || player.locationId || '');
+  return context?.profile?.benefit?.protectedRally === true;
+}
+
+function serverConsumeCost(player = {}, cost = {}) {
+  if (!Object.entries(cost || {}).every(([id, qty]) => serverInventoryQty(player.inventory, id) >= Number(qty || 0))) return false;
+  for (const [id, qty] of Object.entries(cost || {})) serverInventoryRemove(player, id, qty);
+  return true;
+}
+
+function serverGrantItems(player = {}, items = {}) {
+  for (const [id, qty] of Object.entries(items || {})) serverInventoryAdd(player, id, qty);
+}
+
+function serverKromkaQuestById(questId = '') {
+  return [
+    ...(KROMKA_QUEST_CATALOG.campaign || []),
+    ...(KROMKA_QUEST_CATALOG.factionQuests || []),
+    ...(KROMKA_QUEST_CATALOG.mechanicQuests || []),
+    ...(KROMKA_QUEST_CATALOG.personalQuests || [])
+  ].find(row => row.id === String(questId || '')) || null;
+}
+
+function serverKromkaQuestActor(player = {}, enemyId = '', questId = '') {
+  const room = rooms.get(String(player.roomId || ''));
+  const actor = room?.enemies?.get(String(enemyId || ''));
+  if (!actor || actor.dead || Number(actor.hp || 0) <= 0) return { ok: false, error: 'Заказчик не найден рядом.' };
+  const distance = Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0));
+  if (distance > 6.2) return { ok: false, error: 'Подойдите ближе к заказчику.' };
+  if (!serverInteractionHasLineOfSight(room, player, actor)) return { ok: false, error: 'Заказчик находится за препятствием.' };
+  const questIds = Array.isArray(actor.kromkaQuestIds) ? actor.kromkaQuestIds.map(String) : [];
+  if (!questIds.includes(String(questId || ''))) return { ok: false, error: 'Этот персонаж не ведёт выбранное дело.' };
+  if (String(actor.dialoguePlayerId || '') !== String(player.id || '') || Number(actor.dialogueFocusUntil || 0) <= Date.now()) {
+    return { ok: false, error: 'Сначала начните диалог с заказчиком.' };
+  }
+  return { ok: true, actor };
+}
+
+function serverKromkaOnboardingActor(player = {}, enemyId = '', npcId = '') {
+  const room = rooms.get(String(player.roomId || ''));
+  if (room) ensureKromkaOnboardingLocationActors(room, roomLocation(room));
+  const actor = room?.enemies?.get(String(enemyId || ''));
+  if (!actor || actor.dead || Number(actor.hp || 0) <= 0) {
+    return { ok: false, error: 'Нужный персонаж не найден рядом.' };
+  }
+  if (String(actor.kromkaOnboardingNpcId || '') !== String(npcId || '')) {
+    return { ok: false, error: 'Этот персонаж не ведёт текущий этап.' };
+  }
+  const distance = Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0));
+  if (distance > 6.2) return { ok: false, error: 'Подойдите ближе и начните разговор.' };
+  if (!serverInteractionHasLineOfSight(room, player, actor)) {
+    return { ok: false, error: 'Собеседник находится за препятствием.' };
+  }
+  if (String(actor.dialoguePlayerId || '') !== String(player.id || '') || Number(actor.dialogueFocusUntil || 0) <= Date.now()) {
+    return { ok: false, error: 'Сначала начните диалог с этим персонажем.' };
+  }
+  return { ok: true, actor };
+}
+
+function serverRecordKromkaQuestEvent(player = {}, action = '', context = {}) {
+  const objective = String(action || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+  if (!player?.id || !objective) return [];
+  player.kromkaQuestState = sanitizeKromkaQuestState(player.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+  const progressed = [];
+  for (const questId of Object.keys(player.kromkaQuestState.active || {})) {
+    const quest = serverKromkaQuestById(questId);
+    const active = player.kromkaQuestState.active[questId];
+    if (!quest || active?.awaitingOutcome) continue;
+    const expected = String(quest.objectives?.[Number(active.objectiveIndex || 0)] || '');
+    if (expected !== objective) continue;
+    const binding = KROMKA_QUEST_CATALOG.objectiveBindings?.[objective] || {};
+    if (!kromkaObjectiveEventMatches(binding, context)) continue;
+    const required = Math.max(1, Math.min(16, Math.floor(Number(binding.required || 1))));
+    if (required > 1) {
+      const token = String(context.progressToken || context.objectId || context.actorId || '');
+      const partial = recordKromkaQuestObjectiveProgress(
+        player.kromkaQuestState,
+        questId,
+        objective,
+        token,
+        required,
+        KROMKA_QUEST_CATALOG
+      );
+      if (!partial.ok) continue;
+      player.kromkaQuestState = partial.state;
+      if (!partial.complete) {
+        serverApplyKromkaQuestResult(player, partial, quest);
+        progressed.push({
+          questId,
+          objective,
+          partial: true,
+          duplicate: partial.duplicate === true,
+          current: partial.current,
+          target: partial.target,
+          completed: false,
+          awaitingOutcome: false
+        });
+        continue;
+      }
+    }
+    const result = advanceKromkaQuest(player.kromkaQuestState, questId, {
+      action: objective,
+      authoritative: true,
+      locationId: String(context.locationId || player.locationId || ''),
+      actorId: String(context.actorId || ''),
+      objectId: String(context.objectId || ''),
+      source: String(context.source || 'server')
+    }, KROMKA_QUEST_CATALOG, Date.now());
+    if (!result.ok) continue;
+    serverApplyKromkaQuestResult(player, result, quest);
+    progressed.push({
+      questId,
+      objective,
+      current: required,
+      target: required,
+      completed: result.completed === true,
+      awaitingOutcome: result.awaitingOutcome === true,
+      awaitingTurnIn: result.awaitingTurnIn === true
+    });
+  }
+  return progressed;
+}
+
+function serverRecordKromkaQuestEvents(player = {}, actions = [], context = {}) {
+  const progressed = [];
+  for (const action of Array.isArray(actions) ? actions : []) {
+    progressed.push(...serverRecordKromkaQuestEvent(player, action, context));
+  }
+  return progressed;
+}
+
+function serverRecordKromkaLocationArrival(player = {}, locationId = '') {
+  const id = normalizeLocationId(locationId || player.locationId || '');
+  return serverRecordKromkaQuestEvents(player, KROMKA_BOUND_LOCATION_OBJECTIVES[id] || [], {
+    locationId: id,
+    progressToken: id,
+    source: 'location_arrival'
+  });
+}
+
+function serverRecordKromkaNpcDialogue(player = {}, actor = {}) {
+  const npcId = String(actor.kromkaNamedNpcId || '');
+  const progressed = serverRecordKromkaQuestEvents(player, KROMKA_BOUND_DIALOGUE_OBJECTIVES[npcId] || [], {
+    locationId: player.locationId,
+    actorId: npcId,
+    source: 'npc_dialogue'
+  });
+  const allies = KROMKA_QUEST_CATALOG.objectiveBindings?.secure_two_allies || {};
+  if (String(allies.type || '') === 'allies' && (allies.npcIds || []).map(String).includes(npcId)) {
+    progressed.push(...serverRecordKromkaQuestEvent(player, 'secure_two_allies', {
+      locationId: player.locationId,
+      actorId: npcId,
+      progressToken: npcId,
+      source: 'npc_dialogue'
+    }));
+  }
+  return progressed;
+}
+
+function serverKromkaQuestObject(player = {}, objectId = '') {
+  const room = rooms.get(String(player.roomId || ''));
+  const loc = roomLocation(room);
+  const id = String(objectId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
+  const row = id && Array.isArray(loc?.objects)
+    ? loc.objects.find(entry => String(entry?.id || '') === id)
+    : null;
+  const interactive = row?.interactive && typeof row.interactive === 'object' ? row.interactive : {};
+  const objective = String(interactive.questObjective || row?.questObjective || '')
+    .replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+  if (!row || !objective) return { ok: false, error: 'Этот объект не связан с активным заданием.' };
+  const point = serverLocationObjectWorldPoint(row);
+  if (!point || Math.hypot(Number(player.x || 0) - point.x, Number(player.z || 0) - point.z) > 4.6) {
+    return { ok: false, error: 'Подойдите ближе к объекту задания.' };
+  }
+  if (!serverInteractionHasLineOfSight(room, player, point)) {
+    return { ok: false, error: 'Объект задания находится за препятствием.' };
+  }
+  const activeQuestId = Object.keys(player.kromkaQuestState?.active || {}).find(questId => {
+    const quest = serverKromkaQuestById(questId);
+    const active = player.kromkaQuestState.active[questId];
+    return String(quest?.objectives?.[Number(active?.objectiveIndex || 0)] || '') === objective;
+  });
+  if (!activeQuestId) return { ok: false, error: 'Сейчас здесь нечего делать по заданию.' };
+  const binding = KROMKA_QUEST_CATALOG.objectiveBindings?.[objective];
+  if (binding && ['object', 'objects'].includes(String(binding.type || ''))) {
+    const validLocation = String(binding.locationId || '') === String(loc?.id || '');
+    const validObject = (Array.isArray(binding.objectIds) ? binding.objectIds : []).map(String).includes(id);
+    if (!validLocation || !validObject) return { ok: false, error: 'This object is not bound to the active quest objective.' };
+  }
+  return { ok: true, row, objective, activeQuestId };
+}
+
+function serverApplyKromkaQuestResult(player = {}, result = {}, quest = null) {
+  if (!result?.ok) return result;
+  player.kromkaQuestState = result.state;
+  const reward = result.reward;
+  if (reward) {
+    if (Number(reward.silver || 0) > 0) serverInventoryAdd(player, 'silver', Math.floor(Number(reward.silver)));
+    serverGrantItems(player, reward.items || {});
+    const factionId = canonicalKromkaFactionId(quest?.factionId || '');
+    if (factionId && Number(reward.reputation || 0) !== 0) {
+      player.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
+      player.worldFactionReputation[factionId] = clamp(Number(player.worldFactionReputation[factionId] || 0) + Number(reward.reputation), -1000, 9999);
+    }
+    if (reward.unlock === 'magnetic_bolt') player.magneticBoltUnlocked = true;
+    if (reward.unlock === 'personal_base') {
+      const base = serverPersonalBaseForAccount(player.userId, true);
+      if (base && base.rights?.granted !== true) {
+        base.rights = {
+          granted: true,
+          outcomeId: String(result.outcomeId || ''),
+          questId: String(quest?.id || 'personal_aktov_air_rights'),
+          grantedAt: Date.now()
+        };
+        base.updatedAt = Date.now();
+        persistSaves();
+      }
+    }
+  }
+  persistActivePlayerState(player);
+  emitAuthoritativePlayerState(player, { reason: 'kromkaQuest' });
+  return result;
+}
+
+function serverKromkaClanForPlayer(player = {}) {
+  const social = sanitizeServerSocialState(player.socialState || {});
+  if (!social.clan?.id || !social.clan?.name) return null;
+  const clan = serverEnsureKromkaClan(savesDb.kromkaClans, social.clan, player, Date.now());
+  if (clan) clan.storageRuntime = sanitizeServerWeaponRuntimeStore(clan.storageRuntime || {});
+  return clan;
+}
+
+function serverPublicKromkaClanState(player = {}) {
+  const now = Date.now();
+  const released = serverReleaseInactiveClanBases(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, now);
+  if (released.length > 0) persistSaves();
+  const clan = serverKromkaClanForPlayer(player);
+  const publicState = publicKromkaClanState(savesDb.kromkaClans, clan?.id || '', KROMKA_CLAN_BASE_CATALOG);
+  publicState.bases = (publicState.bases || []).map(row => {
+    const runtime = row.runtime || {};
+    const lastWeeklyBenefitAt = Math.max(0, Number(runtime.lastWeeklyBenefitAt || 0));
+    return {
+      ...row,
+      weeklyGrant: serverWeeklyClanBaseGrant(row),
+      benefitStatus: {
+        nextWeeklyBenefitAt: lastWeeklyBenefitAt > 0 ? lastWeeklyBenefitAt + 7 * 86400000 : 0,
+        weeklyReady: lastWeeklyBenefitAt <= 0 || now - lastWeeklyBenefitAt >= 7 * 86400000,
+        orders: serverClanBenefitOrders(row, runtime, now)
+      }
+    };
+  });
+  const owned = clan ? serverOwnedClanBaseContext(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, clan.id) : null;
+  const rallyReadyAt = Math.max(0, Number(clan?.protectedRallyCooldowns?.[String(player.characterId || '')] || 0));
+  return {
+    ...publicState,
+    playerBenefits: owned ? {
+      baseId: owned.profile.id,
+      locationId: owned.profile.locationId,
+      benefit: { ...(owned.profile.benefit || {}) },
+      protectedRallyReadyAt: rallyReadyAt,
+      protectedRallyReady: owned.profile.benefit?.protectedRally === true && rallyReadyAt <= now
+    } : null,
+    sieges: serverPublicKromkaSiegeState(player, now),
+    serverNow: now
+  };
+}
+
+function serverClanBaseContextForPlayer(player = {}, requiredLocationId = '') {
+  const clan = serverKromkaClanForPlayer(player);
+  return clan
+    ? serverOwnedClanBaseContext(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, clan.id, requiredLocationId)
+    : null;
+}
+
+function serverClanBaseBenefitsForPlayer(player = {}) {
+  return { ...(serverClanBaseContextForPlayer(player)?.benefit || {}) };
+}
+
+function emitServerKromkaClanState(player = {}, reason = 'update') {
+  if (!player?.id) return null;
+  const payload = { reason, state: serverPublicKromkaClanState(player), t: Date.now() };
+  io.to(player.id).emit('kromkaClanState', payload);
+  return payload;
+}
+
+function emitKromkaClanStateToAll(reason = 'update') {
+  for (const player of players.values()) emitServerKromkaClanState(player, reason);
+}
+
+function serverSiegeEvent(eventId = '') {
+  return savesDb.kromkaSieges.events?.[String(eventId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96)] || null;
+}
+
+function serverSiegeClanForCharacter(characterId = '') {
+  const id = String(characterId || '');
+  return Object.values(savesDb.kromkaClans.clans || {}).find(clan => !!clan.members?.[id]) || null;
+}
+
+function serverActiveSiegeForCharacter(characterId = '', now = Date.now()) {
+  const clan = serverSiegeClanForCharacter(characterId);
+  if (!clan) return null;
+  return Object.values(savesDb.kromkaSieges.events || {}).find(event => (
+    event.status === 'active'
+    && !event.eliminated?.[characterId]
+    && serverSiegeIsRegistered(event, clan.id, characterId)
+    && serverSiegeSideAllowed(event, clan.id)
+    && (!event.qualifiedAttackerClanId || event.phase === 'relay' || clan.id === event.qualifiedAttackerClanId || clan.id === event.defenderClanId)
+    && Number(now) <= Number(event.startAt || 0) + 55 * 60000
+  )) || null;
+}
+
+function publicServerSiegeEvent(event = {}) {
+  const rosterCounts = {};
+  for (const [clanId, roster] of Object.entries(event.rosters || {})) rosterCounts[clanId] = (roster || []).length;
+  return {
+    id: event.id, baseId: event.baseId, locationId: event.locationId, roomId: event.roomId,
+    windowUtc: event.windowUtc, announcedAt: event.announcedAt, startAt: event.startAt,
+    rosterLocksAt: event.rosterLocksAt, rosterLocked: !!event.rosterLocked,
+    defenderClanId: event.defenderClanId,
+    defenderName: savesDb.kromkaClans.clans?.[event.defenderClanId]?.name || 'Нейтральный гарнизон',
+    challengers: (event.challengers || []).map(row => ({ clanId: row.clanId, name: savesDb.kromkaClans.clans?.[row.clanId]?.name || row.clanId, declaredAt: row.declaredAt })),
+    rosters: { ...(event.rosters || {}) }, rosterCounts,
+    status: event.status, phase: event.phase, phaseStartedAt: event.phaseStartedAt, phaseEndsAt: event.phaseEndsAt,
+    relayOwners: { ...(event.relayOwners || {}) }, relayScores: { ...(event.relayScores || {}) },
+    qualifiedAttackerClanId: event.qualifiedAttackerClanId || '', gateHp: event.gateHp,
+    gateMaxHp: Number(KROMKA_SIEGE_CATALOG.gateHp || 1000), coreOwnerClanId: event.coreOwnerClanId || '',
+    coreHoldStartedAt: event.coreHoldStartedAt || 0, coreHoldMs: Number(KROMKA_SIEGE_CATALOG.coreHoldMs || 180000),
+    respawnWaves: { ...(event.respawnWaves || {}) }, respawnWavesPerSide: Number(KROMKA_SIEGE_CATALOG.respawnWavesPerSide || 3),
+    winnerClanId: event.winnerClanId || '', result: event.result || '', resolvedAt: event.resolvedAt || 0,
+    evacuatedPersonalStorage: !!event.evacuatedPersonalStorage
+  };
+}
+
+function serverPublicKromkaSiegeState(player = {}, now = Date.now()) {
+  const clan = player?.characterId ? (serverSiegeClanForCharacter(player.characterId) || serverKromkaClanForPlayer(player)) : null;
+  const calendar = upcomingSiegeWindows(KROMKA_CLAN_BASE_CATALOG, now, 15 * 86400000).map(window => {
+    const event = savesDb.kromkaSieges.events?.[window.id];
+    const base = savesDb.kromkaClans.bases?.[window.baseId];
+    return {
+      ...window,
+      ownerClanId: base?.ownerClanId || '',
+      ownerName: savesDb.kromkaClans.clans?.[base?.ownerClanId]?.name || 'Нейтральный гарнизон',
+      status: event?.status || 'open', challengerCount: (event?.challengers || []).length,
+      eventId: event?.id || ''
+    };
+  });
+  const events = Object.values(savesDb.kromkaSieges.events || {})
+    .filter(event => Number(event.startAt || 0) >= Number(now) - 2 * 3600000)
+    .sort((a, b) => Number(a.startAt || 0) - Number(b.startAt || 0))
+    .map(publicServerSiegeEvent);
+  return {
+    serverNow: Number(now), clanId: clan?.id || '', calendar, events,
+    rules: {
+      announceLeadMs: Number(KROMKA_SIEGE_CATALOG.announceLeadMs || 86400000),
+      rosterLockLeadMs: Number(KROMKA_SIEGE_CATALOG.rosterLockLeadMs || 3600000),
+      membershipMinAgeMs: Number(KROMKA_SIEGE_CATALOG.membershipMinAgeMs || 259200000),
+      maxParticipantsPerClan: Number(KROMKA_SIEGE_CATALOG.maxParticipantsPerClan || 20),
+      pledge: { ...(KROMKA_SIEGE_CATALOG.pledge || {}) }
+    }
+  };
+}
+
+function emitServerKromkaSiegeState(player = {}, reason = 'update') {
+  if (!player?.id) return null;
+  const state = serverPublicKromkaSiegeState(player, Date.now());
+  io.to(player.id).emit('kromkaSiegeState', { reason, state, t: Date.now() });
+  return state;
+}
+
+function emitKromkaSiegeStateToAll(reason = 'update') {
+  for (const player of players.values()) emitServerKromkaSiegeState(player, reason);
+}
+
+function serverSiegeObjectivePosition(action = '', objectiveId = '') {
+  if (action === 'captureRelay') return { relay_a: { x: -17, z: -13 }, relay_b: { x: 0, z: -9 }, relay_c: { x: 17, z: -13 } }[objectiveId] || null;
+  if (action === 'damageGate') return { x: 0, z: 3 };
+  if (action === 'captureCore' || action === 'contestCore') return { x: 0, z: 19 };
+  return null;
+}
+
+function serverSettleSiegePledges(event = {}, now = Date.now()) {
+  if (event.pledgesSettledAt) return false;
+  for (const challenge of event.challengers || []) {
+    const refundFactor = event.status === 'cancelled' ? 1 : (challenge.clanId === event.qualifiedAttackerClanId ? 0 : 0.5);
+    const clan = savesDb.kromkaClans.clans?.[challenge.clanId];
+    if (!clan || refundFactor <= 0) continue;
+    clan.storage = clan.storage || {};
+    for (const [itemId, qty] of Object.entries(challenge.pledge || {}))
+      clan.storage[itemId] = Number(clan.storage[itemId] || 0) + Math.floor(Number(qty || 0) * refundFactor);
+  }
+  event.pledgesSettledAt = Number(now);
+  return true;
+}
+
+function serverFinalizeSiege(event = {}, now = Date.now()) {
+  const result = serverApplySiegeResolutionOnce(event, savesDb.kromkaClans, KROMKA_SIEGE_CATALOG, now);
+  if (!result.ok || result.duplicate) return result;
+  const profile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === event.baseId);
+  const base = savesDb.kromkaClans.bases?.[event.baseId];
+  if (profile && base) base.protectionUntil = nextChallengeWindow(profile, Number(now) + 1000, { announceLeadMs: 0 })?.startAt || 0;
+  serverSettleSiegePledges(event, now);
+  persistSaves();
+  emitKromkaClanStateToAll('siegeResolved');
+  emitKromkaSiegeStateToAll('resolved');
+  return result;
+}
+
+function serverEnterSiegeRoom(player = {}, event = {}) {
+  const clan = serverSiegeClanForCharacter(player.characterId);
+  if (event.eliminated?.[player.characterId]) return false;
+  if (!clan || event.status !== 'active' || !serverSiegeIsRegistered(event, clan.id, player.characterId)) return false;
+  if (event.phase !== 'relay' && clan.id !== event.defenderClanId && clan.id !== event.qualifiedAttackerClanId) return false;
+  const room = getOrCreateRoom(event.roomId, 'clanSiege');
+  room.siegeEventId = event.id; room.pvpModeOverride = 'pvp';
+  const roster = event.rosters?.[clan.id] || [];
+  const lane = Math.max(0, roster.indexOf(player.characterId));
+  const defender = clan.id === event.defenderClanId;
+  const x = ((lane % 7) - 3) * 2.2; const z = defender ? 31 : -30;
+  const moved = transferPlayerToServerRoom(player, room, {
+    reason: 'clanSiegeEnter', message: defender ? 'Вы вошли в контур защиты.' : 'Вы вошли в контур штурма.', x, z, angle: defender ? 180 : 0
+  });
+  if (!moved) return false;
+  event.participants = event.participants || {};
+  event.participants[player.characterId] = { clanId: clan.id, socketId: player.id, enteredAt: Date.now(), lastSeenAt: Date.now() };
+  player.kromkaSiegeEventId = event.id; player.kromkaSiegeClanId = clan.id;
+  io.to(room.id).emit('kromkaSiegeState', { reason: 'participantEntered', state: serverPublicKromkaSiegeState(player), event: publicServerSiegeEvent(event), t: Date.now() });
+  return true;
+}
+
+function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
+  if (!event.resolvedAt || event.returnedAt || Number(now) < Number(event.resolvedAt) + Number(KROMKA_SIEGE_CATALOG.resultRoomGraceMs || 60000)) return false;
+  const profile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === event.baseId);
+  const destination = chooseRoomForLocation(profile?.locationId || 'settlement');
+  for (const player of players.values()) {
+    if (player.roomId !== event.roomId) continue;
+    player.kromkaSiegeEventId = ''; player.kromkaSiegeClanId = '';
+    transferPlayerToServerRoom(player, destination, { reason: 'clanSiegeClosed', message: 'Контур синхронизации закрыт.' });
+  }
+  event.returnedAt = Number(now); persistSaves(); return true;
+}
+
+function serverTickKromkaSieges(now = Date.now()) {
+  let dirty = false; let broadcast = false;
+  for (const event of Object.values(savesDb.kromkaSieges.events || {})) {
+    if (serverLockSiegeRosters(event, now)) { dirty = true; broadcast = true; }
+    const changes = tickServerSiege(event, now, KROMKA_SIEGE_CATALOG);
+    if (changes.length > 0) { dirty = true; broadcast = true; }
+    if ((event.status === 'resolved' || event.status === 'cancelled') && !event.resolutionAppliedAt) {
+      if (event.status === 'resolved') serverFinalizeSiege(event, now);
+      else { serverSettleSiegePledges(event, now); event.resolutionAppliedAt = Number(now); persistSaves(); }
+      dirty = true; broadcast = true;
+    }
+    if (event.status === 'resolved' || event.status === 'cancelled') serverReturnClosedSiegePlayers(event, now);
+    if (event.status === 'active' && Number(now) - Number(event.lastBroadcastAt || 0) >= 5000) {
+      event.lastBroadcastAt = Number(now); broadcast = true;
+      io.to(event.roomId).emit('kromkaSiegeState', { reason: 'tick', event: publicServerSiegeEvent(event), t: Number(now) });
+    }
+  }
+  if (dirty) persistSaves();
+  if (broadcast) emitKromkaSiegeStateToAll('tick');
+}
+
 function publicWorldState(room, includeMap = true) {
   ensureRoomWorld(room);
+  serverEnsureRoomArtifacts(room, Date.now());
   const loc = roomLocation(room);
   const controllingSite = wastelandSitesForLocation(loc, room)[0] || null;
-  const pvpMode = locationPvpMode(loc);
+  const pvpMode = roomPvpMode(room);
   const pvpEnabled = locationAllowsPvp(loc);
+  const clanBaseProfile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.locationId === room.locationId);
+  const clanBaseRuntime = clanBaseProfile ? savesDb.kromkaClans.bases?.[clanBaseProfile.id] : null;
   return {
     roomId: room.id,
     locationId: room.locationId,
     worldSiteId: String(controllingSite?.id || room.worldSiteId || '').slice(0, 64),
     worldSiteOwner: String(controllingSite?.owner || '').slice(0, 32),
     worldSiteOwnerLabel: String(controllingSite?.ownerLabel || '').slice(0, 80),
+    settlementScene: settlementSceneVariant(controllingSite, {}, WASTELAND_SIM.state()?.worldHour || 0),
     pvpMode,
     pvpLabel: LOCATION_PVP_LABELS[pvpMode] || LOCATION_PVP_LABELS.peaceful,
     pvpEnabled,
+    clanBase: clanBaseProfile ? {
+      id: clanBaseProfile.id,
+      displayName: clanBaseProfile.displayName,
+      benefitText: clanBaseProfile.benefitText,
+      siegeWindowsUtc: clanBaseProfile.siegeWindowsUtc,
+      ownerClanId: clanBaseRuntime?.ownerClanId || '',
+      ownerName: savesDb.kromkaClans.clans?.[clanBaseRuntime?.ownerClanId]?.name || 'Нейтральный гарнизон',
+      modules: { ...(clanBaseRuntime?.modules || {}) }
+    } : null,
     fullDrop: pvpMode === 'pvpFullDrop',
     activity: publicWorldActivity(room.worldActivity),
+    shift: serverCurrentShiftState(Date.now()),
+    anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
     resources: [...room.resources.values()].map(r => ({ id: r.id, tx: r.tx, tz: r.tz, type: r.type, hp: r.hp, maxHp: r.maxHp })),
     enemies: [...room.enemies.values()].map(publicEnemy),
@@ -16897,7 +19227,7 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
     setServerWorldActivityResult(player, completed.task || task, {
       reward: completed.task?.reward || task.reward || {},
       rewardClaimed: false,
-      reason: initiatorClaim?.error === 'Достигнут предел крышек в рюкзаке.'
+      reason: initiatorClaim?.error === 'Достигнут предел марок в рюкзаке.'
         ? 'reward_inventory_full'
         : 'reward_pending'
     });
@@ -16954,15 +19284,19 @@ function maybeClaimClearedWastelandSite(room, killedEnemy, player) {
     if (!result || !result.ok) return false;
     for (const [id, actor] of [...room.enemies.entries()]) {
       if (!actor || actor.dead) continue;
-      const dynamicOccupant = actor.wastelandHostileOwnerLocationId === loc.id
+      const dynamicOccupant = !String(actor.kromkaNamedNpcId || '') && (
+        actor.wastelandHostileOwnerLocationId === loc.id
         || actor.wastelandSiteWorkerLocationId === loc.id
-        || actor.authoredLocationId === loc.id;
+        || actor.authoredLocationId === loc.id
+      );
       if (dynamicOccupant) roomEnemyDelete(room, id);
     }
     if (wastelandLocationHasHostileOwner(loc, room)) {
       spawnWastelandHostileOccupants(room, loc);
     } else {
       spawnAuthoredLocationActors(room, loc);
+      ensureKromkaNamedLocationActors(room, loc);
+      ensureKromkaOnboardingLocationActors(room, loc);
       spawnWastelandSiteWorkers(room, loc);
     }
     room.locationOccupantKey = wastelandLocationOccupantKey(loc, room);
@@ -17006,6 +19340,7 @@ function serverTryDownWorldActivityPlayer(player, room, now = Date.now()) {
   });
   emitAuthoritativePlayerState(player, { reason: 'worldActivityDowned' });
   emitServerWorldActivityState(room, 'worldActivityPlayerDowned');
+  persistActivePlayerState(player);
   return true;
 }
 
@@ -17054,13 +19389,63 @@ function performServerWorldActivityRevive(healer = {}, data = {}) {
     t: now
   };
   io.to(room.id).emit('playerHealed', payload);
+  persistActivePlayerState(target);
   emitAuthoritativePlayerState(target, { reason: 'worldActivityRevived' });
   emitServerWorldActivityState(room, 'worldActivityPlayerRevived');
   return { ok: true, revived: true, target: publicPlayer(target), activity: publicWorldActivity(activity) };
 }
 
+function serverTryRespawnSiegePlayer(p, room, cause = {}, now = Date.now()) {
+  if (!p || !room || room.locationId !== 'clanSiege') return false;
+  const event = serverSiegeEvent(room.siegeEventId || p.kromkaSiegeEventId);
+  const clan = serverSiegeClanForCharacter(p.characterId);
+  if (!event || event.status !== 'active' || !clan || !serverSiegeIsRegistered(event, clan.id, p.characterId)) return false;
+  const wave = serverConsumeSiegeRespawnWave(event, clan.id, KROMKA_SIEGE_CATALOG);
+  if (!wave.ok) {
+    event.eliminated = event.eliminated || {};
+    event.eliminated[p.characterId] = { clanId: clan.id, at: Number(now) };
+    persistSaves();
+    return false;
+  }
+  const defender = clan.id === event.defenderClanId;
+  const roster = event.rosters?.[clan.id] || [];
+  const lane = Math.max(0, roster.indexOf(p.characterId));
+  const preferred = { x: ((lane % 7) - 3) * 2.2, z: defender ? 31 : -30 };
+  const pos = findRoomSafeSpawnWorld(room, preferred.x, preferred.z, {
+    maxRadius: 7, radius: 0.48, minEnemyDistance: 1.35, minPlayerDistance: 1.15, ignorePlayerId: p.id
+  }) || preferred;
+  serverApplyDerivedVitals(p);
+  p.hp = Math.max(1, Math.ceil(Number(p.maxHp || 100) * 0.65));
+  p.dead = false; p.downed = false; p.downedUntil = 0; p.crouching = false;
+  p.x = pos.x; p.z = pos.z; p.input = { forward: 0, right: 0 }; p.vx = 0; p.vz = 0; p.moving = false;
+  p.lastRespawnAt = Number(now); p.lastServerDamageAt = Number(now);
+  event.participants = event.participants || {};
+  event.participants[p.characterId] = {
+    ...(event.participants[p.characterId] || {}), clanId: clan.id, socketId: p.id,
+    deaths: Number(event.participants[p.characterId]?.deaths || 0) + 1, lastSeenAt: Number(now)
+  };
+  const payload = {
+    ok: true, reason: 'clanSiegeWave', cause, roomId: room.id, locationId: room.locationId,
+    x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), hp: p.hp, maxHp: p.maxHp,
+    respawnWavesRemaining: wave.remaining, players: [...players.values()].filter(v => v.roomId === room.id && v.id !== p.id).map(publicPlayer),
+    worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true, t: Number(now)
+  };
+  io.to(p.id).emit('serverRespawn', payload);
+  io.to(room.id).emit('playerRespawned', { id: p.id, characterId: p.characterId, visibleHere: true, player: publicPlayer(p), ...payload });
+  persistActivePlayerState(p); persistSaves();
+  emitAuthoritativePlayerState(p, { reason: 'clanSiegeWave' });
+  emitKromkaSiegeStateToAll('respawnWave');
+  return true;
+}
+
 function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (!p || !p.id) return;
+  p.artifactRuntime = sanitizeArtifactRuntime();
+  p.lastArtifactRuntimeAt = Date.now();
+  p.artifactBloodkinHealingUntil = 0;
+  delete p.artifactDetectorMemory;
+  delete p.artifactFootstepPosition;
+  if (serverTryRespawnSiegePlayer(p, oldRoom, cause, Date.now())) return;
   const socket = io.sockets.sockets.get(p.id);
   const now = Date.now();
   const failedWorldActivityIds = failServerPlayerActiveWorldActivities(p, 'player_died');
@@ -17189,6 +19574,12 @@ function serverEnemyTypeIndexByName(name = '') {
   return found >= 0 ? found : 0;
 }
 
+function serverEnemyTypeIndexByCreatureId(creatureTypeId = '') {
+  const wanted = String(creatureTypeId || '').trim();
+  if (!wanted) return -1;
+  return SERVER_ENEMY_TYPES.findIndex(type => type.creatureTypeId === wanted);
+}
+
 function spawnServerEnemy(room, opts = {}) {
   ensureRoomWorld(room);
   const loc = roomLocation(room);
@@ -17197,7 +19588,10 @@ function spawnServerEnemy(room, opts = {}) {
   if ((loc.safe && !allowSafeLocationActor) || (!forced && loc.noRespawn) || aliveEnemyCount(room) >= (forced ? 80 : (loc.enemyCap || 12))) return null;
   const rng = room.rng || Math.random;
   const requestedMinPlayerDistance = Math.max(0, Number(opts.minPlayerDistance ?? (forced ? 1.4 : 12)));
-  const typeIndex = Number.isInteger(opts.typeIndex)
+  const explicitCreatureTypeIndex = serverEnemyTypeIndexByCreatureId(opts.creatureTypeId);
+  const typeIndex = explicitCreatureTypeIndex >= 0
+    ? explicitCreatureTypeIndex
+    : Number.isInteger(opts.typeIndex)
     ? clamp(opts.typeIndex, 0, SERVER_ENEMY_TYPES.length - 1)
     : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName) : Math.floor(rng() * SERVER_ENEMY_TYPES.length));
   const baseType = SERVER_ENEMY_TYPES[typeIndex] || SERVER_ENEMY_TYPES[0];
@@ -17292,6 +19686,7 @@ function spawnServerEnemy(room, opts = {}) {
     ...type,
     id: makeServerEntityId('enemy'),
     typeIndex,
+    creatureTypeId: String(opts.creatureTypeId || type.creatureTypeId || '').slice(0, 32),
     name: opts.name || type.name,
     visual: resolvedVisual,
     modelKey: resolvedModelKey,
@@ -17316,7 +19711,9 @@ function spawnServerEnemy(room, opts = {}) {
     aiState: 'idle',
     targetId: '',
     faction,
-    hostileToPlayer: opts.hostileToPlayer !== false,
+    hostileToPlayer: typeof opts.hostileToPlayer === 'boolean'
+      ? opts.hostileToPlayer
+      : type.hostileByDefault !== false,
     hostilePlayerIds: new Set(rememberedHostilePlayerIds),
     encounterRole: role,
     role,
@@ -17423,6 +19820,13 @@ function spawnEncounterActor(room, tx, tz, opts = {}) {
 }
 
 function serverEncounterActorVisualModel(opts = {}) {
+  const explicitCreature = KROMKA_MUTANT_BY_ID[String(opts.creatureTypeId || '')];
+  if (explicitCreature) {
+    return {
+      visual: String(explicitCreature.visual || explicitCreature.id),
+      modelKey: String(explicitCreature.modelKey || '')
+    };
+  }
   const role = String(opts.role || '').toLowerCase();
   const faction = serverFactionKey(opts.faction || '');
   const tradeProfile = String(opts.tradeProfile || opts.traderProfile || '').toLowerCase();
@@ -17693,7 +20097,8 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
   if (isBattle && !sharedReality && room.enemies instanceof Map) {
     for (const [enemyId, enemy] of room.enemies.entries()) {
       const actorId = String(enemy?.worldBattleActorId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-      if (!actorId || !zoneActorIds.has(actorId)) {
+      const protectedQuestNpc = String(enemy?.kromkaNamedNpcId || '') && enemy?.dead !== true;
+      if ((!actorId || !zoneActorIds.has(actorId)) && !protectedQuestNpc) {
         roomEnemyDelete(room, enemyId);
         changed = true;
       }
@@ -18042,7 +20447,10 @@ function finalizeEncounterWorldTracking(room) {
 }
 
 function encounterThreatFactions() {
-  return new Set(['raiders', 'ghouls', 'radscorpions', 'mutant_ants', 'geckos', 'mutant', 'mutants', 'super_mutants', 'ash_wolves', 'monsters', 'wild']);
+  return new Set([
+    'raiders', 'burned_feral', 'skladni', 'gari', 'rykhlyaki', 'slukhachi', 'plakalshchiki', 'pylniki',
+    'ghouls', 'radscorpions', 'mutant_ants', 'geckos', 'mutant', 'mutants', 'super_mutants', 'ash_wolves', 'monsters', 'wild'
+  ]);
 }
 
 function maybeReportEncounterOutcome(room, reason = 'update', actor = null, player = null) {
@@ -18226,7 +20634,7 @@ function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
       const trade = rollServerGuardTradeProfile('klim_patrol', room.rng || Math.random, i);
       spawnEncounterActor(room, tx, tz, {
         typeName: 'Рейдер',
-        name: i === 0 ? 'Патрульный Старого Клима' : 'Охрана Старого Клима',
+        name: i === 0 ? 'Дозорный Управы' : 'Охрана Управы',
         faction: 'klim_patrol',
         role: 'guard',
         hostileToPlayer: false,
@@ -18307,7 +20715,7 @@ function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
       const trade = rollServerGuardTradeProfile('klim_patrol', room.rng || Math.random, i + 3);
       spawnEncounterActor(room, tx, tz, {
         typeName: 'Рейдер',
-        name: i === 0 ? 'Патрульный Старого Клима' : 'Охрана Старого Клима',
+        name: i === 0 ? 'Дозорный Управы' : 'Охрана Управы',
         faction: 'klim_patrol',
         role: 'guard',
         hostileToPlayer: false,
@@ -18361,7 +20769,11 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
   if (locationIsFactionCapital(roomLocation(room))) return engaged;
   if (!room.enemies || room.enemies.size < 2) return engaged;
   const now = Date.now();
-  const actors = [...room.enemies.values()].filter(e => e && !e.dead && e.faction && !(e.hostileToPlayer === false && now < Number(e.dialogueFocusUntil || 0)));
+  const actors = [...room.enemies.values()].filter(e => e && !e.dead && e.faction
+    && !String(e.kromkaNamedNpcId || '')
+    && !serverNpcIsKromkaOnboardingProtected(e) && !e.trainingTarget
+    && e.kromkaProjection !== true
+    && !(e.hostileToPlayer === false && now < Number(e.dialogueFocusUntil || 0)));
   const actorSet = new Set(actors);
   const liveFactionGroups = new Set(actors.map(actor => serverCombatFactionGroup(actor.faction || '')));
   const oneFactionCrowd = liveFactionGroups.size <= 1;
@@ -18627,6 +21039,10 @@ function completeDepartedOnsiteParties(room = null) {
 }
 
 function updateServerEnemies(room, dt, opts = {}) {
+  if (caravanCinematicHeld(room)) {
+    for (const enemy of room.enemies.values()) { enemy.vx = 0; enemy.vz = 0; }
+    return false;
+  }
   let enemyStructureChanged = ensureRoomWorld(room) === true;
   // Snapshot broad phase: every AI pass starts from current positions, keeps a
   // safe movement margin while actors advance, and publishes exact end state
@@ -18637,6 +21053,17 @@ function updateServerEnemies(room, dt, opts = {}) {
   const roomPlayers = Array.isArray(opts.players)
     ? opts.players.filter(p => p && Number(p.hp || 1) > 0 && !p.dead)
     : livePlayersInRoom(room).filter(p => Number(p.hp || 1) > 0 && !p.dead);
+  const tutorialLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.tutorialLocationId || 'tutorialCaravanYard');
+  const firstMissionLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.firstMissionLocationId || 'randomRuinedRoad');
+  const needsOnboardingActors = roomPlayers.some(player => {
+    const phase = String(player.kromkaOnboarding?.phase || '');
+    return (phase === 'tutorial' && loc.id === tutorialLocationId)
+      || (phase === 'firstMission' && loc.id === firstMissionLocationId);
+  });
+  if (needsOnboardingActors && ensureKromkaOnboardingLocationActors(room, loc) > 0) {
+    enemyStructureChanged = true;
+    rebuildRoomEnemySpatialIndex(room, roomEnemySpatialMovementPadding(room, dt));
+  }
   // Reused by every movement probe in this AI pass. NPCs and players now obey
   // the same non-penetration rule without repeatedly rebuilding the room list.
   room.enemyAiPlayers = roomPlayers;
@@ -18753,6 +21180,17 @@ function updateServerEnemies(room, dt, opts = {}) {
       enemy.lookZ = null;
       enemy.npcRoutineInvalidated = true;
       if (enemy.aiState === 'dialogue') enemy.aiState = 'idle';
+    }
+    if (serverNpcIsKromkaOnboardingProtected(enemy) || enemy.trainingTarget) {
+      // Onboarding NPCs are fixed story landmarks. In encounter locations the
+      // generic AI can otherwise make a neutral guide investigate gunfire or
+      // react to hostile factions and drift away from the quest marker.
+      clearEnemyTarget(enemy);
+      enemy.factionTargetId = '';
+      enemy.vx = 0;
+      enemy.vz = 0;
+      enemy.wanderTimer = 1.5;
+      continue;
     }
     if (updateServerNpcCorpseLooting(room, enemy, dt, now)) continue;
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
@@ -18911,6 +21349,20 @@ function updateServerEnemies(room, dt, opts = {}) {
             });
             continue;
           }
+          if (serverPlayerHasProtectedClanRally(target, room, now)) {
+            io.to(target.id).emit('enemyAttackMiss', {
+              locationId: room.locationId,
+              enemyId: enemy.id,
+              enemyName: enemy.name,
+              weapon: weapon.id,
+              ranged,
+              protectedRally: true,
+              x: Number(enemy.x.toFixed(2)),
+              z: Number(enemy.z.toFixed(2)),
+              t: now
+            });
+            continue;
+          }
           let raw = serverNpcDamageRoll(enemy, weapon, rng);
           raw = Math.max(1, Math.round(raw * serverNpcShotgunDamageMultiplier(enemy, target, weapon)));
           const attackProfile = serverEnemyAttackProfile(enemy);
@@ -18925,14 +21377,22 @@ function updateServerEnemies(room, dt, opts = {}) {
           serverApplyDerivedVitals(target);
           const secondChance = serverTrySecondChance(target, damage, now);
           if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - damage);
-          const newInjuries = serverApplyInjuriesFromHit(target, damage, damageType, attackProfile.injurySource || enemy.name);
+          const newInjuries = serverApplyInjuriesFromHit(target, damage, damageType, attackProfile.injurySource || enemy.name, {
+            injuryProfile: attackProfile.injuryProfile,
+            attackEffect: attackProfile.effect,
+            effectChance: attackProfile.effectChance
+          });
           target.lastServerDamageAt = now;
+          serverApplyArtifactImpact(target, room, enemy, damageType, damageType === 'explosive' ? 1.5 : 0, now);
           const downed = !secondChance && Number(target.hp || 0) <= 0
             && serverTryDownWorldActivityPlayer(target, room, now);
           io.to(target.id).emit('enemyAttack', {
             locationId: room.locationId,
             enemyId: enemy.id,
             enemyName: enemy.name,
+            creatureTypeId: String(enemy.creatureTypeId || ''),
+            attackId: String(attackProfile.attackId || ''),
+            attackEffect: String(attackProfile.effect || ''),
             raw,
             damage,
             damageType,
@@ -18958,6 +21418,9 @@ function updateServerEnemies(room, dt, opts = {}) {
             characterId: target.characterId || '',
             enemyId: enemy.id,
             enemyName: enemy.name,
+            creatureTypeId: String(enemy.creatureTypeId || ''),
+            attackId: String(attackProfile.attackId || ''),
+            attackEffect: String(attackProfile.effect || ''),
             sourceX: Number(enemy.x.toFixed(2)),
             sourceZ: Number(enemy.z.toFixed(2)),
             damage,
@@ -18986,12 +21449,13 @@ function updateServerEnemies(room, dt, opts = {}) {
             // игрока: весь рюкзак остаётся на месте гибели.
             const deathLoc = roomLocation(room);
             const npcFullDrop = locationHasFullInventoryDrop(deathLoc);
-            const droppedItems = npcFullDrop ? serverDropPvpInventory(room, target, null, now) : [];
+            const droppedItems = serverDropPvpLootForMode(room, target, null, deathLoc, now);
             serverRespawnPlayer(target, room, {
               enemyId: enemy.id,
               enemyName: enemy.name,
               pvpMode: locationPvpMode(deathLoc),
               fullDrop: npcFullDrop,
+              consumableDrop: locationPvpMode(deathLoc) === 'pvp',
               droppedItems
             });
           }
@@ -19353,7 +21817,7 @@ function pruneExpiredEphemeralRooms(now = Date.now()) {
       const loc = roomLocation(room);
       return String(room?.id || '').includes('#')
         && !locationUsesSharedReality(loc)
-        && (loc.encounterOnly === true || loc.randomTemplate === true);
+        && (loc.encounterOnly === true || loc.randomTemplate === true || loc.privateInstance === true);
     },
     hasActiveOwner: roomHasActiveWorldOwner
   });
@@ -19838,6 +22302,7 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     return false;
   }
   removePlayerFromIndependentGlobalTravelSessions(p.id);
+  const questProgress = serverRecordKromkaLocationArrival(p, room.locationId);
   try {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
     ensureServerWorldActivityForRoom(room, Date.now());
@@ -19852,6 +22317,7 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     payload = {
       ok: true,
       reason: String(options.reason || 'worldTransfer').slice(0, 40),
+      cinematicId: String(options.cinematicId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96),
       message: String(options.message || '').slice(0, 160),
       roomId: room.id,
       locationId: room.locationId,
@@ -19862,6 +22328,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
       angle: Number(p.angle || 0),
       hp: Math.round(Number(p.hp || 0)),
       maxHp: Math.round(Number(p.maxHp || 100)),
+      pvpMode: roomPvpMode(room),
+      pvpLabel: LOCATION_PVP_LABELS[roomPvpMode(room)] || roomPvpMode(room),
       worldState: currentRoomWorldState(room),
       players: others,
       serverAuthoritativeEnemies: true,
@@ -19873,7 +22341,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
       worldPoint: room.encounterWorldPoint || options.worldPoint || null,
       sim: options.sim || null,
       completedWorldTaskId: options.completedWorldTaskId || '',
-      completedWorldTask: options.completedWorldTask || null
+      completedWorldTask: options.completedWorldTask || null,
+      questProgress
     };
     socket.emit('serverWorldTransfer', payload);
   } catch (error) {
@@ -19885,6 +22354,9 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true, socket.id);
     emitWorldContainersSnapshot(room, true, socket.id);
+    emitServerArtifactState(p, 'join');
+    if (p.locationId === 'personalBase') emitServerPersonalBaseState(p, 'join');
+    emitServerKromkaClanState(p, 'join');
   } catch (error) {
     console.error('World transfer room snapshot failed:', p.id, room.id, error);
   }
@@ -20104,6 +22576,7 @@ function publicPlayer(p) {
     id: p.id,
     characterId: p.characterId || '',
     deviceType: normalizeDeviceType(p.deviceType || 'desktop'),
+    movementNoiseMultiplier: 1 + serverArtifactEffects(p).movementNoisePct,
     controlType: normalizeControlType(p.controlType || '', p.deviceType || 'desktop'),
     name: p.name,
     appearance: sanitizeCharacterAppearance(p.appearance || {}),
@@ -20126,6 +22599,7 @@ function publicPlayer(p) {
     downedUntil: p.downed ? Math.max(0, Number(p.downedUntil || 0)) : 0,
     weapon: serverActiveWeaponId(p),
     equipment: sanitizeEquipment(p.equipment, { weapon: p.weapon || 'pistol' }),
+    combatProtection: serverPublicCombatProtection(p, false),
     injuries: sanitizeInjuries(p.injuries || {}),
     level: p.level,
     locationId: p.locationId || 'settlement',
@@ -20172,7 +22646,15 @@ function serverAuthoritativeGlobalMapState(p = {}) {
   };
 }
 
+function serverHasMagneticBolt(p = {}) {
+  return p.magneticBoltUnlocked === true
+    || !!p.kromkaQuestState?.completed?.side_iron_argument
+    || p.npcQuests?.mechanic_magnetic_bolt?.rewardClaimed === true;
+}
+
 function publicAuthoritativePlayerState(p = {}) {
+  sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+  const artifactEffects = serverArtifactEffects(p);
   const globalMap = serverAuthoritativeGlobalMapState(p);
   const combat = serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now());
   const storageFaction = serverPlayerStorageFaction(p);
@@ -20197,8 +22679,58 @@ function publicAuthoritativePlayerState(p = {}) {
     );
     return { ...record, rewardEligible };
   });
+  const currentPvpMode = p.onGlobalMap ? 'peaceful' : roomPvpMode(rooms.get(String(p.roomId || '')));
+  const factionContracts = sanitizeServerFactionContracts(p.factionContracts || {});
+  const factionReputation = sanitizeServerWorldFactionReputation(p.worldFactionReputation || {});
+  const npcQuests = sanitizeServerNpcQuestState(p.npcQuests || {});
+  const questJournal = publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+  const socialState = sanitizeServerSocialState(p.socialState || {});
+  const shelterState = publicServerPersonalBase(p);
+  const uiSnapshots = {
+    schema: 'kromka.ui-snapshots.v1',
+    version: 1,
+    generatedAt: Date.now(),
+    contracts: { schema: 'kromka.contracts.v1', version: 1, records: factionContracts },
+    world: {
+      schema: 'kromka.world-player.v1', version: 1, revision: 'kromka-1',
+      tasks: worldTaskRecords, acceptedTaskIds: worldTaskAccepted, trackedTaskId: worldTaskTrackedId,
+      globalMap
+    },
+    quests: { schema: 'kromka.quests-player.v1', version: 1, npc: npcQuests, journal: questJournal },
+    reputation: { schema: 'kromka.reputation.v1', version: 1, factions: factionReputation },
+    friends: {
+      schema: 'kromka.friends.v1', version: 1,
+      records: socialState.friends, requests: socialState.friendRequests
+    },
+    clan: {
+      schema: 'kromka.clan-player.v1', version: 1,
+      state: socialState.clan, invites: socialState.clanInvites
+    },
+    shelter: { schema: 'kromka.shelter.v1', version: 1, state: shelterState },
+    permissions: {
+      schema: 'kromka.authority-scopes.v1',
+      version: 1,
+      personalBase: { ...shelterState.access, scope: 'personalBase' },
+      temporaryParty: {
+        scope: 'temporaryParty',
+        partyId: String(p.attachedPartyId || ''),
+        member: !!String(p.attachedPartyId || '') || !!globalTravelSessionForMember(p.id || ''),
+        leader: String(globalMap.travelLeaderId || '') === String(p.id || '')
+      },
+      clan: {
+        scope: 'clan',
+        clanId: String(socialState.clan?.id || ''),
+        member: !!String(socialState.clan?.id || ''),
+        role: String(socialState.clan?.role || ''),
+        manage: ['Основатель', 'Офицер'].includes(String(socialState.clan?.role || ''))
+      }
+    }
+  };
   return {
     ...publicPlayer(p),
+    boltRangeMeters: serverHasMagneticBolt(p)
+      ? Number(KROMKA_ANOMALY_CATALOG.bolt?.magneticRangeMeters || 13)
+      : Number(KROMKA_ANOMALY_CATALOG.bolt?.rangeMeters || 10),
     xp: Math.max(0, Math.floor(Number(p.xp || 0))),
     xpNeeded: Math.max(1, Math.floor(Number(p.xpNeeded || 100))),
     perkPoints: Math.max(0, Math.floor(Number(p.perkPoints || 0))),
@@ -20209,6 +22741,7 @@ function publicAuthoritativePlayerState(p = {}) {
     taggedSkills: sanitizeTaggedSkills(p.taggedSkills || []),
     skillRanks: sanitizeSkillRanks(p.skillRanks || {}),
     talentRanks: sanitizeTalentRanks(p.talentRanks || {}),
+    progressionCatalogVersion: KROMKA_CHARACTER_PROGRESSION_CATALOG.version,
     inventory: syncServerInventorySnapshot(p),
     equipmentRuntime: serverEquipmentRuntimePresentation(p),
     equipmentRevision: Math.max(0, Math.floor(Number(p.equipmentRevision || 0))),
@@ -20217,15 +22750,36 @@ function publicAuthoritativePlayerState(p = {}) {
     gearPower: serverGearPower(p),
     storage: sanitizeServerInventorySnapshot(storage, { includeEquipped: true }),
     storageFaction,
+    storageWeaponRuntime: storageFaction ? serverFactionStorageWeaponRuntimeSnapshot(p, storageFaction) : [],
     itemConditions: sanitizeServerItemConditions(p.itemConditions || {}),
-    npcQuests: sanitizeServerNpcQuestState(p.npcQuests || {}),
+    npcQuests,
     worldTaskAccepted,
     worldTaskTrackedId,
     worldTaskRecords,
     worldTaskRewardClaims: sanitizeServerWorldTaskClaimIds(p.worldTaskRewardClaims || []),
-    worldFactionReputation: sanitizeServerWorldFactionReputation(p.worldFactionReputation || {}),
+    worldFactionReputation: factionReputation,
+    factionContracts,
+    knownFactionSecrets: p.knownFactionSecrets && typeof p.knownFactionSecrets === 'object'
+      ? p.knownFactionSecrets : {},
+    kromkaQuestJournal: questJournal,
+    artifactRecords: p.artifactRecords.map(record => ({ ...record,
+      implementationNote: String(KROMKA_ARTIFACT_INDEXES.byId[record.typeId]?.implementationNote || '')
+    })),
+    artifactSlots: p.artifactSlots,
+    artifactBeltCapacity: serverArtifactBeltCapacity(p, KROMKA_ARTIFACT_CATALOG),
+    artifactEffects,
+    artifactRuntime: publicArtifactRuntime(p),
+    radiation: Math.max(0, Number(p.radiation) || 0),
+    kromkaOnboarding: publicKromkaOnboarding(
+      p.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
+    ),
+    worldRevision: 'kromka-1',
+    pvpMode: currentPvpMode,
+    pvpLabel: LOCATION_PVP_LABELS[currentPvpMode] || currentPvpMode,
     lastWorldActivityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
-    socialState: sanitizeServerSocialState(p.socialState || {}),
+    socialState,
+    personalBase: shelterState,
+    uiSnapshots,
     combat,
     onGlobalMap: !!p.onGlobalMap,
     globalWorldPoint: { x: globalMap.playerX, y: globalMap.playerY },
@@ -20239,6 +22793,186 @@ function emitAuthoritativePlayerState(p = {}, extra = {}) {
   const target = io.sockets.sockets.get(p.id);
   if (!target) return;
   target.emit('authoritativePlayerState', { ...publicAuthoritativePlayerState(p), ...extra, t: Date.now() });
+}
+
+function emitKromkaOnboardingState(p = {}, extra = {}) {
+  if (!p?.id) return;
+  const target = io.sockets.sockets.get(p.id);
+  if (!target) return;
+  target.emit('kromkaOnboardingState', {
+    ...publicKromkaOnboarding(p.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG),
+    ...extra
+  });
+}
+
+function accountCompletedKromkaTutorial(p = {}) {
+  return Number(usersDb.users?.[p.accountLogin]?.kromkaTutorialCompletedAt || 0) > 0;
+}
+
+function prepareKromkaOnboardingRoom(p = {}, transition = {}) {
+  const locationId = normalizeLocationId(transition.locationId || 'settlement');
+  if (locationId === 'randomRuinedRoad') {
+    const roomId = `${locationId}#intro_${worldTransferId(p.characterId || p.id)}`.slice(0, 96);
+    const room = getOrCreateRoom(roomId, locationId);
+    room.pvpModeOverride = 'peaceful';
+    room.encounterId = 'kromka_caravan_twelve_ambush';
+    room.encounterSetupDone = false;
+    room.encounterOutcomeFlags = {};
+    setupRandomEncounterRoom(room, room.encounterId, { force: true, pvpMode: 'peaceful' });
+    beginCaravanCinematic(room, p, transition.cinematicId);
+    ensureKromkaOnboardingLocationActors(room, roomLocation(room));
+    refreshRoomWorldState(room, { force: true });
+    return room;
+  }
+  return chooseRoomForLocation(locationId);
+}
+
+function serverRecordTutorialFact(p, key, amount = 1) {
+  if (!p || p.locationId !== 'tutorialCaravanYard' || p.kromkaOnboarding?.phase !== 'tutorial') return false;
+  if (!['oreGathered', 'woodGathered'].includes(key) && p.kromkaOnboarding.evidence?.[key]) return false;
+  if (!recordOnboardingEvidence(p.kromkaOnboarding, key, amount)) return false;
+  persistActivePlayerState(p);
+  emitKromkaOnboardingState(p);
+  emitAuthoritativePlayerState(p, { reason: 'tutorialPractice' });
+  return true;
+}
+
+function serverTutorialEquipmentReady(p) {
+  return serverBaseItemId(p.equipment?.weapon) === 'pistol'
+    && !!p.equipment?.armor && !!p.equipment?.boots;
+}
+
+function serverRefreshTutorialSupplies(p, container) {
+  if (p.locationId !== 'tutorialCaravanYard' || container.defId !== 'yard_supply') return false;
+  const state = p.kromkaOnboarding;
+  if (!state || state.phase !== 'tutorial') { container.loot = []; return true; }
+  state.issuedSupplies = state.issuedSupplies || {};
+  const supplies = buildTutorialSupplies(p);
+  container.loot = supplies.map(row => ({ id: row.id,
+    qty: Math.max(0, row.qty - Number(state.issuedSupplies[row.id] || 0))
+  })).filter(row => row.qty > 0);
+  // Practice must remain recoverable if the player spends all rounds or uses
+  // the medicine on themselves. Replacements appear only when none remain.
+  if (state.evidence?.suppliesTaken) {
+    const loaded = Object.values(serverEnsureCombatState(p).weapons)
+      .some(row => row.ammoType === 'ammo9' && row.loaded > 0);
+    if (!state.evidence.targetHit && !loaded && serverOwnedItemQty(p, 'ammo9') === 0)
+      container.loot.push({ id: 'ammo9', qty: 24 });
+    if (!state.evidence.npcHealed && serverOwnedItemQty(p, 'medkit') === 0)
+      container.loot.push({ id: 'medkit', qty: 2 });
+  }
+  return true;
+}
+
+function serverTakeTutorialSupplies(p, container, rows) {
+  if (p.locationId !== 'tutorialCaravanYard' || container.defId !== 'yard_supply'
+      || p.kromkaOnboarding?.phase !== 'tutorial') return;
+  const state = p.kromkaOnboarding;
+  state.issuedSupplies = state.issuedSupplies || {};
+  for (const row of rows) {
+    const previous = Number(state.issuedSupplies[row.id] || 0);
+    state.issuedSupplies[row.id] = previous + row.qty;
+    if (row.id === 'pistol' && !previous) {
+      serverSetPlayerItemCondition(p, 'pistol', 55);
+      const weapon = serverWeaponState(p, SERVER_WEAPONS.pistol);
+      weapon.condition = 55;
+      weapon.loaded = 0;
+    }
+  }
+  if (buildTutorialSupplies(p).every(row => Number(state.issuedSupplies[row.id] || 0) >= row.qty))
+    serverRecordTutorialFact(p, 'suppliesTaken');
+  persistActivePlayerState(p);
+  emitKromkaOnboardingState(p);
+}
+
+function serverAdvanceKromkaOnboarding(p = {}, action = '', options = {}) {
+  if (!p?.id) return { ok: false, error: 'Персонаж не найден.' };
+  if (action === 'confirm_equipment') {
+    const equipped = serverTutorialEquipmentReady(p);
+    const supplied = serverInventoryQty(p.inventory || [], 'medkit') >= 1
+      && serverInventoryQty(p.inventory || [], 'food') >= 1
+      && serverInventoryQty(p.inventory || [], 'water') >= 1;
+    if (!equipped || !supplied) return { ok: false, error: 'Сначала экипируйте оружие, одежду и проверьте выданные припасы.' };
+  }
+  if (action === 'cross_ambush_anomaly') {
+    const anomaly = ANOMALY_SYSTEM.snapshot(p.roomId, p.locationId).fields
+      .find(field => field.id === 'twelve-seam-01');
+    if (!anomaly || anomaly.active) return { ok: false, error: 'Сначала разрядите «Шов» обычным болтом.' };
+  }
+  const result = options.skip === true
+    ? skipKromkaTutorial(p.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG, {
+        now: Date.now(), accountCompleted: accountCompletedKromkaTutorial(p)
+      })
+    : advanceKromkaOnboarding(p.kromkaOnboarding || {}, action, {
+        now: Date.now(), locationId: p.locationId, x: p.x, z: p.z,
+        choiceId: options.choiceId, npcId: options.npcId,
+        dialogueValidated: options.dialogueValidated === true,
+        accountCompleted: accountCompletedKromkaTutorial(p)
+      }, KROMKA_ONBOARDING_CATALOG);
+  if (!result.ok) return result;
+  p.kromkaOnboarding = result.state;
+  const activeRoom = rooms.get(String(p.roomId || ''));
+  if (activeRoom && ensureKromkaOnboardingLocationActors(activeRoom, roomLocation(activeRoom)) > 0) {
+    refreshRoomWorldState(activeRoom);
+    emitEnemySnapshot(activeRoom, true);
+  }
+  if (result.skipped && !p.kromkaOnboarding.evidence?.suppliesTaken) {
+    for (const row of buildTutorialSupplies(p)) {
+      const remaining = Math.max(0, row.qty - Number(p.kromkaOnboarding.issuedSupplies?.[row.id] || 0));
+      if (remaining > 0) serverInventoryAdd(p, row.id, remaining);
+    }
+    // Use the ordinary equipment transaction: direct assignment would leave
+    // a second copy of each equipped item in the bag. If AP is low, items stay
+    // in the bag and the returning player can equip them after recovering AP.
+    serverApplyEquipmentRequest(p, { ...serverEquipmentRuntimePresentation(p),
+      weapon: 'pistol', armor: 'leather', boots: 'boots' });
+  }
+  if (result.state.tutorialCompleted && !accountCompletedKromkaTutorial(p)) {
+    const user = usersDb.users?.[p.accountLogin];
+    if (user) {
+      user.kromkaTutorialCompletedAt = Date.now();
+      persistUsers();
+    }
+  }
+  if (result.completed) {
+    const reward = KROMKA_ONBOARDING_CATALOG.completionReward || {};
+    serverGrantXp(p, reward.xp || 0);
+    p.inventory = serverInventorySetRows(p.inventory || [], 'silver',
+      serverInventoryQty(p.inventory || [], 'silver') + Math.max(0, Number(reward.marks || 0)));
+    for (const row of Array.isArray(reward.items) ? reward.items : []) {
+      const itemId = String(row?.id || '');
+      if (!SERVER_ITEM_IDS.has(itemId)) continue;
+      p.inventory = serverInventorySetRows(p.inventory || [], itemId,
+        serverInventoryQty(p.inventory || [], itemId) + Math.max(0, Number(row.qty || 0)));
+    }
+    p.kromkaQuestState = sanitizeKromkaQuestState(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+    if (!p.kromkaQuestState.completed.campaign_prologue_twelfth) {
+      p.kromkaQuestState.completed.campaign_prologue_twelfth = { outcomeId: '', completedAt: Date.now() };
+      p.kromkaQuestState.rewardClaims.push('quest:campaign_prologue_twelfth');
+      if (!p.kromkaQuestState.knownSecrets.includes('caravan_module_targeted')) p.kromkaQuestState.knownSecrets.push('caravan_module_targeted');
+      serverInventoryAdd(p, 'silver', 45);
+    }
+  }
+  persistActivePlayerState(p);
+  if (result.transition) {
+    const room = prepareKromkaOnboardingRoom(p, result.transition);
+    const moved = transferPlayerToServerRoom(p, room, {
+      reason: result.transition.reason,
+      cinematicId: result.transition.cinematicId,
+      entryKey: result.transition.locationId === 'settlement' ? 'entryFromWasteland' : 'spawn',
+      message: result.completed
+        ? 'Вы добрались до Ключей. Пролог завершён, открыты карта, торговля и контракты.'
+        : 'Караван «Двенадцатый» вошёл в Кромку и попал в засаду.'
+    });
+    if (!moved) return { ok: false, error: 'Переход не подтверждён сервером.', state: result.state };
+  }
+  emitKromkaOnboardingState(p, {
+    completedStepId: result.completedStepId || '',
+    transition: result.transition || null,
+    skipped: result.skipped === true
+  });
+  emitAuthoritativePlayerState(p, { reason: 'kromkaOnboarding' });
+  return { ...result, onboarding: publicKromkaOnboarding(p.kromkaOnboarding, KROMKA_ONBOARDING_CATALOG) };
 }
 
 function persistActivePlayerStates(playerList = []) {
@@ -20347,10 +23081,15 @@ function globalTravelSessionForMember(memberId = '') {
   return null;
 }
 
-const SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION = 900;
+const SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION = clamp(
+  Number(process.env.SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION || 900),
+  1,
+  100000
+);
 const SERVER_GLOBAL_PLAYER_RADIUS = 5.2;
 const SERVER_GLOBAL_LOCATION_RADIUS = 15;
 const SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE = 5.5;
+const SERVER_GLOBAL_ENCOUNTER_DECISION_MS = 15000;
 const WORLD_MAP_EXIT_BAND_TILES = 2;
 
 function serverGlobalMapMetrics() {
@@ -20414,21 +23153,33 @@ function serverGlobalPointForPlayer(p = {}) {
   return sanitizeServerGlobalMapPoint(fallback);
 }
 
-function serverGlobalTravelSpeedKmh(p = {}) {
-  return 16 + 8 * serverSkillNorm(p, 'wanderer');
+function serverGlobalTravelSpeedKmh(p = {}, options = {}) {
+  const baseSpeed = 16 + 8 * serverSkillNorm(p, 'wanderer');
+  if (options.clanConvoy !== true) return baseSpeed;
+  const context = serverClanBaseContextForPlayer(p);
+  return baseSpeed * serverClanCaravanSpeedMultiplier(context?.profile || {});
 }
 
-function serverGlobalTravelTiming(p = {}, fromPoint = null, targetPoint = null, routePoints = null) {
+function serverGlobalTravelTiming(p = {}, fromPoint = null, targetPoint = null, routePoints = null, options = {}) {
   const plannedPoints = Array.isArray(routePoints) && routePoints.length >= 2 ? routePoints : [fromPoint, targetPoint];
   const distancePoints = routeDistance(plannedPoints);
   const { pointKm } = serverGlobalMapMetrics();
   const distanceKm = Number.isFinite(distancePoints) ? Math.max(0, distancePoints * pointKm) : 0;
-  const speedKmh = serverGlobalTravelSpeedKmh(p);
+  const baseSpeedKmh = serverGlobalTravelSpeedKmh(p);
+  const speedKmh = serverGlobalTravelSpeedKmh(p, options);
   const worldHours = speedKmh > 0 ? distanceKm / speedKmh : 0;
   const durationMs = distanceKm <= 0.001
     ? 0
     : Math.max(100, worldHours * 3600 * 1000 / SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION);
-  return { distancePoints, distanceKm, speedKmh, worldHours, durationMs };
+  return {
+    distancePoints,
+    distanceKm,
+    speedKmh,
+    worldHours,
+    durationMs,
+    clanConvoy: options.clanConvoy === true,
+    clanCaravanSpeedPct: baseSpeedKmh > 0 ? Number(Math.max(0, speedKmh / baseSpeedKmh - 1).toFixed(4)) : 0
+  };
 }
 
 function serverGlobalTravelCurrentPoint(session = null, now = Date.now()) {
@@ -20436,8 +23187,11 @@ function serverGlobalTravelCurrentPoint(session = null, now = Date.now()) {
   const targetPoint = sanitizeServerGlobalMapPoint(session?.targetPoint || fromPoint);
   if (!fromPoint || !targetPoint) return fromPoint || targetPoint || null;
   const durationMs = Math.max(0, Number(session?.durationMs || 0));
+  const effectiveNow = session?.pendingEncounter?.pauseAt
+    ? Math.min(Number(now || Date.now()), Number(session.pendingEncounter.pauseAt))
+    : Number(now || Date.now());
   const progress = durationMs > 0
-    ? clamp((Number(now || Date.now()) - Number(session?.startedAt || 0)) / durationMs, 0, 1)
+    ? clamp((effectiveNow - Number(session?.startedAt || 0)) / durationMs, 0, 1)
     : 1;
   const routePoints = (Array.isArray(session?.routePoints) ? session.routePoints : [])
     .map(point => sanitizeServerGlobalMapPoint(point))
@@ -20449,12 +23203,128 @@ function serverGlobalTravelCurrentPoint(session = null, now = Date.now()) {
   });
 }
 
+function serverRestoredGlobalTravelSession(player = {}, savedGlobalMap = {}, now = Date.now()) {
+  const travel = savedGlobalMap?.travel && typeof savedGlobalMap.travel === 'object'
+    ? savedGlobalMap.travel
+    : null;
+  if (!travel || travel.serverAuthoritative !== true) return null;
+  const fromPoint = sanitizeServerGlobalMapPoint(travel.fromPoint || travel.currentPoint || null);
+  const targetPoint = sanitizeServerGlobalMapPoint(travel.toPoint || null);
+  if (!fromPoint || !targetPoint) return null;
+  const routePoints = (Array.isArray(travel.routePoints) ? travel.routePoints : [])
+    .map(point => sanitizeServerGlobalMapPoint(point))
+    .filter(Boolean);
+  const durationMs = clamp(Number(travel.durationMs || Number(travel.duration || 0) * 1000), 0, 86400000);
+  const savedProgress = clamp(Number(travel.progress || 0), 0, 1);
+  const authoredStartedAt = Number(travel.startedAt || 0);
+  const startedAt = authoredStartedAt > 0 ? authoredStartedAt : Number(now || Date.now()) - durationMs * savedProgress;
+  const targetSiteId = String(travel.targetWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  const targetLocationId = normalizeLocationId(travel.targetSettlementId || (targetSiteId ? 'wasteland' : 'wasteland'));
+  return {
+    id: String(travel.travelId || `travel_${player.id}_${Math.floor(now)}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96),
+    leaderId: player.id,
+    leaderName: player.name || 'Игрок',
+    fromLocationId: normalizeLocationId(savedGlobalMap.fromLocationId || player.locationId || 'settlement'),
+    targetLocationId,
+    targetSiteId,
+    fromPoint,
+    targetPoint,
+    routePoints: routePoints.length >= 2 ? routePoints : [fromPoint, targetPoint],
+    worldPoint: sanitizeServerGlobalMapPoint(travel.currentPoint || savedGlobalMap) || fromPoint,
+    distanceKm: Math.max(0, Number(travel.distanceKm || 0)),
+    speedKmh: Math.max(0, Number(travel.speedKmh || serverGlobalTravelSpeedKmh(player))),
+    clanConvoy: travel.clanConvoy === true,
+    clanCaravanSpeedPct: Math.max(0, Number(travel.clanCaravanSpeedPct || 0)),
+    worldHours: Math.max(0, Number(travel.worldHours || 0)),
+    durationMs,
+    memberIds: [player.id],
+    startedAt,
+    arrivalAt: Number(travel.arrivalAt || startedAt + durationMs),
+    restoredFromSave: true
+  };
+}
+
+function serverGlobalTravelEncounterContact(session = null, encounterId = '', now = Date.now()) {
+  const id = String(encounterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  const point = serverGlobalTravelCurrentPoint(session, now);
+  const state = serverGlobalSimState();
+  if (!id || !point || !state) return null;
+  const zone = (Array.isArray(state.worldZones) ? state.worldZones : [])
+    .find(row => String(row?.id || '') === id && serverGlobalZoneVisible(row));
+  if (zone) {
+    const zonePoint = sanitizeServerGlobalMapPoint(zone);
+    const radius = clamp(Number(zone.radius || 9), 2, 40);
+    if (zonePoint && serverGlobalPointDistance(point, zonePoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
+      return {
+        id,
+        kind: 'zone',
+        title: safeName(zone.details?.title || zone.name || 'Событие пустоши'),
+        point: zonePoint,
+        forced: zone.details?.forced === true
+      };
+    }
+  }
+  const party = state.parties?.[id] || null;
+  const partyPoint = party && !party.destroyed && String(party.state || '') !== 'destroyed'
+    ? sanitizeServerGlobalMapPoint(party)
+    : null;
+  const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
+  if (partyPoint && serverGlobalPointDistance(point, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
+    return {
+      id,
+      kind: 'party',
+      title: safeName(party.name || 'Отряд пустоши'),
+      point: partyPoint,
+      forced: party.forced === true
+    };
+  }
+  return null;
+}
+
+function serverFinishGlobalTravelEncounterDecision(session = null, decision = 'skip', now = Date.now()) {
+  const pending = session?.pendingEncounter || null;
+  if (!session || !pending) return null;
+  const pausedMs = Math.max(0, Number(now || Date.now()) - Number(pending.pauseAt || now));
+  session.startedAt = Number(session.startedAt || now) + pausedMs;
+  session.arrivalAt = Number(session.arrivalAt || now) + pausedMs;
+  session.pendingEncounter = null;
+  return {
+    leaderId: session.leaderId,
+    leaderName: session.leaderName,
+    pending: false,
+    decision: decision === 'enter' ? 'enter' : 'skip',
+    encounterId: pending.id,
+    encounterKind: pending.kind,
+    title: pending.title,
+    targetLocationId: session.targetLocationId,
+    decisionId: pending.decisionId,
+    serverNow: Number(now || Date.now())
+  };
+}
+
+function scheduleServerGlobalTravelEncounterTimeout(session = null) {
+  const decisionId = String(session?.pendingEncounter?.decisionId || '');
+  const deadlineAt = Number(session?.pendingEncounter?.deadlineAt || 0);
+  if (!session || !decisionId || deadlineAt <= 0) return;
+  setTimeout(() => {
+    const live = globalTravelSessions.get(session.leaderId);
+    if (live !== session || String(live.pendingEncounter?.decisionId || '') !== decisionId) return;
+    const payload = serverFinishGlobalTravelEncounterDecision(live, 'skip', Date.now());
+    if (!payload) return;
+    payload.reason = 'leaderDecisionTimeout';
+    emitGlobalTravelToParty(live, 'globalTravelEncounterDecision', payload, true);
+  }, Math.max(1, deadlineAt - Date.now()));
+}
+
 function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
   if (!session || session.terminating) return null;
   const serverNow = Number(now || Date.now());
+  const progressNow = session.pendingEncounter?.pauseAt
+    ? Math.min(serverNow, Number(session.pendingEncounter.pauseAt))
+    : serverNow;
   const durationMs = Math.max(0, Number(session.durationMs || 0));
   const elapsedMs = durationMs > 0
-    ? clamp(serverNow - Number(session.startedAt || serverNow), 0, durationMs)
+    ? clamp(progressNow - Number(session.startedAt || progressNow), 0, durationMs)
     : durationMs;
   const fromPoint = sanitizeServerGlobalMapPoint(session.fromPoint || session.worldPoint || null);
   const toPoint = sanitizeServerGlobalMapPoint(session.targetPoint || fromPoint);
@@ -20474,9 +23344,19 @@ function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
     durationMs,
     distanceKm: Math.max(0, Number(session.distanceKm || 0)),
     speedKmh: Math.max(0, Number(session.speedKmh || 0)),
+    clanConvoy: session.clanConvoy === true,
+    clanCaravanSpeedPct: Math.max(0, Number(session.clanCaravanSpeedPct || 0)),
     worldHours: Math.max(0, Number(session.worldHours || 0)),
     wandererSkill: 0,
     serverAuthoritative: true,
+    encounterDecision: session.pendingEncounter ? {
+      encounterId: session.pendingEncounter.id,
+      encounterKind: session.pendingEncounter.kind,
+      title: session.pendingEncounter.title,
+      forced: session.pendingEncounter.forced === true,
+      decisionId: session.pendingEncounter.decisionId,
+      deadlineAt: session.pendingEncounter.deadlineAt
+    } : null,
     startedAt: Number(session.startedAt || serverNow),
     arrivalAt: Number(session.arrivalAt || serverNow),
     serverNow,
@@ -20520,14 +23400,13 @@ function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', 
     candidates.push({ kind: 'site', point: center, radius: SERVER_GLOBAL_LOCATION_RADIUS, site, siteId: String(site.id || ''), locationId, distance, preferred });
   }
   for (const node of (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])) {
-    if (String(node?.kind || 'settlement').toLowerCase() !== 'settlement') continue;
     const locationId = normalizeLocationId(node?.locationId || node?.id || '');
     if (!LOCATIONS[locationId] || !isReleasedLocationId(locationId)) continue;
     const center = sanitizeServerGlobalMapPoint(node);
     const distance = serverGlobalPointDistance(target, center);
     if (!center || distance > SERVER_GLOBAL_LOCATION_RADIUS + 1) continue;
     candidates.push({
-      kind: 'settlement', point: center, radius: SERVER_GLOBAL_LOCATION_RADIUS,
+      kind: 'location', point: center, radius: SERVER_GLOBAL_LOCATION_RADIUS,
       node, siteId: '', locationId, distance, preferred: !!preferredLocation && locationId === preferredLocation
     });
   }
@@ -20535,8 +23414,40 @@ function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', 
   return candidates[0] || { kind: 'point', point: target, radius: 0, siteId: '', locationId: 'wasteland', distance: 0, preferred: false };
 }
 
+function serverPlayerAllowsGlobalMapExit(p = {}) {
+  const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+  if (loc.allowGlobalMapExit === false) return false;
+  const prologueLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.firstMissionLocationId || 'randomRuinedRoad');
+  if (loc.id === prologueLocationId && p.kromkaOnboarding?.phase === 'firstMission') return false;
+  return true;
+}
+
+function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER_COLLISION_RADIUS) {
+  if (!room || serverPlayerAllowsGlobalMapExit(p)) return null;
+  const bounds = normalizedLocationPlayableBounds(roomLocation(room));
+  const inset = Math.max(1, WORLD_MAP_EXIT_BAND_TILES);
+  const minTileX = Math.min(bounds.maxX, bounds.minX + inset);
+  const maxTileX = Math.max(bounds.minX, bounds.maxX - inset);
+  const minTileZ = Math.min(bounds.maxZ, bounds.minZ + inset);
+  const maxTileZ = Math.max(bounds.minZ, bounds.maxZ - inset);
+  const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
+  const epsilon = 0.001;
+  return {
+    minX: (minTileX - MAP_W / 2) * TILE + safeRadius,
+    maxX: (maxTileX + 1 - MAP_W / 2) * TILE - safeRadius - epsilon,
+    minZ: (minTileZ - MAP_H / 2) * TILE + safeRadius,
+    maxZ: (maxTileZ + 1 - MAP_H / 2) * TILE - safeRadius - epsilon
+  };
+}
+
+function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
+  if (!bounds) return true;
+  return Number(x) >= bounds.minX && Number(x) <= bounds.maxX
+    && Number(z) >= bounds.minZ && Number(z) <= bounds.maxZ;
+}
+
 function serverPlayerAtGlobalMapExit(p = {}) {
-  if (!p?.roomId) return false;
+  if (!p?.roomId || !serverPlayerAllowsGlobalMapExit(p)) return false;
   const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const bounds = normalizedLocationPlayableBounds(loc);
@@ -20686,7 +23597,7 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
       const loc = LOCATIONS[requestedLocationId] || {};
       const resolvedSiteId = String(locationSite?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
       return {
-        kind: node ? 'settlement' : 'site', point, radius: SERVER_GLOBAL_LOCATION_RADIUS,
+        kind: node ? 'location' : 'site', point, radius: SERVER_GLOBAL_LOCATION_RADIUS,
         locationId: requestedLocationId, siteId: resolvedSiteId,
         partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
         pvpMode: normalizeLocationPvpMode(locationSite?.pvpMode || locationPvpMode(loc), loc.safe !== false),
@@ -20749,10 +23660,10 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
         pvpMode: normalizeLocationPvpMode(destination.site?.pvpMode || locationPvpMode(loc), loc.safe !== false),
         entryKey: serverGlobalEntryKey(destination.locationId, destination.point, session.fromPoint)
       };
-    } else if (destination.kind === 'settlement') {
+    } else if (destination.kind === 'location') {
       const loc = LOCATIONS[destination.locationId] || {};
       resolution = {
-        kind: 'settlement', point: destination.point, radius: destination.radius,
+        kind: 'location', point: destination.point, radius: destination.radius,
         locationId: destination.locationId, siteId: '',
         partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
         pvpMode: locationPvpMode(loc),
@@ -21070,12 +23981,21 @@ io.on('connection', (socket) => {
     const characterRow = ensureServerCharacterForJoin(auth, data, characterId);
     if (!characterRow?.state) return rejectJoin(socket, ack, 'Сервер не смог загрузить персонажа.');
     const savedState = characterRow.state;
+    migrateSavedStateToKromka(savedState, KROMKA_SAVE_MIGRATION, GLOBAL_MAP);
     const savedProfile = savedState.characterProfile || {};
     const savedPlayer = savedState.player || {};
+    const savedDownedState = restoreDownedState(savedPlayer);
 
+    const resumableSiege = serverActiveSiegeForCharacter(characterId, Date.now());
     const savedLocationId = normalizeLocationId(savedState.currentLocationId || 'settlement');
-    let locationId = LOCATIONS[savedLocationId] ? savedLocationId : 'settlement';
+    let locationId = resumableSiege ? 'clanSiege' : (LOCATIONS[savedLocationId] ? savedLocationId : 'settlement');
+    if (!resumableSiege && locationId === 'clanSiege') locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
     let baseLoc = LOCATIONS[locationId] || {};
+    if (locationId === 'personalBase' && serverPersonalBaseForAccount(auth.user.id, false)?.rights?.granted !== true) {
+      locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
+      baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
+      savedState.currentLocationId = locationId;
+    }
     let savedLocationContext = sanitizeServerLocationContext(savedState.serverLocationContext || {}, locationId);
     const temporaryLocation = !!(baseLoc.encounterOnly || baseLoc.randomTemplate);
     const savedTemporaryRoomId = savedLocationContext.locationId === locationId
@@ -21108,10 +24028,15 @@ io.on('connection', (socket) => {
     const joinSiteRoomId = !sharedRealityLocation && savedLocationContext.siteId
       ? roomIdForWorldSite(locationId, savedLocationContext.siteId)
       : '';
+    const privateRoomOwnerId = locationId === 'personalBase' ? String(auth.user.id || characterId) : characterId;
+    const privateRoomId = resumableSiege?.roomId || (baseLoc.privateInstance === true
+      ? `${locationId}#${privateRoomOwnerId}`.slice(0, 96)
+      : '');
     leaveCurrentRoom(socket, 'join', { newLocationId: locationId });
     const room = savedRoomId
       ? getOrCreateRoom(savedRoomId, locationId)
-      : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId) : chooseRoomForLocation(locationId));
+      : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
+        : (privateRoomId ? getOrCreateRoom(privateRoomId, locationId) : chooseRoomForLocation(locationId)));
     {
       const loc = roomLocation(room);
       const previousEncounterKey = [
@@ -21168,12 +24093,12 @@ io.on('connection', (socket) => {
     auth.session.lastSeenAt = Date.now();
     persistUsers();
 
-    const savedWorldFactionId = savedCharacterWorldFaction(auth.user.id, characterId);
-    const worldFactionId = savedWorldFactionId;
+    const worldFactionId = '';
     const savedEquipment = serverSavedEquipment(savedState);
     const savedEquipmentRuntime = serverSavedEquipmentRuntime(savedState, savedEquipment);
     const savedInventory = serverBagInventoryFromSavedState(savedState);
     const savedFactionStorages = serverFactionStoragesFromState(savedState);
+    const savedFactionStorageRuntime = serverFactionStorageRuntimeFromState(savedState);
     const savedStorageFaction = serverStorageFactionKey(locationCapitalFaction(room.locationId));
     const savedGlobalMap = savedState.globalMap && typeof savedState.globalMap === 'object' ? savedState.globalMap : {};
     const savedGlobalWorldPoint = sanitizeServerGlobalMapPoint({ x: savedGlobalMap.playerX, y: savedGlobalMap.playerY });
@@ -21206,10 +24131,14 @@ io.on('connection', (socket) => {
       appearance: sanitizeCharacterAppearance(savedProfile.appearance || data.appearance || {}),
       skillRanks: sanitizeSkillRanks(savedState.skillRanks || {}),
       talentRanks: sanitizeTalentRanks(savedState.talentRanks || {}),
+      progressionLedger: savedState.progressionLedger && typeof savedState.progressionLedger === 'object'
+        ? savedState.progressionLedger : null,
+      inventoryMutationLedger: sanitizeInventoryMutationLedger(savedState.inventoryMutationLedger || []),
+      criticalActionLedger: sanitizeCriticalActionLedger(savedState.criticalActionLedger || []),
       traits: sanitizeTraits(savedProfile.traits || []),
       taggedSkills: sanitizeTaggedSkills(savedProfile.taggedSkills || []),
       hp: clampPlayerHp(savedPlayer.hp ?? savedPlayer.maxHp ?? 100, savedPlayer.maxHp || 100),
-      dead: false,
+      ...savedDownedState,
       equipment: savedEquipment,
       equipmentRuntime: savedEquipmentRuntime,
       equipmentRevision: 0,
@@ -21232,6 +24161,7 @@ io.on('connection', (socket) => {
       storage: savedStorageFaction ? savedFactionStorages[savedStorageFaction] : [],
       storageFaction: savedStorageFaction,
       factionStorages: savedFactionStorages,
+      factionStorageRuntime: savedFactionStorageRuntime,
       itemConditions: serverItemConditionsFromSavedState(savedState),
       npcQuests: sanitizeServerNpcQuestState(savedState.npcQuests || {}),
       worldTaskAccepted: sanitizeServerWorldTaskIds(savedState.worldTaskAccepted || []),
@@ -21239,6 +24169,26 @@ io.on('connection', (socket) => {
       worldTaskRewardClaims: sanitizeServerWorldTaskClaimIds(savedState.worldTaskRewardClaims || []),
       worldFactionReputation: sanitizeServerWorldFactionReputation(
         savedState.worldFactionReputation || savedProfile.worldFactionReputation || {}
+      ),
+      factionContracts: sanitizeServerFactionContracts(
+        savedState.factionContracts || savedProfile.factionContracts || {}
+      ),
+      knownFactionSecrets: savedState.knownFactionSecrets && typeof savedState.knownFactionSecrets === 'object'
+        ? savedState.knownFactionSecrets : {},
+      kromkaQuestState: sanitizeKromkaQuestState(savedState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
+      artifactRecords: Array.isArray(savedState.artifactRecords) ? savedState.artifactRecords : [],
+      artifactSlots: Array.isArray(savedState.artifactSlots) ? savedState.artifactSlots : [],
+      artifactRuntime: sanitizeArtifactRuntime(savedState.artifactRuntime),
+      radiation: Math.max(0, Number(savedState.radiation) || 0),
+      lastServerDamageAt: Math.min(Date.now(), Math.max(0, Number(savedState.lastServerDamageAt) || 0)),
+      artifactBloodkinCooldownUntil: Math.min(Date.now() + 90000, Math.max(0, Number(savedState.artifactBloodkinCooldownUntil) || 0)),
+      artifactBloodkinHealingUntil: Math.min(Date.now() + 10000, Math.max(0, Number(savedState.artifactBloodkinHealingUntil) || 0)),
+      kromkaOnboarding: sanitizeKromkaOnboarding(
+        savedState.kromkaOnboarding || {
+          phase: 'complete', tutorialCompleted: true, missionCompleted: true
+        }, KROMKA_ONBOARDING_CATALOG, {
+          accountCompleted: Number(auth.user.kromkaTutorialCompletedAt || 0) > 0
+        }
       ),
       lastWorldActivityResult: sanitizeServerWorldActivityResult(savedState.lastWorldActivityResult),
       socialState: sanitizeServerSocialState(savedState.socialState || {}),
@@ -21252,6 +24202,7 @@ io.on('connection', (socket) => {
       lastWorldEntryOrigin: null,
       lastWorldEntryRadius: SERVER_GLOBAL_LOCATION_RADIUS
     };
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
     {
       const loc = roomLocation(room);
       if (loc.encounterOnly || (loc.randomTemplate && room.encounterId) || room.locationWorldEvent) {
@@ -21280,6 +24231,16 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
     players.set(socket.id, p);
+    if (resumableSiege) {
+      room.siegeEventId = resumableSiege.id;
+      const siegeClan = serverSiegeClanForCharacter(characterId);
+      p.kromkaSiegeEventId = resumableSiege.id;
+      p.kromkaSiegeClanId = siegeClan?.id || '';
+      resumableSiege.participants = resumableSiege.participants || {};
+      resumableSiege.participants[characterId] = {
+        ...(resumableSiege.participants[characterId] || {}), clanId: siegeClan?.id || '', socketId: socket.id, lastSeenAt: Date.now()
+      };
+    }
     settleServerWorldActivityPlayers(p.worldTaskAccepted);
     syncServerPlayerWorldPartyAttachment(p, WASTELAND_SIM.state(), { persist: false, emit: false });
     p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
@@ -21290,7 +24251,8 @@ io.on('connection', (socket) => {
       p.globalWorldPoint = point;
       if (!p.attachedPartyTaskId && !p.pendingLocationTransition) {
         const startedAt = Date.now();
-        globalTravelSessions.set(socket.id, {
+        const restoredTravel = serverRestoredGlobalTravelSession(p, savedGlobalMap, startedAt);
+        globalTravelSessions.set(socket.id, restoredTravel || {
           id: `travel_${socket.id}_${startedAt}`,
           leaderId: socket.id,
           leaderName: p.name || 'Игрок',
@@ -21334,15 +24296,23 @@ io.on('connection', (socket) => {
     ensureServerWorldActivityForRoom(room, Date.now());
     refreshRoomWorldState(room, { force: true });
     if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
+    emitKromkaOnboardingState(p);
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true, socket.id);
     emitWorldContainersSnapshot(room, true, socket.id);
+    emitServerArtifactState(p, 'join');
+    if (p.locationId === 'personalBase') emitServerPersonalBaseState(p, 'join');
+    emitServerKromkaClanState(p, 'join');
+    emitServerKromkaSiegeState(p, resumableSiege ? 'reconnected' : 'join');
   });
 
-  socket.on('state', (data = {}) => {
+  socket.on('state', (data = {}, ack) => {
     const p = players.get(socket.id);
-    if (!p) return;
+    if (!p) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Персонаж не находится в игре.' });
+      return;
+    }
     const stateReceivedAt = Date.now();
     const profileOnly = !!data.profileOnly;
     const incomingMovementSeq = Number(data.seq || 0);
@@ -21379,7 +24349,7 @@ io.on('connection', (socket) => {
       hardMovementApplied = true;
       p.angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle;
       if (typeof data.crouching !== 'undefined') p.crouching = !!data.crouching;
-      if (typeof data.moving !== 'undefined') p.moving = !!data.moving;
+      if (typeof data.moving !== 'undefined') p.moving = !!data.moving && !p.dead && !p.downed && !isArtifactStunned(p, stateReceivedAt);
       if (typeof data.turning !== 'undefined') p.turning = !!data.turning;
       else p.turning = false;
       p.vx = p.moving ? clampPlayerVelocity(data.vx) : 0;
@@ -21409,9 +24379,12 @@ io.on('connection', (socket) => {
       && !movementBudget.hardAllowed) {
       realtimeNetworkMetrics.movementEmergencyTransitionsDropped++;
     }
-    const progressionChanged = serverStateHasProgressionProfile(data)
-      ? serverApplyProgressionRequest(p, data)
-      : false;
+    const progressionResult = serverStateHasProgressionProfile(data)
+      ? (profileOnly
+        ? serverApplyProgressionProposal(p, data, { strict: true })
+        : { ok: true, changed: serverApplyProgressionRequest(p, data), error: '' })
+      : null;
+    const progressionChanged = progressionResult?.changed === true;
     if (Object.prototype.hasOwnProperty.call(data, 'deviceType')
       || Object.prototype.hasOwnProperty.call(data, 'controlType')) {
       p.deviceType = normalizeDeviceType(data.deviceType || p.deviceType || 'desktop');
@@ -21429,6 +24402,9 @@ io.on('connection', (socket) => {
       });
     }
     p.lastInputAt = stateReceivedAt;
+    if (p.crouching && Math.hypot(Number(p.x || 0), Number(p.z || 0) - 12) <= 1.5) {
+      serverRecordTutorialFact(p, 'coverUsed');
+    }
     if (p.token && usersDb.sessions[p.token]) usersDb.sessions[p.token].lastSeenAt = stateReceivedAt;
     // v7.74.48: быстрый компактный поток движения. Полный snapshot остаётся
     // авторитетным для состава комнаты, но не должен быть единственным источником
@@ -21477,6 +24453,14 @@ io.on('connection', (socket) => {
         });
       }
     }
+    if (typeof ack === 'function') {
+      ack({
+        ok: progressionResult?.ok !== false,
+        changed: progressionChanged,
+        error: progressionResult?.error || '',
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
   });
 
   socket.on('equipmentAction', (data = {}, ack) => {
@@ -21494,7 +24478,14 @@ io.on('connection', (socket) => {
     if (!p || p.dead || Number(p.hp || 0) <= 0) {
       return respond({ ok: false, error: 'Игрок недоступен.' });
     }
-    respond(serverApplyEquipmentAction(p, data, Date.now()));
+    const result = serverApplyEquipmentAction(p, data, Date.now());
+    if (result.ok && serverTutorialEquipmentReady(p)) serverRecordTutorialFact(p, 'equipmentWorn');
+    if (result.ok && ['detector', 'artifactBelt'].includes(String(data.slot || ''))) {
+      sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+      serverApplyDerivedVitals(p);
+      emitServerArtifactState(p, 'equipment');
+    }
+    respond(result);
   });
 
   socket.on('input', (data = {}) => {
@@ -21517,12 +24508,802 @@ io.on('connection', (socket) => {
     p.lastLegacyInputAt = p.lastInputAt;
   });
 
+  socket.on('kromkaOnboardingAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || p.dead || !p.roomId || p.onGlobalMap) return fail('Подготовка сейчас недоступна.');
+    const action = String(data.action || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+    if (action === 'finish_cinematic') {
+      if (!finishCaravanCinematic(rooms.get(p.roomId), p, String(data.cinematicId || '')))
+        return fail('Кат-сцена для этого персонажа не запущена.');
+      if (typeof ack === 'function') ack({ ok: true });
+      return;
+    }
+    if (action === 'skip_tutorial') {
+      const result = serverAdvanceKromkaOnboarding(p, '', { skip: true });
+      if (typeof ack === 'function') ack(result);
+      return;
+    }
+    const playerActions = new Set([
+      'sign_contract', 'inspect_yard', 'confirm_equipment', 'hit_training_target',
+      'apply_first_aid', 'gather_training_resources', 'craft_training_repair_kit',
+      'repair_training_weapon', 'reload_training_weapon', 'take_cover',
+      'discharge_training_chime', 'depart_caravan', 'recover_gear',
+      'check_survivors', 'cross_ambush_anomaly', 'activate_transmitter',
+      'resolve_cargo', 'reach_keys'
+    ]);
+    if (!playerActions.has(action)) return fail('Неизвестное действие подготовки.');
+    const onboarding = publicKromkaOnboarding(p.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG);
+    const requiredNpcId = String(onboarding.step?.npcId || '');
+    let npcId = '';
+    let dialogueValidated = false;
+    if (requiredNpcId) {
+      const enemyId = String(data.enemyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const source = serverKromkaOnboardingActor(p, enemyId, requiredNpcId);
+      if (!source.ok) return fail(source.error);
+      npcId = String(source.actor.kromkaOnboardingNpcId || '');
+      dialogueValidated = true;
+    }
+    const result = serverAdvanceKromkaOnboarding(p, action, {
+      choiceId: String(data.choiceId || '').slice(0, 64),
+      npcId,
+      dialogueValidated
+    });
+    if (typeof ack === 'function') ack({
+      ...result,
+      self: result.ok ? publicAuthoritativePlayerState(p) : undefined
+    });
+  });
+
+  socket.on('kromkaQuestAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, journal: p ? publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG) : null, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || p.downed) return fail('Сюжетное действие сейчас недоступно.');
+    const mode = String(data.mode || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const questId = String(data.questId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
+    const quest = serverKromkaQuestById(questId);
+    if (!quest) return fail('Авторское задание не найдено.');
+    const transaction = beginCriticalAction(
+      p,
+      'kromkaQuestAction',
+      data,
+      ['mode', 'questId', 'enemyId', 'outcomeId']
+    );
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        journal: publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
+    let result;
+    let questOutcomeCost = null;
+    if (mode === 'start') {
+      const source = serverKromkaQuestActor(p, String(data.enemyId || ''), questId);
+      if (!source.ok) return fail(source.error);
+      result = startKromkaQuest(p.kromkaQuestState || {}, questId, KROMKA_QUEST_CATALOG, { reputation: p.worldFactionReputation || {} }, Date.now());
+    } else if (mode === 'turnin') {
+      const source = serverKromkaQuestActor(p, String(data.enemyId || ''), questId);
+      if (!source.ok) return fail(source.error);
+      result = turnInKromkaQuest(p.kromkaQuestState || {}, questId, KROMKA_QUEST_CATALOG, Date.now());
+    } else if (mode === 'dialogue') {
+      const source = serverKromkaQuestActor(p, String(data.enemyId || ''), questId);
+      if (!source.ok) return fail(source.error);
+      const active = p.kromkaQuestState?.active?.[questId];
+      const objective = String(quest.objectives?.[Number(active?.objectiveIndex || 0)] || '');
+      if (!active || active.awaitingOutcome || active.awaitingTurnIn || !objective) {
+        return fail('Для этого дела сейчас нет следующего этапа разговора.');
+      }
+      const binding = KROMKA_QUEST_CATALOG.objectiveBindings?.[objective] || {};
+      if (String(binding.type || '') !== 'dialogue'
+          || !(binding.npcIds || []).map(String).includes(String(source.actor.kromkaNamedNpcId || ''))) {
+        return fail('Сначала выполните условие задания в игровом мире. Один разговор его не заменяет.');
+      }
+      const questProgress = serverRecordKromkaQuestEvent(p, objective, {
+        locationId: p.locationId,
+        actorId: String(source.actor.kromkaNamedNpcId || ''),
+        source: 'npc_dialogue_action'
+      });
+      const advanced = questProgress.find(row => row.questId === questId && row.objective === objective);
+      if (!advanced) return fail('Разговор не продвинул текущую цель.');
+      commitCriticalAction(p, transaction, { ok: true, action: mode, questId, objective });
+      persistActivePlayerState(p);
+      if (typeof ack === 'function') ack({
+        ok: true,
+        result: {
+          objective,
+          awaitingOutcome: advanced.awaitingOutcome === true,
+          awaitingTurnIn: advanced.awaitingTurnIn === true
+        },
+        questProgress,
+        journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG),
+        self: publicAuthoritativePlayerState(p)
+      });
+      return;
+    } else if (mode === 'record') {
+      return fail('Цели подтверждаются действиями в игровом мире, а не кнопкой журнала.');
+    } else if (mode === 'outcome') {
+      const source = serverKromkaQuestActor(p, String(data.enemyId || ''), questId);
+      if (!source.ok) return fail(source.error);
+      if (questId === 'personal_aktov_air_rights') {
+        const outcomeId = String(data.outcomeId || '');
+        const rightsOutcome = (KROMKA_BASE_BUILDING_CATALOG.rightsQuest?.outcomes || [])
+          .find(row => String(row.id || '') === outcomeId);
+        if (!rightsOutcome) return fail('Неизвестный вариант оформления участка.');
+        questOutcomeCost = rightsOutcome.cost || {};
+        if (!Object.entries(questOutcomeCost).every(([id, qty]) => serverInventoryQty(p.inventory, id) >= Number(qty || 0))) {
+          return fail('Не хватает платы за оформление участка.');
+        }
+      }
+      result = chooseKromkaQuestOutcome(p.kromkaQuestState || {}, questId, String(data.outcomeId || ''), KROMKA_QUEST_CATALOG, Date.now());
+    } else return fail('Неизвестное сюжетное действие.');
+    if (!result.ok) return fail(result.error || 'Сюжетное действие отклонено.');
+    if (questOutcomeCost && !serverConsumeCost(p, questOutcomeCost)) return fail('Не хватает платы за оформление участка.');
+    serverApplyKromkaQuestResult(p, result, quest);
+    commitCriticalAction(p, transaction, {
+      ok: true,
+      action: mode,
+      completed: result.completed === true
+    });
+    persistActivePlayerState(p);
+    if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('requestArtifactState', (_data = {}, ack) => {
+    const p = players.get(socket.id);
+    if (!p || !p.roomId) return typeof ack === 'function' && ack({ ok: false, error: 'Игрок не в локации.' });
+    const state = emitServerArtifactState(p, 'request');
+    if (typeof ack === 'function') ack({ ok: true, state });
+  });
+
+  socket.on('pickupArtifact', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.dead || p.downed || p.onGlobalMap) return fail('Сейчас нельзя забрать артефакт.');
+    const room = rooms.get(p.roomId);
+    if (!room) return fail('Локация уже недоступна.');
+    serverEnsureRoomArtifacts(room, Date.now());
+    const candidate = room.kromkaArtifactState?.artifacts?.find(row => row.id === String(data.artifactId || ''));
+    if (candidate && !candidate.pickedUp) {
+      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: candidate.itemId, qty: 1 }], { apply: false });
+      if (!carryCheck.items.some(row => row.id === candidate.itemId && row.qty >= 1))
+        return fail('Нет места или грузоподъёмности для артефакта.');
+    }
+    const result = serverPickupArtifact(room, p, String(data.artifactId || ''), KROMKA_ARTIFACT_CATALOG, Date.now());
+    if (!result.ok) return fail(result.error || 'Артефакт не удалось забрать.');
+    KROMKA_CLAIMED_ARTIFACT_IDS.add(String(result.record.id || ''));
+    savesDb.claimedArtifactIds = [...KROMKA_CLAIMED_ARTIFACT_IDS];
+    serverInventoryAdd(p, result.record.itemId, 1);
+    serverRecordKromkaQuestEvent(p, 'recover_magnetic_core', {
+      locationId: p.locationId,
+      objectId: result.record.id,
+      itemId: String(result.record.itemId || ''),
+      source: 'artifact_pickup'
+    });
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    persistActivePlayerState(p);
+    for (const occupant of livePlayersInRoom(room)) emitServerArtifactState(occupant, 'pickedUp');
+    const self = publicAuthoritativePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'artifactPickup' });
+    if (typeof ack === 'function') ack({ ok: true, record: result.record, self });
+  });
+
+  socket.on('stabilizeArtifact', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || p.dead || p.onGlobalMap) return fail('Стабилизация здесь недоступна.');
+    const loc = roomLocation(rooms.get(p.roomId));
+    if (!loc?.safe && p.locationId !== 'personalBase') return fail('Нужен безопасный специалист или станок личной базы.');
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
+    if (!record) return fail('Артефакт не найден.');
+    if (record.stabilized && !record.hot) return fail('Артефакт уже стабилизирован.');
+    record.hot = false;
+    record.stabilized = true;
+    record.containerId = '';
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'artifactStabilized' });
+    if (typeof ack === 'function') ack({ ok: true, record, self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('artifactLoadoutAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || p.dead) return fail('Снаряжение артефактов недоступно.');
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const capacity = serverArtifactBeltCapacity(p, KROMKA_ARTIFACT_CATALOG);
+    if (capacity <= 0) return fail('Сначала наденьте пояс-контейнер.');
+    const action = String(data.action || 'equip');
+    const recordId = String(data.recordId || '').slice(0, 96);
+    if (action === 'unequip') {
+      p.artifactSlots = p.artifactSlots.filter(id => id !== recordId);
+    } else {
+      const record = p.artifactRecords.find(row => row.id === recordId);
+      if (!record || !record.stabilized || record.hot) return fail('На пояс ставится только стабилизированный артефакт.');
+      const equippedRecords = p.artifactRecords.filter(row => p.artifactSlots.includes(row.id));
+      if (equippedRecords.some(row => row.typeId === record.typeId && row.id !== record.id)) return fail('Два одинаковых артефакта не складываются.');
+      const slotIndex = Math.floor(Number(data.slotIndex ?? p.artifactSlots.length));
+      if (!Number.isFinite(slotIndex) || slotIndex < 0 || slotIndex >= capacity) return fail('На поясе нет свободного места. Сначала снимите артефакт.');
+      const next = p.artifactSlots.filter(id => id !== recordId);
+      while (next.length < capacity) next.push('');
+      next[slotIndex] = recordId;
+      p.artifactSlots = next.filter(Boolean).slice(0, capacity);
+    }
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    serverApplyDerivedVitals(p);
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'artifactLoadout' });
+    if (typeof ack === 'function') ack({ ok: true, self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('requestPersonalBaseState', (_data = {}, ack) => {
+    const p = players.get(socket.id);
+    if (!p) return typeof ack === 'function' && ack({ ok: false, error: 'Игрок не найден.' });
+    const payload = emitServerPersonalBaseState(p, 'request');
+    if (typeof ack === 'function') ack({ ok: true, ...payload });
+  });
+
+  socket.on('requestKromkaClanState', (_data = {}, ack) => {
+    const p = players.get(socket.id);
+    if (!p) return typeof ack === 'function' && ack({ ok: false, error: 'Игрок не найден.' });
+    const payload = emitServerKromkaClanState(p, 'request');
+    if (typeof ack === 'function') ack({ ok: true, ...payload });
+  });
+
+  socket.on('requestKromkaSiegeState', (_data = {}, ack) => {
+    const p = players.get(socket.id);
+    if (!p) return typeof ack === 'function' && ack({ ok: false, error: 'Игрок не найден.' });
+    const state = emitServerKromkaSiegeState(p, 'request');
+    if (typeof ack === 'function') ack({ ok: true, state });
+  });
+
+  socket.on('kromkaSiegeAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const stateForAck = () => p ? serverPublicKromkaSiegeState(p, Date.now()) : null;
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, state: stateForAck() }); };
+    if (!p || p.dead || p.downed) return fail('Действие осады сейчас недоступно.');
+    const clan = serverKromkaClanForPlayer(p);
+    if (!clan) return fail('Для осады нужен клан.');
+    const action = String(data.action || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+    const now = Date.now();
+
+    if (action === 'challenge') {
+      if (!serverCanManageClan(clan, p.characterId)) return fail('Объявить вызов может основатель или офицер.');
+      if (clan.baseId) return fail('Клан-владелец не может одновременно претендовать на вторую базу.');
+      const baseId = String(data.baseId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+      const profile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === baseId);
+      const base = savesDb.kromkaClans.bases?.[baseId];
+      if (!profile || !base) return fail('Стратегическая база не найдена.');
+      if (base.ownerClanId === clan.id) return fail('Нельзя объявить вызов собственной базе.');
+      const defenderClanId = base.ownerClanId || 'neutral';
+      const requestedAt = Math.floor(Number(data.startAt || 0));
+      const windows = upcomingSiegeWindows(KROMKA_CLAN_BASE_CATALOG, now, 15 * 86400000)
+        .filter(row => row.baseId === baseId && row.startAt >= now + Number(KROMKA_SIEGE_CATALOG.announceLeadMs || 86400000));
+      const window = requestedAt ? windows.find(row => row.startAt === requestedAt) : windows[0];
+      if (!window) return fail('Нужно выбрать неизменяемое окно не раньше чем через 24 часа.');
+      if (Number(base.protectionUntil || 0) >= window.startAt) return fail('До следующего окна действует защита после захвата.');
+      let event = savesDb.kromkaSieges.events[window.id];
+      const created = !event;
+      if (!event) {
+        event = createSiegeEvent({
+          ...window, defenderClanId, roomId: serverSiegeRoomId(baseId, window.id)
+        }, KROMKA_SIEGE_CATALOG, now);
+        savesDb.kromkaSieges.events[event.id] = event;
+      }
+      if (event.defenderClanId !== defenderClanId || event.status !== 'scheduled') {
+        if (created) delete savesDb.kromkaSieges.events[event.id];
+        return fail('Это окно уже закрыто или владелец изменился.');
+      }
+      const challenge = serverAddSiegeChallenge(event, clan.id, now, KROMKA_SIEGE_CATALOG.pledge || {});
+      if (!challenge.ok) { if (created) delete savesDb.kromkaSieges.events[event.id]; return fail(challenge.error); }
+      if (!serverConsumeCost(p, KROMKA_SIEGE_CATALOG.pledge || {})) {
+        event.challengers = event.challengers.filter(row => row.clanId !== clan.id);
+        delete event.relayScores[clan.id];
+        if (created && event.challengers.length === 0) delete savesDb.kromkaSieges.events[event.id];
+        return fail('Не хватает ресурсного залога для вызова.');
+      }
+      clan.lastActiveAt = now;
+      persistActivePlayerState(p);
+      emitAuthoritativePlayerState(p, { reason: 'siegePledge' });
+    } else if (action === 'registerSelf' || action === 'unregisterSelf') {
+      const event = serverSiegeEvent(data.eventId);
+      if (!event || event.status !== 'scheduled') return fail('Регистрация на эту осаду закрыта.');
+      const result = action === 'registerSelf'
+        ? serverRegisterSiegeMember(event, clan, p.characterId, now, KROMKA_SIEGE_CATALOG)
+        : serverUnregisterSiegeMember(event, clan.id, p.characterId, now);
+      if (!result.ok) return fail(result.error);
+    } else if (action === 'enter') {
+      const event = serverSiegeEvent(data.eventId);
+      if (!event || !serverEnterSiegeRoom(p, event)) return fail('Вход разрешён только зарегистрированному участнику активной стороны.');
+      persistSaves();
+      const state = serverPublicKromkaSiegeState(p, now);
+      emitKromkaSiegeStateToAll('entered');
+      if (typeof ack === 'function') ack({ ok: true, transferred: true, state });
+      return;
+    } else if (['captureRelay', 'damageGate', 'captureCore', 'contestCore'].includes(action)) {
+      const event = serverSiegeEvent(data.eventId || p.kromkaSiegeEventId);
+      if (!event || p.roomId !== event.roomId || p.locationId !== 'clanSiege') return fail('Действие возможно только внутри текущего контура осады.');
+      if (!serverSiegeIsRegistered(event, clan.id, p.characterId)) return fail('Персонажа нет в заблокированном составе.');
+      const objectiveId = String(data.objectiveId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+      const objective = serverSiegeObjectivePosition(action, objectiveId);
+      if (!objective || Math.hypot(Number(p.x || 0) - objective.x, Number(p.z || 0) - objective.z) > 3.4) return fail('Подойдите к цели осады.');
+      const result = serverApplySiegeObjective(event, { action, objectiveId, clanId: clan.id, characterId: p.characterId }, now, KROMKA_SIEGE_CATALOG);
+      if (!result.ok) return fail(result.error);
+      tickServerSiege(event, now, KROMKA_SIEGE_CATALOG);
+      if (event.status === 'resolved') serverFinalizeSiege(event, now);
+    } else return fail('Неизвестное действие осады.');
+
+    persistSaves();
+    emitKromkaSiegeStateToAll(action);
+    emitKromkaClanStateToAll(action);
+    if (typeof ack === 'function') ack({ ok: true, state: serverPublicKromkaSiegeState(p, now), self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('kromkaClanAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, state: p ? serverPublicKromkaClanState(p) : null }); };
+    if (!p || p.dead) return fail('Клановое действие сейчас недоступно.');
+    const clan = serverKromkaClanForPlayer(p);
+    if (!clan) return fail('Сначала создайте клан или примите приглашение в ПУТНИКЕ.');
+    const action = String(data.action || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+    const now = Date.now();
+    if (action === 'claimBase') {
+      return fail('Даже нейтральную базу можно занять только через объявленное окно осады.');
+    } else if (action === 'installModule') {
+      const baseId = String(data.baseId || '');
+      const socketId = String(data.socketId || '');
+      const result = serverInstallClanModule(savesDb.kromkaClans, clan.id, baseId, socketId, String(data.moduleId || ''), p.characterId, KROMKA_CLAN_BASE_CATALOG, now);
+      if (!result.ok) return fail(result.error);
+      if (!serverConsumeCost(p, result.cost)) {
+        const base = savesDb.kromkaClans.bases[baseId];
+        if (base?.modules?.[socketId] === result.module.moduleId) delete base.modules[socketId];
+        return fail('Не хватает материалов для модуля.');
+      }
+    } else if (action === 'deposit') {
+      const itemId = serverBaseItemId(data.itemId);
+      const qty = Math.max(1, Math.min(999, Math.floor(Number(data.qty || 1))));
+      if (!itemId || serverInventoryQty(p.inventory, itemId) < qty) return fail('В сумке нет такого количества.');
+      const ownedBaseProfile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === clan.baseId);
+      const storageMultiplier = 1 + Math.max(0, Number(ownedBaseProfile?.benefit?.clanStoragePct || 0));
+      const storageLimit = Math.floor(1000 * storageMultiplier);
+      const storedUnits = Object.values(clan.storage || {}).reduce((sum, value) => sum + Math.max(0, Number(value || 0)), 0);
+      if (storedUnits + qty > storageLimit) return fail(`Клановый склад заполнен: ${Math.floor(storedUnits)}/${storageLimit}.`);
+      const runtimeRemoval = serverValidateWeaponRuntimeRemoval(p, {
+        id: itemId,
+        qty,
+        itemRuntimeId: data.itemRuntimeId,
+        itemRuntimeIds: data.itemRuntimeIds
+      }, { releaseLoadedAmmo: true });
+      if (!runtimeRemoval.ok) return fail(runtimeRemoval.error);
+      const runtimeRecords = serverCaptureWeaponRuntimeRecords(p, { id: itemId, qty }, runtimeRemoval);
+      serverInventoryRemove(p, itemId, qty);
+      clan.storage[itemId] = Math.max(0, Number(clan.storage[itemId] || 0)) + qty;
+      clan.storageRuntime = sanitizeServerWeaponRuntimeStore(clan.storageRuntime || {});
+      for (const record of runtimeRecords) clan.storageRuntime[record.id] = record;
+      serverFinalizeWeaponRuntimeRemoval(p, { id: itemId, qty }, runtimeRemoval);
+    } else if (action === 'withdraw') {
+      const member = clan.members?.[p.characterId];
+      if (!['Основатель', 'Офицер', 'Кладовщик'].includes(String(member?.role || ''))) return fail('Нет права выдачи со склада.');
+      const itemId = serverBaseItemId(data.itemId);
+      const qty = Math.max(1, Math.min(999, Math.floor(Number(data.qty || 1))));
+      if (!itemId || Number(clan.storage[itemId] || 0) < qty) return fail('На клановом складе не хватает предметов.');
+      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: itemId, qty }], { apply: false });
+      if (!carryCheck.items.length || Number(carryCheck.items[0].qty || 0) < qty) return fail('Не хватает места или грузоподъёмности для выдачи со склада.');
+      const taken = serverTakeWeaponRuntimeStoreRecords(
+        clan.storageRuntime || {}, itemId, qty,
+        Array.isArray(data.itemRuntimeIds) ? data.itemRuntimeIds : [data.itemRuntimeId]
+      );
+      clan.storageRuntime = taken.store;
+      clan.storage[itemId] -= qty; if (clan.storage[itemId] <= 0) delete clan.storage[itemId];
+      serverInventoryAdd(p, itemId, qty);
+      while (SERVER_WEAPONS[itemId]?.ammoType && taken.records.length < qty) {
+        const record = sanitizeServerWeaponRuntimeRecord({ baseId: itemId }, itemId);
+        if (!record) break;
+        taken.records.push(record);
+      }
+      serverRestoreWeaponRuntimeRecords(p, taken.records);
+      p.carry = carryCheck.carry;
+    } else if (action === 'completeBenefitOrder') {
+      const requestedBaseId = String(data.baseId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+      const context = serverOwnedClanBaseContext(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, clan.id);
+      if (!context || context.profile.id !== requestedBaseId) return fail('Клан не владеет этой стратегической базой.');
+      if (p.onGlobalMap || normalizeLocationId(p.locationId || '') !== normalizeLocationId(context.profile.locationId || '')) {
+        return fail('Особый заказ выполняется только на территории своей базы.');
+      }
+      const orderId = String(data.orderId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const order = serverClanBenefitOrders(context.profile, context.runtime, now).find(row => row.id === orderId);
+      if (!order) return fail('Особый заказ этой базы не найден.');
+      if (!order.ready) return fail('Следующая партия по этому заказу ещё не готова.');
+      if (!serverConsumeCost(p, order.cost || {})) return fail('Не хватает ресурсов для особого заказа.');
+      clan.storage = clan.storage && typeof clan.storage === 'object' ? clan.storage : {};
+      for (const [itemId, qty] of Object.entries(order.reward || {})) {
+        clan.storage[itemId] = Math.max(0, Math.floor(Number(clan.storage[itemId] || 0))) + Math.max(0, Math.floor(Number(qty || 0)));
+      }
+      const readyAt = serverMarkClanBenefitOrderCompleted(context.runtime, order, now);
+      context.runtime.history.push({
+        type: 'benefit_order',
+        clanId: clan.id,
+        characterId: String(p.characterId || '').slice(0, 80),
+        orderId: order.id,
+        cost: { ...(order.cost || {}) },
+        reward: { ...(order.reward || {}) },
+        readyAt,
+        at: now
+      });
+    } else if (action === 'protectedRally') {
+      const context = serverOwnedClanBaseContext(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, clan.id);
+      if (!context?.profile?.benefit?.protectedRally) return fail('Эта база не поддерживает защищённый сбор.');
+      clan.protectedRallyCooldowns = clan.protectedRallyCooldowns && typeof clan.protectedRallyCooldowns === 'object'
+        ? clan.protectedRallyCooldowns : {};
+      const characterId = String(p.characterId || '').slice(0, 80);
+      const readyAt = Math.max(0, Number(clan.protectedRallyCooldowns[characterId] || 0));
+      if (readyAt > now) return fail('Защищённый сбор этого персонажа ещё восстанавливается.');
+      if (!serverPlayerCanRetreatToBase(p, now)) return fail('Сбор доступен только из спокойного мирного поселения вне боя.');
+      const destination = chooseRoomForLocation(context.profile.locationId);
+      if (!transferPlayerToServerRoom(p, destination, { reason: 'protectedClanRally', message: 'Форт провёл вас через защищённый маршрут сбора.' })) {
+        return fail('Защищённый маршрут сейчас недоступен.');
+      }
+      clan.protectedRallyCooldowns[characterId] = now + 24 * 60 * 60 * 1000;
+      p.clanRallyProtectionUntil = now + 10000;
+      clan.lastActiveAt = now;
+      persistSaves();
+      persistActivePlayerState(p);
+      emitAuthoritativePlayerState(p, { reason: 'protectedClanRally' });
+      emitKromkaClanStateToAll(action);
+      if (typeof ack === 'function') ack({
+        ok: true,
+        transferred: true,
+        protectionUntil: p.clanRallyProtectionUntil,
+        state: serverPublicKromkaClanState(p),
+        self: publicAuthoritativePlayerState(p)
+      });
+      return;
+    } else if (action === 'payUpkeep') {
+      const profile = (KROMKA_CLAN_BASE_CATALOG.bases || []).find(row => row.id === clan.baseId);
+      const base = savesDb.kromkaClans.bases[clan.baseId];
+      if (!profile || !base || base.ownerClanId !== clan.id) return fail('У клана нет базы для содержания.');
+      if (!serverConsumeCost(p, profile.upkeep || {})) return fail('Не хватает ресурсов для содержания базы.');
+      base.lastUpkeepAt = now;
+      serverClaimWeeklyClanBaseGrant(savesDb.kromkaClans, KROMKA_CLAN_BASE_CATALOG, clan.id, now);
+      base.history.push({ type: 'upkeep', clanId: clan.id, at: now });
+    } else return fail('Неизвестное клановое действие.');
+    clan.lastActiveAt = now;
+    persistSaves();
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'kromkaClanAction' });
+    emitKromkaClanStateToAll(action);
+    if (typeof ack === 'function') ack({ ok: true, state: serverPublicKromkaClanState(p), self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('personalBaseAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, state: p ? publicServerPersonalBase(p) : null }); };
+    if (!p || p.dead || p.downed) return fail('Действие с убежищем сейчас недоступно.');
+    const action = String(data.action || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+    const now = Date.now();
+    let permissionTransaction = null;
+    const ownBase = serverPersonalBaseForAccount(p.userId, true);
+    const hostAccountId = serverPersonalBaseHostAccountId(p);
+    let base = serverPersonalBaseForAccount(hostAccountId, hostAccountId === p.userId);
+    if (!base) return fail('Не удалось открыть запись убежища.');
+
+    if (action === 'resolveRights') {
+      base = ownBase;
+      if (base.rights.granted) return fail('Право на участок уже оформлено.');
+      const location = roomLocation(rooms.get(p.roomId));
+      if (!location?.safe || p.onGlobalMap) return fail('Актов оформляет участок только в безопасном поселении.');
+      const outcomeId = String(data.outcomeId || 'official');
+      const outcome = (KROMKA_BASE_BUILDING_CATALOG.rightsQuest?.outcomes || []).find(row => row.id === outcomeId);
+      if (!outcome) return fail('Неизвестный вариант документов.');
+      if (!serverConsumeCost(p, outcome.cost || {})) return fail('Не хватает платы за оформление участка.');
+      base.rights = { granted: true, outcomeId, questId: 'personal_aktov_air_rights', grantedAt: now };
+      p.kromkaQuestState = sanitizeKromkaQuestState(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
+      if (!p.kromkaQuestState.completed.personal_aktov_air_rights) {
+        p.kromkaQuestState.completed.personal_aktov_air_rights = { outcomeId, completedAt: now };
+        p.kromkaQuestState.outcomeTags.push(`personal_aktov_air_rights:${outcomeId}`);
+        p.kromkaQuestState.rewardClaims.push('quest:personal_aktov_air_rights');
+        delete p.kromkaQuestState.active.personal_aktov_air_rights;
+      }
+      base.updatedAt = now;
+      persistSaves();
+      persistActivePlayerState(p);
+    } else if (action === 'enter') {
+      base = ownBase;
+      if (!base.rights.granted) return fail('Сначала завершите «Право на воздух» у Актова.');
+      if (!serverPlayerCanRetreatToBase(p, now)) return fail('В убежище можно уйти только из спокойного безопасного места, не раньше чем через 10 секунд после боя.');
+      const room = getOrCreateRoom(`personalBase#${String(p.userId || '').slice(0, 80)}`, 'personalBase');
+      if (!transferPlayerToServerRoom(p, room, { reason: 'personalBaseEnter', message: 'Вы вошли в личное убежище.' })) return fail('Переход в убежище не удался.');
+      const payload = emitServerPersonalBaseState(p, 'entered');
+      if (typeof ack === 'function') ack({ ok: true, transferred: true, ...payload });
+      return;
+    } else if (action === 'enterGuest') {
+      const ownerCharacterId = String(data.ownerCharacterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+      const ownerAccountIds = characterIdOwnerUserIds(ownerCharacterId);
+      if (!ownerCharacterId || ownerAccountIds.length !== 1) return fail('Владелец убежища не найден.');
+      const guestBase = serverPersonalBaseForAccount(ownerAccountIds[0], false);
+      if (!guestBase?.rights?.granted) return fail('У этого персонажа нет доступного убежища.');
+      if (!serverPersonalBaseAccess(guestBase, p).visit) return fail('Владелец не выдал вам право входа.');
+      if (!serverPlayerCanRetreatToBase(p, now)) return fail('В гости можно войти только из спокойного безопасного места, не раньше чем через 10 секунд после боя.');
+      const room = getOrCreateRoom(`personalBase#${String(guestBase.accountId || '').slice(0, 80)}`, 'personalBase');
+      if (!transferPlayerToServerRoom(p, room, { reason: 'personalBaseGuestEnter', message: 'Вы вошли в гостевое убежище.' })) return fail('Переход в гостевое убежище не удался.');
+      const payload = emitServerPersonalBaseState(p, 'guestEntered');
+      if (typeof ack === 'function') ack({ ok: true, transferred: true, ...payload });
+      return;
+    } else if (action === 'leave') {
+      if (p.locationId !== 'personalBase') return fail('Вы не в личном убежище.');
+      const destinationId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || 'settlement');
+      const room = chooseRoomForLocation(destinationId);
+      if (!transferPlayerToServerRoom(p, room, { reason: 'personalBaseLeave', message: 'Вы вернулись на безопасный тракт.' })) return fail('Выход из убежища не удался.');
+      if (typeof ack === 'function') ack({ ok: true, transferred: true, state: publicServerPersonalBase(p) });
+      return;
+    } else {
+      const expectedRoomId = `personalBase#${String(base.accountId || '').slice(0, 80)}`;
+      const access = serverPersonalBaseAccess(base, p);
+      const remotePermissionEdit = action === 'setPermission' && access.isOwner && serverPlayerCanRetreatToBase(p, now);
+      if (!base.rights.granted || (!remotePermissionEdit && (p.locationId !== 'personalBase' || p.roomId !== expectedRoomId || !access.visit))) return fail('У вас больше нет доступа к этому убежищу.');
+      if (action === 'build') {
+        if (!access.build) return fail('Владелец не разрешил вам строительство.');
+        const result = serverPlaceBaseObject(base, data, KROMKA_BASE_BUILDING_CATALOG, id => serverInventoryQty(p.inventory, id), now);
+        if (!result.ok) return fail(result.error);
+        if (!serverConsumeCost(p, result.cost)) {
+          base.objects = base.objects.filter(row => row.id !== result.object.id);
+          return fail('Материалы изменились до подтверждения строительства.');
+        }
+      } else if (action === 'remove') {
+        if (!access.isOwner) return fail('Сносить постройки может только владелец.');
+        const result = serverRemoveBaseObject(base, String(data.objectId || ''), KROMKA_BASE_BUILDING_CATALOG, now);
+        if (!result.ok) return fail(result.error);
+        serverGrantItems(p, result.refund);
+      } else if (action === 'upgrade') {
+        if (!access.isOwner) return fail('Расширять участок может только владелец.');
+        const nextTier = serverBaseTierProfile(KROMKA_BASE_BUILDING_CATALOG, Number(base.tier || 1) + 1);
+        if (!nextTier || Number(nextTier.level) <= Number(base.tier)) return fail('Убежище уже достигло предельного уровня.');
+        if (!serverConsumeCost(p, nextTier.upgradeCost || {})) return fail('Не хватает материалов для расширения участка.');
+        base.tier = Number(nextTier.level);
+        base.updatedAt = now;
+      } else if (action === 'startJob') {
+        if (!access.stations) return fail('Владелец не разрешил пользоваться станциями.');
+        const result = serverStartBaseJob(base, String(data.typeId || ''), KROMKA_BASE_BUILDING_CATALOG, id => serverInventoryQty(p.inventory, id), now);
+        if (!result.ok) return fail(result.error);
+        const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+        const speedPct = clamp(Number(bonuses.productionSpeedPct || 0), 0, 0.6);
+        if (speedPct > 0 && result.record) {
+          const duration = Math.max(1000, Number(result.record.completesAt || now) - Number(result.record.startedAt || now));
+          result.record.completesAt = Number(result.record.startedAt || now) + Math.round(duration / (1 + speedPct));
+        }
+        if (!serverConsumeCost(p, result.input)) {
+          base.jobs = base.jobs.filter(row => row.id !== result.record.id);
+          return fail('Сырьё изменилось до запуска работы.');
+        }
+      } else if (action === 'claimJob') {
+        if (!access.stations) return fail('Владелец не разрешил управлять производством.');
+        const result = serverClaimBaseJob(base, String(data.jobId || ''), KROMKA_BASE_BUILDING_CATALOG, now);
+        if (!result.ok) return fail(result.error);
+        const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+        for (const [id, qty] of Object.entries(result.output || {})) {
+          let multiplier = 1;
+          if (id === 'medicine' || id === 'water') multiplier += Number(id === 'medicine' ? bonuses.medicineOutputPct || 0 : bonuses.filterOutputPct || 0);
+          if (id === 'food') multiplier += Number(bonuses.foodOutputPct || 0);
+          base.inventory[id] = Number(base.inventory[id] || 0) + Math.max(1, Math.floor(Number(qty || 0) * multiplier));
+        }
+      } else if (action === 'withdraw') {
+        if (!access.storage) return fail('Владелец не разрешил пользоваться складом.');
+        const itemId = serverBaseItemId(data.itemId);
+        const qty = Math.max(1, Math.min(999, Math.floor(Number(data.qty || 1))));
+        if (!itemId || Number(base.inventory[itemId] || 0) < qty) return fail('На складе базы нет такого количества.');
+        const carryCheck = serverLimitItemsByCarry(p, data, [{ id: itemId, qty }], { apply: false });
+        if (!carryCheck.items.length || Number(carryCheck.items[0].qty || 0) < qty) return fail('Не хватает места или грузоподъёмности для выдачи со склада.');
+        const taken = serverTakeWeaponRuntimeStoreRecords(
+          base.inventoryRuntime || {}, itemId, qty,
+          Array.isArray(data.itemRuntimeIds) ? data.itemRuntimeIds : [data.itemRuntimeId]
+        );
+        base.inventoryRuntime = taken.store;
+        base.inventory[itemId] -= qty;
+        if (base.inventory[itemId] <= 0) delete base.inventory[itemId];
+        serverInventoryAdd(p, itemId, qty);
+        while (SERVER_WEAPONS[itemId]?.ammoType && taken.records.length < qty) {
+          const record = sanitizeServerWeaponRuntimeRecord({ baseId: itemId }, itemId);
+          if (!record) break;
+          taken.records.push(record);
+        }
+        serverRestoreWeaponRuntimeRecords(p, taken.records);
+        p.carry = carryCheck.carry;
+      } else if (action === 'deposit') {
+        if (!access.storage) return fail('Владелец не разрешил пользоваться складом.');
+        const itemId = serverBaseItemId(data.itemId);
+        const qty = Math.max(1, Math.min(999, Math.floor(Number(data.qty || 1))));
+        if (!itemId || itemId === 'fists' || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
+        if (Number(base.inventory[itemId] || 0) + qty > serverItemStackLimit(itemId)) return fail('На складе достигнут предел этого стека.');
+        const storageBonus = Math.max(0, Number(calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG).storageCapacityPct || 0));
+        const storageLimit = Math.floor(500 * (1 + storageBonus));
+        const storageUsed = Object.values(base.inventory || {}).reduce((sum, value) => sum + Math.max(0, Number(value || 0)), 0);
+        if (storageUsed + qty > storageLimit) return fail(`Склад базы заполнен: ${Math.floor(storageUsed)}/${storageLimit}.`);
+        const runtimeRemoval = serverValidateWeaponRuntimeRemoval(p, {
+          id: itemId, qty, itemRuntimeId: data.itemRuntimeId, itemRuntimeIds: data.itemRuntimeIds
+        }, { releaseLoadedAmmo: true });
+        if (!runtimeRemoval.ok) return fail(runtimeRemoval.error);
+        const records = serverCaptureWeaponRuntimeRecords(p, { id: itemId, qty }, runtimeRemoval);
+        serverInventoryRemove(p, itemId, qty);
+        base.inventory[itemId] = Math.min(serverItemStackLimit(itemId), Number(base.inventory[itemId] || 0) + qty);
+        base.inventoryRuntime = sanitizeServerWeaponRuntimeStore(base.inventoryRuntime || {});
+        for (const record of records) base.inventoryRuntime[record.id] = record;
+        serverFinalizeWeaponRuntimeRemoval(p, { id: itemId, qty }, runtimeRemoval);
+      } else if (action === 'setPermission') {
+        if (!access.isOwner) return fail('Права гостей меняет только владелец.');
+        permissionTransaction = beginCriticalAction(
+          p,
+          'personalBasePermission',
+          data,
+          ['action', 'characterId', 'visit', 'build', 'storage', 'stations'],
+          now
+        );
+        if (!permissionTransaction.ok) return fail(permissionTransaction.error);
+        if (permissionTransaction.replay) {
+          return typeof ack === 'function' && ack({
+            ...permissionTransaction.result,
+            state: publicServerPersonalBase(p),
+            self: publicAuthoritativePlayerState(p)
+          });
+        }
+        const characterId = String(data.characterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+        if (!characterId || characterId === p.characterId) return fail('Нужен другой персонаж.');
+        const permissionLimit = base.rights?.outcomeId === 'forged' ? 5 : 4;
+        if (!base.permissions[characterId] && Object.keys(base.permissions || {}).length >= permissionLimit) return fail(`Достигнут лимит гостевых записей: ${permissionLimit}.`);
+        const nextPermission = {
+          visit: data.visit === true, build: data.build === true,
+          storage: data.storage === true, stations: data.stations === true
+        };
+        if (Object.values(nextPermission).some(Boolean)) base.permissions[characterId] = nextPermission;
+        else delete base.permissions[characterId];
+      } else if (action === 'resident') {
+        if (!access.isOwner) return fail('Жителей назначает только владелец.');
+        const result = serverApplyResidentAction(
+          base,
+          String(data.residentAction || ''),
+          String(data.residentId || ''),
+          KROMKA_BASE_RESIDENT_CATALOG,
+          KROMKA_BASE_BUILDING_CATALOG,
+          now,
+          {
+            inventoryQty: itemId => serverInventoryQty(p.inventory, itemId),
+            consumeItem: (itemId, qty) => {
+              if (serverInventoryQty(p.inventory, itemId) < qty) return false;
+              serverInventoryRemove(p, itemId, qty);
+              return true;
+            }
+          }
+        );
+        if (!result.ok) return fail(result.error);
+      } else return fail('Неизвестное действие убежища.');
+      base.updatedAt = now;
+      if (permissionTransaction) {
+        commitCriticalAction(p, permissionTransaction, {
+          ok: true,
+          action,
+          targetId: String(data.characterId || '')
+        });
+      }
+      persistSaves();
+      persistActivePlayerState(p);
+    }
+    const payload = emitServerPersonalBaseState(p, action);
+    emitAuthoritativePlayerState(p, { reason: 'personalBaseAction' });
+    if (typeof ack === 'function') ack({ ok: true, ...payload, self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('throwBolt', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.onGlobalMap || p.dead || p.downed || Number(p.hp || 0) <= 0) {
+      return fail('Сейчас нельзя бросить болт.');
+    }
+    const room = rooms.get(p.roomId);
+    if (!room || room.locationId !== p.locationId) return fail('Комната броска уже недоступна.');
+    const magnetic = serverHasMagneticBolt(p);
+    const result = ANOMALY_SYSTEM.throwBolt({
+      roomId: room.id,
+      locationId: room.locationId,
+      playerId: p.id,
+      from: { x: p.x, z: p.z },
+      target: { x: data.x, z: data.z },
+      magnetic,
+      now: Date.now(),
+      hasLineOfThrow: (fromX, fromZ, toX, toZ) => roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ)
+    });
+    if (!result.ok) return fail(result.error);
+    io.to(room.id).emit('boltThrown', result);
+    if (result.hit) {
+      if (result.anomaly?.type === 'chime') {
+        serverRecordKromkaQuestEvents(p, ['find_magnetic_chime', 'discharge_with_bolt'], {
+          locationId: p.locationId,
+          objectId: result.anomaly.id,
+          anomalyType: String(result.anomaly.type || ''),
+          source: 'bolt_discharge'
+        });
+      }
+      const state = ANOMALY_SYSTEM.snapshot(room.id, room.locationId);
+      io.to(room.id).emit('anomalyState', state);
+      room.worldStateDirty = true;
+      if (p.locationId === 'tutorialCaravanYard'
+        && result.anomaly?.id === 'training-chime-01'
+        && p.kromkaOnboarding?.phase === 'tutorial' && p.kromkaOnboarding?.stepId === 'anomaly') {
+        serverRecordTutorialFact(p, 'chimeDischarged');
+      }
+    }
+    if (typeof ack === 'function') ack({
+      ...result,
+      anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
+      journal: publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
+      self: publicAuthoritativePlayerState(p)
+    });
+  });
+
+  socket.on('kromkaQuestObjectInteract', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => {
+      if (typeof ack !== 'function') return;
+      ack({
+        ok: false,
+        error,
+        journal: p ? publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG) : null,
+        self: p ? publicAuthoritativePlayerState(p) : null
+      });
+    };
+    if (!p || !p.roomId || p.onGlobalMap || p.dead || p.downed || Number(p.hp || 0) <= 0) {
+      return fail('Сейчас нельзя взаимодействовать с объектом задания.');
+    }
+    const source = serverKromkaQuestObject(p, String(data.objectId || ''));
+    if (!source.ok) return fail(source.error);
+    const questProgress = serverRecordKromkaQuestEvent(p, source.objective, {
+      locationId: p.locationId,
+      objectId: String(source.row.id || ''),
+      source: 'quest_object'
+    });
+    if (!questProgress.length) return fail('Сервер не подтвердил выполнение цели.');
+    if (typeof ack === 'function') ack({
+      ok: true,
+      questProgress,
+      journal: publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
+      self: publicAuthoritativePlayerState(p)
+    });
+  });
+
 
   socket.on('healPlayer', (data = {}, ack) => {
     const healer = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (!healer || !healer.roomId || healer.dead || Number(healer.hp || 0) <= 0) return fail('Нельзя лечить сейчас.');
+    if (!healer || !healer.roomId || healer.dead || healer.downed || healer.onGlobalMap || Number(healer.hp || 0) <= 0) return fail('Нельзя лечить сейчас.');
     const targetId = String(data.targetId || '').slice(0, 96);
+    const npcRoom = rooms.get(healer.roomId);
+    const npc = npcRoom?.enemies?.get(targetId);
+    if (npc) {
+      if (npc.dead || npc.trainingTarget || npc.hostileToPlayer !== false) return fail('Эту цель нельзя лечить.');
+      const itemId = String(data.itemId || 'medkit');
+      if (itemId !== 'medkit' || serverBaseItemId(healer.equipment?.weapon) !== 'medkit')
+        return fail('Возьмите аптечку в активную руку.');
+      if (Math.hypot(healer.x - npc.x, healer.z - npc.z) > 4.25)
+        return fail('Подойдите к раненому ближе.');
+      if (!serverInteractionHasLineOfSight(npcRoom, healer, npc)) return fail('Раненый находится за препятствием.');
+      const before = Number(npc.hp || 0);
+      if (before >= Number(npc.maxHp || 100)) return fail('Персонаж уже здоров.');
+      if (serverOwnedItemQty(healer, itemId) < 1) return fail('Нужна аптечка.');
+      const spend = serverPrepareFixedActionAp(healer, data, serverMedicalItemApCost(healer, itemId), Date.now(), 'лечение');
+      if (!spend.ok) return fail(spend.error, serverMedicalApAck(healer));
+      if (!serverConsumeOwnedItem(healer, itemId, 1)) return fail('Аптечка больше недоступна.');
+      npc.hp = Math.min(Number(npc.maxHp || 100), before + serverFirstAidAmount(healer, itemId, npc));
+      const healed = npc.hp - before;
+      if (healed > 0 && npc.kromkaOnboardingNpcId === 'yard_casualty_shurik')
+        serverRecordTutorialFact(healer, 'npcHealed');
+      persistActivePlayerState(healer);
+      emitEnemySnapshot(npcRoom, true);
+      emitAuthoritativePlayerState(healer, { reason: 'medicalAction' });
+      if (typeof ack === 'function') ack({ ok: true, healed, itemId, targetId,
+        enemy: publicEnemy(npc, healer), apCost: spend.apCost, ...serverMedicalApAck(healer),
+        self: publicAuthoritativePlayerState(healer) });
+      return;
+    }
     const target = players.get(targetId);
     if (!target || target.roomId !== healer.roomId) return fail('Игрок не найден рядом.');
     if (target.dead || Number(target.hp || 0) <= 0) return fail('Этого игрока нельзя вылечить.');
@@ -21530,8 +25311,43 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(target);
     const dist = Math.hypot(Number(target.x || 0) - Number(healer.x || 0), Number(target.z || 0) - Number(healer.z || 0));
     if (dist > 4.25) return fail('Подойдите ближе, чтобы лечить игрока.');
+    const room = rooms.get(healer.roomId);
+    if (!room || !serverInteractionHasLineOfSight(room, healer, target)) return fail('Между вами и игроком есть препятствие.');
     const itemId = String(data.itemId || 'medkit').slice(0, 32);
-    if (!['medkit', 'stim', 'doctorBag', 'antibiotics'].includes(itemId)) return fail('Этот предмет нельзя применить для лечения.');
+    if (!['medkit', 'stim', 'doctorBag', 'antibiotics', 'food', 'water'].includes(itemId)) return fail('Этот предмет нельзя применить для лечения.');
+    if (['food', 'water'].includes(itemId)) {
+      if (target.id !== healer.id || healer.onGlobalMap) return fail('Еду и воду можно использовать только на себе в локации.');
+      const effects = serverArtifactEffects(target);
+      const problem = consumableProblem(target, itemId, effects);
+      if (problem) return fail(problem);
+      if (serverOwnedItemQty(healer, itemId) <= 0) return fail('Предмета больше нет в инвентаре.');
+      const spend = serverPrepareFixedActionAp(healer, data, 1, Date.now(), 'употребление припасов');
+      if (!spend.ok) return fail(spend.error);
+      if (!serverConsumeOwnedItem(healer, itemId, 1)) return fail('Предмет больше недоступен.');
+      const result = consumeArtifactProvision(target, itemId, effects);
+      persistActivePlayerState(healer);
+      emitAuthoritativePlayerState(healer, { reason: 'provisionConsumed' });
+      if (typeof ack === 'function') ack({ ...result, itemId, apCost: spend.apCost, self: publicAuthoritativePlayerState(healer) });
+      return;
+    }
+    if (target.id !== healer.id) {
+      const consent = matchingServerMedicalConsent(healer, target, itemId, Date.now());
+      if (!consent) {
+        const request = requestServerMedicalConsent(healer, target, itemId, Date.now());
+        io.to(target.id).emit('medicalConsentRequested', { ...request });
+        return typeof ack === 'function' && ack({
+          ok: true,
+          pendingConsent: true,
+          requestId: request.id,
+          expiresAt: request.expiresAt,
+          targetId: target.id,
+          targetName: target.name || 'Игрок',
+          itemId,
+          self: publicAuthoritativePlayerState(healer)
+        });
+      }
+      SERVER_MEDICAL_CONSENTS.delete(consent.id);
+    }
     if (serverOwnedItemQty(healer, itemId) <= 0) return fail('Этого медицинского предмета больше нет в инвентаре.', { inventory: syncServerInventorySnapshot(healer) });
     const maxHp = serverPlayerMaxHp(target);
     const before = clampPlayerHp(target.hp, maxHp);
@@ -21612,16 +25428,20 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const amount = serverFirstAidAmount(healer, itemId);
+    const amount = serverFirstAidAmount(healer, itemId, target);
     if (before >= maxHp - 0.5) return fail('Игрок уже здоров.');
     const spend = serverPrepareFixedActionAp(healer, data, serverMedicalItemApCost(healer, itemId), Date.now(), 'лечение');
     if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(healer) });
     if (!serverConsumeOwnedItem(healer, itemId, 1)) return fail('Медицинский предмет больше недоступен.');
     target.hp = clampPlayerHp(before + amount, maxHp);
+    if (itemId === 'stim') startArtifactStim(target, serverArtifactEffects(target));
     target.lastHealedAt = Date.now();
+    persistActivePlayerState(target);
+    if (target.id !== healer.id) emitAuthoritativePlayerState(target, { reason: 'medicalAction' });
     const healed = Math.max(0, Math.round(target.hp - before));
     const xp = serverMedicalItemXp(itemId, { healed, success: true, other: healer.id !== target.id });
     serverGrantXp(healer, xp);
+    persistActivePlayerState(healer);
     const payload = {
       ...basePayload(),
       healed,
@@ -21635,6 +25455,45 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, ...payload, inventory: syncServerInventorySnapshot(healer), self: publicAuthoritativePlayerState(healer) });
   });
 
+  socket.on('medicalConsentAction', (data = {}, ack) => {
+    const target = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!target || target.dead || Number(target.hp || 0) <= 0) return fail('Сейчас нельзя ответить на запрос лечения.');
+    pruneServerMedicalConsents(Date.now());
+    const requestId = String(data.requestId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
+    const request = SERVER_MEDICAL_CONSENTS.get(requestId);
+    if (!request || request.targetId !== target.id) return fail('Запрос лечения уже недоступен.');
+    const healer = players.get(request.healerId);
+    if (!healer || healer.roomId !== target.roomId || request.roomId !== target.roomId) {
+      SERVER_MEDICAL_CONSENTS.delete(requestId);
+      return fail('Игрок уже не находится рядом.');
+    }
+    const accepted = data.accept === true;
+    if (accepted) {
+      request.approved = true;
+      request.expiresAt = Date.now() + SERVER_MEDICAL_CONSENT_TTL_MS;
+      SERVER_MEDICAL_CONSENTS.set(requestId, request);
+    } else {
+      request.approved = false;
+      SERVER_MEDICAL_CONSENTS.delete(requestId);
+    }
+    const payload = {
+      ok: true,
+      requestId,
+      accepted,
+      healerId: request.healerId,
+      targetId: request.targetId,
+      targetName: request.targetName,
+      itemId: request.itemId,
+      roomId: request.roomId,
+      locationId: request.locationId,
+      expiresAt: request.expiresAt
+    };
+    io.to(request.healerId).emit('medicalConsentResolved', payload);
+    io.to(request.targetId).emit('medicalConsentResolved', payload);
+    if (typeof ack === 'function') ack(payload);
+  });
+
   socket.on('socialAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
@@ -21642,15 +25501,35 @@ io.on('connection', (socket) => {
     const action = String(data.action || '').slice(0, 24);
     if (!Object.prototype.hasOwnProperty.call(SOCIAL_ACTIONS, action)) return fail('Неизвестное социальное действие.');
     const targetId = String(data.targetId || '').slice(0, 96);
+    const transaction = beginCriticalAction(p, 'socialAction', data, ['action', 'targetId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        action,
+        targetId,
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     const target = players.get(targetId);
     if (!target || target.roomId !== p.roomId || target.dead || Number(target.hp || 0) <= 0) return fail('Игрок не найден рядом.');
     if (target.id === p.id || target.characterId === p.characterId) return fail('Нельзя отправить запрос самому себе.');
     const dist = Math.hypot(Number(target.x || 0) - Number(p.x || 0), Number(target.z || 0) - Number(p.z || 0));
     if (dist > 4.8) return fail('Подойдите ближе к игроку.');
+    const room = rooms.get(p.roomId);
+    if (!room || !serverInteractionHasLineOfSight(room, p, target)) return fail('Между вами и игроком есть препятствие.');
     let persistentResult = { ok: true, message: '' };
     if (action === 'friend' || action === 'clan') {
       persistentResult = serverSendPersistentSocialRequest(p, target, action);
       if (!persistentResult.ok) return fail(persistentResult.error || 'Сервер отклонил социальный запрос.');
+    } else if (action === 'trade') {
+      const tradeResult = requestServerPlayerTrade(p, target, Date.now());
+      if (!tradeResult.ok) return fail(tradeResult.error || 'Сервер отклонил предложение торговли.');
+      persistentResult = {
+        ok: true,
+        message: `Предложение торговли отправлено игроку ${target.name || 'Игрок'}.`,
+        trade: publicServerPlayerTrade(tradeResult.session, p.id)
+      };
     }
     io.to(targetId).emit('socialActionReceived', {
       roomId: p.roomId,
@@ -21663,23 +25542,125 @@ io.on('connection', (socket) => {
       label: SOCIAL_ACTIONS[action],
       socialState: action === 'friend' || action === 'clan' ? sanitizeServerSocialState(target.socialState || {}) : null
     });
-    if (typeof ack === 'function') ack({
+    const completedResult = {
       ok: true,
       action,
       targetId,
       targetName: target.name || 'Игрок',
-      message: persistentResult.message || '',
+      message: persistentResult.message || ''
+    };
+    commitCriticalAction(p, transaction, completedResult);
+    persistActivePlayerState(p);
+    if (typeof ack === 'function') ack({
+      ...completedResult,
+      trade: persistentResult.trade || null,
       self: publicAuthoritativePlayerState(p)
     });
+  });
+
+  socket.on('playerTradeAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => {
+      if (typeof ack === 'function') ack({ ok: false, error, state: p ? publicServerPlayerTrade(serverPlayerTradeFor(p.id, data.tradeId), p.id) : null });
+    };
+    if (!p || p.dead || p.onGlobalMap) return fail('Торговля сейчас недоступна.');
+    const action = String(data.action || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+    const transaction = beginCriticalAction(p, 'playerTradeAction', data, ['action', 'tradeId', 'rows']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      const replaySession = serverPlayerTradeFor(p.id, data.tradeId);
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        state: publicServerPlayerTrade(replaySession, p.id),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
+    const session = serverPlayerTradeFor(p.id, data.tradeId);
+    if (!session) return fail('Предложение торговли уже недоступно.');
+    const otherId = session.playerIds.find(id => id !== p.id);
+    const other = players.get(otherId);
+    if (!other || other.roomId !== p.roomId || p.roomId !== session.roomId || other.dead) {
+      cancelServerPlayerTrade(session, 'unavailable', 'Торговля отменена: второй игрок недоступен.');
+      return fail('Второй игрок больше не доступен для торговли.');
+    }
+    if (Math.hypot(Number(p.x || 0) - Number(other.x || 0), Number(p.z || 0) - Number(other.z || 0)) > 5.5) {
+      cancelServerPlayerTrade(session, 'outOfRange', 'Торговля отменена: игроки отошли слишком далеко.');
+      return fail('Подойдите ближе к другому игроку.');
+    }
+    const room = rooms.get(p.roomId);
+    if (!room || !serverInteractionHasLineOfSight(room, p, other)) {
+      cancelServerPlayerTrade(session, 'blocked', 'Торговля отменена: между игроками есть препятствие.');
+      return fail('Между вами и другим игроком есть препятствие.');
+    }
+    if (action === 'cancel' || action === 'declineInvite') {
+      cancelServerPlayerTrade(session, action === 'declineInvite' ? 'declined' : 'cancelled', action === 'declineInvite' ? 'Предложение торговли отклонено.' : 'Торговля отменена.');
+      commitCriticalAction(p, transaction, { ok: true, action, tradeId: session.id, completed: true });
+      persistActivePlayerState(p);
+      if (typeof ack === 'function') ack({ ok: true, state: null });
+      return;
+    }
+    if (action === 'acceptInvite') {
+      if (session.status !== 'pending' || p.id === session.inviterId) return fail('Это предложение уже принято или недоступно.');
+      session.status = 'active';
+      session.expiresAt = Date.now() + SERVER_PLAYER_TRADE_TTL_MS;
+      emitServerPlayerTrade(session, 'accepted', `${p.name || 'Игрок'} принял предложение. Составьте обмен.`);
+    } else if (action === 'setOffer') {
+      if (session.status !== 'active') return fail('Сначала второй игрок должен принять приглашение.');
+      const rows = serverPlayerTradeRows(data.rows || []);
+      for (const row of rows) {
+        if (serverInventoryQty(p.inventory || [], row.id) < row.qty) return fail(`В рюкзаке не хватает предмета «${row.id}».`);
+        const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
+        if (!validation.ok) return fail(validation.error);
+      }
+      session.offers[p.id] = rows;
+      session.accepted[p.id] = false;
+      session.accepted[otherId] = false;
+      session.expiresAt = Date.now() + SERVER_PLAYER_TRADE_TTL_MS;
+      emitServerPlayerTrade(session, 'offerChanged', 'Предложение изменено. Подтверждения сброшены.');
+    } else if (action === 'confirm') {
+      if (session.status !== 'active') return fail('Сделка ещё не активна.');
+      session.accepted[p.id] = true;
+      session.expiresAt = Date.now() + SERVER_PLAYER_TRADE_TTL_MS;
+      if (session.accepted[otherId] === true) {
+        const result = completeServerPlayerTrade(session);
+        if (!result.ok) {
+          session.accepted[p.id] = false;
+          session.accepted[otherId] = false;
+          emitServerPlayerTrade(session, 'validationFailed', result.error);
+          return fail(result.error);
+        }
+        commitCriticalAction(p, transaction, { ok: true, action, tradeId: session.id, completed: true });
+        persistActivePlayerState(p);
+        if (typeof ack === 'function') ack({ ok: true, completed: true, state: null, self: publicAuthoritativePlayerState(p) });
+        return;
+      }
+      emitServerPlayerTrade(session, 'confirmed', `${p.name || 'Игрок'} подтвердил свою сторону обмена.`);
+    } else {
+      return fail('Неизвестное действие торговли.');
+    }
+    commitCriticalAction(p, transaction, { ok: true, action, tradeId: session.id, completed: false });
+    persistActivePlayerState(p);
+    if (typeof ack === 'function') ack({ ok: true, state: publicServerPlayerTrade(session, p.id), self: publicAuthoritativePlayerState(p) });
   });
 
   socket.on('socialStateAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const transaction = beginCriticalAction(p, 'socialStateAction', data, ['action', 'targetId', 'characterId', 'name']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        socialState: sanitizeServerSocialState(p.socialState || {}),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     try {
       const result = performServerSocialStateAction(p, data);
       if (!result?.ok) return fail(result?.error || 'Сервер отклонил социальное действие.');
+      commitCriticalAction(p, transaction, result);
+      persistActivePlayerState(p);
       if (typeof ack === 'function') ack({
         ...result,
         socialState: sanitizeServerSocialState(p.socialState || {}),
@@ -21724,6 +25705,7 @@ io.on('connection', (socket) => {
     if (dialogueInterruptType === 'alarm') return fail('НПС сейчас занят из-за тревоги.');
     const dist = Math.hypot(Number(enemy.x || 0) - Number(p.x || 0), Number(enemy.z || 0) - Number(p.z || 0));
     if (dist > 6.2) return fail('Подойдите ближе к НПС.');
+    if (!serverInteractionHasLineOfSight(room, p, enemy)) return fail('НПС находится за препятствием.');
     if (enemy.dialoguePlayerId && enemy.dialoguePlayerId !== socket.id && Number(enemy.dialogueFocusUntil || 0) > Date.now()) {
       return fail('Этот НПС уже разговаривает с другим игроком.');
     }
@@ -21753,7 +25735,14 @@ io.on('connection', (socket) => {
     clearEnemyTacticalGoal(enemy);
     invalidateEnemyPath(enemy);
     emitEnemySnapshot(room);
-    if (typeof ack === 'function') ack({ ok: true, enemy: publicEnemy(enemy) });
+    const questProgress = serverRecordKromkaNpcDialogue(p, enemy);
+    if (typeof ack === 'function') ack({
+      ok: true,
+      enemy: publicEnemy(enemy),
+      questProgress,
+      journal: publicKromkaQuestJournal(p.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
+      self: publicAuthoritativePlayerState(p)
+    });
   });
 
   socket.on('globalTravelStart', (data = {}, ack) => {
@@ -21791,7 +25780,12 @@ io.on('connection', (socket) => {
     }
     const routePoints = planInfrastructureRoute(GLOBAL_MAP, fromPoint, targetPoint);
     if (routePoints.length < 2) return fail('Маршрут к этой точке перекрыт водой. Выберите доступную точку на суше.');
-    const timing = serverGlobalTravelTiming(leader, fromPoint, targetPoint, routePoints);
+    const leaderClan = serverKromkaClanForPlayer(leader);
+    const clanConvoy = members.length >= 2 && !!leaderClan
+      && members.every(member => serverKromkaClanForPlayer(member)?.id === leaderClan.id);
+    const timing = serverGlobalTravelTiming(leader, fromPoint, targetPoint, routePoints, {
+      clanConvoy
+    });
     const startedAt = Date.now();
     const session = {
       id: existing?.id || `travel_${socket.id}_${Date.now()}`,
@@ -21806,6 +25800,8 @@ io.on('connection', (socket) => {
       worldPoint: fromPoint,
       distanceKm: timing.distanceKm,
       speedKmh: timing.speedKmh,
+      clanConvoy: timing.clanConvoy,
+      clanCaravanSpeedPct: timing.clanCaravanSpeedPct,
       worldHours: timing.worldHours,
       durationMs: timing.durationMs,
       memberIds: members.map(member => member.id),
@@ -21833,6 +25829,8 @@ io.on('connection', (socket) => {
       worldPoint: fromPoint,
       distanceKm: timing.distanceKm,
       speedKmh: timing.speedKmh,
+      clanConvoy: timing.clanConvoy,
+      clanCaravanSpeedPct: timing.clanCaravanSpeedPct,
       worldHours: timing.worldHours,
       durationMs: timing.durationMs,
       duration: timing.durationMs / 1000,
@@ -21849,6 +25847,12 @@ io.on('connection', (socket) => {
   socket.on('globalTravelEnterWorld', (data = {}, ack) => {
     const leader = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
+    if (leader?.roomId && !serverPlayerAllowsGlobalMapExit(leader)) {
+      const phase = String(leader.kromkaOnboarding?.phase || '');
+      return fail(phase === 'firstMission'
+        ? 'Выход на глобальную карту закрыт до завершения пролога.'
+        : 'Выход на глобальную карту откроется после завершения обучения.');
+    }
     if (globalTravelMemberIsFollower(socket.id)) {
       const session = globalTravelSessionForMember(socket.id);
       return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
@@ -21959,17 +25963,75 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Маршрут группы не найден.' });
       return;
     }
-    const decision = String(data.decision || '').slice(0, 16);
-    const pending = !!data.pending;
-    const payload = {
-      leaderId: socket.id,
-      leaderName: leader.name || session.leaderName || 'Игрок',
-      pending,
-      decision: pending ? '' : (decision === 'enter' ? 'enter' : 'skip'),
-      encounterId: String(data.encounterId || '').slice(0, 40),
-      title: safeName(data.title || 'Событие мира'),
-      targetLocationId: session.targetLocationId
-    };
+    const now = Date.now();
+    const encounterId = String(data.encounterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    const requestedContact = serverGlobalTravelEncounterContact(session, encounterId, now);
+    if (data.pending === true) {
+      if (!requestedContact) {
+        if (typeof ack === 'function') ack({ ok: false, error: 'Сервер не подтвердил контакт на текущем участке маршрута.' });
+        return;
+      }
+      const existing = session.pendingEncounter;
+      if (existing && existing.id !== requestedContact.id) {
+        if (typeof ack === 'function') ack({ ok: false, error: 'Сначала завершите решение по текущей встрече.' });
+        return;
+      }
+      if (!existing) {
+        session.pendingEncounter = {
+          ...requestedContact,
+          pauseAt: now,
+          deadlineAt: now + SERVER_GLOBAL_ENCOUNTER_DECISION_MS,
+          decisionId: `decision_${session.id}_${now}`.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96)
+        };
+        scheduleServerGlobalTravelEncounterTimeout(session);
+      }
+      const pending = session.pendingEncounter;
+      const payload = {
+        leaderId: socket.id,
+        leaderName: leader.name || session.leaderName || 'Игрок',
+        pending: true,
+        decision: '',
+        encounterId: pending.id,
+        encounterKind: pending.kind,
+        title: pending.title,
+        forced: pending.forced === true,
+        decisionId: pending.decisionId,
+        deadlineAt: pending.deadlineAt,
+        serverNow: now,
+        targetLocationId: session.targetLocationId
+      };
+      emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', payload, false);
+      if (typeof ack === 'function') ack({ ok: true, ...payload });
+      return;
+    }
+
+    const decision = String(data.decision || '').toLowerCase();
+    let pending = session.pendingEncounter;
+    if (!pending && decision === 'enter' && requestedContact) {
+      pending = {
+        ...requestedContact,
+        pauseAt: now,
+        deadlineAt: now + SERVER_GLOBAL_ENCOUNTER_DECISION_MS,
+        decisionId: `decision_${session.id}_${now}`.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96)
+      };
+      session.pendingEncounter = pending;
+    }
+    if (!pending || pending.id !== encounterId) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Сервер не нашёл ожидающую решения встречу.' });
+      return;
+    }
+    if (!['enter', 'skip'].includes(decision) || (pending.forced && decision === 'skip')) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Это решение для встречи недоступно.' });
+      return;
+    }
+    if (now > Number(pending.deadlineAt || 0)) {
+      const timeoutPayload = serverFinishGlobalTravelEncounterDecision(session, 'skip', now);
+      timeoutPayload.reason = 'leaderDecisionTimeout';
+      emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', timeoutPayload, false);
+      if (typeof ack === 'function') ack({ ok: false, error: 'Время решения истекло.', ...timeoutPayload });
+      return;
+    }
+    const payload = serverFinishGlobalTravelEncounterDecision(session, decision, now);
     emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', payload, false);
     if (typeof ack === 'function') ack({ ok: true, ...payload });
   });
@@ -22058,9 +26120,19 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const transaction = beginCriticalAction(p, 'worldTaskAction', data, ['action', 'taskId', 'worldTaskId', 'rows', 'pointId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        sim: WASTELAND_SIM.publicState(),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     try {
       const result = performServerWorldTaskAction(p, data);
       if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие с работой пустоши.');
+      commitCriticalAction(p, transaction, result);
       p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
       syncWorldPartyPlayerAttachments(
         typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null
@@ -22077,26 +26149,7 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    const factionId = serverWorldFactionKey(data.factionId || data.worldFactionId || '');
-    if (!SERVER_JOINABLE_WORLD_FACTIONS.has(factionId)) return fail('К этой фракции нельзя вступить.');
-    const previousFactionId = serverWorldFactionKey(p.worldFactionId || p.factionId || '');
-    if (previousFactionId === factionId) {
-      if (typeof ack === 'function') ack({ ok: true, factionId, previousFactionId, self: publicAuthoritativePlayerState(p) });
-      return;
-    }
-    if (serverPlayerHasActiveFactionCommitment(p)) return fail('Сначала завершите или отмените активную фракционную работу.');
-    const site = serverFactionJoinSite(p, factionId);
-    if (!site) return fail('Вступить можно только у доски работ на территории этой фракции.');
-    p.worldFactionId = factionId;
-    p.factionId = factionId;
-    persistActivePlayerState(p);
-    if (typeof ack === 'function') ack({
-      ok: true,
-      factionId,
-      previousFactionId,
-      siteId: String(site.id || ''),
-      self: publicAuthoritativePlayerState(p)
-    });
+    fail('Постоянного вступления больше нет. Возьмите временный контракт у нужной стороны.');
   });
 
   socket.on('worldTaskLeaveParty', (_data = {}, ack) => {
@@ -22119,6 +26172,7 @@ io.on('connection', (socket) => {
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
+    if (!serverInteractionHasLineOfSight(room, p, point)) return fail('Торговый автомат находится за препятствием.');
     const market = serverTradeMachineMarket(room, loc, machine);
     if (typeof ack === 'function') ack(market);
   });
@@ -22139,8 +26193,29 @@ io.on('connection', (socket) => {
     if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 4.6) {
       return fail('Подойдите ближе к хранилищу.');
     }
+    if (!serverInteractionHasLineOfSight(room, p, point)) return fail('Хранилище находится за препятствием.');
+    const transaction = beginInventoryMutation(
+      p,
+      'storageTransfer',
+      data,
+      ['direction', 'rows', 'itemId', 'id', 'qty']
+    );
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      const storage = serverFactionStorageRows(p, storageFaction);
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        storageFaction,
+        inventory: p.inventory,
+        storage,
+        storageWeaponRuntime: serverFactionStorageWeaponRuntimeSnapshot(p, storageFaction),
+        carry: sanitizeCarrySnapshot(p),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     const result = performServerStorageTransfer(p, data, storageFaction);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил перенос.');
+    commitInventoryMutation(p, transaction, result);
     persistActivePlayerState(p);
     if (typeof ack === 'function') ack(result);
   });
@@ -22150,6 +26225,21 @@ io.on('connection', (socket) => {
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const action = String(data.action || '').toLowerCase();
+    const transaction = beginInventoryMutation(
+      p,
+      'inventoryItemAction',
+      data,
+      ['action', 'itemId', 'id', 'itemRuntimeId', 'modificationId', 'modSlot', 'equipment']
+    );
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        inventory: p.inventory,
+        carry: sanitizeCarrySnapshot(p),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     let result = null;
     if (action === 'repair') result = performServerRepairItem(p, data);
     else if (action === 'salvage') result = performServerSalvageItem(p, data);
@@ -22169,6 +26259,7 @@ io.on('connection', (socket) => {
     }
     else return fail('Неизвестное действие с предметом.');
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие с предметом.');
+    commitInventoryMutation(p, transaction, result);
     persistActivePlayerState(p);
     if (typeof ack === 'function') ack(result);
   });
@@ -22180,10 +26271,19 @@ io.on('connection', (socket) => {
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
     const questId = String(data.questId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    const transaction = beginCriticalAction(p, 'npcQuestAction', data, ['action', 'questId', 'enemyId', 'traderId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     const actor = serverNpcQuestActor(p, data.enemyId || data.traderId || '', questId);
     if (!actor) return fail('Подойдите к персонажу, который выдал это задание.');
     const result = performServerNpcQuestAction(p, actor, data);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие задания.');
+    commitCriticalAction(p, transaction, result);
     persistActivePlayerState(p);
     const playerResult = result.enemy ? { ...result, enemy: publicEnemy(actor, p) } : result;
     if (typeof ack === 'function') ack(playerResult);
@@ -22206,9 +26306,31 @@ io.on('connection', (socket) => {
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
+    if (!serverInteractionHasLineOfSight(room, p, point)) return fail('Торговый автомат находится за препятствием.');
+    const transaction = beginInventoryMutation(
+      p,
+      'tradeMachineExchange',
+      data,
+      ['machineId', 'id', 'buys', 'buyRows', 'sells', 'sellRows']
+    );
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      return typeof ack === 'function' && ack({
+        ...transaction.result,
+        inventory: p.inventory,
+        carry: sanitizeCarrySnapshot(p),
+        market: serverTradeMachineMarket(room, loc, machine),
+        self: publicAuthoritativePlayerState(p)
+      });
+    }
     const result = performServerTradeMachineExchange(room, loc, machine, data, p);
+    if (!result?.ok) {
+      if (typeof ack === 'function') ack(result);
+      return;
+    }
+    commitInventoryMutation(p, transaction, { ...result, machineId: String(machine.id || '') });
+    persistActivePlayerState(p);
     if (typeof ack === 'function') ack(result);
-    if (!result?.ok) return;
     io.to(room.id).emit('tradeMachineMarketUpdated', {
       machineId: String(machine.id || ''),
       market: result.market,
@@ -22222,8 +26344,30 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId || p.onGlobalMap || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
+      const transaction = beginInventoryMutation(
+        p,
+        'craftingStationUsed',
+        data,
+        ['recipeId', 'station', 'fee', 'locationId', 'stationObjectId']
+      );
+      if (!transaction.ok) return fail(transaction.error);
+      if (transaction.replay) {
+        return typeof ack === 'function' && ack({
+          ...transaction.result,
+          inventory: p.inventory,
+          carry: sanitizeCarrySnapshot(p),
+          self: publicAuthoritativePlayerState(p)
+        });
+      }
       const result = recordWastelandCraftingStationFee(data, p);
-      if (result?.ok) persistActivePlayerState(p);
+      if (result?.ok) {
+        commitInventoryMutation(p, transaction, {
+          ...result,
+          outputItemId: result.output?.id || '',
+          outputQuantity: Number(result.output?.qty || 0)
+        });
+        persistActivePlayerState(p);
+      }
       if (typeof ack === 'function') ack(result);
     } catch (err) {
       console.error('craftingStationUsed failed:', err);
@@ -22240,8 +26384,6 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
-    if (locationIsFactionCapital(roomLocation(room))) return;
-    if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
     const handSlot = data.handSlot === 'offhand' ? 'offhand' : 'weapon';
     const handWeapon = serverEquippedWeaponEntryForSlot(p, handSlot);
     if (!handWeapon) return;
@@ -22283,8 +26425,6 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
-    if (locationIsFactionCapital(roomLocation(room))) return;
-    if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
     const weapon = String(data.weapon || serverActiveWeaponId(p)).slice(0, 32);
     const payload = {
       shooterId: socket.id,
@@ -22319,6 +26459,8 @@ io.on('connection', (socket) => {
       });
     }
     const result = serverApplyReload(p, data, Date.now());
+    if (result.ok && Number(result.take || 0) > 0 && serverActiveWeaponId(p) === 'pistol')
+      serverRecordTutorialFact(p, 'weaponReloaded');
     if (!result.ok) return fail(result.error || 'Сервер: перезарядка отклонена.', { inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()) });
     socket.to(p.roomId).emit('playerReloaded', {
       shooterId: socket.id,
@@ -22328,6 +26470,7 @@ io.on('connection', (socket) => {
       weapon: serverActiveWeaponId(p),
       t: Date.now()
     });
+    persistActivePlayerState(p);
     if (typeof ack === 'function') ack({ ok: true, ...result, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 
@@ -22337,7 +26480,6 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
-    const loc = roomLocation(room);
     const equippedWeaponId = serverActiveWeaponId(p);
     const weapon = serverWeaponDef(equippedWeaponId, p);
     const currentCombat = () => ({
@@ -22345,10 +26487,6 @@ io.on('connection', (socket) => {
       combats: serverCombatAcksForEntries(p, serverDualWieldPistolPair(p)?.entries || [{ slot: serverActiveWeaponSlot(p), weapon }], Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
-    if (locationIsFactionCapital(loc)
-      || (!locationAllowsNpcCombat(loc) && !room.locationWorldEvent)) {
-      return fail('В этой локации нельзя использовать оружие.', currentCombat());
-    }
     syncServerActionProgressionPlayer(p, data);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
@@ -22431,12 +26569,10 @@ io.on('connection', (socket) => {
       return distance <= radius + targetRadius
         && serverLineOfFireClearFrom(room, impactX, impactZ, target, { shooterCrouching: false });
     };
-    const enemyTargets = [...room.enemies.values()].filter(enemy => enemy && !enemy.dead && explosionReaches(enemy));
+    const enemyTargets = [...room.enemies.values()].filter(enemy => (
+      enemy && !enemy.dead && explosionReaches(enemy) && serverPlayerCanDamageNpc(p, enemy, room)
+    ));
     const loc = roomLocation(room);
-    if (enemyTargets.length && locationIsFactionCapital(loc)) return fail('В столице нельзя наносить урон.', currentCombat());
-    if (enemyTargets.length && !locationAllowsNpcCombat(loc) && !room.locationWorldEvent) {
-      return fail('В мирной локации нельзя атаковать НПС.', currentCombat());
-    }
 
     const now = Date.now();
     const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, weapon, modeInfo, now);
@@ -22449,7 +26585,6 @@ io.on('connection', (socket) => {
     const baseRaw = explosionCritical.rawDamage;
     const enemyHits = [];
     for (const enemy of enemyTargets) {
-      if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, p, now);
       const targetRadius = 0.5 * Number(enemy.scale || 1) + 0.22;
       const distance = Math.hypot(Number(enemy.x || 0) - impactX, Number(enemy.z || 0) - impactZ);
       const falloff = Math.max(0.34, 1 - Math.max(0, distance - targetRadius) / radius * 0.72);
@@ -22491,6 +26626,7 @@ io.on('connection', (socket) => {
     for (const target of potentialPlayers) {
       if (!target || target.dead || Number(target.hp || 0) <= 0 || !explosionReaches({ ...target, scale: 1 })) continue;
       const isSelf = target.id === p.id;
+      if (!isSelf && !serverPlayerCanDamagePlayer(p, target, room, now)) continue;
       const targetRadius = 0.72;
       const distance = Math.hypot(Number(target.x || 0) - impactX, Number(target.z || 0) - impactZ);
       const falloff = Math.max(0.35, 1 - Math.max(0, distance - targetRadius) / radius * 0.7);
@@ -22501,6 +26637,7 @@ io.on('connection', (socket) => {
       if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
+      serverApplyArtifactImpact(target, room, { x: impactX, z: impactZ }, 'explosive', 2 * falloff, now);
       const downed = !secondChance && Number(target.hp || 0) <= 0
         && serverTryDownWorldActivityPlayer(target, room, now);
       const killed = Number(target.hp || 0) <= 0 && !secondChance;
@@ -22588,10 +26725,36 @@ io.on('connection', (socket) => {
     if (!room) return fail('Локация не найдена.');
     ensureRoomWorld(room);
     const loc = roomLocation(room);
-    if (locationIsFactionCapital(loc)) return fail('В столице нельзя наносить урон.');
-    if (!locationAllowsNpcCombat(loc) && !room.locationWorldEvent) return fail('В мирной локации нельзя атаковать НПС.');
     const enemyId = String(data.enemyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     const enemy = room.enemies.get(enemyId);
+    if (enemy?.trainingTarget && loc.id === 'tutorialCaravanYard') {
+      const currentCombat = () => ({ self: publicAuthoritativePlayerState(p),
+        combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()) });
+      failureContext = currentCombat;
+      if (data.equipment && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) return fail('Экипировка изменилась.');
+      const plan = serverResolvePlayerAttackPlan(p, data, Date.now());
+      if (!plan.ok) return fail(plan.error);
+      const weapon = plan.entries[0].weapon;
+      if (!weapon.ammoType || weapon.id === 'rocketLauncher') return fail('В мишень нужно выстрелить из огнестрельного оружия.');
+      const dx = enemy.x - p.x, dz = enemy.z - p.z;
+      const dirX = Number(data.shotDirX), dirZ = Number(data.shotDirZ);
+      const length = Math.hypot(dirX, dirZ);
+      const projection = (dx * dirX + dz * dirZ) / length;
+      const perpendicular = Math.abs(dx * dirZ - dz * dirX) / length;
+      if (!Number.isFinite(length) || length < 0.001 || projection <= 0 || perpendicular > 0.7)
+        return fail('Линия выстрела не попадает в мишень.');
+      if (Math.hypot(dx, dz) > Number(weapon.range || 1) + 0.85) return fail('Мишень слишком далеко.');
+      if (!serverLineOfFireClearFrom(room, p.x, p.z, enemy, { shooterCrouching: !!p.crouching }))
+        return fail('Мишень закрыта препятствием.');
+      const spend = serverValidateAndSpendAttack(p, data, weapon, plan.modeInfo, Date.now(), plan);
+      if (!spend.ok || spend.reused) return fail(spend.error || 'Этот выстрел уже обработан.');
+      serverRecordTutorialFact(p, 'targetHit');
+      persistActivePlayerState(p);
+      if (typeof ack === 'function') ack({ ok: true, hit: true, chance: 100, damage: 0,
+        enemyId, enemy: publicEnemy(enemy, p), combat: spend.combat, combats: spend.combats,
+        apCost: spend.apCost, shots: spend.shots, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
     if (!enemy || enemy.dead) return fail('Цель уже недоступна.');
 
     syncServerActionProgressionPlayer(p, data);
@@ -22633,7 +26796,12 @@ io.on('connection', (socket) => {
     if (multiTarget && !multiTarget.ok) return fail(multiTarget.error || 'Сервер: цель вне области атаки.');
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE * Math.max(...spend.entries.map(entry => Number(entry.weapon.modNoiseMul || 1)))), socket.id, weapon.ammoType ? 'combat' : 'melee');
-    if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, p, now);
+    // The shot is valid and spent normally; protected targets receive no damage,
+    // stagger, injuries or faction provocation, including multi-target attacks.
+    if (!serverPlayerCanDamageNpc(p, enemy, room)) {
+      if (typeof ack === 'function') ack(serverProtectedAttackAck(p, spend, weapon, { enemy: publicEnemy(enemy, p) }));
+      return;
+    }
 
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;
     const serverTargetingData = multiTarget
@@ -22674,12 +26842,18 @@ io.on('connection', (socket) => {
         continue;
       }
       let raw = serverDamageRoll(p, bulletWeapon, bulletMode);
+      if (!bulletWeapon.ammoType) raw = Math.max(1, Math.round(raw * (1 + serverArtifactEffects(p).meleeDamagePct)));
       if (ambushLevel > 0) raw = Math.max(1, Math.round(raw * (1 + ambushLevel * 0.14)));
       if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
-      const criticalShot = resolveCriticalShot(raw, serverStatValue(p, 'luck'), bulletWeapon);
-      raw = criticalShot.rawDamage;
       const type = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
-      const dmgInfo = serverMitigateEnemyDamage(raw, enemy, type);
+      const dmgInfo = resolveWeaponDamage({
+        rawDamage: raw,
+        luck: serverStatValue(p, 'luck'),
+        weapon: bulletWeapon,
+        profile: serverEnemyArmorProfile(enemy, type),
+        damageType: type
+      });
+      raw = dmgInfo.raw;
       enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
       hits.push({
         handSlot: entry.slot,
@@ -22691,9 +26865,12 @@ io.on('connection', (socket) => {
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
         damageType: dmgInfo.type,
-        critical: criticalShot.critical,
-        criticalChance: Math.round(criticalShot.chance * 100),
-        criticalMultiplier: criticalShot.multiplier
+        threshold: dmgInfo.threshold,
+        protection: Number((dmgInfo.protection * 100).toFixed(1)),
+        resistance: Number((dmgInfo.resistance * 100).toFixed(1)),
+        critical: dmgInfo.critical,
+        criticalChance: Math.round(dmgInfo.criticalChance * 100),
+        criticalMultiplier: dmgInfo.criticalMultiplier
       });
     }
     const anyHit = hits.some(row => row.hit);
@@ -22745,8 +26922,6 @@ io.on('connection', (socket) => {
     ensureRoomWorld(room);
     const loc = roomLocation(room);
     const pvpMode = locationPvpMode(loc);
-    if (locationIsFactionCapital(loc)) return fail('В столице нельзя наносить урон.');
-    if (!locationAllowsPvp(loc)) return fail('В этой локации PvP запрещён.');
 
     const targetId = String(data.targetId || data.playerId || '').slice(0, 80);
     const target = players.get(targetId);
@@ -22791,6 +26966,10 @@ io.on('connection', (socket) => {
     if (spend.reused) return fail('Сервер: эта атака уже обработана.', spend.combat ? { combat: spend.combat } : {});
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(attacker, ENEMY_HEARING_SHOT_RANGE * Math.max(...spend.entries.map(entry => Number(entry.weapon.modNoiseMul || 1)))), socket.id, weapon.ammoType ? 'combat' : 'melee');
+    if (!serverPlayerCanDamagePlayer(attacker, target, room, now)) {
+      if (typeof ack === 'function') ack(serverProtectedAttackAck(attacker, spend, weapon, { target: publicPlayer(target) }));
+      return;
+    }
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;
     const shotgunSpread = serverIsShotgunWeapon(weapon)
       ? serverShotgunSpreadSample(weapon, origin, targetProxy, data)
@@ -22826,11 +27005,17 @@ io.on('connection', (socket) => {
         continue;
       }
       let raw = serverDamageRoll(attacker, bulletWeapon, bulletMode);
+      if (!bulletWeapon.ammoType) raw = Math.max(1, Math.round(raw * (1 + serverArtifactEffects(attacker).meleeDamagePct)));
       if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
-      const criticalShot = resolveCriticalShot(raw, serverStatValue(attacker, 'luck'), bulletWeapon);
-      raw = criticalShot.rawDamage;
       const damageType = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
-      const dmgInfo = serverMitigateDamage(raw, target, damageType);
+      const dmgInfo = resolveWeaponDamage({
+        rawDamage: raw,
+        luck: serverStatValue(attacker, 'luck'),
+        weapon: bulletWeapon,
+        profile: serverArmorProfile(target, damageType),
+        damageType
+      });
+      raw = dmgInfo.raw;
       const secondChance = serverTrySecondChance(target, dmgInfo.damage, now);
       if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
       newInjuries.push(...serverApplyInjuriesFromHit(target, dmgInfo.damage, damageType, attacker.name || 'player attack'));
@@ -22844,9 +27029,12 @@ io.on('connection', (socket) => {
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
         damageType: dmgInfo.type,
-        critical: criticalShot.critical,
-        criticalChance: Math.round(criticalShot.chance * 100),
-        criticalMultiplier: criticalShot.multiplier,
+        threshold: dmgInfo.threshold,
+        protection: Number((dmgInfo.protection * 100).toFixed(1)),
+        resistance: Number((dmgInfo.resistance * 100).toFixed(1)),
+        critical: dmgInfo.critical,
+        criticalChance: Math.round(dmgInfo.criticalChance * 100),
+        criticalMultiplier: dmgInfo.criticalMultiplier,
         secondChance
       });
       targetProxy.hp = target.hp;
@@ -22858,6 +27046,8 @@ io.on('connection', (socket) => {
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
+    if (anyHit) serverApplyArtifactImpact(target, room, attacker,
+      hits.some(row => row.hit && row.damageType === 'electric') ? 'electric' : '', 0, now);
     const downed = anyHit && Number(target.hp || 0) <= 0
       && serverTryDownWorldActivityPlayer(target, room, now);
     const killed = anyHit && Number(target.hp || 0) <= 0;
@@ -22961,6 +27151,7 @@ io.on('connection', (socket) => {
     const pos = tileToWorld(resource.tx, resource.tz);
     const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
+    if (!serverInteractionHasLineOfSight(room, p, pos)) return fail('Ресурс находится за препятствием.');
 
     const expectedTool = resourceDef.toolId;
     const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
@@ -23018,6 +27209,8 @@ io.on('connection', (socket) => {
     const item = { id: resourceDef.itemId, qty };
     if (!activityFieldKit) serverWearPlayerItem(p, expectedTool, 1.5);
     serverInventoryAdd(p, item.id, item.qty);
+    if (resource.id === 'yard_ore') serverRecordTutorialFact(p, 'oreGathered', item.qty);
+    if (resource.id === 'yard_wood') serverRecordTutorialFact(p, 'woodGathered', item.qty);
     const xp = serverHarvestXp(qty);
     serverGrantXp(p, xp);
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
@@ -23038,6 +27231,7 @@ io.on('connection', (socket) => {
     if (!actor || actor.dead) return fail('NPC недоступен.');
     const dist = Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0));
     if (dist > 5.2) return fail('NPC слишком далеко.');
+    if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('NPC находится за препятствием.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
     if (npcScheduledServiceClosed(room, actor, Date.now())) return fail('Торговец сейчас не работает или занят. Приходите позже.');
     const grudgeHours = serverCaravanGrievanceHours(actor, p);
@@ -23062,6 +27256,7 @@ io.on('connection', (socket) => {
     const grudgeHours = serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');
+    if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('NPC находится за препятствием.');
     const result = performServerNpcTradeExchange(room, actor, data, p);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил обмен.', { market: serverNpcTradeMarket(actor), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
     const playerResult = { ...result, enemy: publicEnemy(actor, p) };
@@ -23081,10 +27276,12 @@ io.on('connection', (socket) => {
     if (!loc.encounterOnly && !loc.randomTemplate) return fail('Ограбление каравана доступно только в событии каравана.');
     const enemyId = String(data.enemyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     const actor = room.enemies.get(enemyId);
+    if (serverNpcIsKromkaOnboardingProtected(actor)) return fail('Сюжетного персонажа нельзя ограбить.');
     if (!actor || actor.dead) return fail('Цель уже недоступна.');
     if (actor.hostileToPlayer !== false) return fail('Цель уже враждебна.');
     const dist = Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0));
     if (dist > 4.4) return fail('Подойдите ближе, чтобы ограбить.');
+    if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('Цель находится за препятствием.');
     const changed = setEncounterFactionHostileToPlayer(room, actor.faction, p, Date.now());
     addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
     refreshRoomWorldState(room);
@@ -23122,6 +27319,10 @@ io.on('connection', (socket) => {
     const dist = Math.hypot((p.x || 0) - enemy.x, (p.z || 0) - enemy.z);
     if (dist > 4.4) {
       if (typeof ack === 'function') ack({ ok: false, error: 'too_far' });
+      return;
+    }
+    if (!serverInteractionHasLineOfSight(room, p, enemy)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'interaction_blocked' });
       return;
     }
     const now = Date.now();
@@ -23168,6 +27369,10 @@ io.on('connection', (socket) => {
     const dist = Math.hypot((p.x || 0) - enemy.x, (p.z || 0) - enemy.z);
     if (dist > 4.4) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к телу.' });
+      return;
+    }
+    if (!serverInteractionHasLineOfSight(room, p, enemy)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Тело находится за препятствием.' });
       return;
     }
     serverTouchCorpseLootHold(enemy, socket.id, Date.now());
@@ -23243,7 +27448,7 @@ io.on('connection', (socket) => {
       id: itemId,
       qty,
       itemRuntimeId: data.itemRuntimeId
-    });
+    }, { releaseLoadedAmmo: true });
     if (!runtimeRemoval.ok) {
       if (typeof ack === 'function') ack({ ok: false, error: runtimeRemoval.error, self: publicAuthoritativePlayerState(p) });
       return;
@@ -23268,6 +27473,7 @@ io.on('connection', (socket) => {
       x,
       z,
       droppedBy: socket.id,
+      itemRuntimeRecords: serverCaptureWeaponRuntimeRecords(p, { id: itemId, qty }, runtimeRemoval),
       createdAt: Date.now()
     };
     room.groundItems.set(groundItem.id, groundItem);
@@ -23304,6 +27510,10 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к предмету.' });
       return;
     }
+    if (!serverInteractionHasLineOfSight(room, p, groundItem)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Предмет находится за препятствием.' });
+      return;
+    }
     const stackQty = Math.max(1, Math.floor(Number(groundItem.qty || 1)));
     const carryCheck = serverLimitItemsByCarry(p, data, [{ id: groundItem.itemId, qty: stackQty }], { apply: false });
     if (!carryCheck.items.length || Number(carryCheck.items[0].qty || 0) < stackQty) {
@@ -23316,6 +27526,7 @@ io.on('connection', (socket) => {
     p.carry = carryCheck.carry;
     room.groundItems.delete(id);
     serverInventoryAdd(p, groundItem.itemId, groundItem.qty);
+    serverRestoreWeaponRuntimeRecords(p, groundItem.itemRuntimeRecords || []);
     refreshRoomWorldState(room);
     const item = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item, carry: carryCheck.carry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -23346,6 +27557,10 @@ io.on('connection', (socket) => {
     const dist = Math.hypot((p.x || 0) - container.x, (p.z || 0) - container.z);
     if (dist > 3.2) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к замку.' });
+      return;
+    }
+    if (!serverInteractionHasLineOfSight(room, p, container)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Замок находится за препятствием.' });
       return;
     }
     if (container.terminalLocked) {
@@ -23436,6 +27651,10 @@ io.on('connection', (socket) => {
     const dist = Math.hypot((p.x || 0) - container.x, (p.z || 0) - container.z);
     if (dist > 3.2) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к терминалу.' });
+      return;
+    }
+    if (!serverInteractionHasLineOfSight(room, p, container)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Терминал находится за препятствием.' });
       return;
     }
     if (!container.terminalLocked) {
@@ -23538,6 +27757,10 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к контейнеру.' });
       return;
     }
+    if (!serverInteractionHasLineOfSight(room, p, container)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Контейнер находится за препятствием.' });
+      return;
+    }
     if (container.terminalLocked || container.locked) {
       const pub = publicWorldContainer(container);
       if (typeof ack === 'function') ack({
@@ -23549,7 +27772,8 @@ io.on('connection', (socket) => {
       });
       return;
     }
-    if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
+    if (serverRefreshTutorialSupplies(p, container)) { /* personal tutorial issue */ }
+    else if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
     else if (applyContainerProgressionLoot(room, container, p)) refreshRoomWorldState(room);
     if (typeof ack === 'function') ack({ ok: true, container: publicWorldContainer(container) });
   });
@@ -23578,6 +27802,10 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Подойдите ближе к контейнеру.' });
       return;
     }
+    if (!serverInteractionHasLineOfSight(room, p, container)) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Контейнер находится за препятствием.' });
+      return;
+    }
     if (container.terminalLocked || container.locked) {
       const pub = publicWorldContainer(container);
       if (typeof ack === 'function') ack({
@@ -23589,7 +27817,8 @@ io.on('connection', (socket) => {
       });
       return;
     }
-    if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
+    if (serverRefreshTutorialSupplies(p, container)) { /* personal tutorial issue */ }
+    else if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
     else if (applyContainerProgressionLoot(room, container, p)) refreshRoomWorldState(room);
     const requested = sanitizeLootRequest(data);
     const wanted = new Map();
@@ -23636,6 +27865,7 @@ io.on('connection', (socket) => {
     }
     const finalCarry = serverLimitItemsByCarry(p, data, finalTaken).carry;
     finalTaken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
+    serverTakeTutorialSupplies(p, container, finalTaken);
     refreshRoomWorldState(room);
     const pub = publicWorldContainer(container);
     if (typeof ack === 'function') ack({ ok: true, items: finalTaken, container: pub, empty: pub.empty, partial: !!carryCheck.blocked, carry: finalCarry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -23816,6 +28046,7 @@ io.on('connection', (socket) => {
       }
     }
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
+    const questProgress = serverRecordKromkaLocationArrival(p, room.locationId);
     // Commit the consumed arrival ticket before replying. If the response is
     // lost and the client reconnects, the durable save already describes the
     // entered room instead of resurrecting a stale world-map transition.
@@ -23823,11 +28054,12 @@ io.on('connection', (socket) => {
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     ensureServerWorldActivityForRoom(room, Date.now());
     refreshRoomWorldState(room, { force: true });
-    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), questProgress, serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true, socket.id);
     emitWorldContainersSnapshot(room, true, socket.id);
+    emitServerArtifactState(p, 'locationChanged');
   };
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);
@@ -23856,6 +28088,8 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const p = players.get(socket.id);
+    const trade = p ? serverPlayerTradeFor(p.id) : null;
+    if (trade) cancelServerPlayerTrade(trade, 'disconnected', 'Торговля отменена: один из игроков отключился.');
     try {
       cleanupGlobalTravelSessionsForSocket(socket.id);
     } catch (error) {
@@ -23876,10 +28110,19 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Disconnect lock cleanup failed:', socket.id, error);
     } finally {
+      ANOMALY_SYSTEM.releasePlayer(socket.id);
       players.delete(socket.id);
     }
   });
 });
+
+setInterval(() => {
+  try {
+    serverTickKromkaSieges(Date.now());
+  } catch (error) {
+    console.error('Kromka siege scheduler tick failed:', error);
+  }
+}, 1000);
 
 setInterval(() => {
   const startedAt = Date.now();
@@ -23909,6 +28152,72 @@ setInterval(() => {
     console.error('World caravan player sync failed:', err);
   }
 }, 1000);
+
+let lastKromkaShiftRevision = '';
+setInterval(() => {
+  const now = Date.now();
+  const globalShift = KROMKA_SHIFT_CYCLE.state(now);
+  const revision = `${globalShift.shiftId}:${globalShift.phase}`;
+  const phaseChanged = revision !== lastKromkaShiftRevision;
+  lastKromkaShiftRevision = revision;
+  if (phaseChanged && typeof WASTELAND_SIM.recordAnomalyShift === 'function') {
+    try {
+      WASTELAND_SIM.recordAnomalyShift(globalShift);
+      invalidateWastelandPublicCache();
+    } catch (err) {
+      console.error('Anomaly Shift world simulation failed:', err);
+    }
+  }
+  for (const room of rooms.values()) {
+    const beforeShiftId = String(room.kromkaArtifactState?.shiftId || '');
+    serverEnsureRoomArtifacts(room, now);
+    if (beforeShiftId !== String(room.kromkaArtifactState?.shiftId || '')) room.worldStateDirty = true;
+  }
+  for (const p of players.values()) {
+    if (!p || !p.roomId || p.onGlobalMap || p.dead) continue;
+    const shift = serverCurrentShiftState(now, p);
+    if (shift.phase === 'active' && !shift.sheltered && now - Number(p.lastShiftDamageAt || 0) >= 3000) {
+      p.lastShiftDamageAt = now;
+      const rawDamage = 4 + Number(shift.strength || 1) * 2;
+      const mitigation = serverMitigateDamage(rawDamage, p, 'anomalous');
+      p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
+      const newInjuries = serverApplyInjuriesFromHit(
+        p,
+        mitigation.damage,
+        'anomalous',
+        'Выброс'
+      );
+      p.lastServerDamageAt = now;
+      const shiftRoom = rooms.get(p.roomId);
+      const downed = Number(p.hp || 0) <= 0
+        && serverTryDownWorldActivityPlayer(p, shiftRoom, now);
+      io.to(p.id).emit('playerStatusEffect', {
+        effect: 'shiftExposure',
+        damage: mitigation.damage,
+        rawDamage,
+        absorbed: mitigation.absorbed,
+        protection: Number((mitigation.protection * 100).toFixed(1)),
+        resistance: Number((mitigation.resistance * 100).toFixed(1)),
+        threshold: mitigation.threshold,
+        strength: shift.strength,
+        hp: Math.round(Number(p.hp || 0)),
+        maxHp: Math.round(Number(p.maxHp || 1)),
+        downed,
+        injuries: sanitizeInjuries(p.injuries || {}),
+        newInjuries,
+        t: now
+      });
+      if (Number(p.hp || 0) <= 0) {
+        p.dead = true;
+        serverRespawnPlayer(p, shiftRoom, { shiftId: shift.shiftId, fullDrop: false });
+      }
+    }
+    if (phaseChanged || now - Number(p.lastArtifactStateAt || 0) >= 1000) {
+      p.lastArtifactStateAt = now;
+      emitServerArtifactState(p, phaseChanged ? 'shiftPhase' : 'proximity');
+    }
+  }
+}, 500);
 
 setInterval(() => {
   // 1) Сначала двигаем игроков.
@@ -23940,6 +28249,15 @@ setInterval(() => {
     expireLegacyPlayerInput(p, playerTickNow);
     serverRegenPlayerAp(p, playerTickNow);
     updateServerPlayerMedicalEffects(p, playerTickNow);
+    updateServerArtifactRegeneration(p, playerTickNow);
+    const supportRoom = rooms.get(p.roomId);
+    const supportEffects = serverArtifactEffects(p);
+    tickArtifactRuntime(p, supportEffects, !!supportRoom && isWetEnvironment(p,
+      ANOMALY_SYSTEM.authoredFields(supportRoom.locationId),
+      (KROMKA_LOCATION_CATALOG.locations || []).find(row => row.id === supportRoom.locationId)?.wetZones || []), playerTickNow);
+    if (isArtifactStunned(p, playerTickNow)) {
+      p.input = { forward: 0, right: 0 }; p.vx = 0; p.vz = 0; p.moving = false;
+    }
     const fwdX = Math.sin(p.angle);
     const fwdZ = Math.cos(p.angle);
     const rightX = Math.cos(p.angle);
@@ -23950,17 +28268,81 @@ setInterval(() => {
     dx /= len; dz /= len;
     const moving = Math.abs(p.input.forward) + Math.abs(p.input.right) > 0.01;
     if (moving) {
-      const speedFactor = p.input.forward < -0.15 ? 0.58 : 1;
+      const speedFactor = (p.input.forward < -0.15 ? 0.58 : 1)
+        * (1 + serverArtifactEffects(p).speedPct);
       const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
       const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
       const room = rooms.get(p.roomId);
+      const closedBounds = serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS);
       if (!room || (
-        isRoomTerrainWalkableWorld(room, nextX, nextZ, PLAYER_COLLISION_RADIUS)
+        (!closedBounds || serverPointInsideClosedLocationBounds(nextX, nextZ, closedBounds))
+        && isRoomTerrainWalkableWorld(room, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomStaticCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
         && roomEnemyCollisionMoveAllowed(room, p.x, p.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
       )) {
         p.x = nextX;
         p.z = nextZ;
+      }
+    }
+
+    const stepRadius = artifactFootstep(p, supportEffects, playerTickNow);
+    if (stepRadius > 0) addRoomNoise(supportRoom, p.x, p.z, serverPlayerNoiseRadius(p, stepRadius), p.id, 'footstep');
+    const anomalyRoom = rooms.get(p.roomId);
+    const anomalyHit = anomalyRoom ? ANOMALY_SYSTEM.evaluatePlayer({
+      roomId: anomalyRoom.id,
+      locationId: anomalyRoom.locationId,
+      playerId: p.id,
+      x: p.x,
+      z: p.z,
+      now: playerTickNow
+    }) : null;
+    if (anomalyHit) {
+      serverApplyDerivedVitals(p);
+      const mitigation = serverMitigateDamage(anomalyHit.damage, p, anomalyHit.damageType);
+      const secondChance = serverTrySecondChance(p, mitigation.damage, playerTickNow);
+      if (!secondChance) p.hp = Math.max(0, Number(p.hp || p.maxHp) - mitigation.damage);
+      const newInjuries = serverApplyInjuriesFromHit(
+        p,
+        mitigation.damage,
+        anomalyHit.damageType,
+        anomalyHit.anomalyName || 'Аномалия'
+      );
+      p.lastServerDamageAt = playerTickNow;
+      serverApplyArtifactImpact(p, anomalyRoom, { x: anomalyHit.sourceX, z: anomalyHit.sourceZ },
+        anomalyHit.damageType, anomalyHit.anomalyType === 'pull' ? -0.8 : anomalyHit.anomalyType === 'carousel' ? 0.8 : 0, playerTickNow);
+      const downed = !secondChance && Number(p.hp || 0) <= 0
+        && serverTryDownWorldActivityPlayer(p, anomalyRoom, playerTickNow);
+      const killed = Number(p.hp || 0) <= 0 && !secondChance;
+      const payload = {
+        ...anomalyHit,
+        playerId: p.id,
+        characterId: p.characterId || '',
+        targetName: p.name || 'Наёмник',
+        rawDamage: anomalyHit.damage,
+        damage: mitigation.damage,
+        absorbed: mitigation.absorbed,
+        protection: Number((mitigation.protection * 100).toFixed(1)),
+        resistance: Number((mitigation.resistance * 100).toFixed(1)),
+        threshold: mitigation.threshold,
+        hp: Math.round(Number(p.hp || 0)),
+        maxHp: Math.round(Number(p.maxHp || 100)),
+        secondChance,
+        downed,
+        killed,
+        injuries: sanitizeInjuries(p.injuries || {}),
+        newInjuries
+      };
+      io.to(anomalyRoom.id).emit('playerDamaged', payload);
+      io.to(p.id).emit('playerStatusEffect', payload);
+      if (killed) {
+        p.dead = true;
+        p.diedAt = playerTickNow;
+        serverRespawnPlayer(p, anomalyRoom, {
+          anomalyId: anomalyHit.anomalyId,
+          anomalyName: anomalyHit.anomalyName,
+          pvpMode: locationPvpMode(roomLocation(anomalyRoom)),
+          fullDrop: false
+        });
       }
     }
   }

@@ -63,6 +63,13 @@ namespace RealmOfAshes.Game
         public static string Category(string itemOrRuntimeId)
         {
             string id = RoaInventory.BaseId(itemOrRuntimeId);
+            string authoritative = RoaItemData.Category(id);
+            if (!string.IsNullOrEmpty(authoritative))
+            {
+                if (authoritative == "currency" || authoritative == "strategic"
+                    || authoritative == "artifacts") return "misc";
+                return authoritative;
+            }
             return CategoryById.TryGetValue(id, out string category) ? category : "misc";
         }
 

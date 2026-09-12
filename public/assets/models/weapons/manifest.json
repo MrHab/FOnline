@@ -5,8 +5,9 @@
   "blenderGenerator": "tools/blender/build_weapon_runtime_models.py",
   "artDirection": "geometry_b_materials_c",
   "source": {
-    "package": "Realm of Ashes original procedural weapon library",
-    "license": "Project-owned original work"
+    "package": "Complete firearm CC0 donor catalog, CC0 knife/axe, and project-authored workshop tools",
+    "license": "Mixed: project-owned original work and CC0-1.0",
+    "pilotManifest": "source-assets/weapons/pilot/manifest.json"
   },
   "coordinateSystem": {
     "forward": "-Z",
@@ -38,20 +39,20 @@
       "id": "pistol",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_pistol.glb",
-      "bytes": 266704,
-      "sha256": "d35fb85ec82ae33b9578eb2c50e790700c7b0da90ea86bea546cdeb55ef64d70",
-      "meshes": 32,
+      "bytes": 168336,
+      "sha256": "bc3dbf8dc9a8f872fbce28b39e656a4ff2de8d080508e050f28ca86d8b2e7e39",
+      "meshes": 6,
       "runtimeScale": 0.34,
       "boundsMeters": {
         "min": [
           -0.0372,
-          -0.09486,
-          -0.142563
+          -0.0714,
+          -0.103164
         ],
         "max": [
-          0.03672,
-          0.2142,
-          0.097972
+          0.03262,
+          0.255457,
+          0.101133
         ]
       },
       "animations": [
@@ -65,26 +66,36 @@
         "socket_reload"
       ],
       "reloadKind": "shells",
-      "reloadPart": "breech_cap"
+      "reloadPart": "breech_cap",
+      "modelRevision": 3,
+      "pilotFamily": "sidearm",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "4a1f77b488f23e1758a4e9a5289cf076c876e3455a176dc8e0f4abea613aae1d",
+        "sourceFile": "quaternius/ultimate-guns/Pistol_1.fbx"
+      }
     },
     {
       "id": "rifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_rifle.glb",
-      "bytes": 243540,
-      "sha256": "773c94b870ed3b864cd71d14f2a22641cd1bc598cf4710e65f0b73f83ce804ef",
-      "meshes": 29,
+      "bytes": 135760,
+      "sha256": "54daca9aa5004282f8f16d9ffd6e2e2f1c716bc62a445fde0ab431674af3dd8e",
+      "meshes": 6,
       "runtimeScale": 0.52,
       "boundsMeters": {
         "min": [
-          -0.0988,
-          -0.2899,
-          -0.168851
+          -0.0286,
+          -0.28187,
+          -0.161162
         ],
         "max": [
-          0.15444,
-          0.81692,
-          0.1534
+          0.072869,
+          0.78813,
+          0.034008
         ]
       },
       "animations": [
@@ -98,14 +109,24 @@
         "socket_reload"
       ],
       "reloadKind": "bolt_clip",
-      "reloadPart": "cartridge_clip"
+      "reloadPart": "cartridge_clip",
+      "modelRevision": 3,
+      "pilotFamily": "long_gun",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "d2191ecfe672362d20faaaed90639f34ea6c4ac6332c96d3b90e13518515d4a5",
+        "sourceFile": "quaternius/ultimate-guns/SniperRifle_1.fbx"
+      }
     },
     {
       "id": "assaultRifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_assaultRifle.glb",
-      "bytes": 531224,
-      "sha256": "7f84c9e6f67f76f4a83bbb1b8daeb568c9ba785319909a7e15dfec198e34610d",
+      "bytes": 531632,
+      "sha256": "4385f4d7e250990b599e63cc3d80c27cc08c445ac71354b9d970329bd8209f22",
       "meshes": 4,
       "runtimeScale": 1,
       "boundsMeters": {
@@ -132,27 +153,37 @@
       ],
       "reloadKind": "magazine",
       "reloadPart": "magazine",
+      "modelRevision": 3,
+      "pilotFamily": "long_gun",
       "approvedReviewSha256": "322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6",
-      "source": "Quaternius Zombie Apocalypse Kit / Rifle.gltf (CC0), rebuilt and critic-approved"
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Zombie Apocalypse Kit",
+        "page": "https://quaternius.com/packs/zombieapocalypse.html",
+        "license": "CC0-1.0",
+        "sourceFile": null,
+        "sha256": null,
+        "note": "Rifle.gltf rebuilt and critic-approved; approval hash is the integration gate."
+      }
     },
     {
       "id": "machineGun",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_machineGun.glb",
-      "bytes": 294508,
-      "sha256": "7ae3e9f7a61a91c341e8a265a9f87142d30c6dd9f009a69ab504200af2d27c37",
-      "meshes": 43,
+      "bytes": 205156,
+      "sha256": "112978d3def1f107c8822e1025182e261cabb32ce755cb1e453cf568fb5f3720",
+      "meshes": 6,
       "runtimeScale": 0.56,
       "boundsMeters": {
         "min": [
-          -0.1176,
-          -0.3304,
-          -0.226869
+          -0.106687,
+          -0.358953,
+          -0.206623
         ],
         "max": [
-          0.2114,
-          0.8512,
-          0.332216
+          0.148386,
+          0.801047,
+          0.156856
         ]
       },
       "animations": [
@@ -166,26 +197,36 @@
         "socket_reload"
       ],
       "reloadKind": "ammo_box",
-      "reloadPart": "ammo_box"
+      "reloadPart": "ammo_box",
+      "modelRevision": 3,
+      "pilotFamily": "heavy",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "4cd8e8258dcb84c534e201345e4a41c39c9bec948fa6537adbf0217d2b42fd2e",
+        "sourceFile": "quaternius/ultimate-guns/AssaultRifle2_1.fbx"
+      }
     },
     {
       "id": "laserPistol",
       "family": "energy_sidearm",
       "file": "/assets/models/weapons/weapon_laserPistol.glb",
-      "bytes": 227560,
-      "sha256": "689cf2da280cd2fa08c5a2c5f94ed6f45b5003fbfa83c708e54529c98712f2b3",
-      "meshes": 36,
+      "bytes": 169596,
+      "sha256": "8f5c4493d72cc4e400815940bd6aef2231dad87726bfc5ef68b08b1413d41726",
+      "meshes": 5,
       "runtimeScale": 0.4,
       "boundsMeters": {
         "min": [
-          -0.083428,
-          -0.083175,
-          -0.170383
+          -0.05157,
+          -0.062987,
+          -0.111444
         ],
         "max": [
-          0.083428,
-          0.3216,
-          0.160236
+          0.05163,
+          0.337013,
+          0.149697
         ]
       },
       "animations": [
@@ -199,26 +240,36 @@
         "socket_reload"
       ],
       "reloadKind": "energy_cell",
-      "reloadPart": "energy_core"
+      "reloadPart": "energy_core",
+      "modelRevision": 3,
+      "pilotFamily": "energy_sidearm",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Sci-Fi Modular Gun Pack",
+        "page": "https://quaternius.com/packs/scifimodularguns.html",
+        "license": "CC0-1.0",
+        "sha256": "900e5eaf56065b2fe9870057f3ac01a74e5eba0e9d2193f05883200387c65617",
+        "sourceFile": "quaternius/sci-fi-modular/Pistol_1.fbx"
+      }
     },
     {
       "id": "flamethrower",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_flamethrower.glb",
-      "bytes": 282988,
-      "sha256": "2d5f0057728f4d05a0c846c805bf414e1c777bb1384782a8270fdeb1423c1edd",
-      "meshes": 34,
+      "bytes": 270436,
+      "sha256": "478fe404f4c782082d3c4097f9630076573f7b87c580e9b6d06238e471f79596",
+      "meshes": 8,
       "runtimeScale": 0.55,
       "boundsMeters": {
         "min": [
-          -0.1265,
-          -0.29425,
-          -0.218303
+          -0.103881,
+          -0.2695,
+          -0.230263
         ],
         "max": [
           0.168627,
-          0.7975,
-          0.17875
+          0.854522,
+          0.172279
         ]
       },
       "animations": [
@@ -232,26 +283,36 @@
         "socket_reload"
       ],
       "reloadKind": "fuel_tank",
-      "reloadPart": "fuel_tank"
+      "reloadPart": "fuel_tank",
+      "modelRevision": 3,
+      "pilotFamily": "heavy",
+      "source": {
+        "creator": "Alexandr Mischenko",
+        "pack": "Flamethrower PBR/Unity CC0",
+        "page": "https://opengameart.org/content/flamethrower-pbrunity-cc0",
+        "license": "CC0-1.0",
+        "sha256": "954ad0ea00d83aaff4245a89ad378108f61cbf21d1c5c1fd2532865e43e6cc02",
+        "sourceFile": "opengameart/flamethrower/Flamethrower.fbx"
+      }
     },
     {
       "id": "plasmaRifle",
       "family": "energy_long_gun",
       "file": "/assets/models/weapons/weapon_plasmaRifle.glb",
-      "bytes": 283988,
-      "sha256": "b41aad54b7d0d4f9ae446313ca595a20bd0d9257d1ddc7f977e52dd0535e51e4",
-      "meshes": 49,
+      "bytes": 194700,
+      "sha256": "6567ccf44665af2435521307dd47453441db1df5060a142ec3142b0235e74e64",
+      "meshes": 5,
       "runtimeScale": 0.54,
       "boundsMeters": {
         "min": [
-          -0.138222,
-          -0.27675,
-          -0.227727
+          -0.094802,
+          -0.416689,
+          -0.132594
         ],
         "max": [
-          0.138222,
-          0.79056,
-          0.2484
+          0.094802,
+          0.613311,
+          0.181962
         ]
       },
       "animations": [
@@ -265,26 +326,36 @@
         "socket_reload"
       ],
       "reloadKind": "energy_cell",
-      "reloadPart": "energy_core"
+      "reloadPart": "energy_core",
+      "modelRevision": 3,
+      "pilotFamily": "energy_long_gun",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Sci-Fi Modular Gun Pack",
+        "page": "https://quaternius.com/packs/scifimodularguns.html",
+        "license": "CC0-1.0",
+        "sha256": "3d2e58f6d89a9aedf2e25f769ca4c3dfd3981d0fa5ecbf0ebbd37c6c2da196b7",
+        "sourceFile": "quaternius/sci-fi-modular/AR_1.fbx"
+      }
     },
     {
       "id": "shotgun",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_shotgun.glb",
-      "bytes": 252364,
-      "sha256": "ffae44ede27b4cbd86cc7c6262755e5435fd2cda704ad391107da74ef68ba2d0",
-      "meshes": 35,
+      "bytes": 148876,
+      "sha256": "b5767c8d952f8eff3a48dc6f66282d735125bc46f6439b2430471be83fd9f0e2",
+      "meshes": 6,
       "runtimeScale": 0.52,
       "boundsMeters": {
         "min": [
-          -0.182017,
-          -0.2951,
-          -0.179167
+          -0.086498,
+          -0.282852,
+          -0.146604
         ],
         "max": [
-          0.104,
-          0.79248,
-          0.1365
+          0.035025,
+          0.757148,
+          0.041391
         ]
       },
       "animations": [
@@ -298,26 +369,36 @@
         "socket_reload"
       ],
       "reloadKind": "shells",
-      "reloadPart": "reload_shell"
+      "reloadPart": "reload_shell",
+      "modelRevision": 3,
+      "pilotFamily": "long_gun",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "af7d88bb19ab533cb763516ff06b6c355336dcf4b2987f9c378d291ea12ab501",
+        "sourceFile": "quaternius/ultimate-guns/Shotgun_1.fbx"
+      }
     },
     {
       "id": "rocketLauncher",
       "family": "launcher",
       "file": "/assets/models/weapons/weapon_rocketLauncher.glb",
-      "bytes": 224600,
-      "sha256": "d1f15bec890ad355cc8bb434d89dd641ba456422027ec3226351c8157b60f57d",
-      "meshes": 27,
+      "bytes": 154288,
+      "sha256": "328c77c230347a1268c0caa4b3dfe53f1b69365a28998e742e0ba0986dae4210",
+      "meshes": 6,
       "runtimeScale": 0.58,
       "boundsMeters": {
         "min": [
-          -0.1508,
-          -0.3103,
+          -0.1363,
+          -0.31094,
           -0.244569
         ],
         "max": [
-          0.14616,
-          0.8207,
-          0.2552
+          0.1363,
+          0.80906,
+          0.2001
         ]
       },
       "animations": [
@@ -331,26 +412,36 @@
         "socket_reload"
       ],
       "reloadKind": "rocket",
-      "reloadPart": "rocket_round"
+      "reloadPart": "rocket_round",
+      "modelRevision": 3,
+      "pilotFamily": "launcher",
+      "source": {
+        "creator": "KennyNL",
+        "pack": "Low Poly Rocket Launcher",
+        "page": "https://opengameart.org/content/low-poly-rocket-launcher",
+        "license": "CC0-1.0",
+        "sha256": "763251a23c9a43e0560075d093c91057d331c9c3ca8cbf578a844f9dcdad5563",
+        "sourceFile": "opengameart/rocket-launcher/rocket_launcher.blend"
+      }
     },
     {
       "id": "revolver",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_revolver.glb",
-      "bytes": 230140,
-      "sha256": "8f34c6b32d17deb1ad63be20816580b5b1a4848ddd33b359e329cfcd575eb221",
-      "meshes": 35,
+      "bytes": 162560,
+      "sha256": "2c129e35b681a18f6e84eab642a545f2fb98f76eaf0870e65f0862d51b70a10a",
+      "meshes": 6,
       "runtimeScale": 0.36,
       "boundsMeters": {
         "min": [
-          -0.0432,
-          -0.09685,
-          -0.150949
+          -0.025994,
+          -0.057135,
+          -0.109971
         ],
         "max": [
-          0.0432,
-          0.2421,
-          0.10188
+          0.025989,
+          0.292865,
+          0.047168
         ]
       },
       "animations": [
@@ -364,26 +455,36 @@
         "socket_reload"
       ],
       "reloadKind": "shells",
-      "reloadPart": "cylinder"
+      "reloadPart": "cylinder",
+      "modelRevision": 3,
+      "pilotFamily": "sidearm",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "2a510aef860b4bb1452aa433322424b8ccae064da95db3a05632e3c29bcf8988",
+        "sourceFile": "quaternius/ultimate-guns/Revolver_1.fbx"
+      }
     },
     {
       "id": "sawedOffShotgun",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_sawedOffShotgun.glb",
-      "bytes": 194632,
-      "sha256": "c4daf94325ffb422b322212fad8ba25f1e2a57aa69f08a8c767a3715e0013439",
-      "meshes": 24,
+      "bytes": 133592,
+      "sha256": "58bc34798bc93b42cc85e0a1cb6f6ca5a59bb81894c084095c2237d08863f6d3",
+      "meshes": 6,
       "runtimeScale": 0.42,
       "boundsMeters": {
         "min": [
-          -0.04746,
-          -0.153581,
-          -0.115851
+          -0.0462,
+          -0.110906,
+          -0.076343
         ],
         "max": [
-          0.04746,
-          0.19656,
-          0.1113
+          0.0462,
+          0.289094,
+          0.046659
         ]
       },
       "animations": [
@@ -397,26 +498,36 @@
         "socket_reload"
       ],
       "reloadKind": "shells",
-      "reloadPart": "reload_shell"
+      "reloadPart": "reload_shell",
+      "modelRevision": 3,
+      "pilotFamily": "sidearm",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "0cf769d40f8b669077e0070030afc5168d6e4394f66470551f6774b61fa7d9a5",
+        "sourceFile": "quaternius/ultimate-guns/Shotgun_SawedOff.fbx"
+      }
     },
     {
       "id": "smg",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_smg.glb",
-      "bytes": 216180,
-      "sha256": "0b254e4eca986e31b9010a00b989d64e6835b13edaed4a59371d461a094934fa",
-      "meshes": 26,
+      "bytes": 154456,
+      "sha256": "59866c9ecd4091e9b07bd9c9bce1c65131bda216fcd5d312a5e8069955037696",
+      "meshes": 6,
       "runtimeScale": 0.48,
       "boundsMeters": {
         "min": [
-          -0.04848,
-          -0.24192,
-          -0.130825
+          -0.031608,
+          -0.173665,
+          -0.173137
         ],
         "max": [
-          0.0564,
-          0.3156,
-          0.11664
+          0.034614,
+          0.376335,
+          0.173806
         ]
       },
       "animations": [
@@ -430,25 +541,35 @@
         "socket_reload"
       ],
       "reloadKind": "magazine",
-      "reloadPart": "magazine"
+      "reloadPart": "magazine",
+      "modelRevision": 3,
+      "pilotFamily": "long_gun",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "license": "CC0-1.0",
+        "sha256": "f003b6904eac13e65863f8afb9495c81e83d4b4ce055484082f5b9c87fe83f53",
+        "sourceFile": "quaternius/ultimate-guns/SubmachineGun_1.fbx"
+      }
     },
     {
       "id": "knife",
       "family": "melee_light",
       "file": "/assets/models/weapons/weapon_knife.glb",
-      "bytes": 129004,
-      "sha256": "5e06b649ec20b1c7911d4e42e6b0570ee4c1c13fb36db18d0f5d84690618d20b",
-      "meshes": 17,
+      "bytes": 152408,
+      "sha256": "ac417d6e344d9d4b4d76cca0f33c825febc3b6ef3bde3b030260d397c044d97d",
+      "meshes": 6,
       "runtimeScale": 0.22,
       "boundsMeters": {
         "min": [
-          -0.061606,
+          -0.060957,
           -0.125153,
-          -0.049322
+          -0.047883
         ],
         "max": [
-          0.046695,
-          0.197918,
+          0.044935,
+          0.200035,
           0.044522
         ]
       },
@@ -460,26 +581,36 @@
         "socket_grip_r"
       ],
       "reloadKind": "none",
-      "reloadPart": null
+      "reloadPart": null,
+      "modelRevision": 3,
+      "pilotFamily": "melee_light",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Survival Pack",
+        "page": "https://quaternius.com/packs/survival.html",
+        "license": "CC0-1.0",
+        "sha256": "6a2d5250870ebc62aef8dc1c5bd6de88e921d36f976d06f61c2e9f190f7ec030",
+        "sourceFile": "quaternius/survival/Knife.fbx"
+      }
     },
     {
       "id": "pickaxe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_pickaxe.glb",
-      "bytes": 171704,
-      "sha256": "ae0278c0c347e2e315c20fc7243112af8e8034ad73687b23fcfabad5acecf728",
-      "meshes": 16,
+      "bytes": 147916,
+      "sha256": "c315cf2c6fafdc1e2bd9ba062a29a9e6cfa48c55a44c8fd82691cdab52e2c648",
+      "meshes": 9,
       "runtimeScale": 0.45,
       "boundsMeters": {
         "min": [
-          -0.434352,
-          -0.262153,
-          -0.173229
+          -0.432878,
+          -0.266062,
+          -0.153671
         ],
         "max": [
-          0.227346,
-          0.599112,
-          0.087699
+          0.1978,
+          0.560523,
+          0.09439
         ]
       },
       "animations": [
@@ -491,25 +622,26 @@
         "socket_grip_l"
       ],
       "reloadKind": "none",
-      "reloadPart": null
+      "reloadPart": null,
+      "modelRevision": 3
     },
     {
       "id": "axe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_axe.glb",
-      "bytes": 183136,
-      "sha256": "792d17e316c07a4a70c754946c491bb9e5f09d7653b8792c2e8fe61da6d26df4",
-      "meshes": 16,
+      "bytes": 130332,
+      "sha256": "95beb345e74278efc7b73e5eeabe9c66f9ec90d1c87f9d3100a97eb01cfd845f",
+      "meshes": 6,
       "runtimeScale": 0.44,
       "boundsMeters": {
         "min": [
-          -0.286037,
-          -0.258992,
+          -0.31993,
+          -0.260501,
           -0.160058
         ],
         "max": [
-          0.153218,
-          0.575919,
+          0.087694,
+          0.514072,
           0.087518
         ]
       },
@@ -522,26 +654,36 @@
         "socket_grip_l"
       ],
       "reloadKind": "none",
-      "reloadPart": null
+      "reloadPart": null,
+      "modelRevision": 3,
+      "pilotFamily": "melee_heavy",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Survival Pack",
+        "page": "https://quaternius.com/packs/survival.html",
+        "license": "CC0-1.0",
+        "sha256": "41537fbef651a0931b42b1786658ea1ef116dbe4a2315a38d12644251e4c52f4",
+        "sourceFile": "quaternius/survival/Axe.fbx"
+      }
     },
     {
       "id": "handPump",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_handPump.glb",
-      "bytes": 232432,
-      "sha256": "af3cf4d30ca4fde792b08427f98c9124423e9eb17e8a86f627e849ac608a5a2f",
-      "meshes": 22,
+      "bytes": 138328,
+      "sha256": "d7d9c1a2d83081224dc4e38ebf477f466bda1ad2ea1bcb7364e97e7c84950d6d",
+      "meshes": 12,
       "runtimeScale": 0.5,
       "boundsMeters": {
         "min": [
-          -0.20927,
-          -0.240997,
-          -0.192799
+          -0.24467,
+          -0.266616,
+          -0.180125
         ],
         "max": [
-          0.197592,
-          0.550989,
-          0.099503
+          0.196367,
+          0.499278,
+          0.09873
         ]
       },
       "animations": [
@@ -553,7 +695,8 @@
         "socket_grip_l"
       ],
       "reloadKind": "none",
-      "reloadPart": null
+      "reloadPart": null,
+      "modelRevision": 3
     }
   ]
 }

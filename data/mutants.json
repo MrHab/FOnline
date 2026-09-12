@@ -1,0 +1,188 @@
+{
+  "schema": "kromka.mutants.v1",
+  "version": 1,
+  "designRule": "Every released creature is identified by creatureTypeId. Names and legacy visuals are never used as gameplay type detection.",
+  "legacyAliases": {
+    "ghoul": "burned",
+    "superMutant": "fold",
+    "ashWolf": "gari",
+    "radScorpion": "rykhlyak",
+    "mutantAnt": "dustling",
+    "gecko": "listener",
+    "fireGecko": "mourner"
+  },
+  "types": [
+    {
+      "id": "burned",
+      "displayName": "Выжженный",
+      "pluralName": "Выжженные",
+      "classification": "human",
+      "description": "Люди, пережившие Сдвиг необратимо. Помнят речь, привычки и обиды; часть сохраняет разум и не нападает первой.",
+      "faction": "burned",
+      "role": "burned",
+      "hostileByDefault": false,
+      "modelKey": "kromkaBurned",
+      "visual": "burned",
+      "stats": { "hp": 58, "attack": 9, "speed": 2.55, "xp": 26, "scale": 0.98 },
+      "senses": { "visionRange": 9.2, "hearingShotRange": 13.5, "hearingHarvestRange": 6.0, "memoryMs": 4400, "investigateMs": 5200, "senseIntervalMs": 350, "noiseReaction": 0.72, "noiseScatter": 1.4, "separationRadius": 1.05 },
+      "attacks": [
+        { "id": "ragged_lunge", "damageType": "physical", "telegraphMs": 430, "cooldownMs": 1250, "effect": "bleed", "effectChance": 0.16 }
+      ],
+      "resistances": { "physical": 0.05, "ballistic": 0.0, "energy": -0.1, "toxic": 0.35, "radiation": 0.7, "anomaly": 0.25 },
+      "injuryProfile": { "infectionChance": 0.32, "bleedChance": 0.18, "fractureChance": 0.04 },
+      "loot": { "trophyQty": 0, "table": "burned_personal_effects" },
+      "readability": { "silhouette": "human, stooped shoulder, asymmetric ember fissures", "combatTell": "orange fissures brighten before a lunge", "color": "#b85b35" }
+    },
+    {
+      "id": "fold",
+      "displayName": "Складень",
+      "pluralName": "Складни",
+      "classification": "engineered_organism",
+      "description": "Потомки довоенных донорских тканевых организмов: тяжелые, многослойные и удивительно терпеливые.",
+      "faction": "skladni",
+      "role": "monster",
+      "hostileByDefault": true,
+      "modelKey": "kromkaFold",
+      "visual": "fold",
+      "stats": { "hp": 168, "attack": 19, "speed": 1.45, "xp": 82, "scale": 1.36 },
+      "senses": { "visionRange": 7.8, "hearingShotRange": 15.0, "hearingHarvestRange": 7.5, "memoryMs": 5600, "investigateMs": 6200, "senseIntervalMs": 460, "noiseReaction": 0.64, "noiseScatter": 1.15, "separationRadius": 1.55 },
+      "attacks": [
+        { "id": "fold_slam", "damageType": "physical", "telegraphMs": 900, "cooldownMs": 2300, "effect": "stagger", "effectChance": 0.7 },
+        { "id": "tissue_grab", "damageType": "physical", "telegraphMs": 650, "cooldownMs": 3100, "effect": "slow", "effectChance": 0.45 }
+      ],
+      "resistances": { "physical": 0.35, "ballistic": 0.3, "energy": -0.2, "toxic": 0.65, "radiation": 0.8, "anomaly": 0.15 },
+      "injuryProfile": { "infectionChance": 0.22, "bleedChance": 0.1, "fractureChance": 0.34 },
+      "loot": { "trophyQty": 3, "table": "fold_tissue" },
+      "readability": { "silhouette": "low broad torso, layered tissue lobes, long forelimbs", "combatTell": "raises both forelimbs before a ground slam", "color": "#70515d" }
+    },
+    {
+      "id": "gari",
+      "displayName": "Гарь",
+      "pluralName": "Гари",
+      "classification": "natural_mutant",
+      "description": "Тонкие псовые под пластинами черного кератина. Охотятся стаей и режут путь к отступлению.",
+      "faction": "gari",
+      "role": "animal",
+      "hostileByDefault": true,
+      "modelKey": "kromkaGari",
+      "visual": "gari",
+      "stats": { "hp": 39, "attack": 9, "speed": 3.45, "xp": 23, "scale": 0.84 },
+      "senses": { "visionRange": 11.8, "hearingShotRange": 14.5, "hearingHarvestRange": 7.5, "memoryMs": 3900, "investigateMs": 4300, "senseIntervalMs": 235, "noiseReaction": 0.82, "noiseScatter": 1.9, "separationRadius": 1.0 },
+      "attacks": [
+        { "id": "flank_bite", "damageType": "physical", "telegraphMs": 300, "cooldownMs": 1050, "effect": "bleed", "effectChance": 0.28 }
+      ],
+      "resistances": { "physical": 0.08, "ballistic": -0.05, "energy": 0.05, "toxic": 0.15, "radiation": 0.45, "anomaly": 0.0 },
+      "injuryProfile": { "infectionChance": 0.14, "bleedChance": 0.34, "fractureChance": 0.02 },
+      "loot": { "trophyQty": 1, "table": "gari_keratin" },
+      "readability": { "silhouette": "thin hound with tall black dorsal plates", "combatTell": "drops low and plates flatten before sprinting", "color": "#2e2928" }
+    },
+    {
+      "id": "rykhlyak",
+      "displayName": "Рыхляк",
+      "pluralName": "Рыхляки",
+      "classification": "natural_mutant",
+      "description": "Массивное свиноподобное животное в костяных наростах. Взрывает грунт и идет напролом.",
+      "faction": "rykhlyaki",
+      "role": "animal",
+      "hostileByDefault": true,
+      "modelKey": "kromkaRykhlyak",
+      "visual": "rykhlyak",
+      "stats": { "hp": 96, "attack": 16, "speed": 1.82, "xp": 44, "scale": 1.18 },
+      "senses": { "visionRange": 8.4, "hearingShotRange": 11.5, "hearingHarvestRange": 8.2, "memoryMs": 4700, "investigateMs": 5400, "senseIntervalMs": 380, "noiseReaction": 0.58, "noiseScatter": 1.1, "separationRadius": 1.35 },
+      "attacks": [
+        { "id": "bone_charge", "damageType": "physical", "telegraphMs": 820, "cooldownMs": 2600, "effect": "knockdown", "effectChance": 0.5 },
+        { "id": "shallow_burrow", "damageType": "physical", "telegraphMs": 1100, "cooldownMs": 5200, "effect": "reposition", "effectChance": 1.0 }
+      ],
+      "resistances": { "physical": 0.28, "ballistic": 0.2, "energy": -0.1, "toxic": 0.25, "radiation": 0.5, "anomaly": -0.05 },
+      "injuryProfile": { "infectionChance": 0.08, "bleedChance": 0.08, "fractureChance": 0.42 },
+      "loot": { "trophyQty": 2, "table": "rykhlyak_bone" },
+      "readability": { "silhouette": "barrel body, white shoulder shield and tusks", "combatTell": "scrapes the ground beneath a white shoulder flare", "color": "#c4b391" }
+    },
+    {
+      "id": "listener",
+      "displayName": "Слухач",
+      "pluralName": "Слухачи",
+      "classification": "natural_mutant",
+      "description": "Слепой хищник с раскрытыми ушными полостями. Почти не замечает неподвижную цель, но выстрел слышит через квартал.",
+      "faction": "slukhachi",
+      "role": "animal",
+      "hostileByDefault": true,
+      "modelKey": "kromkaListener",
+      "visual": "listener",
+      "stats": { "hp": 54, "attack": 11, "speed": 2.72, "xp": 31, "scale": 0.96 },
+      "senses": { "visionRange": 2.2, "hearingShotRange": 22.0, "hearingHarvestRange": 11.0, "memoryMs": 6100, "investigateMs": 7200, "senseIntervalMs": 190, "noiseReaction": 0.96, "noiseScatter": 0.65, "separationRadius": 0.98 },
+      "attacks": [
+        { "id": "echo_pounce", "damageType": "physical", "telegraphMs": 520, "cooldownMs": 1450, "effect": "disorient", "effectChance": 0.35 }
+      ],
+      "resistances": { "physical": 0.1, "ballistic": 0.0, "energy": 0.0, "toxic": 0.2, "radiation": 0.5, "anomaly": 0.15 },
+      "injuryProfile": { "infectionChance": 0.18, "bleedChance": 0.24, "fractureChance": 0.08 },
+      "loot": { "trophyQty": 1, "table": "listener_membrane" },
+      "readability": { "silhouette": "blind wedge head with two huge ear cavities", "combatTell": "ear discs open and pulse before a pounce", "color": "#6d91a1" }
+    },
+    {
+      "id": "mourner",
+      "displayName": "Плакальщик",
+      "pluralName": "Плакальщики",
+      "classification": "natural_mutant",
+      "description": "Крупная врановая птица, запоминающая последние человеческие фразы. Голосом выманивает добычу к стае.",
+      "faction": "plakalshchiki",
+      "role": "animal",
+      "hostileByDefault": true,
+      "modelKey": "kromkaMourner",
+      "visual": "mourner",
+      "stats": { "hp": 34, "attack": 8, "speed": 3.05, "xp": 28, "scale": 0.82 },
+      "senses": { "visionRange": 14.0, "hearingShotRange": 16.0, "hearingHarvestRange": 8.0, "memoryMs": 4800, "investigateMs": 6000, "senseIntervalMs": 230, "noiseReaction": 0.84, "noiseScatter": 2.1, "separationRadius": 1.25 },
+      "attacks": [
+        { "id": "borrowed_voice", "damageType": "psychic", "telegraphMs": 1050, "cooldownMs": 4800, "effect": "lure", "effectChance": 0.65 },
+        { "id": "flock_dive", "damageType": "physical", "telegraphMs": 360, "cooldownMs": 1300, "effect": "bleed", "effectChance": 0.12 }
+      ],
+      "resistances": { "physical": -0.05, "ballistic": -0.1, "energy": 0.05, "toxic": 0.3, "radiation": 0.4, "anomaly": 0.25 },
+      "injuryProfile": { "infectionChance": 0.1, "bleedChance": 0.2, "fractureChance": 0.0 },
+      "loot": { "trophyQty": 1, "table": "mourner_quill" },
+      "readability": { "silhouette": "high black body with crescent wings", "combatTell": "wing crescents spread before the diving strike", "color": "#463f5e" }
+    },
+    {
+      "id": "lantern",
+      "displayName": "Фонарник",
+      "pluralName": "Фонарники",
+      "classification": "natural_mutant",
+      "description": "Мирный травоядный носитель светящегося симбионта. Не охотится, но его холодный свет приводит настоящих хищников.",
+      "faction": "fonarniki",
+      "role": "animal",
+      "hostileByDefault": false,
+      "modelKey": "kromkaLantern",
+      "visual": "lantern",
+      "stats": { "hp": 72, "attack": 4, "speed": 2.05, "xp": 8, "scale": 1.08 },
+      "senses": { "visionRange": 9.5, "hearingShotRange": 15.5, "hearingHarvestRange": 7.0, "memoryMs": 3200, "investigateMs": 2600, "senseIntervalMs": 360, "noiseReaction": 0.88, "noiseScatter": 2.8, "separationRadius": 1.4 },
+      "attacks": [
+        { "id": "panic_kick", "damageType": "physical", "telegraphMs": 580, "cooldownMs": 1850, "effect": "stagger", "effectChance": 0.2 }
+      ],
+      "resistances": { "physical": 0.08, "ballistic": 0.0, "energy": 0.2, "toxic": 0.35, "radiation": 0.6, "anomaly": 0.35 },
+      "injuryProfile": { "infectionChance": 0.06, "bleedChance": 0.1, "fractureChance": 0.06 },
+      "loot": { "trophyQty": 1, "table": "lantern_symbiont" },
+      "readability": { "silhouette": "placid quadruped with three cyan lantern bulbs", "combatTell": "lights strobe before a panic kick", "color": "#73d7c8" }
+    },
+    {
+      "id": "dustling",
+      "displayName": "Пыльник",
+      "pluralName": "Пыльники",
+      "classification": "colonial_insect",
+      "description": "Подвижная колония крупных насекомых под общей панцирной коркой. Забивает фильтры и выгрызает крепеж брони.",
+      "faction": "pylniki",
+      "role": "animal",
+      "hostileByDefault": true,
+      "modelKey": "kromkaDustling",
+      "visual": "dustling",
+      "stats": { "hp": 48, "attack": 7, "speed": 2.65, "xp": 25, "scale": 0.9 },
+      "senses": { "visionRange": 7.5, "hearingShotRange": 12.5, "hearingHarvestRange": 9.0, "memoryMs": 3500, "investigateMs": 4100, "senseIntervalMs": 270, "noiseReaction": 0.76, "noiseScatter": 1.65, "separationRadius": 0.78 },
+      "attacks": [
+        { "id": "abrasive_cloud", "damageType": "toxic", "telegraphMs": 620, "cooldownMs": 2100, "effect": "equipment_wear", "effectChance": 0.55 },
+        { "id": "filter_burrow", "damageType": "physical", "telegraphMs": 440, "cooldownMs": 1800, "effect": "filter_damage", "effectChance": 0.4 }
+      ],
+      "resistances": { "physical": 0.18, "ballistic": 0.12, "energy": -0.25, "toxic": 0.75, "radiation": 0.65, "anomaly": 0.05 },
+      "injuryProfile": { "infectionChance": 0.26, "bleedChance": 0.08, "fractureChance": 0.0 },
+      "loot": { "trophyQty": 2, "table": "dustling_chitin" },
+      "readability": { "silhouette": "segmented low colony under a ribbed shell", "combatTell": "shell vents raise before the abrasive cloud", "color": "#9c8153" }
+    }
+  ]
+}

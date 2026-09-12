@@ -1,0 +1,470 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "tutorialCaravanYard",
+  "name": "Сборный двор №12",
+  "seed": 2026091201,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "tutorial",
+  "privateInstance": true,
+  "noRespawn": true,
+  "allowGlobalMapExit": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Утоптанный двор отправки"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "worldZones": [],
+  "containers": [
+    {
+      "id": "yard_supply",
+      "name": "Ящик снаряжения Глеба",
+      "tx": 11,
+      "tz": 19,
+      "tier": "basic",
+      "locked": false,
+      "loot": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "training-chime-01",
+      "model": "chime",
+      "name": "Anomaly training-chime-01",
+      "position": {
+        "x": 8.0,
+        "y": 0.08,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_caravan_truck",
+      "model": "carWreck",
+      "name": "Тягач «Двенадцатого»",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.14,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "tutorial",
+        "caravan",
+        "landmark"
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "role": "tutorial",
+      "footprint": {
+        "x": 2.666,
+        "z": 4.853
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_casualty_cot",
+      "model": "cotBed",
+      "name": "Койка грузчика Шурика",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.57,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "tutorial",
+      "tags": [
+        "tutorial",
+        "sleep",
+        "bed",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2.001,
+        "z": 0.981
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_cover_a",
+      "model": "tutorialRoadBarrier",
+      "name": "Учебное укрытие",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "tutorial",
+      "tags": [
+        "tutorial",
+        "quest-required"
+      ],
+      "footprint": {
+        "x": 3.2,
+        "z": 0.8
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_gate_left",
+      "model": "roadblockBarricade",
+      "name": "Левая створка отправки",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.57,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "tutorial",
+        "departure-gate"
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "role": "tutorial",
+      "footprint": {
+        "x": 0.36,
+        "z": 0.55
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_gate_right",
+      "model": "roadblockBarricade",
+      "name": "Правая створка отправки",
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.57,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "tutorial",
+        "departure-gate"
+      ],
+      "vision": {
+        "blocks": false
+      },
+      "role": "tutorial",
+      "footprint": {
+        "x": 0.36,
+        "z": 0.55
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_ore",
+      "model": "oreOutcrop",
+      "name": "Учебная залежь руды",
+      "position": {
+        "x": 21.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "tutorial",
+      "tags": [
+        "tutorial",
+        "resource",
+        "ore"
+      ],
+      "footprint": {
+        "x": 1.85,
+        "z": 1.64
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "resourceType": "ore",
+      "hp": 100,
+      "maxHp": 100
+    },
+    {
+      "id": "yard_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "tutorial",
+      "tags": [
+        "tutorial",
+        "quest-required"
+      ],
+      "footprint": {
+        "x": 2.4,
+        "z": 1.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "craftingStation": "repair_bench",
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "interactive": {
+        "kind": "craftingStation",
+        "station": "repair_bench"
+      }
+    },
+    {
+      "id": "yard_wood",
+      "model": "deadwood",
+      "name": "Древесина для заготовки",
+      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "tutorial",
+      "tags": [
+        "tutorial",
+        "resource",
+        "wood"
+      ],
+      "footprint": {
+        "x": 2.4,
+        "z": 0.68
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "resourceType": "wood",
+      "hp": 100,
+      "maxHp": 100
+    }
+  ],
+  "visualProfile": {
+    "id": "mercenary-departure-yard-v1",
+    "skyDay": "#6d6a60",
+    "fogDay": "#777166",
+    "hemiSkyDay": "#c7bca5",
+    "hemiGroundDay": "#514b42",
+    "fillDay": "#c8b995",
+    "sunDay": "#ead09b",
+    "rimDay": "#91a39b",
+    "fogDensityDay": 0.0015,
+    "exposureDay": 1.02,
+    "colorGrade": "kromka-yard"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "off_map",
+  "kromkaVisualProfile": "mercenary-departure-yard-v1",
+  "ambientProfile": "working-caravan-depot",
+  "anomalyDensity": 0.0,
+  "unityScene": "Assets/Scenes/Kromka/Locations/tutorialCaravanYard.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "tutorial-contract-desk",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -26.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "tutorialCaravanYard-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -26.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

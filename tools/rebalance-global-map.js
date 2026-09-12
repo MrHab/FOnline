@@ -6,6 +6,7 @@ const dataDir = path.join(root, 'data');
 const locationsDir = path.join(dataDir, 'locations');
 const globalMapPath = path.join(dataDir, 'global-map.json');
 const simPath = path.join(dataDir, 'wasteland-sim.json');
+const { isRetiredEnvironmentModel } = require('../src/server/retired-environment-models');
 
 const RESOURCE_KEYS = [
   'water',
@@ -1016,16 +1017,14 @@ function baseLocation(id, name, opts = {}) {
 }
 
 function obj(id, model, name, x, z, opts = {}) {
-  const fileName = opts.file || `${model.replace(/[A-Z]/g, m => '_' + m.toLowerCase()).replace(/^_/, '')}.glb`;
   return {
     id,
     model,
     name,
-    url: `/assets/models/wasteland/${fileName}`,
     position: { x, y: 0, z },
     rotation: { x: 0, y: opts.ry || 0, z: 0 },
     scale: opts.scale || { x: 1, y: 1, z: 1 },
-    collision: opts.collision || 'none',
+    collision: isRetiredEnvironmentModel(model) ? 'none' : (opts.collision || 'none'),
     tags: opts.tags || [],
     ...(opts.resourceType ? { resourceType: opts.resourceType, hp: opts.hp || 6, maxHp: opts.maxHp || opts.hp || 6 } : {}),
     ...(opts.vision ? { vision: { mode: opts.vision } } : {})

@@ -1042,6 +1042,7 @@ function evaluateServerFunctions(source, sections, names, globals = {}) {
 
 function assertServerFactionMigrationContract() {
   const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
+  const factionContracts = require('../src/server/kromka-faction-contracts');
   let persistCalls = 0;
   const legacyState = {
     characterProfile: {
@@ -1082,7 +1083,12 @@ function assertServerFactionMigrationContract() {
       },
       SERVER_ALWAYS_HOSTILE_FACTION_GROUPS: new Set([
         'raiders', 'mutants', 'ghouls', 'mutant_ants', 'wild'
-      ])
+      ]),
+      PLAYER_FACTION_MODEL_VERSION: factionContracts.PLAYER_FACTION_MODEL_VERSION,
+      canonicalKromkaFactionId: factionContracts.canonicalKromkaFactionId,
+      migrateKromkaPlayerFactionState: factionContracts.migrateKromkaPlayerFactionState,
+      sanitizeKromkaContracts: factionContracts.sanitizeKromkaContracts,
+      sanitizeKromkaReputation: factionContracts.sanitizeKromkaReputation
     }
   );
 
@@ -1098,16 +1104,15 @@ function assertServerFactionMigrationContract() {
     'legacy caravan join date survived migration');
   assert.deepStrictEqual(
     JSON.parse(JSON.stringify(legacyState.worldFactionReputation)),
-    { scrap_union: 8, old_klim: 5 },
-    'migration retained independent/creature reputation or lost a main faction'
+    { free_artels: 8, tract_league: 25, uprava: 5 },
+    'migration retained creature reputation or lost a recognized Kromka side'
   );
-  assert.deepStrictEqual(
-    JSON.parse(JSON.stringify(legacyState.archivedWorldFactionReputation)),
-    { caravans: 6 },
-    'legacy caravan reputation was not archived at its highest saved value'
-  );
-  assert.strictEqual(legacyState.worldFactionModelVersion, 2,
-    'migrated state was not marked with the simplified faction model');
+  assert.strictEqual(legacyState.archivedWorldFactionReputation, undefined,
+    'obsolete archived reputation survived Kromka migration');
+  assert.strictEqual(legacyState.worldFactionModelVersion, 3,
+    'migrated state was not marked with the Kromka contract model');
+  assert.strictEqual(legacyState.factionContracts.tract_league.source, 'legacy-transition',
+    'legacy membership did not receive a temporary transition contract');
   assert.deepStrictEqual(row.summary, { factionId: '' },
     'legacy summary still advertises caravan membership');
 
@@ -1131,8 +1136,8 @@ function assertServerFactionMigrationContract() {
   assert.strictEqual(api.serverWorldTaskReputationFaction({
     type: 'deliver_supplies', issuerSiteId: 'main_issuer', siteId: 'main_target',
     details: { rewardFactionId: 'raiders' }
-  }, state), 'old_klim', 'hostile legacy marker did not migrate to its main issuer');
-  for (const rewardFactionId of ['caravans', 'neutral', '']) {
+  }, state), 'uprava', 'hostile marker did not migrate to its canonical issuer');
+  for (const rewardFactionId of ['neutral', '']) {
     assert.strictEqual(api.serverWorldTaskReputationFaction({
       type: 'deliver_supplies', issuerSiteId: 'main_issuer', siteId: 'main_target',
       details: { rewardFactionId }
@@ -1140,17 +1145,17 @@ function assertServerFactionMigrationContract() {
   }
   assert.strictEqual(api.serverWorldTaskReputationFaction({
     type: 'deliver_supplies', issuerSiteId: 'independent_issuer', siteId: 'main_target', details: {}
-  }, state), '', 'ordinary independent work inherited reputation from its main target');
+  }, state), 'tract_league', 'League work did not reward its recognized contract side');
   assert.strictEqual(api.serverWorldTaskReputationFaction({
     type: 'deliver_supplies', issuerSiteId: 'hostile_issuer', siteId: 'main_target',
     details: { rewardFactionId: 'raiders' }
   }, state), '', 'hostile-issued work inherited reputation from its main target');
   assert.strictEqual(api.serverWorldTaskReputationFaction({
     type: 'join_patrol', partyId: 'main_patrol', issuerSiteId: 'independent_issuer', details: {}
-  }, state), 'old_klim', 'main patrol work did not reward its accompanied faction');
+  }, state), 'uprava', 'main patrol work did not reward its canonical contract side');
   assert.strictEqual(api.serverWorldTaskReputationFaction({
     type: 'escort_caravan', partyId: 'free_caravan', issuerSiteId: 'main_issuer', details: {}
-  }, state), '', 'free-caravan escort inherited reputation from a main issuer');
+  }, state), 'tract_league', 'caravan escort did not reward the Tract League');
 }
 
 function assertServerPersistenceFaultRecovery() {
@@ -1502,11 +1507,17 @@ function assertServerWorldTransferFaultRecovery() {
       refreshRoomWorldState: () => {
         refreshCalls++;
       },
+      serverRecordKromkaLocationArrival: () => null,
+      roomPvpMode: () => 'pvp',
+      LOCATION_PVP_LABELS: { pvp: 'PvP' },
       publicPlayer: p => ({ id: p.id, roomId: p.roomId }),
       currentRoomWorldState: room => room.worldState,
       emitEnemyBaselineForSocket() {},
       emitGroundItemsSnapshot() {},
-      emitWorldContainersSnapshot() {}
+      emitWorldContainersSnapshot() {},
+      emitServerArtifactState() {},
+      emitServerPersonalBaseState() {},
+      emitServerKromkaClanState() {}
     }
   );
   const projectPlayer = p => ({

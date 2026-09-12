@@ -11,6 +11,13 @@ const bootstrap = read(game, 'RoaGameBootstrap.cs');
 const coach = read(game, 'RoaFirstRunCoach.cs');
 const activity = read(game, 'RoaWorldActivityCanvas.cs');
 const systemCanvas = read(game, 'RoaSystemCanvas.cs');
+const minimap = read(game, 'RoaMinimap.cs');
+const loader = read('unity-client', 'Assets', 'Scripts', 'World', 'RoaLocationLoader.cs');
+const exitBoundary = read('unity-client', 'Assets', 'Scripts', 'World', 'RoaWorldExitBoundary.cs');
+const globalMap = read(game, 'RoaGlobalMap.cs');
+const controller = read(game, 'RoaPlayerController.cs');
+const onboarding = read(game, 'RoaKromkaOnboarding.cs');
+const socket = read('unity-client', 'Assets', 'Scripts', 'Net', 'RoaSocketClient.cs');
 const auditRunner = read('unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs');
 const probe = read('unity-client', 'Assets', 'Editor', 'RoaFirstRunCoachProbe.cs');
 
@@ -58,11 +65,69 @@ assert(coach.includes('background.raycastTarget = false;')
 assert(probe.includes('public static void RunBatch()')
   && probe.includes('raycastGraphics == 1')
   && probe.includes('activity.LastResultTaskId == "activity_test"')
+  && probe.includes('RoaWorldExitBoundary.IsInExitBand')
+  && probe.includes('boundary.BeaconCount >= 12')
+  && probe.includes('boundary.LockedColliderCount == 4')
   && probe.includes('CoachStep.Mission')
   && probe.includes('[ПЕРВЫЙ ВЫХОД] готово'),
   'Unity editor probe does not cover the full task-matched activity loop');
 assert(auditRunner.includes('typeof(RoaFirstRunCoachProbe)'),
   'First-run probe is not part of the mandatory Unity client audit');
+
+assert(exitBoundary.includes('public const int ExitBandTileCount = 2;')
+  && exitBoundary.includes('GlobalMapExitBoundary')
+  && exitBoundary.includes('ExitThresholdLine')
+  && exitBoundary.includes('OutwardExitArrows')
+  && exitBoundary.includes('ExitGuideBeacon')
+  && exitBoundary.includes('ClosedLocationBoundary')
+  && exitBoundary.includes('LockedDashedPerimeter')
+  && exitBoundary.includes('AddComponent<BoxCollider>()')
+  && exitBoundary.includes('ВЫХОД НА ГЛОБАЛЬНУЮ КАРТУ'),
+  'The local world does not provide a clear two-tile global-map exit boundary');
+assert(exitBoundary.includes('DistanceToMapEdge')
+  && exitBoundary.includes('ApproachDistance = 12f')
+  && exitBoundary.includes('Пересеките золотую полосу'),
+  'The exit boundary does not provide proximity feedback before the automatic transition');
+assert(loader.includes('_currentRoot.AddComponent<RoaWorldExitBoundary>()')
+  && loader.includes('exitBoundary.Configure(definition.TileWidth, definition.TileDepth);'),
+  'Generated and authored Unity locations do not share the exit boundary');
+assert(bootstrap.includes('RoaWorldExitBoundary.IsInExitBand('),
+  'The automatic transition width can drift away from its visual boundary');
+assert(globalMap.includes('_enterWorldRequestPending')
+  && globalMap.includes('controller?.SendStateImmediately()')
+  && globalMap.includes('_enterWorldRetryAt = Time.realtimeSinceStartup + 0.75f;'),
+  'Unity can overlap edge-exit requests or validate a stale player position');
+assert(controller.includes('public void SendStateImmediately()')
+  && socket.includes('private void SendStateInternal(')
+  && socket.includes('if (!force && !isTransition && _stateCooldown > 0f) return;'),
+  'The edge-exit action cannot flush its final authoritative position');
+assert(bootstrap.includes('_controller.TeleportToSafeSpawn(spawn)')
+  && controller.includes('FindSafeSpawnPosition(')
+  && controller.includes('Physics.CheckCapsule(')
+  && controller.includes('if (reason == "movementCorrection")')
+  && controller.includes('ApplyAuthoritativePositionCorrection(corrected);')
+  && controller.includes('transform.position = corrected;')
+  && controller.includes('Physics.SyncTransforms();')
+  && controller.includes('ResetTeleportMotion();')
+  && controller.includes('_presentationCorrectionOffset = Vector3.zero;')
+  && controller.includes('_presentationCorrectionVelocity = Vector3.zero;')
+  && controller.includes('TeleportToSafeSpawn(corrected);')
+  && onboarding.includes('Vector3 target = RoaCoords.ToUnity('),
+  'Character creation, respawn or onboarding can place the player or target inside mirrored geometry');
+
+const tutorialYard = JSON.parse(read('data', 'locations', 'tutorialCaravanYard.json'));
+const tutorialAuthoring = read('unity-client', 'Assets', 'Editor', 'RoaTutorialYardAuthoring.cs');
+assert(tutorialAuthoring.includes('authoring.PlayerArrival.localPosition = new Vector3(0, .1f, -26);')
+  && tutorialAuthoring.includes('authoring.MigrationArrival.localPosition = new Vector3(0, .1f, -26);'),
+  'Tutorial editor anchors disagree with the validated clear-ground spawn');
+for (const key of ['spawn', 'respawn', 'entry', 'entryFromWorld', 'entryFromWasteland']) {
+  assert(tutorialYard[key]?.tx === 19 && tutorialYard[key]?.tz === 6
+    && tutorialYard[key]?.x === 0 && tutorialYard[key]?.z === -26,
+  `Tutorial yard ${key} is not at the authored clear-ground arrival point`);
+}
+assert(minimap.includes('PaintGlobalMapExitBand(pixels);')
+  && minimap.includes('RoaWorldExitBoundary.ExitBandTileCount'),
+  'The minimap does not show the same exit band as the 3D location');
 
 assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(
   read(game, 'RoaFirstRunCoach.cs.meta')),
@@ -70,5 +135,8 @@ assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(
 assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(
   read('unity-client', 'Assets', 'Editor', 'RoaFirstRunCoachProbe.cs.meta')),
   'RoaFirstRunCoachProbe.cs.meta has invalid metadata');
+assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(
+  read('unity-client', 'Assets', 'Scripts', 'World', 'RoaWorldExitBoundary.cs.meta')),
+  'RoaWorldExitBoundary.cs.meta has invalid metadata');
 
-console.log('Unity first run OK: movement, interaction, live-map mission, matching authoritative result and replayable guidance');
+console.log('Unity first run OK: guided movement, interaction, visible world exit, live-map mission and authoritative result');

@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "radscorpionNest",
-  "name": "Гнездо радскорпионов",
+  "name": "Гнездовье Рыхляков",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvpFullDrop",
@@ -13,7 +13,7 @@
   "spawnCount": 0,
   "ground": {
     "preset": "caravanYard",
-    "label": "Стоянка Старого Клима",
+    "label": "Глиняный провал",
     "texture": "traderYard"
   },
   "map": {
@@ -27,19 +27,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24,
-    "x": 1,
-    "y": 0,
-    "z": 11,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24,
-    "x": 1,
-    "y": 0,
-    "z": 11,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -67,63 +67,1351 @@
   "containers": [],
   "objects": [
     {
-      "id": "scorpion_rocks_01",
-      "model": "rubbleRock",
-      "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "id": "radscorpionNest-dressing-functional-01",
+      "model": "dead_tree_a",
+      "name": "radscorpionNest-dressing-functional-01",
       "position": {
-        "x": -7,
-        "y": 0,
-        "z": -7
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.51,
+        "z": 1.7
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-functional-02",
+      "model": "deadwood",
+      "name": "radscorpionNest-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.152,
+        "z": 1.356
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "radscorpionNest-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.821,
+        "z": 2.222
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-functional-04",
+      "model": "car_wreck",
+      "name": "radscorpionNest-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.875,
+        "z": 3.99
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-functional-05",
+      "model": "perimeter_debris",
+      "name": "radscorpionNest-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.617,
+        "z": 1.589
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-01",
+      "model": "dead_tree_b",
+      "name": "radscorpionNest-dressing-region-01",
+      "position": {
+        "x": 21.428,
+        "y": 0.0,
+        "z": -23.597
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.318,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.156,
+        "z": 2.289
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "radscorpionNest-dressing-region-02",
+      "position": {
+        "x": 21.311,
+        "y": 0.0,
+        "z": -23.446
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.263,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.031,
+        "z": 1.903
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-03",
+      "model": "oil_pump_jack",
+      "name": "radscorpionNest-dressing-region-03",
+      "position": {
+        "x": 21.307,
+        "y": 0.0,
+        "z": -23.449
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.263,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.133,
+        "z": 4.588
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "radscorpionNest-dressing-region-04",
+      "position": {
+        "x": 19.474,
+        "y": 0.0,
+        "z": -24.998
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.191,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.943,
+        "z": 3.228
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-05",
+      "model": "dead_tree_b",
+      "name": "radscorpionNest-dressing-region-05",
+      "position": {
+        "x": 19.374,
+        "y": 0.0,
+        "z": -24.892
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.191,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.041,
+        "z": 2.265
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "radscorpionNest-dressing-region-06",
+      "position": {
+        "x": 19.361,
+        "y": 0.0,
+        "z": -24.9
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.135,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.017,
+        "z": 1.924
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-07",
+      "model": "oil_pump_jack",
+      "name": "radscorpionNest-dressing-region-07",
+      "position": {
+        "x": 19.411,
+        "y": 0.0,
+        "z": -24.862
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.136,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.847,
+        "z": 4.54
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "radscorpionNest-dressing-region-08",
+      "position": {
+        "x": 17.888,
+        "y": 0.0,
+        "z": -25.807
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.08,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.766,
+        "z": 3.149
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-09",
+      "model": "dead_tree_b",
+      "name": "radscorpionNest-dressing-region-09",
+      "position": {
+        "x": 17.869,
+        "y": 0.0,
+        "z": -25.82
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.081,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.192,
+        "y": 1.192,
+        "z": 1.192
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.915,
+        "z": 2.215
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "radscorpionNest-dressing-region-10",
+      "position": {
+        "x": 17.913,
+        "y": 0.0,
+        "z": -25.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.024,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.044,
+        "z": 1.91
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-11",
+      "model": "oil_pump_jack",
+      "name": "radscorpionNest-dressing-region-11",
+      "position": {
+        "x": 16.405,
+        "y": 0.0,
+        "z": -26.777
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.023,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.529,
+        "z": 4.42
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "radscorpionNest-dressing-region-12",
+      "position": {
+        "x": 16.33,
+        "y": 0.0,
+        "z": -26.609
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.948,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.505,
+        "z": 2.996
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-13",
+      "model": "dead_tree_b",
+      "name": "radscorpionNest-dressing-region-13",
+      "position": {
+        "x": 16.334,
+        "y": 0.0,
+        "z": -26.606
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.949,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.727,
+        "z": 2.113
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "radscorpionNest-dressing-region-14",
+      "position": {
+        "x": 14.398,
+        "y": 0.0,
+        "z": -27.699
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.332,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.876,
+        "z": 2.052
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-dressing-region-15",
+      "model": "oil_pump_jack",
+      "name": "radscorpionNest-dressing-region-15",
+      "position": {
+        "x": 14.329,
+        "y": 0.0,
+        "z": -27.577
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.331,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.188,
+        "y": 1.188,
+        "z": 1.188
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.245,
+        "z": 3.152
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-elder-den",
+      "model": "ring_structure",
+      "name": "radscorpionNest-elder-den EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-landmark",
+      "model": "broken-settling-wall",
+      "name": "Landmark broken-settling-wall EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "broken-settling-wall"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-main-nest",
+      "model": "ring_structure",
+      "name": "radscorpionNest-main-nest EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-outer-trace-0",
+      "model": "terrain_mound",
+      "name": "radscorpionNest-outer-trace-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-outer-trace-1",
+      "model": "terrain_mound",
+      "name": "radscorpionNest-outer-trace-1 EDITABLE",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-outer-trace-2",
+      "model": "terrain_mound",
+      "name": "radscorpionNest-outer-trace-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-outer-trace-3",
+      "model": "terrain_mound",
+      "name": "radscorpionNest-outer-trace-3 EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-outer-trace-4",
+      "model": "terrain_mound",
+      "name": "radscorpionNest-outer-trace-4 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-region-black-pool-0",
+      "model": "ring_structure",
+      "name": "radscorpionNest-region-black-pool-0 EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-region-black-pool-1",
+      "model": "ring_structure",
+      "name": "radscorpionNest-region-black-pool-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-region-black-pool-2",
+      "model": "ring_structure",
+      "name": "radscorpionNest-region-black-pool-2 EDITABLE",
+      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "radscorpionNest-region-main-pipe",
+      "model": "external_pipe",
+      "name": "radscorpionNest-region-main-pipe EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 1.1,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scorpion_rocks_01",
+      "model": "rubbleRock",
+      "name": "Каменная осыпь",      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": -7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
         "rock"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
+        "x": 2.28,
+        "z": 1.731
       },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      }
+      "role": "scenery",
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scorpion_rocks_02",
       "model": "oreOutcrop",
-      "name": "Сухая гряда",
-      "url": "/assets/models/wasteland/ore_outcrop.glb",
-      "position": {
-        "x": 9,
-        "y": 0,
-        "z": -5
+      "name": "Сухая гряда",      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": -5.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover",
         "resource",
@@ -133,20 +1421,15 @@
       "hp": 5,
       "maxHp": 5,
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.791,
+        "z": 1.337
       },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "pvp": true,
@@ -158,11 +1441,68 @@
   "units": "game-meters",
   "entry": {
     "tx": 19,
-    "tz": 24,
-    "x": 1,
-    "y": 0,
-    "z": 11,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
-  "transitions": []
+  "transitions": [],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "zero_basin",
+  "kromkaVisualProfile": "burrower-settling-pit-v1",
+  "ambientProfile": "unstable-toxic-earth",
+  "anomalyDensity": 0.36,
+  "unityScene": "Assets/Scenes/Kromka/Locations/radscorpionNest.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "nest-upper-catwalk",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "radscorpionNest-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
 }

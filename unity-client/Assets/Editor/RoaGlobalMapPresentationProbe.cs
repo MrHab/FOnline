@@ -31,23 +31,31 @@ namespace RealmOfAshes.EditorTools
                     RoaGlobalMap.PresentationProfile(RoaGlobalMap.MapDetailTier.Near);
                 // На «РЕГИОН» границы владений включены вместе с заливкой:
                 // контур региона читается без приближения.
-                Check(far.TerritoryFill && far.TerritoryBorder && !far.Sites
-                      && !far.Parties && !far.Threats && far.OverlayLabelLimit == 6
+                Check(far.TerritoryFill && far.TerritoryBorder && far.Influence
+                      && far.Sites && far.Parties && far.Threats
+                      && far.SiteBucket == 0f && far.PartyBucket == 0f
+                      && far.ThreatBucket == 0f && far.OverlayLabelLimit == 6
                       && far.InfrastructureLabelLimit == 0
-                      && !medium.TerritoryFill && medium.TerritoryBorder
+                      && medium.TerritoryFill && medium.TerritoryBorder && medium.Influence
                       && medium.Sites && medium.Parties && medium.Threats
+                      && medium.SiteBucket == 0f && medium.PartyBucket == 0f
+                      && medium.ThreatBucket == 0f
                       && medium.InfrastructureLabelLimit == 3
                       // Точки не сворачиваются в кластеры: маркеры разносит
                       // ApplySiteSeparation, победители по bucket отключены.
-                      && medium.SiteBucket == 0f && near.SiteBucket == 0f
-                      && near.TerritoryBorder && near.Influence && near.Sites
+                      && near.TerritoryFill && near.TerritoryBorder
+                      && near.Influence && near.Sites
                       && near.Parties && near.Threats && near.OverlayLabelLimit == 12
+                      && near.SiteBucket == 0f && near.PartyBucket == 0f
+                      && near.ThreatBucket == 0f
                       && near.InfrastructureLabelLimit == 0,
                     "семантический масштаб не отделяет регион, округу и район");
-                Check(!RoaGlobalMap.TargetKindVisibleAtTier("site",
+                Check(RoaGlobalMap.TargetKindVisibleAtTier("site",
                           RoaGlobalMap.MapDetailTier.Far, true, true)
-                      && RoaGlobalMap.TargetKindVisibleAtTier("site",
-                          RoaGlobalMap.MapDetailTier.Medium, true, true)
+                      && RoaGlobalMap.TargetKindVisibleAtTier("party",
+                          RoaGlobalMap.MapDetailTier.Far, true, true)
+                      && RoaGlobalMap.TargetKindVisibleAtTier("zone",
+                          RoaGlobalMap.MapDetailTier.Far, true, true)
                       && !RoaGlobalMap.TargetKindVisibleAtTier("party",
                           RoaGlobalMap.MapDetailTier.Near, true, false)
                       && !RoaGlobalMap.TargetKindVisibleAtTier("zone",

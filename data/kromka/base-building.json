@@ -1,0 +1,41 @@
+{
+  "schema": "kromka.personal-base.v1",
+  "version": 1,
+  "gridStep": 1,
+  "tiers": [
+    { "id": "stash", "level": 1, "displayName": "Схрон", "size": 20, "residentLimit": 2, "stationLimit": 2, "objectLimit": 40, "upgradeCost": {} },
+    { "id": "shelter", "level": 2, "displayName": "Укрытие", "size": 28, "residentLimit": 4, "stationLimit": 4, "objectLimit": 80, "upgradeCost": { "scrap": 80, "wood": 45, "electronics": 8 } },
+    { "id": "workshop", "level": 3, "displayName": "Мастерская", "size": 36, "residentLimit": 6, "stationLimit": 7, "objectLimit": 120, "upgradeCost": { "scrap": 160, "wood": 80, "electronics": 20, "chemicals": 10 } },
+    { "id": "autonomous", "level": 4, "displayName": "Автономная база", "size": 44, "residentLimit": 8, "stationLimit": 10, "objectLimit": 160, "upgradeCost": { "scrap": 300, "wood": 120, "electronics": 40, "chemicals": 25 } }
+  ],
+  "rightsQuest": {
+    "id": "personal_aktov_air_rights",
+    "displayName": "Право на воздух",
+    "giverNpcId": "aktov",
+    "outcomes": [
+      { "id": "official", "displayName": "Официальный отвод", "cost": { "silver": 120 }, "consequence": "Управа признаёт участок и записывает налоговую строку." },
+      { "id": "witness", "displayName": "Свидетельское право", "cost": { "silver": 40 }, "consequence": "Право подтверждают жители Кромки; Управа считает запись сомнительной." },
+      { "id": "forged", "displayName": "Исправленные документы", "cost": { "silver": 65, "electronics": 2 }, "consequence": "Дешевле официального пути, но подделка остаётся уликой." }
+    ]
+  },
+  "objects": [
+    { "id": "wall_scrap", "displayName": "Стена из листового лома", "category": "structure", "model": "roadblockBarricade", "size": [3, 0.6], "cost": { "scrap": 6 }, "energy": 0, "water": 0 },
+    { "id": "door_scrap", "displayName": "Укреплённая дверь", "category": "structure", "model": "wastelandDoor", "size": [1.4, 0.5], "cost": { "scrap": 8, "wood": 2 }, "energy": 0, "water": 0 },
+    { "id": "bed_fold", "displayName": "Складная койка", "category": "furniture", "model": "bed", "size": [2, 1], "cost": { "scrap": 3, "wood": 5 }, "energy": 0, "water": 0 },
+    { "id": "lamp_cage", "displayName": "Лампа в решётке", "category": "utility", "model": "streetLamp", "size": [0.7, 0.7], "cost": { "scrap": 2, "electronics": 1 }, "energy": -1, "water": 0 },
+    { "id": "generator_small", "displayName": "Малый генератор", "category": "generator", "model": "generator", "size": [2.4, 1.6], "cost": { "scrap": 20, "electronics": 5, "oil": 4 }, "energy": 12, "water": 0 },
+    { "id": "water_collector", "displayName": "Сборщик конденсата", "category": "water", "model": "waterPump", "size": [2, 2], "cost": { "scrap": 14, "chemicals": 3 }, "energy": -2, "water": 10 },
+    { "id": "storage_crate", "displayName": "Базовый склад", "category": "storage", "model": "storageChest", "size": [2, 1.2], "cost": { "scrap": 8, "wood": 8 }, "energy": 0, "water": 0 },
+    { "id": "repair_bench", "displayName": "Ремонтный верстак", "category": "station", "model": "craftStationRepair", "size": [2.5, 1.4], "cost": { "scrap": 18, "electronics": 3 }, "energy": -2, "water": 0 },
+    { "id": "medical_bench", "displayName": "Медицинский стол", "category": "station", "model": "craftStationChem", "size": [2.5, 1.4], "cost": { "scrap": 12, "medicine": 8, "chemicals": 4 }, "energy": -2, "water": -2 },
+    { "id": "artifact_stabilizer", "displayName": "Стабилизатор артефактов", "category": "station", "model": "relayConsole", "size": [2.2, 1.5], "cost": { "scrap": 22, "electronics": 10, "chemicals": 6 }, "energy": -5, "water": 0 },
+    { "id": "radio_table", "displayName": "Радиостол", "category": "station", "model": "radioTower", "size": [2, 1.4], "cost": { "scrap": 15, "electronics": 8 }, "energy": -3, "water": 0 },
+    { "id": "garden_tray", "displayName": "Грядка в поддоне", "category": "production", "model": "planter", "size": [3, 2], "cost": { "scrap": 6, "wood": 8, "water": 4 }, "energy": 0, "water": -3 }
+  ],
+  "jobs": [
+    { "id": "filters", "displayName": "Собрать фильтры", "stationTypeId": "medical_bench", "durationMs": 3600000, "input": { "scrap": 2, "chemicals": 2 }, "output": { "water": 4 } },
+    { "id": "medicine", "displayName": "Приготовить лекарства", "stationTypeId": "medical_bench", "durationMs": 5400000, "input": { "chemicals": 3 }, "output": { "medicine": 3 } },
+    { "id": "parts", "displayName": "Перебрать обычные детали", "stationTypeId": "repair_bench", "durationMs": 2700000, "input": { "scrap": 5 }, "output": { "weaponParts": 2 } },
+    { "id": "food", "displayName": "Вырастить паёк", "stationTypeId": "garden_tray", "durationMs": 7200000, "input": { "water": 3 }, "output": { "food": 5 } }
+  ]
+}

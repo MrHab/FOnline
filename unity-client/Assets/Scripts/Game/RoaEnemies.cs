@@ -39,6 +39,10 @@ namespace RealmOfAshes.Game
         [Tooltip("Туман войны. Пока не назначен, существа видны всегда.")]
         public RoaFogOfWar Fog;
 
+        // Cinematic stand-ins must not overlap live actors. Keep receiving server
+        // snapshots, and restore visibility immediately when the movie ends.
+        public bool CinematicPresentationSuppressed { get; set; }
+
         private RoaMovementFx _movementFx;
         private Camera _worldCamera;
         private RoaPlayerController _localPlayer;
@@ -59,6 +63,9 @@ namespace RealmOfAshes.Game
         /// </summary>
         private static readonly Dictionary<string, Task<GltfImport>> ModelCache =
             new Dictionary<string, Task<GltfImport>>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache() => RoaModelImportLifetime.Clear(ModelCache);
 
         // Существа-гуманоиды с костью hand_r, которые держат оружие в руке.
         // Звери (волк, геккон, скорпион, муравей, брамин) сюда не входят.
@@ -103,6 +110,7 @@ namespace RealmOfAshes.Game
             public JObject Snapshot;
             public RoaMovementFx.ActorStepState StepFx;
             public RoaEnemyThreatTelegraph ThreatView;
+            public RoaKromkaMutantPresentation KromkaPresentation;
             public Vector3 LookPoint;
             public float ThreatRemaining;
             public float ThreatWindow;
@@ -166,6 +174,14 @@ namespace RealmOfAshes.Game
             if (unifiedHumanoid) return new BodyProfile(0.38f, 1.82f, 0.91f);
             switch (modelKey ?? string.Empty)
             {
+                case "kromkaBurned": return new BodyProfile(0.42f, 1.74f, 0.87f);
+                case "kromkaFold": return new BodyProfile(0.68f, 1.62f, 0.81f);
+                case "kromkaGari": return new BodyProfile(0.44f, 0.96f, 0.48f);
+                case "kromkaRykhlyak": return new BodyProfile(0.68f, 1.12f, 0.56f);
+                case "kromkaDustling": return new BodyProfile(0.46f, 0.58f, 0.29f);
+                case "kromkaListener": return new BodyProfile(0.47f, 1.08f, 0.54f);
+                case "kromkaMourner": return new BodyProfile(0.52f, 1.28f, 0.64f);
+                case "kromkaLantern": return new BodyProfile(0.64f, 1.58f, 0.79f);
                 case "enemySuperMutant": return new BodyProfile(0.52f, 2.38f, 1.19f);
                 case "enemyRadscorpion": return new BodyProfile(0.58f, 0.72f, 0.36f);
                 case "enemyMutantAnt": return new BodyProfile(0.38f, 0.48f, 0.24f);
@@ -730,7 +746,7 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Visible hostile NPCs ordered exactly as the mobile auto-target list.</summary>
-        public void CollectMobileTargets(Vector3 origin, float maxDistance, List<MobileTarget> targets)
+        public void CollectMobileTargets(Vector3 origin, float maxDistance, List<MobileTarget> targets, bool medical = false)
         {
             if (targets == null) return;
             targets.Clear();
@@ -740,7 +756,10 @@ namespace RealmOfAshes.Game
                 Enemy enemy = entry.Value;
                 if (enemy == null || enemy.Dead || enemy.Root == null) continue;
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
-                if (!ReadBoolean(enemy.Snapshot?["hostileToPlayer"], true)) continue;
+                bool hostile = ReadBoolean(enemy.Snapshot?["hostileToPlayer"], true);
+                bool training = ReadBoolean(enemy.Snapshot?["trainingTarget"]);
+                if (medical ? (hostile || training || Value(enemy.Snapshot, "hp") >= Value(enemy.Snapshot, "maxHp"))
+                    : (!hostile && !training)) continue;
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;
                 float sq = delta.sqrMagnitude;
@@ -927,6 +946,7 @@ namespace RealmOfAshes.Game
                 if (enemy.UnifiedHumanoid) _ = RefreshHumanoidEquipment(enemy);
                 else if (enemy.CarriesWeapon) _ = RefreshCreatureWeapon(enemy);
             }
+            enemy.KromkaPresentation?.PlayImpact(payload?["attackId"]?.ToString());
             bool windupAnimated = Time.time < enemy.AttackWindupUntil;
             enemy.ThreatActive = false;
             enemy.ThreatRemaining = 0f;
@@ -1167,6 +1187,17 @@ namespace RealmOfAshes.Game
 
         private Enemy Create(string id, JObject row)
         {
+            if (ReadBoolean(row["trainingTarget"]))
+            {
+                GameObject target = RoaTutorialProps.Build("target", transform);
+                var dummy = new Enemy { Root = target, Gate = target.AddComponent<RoaVisibilityGate>(),
+                    Snapshot = (JObject)row.DeepClone(), LastPacketTime = Time.time,
+                    BodyRadius = 0.45f, ContactFallbackAngleDeg = StableContactAngle(id) };
+                dummy.BodyCollider = InstallPresentationBody(target, PresentationBodyProfile("", false),
+                    out dummy.BodyRigidbody);
+                _enemies[id] = dummy;
+                return dummy;
+            }
             string key = RoaEnemyModels.ResolveKey(
                 row["modelKey"]?.ToString(),
                 row["visual"]?.ToString(),
@@ -1195,12 +1226,15 @@ namespace RealmOfAshes.Game
             string name = row["name"]?.ToString();
             var root = new GameObject("Enemy:" + (string.IsNullOrEmpty(name) ? id : name));
             root.transform.SetParent(transform, false);
+            RoaKromkaMutantPresentation mutantPresentation = root.AddComponent<RoaKromkaMutantPresentation>();
+            mutantPresentation.Configure(row["creatureTypeId"]?.ToString(), key, id);
             BodyProfile bodyProfile = PresentationBodyProfile(key, unifiedHumanoid);
 
             var enemy = new Enemy
             {
                 Root = root,
                 Gate = root.AddComponent<RoaVisibilityGate>(),
+                KromkaPresentation = mutantPresentation,
                 UnifiedHumanoid = unifiedHumanoid,
                 CarriesWeapon = !unifiedHumanoid && CreatureWeaponModels.Contains(key),
                 YawOffset = unifiedHumanoid ? 0f : RoaEnemyModels.YawOffset(key),
@@ -1631,6 +1665,9 @@ namespace RealmOfAshes.Game
                     // Небольшой запас поглощает джиттер между volatile frame и
                     // надёжным enemyMelee, не запуская второй замах после контакта.
                     enemy.AttackWindupUntil = Time.time + enemy.ThreatRemaining + 0.36f;
+                    enemy.KromkaPresentation?.SetThreat(
+                        enemy.ThreatRemaining,
+                        enemy.Snapshot?["primaryAttackId"]?.ToString());
                     enemy.ActionUntil = Mathf.Max(enemy.ActionUntil,
                         Time.time + AttackRootLockSeconds(
                             enemy.ThreatRemaining, enemy.ThreatRanged));
@@ -1732,7 +1769,10 @@ namespace RealmOfAshes.Game
                 // Существо за стеной или за краем обзора не показывается вовсе:
                 // видеть его на экране значило бы знать то, чего персонаж не знает.
                 if (enemy.Gate != null)
-                    enemy.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position));
+                {
+                    if (CinematicPresentationSuppressed) enemy.Gate.SetVisible(false);
+                    else enemy.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position));
+                }
 
                 bool visible = enemy.Gate == null || enemy.Gate.IsVisible;
                 bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;

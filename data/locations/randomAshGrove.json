@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "randomAshGrove",
-  "name": "Пепельная роща",
+  "name": "Полоса №8",
   "seed": 20260911,
   "safe": false,
   "pvpMode": "pvp",
@@ -25,16 +25,36 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 19
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromNorth": {
+    "tx": 19,
+    "tz": 4
+  },
+  "entryFromSouth": {
+    "tx": 19,
+    "tz": 34
+  },
+  "entryFromWest": {
+    "tx": 4,
     "tz": 19
   },
-  "entryFromNorth": { "tx": 19, "tz": 4 },
-  "entryFromSouth": { "tx": 19, "tz": 34 },
-  "entryFromWest": { "tx": 4, "tz": 19 },
-  "entryFromEast": { "tx": 34, "tz": 19 },
+  "entryFromEast": {
+    "tx": 34,
+    "tz": 19
+  },
   "worldZones": [
     {
       "id": "world_exit_edges",
@@ -46,26 +66,61 @@
   ],
   "objects": [
     {
-      "id": "ash_grove_tree_01",
-      "model": "deadTreeB",
-      "name": "Мертвое дерево",
-      "url": "/assets/models/wasteland/dead_tree_b.glb",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": -12
+      "id": "ash_grove_deadwood_01",
+      "model": "deadwood",
+      "name": "Валежник",      "position": {
+        "x": 11.0,
+        "y": 0.0,
+        "z": 13.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0.7,
-        "z": 0
+        "x": 0.0,
+        "y": 5.783,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
+      "tags": [
+        "resource",
+        "wood"
+      ],
+      "resourceType": "wood",
+      "hp": 3,
+      "maxHp": 3,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.235,
+        "z": 1.837
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ash_grove_tree_01",
+      "model": "deadTreeB",
+      "name": "Мертвое дерево",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.7,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
       "tags": [
         "tree",
         "resource",
@@ -75,40 +130,1514 @@
       "hp": 4,
       "maxHp": 4,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.915,
+        "z": 1.862
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "ash_grove_deadwood_01",
-      "model": "deadwood",
-      "name": "Валежник",
-      "url": "/assets/models/wasteland/deadwood.glb",
+      "id": "randomAshGrove-cover-0",
+      "model": "wall",
+      "name": "randomAshGrove-cover-0 EDITABLE",
       "position": {
-        "x": 11,
-        "y": 0,
-        "z": 13
+        "x": -18.0,
+        "y": 0.7,
+        "z": -12.0
       },
       "rotation": {
-        "x": 0,
-        "y": -0.5,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "solid",
+      "role": "cover",
       "tags": [
-        "resource",
-        "wood"
+        "wall",
+        "cover"
       ],
-      "resourceType": "wood",
-      "hp": 3,
-      "maxHp": 3,
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-cover-1",
+      "model": "wall",
+      "name": "randomAshGrove-cover-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.7,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-cover-2",
+      "model": "wall",
+      "name": "randomAshGrove-cover-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.7,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-cover-3",
+      "model": "wall",
+      "name": "randomAshGrove-cover-3 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.7,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-cover-4",
+      "model": "wall",
+      "name": "randomAshGrove-cover-4 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.7,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-functional-01",
+      "model": "car_wreck",
+      "name": "randomAshGrove-dressing-functional-01",
+      "position": {
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.634,
+        "z": 4.287
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-functional-02",
+      "model": "dry_bush",
+      "name": "randomAshGrove-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.873,
+        "z": 1.745
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "randomAshGrove-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.293,
+        "z": 2.459
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-functional-04",
+      "model": "campfire_rest",
+      "name": "randomAshGrove-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.873,
+        "z": 2.738
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-01",
+      "model": "dry_bush",
+      "name": "randomAshGrove-dressing-region-01",
+      "position": {
+        "x": 33.115,
+        "y": 0.0,
+        "z": -5.54
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.244,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.952,
+        "z": 1.755
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-02",
+      "model": "garden_patch",
+      "name": "randomAshGrove-dressing-region-02",
+      "position": {
+        "x": 17.793,
+        "y": 0.0,
+        "z": -2.99
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.93,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.521,
+        "z": 2.626
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-03",
+      "model": "utility_pole",
+      "name": "randomAshGrove-dressing-region-03",
+      "position": {
+        "x": 17.792,
+        "y": 0.0,
+        "z": -2.982
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.93,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.598,
+        "z": 1.856
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "randomAshGrove-dressing-region-04",
+      "position": {
+        "x": 18.043,
+        "y": 0.0,
+        "z": 0.299
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.874,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.364,
+        "z": 2.997
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-05",
+      "model": "dry_bush",
+      "name": "randomAshGrove-dressing-region-05",
+      "position": {
+        "x": 33.895,
+        "y": 0.0,
+        "z": 0.567
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.875,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.261,
+        "z": 2.012
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-06",
+      "model": "garden_patch",
+      "name": "randomAshGrove-dressing-region-06",
+      "position": {
+        "x": 33.897,
+        "y": 0.0,
+        "z": 0.551
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.062,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.432,
+        "z": 2.29
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-07",
+      "model": "utility_pole",
+      "name": "randomAshGrove-dressing-region-07",
+      "position": {
+        "x": 33.895,
+        "y": 0.0,
+        "z": 0.597
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.062,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.643,
+        "z": 1.827
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "randomAshGrove-dressing-region-08",
+      "position": {
+        "x": 33.074,
+        "y": 0.0,
+        "z": -1.315
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.005,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.232,
+        "z": 2.748
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-09",
+      "model": "dry_bush",
+      "name": "randomAshGrove-dressing-region-09",
+      "position": {
+        "x": 33.075,
+        "y": 0.0,
+        "z": -1.28
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.005,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.26,
+        "y": 1.26,
+        "z": 1.26
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.174,
+        "z": 1.845
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-10",
+      "model": "garden_patch",
+      "name": "randomAshGrove-dressing-region-10",
+      "position": {
+        "x": 33.077,
+        "y": 0.0,
+        "z": -1.265
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.386,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.38,
+        "z": 1.82
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-11",
+      "model": "utility_pole",
+      "name": "randomAshGrove-dressing-region-11",
+      "position": {
+        "x": 31.058,
+        "y": 0.0,
+        "z": -11.455
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.385,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.528,
+        "z": 1.212
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "randomAshGrove-dressing-region-12",
+      "position": {
+        "x": 30.931,
+        "y": 0.0,
+        "z": -11.382
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.331,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.217,
+        "z": 1.922
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-13",
+      "model": "dry_bush",
+      "name": "randomAshGrove-dressing-region-13",
+      "position": {
+        "x": 30.927,
+        "y": 0.0,
+        "z": -11.396
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.33,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.49,
+        "z": 1.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-14",
+      "model": "garden_patch",
+      "name": "randomAshGrove-dressing-region-14",
+      "position": {
+        "x": 30.24,
+        "y": 0.0,
+        "z": -13.114
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.259,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.199,
+        "z": 2.338
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-dressing-region-15",
+      "model": "utility_pole",
+      "name": "randomAshGrove-dressing-region-15",
+      "position": {
+        "x": 30.68,
+        "y": 0.0,
+        "z": -13.289
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.259,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.848,
+        "y": 0.848,
+        "z": 0.848
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.351,
+        "z": 1.193
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-landmark",
+      "model": "windbreak-trees",
+      "name": "Landmark windbreak-trees EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "windbreak-trees"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-field-0",
+      "model": "clean_soil",
+      "name": "randomAshGrove-region-field-0 EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-field-1",
+      "model": "clean_soil",
+      "name": "randomAshGrove-region-field-1 EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-field-2",
+      "model": "clean_soil",
+      "name": "randomAshGrove-region-field-2 EDITABLE",
+      "position": {
+        "x": 7.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-field-3",
+      "model": "clean_soil",
+      "name": "randomAshGrove-region-field-3 EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-irrigation",
+      "model": "irrigation",
+      "name": "randomAshGrove-region-irrigation EDITABLE",
+      "position": {
+        "x": -31.0,
+        "y": -0.03,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "irrigation",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-shelterbelt-0",
+      "model": "shelterbelt_tree",
+      "name": "randomAshGrove-region-shelterbelt-0 EDITABLE",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-shelterbelt-1",
+      "model": "shelterbelt_tree",
+      "name": "randomAshGrove-region-shelterbelt-1 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-shelterbelt-2",
+      "model": "shelterbelt_tree",
+      "name": "randomAshGrove-region-shelterbelt-2 EDITABLE",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-shelterbelt-3",
+      "model": "shelterbelt_tree",
+      "name": "randomAshGrove-region-shelterbelt-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-region-shelterbelt-4",
+      "model": "shelterbelt_tree",
+      "name": "randomAshGrove-region-shelterbelt-4 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomAshGrove-route-segment",
+      "model": "encounter_route",
+      "name": "randomAshGrove-route-segment EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "encounter_route",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "middle_vein",
+  "kromkaVisualProfile": "shelterbelt-eight-v1",
+  "ambientProfile": "quiet-inhabited-fringe",
+  "anomalyDensity": 0.09,
+  "unityScene": "Assets/Scenes/Kromka/Locations/randomAshGrove.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "randomAshGrove-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "shelterbelt-road",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

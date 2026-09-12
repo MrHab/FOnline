@@ -1,0 +1,34 @@
+{
+  "schema": "kromka.canon.v1",
+  "version": 1,
+  "designDocument": "docs/KROMKA_GAME_BIBLE_AND_PATCH_PLAN.md",
+  "game": {
+    "displayName": "Кромка",
+    "genre": "постъядерная MMORPG с открытой песочницей и линейной кампанией",
+    "yearsAfterExchange": 103,
+    "camera": "perspective-top-down",
+    "playerRole": "independent-mercenary",
+    "permanentCompanions": false
+  },
+  "world": {
+    "revision": "kromka-1",
+    "regionName": "Кромка",
+    "mainRiver": "Тесьма",
+    "worldWidthKm": 380,
+    "worldHeightKm": 300,
+    "catastrophe": "Обмен",
+    "infrastructure": "Каскад",
+    "strategicResource": "синь",
+    "researchProgram": "Вектор",
+    "anomalyTerm": "Искажение",
+    "emissionTerm": "Сдвиг",
+    "hiddenMystery": "Свидетель"
+  },
+  "authority": {
+    "runtimeState": "server",
+    "spatialAuthoring": "unity",
+    "globalMapScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
+    "locationSceneRoot": "Assets/Scenes/Kromka/Locations",
+    "generatedRuntimeData": "data/generated/kromka"
+  }
+}

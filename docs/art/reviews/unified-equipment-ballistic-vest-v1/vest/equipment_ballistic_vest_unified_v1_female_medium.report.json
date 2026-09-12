@@ -1,123 +1,61 @@
 {
-  "actualGlb": {
-    "materials": 5,
-    "meshDefinitions": 2,
-    "nodes": [
-      "head",
-      "neck_01",
-      "index_04_leaf_l",
-      "index_03_l",
-      "index_02_l",
-      "index_01_l",
-      "middle_04_leaf_l",
-      "middle_03_l",
-      "middle_02_l",
-      "middle_01_l",
-      "pinky_04_leaf_l",
-      "pinky_03_l",
-      "pinky_02_l",
-      "pinky_01_l",
-      "ring_04_leaf_l",
-      "ring_03_l",
-      "ring_02_l",
-      "ring_01_l",
-      "thumb_04_leaf_l",
-      "thumb_03_l",
-      "thumb_02_l",
-      "thumb_01_l",
-      "hand_l",
-      "lowerarm_l",
-      "upperarm_l",
-      "clavicle_l",
-      "index_04_leaf_r",
-      "index_03_r",
-      "index_02_r",
-      "index_01_r",
-      "middle_04_leaf_r",
-      "middle_03_r",
-      "middle_02_r",
-      "middle_01_r",
-      "pinky_04_leaf_r",
-      "pinky_03_r",
-      "pinky_02_r",
-      "pinky_01_r",
-      "ring_04_leaf_r",
-      "ring_03_r",
-      "ring_02_r",
-      "ring_01_r",
-      "thumb_04_leaf_r",
-      "thumb_03_r",
-      "thumb_02_r",
-      "thumb_01_r",
-      "hand_r",
-      "lowerarm_r",
-      "upperarm_r",
-      "clavicle_r",
-      "spine_03",
-      "spine_02",
-      "spine_01",
-      "ball_leaf_l",
-      "ball_l",
-      "foot_l",
-      "calf_l",
-      "thigh_l",
-      "ball_leaf_r",
-      "ball_r",
-      "foot_r",
-      "calf_r",
-      "thigh_r",
-      "pelvis",
-      "root",
-      "equipment_ballistic_vest_unified_v1_female_medium_plates_webbin",
-      "equipment_ballistic_vest_unified_v1_female_medium_soft_carrier",
-      "character_root"
-    ],
-    "positionVertices": 10421,
-    "skins": 1,
-    "textures": 15,
-    "triangles": 6440
-  },
+  "schema": "realm.free-armor-replacement-review.v1",
   "assetId": "equipment_ballistic_vest_unified_v1_female_medium",
-  "bodyId": "female_medium",
-  "details": {
-    "backPlateOutlinePoints": 8,
-    "backY": 0.20847,
-    "dragHandle": true,
-    "frontPlateOutlinePoints": 8,
-    "frontY": -0.19023,
-    "halfWidth": 0.193,
-    "molleRows": 3,
-    "pouchCount": 3,
-    "shoulderAdjusters": 2
-  },
-  "file": "equipment_ballistic_vest_unified_v1_female_medium.glb",
-  "fit": {
-    "lowerHemZ": 1.05088,
-    "shellPolygons": 2442,
-    "shellVertices": 1266,
-    "torsoBounds": {
-      "maximum": [
-        0.173,
-        0.16247,
-        1.48775
-      ],
-      "minimum": [
-        -0.173,
-        -0.14023,
-        0.87088
-      ]
-    },
-    "upperLimitZ": 1.41775
-  },
   "itemId": "ballisticVest",
-  "provenance": {
-    "directRuntimeUse": false,
-    "donor": null,
-    "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C plate carrier, webbing and pouches on the exact current 65-bone player rig"
-  },
+  "slot": "armor",
+  "bodyId": "female_medium",
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "8B9BDDE8E09E62FCF9437B55333457D9CA4482C3F32CC47CC1673AE6A2D7CB20",
-  "slot": "armor"
+  "sha256": "E1FCF17313A921EA291E20CD9B4E90CE54F55DCDFA976975E0666D5AEB948634",
+  "source": {
+    "creator": "Quaternius",
+    "pack": "Ultimate Modular Men / Ultimate Modular Women",
+    "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+    "license": "CC0-1.0",
+    "downloadedFile": "quaternius_female_soldier.gltf",
+    "sha256": "622B3F36FCAC90539EF8F7121EC1F11B5E1AE603A085019B3FA96EBA20DDDFD3/37112E60AF92FF84D882A34E21F0F78A2AFC14282E950FB0E3652E51D06E0B2D",
+    "geometryOrigin": "downloaded_refit"
+  },
+  "optimization": {
+    "triangleBudget": 12000,
+    "sourceSelectedTriangles": 2708,
+    "removedFaces": 2068,
+    "donorCoverageTriangles": 0,
+    "fittedSourceTriangles": 640,
+    "decimated": false,
+    "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+  },
+  "actualGlb": {
+    "triangles": 640,
+    "meshes": 1,
+    "materials": 5,
+    "skins": 1,
+    "joints": 65,
+    "bytes": 482160
+  },
+  "materials": [
+    "ballistic_vest_faded_olive_carrier",
+    "ballistic_vest_charcoal_insert",
+    "ballistic_vest_dusty_webbing",
+    "ballistic_vest_oxidised_hardware",
+    "ballistic_vest_faded_repair_cloth"
+  ],
+  "fit": {
+    "targetBoundsMin": [
+      -0.86366,
+      -0.14514,
+      -0.0087
+    ],
+    "targetBoundsMax": [
+      0.86366,
+      0.16816,
+      1.82848
+    ],
+    "sourceFitScale": [
+      1.055,
+      1.1,
+      0.99
+    ],
+    "verticalOffset": -0.04
+  }
 }

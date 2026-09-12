@@ -1,0 +1,33 @@
+{
+  "schema": "kromka.saveMigration.v1",
+  "version": 1,
+  "fromWorldRevision": "legacy",
+  "toWorldRevision": "kromka-1",
+  "safeDestinations": [
+    {
+      "legacyArea": "north-west",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    },
+    {
+      "legacyArea": "north-east",
+      "targetLocationId": "scrapTown",
+      "spawnId": "razdolye-gate"
+    },
+    {
+      "legacyArea": "south-west",
+      "targetLocationId": "caravanCamp",
+      "spawnId": "crossroads-yard"
+    },
+    {
+      "legacyArea": "south-east",
+      "targetLocationId": "relayStation",
+      "spawnId": "contour-three-airlock"
+    },
+    {
+      "legacyArea": "unknown",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    }
+  ]
+}

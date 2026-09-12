@@ -1077,6 +1077,7 @@ namespace RealmOfAshes.Game
                 : "Собираем данные наблюдения…", Accent, 12f);
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["taskId"] = taskId,
                 ["action"] = "activity_interact",
                 ["pointId"] = pointId
@@ -1110,6 +1111,7 @@ namespace RealmOfAshes.Game
             ShowMessage(defense ? "Подводим итог обороны…" : "Проверяем точку эвакуации…", Accent, 12f);
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["taskId"] = taskId,
                 ["action"] = "activity_extract"
             }, ack =>
@@ -1724,7 +1726,7 @@ namespace RealmOfAshes.Game
             int reputation = Mathf.Max(0, reward["reputation"]?.ToObject<int>() ?? 0);
             string factionId = reward["reputationFactionId"]?.ToString() ?? string.Empty;
             if (xp > 0) grants.Add("+" + xp + " XP");
-            if (caps > 0) grants.Add("+" + caps + " крышек");
+            if (caps > 0) grants.Add("+" + caps + " марок");
             if (reputation > 0)
                 grants.Add("+" + reputation + " репутации"
                     + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + RoaPipboy.FactionLabel(factionId)));
@@ -1733,7 +1735,7 @@ namespace RealmOfAshes.Game
             bool claimed = result["rewardClaimed"]?.ToObject<bool>() == true;
             if (!claimed)
                 return result["reason"]?.ToString() == "reward_inventory_full"
-                    ? "НАГРАДА ЖДЁТ: освободите место для крышек — сервер начислит её автоматически."
+                    ? "НАГРАДА ЖДЁТ: освободите место для марок — сервер начислит её автоматически."
                     : "НАГРАДА ЖДЁТ В КОНТРАКТАХ: " + rewardText;
 
             var confirmed = new List<string>();
@@ -1743,7 +1745,7 @@ namespace RealmOfAshes.Game
                 foreach (JToken row in inventory)
                     if (RoaInventory.BaseId(row?["id"]?.ToString()) == "silver")
                         balance += Mathf.Max(0, row?["qty"]?.ToObject<int>() ?? 0);
-                confirmed.Add("баланс " + balance + " крышек");
+                confirmed.Add("баланс " + balance + " марок");
             }
             if (authoritativeSelf?["level"] != null)
                 confirmed.Add("ур. " + Mathf.Max(1, authoritativeSelf["level"].ToObject<int>()));

@@ -174,6 +174,19 @@ namespace RealmOfAshes.Game
             _line.text = "«" + Interaction.NpcSpeech + "»"
                 + (string.IsNullOrEmpty(personality) ? string.Empty : "\n\nХарактер: " + personality);
 
+            RoaInteraction.OnboardingDialogueCard onboarding = Interaction.NpcOnboarding();
+            if (onboarding != null)
+            {
+                AddHeading("ТЕКУЩАЯ ЦЕЛЬ");
+                var actions = new List<(string, System.Action)>();
+                foreach (RoaInteraction.DialogueChoice choice in onboarding.Choices)
+                {
+                    RoaInteraction.DialogueChoice captured = choice;
+                    actions.Add((captured.Label, () => Interaction.NpcOnboardingAction(captured.Id)));
+                }
+                AddCard(onboarding.Title, onboarding.Description, actions);
+            }
+
             if (Interaction.NpcHasTradeOption)
                 AddOption("Показать товары", () => Interaction.NpcRequestTrade());
             if (Interaction.NpcCanRob)
@@ -194,6 +207,33 @@ namespace RealmOfAshes.Game
                         actions.Add(("Сдать", () => Interaction.NpcQuestAction(id, "complete")));
                         actions.Add(("Договориться", () => Interaction.NpcQuestAction(id, "negotiate")));
                         actions.Add(("Отказаться", () => Interaction.NpcQuestAction(id, "cancel")));
+                    }
+                    AddCard(quest.Name + "  [" + quest.StateLabel + "]", quest.Description, actions);
+                }
+            }
+
+            List<RoaInteraction.KromkaQuestOption> kromkaQuests = Interaction.NpcKromkaQuests();
+            if (kromkaQuests.Count > 0)
+            {
+                AddHeading("ДЕЛА КРОМКИ");
+                foreach (RoaInteraction.KromkaQuestOption quest in kromkaQuests)
+                {
+                    RoaInteraction.KromkaQuestOption capturedQuest = quest;
+                    var actions = new List<(string, System.Action)>();
+                    if (quest.State == "available")
+                        actions.Add(("Принять дело", () => Interaction.NpcKromkaQuestAction(capturedQuest.Id, "start")));
+                    if (quest.State == "active" && quest.CanAdvanceDialogue)
+                        actions.Add(("Продолжить разговор", () => Interaction.NpcKromkaQuestAction(capturedQuest.Id, "dialogue")));
+                    if (quest.State == "turnin")
+                        actions.Add(("Сдать дело", () => Interaction.NpcKromkaQuestAction(capturedQuest.Id, "turnin")));
+                    if (quest.State == "choice")
+                    {
+                        foreach (RoaInteraction.DialogueChoice outcome in quest.Outcomes)
+                        {
+                            RoaInteraction.DialogueChoice capturedOutcome = outcome;
+                            actions.Add((capturedOutcome.Label, () => Interaction.NpcKromkaQuestAction(
+                                capturedQuest.Id, "outcome", capturedOutcome.Id)));
+                        }
                     }
                     AddCard(quest.Name + "  [" + quest.StateLabel + "]", quest.Description, actions);
                 }

@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -23,8 +24,53 @@ const systemCanvas = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaSyste
 const meta = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaAudio.cs.meta');
 const movementMeta = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaMovementFx.cs.meta');
 const movementProbe = read('unity-client', 'Assets', 'Editor', 'RoaMovementFxProbe.cs');
+const weaponAudioProbe = read('unity-client', 'Assets', 'Editor', 'RoaWeaponAudioProbe.cs');
+const clientAuditRunner = read('unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs');
+const weaponAudioRoot = path.join(root, 'unity-client', 'Assets', 'Resources', 'Audio', 'Weapons');
+const weaponAudioManifest = JSON.parse(read('source-assets', 'audio', 'weapon-pilot', 'manifest.json'));
+const weaponAudioFiles = [
+  'ballistic_pistol.ogg', 'ballistic_rifle.ogg', 'ballistic_shotgun.ogg',
+  'ballistic_machinegun.ogg', 'energy_sidearm.ogg', 'energy_longgun.ogg',
+  'launcher_fire.ogg', 'flamethrower_fire.ogg', 'projectile_impact.ogg',
+  'melee_light_swing.ogg', 'melee_light_impact.ogg', 'melee_heavy_swing.ogg',
+  'melee_heavy_impact.ogg', 'reload_pistol.ogg', 'reload_rifle.ogg',
+  'reload_shotgun.ogg', 'dry_fire.ogg'
+];
 
 assert(audio.includes('public sealed class RoaAudio'), 'Unity runtime audio component is missing');
+assert(audio.includes('WeaponPilotClipCount = 17')
+  && audio.includes('Resources.Load<AudioClip>(WeaponAudioResourceRoot + resourceName)')
+  && audio.includes('public bool WeaponPilotAudioReady')
+  && audio.includes('LoadWeaponPilotClips();'),
+'Authored weapon audio no longer loads with generated fallbacks');
+assert.strictEqual(weaponAudioManifest.clips.length, weaponAudioFiles.length,
+  'Weapon audio source manifest does not describe all runtime clips');
+assert.deepStrictEqual(
+  weaponAudioManifest.clips.map(clip => clip.file).sort(),
+  [...weaponAudioFiles].sort(),
+  'Weapon audio source manifest and runtime catalog disagree');
+assert.deepStrictEqual(
+  fs.readdirSync(weaponAudioRoot).filter(file => file.endsWith('.ogg')).sort(),
+  [...weaponAudioFiles].sort(),
+  'Unexpected or missing OGG files in the weapon audio Resources folder');
+for (const file of weaponAudioFiles) {
+  const asset = path.join(weaponAudioRoot, file);
+  const bytes = fs.readFileSync(asset);
+  const manifestClip = weaponAudioManifest.clips.find(clip => clip.file === file);
+  assert(bytes.length > 4 * 1024,
+    `Authored weapon audio is missing or unexpectedly small: ${file}`);
+  assert.strictEqual(manifestClip.bytes, bytes.length,
+    `Weapon audio byte count drifted from provenance: ${file}`);
+  assert.strictEqual(manifestClip.sha256,
+    crypto.createHash('sha256').update(bytes).digest('hex'),
+    `Weapon audio hash drifted from provenance: ${file}`);
+  assert(fs.existsSync(`${asset}.meta`), `Unity audio importer metadata is missing: ${file}.meta`);
+}
+assert(weaponAudioProbe.includes('ExpectedClips = 17')
+  && weaponAudioProbe.includes('audio.WeaponPilotAudioReady')
+  && weaponAudioProbe.includes('clip.channels == 1')
+  && clientAuditRunner.includes('typeof(RoaWeaponAudioProbe)'),
+'Unity weapon audio probe no longer validates the complete mono Resources set');
 assert(audio.includes('BuildWind()') && audio.includes('BuildGunshot(')
   && audio.includes('BuildEnergyShot(') && audio.includes('BuildExplosion()'),
 'Runtime audio no longer generates ambience and distinct weapon/explosion layers');
@@ -38,9 +84,12 @@ assert(audio.includes('public event Action<FootstepCue> Footstep;')
   && audio.includes('RightFoot = _rightFoot'),
 'Audio cadence no longer emits an alternating visual footstep cue');
 assert(audio.includes('PlayActorFootstep(FootstepCue cue)')
-  && audio.includes('14f, false)')
+  && audio.includes('14f * noise, false)')
   && audio.includes('if (!allowSteal) return;'),
 'Visible actor footsteps no longer yield pooled audio voices to combat');
+assert(audio.includes('maxDistance * _hearingMultiplier')
+  && audio.includes('cue.NoiseMultiplier') && audio.includes('_feet.volume *= _movementNoiseMultiplier'),
+'Artifact hearing and movement-noise modifiers must reach spatial audio');
 assert(audio.includes('float.IsNaN(data[i])') && audio.includes('Generated audio is silent')
   && audio.includes('_validatedClipCount++'),
 'Generated clips no longer reject silent or invalid PCM data');
@@ -81,7 +130,7 @@ assert(combat.includes('Audio?.PlayMeleeSwing')
   && combat.includes('Audio?.PlayMeleeImpact')
   && combat.includes('Audio?.PlayHurt(damage)')
   && combat.includes('Audio?.PlayKillConfirm()')
-  && combat.includes('Audio?.PlayReload()'),
+  && combat.includes('Audio?.PlayReload(ActiveWeapon())'),
 'Accepted combat actions lost an important sound feedback branch');
 assert(controller.includes('footPosition.y = FeetY() + 0.025f;')
   && controller.includes('Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);')

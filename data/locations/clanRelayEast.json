@@ -1,0 +1,2534 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "clanRelayEast",
+  "name": "Ретранслятор В-9",
+  "seed": 2026091406,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "clanBase",
+  "clanBaseId": "relay_v9",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "glassAsh",
+    "label": "Ретранслятор В-9"
+  },
+  "map": {
+    "width": 80,
+    "depth": 80,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "clanRelayEast-approach-0",
+      "model": "siege_approach",
+      "name": "clanRelayEast-approach-0 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-approach-1",
+      "model": "siege_approach",
+      "name": "clanRelayEast-approach-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-approach-2",
+      "model": "siege_approach",
+      "name": "clanRelayEast-approach-2 EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-breach-gate",
+      "model": "checkpoint_gate",
+      "name": "clanRelayEast-breach-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-command-core",
+      "model": "ring_structure",
+      "name": "clanRelayEast-command-core EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-01",
+      "model": "scrap_watch_tower",
+      "name": "clanRelayEast-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.551,
+        "z": 2.914
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-02",
+      "model": "scrap_wall_segment",
+      "name": "clanRelayEast-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.429,
+        "z": 2.257
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-03",
+      "model": "roadblock_barricade",
+      "name": "clanRelayEast-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.89,
+        "z": 2.084
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-04",
+      "model": "armory_rack",
+      "name": "clanRelayEast-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.661,
+        "z": 2.424
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-05",
+      "model": "storage_chest",
+      "name": "clanRelayEast-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.411,
+        "z": 1.543
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-functional-06",
+      "model": "craft_station_repair",
+      "name": "clanRelayEast-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.189,
+        "z": 3.374
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-01",
+      "model": "dead_tree_a",
+      "name": "clanRelayEast-dressing-region-01",
+      "position": {
+        "x": 29.765,
+        "y": 0.0,
+        "z": -13.969
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.408,
+        "z": 2.225
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-02",
+      "model": "relay_antenna",
+      "name": "clanRelayEast-dressing-region-02",
+      "position": {
+        "x": 29.627,
+        "y": 0.0,
+        "z": -13.932
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.464,
+        "z": 2.028
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-03",
+      "model": "utility_pole",
+      "name": "clanRelayEast-dressing-region-03",
+      "position": {
+        "x": 29.626,
+        "y": 0.0,
+        "z": -13.937
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.642,
+        "z": 1.783
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "clanRelayEast-dressing-region-04",
+      "position": {
+        "x": 28.808,
+        "y": 0.0,
+        "z": -15.549
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.102,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.187,
+        "z": 1.501
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-05",
+      "model": "dead_tree_a",
+      "name": "clanRelayEast-dressing-region-05",
+      "position": {
+        "x": 28.679,
+        "y": 0.0,
+        "z": -15.496
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.102,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.182,
+        "z": 1.737
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-06",
+      "model": "relay_antenna",
+      "name": "clanRelayEast-dressing-region-06",
+      "position": {
+        "x": 28.691,
+        "y": 0.0,
+        "z": -15.475
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.026,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.636,
+        "z": 2.277
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-07",
+      "model": "utility_pole",
+      "name": "clanRelayEast-dressing-region-07",
+      "position": {
+        "x": 28.666,
+        "y": 0.0,
+        "z": -15.523
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.026,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.63,
+        "z": 1.835
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "clanRelayEast-dressing-region-08",
+      "position": {
+        "x": 28.703,
+        "y": 0.0,
+        "z": -17.623
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.971,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.27,
+        "z": 1.719
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-09",
+      "model": "dead_tree_a",
+      "name": "clanRelayEast-dressing-region-09",
+      "position": {
+        "x": 28.711,
+        "y": 0.0,
+        "z": -17.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.971,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.257,
+        "y": 1.257,
+        "z": 1.257
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.299,
+        "z": 1.943
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-10",
+      "model": "relay_antenna",
+      "name": "clanRelayEast-dressing-region-10",
+      "position": {
+        "x": 28.676,
+        "y": 0.0,
+        "z": -17.666
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.419,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.717,
+        "z": 2.772
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-11",
+      "model": "utility_pole",
+      "name": "clanRelayEast-dressing-region-11",
+      "position": {
+        "x": 33.414,
+        "y": 0.0,
+        "z": -4.21
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.419,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.968,
+        "z": 1.707
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "clanRelayEast-dressing-region-12",
+      "position": {
+        "x": 33.273,
+        "y": 0.0,
+        "z": -4.207
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.362,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.069,
+        "z": 2.227
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-13",
+      "model": "dead_tree_a",
+      "name": "clanRelayEast-dressing-region-13",
+      "position": {
+        "x": 33.276,
+        "y": 0.0,
+        "z": -4.203
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.362,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.233,
+        "z": 2.336
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-14",
+      "model": "relay_antenna",
+      "name": "clanRelayEast-dressing-region-14",
+      "position": {
+        "x": 32.987,
+        "y": 0.0,
+        "z": -6.043
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.321,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.649,
+        "z": 2.771
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-dressing-region-15",
+      "model": "utility_pole",
+      "name": "clanRelayEast-dressing-region-15",
+      "position": {
+        "x": 32.8,
+        "y": 0.0,
+        "z": -6.013
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.321,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.217,
+        "y": 1.217,
+        "z": 1.217
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.815,
+        "z": 1.844
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-landmark",
+      "model": "split-dish",
+      "name": "Landmark split-dish EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "split-dish"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-1",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-1 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-2",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-2 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-3",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-3 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-4",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-4 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-5",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-5 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-module-socket-6",
+      "model": "module_socket",
+      "name": "clanRelayEast-module-socket-6 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-0",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-1",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-2",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-2 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-3",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-3 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-4",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-4 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-5",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-5 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-glass-6",
+      "model": "fused_glass",
+      "name": "clanRelayEast-region-glass-6 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-leaning-pylon-0",
+      "model": "power_pylon",
+      "name": "clanRelayEast-region-leaning-pylon-0 EDITABLE",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-leaning-pylon-1",
+      "model": "power_pylon",
+      "name": "clanRelayEast-region-leaning-pylon-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 6.074
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.624,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-region-leaning-pylon-2",
+      "model": "power_pylon",
+      "name": "clanRelayEast-region-leaning-pylon-2 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-relay-1",
+      "model": "siege_relay",
+      "name": "clanRelayEast-relay-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-relay-2",
+      "model": "siege_relay",
+      "name": "clanRelayEast-relay-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanRelayEast-relay-3",
+      "model": "siege_relay",
+      "name": "clanRelayEast-relay-3 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "command",
+      "model": "relayAntenna",
+      "name": "Командный узел: Ретранслятор В-9",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "command-core"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.96,
+        "z": 3.08
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "relayAntenna",
+      "name": "Ретранслятор В-9",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "landmark",
+        "split_dish"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.96,
+        "z": 3.08
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_a",
+      "model": "utilityPole",
+      "name": "Внешний передатчик А",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_b",
+      "model": "utilityPole",
+      "name": "Внешний передатчик Б",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_c",
+      "model": "utilityPole",
+      "name": "Внешний передатчик В",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-c"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_s",
+      "model": "concreteWall",
+      "name": "Южный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "storage",
+      "model": "storageLeanTo",
+      "name": "Клановый склад",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.5,
+        "y": 1.0,
+        "z": 1.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "clan-storage"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.5,
+        "z": 2.7
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_a",
+      "model": "watchPost",
+      "name": "Башня А",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_b",
+      "model": "watchPost",
+      "name": "Башня Б",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "workshop",
+      "model": "workshopBench",
+      "name": "Модульный двор",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.0,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-yard"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.2,
+        "z": 1.96
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-clan-relay_v9-v1",
+    "skyDay": "#5d625f",
+    "fogDay": "#6d716c",
+    "hemiSkyDay": "#a9aca0",
+    "hemiGroundDay": "#3c403d",
+    "fillDay": "#9fa58e",
+    "sunDay": "#d4c28f",
+    "rimDay": "#7b9c98",
+    "fogDensityDay": 0.00228,
+    "exposureDay": 0.98,
+    "colorGrade": "kromka-glasslands"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "glasslands",
+  "kromkaVisualProfile": "clan-relay-v9-v1",
+  "ambientProfile": "glasslands-shift-relay",
+  "anomalyDensity": 0.4,
+  "unityScene": "Assets/Scenes/Kromka/Locations/clanRelayEast.unity",
+  "respawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 18,
+    "tz": 10,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "clanRelayEast-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "relay-v9-neutral-yard",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

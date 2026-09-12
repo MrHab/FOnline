@@ -48,11 +48,15 @@ namespace RealmOfAshes.Game
     public sealed class RoaGlobalMapActorView : MonoBehaviour
     {
         private const float HumanoidWalkVisualSpeed = 1.26f;
+        public const float StrategicActorModelScale = 0.5f;
         private const string ModelPivotName = "StrategicActorModel";
         private const string ModelContentName = "StrategicActorContent";
 
         private static readonly Dictionary<string, Task<GltfImport>> ModelCache =
             new Dictionary<string, Task<GltfImport>>(StringComparer.Ordinal);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache() => RoaModelImportLifetime.Clear(ModelCache);
 
         private Transform _modelPivot;
         private Transform _modelContent;
@@ -304,42 +308,42 @@ namespace RealmOfAshes.Game
             switch (modelKey ?? string.Empty)
             {
                 case "player":
-                    return HumanoidProfile(2.15f, 0.50f, sex);
+                    return HumanoidProfile(1.15f, 0.27f, sex);
                 // Доворот берётся из единого источника RoaEnemyModels.YawOffset,
                 // чтобы разворот отрядов на глобальной карте совпадал с боем и не
                 // расходился при правках (скорпион/муравей — 180°, остальные — 0°).
                 case "enemySuperMutant":
-                    return Profile(1.95f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(1.12f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Height,
                         BoundsOf(0.005f, 1.053f, 0.047f, 0.953f, 2.147f, 1.196f));
                 case "enemyGhoul":
-                    return Profile(1.68f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(0.96f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Height,
                         BoundsOf(0.004f, 0.906f, 0.032f, 0.770f, 1.838f, 0.992f));
                 case "friendlyBrahmin":
                 case "brahmin":
-                    return Profile(1.95f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(1.12f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0.063f, 1.193f, -0.354f, 2.922f, 2.388f, 3.280f));
                 case "enemyAshWolf":
-                    return Profile(1.72f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(0.98f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 0.958f, 0.053f, 0.916f, 1.916f, 3.266f));
                 case "enemyGecko":
                 case "enemyFireGecko":
-                    return Profile(1.75f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(1.05f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 1.451f, 0.501f, 2.122f, 2.903f, 5.216f));
                 case "enemyRadscorpion":
-                    return Profile(1.82f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(1.02f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(-0.025f, 0.629f, 0.243f, 2.340f, 1.257f, 2.303f));
                 case "enemyMutantAnt":
-                    return Profile(1.68f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
+                    return Profile(0.94f, 0.22f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 0.355f, -0.011f, 2.053f, 0.708f, 2.186f));
                 default:
-                    RoaStrategicActorProfile humanoid = HumanoidProfile(1.68f, 0.37f, sex);
+                    RoaStrategicActorProfile humanoid = HumanoidProfile(0.96f, 0.22f, sex);
                     humanoid.YawOffset = RoaEnemyModels.YawOffset(modelKey);
                     return humanoid;
             }
@@ -640,7 +644,8 @@ namespace RealmOfAshes.Game
                                                         RoaStrategicActorFitMode fitMode,
                                                         Bounds animatedLocalBounds)
         {
-            return new RoaStrategicActorProfile(targetWorldSpan, groundDropWorld,
+            return new RoaStrategicActorProfile(targetWorldSpan * StrategicActorModelScale,
+                groundDropWorld,
                 yawOffset, fitMode, animatedLocalBounds);
         }
 

@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "resourceKlimQuarry",
-  "name": "Каменоломня Старого Клима",
+  "name": "Карьер Девятый",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -46,24 +54,22 @@
     {
       "id": "quarry_ore_01",
       "model": "oreOutcrop",
-      "name": "Рудная жила",
-      "url": "/assets/models/wasteland/ore_outcrop.glb",
-      "position": {
-        "x": -10,
-        "y": 0,
-        "z": -8
+      "name": "Рудная жила",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -8.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "ore"
@@ -72,30 +78,35 @@
       "hp": 7,
       "maxHp": 7,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.791,
+        "z": 1.337
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "quarry_ore_02",
       "model": "oreOutcrop",
-      "name": "Каменная жила",
-      "url": "/assets/models/wasteland/ore_outcrop.glb",
-      "position": {
-        "x": 9,
-        "y": 0,
-        "z": -12
+      "name": "Каменная жила",      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": -12.0
       },
       "rotation": {
-        "x": 0,
-        "y": -0.4,
-        "z": 0
+        "x": 0.0,
+        "y": 5.883,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "ore"
@@ -104,30 +115,35 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.855,
+        "z": 1.498
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "quarry_scrap_01",
       "model": "scrapHeap",
-      "name": "Ржавый лом",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": 9
+      "name": "Ржавый лом",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "scrap"
@@ -136,28 +152,1227 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 1.84
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-conveyor",
+      "model": "ore_conveyor",
+      "name": "resourceKlimQuarry-conveyor EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "conveyor",
+        "ore",
+        "industry"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-cut-face",
+      "model": "quarry_face",
+      "name": "resourceKlimQuarry-cut-face EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "quarry",
+        "resource",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "hp": 1200,
+      "maxHp": 1200
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-functional-01",
+      "model": "ore_outcrop",
+      "name": "resourceKlimQuarry-dressing-functional-01",
+      "position": {
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.463,
+        "z": 1.648
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-functional-02",
+      "model": "scrap_heap",
+      "name": "resourceKlimQuarry-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.155,
+        "z": 2.933
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-functional-03",
+      "model": "cargo_stack",
+      "name": "resourceKlimQuarry-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.619,
+        "z": 1.532
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-functional-04",
+      "model": "workshop_bench",
+      "name": "resourceKlimQuarry-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.355,
+        "z": 2.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-01",
+      "model": "concrete_wall",
+      "name": "resourceKlimQuarry-dressing-region-01",
+      "position": {
+        "x": 13.792,
+        "y": 0.0,
+        "z": 14.577
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.701,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.247,
+        "z": 2.038
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "resourceKlimQuarry-dressing-region-02",
+      "position": {
+        "x": 13.49,
+        "y": 0.0,
+        "z": 14.279
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.995,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.294,
+        "z": 1.394
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-03",
+      "model": "utility_pole",
+      "name": "resourceKlimQuarry-dressing-region-03",
+      "position": {
+        "x": 13.489,
+        "y": 0.0,
+        "z": 14.282
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.996,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.303,
+        "z": 1.715
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "resourceKlimQuarry-dressing-region-04",
+      "position": {
+        "x": 15.697,
+        "y": 0.0,
+        "z": 11.815
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.071,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.399,
+        "z": 1.641
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-05",
+      "model": "concrete_wall",
+      "name": "resourceKlimQuarry-dressing-region-05",
+      "position": {
+        "x": 15.802,
+        "y": 0.0,
+        "z": 11.905
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.071,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.713,
+        "z": 2.413
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "resourceKlimQuarry-dressing-region-06",
+      "position": {
+        "x": 15.799,
+        "y": 0.0,
+        "z": 11.914
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.889,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.345,
+        "z": 1.449
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-07",
+      "model": "utility_pole",
+      "name": "resourceKlimQuarry-dressing-region-07",
+      "position": {
+        "x": 15.792,
+        "y": 0.0,
+        "z": 11.92
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.888,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.289,
+        "z": 1.627
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "resourceKlimQuarry-dressing-region-08",
+      "position": {
+        "x": 15.694,
+        "y": 0.0,
+        "z": 13.243
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.944,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.497,
+        "z": 1.632
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-09",
+      "model": "concrete_wall",
+      "name": "resourceKlimQuarry-dressing-region-09",
+      "position": {
+        "x": 15.684,
+        "y": 0.0,
+        "z": 13.255
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.943,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.927,
+        "z": 2.319
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "resourceKlimQuarry-dressing-region-10",
+      "position": {
+        "x": 15.675,
+        "y": 0.0,
+        "z": 13.268
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.239,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.399,
+        "z": 1.354
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-11",
+      "model": "utility_pole",
+      "name": "resourceKlimQuarry-dressing-region-11",
+      "position": {
+        "x": 11.169,
+        "y": 0.0,
+        "z": 17.236
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.238,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.34,
+        "z": 1.886
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "resourceKlimQuarry-dressing-region-12",
+      "position": {
+        "x": 11.264,
+        "y": 0.0,
+        "z": 17.4
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.31,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.186,
+        "z": 1.624
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-13",
+      "model": "concrete_wall",
+      "name": "resourceKlimQuarry-dressing-region-13",
+      "position": {
+        "x": 11.266,
+        "y": 0.0,
+        "z": 17.396
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.31,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.726,
+        "z": 2.545
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "resourceKlimQuarry-dressing-region-14",
+      "position": {
+        "x": 9.935,
+        "y": 0.0,
+        "z": 18.194
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.989,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.328,
+        "z": 1.432
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-dressing-region-15",
+      "model": "utility_pole",
+      "name": "resourceKlimQuarry-dressing-region-15",
+      "position": {
+        "x": 9.709,
+        "y": 0.0,
+        "z": 17.786
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.989,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.911,
+        "y": 0.911,
+        "z": 0.911
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.334,
+        "z": 1.751
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-headframe",
+      "model": "gantry_crane",
+      "name": "resourceKlimQuarry-headframe EDITABLE",
+      "position": {
+        "x": -13.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 11.5,
+        "z": 5.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-landmark",
+      "model": "bucket-excavator",
+      "name": "Landmark bucket-excavator EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "bucket-excavator"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-canal",
+      "model": "water_channel",
+      "name": "resourceKlimQuarry-region-canal EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": -0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "water_channel",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-dam-bank",
+      "model": "wall",
+      "name": "resourceKlimQuarry-region-dam-bank EDITABLE",
+      "position": {
+        "x": -1.0,
+        "y": 1.2,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-pylon-0",
+      "model": "power_pylon",
+      "name": "resourceKlimQuarry-region-pylon-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-pylon-1",
+      "model": "power_pylon",
+      "name": "resourceKlimQuarry-region-pylon-1 EDITABLE",
+      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-pylon-2",
+      "model": "power_pylon",
+      "name": "resourceKlimQuarry-region-pylon-2 EDITABLE",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceKlimQuarry-region-pylon-3",
+      "model": "power_pylon",
+      "name": "resourceKlimQuarry-region-pylon-3 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 15,
-        "y": 0,
-        "z": 14
+      "name": "Место отдыха",      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -166,16 +1381,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 26,
       "tz": 26,
@@ -185,9 +1392,76 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "northern_sluices",
+  "kromkaVisualProfile": "ninth-dam-quarry-v1",
+  "ambientProfile": "wet-granite-quarry",
+  "anomalyDensity": 0.08,
+  "unityScene": "Assets/Scenes/Kromka/Locations/resourceKlimQuarry.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "quarry-service-ramp",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "resourceKlimQuarry-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

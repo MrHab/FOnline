@@ -238,20 +238,4 @@ namespace RealmOfAshes.World
         }
     }
 
-    /// <summary>
-    /// Stable ID for a location miniature placed by hand in GlobalMapAuthored.
-    /// Move the visual children freely; keep the anchor aligned with server data.
-    /// </summary>
-    [DisallowMultipleComponent]
-    public sealed class RoaGlobalMapNodeAnchor : MonoBehaviour
-    {
-        [SerializeField] private string _nodeId = string.Empty;
-
-        public string NodeId => _nodeId;
-
-        public void Configure(string nodeId)
-        {
-            _nodeId = nodeId ?? string.Empty;
-        }
-    }
 }

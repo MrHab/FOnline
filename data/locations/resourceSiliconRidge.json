@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "resourceSiliconRidge",
-  "name": "Кремниевая гряда",
+  "name": "Керамический уступ",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,117 +52,1216 @@
   "containers": [],
   "objects": [
     {
-      "id": "silicon_ore_01",
-      "model": "oreOutcrop",
-      "name": "Кремниевая жила",
-      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "id": "resourceSiliconRidge-conveyor",
+      "model": "ore_conveyor",
+      "name": "resourceSiliconRidge-conveyor EDITABLE",
       "position": {
-        "x": -9,
-        "y": 0,
-        "z": -7
+        "x": 12.0,
+        "y": 0.0,
+        "z": -7.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "solid",
+      "role": "structure",
       "tags": [
-        "resource",
-        "ore"
+        "conveyor",
+        "ore",
+        "industry"
       ],
-      "resourceType": "ore",
-      "hp": 6,
-      "maxHp": 6,
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "silicon_relay_01",
-      "model": "relayAntenna",
-      "name": "Разобранная антенна",
-      "url": "/assets/models/wasteland/relay_antenna.glb",
+      "id": "resourceSiliconRidge-cut-face",
+      "model": "quarry_face",
+      "name": "resourceSiliconRidge-cut-face EDITABLE",
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": -8
+        "x": 0.0,
+        "y": 0.0,
+        "z": 13.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 0.8,
-        "y": 0.8,
-        "z": 0.8
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "cover",
-        "electronics"
+        "quarry",
+        "resource",
+        "top-readable"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "hp": 1200,
+      "maxHp": 1200
     },
     {
-      "id": "silicon_scrap_01",
-      "model": "scrapHeap",
-      "name": "Электронный лом",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "id": "resourceSiliconRidge-dressing-functional-01",
+      "model": "ore_outcrop",
+      "name": "resourceSiliconRidge-dressing-functional-01",
       "position": {
-        "x": 5,
-        "y": 0,
-        "z": 9
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
       },
-      "collision": "resource",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "resource",
-        "scrap"
+        "resource_site",
+        "functional-dressing"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
+      "footprint": {
+        "x": 1.463,
+        "z": 1.648
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-functional-02",
+      "model": "scrap_heap",
+      "name": "resourceSiliconRidge-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.155,
+        "z": 2.933
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-functional-03",
+      "model": "cargo_stack",
+      "name": "resourceSiliconRidge-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.619,
+        "z": 1.532
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-functional-04",
+      "model": "workshop_bench",
+      "name": "resourceSiliconRidge-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.355,
+        "z": 2.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-01",
+      "model": "rubble_rock",
+      "name": "resourceSiliconRidge-dressing-region-01",
+      "position": {
+        "x": -11.041,
+        "y": 0.0,
+        "z": 20.475
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.178,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.503,
+        "z": 2.638
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-02",
+      "model": "deadwood",
+      "name": "resourceSiliconRidge-dressing-region-02",
+      "position": {
+        "x": -11.227,
+        "y": 0.0,
+        "z": 20.858
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.882,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.583,
+        "z": 2.126
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-03",
+      "model": "dry_bush",
+      "name": "resourceSiliconRidge-dressing-region-03",
+      "position": {
+        "x": -11.236,
+        "y": 0.0,
+        "z": 20.85
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.883,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.461,
+        "z": 1.68
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-04",
+      "model": "ore_outcrop",
+      "name": "resourceSiliconRidge-dressing-region-04",
+      "position": {
+        "x": -14.566,
+        "y": 0.0,
+        "z": 18.675
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.808,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.382,
+        "z": 1.68
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-05",
+      "model": "rubble_rock",
+      "name": "resourceSiliconRidge-dressing-region-05",
+      "position": {
+        "x": -14.483,
+        "y": 0.0,
+        "z": 18.563
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.808,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.031,
+        "z": 2.428
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-06",
+      "model": "deadwood",
+      "name": "resourceSiliconRidge-dressing-region-06",
+      "position": {
+        "x": -14.475,
+        "y": 0.0,
+        "z": 18.571
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.99,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.677,
+        "z": 2.149
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-07",
+      "model": "dry_bush",
+      "name": "resourceSiliconRidge-dressing-region-07",
+      "position": {
+        "x": -14.455,
+        "y": 0.0,
+        "z": 18.586
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.991,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.546,
+        "z": 1.731
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-08",
+      "model": "ore_outcrop",
+      "name": "resourceSiliconRidge-dressing-region-08",
+      "position": {
+        "x": -12.985,
+        "y": 0.0,
+        "z": 18.734
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.938,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.462,
+        "z": 1.674
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-09",
+      "model": "rubble_rock",
+      "name": "resourceSiliconRidge-dressing-region-09",
+      "position": {
+        "x": -13.004,
+        "y": 0.0,
+        "z": 18.72
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.938,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.962,
+        "y": 0.962,
+        "z": 0.962
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.232,
+        "z": 2.541
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-10",
+      "model": "deadwood",
+      "name": "resourceSiliconRidge-dressing-region-10",
+      "position": {
+        "x": -12.969,
+        "y": 0.0,
+        "z": 18.747
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.625,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.391,
+        "z": 1.926
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-11",
+      "model": "dry_bush",
+      "name": "resourceSiliconRidge-dressing-region-11",
+      "position": {
+        "x": -6.991,
+        "y": 0.0,
+        "z": 21.692
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.624,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.343,
+        "z": 1.443
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-12",
+      "model": "ore_outcrop",
+      "name": "resourceSiliconRidge-dressing-region-12",
+      "position": {
+        "x": -6.95,
+        "y": 0.0,
+        "z": 21.508
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.569,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.255,
+        "z": 1.682
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-13",
+      "model": "rubble_rock",
+      "name": "resourceSiliconRidge-dressing-region-13",
+      "position": {
+        "x": -6.941,
+        "y": 0.0,
+        "z": 21.513
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.569,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.626,
+        "z": 2.142
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-14",
+      "model": "deadwood",
+      "name": "resourceSiliconRidge-dressing-region-14",
+      "position": {
+        "x": -5.298,
+        "y": 0.0,
+        "z": 21.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.899,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.048,
+        "z": 1.362
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-dressing-region-15",
+      "model": "dry_bush",
+      "name": "resourceSiliconRidge-dressing-region-15",
+      "position": {
+        "x": -5.418,
+        "y": 0.0,
+        "z": 22.422
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.899,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.597,
+        "z": 1.336
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-headframe",
+      "model": "gantry_crane",
+      "name": "resourceSiliconRidge-headframe EDITABLE",
+      "position": {
+        "x": -13.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 11.5,
+        "z": 5.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-landmark",
+      "model": "white-cut-face",
+      "name": "Landmark white-cut-face EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "white-cut-face"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-chalk-cliff-0",
+      "model": "terrain_mound",
+      "name": "resourceSiliconRidge-region-chalk-cliff-0 EDITABLE",
+      "position": {
+        "x": -30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-chalk-cliff-1",
+      "model": "terrain_mound",
+      "name": "resourceSiliconRidge-region-chalk-cliff-1 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-chalk-cliff-2",
+      "model": "terrain_mound",
+      "name": "resourceSiliconRidge-region-chalk-cliff-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-chalk-cliff-3",
+      "model": "terrain_mound",
+      "name": "resourceSiliconRidge-region-chalk-cliff-3 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-chalk-cliff-4",
+      "model": "terrain_mound",
+      "name": "resourceSiliconRidge-region-chalk-cliff-4 EDITABLE",
+      "position": {
+        "x": 30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceSiliconRidge-region-karst-window",
+      "model": "ring_structure",
+      "name": "resourceSiliconRidge-region-karst-window EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 10.0,
+        "z": 10.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": -13,
-        "y": 0,
-        "z": 16
+      "name": "Место отдыха",      "position": {
+        "x": -13.0,
+        "y": 0.0,
+        "z": 16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -163,16 +1270,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 12,
       "tz": 27,
@@ -182,9 +1281,184 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "silicon_ore_01",
+      "model": "oreOutcrop",
+      "name": "Кремниевая жила",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": -7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 6,
+      "maxHp": 6,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.791,
+        "z": 1.337
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "silicon_relay_01",
+      "model": "relayAntenna",
+      "name": "Разобранная антенна",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.8,
+        "y": 0.8,
+        "z": 0.8
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "electronics"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.44,
+        "z": 1.12
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "silicon_scrap_01",
+      "model": "scrapHeap",
+      "name": "Электронный лом",      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 5,
+      "maxHp": 5,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 1.84
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "chalk_lowland",
+  "kromkaVisualProfile": "ceramic-chalk-escarpment-v1",
+  "ambientProfile": "chalk-and-static-wind",
+  "anomalyDensity": 0.22,
+  "unityScene": "Assets/Scenes/Kromka/Locations/resourceSiliconRidge.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "ceramic-upper-track",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "resourceSiliconRidge-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

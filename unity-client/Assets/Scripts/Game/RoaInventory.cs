@@ -48,14 +48,16 @@ namespace RealmOfAshes.Game
                 { "armor", new HashSet<string>(new[] { "leather", "metalArmor", "ballisticVest", "combatArmor", "hazmatSuit", "heavyArmor", "energySuit" }) },
                 { "helmet", new HashSet<string>(new[] { "weldedHelmet", "helmet", "tacticalHelmet", "assaultHelmet", "preWarHelmet" }) },
                 { "boots", new HashSet<string>(new[] { "boots", "scoutBoots", "reinforcedBoots", "assaultBoots" }) },
-                { "backpack", new HashSet<string>(new[] { "backpack" }) }
+                { "backpack", new HashSet<string>(new[] { "backpack" }) },
+                { "detector", new HashSet<string>(new[] { "artifactDetectorMk1", "artifactDetectorMk2", "artifactDetectorMk3" }) },
+                { "artifactBelt", new HashSet<string>(new[] { "artifactBelt2", "artifactBelt3", "artifactBelt4" }) }
             };
 
-        private static readonly string[] SlotOrder = { "weapon", "offhand", "armor", "helmet", "boots", "backpack" };
+        private static readonly string[] SlotOrder = { "weapon", "offhand", "armor", "helmet", "boots", "backpack", "detector", "artifactBelt" };
 
         private static readonly HashSet<string> MedicalItems = new HashSet<string>(new[]
         {
-            "medkit", "stim", "doctorBag", "antibiotics"
+            "medkit", "stim", "doctorBag", "antibiotics", "food", "water"
         });
 
         private static readonly HashSet<string> AmmoItems = new HashSet<string>(new[]
@@ -293,7 +295,8 @@ namespace RealmOfAshes.Game
             string backpack;
             bool backpackEquipped = _equipment.TryGetValue("backpack", out backpack)
                 && BaseId(backpack) == "backpack";
-            _carryCapacity = RoaItemData.CarryCapacity(strength, backpackEquipped);
+            float artifactCarry = _self?["artifactEffects"]?["carryKg"]?.ToObject<float>() ?? 0f;
+            _carryCapacity = RoaItemData.CarryCapacity(strength, backpackEquipped) + artifactCarry;
         }
 
         /// <summary>Первый слот, куда подходит предмет.</summary>
@@ -378,7 +381,9 @@ namespace RealmOfAshes.Game
 
                 int healed = ack["healed"]?.ToObject<int>() ?? 0;
                 string cured = ack["curedInjury"]?.ToString();
-                _status = !string.IsNullOrEmpty(cured)
+                _status = (ack["hydrated"]?.ToObject<float>() ?? 0f) > 0f
+                    ? "запас воды пополнен"
+                    : !string.IsNullOrEmpty(cured)
                     ? "вылечено: " + cured
                     : (healed > 0 ? "восстановлено HP: " + healed : "лечение выполнено");
             });
@@ -387,12 +392,14 @@ namespace RealmOfAshes.Game
         private void SubmitItemAction(string action, string itemRuntimeId)
         {
             if (_actionPending || Socket == null || Socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
+            if (action == "repair") itemRuntimeId = RepairRuntimeId(itemRuntimeId);
             string itemId = BaseId(itemRuntimeId);
             _actionPending = true;
             _status = "действие с предметом…";
 
             Socket.EmitWithAck("inventoryItemAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["action"] = action,
                 ["itemId"] = itemId,
                 ["itemRuntimeId"] = itemRuntimeId,
@@ -473,6 +480,7 @@ namespace RealmOfAshes.Game
             _status = string.IsNullOrEmpty(modificationId) ? "снятие детали…" : "установка детали…";
             Socket.EmitWithAck("inventoryItemAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["action"] = "modifyWeapon",
                 ["itemId"] = itemId,
                 ["itemRuntimeId"] = itemRuntimeId,
@@ -522,7 +530,61 @@ namespace RealmOfAshes.Game
 
         private float ItemCondition(string itemId)
         {
-            return _self?["itemConditions"]?[itemId]?.ToObject<float>() ?? 100f;
+            string baseId = BaseId(itemId);
+            string runtimeId = RepairRuntimeId(itemId);
+            foreach (string key in new[] { "weaponInventoryRuntime", "weaponModifications" })
+                if (_self?[key] is JArray records)
+                    foreach (JToken row in records)
+                        if (row["id"]?.ToString() == runtimeId && row["condition"] != null)
+                            return row["condition"].ToObject<float>();
+            return _self?["itemConditions"]?[baseId]?.ToObject<float>() ?? 100f;
+        }
+
+        private string RepairRuntimeId(string itemId)
+        {
+            string baseId = BaseId(itemId);
+            if (itemId != baseId) return itemId;
+            foreach (var entry in _equipment)
+                if (BaseId(entry.Value) == baseId) return entry.Value;
+            if (_self?["weaponInventoryRuntime"] is JArray records)
+                foreach (JToken row in records)
+                    if (row["baseId"]?.ToString() == baseId) return row["id"]?.ToString() ?? itemId;
+            return itemId;
+        }
+
+        public List<JObject> ArtifactsFor(string itemId)
+        {
+            var result = new List<JObject>();
+            if (_self?["artifactRecords"] is JArray records)
+                foreach (JObject row in records)
+                    if (row["itemId"]?.ToString() == itemId) result.Add((JObject)row.DeepClone());
+            return result;
+        }
+
+        public bool ArtifactEquipped(string recordId)
+        {
+            if (_self?["artifactSlots"] is JArray slots)
+                foreach (JToken slot in slots) if (slot.ToString() == recordId) return true;
+            return false;
+        }
+
+        public bool SubmitArtifactAction(string action, string recordId, Action<JObject> completed = null)
+        {
+            if (_actionPending || Socket == null || Socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return false;
+            _actionPending = true;
+            var payload = new Dictionary<string, object> { ["recordId"] = recordId, ["action"] = action };
+            // Append to the next free slot. A full belt must not silently replace an artifact.
+            payload["slotIndex"] = (_self?["artifactSlots"] as JArray)?.Count ?? 0;
+            Action<JObject> onAck = ack =>
+            {
+                _actionPending = false;
+                if (ack != null) Socket.ApplyGameplayAck(ack);
+                _status = ack?["ok"]?.ToObject<bool>() == true ? string.Empty : ack?["error"]?.ToString() ?? "Нет ответа сервера.";
+                completed?.Invoke(ack);
+            };
+            if (action == "stabilize") Socket.EmitWithAck("stabilizeArtifact", payload, onAck);
+            else Socket.EmitWithAck("artifactLoadoutAction", payload, onAck);
+            return true;
         }
 
         private void OnGUI()
@@ -731,10 +793,25 @@ namespace RealmOfAshes.Game
         // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
 
         public bool IsRepairable(string itemOrRuntimeId) { return RepairableItems.Contains(BaseId(itemOrRuntimeId)); }
+        public List<string> RepairableRuntimeIds(string itemId)
+        {
+            var result = new List<string>();
+            string baseId = BaseId(itemId);
+            foreach (var entry in _equipment)
+                if (BaseId(entry.Value) == baseId && !result.Contains(entry.Value)) result.Add(entry.Value);
+            if (_self?["weaponInventoryRuntime"] is JArray records)
+                foreach (JToken row in records)
+                {
+                    string id = row["id"]?.ToString();
+                    if (row["baseId"]?.ToString() == baseId && !string.IsNullOrEmpty(id) && !result.Contains(id)) result.Add(id);
+                }
+            if (result.Count == 0) result.Add(itemId);
+            return result;
+        }
         public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
         public bool IsFirearmItem(string itemOrRuntimeId) { return Firearms.Contains(BaseId(itemOrRuntimeId)); }
         public bool IsMedical(string itemOrRuntimeId) { return MedicalItems.Contains(BaseId(itemOrRuntimeId)); }
-        public float ConditionPercent(string itemOrRuntimeId) { return ItemCondition(BaseId(itemOrRuntimeId)); }
+        public float ConditionPercent(string itemOrRuntimeId) { return ItemCondition(itemOrRuntimeId); }
         /// <summary>repair / unload / salvage — inventoryItemAction сервера.</summary>
         public void ItemAction(string action, string itemRuntimeId) { SubmitItemAction(action, itemRuntimeId); }
 
@@ -744,6 +821,10 @@ namespace RealmOfAshes.Game
         public string ModifySlot { get { return _modifySlot; } set { _modifySlot = value ?? "barrel"; } }
         public bool ActionPending { get { return _actionPending; } }
         public string ActionStatus { get { return _status ?? string.Empty; } }
+        public string ArtifactStatus
+        {
+            get { return GetComponent<RoaHud>()?.ArtifactStatus ?? string.Empty; }
+        }
 
         /// <summary>Открыть верстак для огнестрела (openWeaponModificationWorkbench web).</summary>
         public bool OpenWorkbench(string itemRuntimeId)
@@ -760,7 +841,7 @@ namespace RealmOfAshes.Game
         public void SubmitModification(string runtimeId, string slot, string modificationId) { SubmitWeaponModification(runtimeId, slot, modificationId); }
         public bool CanAffordCost(Dictionary<string, int> cost) { return CanAfford(cost); }
         public int CountOf(string itemId) { return InventoryQty(itemId); }
-        public float ConditionOf(string runtimeId) { return ItemCondition(BaseId(runtimeId)); }
+        public float ConditionOf(string runtimeId) { return ItemCondition(runtimeId); }
 
         /// <summary>Сигнатура содержимого рюкзака — для перестроения списков при изменении.</summary>
         public string InventorySignature()
@@ -885,6 +966,8 @@ namespace RealmOfAshes.Game
             if (slot == "helmet") return "шлем";
             if (slot == "boots") return "обувь";
             if (slot == "backpack") return "рюкзак";
+            if (slot == "detector") return "детектор";
+            if (slot == "artifactBelt") return "арт-пояс";
             return slot;
         }
 

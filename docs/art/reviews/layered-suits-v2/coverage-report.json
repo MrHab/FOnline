@@ -1,0 +1,1566 @@
+{
+  "schema": "realm.layered-suit-coverage.v2",
+  "version": "2-9e8c2a4e",
+  "rows": [
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_slim",
+      "boots": "integrated",
+      "suitSha256": "67e46637f4e62cfeff7299395e48b89660343f87a341f5d3d5b5de165fa5f6c0",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_slim",
+      "boots": "boots",
+      "suitSha256": "67e46637f4e62cfeff7299395e48b89660343f87a341f5d3d5b5de165fa5f6c0",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "5342320832e4bf64aec47614ac85ea7a8d31c80495f3f6445290e2b9a72a484c",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_slim",
+      "boots": "scoutBoots",
+      "suitSha256": "67e46637f4e62cfeff7299395e48b89660343f87a341f5d3d5b5de165fa5f6c0",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "917683ede47ba889730285806cb788aab12e830fb141dbdacc8eccf79f89aade",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_slim",
+      "boots": "reinforcedBoots",
+      "suitSha256": "67e46637f4e62cfeff7299395e48b89660343f87a341f5d3d5b5de165fa5f6c0",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "a3da78bce3ff801802ea5caea6d0623506992428650e1be8c79a75d7524d2a1e",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_slim",
+      "boots": "assaultBoots",
+      "suitSha256": "67e46637f4e62cfeff7299395e48b89660343f87a341f5d3d5b5de165fa5f6c0",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "1df3c0dcee0a709ed6ccef511d43c36e6ce3a5356ae35dfb01b50e561d3a09ad",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_medium",
+      "boots": "integrated",
+      "suitSha256": "fbe0a22beed7e0128bcb49177287f4d2a86188d72f562e93cd9b9b10590889db",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_medium",
+      "boots": "boots",
+      "suitSha256": "fbe0a22beed7e0128bcb49177287f4d2a86188d72f562e93cd9b9b10590889db",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "078252253c9b740cd9f8c6d18397991731ab7fc329a4ee9db954130c3c830a6d",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_medium",
+      "boots": "scoutBoots",
+      "suitSha256": "fbe0a22beed7e0128bcb49177287f4d2a86188d72f562e93cd9b9b10590889db",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "d93c52749d17dbfc15436303bcb052a5a5fe3496e26281dfaed6a48afd19256b",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_medium",
+      "boots": "reinforcedBoots",
+      "suitSha256": "fbe0a22beed7e0128bcb49177287f4d2a86188d72f562e93cd9b9b10590889db",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "5eb38eab145a6459efecea819df4bcc8691e7a7b70ab69a351901db741e66bf7",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_medium",
+      "boots": "assaultBoots",
+      "suitSha256": "fbe0a22beed7e0128bcb49177287f4d2a86188d72f562e93cd9b9b10590889db",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "4bb28c7f7cb4d1fac74196c2c323b41fa7cd76ab26046fb08b2f74c75c847b62",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_large",
+      "boots": "integrated",
+      "suitSha256": "bacc5b143d9358482ecdd28bd1390849ce7091cedeb776b369f1b50f65b1eca4",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_large",
+      "boots": "boots",
+      "suitSha256": "bacc5b143d9358482ecdd28bd1390849ce7091cedeb776b369f1b50f65b1eca4",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "0011cd0c251b942b88272d129a2fe70416cf42e09518ddf37698cb6a9f14e73a",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_large",
+      "boots": "scoutBoots",
+      "suitSha256": "bacc5b143d9358482ecdd28bd1390849ce7091cedeb776b369f1b50f65b1eca4",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "4553e3b9b9f05f598cd93dd0ac461e4f952572864ea45edba2abc7705ca265f1",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_large",
+      "boots": "reinforcedBoots",
+      "suitSha256": "bacc5b143d9358482ecdd28bd1390849ce7091cedeb776b369f1b50f65b1eca4",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "1b08d862b2977499f0b6515aad38da9bc1d19edf0017b32da40ac8cabd605e00",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "female_large",
+      "boots": "assaultBoots",
+      "suitSha256": "bacc5b143d9358482ecdd28bd1390849ce7091cedeb776b369f1b50f65b1eca4",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "1588970cb76531eb3a59e25a92b04c83121c1ab49f940f2b3efe84214dbdc97a",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_slim",
+      "boots": "integrated",
+      "suitSha256": "bc3408fd29b087e0ad44c66a6339e14887b040c5ce74f9e50a3fc48cc68b846c",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_slim",
+      "boots": "boots",
+      "suitSha256": "bc3408fd29b087e0ad44c66a6339e14887b040c5ce74f9e50a3fc48cc68b846c",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "7d555b931c38af36b9446b2245c56a2fccc9447996e13790414745f2bfb0631c",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_slim",
+      "boots": "scoutBoots",
+      "suitSha256": "bc3408fd29b087e0ad44c66a6339e14887b040c5ce74f9e50a3fc48cc68b846c",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "ce8b7bcc299c38cdcdcbf85d9e02bad981bc9185521f4cfaeb9afcd3b1b71aeb",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_slim",
+      "boots": "reinforcedBoots",
+      "suitSha256": "bc3408fd29b087e0ad44c66a6339e14887b040c5ce74f9e50a3fc48cc68b846c",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "974f4a7ad55124479e3ae2d25a1f1250900065b029437ddaa3d78980b241577a",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_slim",
+      "boots": "assaultBoots",
+      "suitSha256": "bc3408fd29b087e0ad44c66a6339e14887b040c5ce74f9e50a3fc48cc68b846c",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "02b3acd9a8c655f3964b05985fc32beb908291f9f9349a6450888f9d40be1027",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_medium",
+      "boots": "integrated",
+      "suitSha256": "9ce06d2b694f67771b422528237737f7888e0f729c682f0eae676cfe2667c7a6",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_medium",
+      "boots": "boots",
+      "suitSha256": "9ce06d2b694f67771b422528237737f7888e0f729c682f0eae676cfe2667c7a6",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "9b257cf47a36e05cf4ad009346b2ca76d717e47af33d9eec2f549b50f0007879",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_medium",
+      "boots": "scoutBoots",
+      "suitSha256": "9ce06d2b694f67771b422528237737f7888e0f729c682f0eae676cfe2667c7a6",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "8e4ad58d3036733602e5b48c8f73af48bd3f5c700362d829fece8b5eca37ced7",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_medium",
+      "boots": "reinforcedBoots",
+      "suitSha256": "9ce06d2b694f67771b422528237737f7888e0f729c682f0eae676cfe2667c7a6",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "7fac227047d171e14017a6ea91cc0a7eb9d3a8ff31393e80fce332da279062d6",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_medium",
+      "boots": "assaultBoots",
+      "suitSha256": "9ce06d2b694f67771b422528237737f7888e0f729c682f0eae676cfe2667c7a6",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "430151bc201d33bb770e4fc1967c36d922efcefaa213a94f65b40ae57b0c8bca",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_large",
+      "boots": "integrated",
+      "suitSha256": "5702ad890028548d8b13a2be671b445fad2c3d5aa480b722a3f5914beb50af25",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_large",
+      "boots": "boots",
+      "suitSha256": "5702ad890028548d8b13a2be671b445fad2c3d5aa480b722a3f5914beb50af25",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "ffb7151e3fcc59c534ee3d95e00679db09f4a90510bcdecf9ec1228a300a6f9a",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_large",
+      "boots": "scoutBoots",
+      "suitSha256": "5702ad890028548d8b13a2be671b445fad2c3d5aa480b722a3f5914beb50af25",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "553ed76aafc3c393248450739a135a9201eeca858dbe9c68ff365b5706d0ee47",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_large",
+      "boots": "reinforcedBoots",
+      "suitSha256": "5702ad890028548d8b13a2be671b445fad2c3d5aa480b722a3f5914beb50af25",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "6da5cfb15621016b2c1c675c0e4ce72a997e45ceda27266bee3f0ed6525b33b6",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "hazmatSuit",
+      "bodyId": "male_large",
+      "boots": "assaultBoots",
+      "suitSha256": "5702ad890028548d8b13a2be671b445fad2c3d5aa480b722a3f5914beb50af25",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "80b24331931d8131937f9eed1a91d64c35376f8db4792d109e02e5dc297fc761",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_slim",
+      "boots": "integrated",
+      "suitSha256": "7e61ca28c8c5281a0eed5f9cad475114c5251832d164844054bb1cf7d232cad9",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_slim",
+      "boots": "boots",
+      "suitSha256": "7e61ca28c8c5281a0eed5f9cad475114c5251832d164844054bb1cf7d232cad9",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "5342320832e4bf64aec47614ac85ea7a8d31c80495f3f6445290e2b9a72a484c",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_slim",
+      "boots": "scoutBoots",
+      "suitSha256": "7e61ca28c8c5281a0eed5f9cad475114c5251832d164844054bb1cf7d232cad9",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "917683ede47ba889730285806cb788aab12e830fb141dbdacc8eccf79f89aade",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_slim",
+      "boots": "reinforcedBoots",
+      "suitSha256": "7e61ca28c8c5281a0eed5f9cad475114c5251832d164844054bb1cf7d232cad9",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "a3da78bce3ff801802ea5caea6d0623506992428650e1be8c79a75d7524d2a1e",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_slim",
+      "boots": "assaultBoots",
+      "suitSha256": "7e61ca28c8c5281a0eed5f9cad475114c5251832d164844054bb1cf7d232cad9",
+      "bodySha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4",
+      "bootSha256": "1df3c0dcee0a709ed6ccef511d43c36e6ce3a5356ae35dfb01b50e561d3a09ad",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5960,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11072,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_medium",
+      "boots": "integrated",
+      "suitSha256": "5b9e2f7c6fd37d813ce847933de0ec357ecaaccc5a5abbafe54d8470ee7ebd75",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_medium",
+      "boots": "boots",
+      "suitSha256": "5b9e2f7c6fd37d813ce847933de0ec357ecaaccc5a5abbafe54d8470ee7ebd75",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "078252253c9b740cd9f8c6d18397991731ab7fc329a4ee9db954130c3c830a6d",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_medium",
+      "boots": "scoutBoots",
+      "suitSha256": "5b9e2f7c6fd37d813ce847933de0ec357ecaaccc5a5abbafe54d8470ee7ebd75",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "d93c52749d17dbfc15436303bcb052a5a5fe3496e26281dfaed6a48afd19256b",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_medium",
+      "boots": "reinforcedBoots",
+      "suitSha256": "5b9e2f7c6fd37d813ce847933de0ec357ecaaccc5a5abbafe54d8470ee7ebd75",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "5eb38eab145a6459efecea819df4bcc8691e7a7b70ab69a351901db741e66bf7",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_medium",
+      "boots": "assaultBoots",
+      "suitSha256": "5b9e2f7c6fd37d813ce847933de0ec357ecaaccc5a5abbafe54d8470ee7ebd75",
+      "bodySha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140",
+      "bootSha256": "4bb28c7f7cb4d1fac74196c2c323b41fa7cd76ab26046fb08b2f74c75c847b62",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5928,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3044,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2068,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11040,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_large",
+      "boots": "integrated",
+      "suitSha256": "6b20c3537bbe509d5561f1545cf49dd70c6e82841081662682f1fa1d5e495fba",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": null,
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_large",
+      "boots": "boots",
+      "suitSha256": "6b20c3537bbe509d5561f1545cf49dd70c6e82841081662682f1fa1d5e495fba",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "0011cd0c251b942b88272d129a2fe70416cf42e09518ddf37698cb6a9f14e73a",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_large",
+      "boots": "scoutBoots",
+      "suitSha256": "6b20c3537bbe509d5561f1545cf49dd70c6e82841081662682f1fa1d5e495fba",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "4553e3b9b9f05f598cd93dd0ac461e4f952572864ea45edba2abc7705ca265f1",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_large",
+      "boots": "reinforcedBoots",
+      "suitSha256": "6b20c3537bbe509d5561f1545cf49dd70c6e82841081662682f1fa1d5e495fba",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "1b08d862b2977499f0b6515aad38da9bc1d19edf0017b32da40ac8cabd605e00",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "female_large",
+      "boots": "assaultBoots",
+      "suitSha256": "6b20c3537bbe509d5561f1545cf49dd70c6e82841081662682f1fa1d5e495fba",
+      "bodySha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd",
+      "bootSha256": "1588970cb76531eb3a59e25a92b04c83121c1ab49f940f2b3efe84214dbdc97a",
+      "kneeHeight": 0.5534142255783081,
+      "zones": {
+        "foot": {
+          "samples": 5872,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3042,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2102,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 11016,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_slim",
+      "boots": "integrated",
+      "suitSha256": "4a2879964fcc88ba4d9e2918da2322c792d26b891b3058b9a51d087709f9ba54",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_slim",
+      "boots": "boots",
+      "suitSha256": "4a2879964fcc88ba4d9e2918da2322c792d26b891b3058b9a51d087709f9ba54",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "7d555b931c38af36b9446b2245c56a2fccc9447996e13790414745f2bfb0631c",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_slim",
+      "boots": "scoutBoots",
+      "suitSha256": "4a2879964fcc88ba4d9e2918da2322c792d26b891b3058b9a51d087709f9ba54",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "ce8b7bcc299c38cdcdcbf85d9e02bad981bc9185521f4cfaeb9afcd3b1b71aeb",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_slim",
+      "boots": "reinforcedBoots",
+      "suitSha256": "4a2879964fcc88ba4d9e2918da2322c792d26b891b3058b9a51d087709f9ba54",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "974f4a7ad55124479e3ae2d25a1f1250900065b029437ddaa3d78980b241577a",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_slim",
+      "boots": "assaultBoots",
+      "suitSha256": "4a2879964fcc88ba4d9e2918da2322c792d26b891b3058b9a51d087709f9ba54",
+      "bodySha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d",
+      "bootSha256": "02b3acd9a8c655f3964b05985fc32beb908291f9f9349a6450888f9d40be1027",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5632,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3118,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2146,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10896,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_medium",
+      "boots": "integrated",
+      "suitSha256": "1b0aab4fc9a6855f12f80af2960c43653d69443aebfd4bad9613ea98129cf67b",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_medium",
+      "boots": "boots",
+      "suitSha256": "1b0aab4fc9a6855f12f80af2960c43653d69443aebfd4bad9613ea98129cf67b",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "9b257cf47a36e05cf4ad009346b2ca76d717e47af33d9eec2f549b50f0007879",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_medium",
+      "boots": "scoutBoots",
+      "suitSha256": "1b0aab4fc9a6855f12f80af2960c43653d69443aebfd4bad9613ea98129cf67b",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "8e4ad58d3036733602e5b48c8f73af48bd3f5c700362d829fece8b5eca37ced7",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_medium",
+      "boots": "reinforcedBoots",
+      "suitSha256": "1b0aab4fc9a6855f12f80af2960c43653d69443aebfd4bad9613ea98129cf67b",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "7fac227047d171e14017a6ea91cc0a7eb9d3a8ff31393e80fce332da279062d6",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_medium",
+      "boots": "assaultBoots",
+      "suitSha256": "1b0aab4fc9a6855f12f80af2960c43653d69443aebfd4bad9613ea98129cf67b",
+      "bodySha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046",
+      "bootSha256": "430151bc201d33bb770e4fc1967c36d922efcefaa213a94f65b40ae57b0c8bca",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5630,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3170,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2152,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10952,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_large",
+      "boots": "integrated",
+      "suitSha256": "01f45246d962cedd95b84b1b1c1b824ae7c3b5200ac4de436fa0005f11d6a126",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": null,
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_large",
+      "boots": "boots",
+      "suitSha256": "01f45246d962cedd95b84b1b1c1b824ae7c3b5200ac4de436fa0005f11d6a126",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "ffb7151e3fcc59c534ee3d95e00679db09f4a90510bcdecf9ec1228a300a6f9a",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_large",
+      "boots": "scoutBoots",
+      "suitSha256": "01f45246d962cedd95b84b1b1c1b824ae7c3b5200ac4de436fa0005f11d6a126",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "553ed76aafc3c393248450739a135a9201eeca858dbe9c68ff365b5706d0ee47",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_large",
+      "boots": "reinforcedBoots",
+      "suitSha256": "01f45246d962cedd95b84b1b1c1b824ae7c3b5200ac4de436fa0005f11d6a126",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "6da5cfb15621016b2c1c675c0e4ce72a997e45ceda27266bee3f0ed6525b33b6",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    },
+    {
+      "itemId": "energySuit",
+      "bodyId": "male_large",
+      "boots": "assaultBoots",
+      "suitSha256": "01f45246d962cedd95b84b1b1c1b824ae7c3b5200ac4de436fa0005f11d6a126",
+      "bodySha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7",
+      "bootSha256": "80b24331931d8131937f9eed1a91d64c35376f8db4792d109e02e5dc297fc761",
+      "kneeHeight": 0.5478236675262451,
+      "zones": {
+        "foot": {
+          "samples": 5584,
+          "uncovered": 0
+        },
+        "calf": {
+          "samples": 3220,
+          "uncovered": 0
+        },
+        "thigh": {
+          "samples": 2164,
+          "uncovered": 0
+        }
+      },
+      "surfaceSamples": 10968,
+      "uncoveredSamples": 0,
+      "examples": []
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "kromka.migrationAliases.v1",
+  "version": 1,
+  "targetWorldRevision": "kromka-1",
+  "factions": {
+    "old_klim": "uprava",
+    "scrap_union": "free_artels",
+    "relay_order": "contour",
+    "caravans": "tract_league"
+  },
+  "creatures": {
+    "ghoul": "burned_human",
+    "super_mutant": "fold_mutant",
+    "radscorpion": "burrower",
+    "mutant_ant": "dustling",
+    "gecko": "listener"
+  },
+  "preservedLocationIds": [
+    "settlement",
+    "caravanCamp",
+    "scrapTown",
+    "relayStation",
+    "roadOutpost",
+    "klimAmmoWorks",
+    "scrapOutpost",
+    "scrapFoundry",
+    "relayOutpost",
+    "relayWorkshop",
+    "solarArray",
+    "oldDepot",
+    "resourceDryWaterPump",
+    "resourceChemSpring",
+    "resourceIronMine",
+    "resourceKlimQuarry",
+    "resourceOilPump",
+    "resourceOldKlimFarm",
+    "resourceScrapFields",
+    "resourceSiliconRidge",
+    "resourceTireDepot",
+    "antHive",
+    "geckoCanyon",
+    "radscorpionNest",
+    "mutantCrater",
+    "randomAshGrove",
+    "randomDryBasin",
+    "randomRuinedRoad",
+    "randomEncounter",
+    "wasteland"
+  ]
+}

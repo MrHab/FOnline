@@ -1,0 +1,399 @@
+{
+  "schema": "kromka.worldLayoutSeed.v1",
+  "version": 1,
+  "worldRevision": "kromka-1",
+  "note": "Одноразовая раскладка для создания новой Unity-сцены. После генерации пространственным источником является Assets/Scenes/Kromka/KromkaGlobalMap.unity.",
+  "grid": {
+    "cols": 38,
+    "rows": 30,
+    "cellPoints": 10,
+    "cellKm": 10
+  },
+  "regions": [
+    {
+      "id": "northern_sluices",
+      "displayName": "Северные затворы",
+      "visualProfile": "wet-concrete-sluices",
+      "dangerBand": 2,
+      "center": [155, 262],
+      "size": [240, 72],
+      "unityBoundary": [[35, 285], [80, 297], [245, 292], [275, 270], [252, 238], [205, 226], [142, 234], [68, 245]]
+    },
+    {
+      "id": "middle_vein",
+      "displayName": "Срединная жила",
+      "visualProfile": "river-valley-settled",
+      "dangerBand": 1,
+      "center": [184, 195],
+      "size": [152, 104],
+      "unityBoundary": [[118, 238], [202, 242], [252, 216], [250, 174], [222, 140], [160, 142], [118, 169], [104, 205]]
+    },
+    {
+      "id": "ore_arc",
+      "displayName": "Рудная дуга",
+      "visualProfile": "rust-quarries-foundries",
+      "dangerBand": 2,
+      "center": [82, 220],
+      "size": [150, 140],
+      "unityBoundary": [[18, 260], [52, 286], [126, 276], [156, 242], [148, 205], [126, 168], [72, 150], [25, 176]]
+    },
+    {
+      "id": "tract_isthmus",
+      "displayName": "Трактовый перешеек",
+      "visualProfile": "road-rail-caravan",
+      "dangerBand": 1,
+      "center": [175, 145],
+      "size": [350, 82],
+      "unityBoundary": [[0, 178], [72, 184], [132, 177], [195, 168], [258, 145], [312, 126], [307, 99], [244, 118], [181, 132], [120, 139], [58, 142], [0, 138]]
+    },
+    {
+      "id": "chalk_lowland",
+      "displayName": "Меловая низь",
+      "visualProfile": "white-dust-reeds",
+      "dangerBand": 3,
+      "center": [307, 88],
+      "size": [145, 136],
+      "unityBoundary": [[238, 148], [300, 154], [372, 123], [378, 48], [326, 18], [268, 33], [242, 76]]
+    },
+    {
+      "id": "glasslands",
+      "displayName": "Стеколье",
+      "visualProfile": "fused-soil-electric-haze",
+      "dangerBand": 4,
+      "center": [306, 184],
+      "size": [150, 154],
+      "unityBoundary": [[230, 245], [298, 270], [365, 242], [378, 178], [360, 118], [318, 100], [269, 123], [243, 166]]
+    },
+    {
+      "id": "zero_basin",
+      "displayName": "Нулевая котловина",
+      "visualProfile": "black-basin-blue-glow",
+      "dangerBand": 5,
+      "center": [215, 58],
+      "size": [232, 120],
+      "unityBoundary": [[102, 108], [164, 124], [235, 118], [303, 98], [334, 52], [302, 8], [158, 5], [104, 43]]
+    },
+    {
+      "id": "silent_ring",
+      "displayName": "Глухой обвод",
+      "visualProfile": "dead-forest-signal-fog",
+      "dangerBand": 5,
+      "center": [
+        190,
+        150
+      ],
+      "size": [
+        372,
+        292
+      ],
+      "ring": true,
+      "unityBoundary": [[4, 296], [376, 296], [376, 4], [4, 4]]
+    }
+  ],
+  "locations": [
+    {
+      "id": "klimAmmoWorks",
+      "x": 145.0,
+      "z": 274.0
+    },
+    {
+      "id": "resourceKlimQuarry",
+      "x": 112.0,
+      "z": 250.0
+    },
+    {
+      "id": "sluiceCity",
+      "x": 190.0,
+      "z": 262.0
+    },
+    {
+      "id": "clanHydroNode2",
+      "x": 235.0,
+      "z": 271.0
+    },
+    {
+      "id": "settlement",
+      "x": 195.0,
+      "z": 205.0
+    },
+    {
+      "id": "roadOutpost",
+      "x": 166.0,
+      "z": 224.0
+    },
+    {
+      "id": "resourceDryWaterPump",
+      "x": 226.0,
+      "z": 229.0
+    },
+    {
+      "id": "resourceOldKlimFarm",
+      "x": 151.0,
+      "z": 190.0
+    },
+    {
+      "id": "clanFilterT6",
+      "x": 235.0,
+      "z": 184.0
+    },
+    {
+      "id": "scrapTown",
+      "x": 76.0,
+      "z": 210.0
+    },
+    {
+      "id": "scrapOutpost",
+      "x": 116.0,
+      "z": 206.0
+    },
+    {
+      "id": "scrapFoundry",
+      "x": 52.0,
+      "z": 236.0
+    },
+    {
+      "id": "resourceIronMine",
+      "x": 58.0,
+      "z": 252.0
+    },
+    {
+      "id": "resourceScrapFields",
+      "x": 95.0,
+      "z": 237.0
+    },
+    {
+      "id": "antHive",
+      "x": 42.0,
+      "z": 174.0
+    },
+    {
+      "id": "clanOreExchange",
+      "x": 84.0,
+      "z": 265.0
+    },
+    {
+      "id": "clanFactoryCycle",
+      "x": 128.0,
+      "z": 244.0
+    },
+    {
+      "id": "caravanCamp",
+      "x": 125.0,
+      "z": 155.0
+    },
+    {
+      "id": "oldDepot",
+      "x": 170.0,
+      "z": 161.0
+    },
+    {
+      "id": "resourceTireDepot",
+      "x": 82.0,
+      "z": 144.0
+    },
+    {
+      "id": "clanDepotBypass",
+      "x": 210.0,
+      "z": 145.0
+    },
+    {
+      "id": "resourceSiliconRidge",
+      "x": 274.0,
+      "z": 139.0
+    },
+    {
+      "id": "geckoCanyon",
+      "x": 332.0,
+      "z": 83.0
+    },
+    {
+      "id": "secondHaven",
+      "x": 297.0,
+      "z": 110.0
+    },
+    {
+      "id": "clanChalkSluice",
+      "x": 267.0,
+      "z": 88.0
+    },
+    {
+      "id": "relayStation",
+      "x": 300.0,
+      "z": 181.0
+    },
+    {
+      "id": "relayOutpost",
+      "x": 272.0,
+      "z": 205.0
+    },
+    {
+      "id": "relayWorkshop",
+      "x": 330.0,
+      "z": 196.0
+    },
+    {
+      "id": "solarArray",
+      "x": 345.0,
+      "z": 154.0
+    },
+    {
+      "id": "mutantCrater",
+      "x": 315.0,
+      "z": 143.0
+    },
+    {
+      "id": "vectorLab",
+      "x": 338.0,
+      "z": 225.0
+    },
+    {
+      "id": "clanRelayEast",
+      "x": 358.0,
+      "z": 184.0
+    },
+    {
+      "id": "resourceChemSpring",
+      "x": 168.0,
+      "z": 76.0
+    },
+    {
+      "id": "resourceOilPump",
+      "x": 147.0,
+      "z": 45.0
+    },
+    {
+      "id": "radscorpionNest",
+      "x": 286.0,
+      "z": 34.0
+    },
+    {
+      "id": "balanceBunker",
+      "x": 247.0,
+      "z": 49.0
+    },
+    {
+      "id": "cascadeRegenerator",
+      "x": 205.0,
+      "z": 65.0
+    },
+    {
+      "id": "clanFortZero",
+      "x": 220.0,
+      "z": 22.0
+    },
+    {
+      "id": "wasteland",
+      "x": 78.0,
+      "z": 65.0
+    }
+  ],
+  "routes": [
+    {
+      "id": "tesma_service_road",
+      "displayName": "Дорога вдоль Тесьмы",
+      "kind": "road",
+      "travelFactor": 0.62,
+      "widthKm": 1.2,
+      "points": [
+        [184.0, 286.0],
+        [174.0, 250.0],
+        [180.0, 222.0],
+        [195.0, 205.0],
+        [211.0, 160.0],
+        [207.0, 116.0],
+        [205.0, 65.0]
+      ]
+    },
+    {
+      "id": "cascade_canal",
+      "displayName": "Канал Каскада",
+      "kind": "cascade_canal",
+      "travelFactor": 0.78,
+      "widthKm": 0.8,
+      "points": [
+        [220.0, 292.0],
+        [216.0, 262.0],
+        [211.0, 228.0],
+        [205.0, 205.0],
+        [216.0, 171.0],
+        [225.0, 132.0],
+        [220.0, 96.0],
+        [205.0, 65.0]
+      ]
+    },
+    {
+      "id": "ore_freight_rail",
+      "displayName": "Рудная ветвь",
+      "kind": "railway",
+      "travelFactor": 0.55,
+      "widthKm": 0.7,
+      "points": [
+        [28.0, 246.0],
+        [74.0, 214.0],
+        [120.0, 201.0],
+        [195.0, 205.0],
+        [254.0, 196.0],
+        [300.0, 180.0],
+        [364.0, 158.0]
+      ]
+    },
+    {
+      "id": "tract_main",
+      "displayName": "Большой Тракт",
+      "kind": "road",
+      "travelFactor": 0.5,
+      "widthKm": 1.4,
+      "points": [
+        [0.0, 155.0],
+        [54.0, 155.0],
+        [125.0, 155.0],
+        [195.0, 205.0],
+        [245.0, 165.0],
+        [295.0, 110.0],
+        [380.0, 85.0]
+      ]
+    },
+    {
+      "id": "zero_service_line",
+      "displayName": "Служебная линия Нуля",
+      "kind": "service_tunnel",
+      "travelFactor": 0.7,
+      "widthKm": 0.5,
+      "points": [
+        [125.0, 155.0],
+        [160.0, 126.0],
+        [205.0, 91.0],
+        [205.0, 65.0],
+        [245.0, 50.0],
+        [304.0, 54.0]
+      ]
+    }
+  ],
+  "migration": [
+    {
+      "legacyArea": "north-west",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    },
+    {
+      "legacyArea": "north-east",
+      "targetLocationId": "scrapTown",
+      "spawnId": "razdolye-gate"
+    },
+    {
+      "legacyArea": "south-west",
+      "targetLocationId": "caravanCamp",
+      "spawnId": "crossroads-yard"
+    },
+    {
+      "legacyArea": "south-east",
+      "targetLocationId": "relayStation",
+      "spawnId": "contour-three-airlock"
+    },
+    {
+      "legacyArea": "unknown",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    }
+  ]
+}

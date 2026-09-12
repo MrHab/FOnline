@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using UnityEngine;
@@ -17,8 +18,11 @@ namespace RealmOfAshes.Game
     public sealed class RoaPipboy : MonoBehaviour
     {
         private const float RemoteHealRange = 4.2f;
-        public static readonly string[] PrimaryFactionIds = { "old_klim", "scrap_union", "relay_order" };
-        public const string FactionGroupsExplanation = "Независимые поселения и караваны не имеют шкалы репутации. Рейдеры, мутанты, гули и дикие существа — угрозы, а не фракции игрока.";
+        public static readonly string[] PrimaryFactionIds =
+        {
+            "uprava", "free_artels", "contour", "tract_league", "seconds", "continuity"
+        };
+        public const string FactionGroupsExplanation = "Наёмник не вступает во фракцию навсегда: репутация открывает временные контракты, но работа на одну сторону может ухудшить отношения с другой.";
 
         public RoaSocketClient Socket;
         public RoaRemotePlayers RemotePlayers;
@@ -59,12 +63,15 @@ namespace RealmOfAshes.Game
         private Vector2 _factionsScroll;
         private Vector2 _radioScroll;
         private JObject _wasteland;
+        private JArray _factionCatalog = new JArray();
         private bool _worldRequestPending;
         private float _worldRefreshAt;
         private string _worldError = string.Empty;
         private int _radioChannel;
         private Rect _stagingRect;
         private bool _stagingVisible;
+        private JObject _medicalConsentRequest;
+        private JObject _playerTrade;
 
         public bool IsOpen { get { return _open; } }
 
@@ -77,11 +84,14 @@ namespace RealmOfAshes.Game
         /// <summary>Идёт ли запрос прокачки и его статус — для блокировки кнопок.</summary>
         public bool ProgressionPending { get { return _pending; } }
         public string ProgressionStatus { get { return _status ?? string.Empty; } }
+        public JObject MedicalConsentRequest { get { return _medicalConsentRequest; } }
+        public JObject PlayerTrade { get { return _playerTrade; } }
 
         // ---- Фасад для канва-страниц терминала (RoaPipboyCanvas) ----
 
         /// <summary>Авторитетная сводка пустоши (/api/wasteland → sim); null, пока не получена.</summary>
         public JObject Wasteland { get { return _wasteland; } }
+        public JArray FactionCatalog { get { return _factionCatalog; } }
         public string WorldError { get { return _worldError ?? string.Empty; } }
         public bool WorldRequestPending { get { return _worldRequestPending; } }
 
@@ -115,10 +125,170 @@ namespace RealmOfAshes.Game
             SendNearbyAction(target, action);
         }
 
+        public void SubmitPersonalBaseInvite(PublicPlayer target)
+        {
+            SubmitPersonalBasePermission(target, "guest");
+        }
+
+        public void SubmitPersonalBasePermission(PublicPlayer target, string mode)
+        {
+            if (_pending || target == null || string.IsNullOrEmpty(target.CharacterId) || Socket == null) return;
+            bool visit = mode != "revoke";
+            bool build = mode == "builder";
+            bool work = mode == "worker" || mode == "builder";
+            _pending = true;
+            _pendingProgression = false;
+            _pendingUntil = Time.unscaledTime + 5f;
+            Socket.EmitWithAck("personalBaseAction", new
+            {
+                requestId = Guid.NewGuid().ToString("N"),
+                action = "setPermission",
+                characterId = target.CharacterId,
+                visit,
+                build,
+                storage = work,
+                stations = work
+            }, ack =>
+            {
+                _pending = false;
+                Socket.ApplyGameplayAck(ack);
+                _status = ack?["ok"]?.ToObject<bool>() == true
+                    ? (mode == "revoke" ? "Доступ отозван у игрока " : "Права базы обновлены для игрока ") + (target.Name ?? "Игрок") + "."
+                    : (ack?["error"]?.ToString() ?? "Не удалось выдать гостевой доступ.");
+            });
+        }
+
+        public void SubmitPersonalBaseVisit(PublicPlayer target)
+        {
+            if (_pending || target == null || string.IsNullOrEmpty(target.CharacterId) || Socket == null) return;
+            _pending = true;
+            _pendingProgression = false;
+            _pendingUntil = Time.unscaledTime + 5f;
+            Socket.EmitWithAck("personalBaseAction", new { requestId = Guid.NewGuid().ToString("N"), action = "enterGuest", ownerCharacterId = target.CharacterId }, ack =>
+            {
+                _pending = false;
+                Socket.ApplyGameplayAck(ack);
+                _status = ack?["ok"]?.ToObject<bool>() == true
+                    ? "Входим в гостевое убежище…"
+                    : (ack?["error"]?.ToString() ?? "Гостевой вход недоступен.");
+            });
+        }
+
         public void SubmitHeal(PublicPlayer target, string itemId)
         {
             if (_pending) return;
             HealNearby(target, itemId);
+        }
+
+        public void SubmitMedicalConsent(bool accept)
+        {
+            string requestId = _medicalConsentRequest?["id"]?.ToString() ?? string.Empty;
+            if (Socket == null || string.IsNullOrEmpty(requestId)) return;
+            Socket.EmitWithAck("medicalConsentAction", new { requestId, accept }, ack =>
+            {
+                bool ok = ack?["ok"]?.ToObject<bool>() == true;
+                _status = ok
+                    ? (accept ? "Лечение разрешено на 15 секунд." : "Лечение отклонено.")
+                    : (ack?["error"]?.ToString() ?? "Ответ на запрос лечения не принят.");
+                if (ok) _medicalConsentRequest = null;
+            });
+        }
+
+        public void SubmitPlayerTradeAction(string action)
+        {
+            SubmitPlayerTrade(action, null);
+        }
+
+        public void SubmitPlayerTradeOfferDelta(string itemId, int delta)
+        {
+            if (_playerTrade == null || string.IsNullOrEmpty(itemId) || delta == 0) return;
+            var offers = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            if (_playerTrade["ownOffer"] is JArray current)
+            {
+                foreach (JToken row in current)
+                {
+                    string id = row["id"]?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(id) && row is JObject record)
+                        offers[id] = (JObject)record.DeepClone();
+                }
+            }
+            JObject offer = offers.TryGetValue(itemId, out JObject currentOffer)
+                ? currentOffer : new JObject { ["id"] = itemId, ["qty"] = 0, ["itemRuntimeIds"] = new JArray() };
+            int before = Mathf.Max(0, offer["qty"]?.ToObject<int>() ?? 0);
+            int next = Mathf.Clamp(before + delta, 0, InventoryQty(itemId));
+            JArray runtimeIds = offer["itemRuntimeIds"] as JArray ?? new JArray();
+            while (runtimeIds.Count > next) runtimeIds.RemoveAt(runtimeIds.Count - 1);
+            offer["qty"] = next;
+            offer["itemRuntimeIds"] = runtimeIds;
+            if (next > 0) offers[itemId] = offer;
+            else offers.Remove(itemId);
+            var rows = new JArray();
+            foreach (JObject row in offers.Values)
+                if ((row["qty"]?.ToObject<int>() ?? 0) > 0) rows.Add(row);
+            SubmitPlayerTrade("setOffer", rows);
+        }
+
+        public void SubmitPlayerTradeWeaponToggle(string itemId, string itemRuntimeId)
+        {
+            if (_playerTrade == null || string.IsNullOrEmpty(itemId)
+                || string.IsNullOrEmpty(itemRuntimeId) || itemRuntimeId == itemId) return;
+            var offers = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            if (_playerTrade["ownOffer"] is JArray current)
+                foreach (JToken token in current)
+                    if (token is JObject row && !string.IsNullOrEmpty(row["id"]?.ToString()))
+                        offers[row["id"].ToString()] = (JObject)row.DeepClone();
+
+            JObject offer = offers.TryGetValue(itemId, out JObject existing)
+                ? existing : new JObject { ["id"] = itemId, ["qty"] = 0, ["itemRuntimeIds"] = new JArray() };
+            JArray runtimeIds = offer["itemRuntimeIds"] as JArray ?? new JArray();
+            JToken selected = runtimeIds.FirstOrDefault(token => token?.ToString() == itemRuntimeId);
+            int qty = Mathf.Max(0, offer["qty"]?.ToObject<int>() ?? 0);
+            if (selected != null)
+            {
+                selected.Remove();
+                qty = Mathf.Max(0, qty - 1);
+            }
+            else
+            {
+                if (qty < InventoryQty(itemId)) qty++;
+                runtimeIds.Add(itemRuntimeId);
+            }
+            offer["qty"] = qty;
+            offer["itemRuntimeIds"] = runtimeIds;
+            if (qty > 0) offers[itemId] = offer;
+            else offers.Remove(itemId);
+            var rows = new JArray(offers.Values.Where(row => (row["qty"]?.ToObject<int>() ?? 0) > 0));
+            SubmitPlayerTrade("setOffer", rows);
+        }
+
+        private void SubmitPlayerTrade(string action, JArray rows)
+        {
+            string tradeId = _playerTrade?["id"]?.ToString() ?? string.Empty;
+            if (Socket == null || string.IsNullOrEmpty(tradeId) || _pending) return;
+            var payload = new JObject
+            {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
+                ["tradeId"] = tradeId,
+                ["action"] = action
+            };
+            if (rows != null) payload["rows"] = rows;
+            _pending = true;
+            _pendingProgression = false;
+            _pendingUntil = Time.unscaledTime + 5f;
+            _status = "Ожидаю подтверждение сделки…";
+            Socket.EmitWithAck("playerTradeAction", payload, ack =>
+            {
+                _pending = false;
+                if (ack == null || ack["ok"]?.ToObject<bool>() != true)
+                {
+                    Socket.ApplyGameplayAck(ack);
+                    _status = ack?["error"]?.ToString() ?? "Действие торговли отклонено.";
+                    return;
+                }
+                Socket.ApplyGameplayAck(ack);
+                _playerTrade = ack["state"] is JObject state ? (JObject)state.DeepClone() : null;
+                _status = ack["completed"]?.ToObject<bool>() == true ? "Обмен завершён." : "Сделка обновлена.";
+            });
         }
 
         public bool TryNearestPlayer(out PublicPlayer target, out float distance)
@@ -134,13 +304,13 @@ namespace RealmOfAshes.Game
         public int RadioChannel { get { return _radioChannel; } set { _radioChannel = Mathf.Clamp(value, 0, RadioTitles.Length - 1); } }
 
         public static readonly string[] RadioTitles =
-            { "Поселенческий маяк", "Пепельная частота", "Канал безопасности", "Тишина" };
+            { "Голос Тесьмы", "Шум Стеколья", "Сводка Тракта", "Тишина" };
 
         public static readonly string[] RadioDescriptions =
         {
-            "Слабый сигнал караванов и местных объявлений.",
-            "Фоновый шум, редкие пакеты данных из старых ретрансляторов.",
-            "Автоматические предупреждения о рейдерах, ловушках и тайниках.",
+            "Поселковые объявления, состояние воды и заявки наёмникам.",
+            "Фоновый шум Искажений и редкие пакеты данных Контура.",
+            "Маршруты караванов, цены и предупреждения Лиги Тракта.",
             "Приёмник отключён; остаётся только системный журнал."
         };
 
@@ -193,7 +363,10 @@ namespace RealmOfAshes.Game
             Socket.OnJoined += HandleJoined;
             Socket.OnAuthoritativeSelf += HandleSelf;
             Socket.OnSocialActionReceived += HandleSocialAction;
+            Socket.OnPlayerTradeUpdated += HandlePlayerTradeUpdated;
             Socket.OnSocialStateUpdated += HandleSocialStateUpdated;
+            Socket.OnMedicalConsentRequested += HandleMedicalConsentRequested;
+            Socket.OnMedicalConsentResolved += HandleMedicalConsentResolved;
             _subscribed = true;
         }
 
@@ -209,7 +382,10 @@ namespace RealmOfAshes.Game
             Socket.OnJoined -= HandleJoined;
             Socket.OnAuthoritativeSelf -= HandleSelf;
             Socket.OnSocialActionReceived -= HandleSocialAction;
+            Socket.OnPlayerTradeUpdated -= HandlePlayerTradeUpdated;
             Socket.OnSocialStateUpdated -= HandleSocialStateUpdated;
+            Socket.OnMedicalConsentRequested -= HandleMedicalConsentRequested;
+            Socket.OnMedicalConsentResolved -= HandleMedicalConsentResolved;
             _subscribed = false;
         }
 
@@ -261,6 +437,7 @@ namespace RealmOfAshes.Game
         {
             if (self == null) return;
             _self = (JObject)self.DeepClone();
+            ApplyVersionedUiSnapshots(_self);
 
             if (!_pending || !_pendingProgression) return;
             int actual = RoaProgressionData.FindSkill(_pendingId) != null
@@ -271,6 +448,37 @@ namespace RealmOfAshes.Game
             _pending = false;
             _pendingProgression = false;
             _status = "Сервер подтвердил: " + ProgressionName(_pendingId) + ".";
+        }
+
+        private static void ApplyVersionedUiSnapshots(JObject self)
+        {
+            JObject snapshots = self?["uiSnapshots"] as JObject;
+            if (snapshots == null || (snapshots["version"]?.ToObject<int>() ?? 0) < 1) return;
+
+            JObject contracts = snapshots["contracts"] as JObject;
+            JObject world = snapshots["world"] as JObject;
+            JObject quests = snapshots["quests"] as JObject;
+            JObject reputation = snapshots["reputation"] as JObject;
+            JObject friends = snapshots["friends"] as JObject;
+            JObject clan = snapshots["clan"] as JObject;
+            JObject shelter = snapshots["shelter"] as JObject;
+
+            if (contracts?["records"] != null) self["factionContracts"] = contracts["records"].DeepClone();
+            if (world?["tasks"] != null) self["worldTaskRecords"] = world["tasks"].DeepClone();
+            if (world?["acceptedTaskIds"] != null) self["worldTaskAccepted"] = world["acceptedTaskIds"].DeepClone();
+            if (world?["trackedTaskId"] != null) self["worldTaskTrackedId"] = world["trackedTaskId"].DeepClone();
+            if (world?["globalMap"] != null) self["globalMap"] = world["globalMap"].DeepClone();
+            if (quests?["npc"] != null) self["npcQuests"] = quests["npc"].DeepClone();
+            if (quests?["journal"] != null) self["kromkaQuestJournal"] = quests["journal"].DeepClone();
+            if (reputation?["factions"] != null) self["worldFactionReputation"] = reputation["factions"].DeepClone();
+
+            JObject social = self["socialState"] as JObject ?? new JObject();
+            if (friends?["records"] != null) social["friends"] = friends["records"].DeepClone();
+            if (friends?["requests"] != null) social["friendRequests"] = friends["requests"].DeepClone();
+            if (clan?["state"] != null) social["clan"] = clan["state"].DeepClone();
+            if (clan?["invites"] != null) social["clanInvites"] = clan["invites"].DeepClone();
+            self["socialState"] = social;
+            if (shelter?["state"] != null) self["personalBase"] = shelter["state"].DeepClone();
         }
 
         private void HandleSocialAction(JObject payload)
@@ -292,6 +500,34 @@ namespace RealmOfAshes.Game
             ApplySocialState(payload["socialState"] as JObject);
             string message = payload["message"]?.ToString();
             if (!string.IsNullOrEmpty(message)) _status = message;
+        }
+
+        private void HandlePlayerTradeUpdated(JObject payload)
+        {
+            if (payload == null) return;
+            _playerTrade = payload["state"] is JObject state ? (JObject)state.DeepClone() : null;
+            string message = payload["message"]?.ToString();
+            if (!string.IsNullOrEmpty(message)) _status = message;
+            if (_playerTrade != null) OpenSocial();
+        }
+
+        private void HandleMedicalConsentRequested(JObject payload)
+        {
+            if (payload == null) return;
+            _medicalConsentRequest = (JObject)payload.DeepClone();
+            _status = (payload["healerName"]?.ToString() ?? "Игрок") + " просит разрешение на лечение.";
+            OpenSocial();
+        }
+
+        private void HandleMedicalConsentResolved(JObject payload)
+        {
+            if (payload == null) return;
+            string requestId = payload["requestId"]?.ToString() ?? string.Empty;
+            if (_medicalConsentRequest?["id"]?.ToString() == requestId) _medicalConsentRequest = null;
+            bool accepted = payload["accepted"]?.ToObject<bool>() == true;
+            _status = accepted
+                ? "Лечение разрешено. Примените выбранный предмет повторно."
+                : "Запрос лечения отклонён.";
         }
 
         private void ApplySocialState(JObject social)
@@ -321,7 +557,7 @@ namespace RealmOfAshes.Game
             GUILayout.BeginArea(area, GUI.skin.window);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("<b>PIP-BOY · " + (_self["name"]?.ToString() ?? "Персонаж") + "</b>", Rich(), GUILayout.ExpandWidth(true));
+            GUILayout.Label("<b>ПУТНИК · " + (_self["name"]?.ToString() ?? "Персонаж") + "</b>", Rich(), GUILayout.ExpandWidth(true));
             if (GUILayout.Button("Закрыть [P]", GUILayout.Width(118f))) _open = false;
             GUILayout.EndHorizontal();
 
@@ -418,11 +654,11 @@ namespace RealmOfAshes.Game
         private void DrawStatus()
         {
             _statusScroll = GUILayout.BeginScrollView(_statusScroll);
-            GUILayout.Label("<b>SPECIAL</b>", Rich());
+            GUILayout.Label("<b>ХАРАКТЕРИСТИКИ</b>", Rich());
             JObject special = _self["special"] as JObject ?? new JObject();
             JObject talents = _self["talentRanks"] as JObject ?? new JObject();
             string[] ids = { "str", "per", "end", "cha", "int", "agi", "luck" };
-            string[] names = { "Сила", "Восприятие", "Выносливость", "Харизма", "Интеллект", "Ловкость", "Удача" };
+            string[] names = { "Мощь", "Наблюдательность", "Стойкость", "Влияние", "Интеллект", "Реакция", "Чутьё" };
             for (int i = 0; i < ids.Length; i++)
             {
                 int baseValue = Int(special[ids[i]], 5);
@@ -489,7 +725,7 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(description)) GUILayout.Label(description, Wrap());
                 JObject reward = task["reward"] as JObject;
                 if (reward != null)
-                    GUILayout.Label("Награда: " + Int(reward["xp"]) + " XP, " + Int(reward["caps"]) + " крышек");
+                    GUILayout.Label("Награда: " + Int(reward["xp"]) + " XP, " + Int(reward["caps"]) + " марок");
                 GUILayout.Label("Состояние: " + TaskStateLabel(state));
 
                 GUI.enabled = !_pending;
@@ -606,6 +842,7 @@ namespace RealmOfAshes.Game
                     JObject sim = payload["sim"] as JObject;
                     if (sim == null) throw new Exception("в ответе нет поля sim");
                     _wasteland = sim;
+                    _factionCatalog = payload["factions"] as JArray ?? new JArray();
                     _worldError = string.Empty;
                 }
                 catch (Exception error)
@@ -732,9 +969,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            string playerFaction = WorldFactionId();
-            GUILayout.Label("Текущая сторона: " + (string.IsNullOrEmpty(playerFaction)
-                ? "Независимый странник" : FactionLabel(playerFaction)), GUI.skin.box);
+            GUILayout.Label("Статус: Независимый наёмник", GUI.skin.box);
             GUILayout.Label(FactionGroupsExplanation, Wrap());
             _factionsScroll = GUILayout.BeginScrollView(_factionsScroll);
             foreach (string id in PrimaryFactionIds)
@@ -744,13 +979,20 @@ namespace RealmOfAshes.Game
                 int contested;
                 FactionStats(id, out sites, out parties, out contested);
                 int reputation = Int(_self?["worldFactionReputation"]?[id]);
+                bool activeContract = (_self?["factionContracts"]?[id] as JObject) != null;
+                JObject lore = FactionLore(id);
                 GUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("<b>" + FactionLabel(id) + "</b>", Rich(), GUILayout.ExpandWidth(true));
-                GUILayout.Label(id == playerFaction ? "Ваша фракция" : "Доступна для вступления", GUILayout.Width(190f));
+                GUILayout.Label("<b>" + (lore == null ? "Неизвестная сторона" : FactionLabel(id)) + "</b>", Rich(), GUILayout.ExpandWidth(true));
+                GUILayout.Label(activeContract ? "Временный контракт" : "Нет контракта", GUILayout.Width(190f));
                 GUILayout.EndHorizontal();
                 GUILayout.Label("Точки " + sites + " · отряды " + parties + " · спорные " + contested
                     + " · репутация " + reputation);
+                if (lore != null)
+                {
+                    GUILayout.Label("Обещание: " + (lore["promise"]?.ToString() ?? "—"), Wrap());
+                    GUILayout.Label("Цена: " + (lore["price"]?.ToString() ?? "—"), Wrap());
+                }
                 GUILayout.EndVertical();
             }
             GUILayout.EndScrollView();
@@ -758,12 +1000,12 @@ namespace RealmOfAshes.Game
 
         private void DrawRadio()
         {
-            string[] titles = { "Поселенческий маяк", "Пепельная частота", "Канал безопасности", "Тишина" };
+            string[] titles = { "Голос Тесьмы", "Шум Стеколья", "Сводка Тракта", "Тишина" };
             string[] descriptions =
             {
-                "Слабый сигнал караванов и местных объявлений.",
-                "Фоновый шум, редкие пакеты данных из старых ретрансляторов.",
-                "Автоматические предупреждения о рейдерах, ловушках и тайниках.",
+                "Поселковые объявления, состояние воды и заявки наёмникам.",
+                "Фоновый шум Искажений и редкие пакеты данных Контура.",
+                "Маршруты караванов, цены и предупреждения Лиги Тракта.",
                 "Приёмник отключён; остаётся только системный журнал."
             };
             _radioScroll = GUILayout.BeginScrollView(_radioScroll);
@@ -943,6 +1185,11 @@ namespace RealmOfAshes.Game
                 }
 
                 Socket.ApplyGameplayAck(ack);
+                if (ack["pendingConsent"]?.ToObject<bool>() == true)
+                {
+                    _status = "Запрос на лечение отправлен. После согласия примените предмет повторно.";
+                    return;
+                }
                 if (ack["target"] is JObject targetState)
                     RemotePlayers?.ApplyPublicPlayer(targetState.ToObject<PublicPlayer>());
                 string cured = ack["curedInjury"]?.ToString();
@@ -1039,7 +1286,7 @@ namespace RealmOfAshes.Game
             JObject ranks = (_self["skillRanks"] as JObject)?.DeepClone() as JObject ?? new JObject();
             ranks[id] = Mathf.Min(100, current + 5);
             BeginProgressionRequest(id, current + 5);
-            Socket.SendProgressionProfile(ranks, null);
+            Socket.SendProgressionProfile(ranks, null, HandleProgressionAck);
         }
 
         private void RequestTalent(string id, int current)
@@ -1047,7 +1294,16 @@ namespace RealmOfAshes.Game
             JObject ranks = (_self["talentRanks"] as JObject)?.DeepClone() as JObject ?? new JObject();
             ranks[id] = current + 1;
             BeginProgressionRequest(id, current + 1);
-            Socket.SendProgressionProfile(null, ranks);
+            Socket.SendProgressionProfile(null, ranks, HandleProgressionAck);
+        }
+
+        private void HandleProgressionAck(JObject ack)
+        {
+            if (ack?["self"] is JObject self) ApplySelf(self);
+            if (ack?["ok"]?.ToObject<bool>() == true) return;
+            _pending = false;
+            _pendingProgression = false;
+            _status = ack?["error"]?.ToString() ?? "Сервер отклонил изменение развития персонажа.";
         }
 
         private void BeginProgressionRequest(string id, int rank)
@@ -1067,7 +1323,10 @@ namespace RealmOfAshes.Game
             _pendingProgression = false;
             _pendingUntil = Time.unscaledTime + 5f;
             _status = "Отправка запроса…";
-            Socket.EmitWithAck("socialAction", new { targetId = target.Id, action }, ack =>
+            Socket.EmitWithAck("socialAction", new
+            {
+                requestId = Guid.NewGuid().ToString("N"), targetId = target.Id, action
+            }, ack =>
             {
                 _pending = false;
                 if (ack == null || ack["ok"]?.ToObject<bool>() == false)
@@ -1077,13 +1336,18 @@ namespace RealmOfAshes.Game
                     return;
                 }
                 Socket.ApplyGameplayAck(ack);
+                if (ack["trade"] is JObject trade) _playerTrade = (JObject)trade.DeepClone();
                 _status = ack["message"]?.ToString() ?? "Запрос отправлен игроку " + (target.Name ?? "игрок") + ".";
             });
         }
 
         private void SendSocialStateAction(string action, string targetId = null, string clanName = null)
         {
-            var payload = new JObject { ["action"] = action };
+            var payload = new JObject
+            {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
+                ["action"] = action
+            };
             if (!string.IsNullOrEmpty(targetId)) payload["targetId"] = targetId;
             if (!string.IsNullOrEmpty(clanName)) payload["name"] = clanName;
 
@@ -1115,7 +1379,10 @@ namespace RealmOfAshes.Game
             _pendingProgression = false;
             _pendingUntil = Time.unscaledTime + 5f;
             _status = "Сервер обновляет контракт…";
-            Socket.EmitWithAck("worldTaskAction", new { taskId, action }, ack =>
+            Socket.EmitWithAck("worldTaskAction", new
+            {
+                requestId = Guid.NewGuid().ToString("N"), taskId, action
+            }, ack =>
             {
                 _pending = false;
                 Socket.ApplyGameplayAck(ack);
@@ -1131,7 +1398,7 @@ namespace RealmOfAshes.Game
                 {
                     JObject reward = ack["reward"] as JObject;
                     _status = "Награда получена: " + Int(reward?["xp"]) + " XP, "
-                        + Int(reward?["caps"]) + " крышек.";
+                        + Int(reward?["caps"]) + " марок.";
                 }
                 else if (action == "cancel") _status = "Контракт отменён.";
                 else _status = "Контракт обновлён.";
@@ -1238,8 +1505,8 @@ namespace RealmOfAshes.Game
         public string RequirementText(RoaProgressionData.TalentDef talent)
         {
             var rows = new List<string> { "ур. " + talent.Level };
-            if (!string.IsNullOrEmpty(talent.Stat)) rows.Add(talent.Stat.ToUpperInvariant() + " " + talent.StatValue);
-            if (!string.IsNullOrEmpty(talent.Stat2)) rows.Add(talent.Stat2.ToUpperInvariant() + " " + talent.StatValue2);
+            if (!string.IsNullOrEmpty(talent.Stat)) rows.Add(RoaCharacterCreator.StatName(talent.Stat) + " " + talent.StatValue);
+            if (!string.IsNullOrEmpty(talent.Stat2)) rows.Add(RoaCharacterCreator.StatName(talent.Stat2) + " " + talent.StatValue2);
             if (!string.IsNullOrEmpty(talent.Skill))
             {
                 RoaProgressionData.SkillDef skill = RoaProgressionData.FindSkill(talent.Skill);
@@ -1287,8 +1554,40 @@ namespace RealmOfAshes.Game
         {
             foreach (JToken token in sites ?? new JArray())
                 if (token?["id"]?.ToString() == id)
-                    return token["name"]?.ToString() ?? id;
-            return string.IsNullOrEmpty(id) ? "отмеченной точке" : id;
+                    return KromkaLocationLabel(id, token["name"]?.ToString() ?? id);
+            return string.IsNullOrEmpty(id) ? "отмеченной точке" : KromkaLocationLabel(id, id);
+        }
+
+        public static string KromkaPublicText(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return value ?? string.Empty;
+            return value
+                .Replace("Дорожный аванпост Старого Клима", "Застава 17")
+                .Replace("Старый военный склад", "Арсенал №6")
+                .Replace("Караванный двор Старого Клима", "Ключи")
+                .Replace("Старого Клима", "Управы")
+                .Replace("Старый Клим", "Управа")
+                .Replace("Old Klim", "Uprava")
+                .Replace("Свалочного союза", "Вольных артелей")
+                .Replace("Свалочный союз", "Вольные артели")
+                .Replace("Свалочный пост", "Раздолье")
+                .Replace("станция Ретранслятор", "станция Контур-3")
+                .Replace("Ретранслятор", "Контур")
+                .Replace("Вольные караваны", "Лига Тракта");
+        }
+
+        private static string KromkaLocationLabel(string id, string fallback)
+        {
+            switch (id ?? string.Empty)
+            {
+                case "settlement": return "Ключи";
+                case "caravanCamp": return "Перекрёсток";
+                case "scrapTown": return "Раздолье";
+                case "relayStation": return "Контур-3";
+                case "roadOutpost": return "Застава 17";
+                case "klimAmmoWorks": return "Патронный двор «Створ-2»";
+                default: return KromkaPublicText(fallback);
+            }
         }
 
         public static string SiteTypeLabel(string type)
@@ -1433,7 +1732,7 @@ namespace RealmOfAshes.Game
 
         private static string StockLabel(string id)
         {
-            if (id == "silver") return "крышки";
+            if (id == "silver") return "марки";
             if (id == "water") return "вода";
             if (id == "ore") return "руда";
             if (id == "scrap") return "лом";
@@ -1452,6 +1751,7 @@ namespace RealmOfAshes.Game
             string key = (kind ?? string.Empty).ToLowerInvariant();
             if (key == "caravan") return "Караван";
             if (key == "patrol") return "Патруль";
+            if (key == "refugees") return "Беженцы";
             if (key == "raider") return "Рейдеры";
             if (key == "monster") return "Монстры";
             return "Группа";
@@ -1462,6 +1762,8 @@ namespace RealmOfAshes.Game
             string key = (state ?? string.Empty).ToLowerInvariant();
             if (key == "idle") return "на стоянке";
             if (key == "moving") return "в пути";
+            if (key == "assembling") return "собираются у выхода";
+            if (key == "stranded") return "застряли без маршрута";
             if (key == "staging") return "собирается в путь";
             if (key == "returning") return "возвращается на базу";
             if (key == "onsite") return "работает на точке";
@@ -1488,7 +1790,7 @@ namespace RealmOfAshes.Game
         public string WorldFactionId()
         {
             string id = _self?["worldFactionId"]?.ToString() ?? _self?["factionId"]?.ToString() ?? string.Empty;
-            return IsJoinableFaction(id) ? id : string.Empty;
+            return IsKnownFaction(id) ? CanonicalFactionId(id) : string.Empty;
         }
 
         public int FactionRelation(string id, string playerFaction)
@@ -1519,7 +1821,7 @@ namespace RealmOfAshes.Game
             contested = 0;
             foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
             {
-                if (token?["owner"]?.ToString() != factionId) continue;
+                if (CanonicalFactionId(token?["owner"]?.ToString()) != factionId) continue;
                 sites++;
                 string state = token["controlState"]?.ToString() ?? string.Empty;
                 if (state == "critical" || state == "contested" || state == "threatened"
@@ -1527,7 +1829,7 @@ namespace RealmOfAshes.Game
                     || Flag(token["activeConflict"])) contested++;
             }
             foreach (JToken token in _wasteland?["parties"] as JArray ?? new JArray())
-                if (token?["faction"]?.ToString() == factionId
+                if (CanonicalFactionId(token?["faction"]?.ToString()) == factionId
                     && !Flag(token?["destroyed"])
                     && token?["state"]?.ToString() != "destroyed") parties++;
         }
@@ -1546,18 +1848,48 @@ namespace RealmOfAshes.Game
 
         public static bool IsJoinableFaction(string id)
         {
-            return id == "old_klim" || id == "scrap_union" || id == "relay_order";
+            return false;
+        }
+
+        public static bool IsKnownFaction(string id)
+        {
+            string canonical = CanonicalFactionId(id);
+            return Array.IndexOf(PrimaryFactionIds, canonical) >= 0;
+        }
+
+        public static string CanonicalFactionId(string id)
+        {
+            string key = (id ?? string.Empty).ToLowerInvariant();
+            if (key == "old_klim" || key == "klim_patrol") return "uprava";
+            if (key == "scrap_union" || key == "scrap" || key == "scrap_town") return "free_artels";
+            if (key == "relay_order" || key == "relay" || key == "relay_station") return "contour";
+            if (key == "caravan" || key == "caravans") return "tract_league";
+            return key;
+        }
+
+        public JObject FactionLore(string id)
+        {
+            string canonical = CanonicalFactionId(id);
+            foreach (JToken token in _factionCatalog)
+            {
+                JObject row = token as JObject;
+                if (row != null && CanonicalFactionId(row["id"]?.ToString()) == canonical) return row;
+            }
+            return null;
         }
 
         public static string FactionLabel(string id)
         {
             if (string.IsNullOrEmpty(id) || id == "neutral") return "Нейтралы";
-            if (id == "old_klim") return "Старый Клим";
-            if (id == "scrap_union") return "Свалочный союз";
-            if (id == "relay_order") return "Орден Ретранслятора";
-            if (id == "caravans" || id == "caravan") return "Вольные караваны";
+            id = CanonicalFactionId(id);
+            if (id == "uprava") return "Управа";
+            if (id == "free_artels") return "Вольные артели";
+            if (id == "contour") return "Контур";
+            if (id == "tract_league") return "Лига Тракта";
+            if (id == "seconds") return "Вторые";
+            if (id == "continuity") return "Комитет преемственности";
             if (id == "raiders" || id == "ash_raiders") return "Рейдеры";
-            if (id == "mutants") return "Супермутанты";
+            if (id == "mutants") return "Мутанты";
             if (id == "wild") return "Дикие твари";
             if (id == "free_settlers") return "Свободные поселения";
             if (id == "iron_clans") return "Железные кланы";

@@ -95,26 +95,40 @@ namespace RealmOfAshes.Game
         public static void Bind(GameObject card, string itemOrRuntimeId, string extraStat = null)
         {
             if (card == null) return;
-            var trigger = card.GetComponent<EventTrigger>() ?? card.AddComponent<EventTrigger>();
-            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-            enter.callback.AddListener(_ => { if (Instance != null) Instance.ShowItem(itemOrRuntimeId, extraStat); });
-            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-            exit.callback.AddListener(_ => { if (Instance != null) Instance.Hide(); });
-            trigger.triggers.Add(enter);
-            trigger.triggers.Add(exit);
+            HoverRelay relay = card.GetComponent<HoverRelay>() ?? card.AddComponent<HoverRelay>();
+            relay.OnEnter += () => { if (Instance != null) Instance.ShowItem(itemOrRuntimeId, extraStat); };
+            relay.OnExit += () => { if (Instance != null) Instance.Hide(); };
+        }
+
+        /// <summary>
+        /// Только наведение/уход: EventTrigger реализует все интерфейсы событий
+        /// (в том числе IScrollHandler и drag) и перехватывал колесо и
+        /// перетаскивание над строками, не давая им дойти до ScrollRect списка.
+        /// </summary>
+        private sealed class HoverRelay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+        {
+            public System.Action OnEnter, OnExit;
+            public void OnPointerEnter(PointerEventData eventData) { OnEnter?.Invoke(); }
+            public void OnPointerExit(PointerEventData eventData) { OnExit?.Invoke(); }
+        }
+
+        /// <summary>Только клик правой кнопкой — по той же причине, что и HoverRelay.</summary>
+        private sealed class RightClickRelay : MonoBehaviour, IPointerClickHandler
+        {
+            public System.Action OnRightClick;
+            public void OnPointerClick(PointerEventData eventData)
+            {
+                if (eventData.button == PointerEventData.InputButton.Right) OnRightClick?.Invoke();
+            }
         }
 
         /// <summary>Подсказка с произвольным текстом (dataset.gameHint web).</summary>
         public static void BindHint(GameObject target, string title, string hint)
         {
             if (target == null) return;
-            var trigger = target.GetComponent<EventTrigger>() ?? target.AddComponent<EventTrigger>();
-            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-            enter.callback.AddListener(_ => { if (Instance != null) Instance.Show(title, hint, null); });
-            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-            exit.callback.AddListener(_ => { if (Instance != null) Instance.Hide(); });
-            trigger.triggers.Add(enter);
-            trigger.triggers.Add(exit);
+            HoverRelay relay = target.GetComponent<HoverRelay>() ?? target.AddComponent<HoverRelay>();
+            relay.OnEnter += () => { if (Instance != null) Instance.Show(title, hint, null); };
+            relay.OnExit += () => { if (Instance != null) Instance.Hide(); };
         }
 
         // ------------------------------------------------------------------ контекстное меню
@@ -166,6 +180,7 @@ namespace RealmOfAshes.Game
             _menu.sizeDelta = new Vector2(210f, -y + 5f);
             _menu.gameObject.SetActive(true);
             _menuOpenedThisFrame = true;
+            Canvas.ForceUpdateCanvases(); // The first popup otherwise clamps against an unlaid-out canvas.
             PositionAtCursor(_menu, 2f);
         }
 
@@ -178,15 +193,8 @@ namespace RealmOfAshes.Game
         public static void BindMenu(GameObject card, System.Func<List<Option>> build)
         {
             if (card == null) return;
-            var trigger = card.GetComponent<EventTrigger>() ?? card.AddComponent<EventTrigger>();
-            var click = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
-            click.callback.AddListener(data =>
-            {
-                var pointer = data as PointerEventData;
-                if (pointer == null || pointer.button != PointerEventData.InputButton.Right || Instance == null) return;
-                Instance.ShowMenu(build());
-            });
-            trigger.triggers.Add(click);
+            RightClickRelay relay = card.GetComponent<RightClickRelay>() ?? card.AddComponent<RightClickRelay>();
+            relay.OnRightClick += () => { if (Instance != null) Instance.ShowMenu(build()); };
         }
 
         // ------------------------------------------------------------------ постройка

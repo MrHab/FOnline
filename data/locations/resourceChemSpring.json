@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "resourceChemSpring",
-  "name": "Химический родник",
+  "name": "Сток 4-Б",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,87 +52,58 @@
   "containers": [],
   "objects": [
     {
-      "id": "chem_tank_01",
-      "model": "waterTank",
-      "name": "Химический бак",
-      "url": "/assets/models/wasteland/water_tank.glb",
-      "position": {
-        "x": -7,
-        "y": 0,
-        "z": -7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "resource",
-      "tags": [
-        "resource",
-        "chemicals"
-      ],
-      "resourceType": "chemicals",
-      "hp": 7,
-      "maxHp": 7,
-      "vision": {
-        "mode": "cover"
-      }
-    },
-    {
       "id": "chem_barrels_01",
       "model": "barrelCluster",
-      "name": "Бочки с химией",
-      "url": "/assets/models/wasteland/barrel_cluster.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -4
+      "name": "Бочки с химией",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -4.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover",
         "chemicals"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 2.015
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "chem_scrap_01",
       "model": "scrapHeap",
-      "name": "Сломанный фильтр",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
-      "position": {
-        "x": 5,
-        "y": 0,
-        "z": 10
+      "name": "Сломанный фильтр",      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 10.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "scrap"
@@ -133,28 +112,1154 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 1.84
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "chem_tank_01",
+      "model": "waterTank",
+      "name": "Химический бак",      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": -7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "resource",
+        "chemicals"
+      ],
+      "resourceType": "chemicals",
+      "hp": 7,
+      "maxHp": 7,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.798,
+        "z": 1.24
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-drain-stack",
+      "model": "external_pipe",
+      "name": "resourceChemSpring-drain-stack EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 2.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-functional-01",
+      "model": "ore_outcrop",
+      "name": "resourceChemSpring-dressing-functional-01",
+      "position": {
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.463,
+        "z": 1.648
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-functional-02",
+      "model": "scrap_heap",
+      "name": "resourceChemSpring-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.155,
+        "z": 2.933
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-functional-03",
+      "model": "cargo_stack",
+      "name": "resourceChemSpring-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.619,
+        "z": 1.532
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-functional-04",
+      "model": "workshop_bench",
+      "name": "resourceChemSpring-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.355,
+        "z": 2.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-01",
+      "model": "dead_tree_b",
+      "name": "resourceChemSpring-dressing-region-01",
+      "position": {
+        "x": 17.033,
+        "y": 0.0,
+        "z": 8.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.613,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.695,
+        "z": 1.601
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "resourceChemSpring-dressing-region-02",
+      "position": {
+        "x": 17.449,
+        "y": 0.0,
+        "z": 9.159
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.801,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.367,
+        "z": 1.472
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-03",
+      "model": "oil_pump_jack",
+      "name": "resourceChemSpring-dressing-region-03",
+      "position": {
+        "x": 17.445,
+        "y": 0.0,
+        "z": 9.167
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.8,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.308,
+        "z": 3.33
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "resourceChemSpring-dressing-region-04",
+      "position": {
+        "x": 15.443,
+        "y": 0.0,
+        "z": 12.237
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.726,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.413,
+        "z": 2.371
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-05",
+      "model": "dead_tree_b",
+      "name": "resourceChemSpring-dressing-region-05",
+      "position": {
+        "x": 15.332,
+        "y": 0.0,
+        "z": 12.152
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.726,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.686,
+        "z": 1.653
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "resourceChemSpring-dressing-region-06",
+      "position": {
+        "x": 15.321,
+        "y": 0.0,
+        "z": 12.163
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.909,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.326,
+        "z": 1.43
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-07",
+      "model": "oil_pump_jack",
+      "name": "resourceChemSpring-dressing-region-07",
+      "position": {
+        "x": 15.349,
+        "y": 0.0,
+        "z": 12.128
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.908,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.882,
+        "y": 0.882,
+        "z": 0.882
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.206,
+        "z": 3.383
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "resourceChemSpring-dressing-region-08",
+      "position": {
+        "x": 16.383,
+        "y": 0.0,
+        "z": 11.543
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.852,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.883,
+        "y": 0.883,
+        "z": 0.883
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.368,
+        "z": 2.414
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-09",
+      "model": "dead_tree_b",
+      "name": "resourceChemSpring-dressing-region-09",
+      "position": {
+        "x": 16.384,
+        "y": 0.0,
+        "z": 11.539
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.853,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.883,
+        "y": 0.883,
+        "z": 0.883
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.65,
+        "z": 1.687
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "resourceChemSpring-dressing-region-10",
+      "position": {
+        "x": 16.364,
+        "y": 0.0,
+        "z": 11.566
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.04,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.303,
+        "z": 1.378
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-11",
+      "model": "oil_pump_jack",
+      "name": "resourceChemSpring-dressing-region-11",
+      "position": {
+        "x": 13.942,
+        "y": 0.0,
+        "z": 14.391
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.04,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.077,
+        "z": 3.447
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "resourceChemSpring-dressing-region-12",
+      "position": {
+        "x": 13.818,
+        "y": 0.0,
+        "z": 14.25
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.984,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.315,
+        "z": 2.455
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-13",
+      "model": "dead_tree_b",
+      "name": "resourceChemSpring-dressing-region-13",
+      "position": {
+        "x": 13.823,
+        "y": 0.0,
+        "z": 14.242
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.985,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.609,
+        "z": 1.72
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "resourceChemSpring-dressing-region-14",
+      "position": {
+        "x": 14.841,
+        "y": 0.0,
+        "z": 13.176
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.069,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.341,
+        "z": 1.444
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-dressing-region-15",
+      "model": "oil_pump_jack",
+      "name": "resourceChemSpring-dressing-region-15",
+      "position": {
+        "x": 15.184,
+        "y": 0.0,
+        "z": 13.493
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.07,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.896,
+        "y": 0.896,
+        "z": 0.896
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.232,
+        "z": 2.436
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-landmark",
+      "model": "drain-stack",
+      "name": "Landmark drain-stack EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "drain-stack"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-region-black-pool-0",
+      "model": "ring_structure",
+      "name": "resourceChemSpring-region-black-pool-0 EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-region-black-pool-1",
+      "model": "ring_structure",
+      "name": "resourceChemSpring-region-black-pool-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-region-black-pool-2",
+      "model": "ring_structure",
+      "name": "resourceChemSpring-region-black-pool-2 EDITABLE",
+      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-region-main-pipe",
+      "model": "external_pipe",
+      "name": "resourceChemSpring-region-main-pipe EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 1.1,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceChemSpring-settling-pool",
+      "model": "ring_structure",
+      "name": "resourceChemSpring-settling-pool EDITABLE",
+      "position": {
+        "x": -13.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 15,
-        "y": 0,
-        "z": -14
+      "name": "Место отдыха",      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -163,16 +1268,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 26,
       "tz": 12,
@@ -182,9 +1279,76 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "zero_basin",
+  "kromkaVisualProfile": "toxic-drain-four-b-v1",
+  "ambientProfile": "toxic-lower-drain",
+  "anomalyDensity": 0.38,
+  "unityScene": "Assets/Scenes/Kromka/Locations/resourceChemSpring.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "drain-upper-platform",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "resourceChemSpring-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

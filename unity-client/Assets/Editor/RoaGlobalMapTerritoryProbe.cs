@@ -129,9 +129,9 @@ public static class RoaGlobalMapTerritoryProbe
                                    && Mathf.Abs(_map.SelectedMapY - selectedBeforeY) < 0.01f;
         bool valid = _map.TerritoryBorderCount > 0
                      && _map.InfluenceZoneCount == 0
-                     && _map.SettlementModelCount == 4
-                     && _map.SiteMarkerCount == 4
-                     && _map.SettlementStatusCount == 4
+                     && _map.SettlementModelCount == 39
+                     && _map.SiteMarkerCount == 2
+                     && _map.SettlementStatusCount == 6
                      && selection.Contains("Территория:")
                      && selection.Contains("Поселение")
                      && factions.Contains("Владение фракций:")

@@ -1,6 +1,8 @@
 {
-  "artDirection": "геометрия B, материалы и износ C",
-  "assetId": "equipment_leather_jacket_unified_v1",
+  "schema": "realm.free-armor-replacement-family.v1",
+  "assetFamily": "equipment_leather_jacket_unified_v1",
+  "itemId": "leather",
+  "slot": "armor",
   "bodyIds": [
     "female_slim",
     "female_medium",
@@ -9,681 +11,365 @@
     "male_medium",
     "male_large"
   ],
+  "variantCount": 6,
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "variantCount": 6,
+  "triangleBudgetPerVariant": 12000,
+  "source": {
+    "creator": "Quaternius",
+    "pack": "Ultimate Modular Men / Ultimate Modular Women",
+    "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+    "license": "CC0-1.0",
+    "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F"
+  },
   "variants": [
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_female_slim_details",
-          "equipment_leather_jacket_unified_v1_female_slim_shell",
-          "character_root"
-        ],
-        "positionVertices": 7634,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6704
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_female_slim",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "female_slim",
-      "file": "equipment_leather_jacket_unified_v1_female_slim.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00756,
-        "lowerHemZ": 1.071,
-        "shellPolygons": 5150,
-        "shellVertices": 2624,
-        "sleeveLimitX": 0.58716,
-        "torsoBounds": {
-          "maximum": [
-            0.1602,
-            0.15022,
-            1.48695
-          ],
-          "minimum": [
-            -0.1602,
-            -0.12659,
-            0.871
-          ]
-        },
-        "upperLimitZ": 1.48195
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "D7DAF3221C1FD0F934A8C2CC309C09A140D719444825D06E3B681FAC3B346E73"
+      "sha256": "0A96F91BCFCE8B7E3BA88C15F600DAD69503CE83E20C168D73F850FC5A328F45",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3850,
+        "removedFaces": 2468,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1382,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1382,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 431044
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.13482,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.15548,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_female_medium_details",
-          "equipment_leather_jacket_unified_v1_female_medium_shell",
-          "character_root"
-        ],
-        "positionVertices": 7964,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6788
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_female_medium",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "female_medium",
-      "file": "equipment_leather_jacket_unified_v1_female_medium.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.01007,
-        "lowerHemZ": 1.07088,
-        "shellPolygons": 5230,
-        "shellVertices": 2664,
-        "sleeveLimitX": 0.58622,
-        "torsoBounds": {
-          "maximum": [
-            0.173,
-            0.16247,
-            1.48775
-          ],
-          "minimum": [
-            -0.173,
-            -0.14023,
-            0.87088
-          ]
-        },
-        "upperLimitZ": 1.48275
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "F43552AACDB8B25951A8BD8F3CBFA5C7C50D32F2E59F12F756E519169DCC98A1"
+      "sha256": "B4ED43DCC0B6337B9BF7FBB1FCF54E2E7C5993D0E16830F4CA57F3207DBB9C42",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3850,
+        "removedFaces": 2468,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1382,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1382,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 429876
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.14514,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.16816,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_female_large_details",
-          "equipment_leather_jacket_unified_v1_female_large_shell",
-          "character_root"
-        ],
-        "positionVertices": 7545,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6928
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_female_large",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "female_large",
-      "file": "equipment_leather_jacket_unified_v1_female_large.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.01593,
-        "lowerHemZ": 1.07074,
-        "shellPolygons": 5312,
-        "shellVertices": 2706,
-        "sleeveLimitX": 0.58734,
-        "torsoBounds": {
-          "maximum": [
-            0.1955,
-            0.18787,
-            1.48863
-          ],
-          "minimum": [
-            -0.1955,
-            -0.16967,
-            0.87074
-          ]
-        },
-        "upperLimitZ": 1.48363
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "5ACB7598148258B50A3B284B6ED9D223A9BD34C22642622A5A160E6691CEA9C1"
+      "sha256": "643745DC8F8A3F907372521AB010D8E3CB3785FFAD99664845A0FCC200910B22",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3850,
+        "removedFaces": 2468,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1382,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1382,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 430412
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.17561,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.19445,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_male_slim_details",
-          "equipment_leather_jacket_unified_v1_male_slim_shell",
-          "character_root"
-        ],
-        "positionVertices": 7410,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6552
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_male_slim",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "male_slim",
-      "file": "equipment_leather_jacket_unified_v1_male_slim.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00022,
-        "lowerHemZ": 1.09245,
-        "shellPolygons": 4902,
-        "shellVertices": 2512,
-        "sleeveLimitX": 0.65116,
-        "torsoBounds": {
-          "maximum": [
-            0.19315,
-            0.14985,
-            1.53285
-          ],
-          "minimum": [
-            -0.19315,
-            -0.11343,
-            0.89245
-          ]
-        },
-        "upperLimitZ": 1.52785
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "E715FBAEF734D224473344874C894FC9345D190E9238068FB5A39D38B6BB65E2"
+      "sha256": "8516CF4ECD0DEE692BA547B3292DA11724B62ECDB27AD3C140B1CCEA7ACA5A67",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3704,
+        "removedFaces": 2256,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1448,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1448,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 439968
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.15147,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_male_medium_details",
-          "equipment_leather_jacket_unified_v1_male_medium_shell",
-          "character_root"
-        ],
-        "positionVertices": 8048,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6512
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_male_medium",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "male_medium",
-      "file": "equipment_leather_jacket_unified_v1_male_medium.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00116,
-        "lowerHemZ": 1.09362,
-        "shellPolygons": 4890,
-        "shellVertices": 2504,
-        "sleeveLimitX": 0.65114,
-        "torsoBounds": {
-          "maximum": [
-            0.206,
-            0.16345,
-            1.5333
-          ],
-          "minimum": [
-            -0.206,
-            -0.12534,
-            0.89362
-          ]
-        },
-        "upperLimitZ": 1.5283
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "ECE54B6F22E5E1439B0AA17CEE71A9E373D9E3D922A3605866C02DD15F3EB506"
+      "sha256": "F17D72AF9066BC26B19D6F50663D8B8D2E1F3066814AADADF3CE0D0458D387C8",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3704,
+        "removedFaces": 2256,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1448,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1448,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 438748
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.16509,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 3,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_leather_jacket_unified_v1_male_large_details",
-          "equipment_leather_jacket_unified_v1_male_large_shell",
-          "character_root"
-        ],
-        "positionVertices": 8350,
-        "skins": 1,
-        "textures": 9,
-        "triangles": 6528
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_leather_jacket_unified_v1_male_large",
+      "itemId": "leather",
+      "slot": "armor",
       "bodyId": "male_large",
-      "file": "equipment_leather_jacket_unified_v1_male_large.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00482,
-        "lowerHemZ": 1.09324,
-        "shellPolygons": 4910,
-        "shellVertices": 2512,
-        "sleeveLimitX": 0.65113,
-        "torsoBounds": {
-          "maximum": [
-            0.23082,
-            0.19073,
-            1.53435
-          ],
-          "minimum": [
-            -0.23082,
-            -0.15233,
-            0.89324
-          ]
-        },
-        "upperLimitZ": 1.52935
-      },
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "4390D7273CBE6A13E085FFC15E136023CECC5EF58B5DAFF8A861915A2C08410F"
+      "sha256": "AD44C7684B5D3D71D316965CCAC37B747B882BCBB89255D3A44EB3B1DA0B3E2B",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_punk.gltf",
+        "sha256": "F9224072F5E6CBB207ECA250FAA7F1868614A1A984074FE79C7B2862DF4FEB42/61CC7F85A8E9B700CDB92AE8EBD6E3BDD1E8A510B57027F6C7D8C2B6FF3B0E0F",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 3704,
+        "removedFaces": 2256,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 1448,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 1448,
+        "meshes": 2,
+        "materials": 3,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 439800
+      },
+      "materials": [
+        "jacket_weathered_oxblood_leather",
+        "jacket_dark_edge_leather",
+        "jacket_tarnished_hardware"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.15386,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.19263,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.035,
+          1.08,
+          0.985
+        ]
+      }
     }
   ]
 }

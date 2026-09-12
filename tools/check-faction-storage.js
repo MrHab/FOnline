@@ -41,10 +41,10 @@ function rows(input = []) {
 }
 
 const context = {
-  SERVER_FACTION_STORAGE_IDS: new Set(['old_klim', 'scrap_union', 'relay_order', 'caravans']),
+  SERVER_FACTION_STORAGE_IDS: new Set(['uprava', 'free_artels', 'contour', 'tract_league', 'seconds', 'continuity']),
   sanitizeServerInventorySnapshot: rows,
   serverInventoryRowsToObject: input => Object.fromEntries(rows(input).map(row => [row.id, row.qty])),
-  locationCapitalFaction: value => ({ settlement: 'old_klim', scrapTown: 'scrap_union', relayStation: 'relay_order', caravanCamp: 'caravans' })[String(value || '')] || ''
+  locationCapitalFaction: value => ({ sluiceCity: 'uprava', scrapTown: 'free_artels', relayStation: 'contour', caravanCamp: 'tract_league', secondHaven: 'seconds', balanceBunker: 'continuity' })[String(value || '')] || ''
 };
 vm.createContext(context);
 vm.runInContext([
@@ -57,10 +57,10 @@ vm.runInContext([
 ].join('\n'), context);
 
 const migrated = context.serverFactionStoragesFromState({ storage: { water: 3, ammo9: 8 } });
-assert.deepStrictEqual(Array.from(migrated.old_klim), [{ id: 'water', qty: 3 }, { id: 'ammo9', qty: 8 }]);
-assert.strictEqual(migrated.scrap_union.length, 0, 'Legacy storage leaked into Scrap Union storage');
-assert.strictEqual(migrated.relay_order.length, 0, 'Legacy storage leaked into Relay Order storage');
-assert.strictEqual(migrated.caravans.length, 0, 'Legacy storage leaked into Free Caravans storage');
+assert.deepStrictEqual(Array.from(migrated.uprava), [{ id: 'water', qty: 3 }, { id: 'ammo9', qty: 8 }]);
+assert.strictEqual(migrated.free_artels.length, 0, 'Legacy storage leaked into Free Artels storage');
+assert.strictEqual(migrated.contour.length, 0, 'Legacy storage leaked into Contour storage');
+assert.strictEqual(migrated.tract_league.length, 0, 'Legacy storage leaked into Tract League storage');
 
 const canonical = context.serverFactionStoragesFromState({
   storage: { water: 99 },
@@ -71,16 +71,16 @@ const canonical = context.serverFactionStoragesFromState({
     caravans: { food: 6 }
   }
 });
-assert.deepStrictEqual(Array.from(canonical.old_klim), [{ id: 'water', qty: 1 }]);
-assert.deepStrictEqual(Array.from(canonical.scrap_union), [{ id: 'ammo9', qty: 4 }]);
-assert.deepStrictEqual(Array.from(canonical.relay_order), [{ id: 'electronics', qty: 2 }]);
-assert.deepStrictEqual(Array.from(canonical.caravans), [{ id: 'food', qty: 6 }]);
+assert.deepStrictEqual(Array.from(canonical.uprava), [{ id: 'water', qty: 1 }]);
+assert.deepStrictEqual(Array.from(canonical.free_artels), [{ id: 'ammo9', qty: 4 }]);
+assert.deepStrictEqual(Array.from(canonical.contour), [{ id: 'electronics', qty: 2 }]);
+assert.deepStrictEqual(Array.from(canonical.tract_league), [{ id: 'food', qty: 6 }]);
 
 const player = { storage: [{ id: 'scrap', qty: 5 }] };
 context.ensureServerFactionStorages(player);
-context.serverFactionStorageRows(player, 'scrap_union').push({ id: 'ammo9', qty: 7 });
-assert.deepStrictEqual(Array.from(player.factionStorages.old_klim), [{ id: 'scrap', qty: 5 }]);
-assert.deepStrictEqual(Array.from(player.factionStorages.scrap_union), [{ id: 'ammo9', qty: 7 }]);
+context.serverFactionStorageRows(player, 'free_artels').push({ id: 'ammo9', qty: 7 });
+assert.deepStrictEqual(Array.from(player.factionStorages.uprava), [{ id: 'scrap', qty: 5 }]);
+assert.deepStrictEqual(Array.from(player.factionStorages.free_artels), [{ id: 'ammo9', qty: 7 }]);
 assert.strictEqual(context.serverFactionStorageRows(player, 'unknown').length, 0);
 
 const spawnContainers = functionSource(server, 'spawnRoomWorldContainers');
@@ -91,4 +91,4 @@ assert(normalizeLocation.includes('locationCapitalStorageObject'), 'Faction capi
 const transfer = functionSource(server, 'performServerStorageTransfer');
 assert(transfer.includes('ensureServerFactionStorages(player)[storageFaction] = nextStorage'), 'Transfers are not persisted in the selected faction storage');
 
-console.log('Faction storage check passed: four isolated capital storages with legacy migration.');
+console.log('Faction storage check passed: six isolated Kromka capital storages with legacy migration.');

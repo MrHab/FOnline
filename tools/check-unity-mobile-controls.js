@@ -19,15 +19,16 @@ assert(canvas.includes('public sealed class RoaMobileControlsCanvas')
   && canvas.includes('Screen.safeArea')
   && canvas.includes('public static Layout CalculateLayout('),
   'Adaptive safe-area mobile uGUI Canvas is incomplete');
-assert((canvas.match(/CreateButton\("/g) || []).length === 11
+assert((canvas.match(/CreateButton\("/g) || []).length === 12
   && canvas.includes('CreateDiscTexture()')
   && canvas.includes('back.raycastTarget = true')
   && canvas.includes('icon.raycastTarget = false')
   && canvas.includes('_joystickOuterImage.raycastTarget'),
-  'Mobile Canvas no longer has eleven bounded buttons or correct raycast ownership');
+  'Mobile Canvas no longer has twelve bounded buttons or correct raycast ownership');
 assert(canvas.includes('SetLabel("Target", state.TargetSelected ? "ЦЕЛЬ ✓" : "ЦЕЛЬ")')
   && canvas.includes('SetLabel("Crouch", state.Crouching ? "ВСТАТЬ" : "ПРИСЕСТЬ")')
   && canvas.includes('SetLabel("Player", state.PingAvailable ? "МЕТКА" : "ИГРОК")')
+  && canvas.includes('SetLabel("Bolt", state.BoltAiming ? "ОТМЕНА" : "БОЛТ")')
   && canvas.includes('state.FireMode.ToUpperInvariant()')
   && canvas.includes('state.InputSuppressed ? "ЗАКРЫТЬ" : "МЕНЮ"')
   && canvas.includes('bool joystickVisible = _gameplayButtonsVisible && state.JoystickActive;'),
@@ -57,7 +58,7 @@ for (const action of [
 }
 
 assert(bootstrap.includes('gameObject.AddComponent<RoaMobileControlsCanvas>()')
-  && bootstrap.includes('mobileCanvas.Configure(MobileControls);')
+  && bootstrap.includes('mobileCanvas.Configure(MobileControls, BoltThrower);')
   && bootstrap.includes('MobileControls.CanvasDriven = true;'),
   'Bootstrap does not activate the mobile Canvas and gate the old IMGUI path');
 assert(probe.includes('mobile Canvas control leaves the device safe area')
@@ -70,4 +71,4 @@ assert(probe.includes('mobile Canvas control leaves the device safe area')
 assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, 'RoaMobileControlsCanvas.cs.meta')),
   'RoaMobileControlsCanvas.cs.meta has no valid GUID');
 
-console.log('Unity mobile controls OK: safe-area uGUI, 11 touch targets, held fire, floating stick and panel-aware states');
+console.log('Unity mobile controls OK: safe-area uGUI, 12 touch targets, held fire, bolt tool, floating stick and panel-aware states');

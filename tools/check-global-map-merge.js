@@ -44,6 +44,23 @@ for (const key of MERGED_COLLECTIONS) {
   assert(Array.isArray(merged[key]), `коллекция ${key} после слияния не массив`);
 }
 
+// A major authored-world replacement must not retain the previous grid or
+// coordinates. Account/character saves are migrated separately by worldRevision.
+const legacyMap = {
+  version: 1,
+  grid: { cols: 30, rows: 30, cellPoints: 30, cellKm: 10 },
+  nodes: [{ id: 'settlement', x: 195, y: 705 }]
+};
+const kromkaMap = {
+  version: 2,
+  worldRevision: 'kromka-1',
+  unityScene: 'Assets/Scenes/Kromka/KromkaGlobalMap.unity',
+  grid: { cols: 38, rows: 30, cellPoints: 10, cellKm: 10 },
+  nodes: [{ id: 'settlement', x: 95, y: 205 }]
+};
+assert.deepStrictEqual(mergeAuthoredGlobalMap(legacyMap, kromkaMap), kromkaMap,
+  'новая версия авторского мира смешалась со старой сеткой и координатами');
+
 // --- Сервер обязан использовать именно слияние ---
 const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 assert(server.includes("require('./src/server/global-map-merge')"),

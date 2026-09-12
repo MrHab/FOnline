@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using RealmOfAshes.Game;
+using RealmOfAshes.World;
 using UnityEditor;
 using UnityEngine;
 
@@ -49,6 +50,23 @@ namespace RealmOfAshes.EditorTools
                         && RoaCombat.UiBlocksAttack(false, true, false, false, false)
                         && RoaCombat.UiBlocksAttack(false, false, false, false, true),
                     "PIP-ASH or the global map no longer blocks combat input");
+                var capital = new LocationDefinition
+                {
+                    Id = "settlement",
+                    Safe = true,
+                    Kind = "settlement"
+                };
+                var safeResource = new LocationDefinition
+                {
+                    Id = "resourceOldKlimFarm",
+                    Safe = true,
+                    Kind = "resource"
+                };
+                Require(string.IsNullOrEmpty(RoaCombat.ForbiddenAttackReason(false, capital))
+                        && RoaCombat.ForbiddenAttackReason(true, safeResource)
+                            == "Вы без сознания и не можете атаковать."
+                        && string.IsNullOrEmpty(RoaCombat.ForbiddenAttackReason(false, safeResource)),
+                    "peaceful locations must allow firing while unconscious players remain blocked");
 
                 foreach (float deadline in new[] { 0.24f, 0.52f, 0.80f })
                 {
@@ -89,7 +107,7 @@ namespace RealmOfAshes.EditorTools
 
                 Debug.Log("[COMBAT FLOW 4.8] готово: приоритет=death>reaction>attack>gait, "
                     + "melee=server-contact, ranged=impact-recoil, смерть=8 направлений, "
-                    + "VFX=цвет+пыль+ограниченный импульс, UI=без стрельбы.");
+                    + "VFX=цвет+пыль+ограниченный импульс, мирные зоны=стрельба, UI/без сознания=без стрельбы.");
             }
             catch (Exception error)
             {

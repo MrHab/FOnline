@@ -1,9 +1,8 @@
 {
-  "schema": "realm.equipment-energy-suit-review.v1",
+  "schema": "realm.free-armor-replacement-family.v1",
   "assetFamily": "equipment_energy_suit_unified_v1",
   "itemId": "energySuit",
-  "itemNameRu": "Энергозащитный костюм",
-  "artDirection": "геометрия B, материалы и износ C",
+  "slot": "armor",
   "bodyIds": [
     "female_slim",
     "female_medium",
@@ -15,146 +14,50 @@
   "variantCount": 6,
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
+  "triangleBudgetPerVariant": 12000,
+  "source": {
+    "creator": "Quaternius",
+    "pack": "Ultimate Modular Men / Ultimate Modular Women",
+    "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+    "license": "CC0-1.0",
+    "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802"
+  },
   "variants": [
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_female_slim_field_details",
-          "equipment_energy_suit_unified_v1_female_slim_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 15215,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11218
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_female_slim",
+      "itemId": "energySuit",
+      "slot": "armor",
       "bodyId": "female_slim",
-      "file": "equipment_energy_suit_unified_v1_female_slim.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.64216,
-            0.15022,
-            1.48695
-          ],
-          "minimum": [
-            -0.64216,
-            -0.13026,
-            -0.00841
-          ]
-        },
-        "detailPolygons": 373,
-        "detailVertices": 682,
-        "energyCore": [
-          0,
-          -0.19959,
-          1.28195
-        ],
-        "headBounds": {
-          "maximum": [
-            0.08888,
-            0.1129,
-            1.76664
-          ],
-          "minimum": [
-            -0.08888,
-            -0.11191,
-            1.48329
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3574,
-        "shellPolygons": 9995,
-        "shellVertices": 5054,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.1602,
-            0.15022,
-            1.48695
-          ],
-          "minimum": [
-            -0.1602,
-            -0.12659,
-            0.871
-          ]
-        },
-        "waistRadii": [
-          0.15567,
-          0.10407
-        ]
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "0EFD6734E2BB53676D66981DB5BDA8A3851380CE2359FF15705CFB4E61D558EF",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_scifi.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
       },
-      "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 4416,
+        "removedFaces": 1120,
+        "donorCoverageTriangles": 870,
+        "fittedSourceTriangles": 3296,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 4166,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 764292
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -163,155 +66,59 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "1DA48E9FD6F82E7EA29FAF5F50349FCDD267800D1441C1CE6234E4F45E5D4352"
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.13482,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.15548,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_female_medium_field_details",
-          "equipment_energy_suit_unified_v1_female_medium_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 15497,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11314
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_female_medium",
+      "itemId": "energySuit",
+      "slot": "armor",
       "bodyId": "female_medium",
-      "file": "equipment_energy_suit_unified_v1_female_medium.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.64122,
-            0.16247,
-            1.48872
-          ],
-          "minimum": [
-            -0.64122,
-            -0.14023,
-            -0.00841
-          ]
-        },
-        "detailPolygons": 373,
-        "detailVertices": 682,
-        "energyCore": [
-          0,
-          -0.21323,
-          1.28275
-        ],
-        "headBounds": {
-          "maximum": [
-            0.08888,
-            0.1129,
-            1.76664
-          ],
-          "minimum": [
-            -0.08888,
-            -0.11191,
-            1.4846
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3544,
-        "shellPolygons": 10063,
-        "shellVertices": 5094,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.173,
-            0.16247,
-            1.48775
-          ],
-          "minimum": [
-            -0.173,
-            -0.14023,
-            0.87088
-          ]
-        },
-        "waistRadii": [
-          0.16953,
-          0.11489
-        ]
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "1ABC629A25E80A2A226DCE354854D6D958BF11C9879FF0C5FB967BD4048EC120",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_scifi.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
       },
-      "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 4416,
+        "removedFaces": 1120,
+        "donorCoverageTriangles": 870,
+        "fittedSourceTriangles": 3296,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 4166,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 767432
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -320,155 +127,59 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "1528E192329B56B8442CF6C301FB4120B8F34532AB3912063F5B3677B61F3EEE"
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.14514,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.16816,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_female_large_field_details",
-          "equipment_energy_suit_unified_v1_female_large_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 15619,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11438
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_female_large",
+      "itemId": "energySuit",
+      "slot": "armor",
       "bodyId": "female_large",
-      "file": "equipment_energy_suit_unified_v1_female_large.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.64233,
-            0.18787,
-            1.49105
-          ],
-          "minimum": [
-            -0.64234,
-            -0.16967,
-            -0.00841
-          ]
-        },
-        "detailPolygons": 373,
-        "detailVertices": 682,
-        "energyCore": [
-          0,
-          -0.24267,
-          1.28363
-        ],
-        "headBounds": {
-          "maximum": [
-            0.08888,
-            0.1129,
-            1.76664
-          ],
-          "minimum": [
-            -0.08888,
-            -0.11191,
-            1.48035
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3507,
-        "shellPolygons": 10138,
-        "shellVertices": 5140,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.1955,
-            0.18787,
-            1.48863
-          ],
-          "minimum": [
-            -0.1955,
-            -0.16967,
-            0.87074
-          ]
-        },
-        "waistRadii": [
-          0.19515,
-          0.14276
-        ]
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "7EFAF671BD3E40D447AD33ED84E8C83A4B6EE606FEC1F3EB701FFF17E3E27AF2",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_female_scifi.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
       },
-      "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 4416,
+        "removedFaces": 1120,
+        "donorCoverageTriangles": 870,
+        "fittedSourceTriangles": 3296,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 4166,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 766012
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -477,155 +188,59 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "727E2943F708CCEFA37E18C831F6EA40E07F0FB5077BBA1EC7CD76386260332C"
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.17561,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.19445,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_male_slim_field_details",
-          "equipment_energy_suit_unified_v1_male_slim_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 14577,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11330
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_male_slim",
+      "itemId": "energySuit",
+      "slot": "armor",
       "bodyId": "male_slim",
-      "file": "equipment_energy_suit_unified_v1_male_slim.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.70616,
-            0.14997,
-            1.55992
-          ],
-          "minimum": [
-            -0.70616,
-            -0.12804,
-            -0.00951
-          ]
-        },
-        "detailPolygons": 373,
-        "detailVertices": 682,
-        "energyCore": [
-          0,
-          -0.18643,
-          1.285
-        ],
-        "headBounds": {
-          "maximum": [
-            0.09283,
-            0.11971,
-            1.81008
-          ],
-          "minimum": [
-            -0.09283,
-            -0.11517,
-            1.51691
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3775,
-        "shellPolygons": 10034,
-        "shellVertices": 5064,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.19315,
-            0.14985,
-            1.53285
-          ],
-          "minimum": [
-            -0.19315,
-            -0.11343,
-            0.89245
-          ]
-        },
-        "waistRadii": [
-          0.1524,
-          0.11773
-        ]
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "859A18721A2A950CFEBBFA79A3A46C0CCD7B9E593E42317EB4AD5236A9A78E3F",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_spacesuit.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
       },
-      "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5704,
+        "removedFaces": 0,
+        "donorCoverageTriangles": 870,
+        "fittedSourceTriangles": 5704,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 6574,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 1058264
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -634,155 +249,59 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "2EC44CF4F19B3F9A94A2D95570832E4FCB5ED627C1847D294360253C3385DCE4"
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.15147,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_male_medium_field_details",
-          "equipment_energy_suit_unified_v1_male_medium_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 14906,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11314
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_male_medium",
-      "bodyId": "male_medium",
-      "file": "equipment_energy_suit_unified_v1_male_medium.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.70614,
-            0.16345,
-            1.56288
-          ],
-          "minimum": [
-            -0.70614,
-            -0.12804,
-            -0.00951
-          ]
-        },
-        "detailPolygons": 401,
-        "detailVertices": 738,
-        "energyCore": [
-          0,
-          -0.19834,
-          1.285
-        ],
-        "headBounds": {
-          "maximum": [
-            0.09253,
-            0.12317,
-            1.81008
-          ],
-          "minimum": [
-            -0.09253,
-            -0.11517,
-            1.51807
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3762,
-        "shellPolygons": 10001,
-        "shellVertices": 5050,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.206,
-            0.16345,
-            1.5333
-          ],
-          "minimum": [
-            -0.206,
-            -0.12534,
-            0.89362
-          ]
-        },
-        "waistRadii": [
-          0.1648,
-          0.12881
-        ]
-      },
       "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "slot": "armor",
+      "bodyId": "male_medium",
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "7FCC6489292868C973455E7A8F0046A83FFE8891EDD96826809C9DD0FD9E123F",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_spacesuit.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5704,
+        "removedFaces": 0,
+        "donorCoverageTriangles": 926,
+        "fittedSourceTriangles": 5704,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 6630,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 1067684
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -791,155 +310,59 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "95CA16D1CC31FFE2DC7167B1011BCC5B107C13781C18D67BF5152C9BA71DA5F7"
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.16509,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 6,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_energy_suit_unified_v1_male_large_field_details",
-          "equipment_energy_suit_unified_v1_male_large_sealed_shell",
-          "character_root"
-        ],
-        "positionVertices": 14394,
-        "skins": 1,
-        "textures": 6,
-        "triangles": 11246
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_energy_suit_unified_v1_male_large",
-      "bodyId": "male_large",
-      "file": "equipment_energy_suit_unified_v1_male_large.glb",
-      "fit": {
-        "anatomyProjectionStrength": 0.84,
-        "bodyBounds": {
-          "maximum": [
-            0.70613,
-            0.19073,
-            1.56614
-          ],
-          "minimum": [
-            -0.70613,
-            -0.15233,
-            -0.00951
-          ]
-        },
-        "detailPolygons": 373,
-        "detailVertices": 682,
-        "energyCore": [
-          0,
-          -0.22533,
-          1.285
-        ],
-        "headBounds": {
-          "maximum": [
-            0.09236,
-            0.12927,
-            1.81008
-          ],
-          "minimum": [
-            -0.09236,
-            -0.11517,
-            1.51934
-          ]
-        },
-        "innerSealRequired": false,
-        "rubberMaterialPolygons": 3728,
-        "shellPolygons": 10007,
-        "shellVertices": 5052,
-        "silhouetteProfile": "energy",
-        "torsoBounds": {
-          "maximum": [
-            0.23082,
-            0.19073,
-            1.53435
-          ],
-          "minimum": [
-            -0.23082,
-            -0.15233,
-            0.89324
-          ]
-        },
-        "waistRadii": [
-          0.19412,
-          0.15718
-        ]
-      },
       "itemId": "energySuit",
-      "itemNameRu": "Энергозащитный костюм",
+      "slot": "armor",
+      "bodyId": "male_large",
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "B2072A896DA244331941A3DA43BC62E929657A233B3D0A0938E1F5E8FC733F69",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Ultimate Modular Men / Ultimate Modular Women",
+        "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_male_spacesuit.gltf",
+        "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A/86BCB11A1BC18C744A23ABE5E7BD4CC95E636BA1F405CECDBD5A0E2F7214B802",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5704,
+        "removedFaces": 0,
+        "donorCoverageTriangles": 870,
+        "fittedSourceTriangles": 5704,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 6574,
+        "meshes": 2,
+        "materials": 6,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 1059892
+      },
       "materials": [
         "energy_suit_weathered_graphite_composite",
         "energy_suit_aged_charcoal_insulation",
@@ -948,15 +371,23 @@
         "energy_suit_chipped_blue_ceramic",
         "energy_suit_oxidized_service_patch"
       ],
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
-      },
-      "reviewOnly": true,
-      "runtimeIntegrationAllowed": false,
-      "sha256": "928507C20DD9C97F0F5B8C1183A1FE4F554ACACD165B8ADA081D1B21AA52621A"
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.15386,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.19263,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.055,
+          1.1,
+          0.985
+        ]
+      }
     }
   ]
 }

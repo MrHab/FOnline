@@ -154,7 +154,7 @@ if (sim) {
   const activeTasks = asArray(sim.worldTasks).filter(task => task && task.status === 'active');
   const supportedTypes = new Set([
     'deliver_supplies', 'defend_resource', 'retake_site', 'clear_lair', 'escort_caravan', 'join_patrol',
-    'resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion'
+    'patrol_mission', 'resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion'
   ]);
 
   for (const task of activeTasks) {
@@ -171,7 +171,7 @@ if (sim) {
     if (['defend_resource', 'retake_site'].includes(type) && (!task.siteId || !sites[task.siteId])) {
       warnings.push(`${id}: боевое задание не указывает существующую точку.`);
     }
-    if (['escort_caravan', 'join_patrol'].includes(type)) {
+    if (['escort_caravan', 'join_patrol', 'patrol_mission'].includes(type)) {
       const partyId = task.joinPartyId || task.partyId;
       if (!partyId || !parties[partyId]) warnings.push(`${id}: задание отряда не указывает существующий отряд.`);
     }

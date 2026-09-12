@@ -78,6 +78,7 @@ const server = read('server.js');
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
+const barterCanvas = read('unity-client/Assets/Scripts/Game/RoaBarterCanvas.cs');
 const auth = read('unity-client/Assets/Scripts/Net/RoaAuthClient.cs');
 const uiScale = read('unity-client/Assets/Scripts/Game/RoaUiScale.cs');
 const offlineProbe = read('unity-client/Assets/Editor/RoaOfflineResilienceProbe.cs');
@@ -199,6 +200,24 @@ assert(interaction.includes('SecurityAction("hackTerminal")')
   'Unity security action must keep a closed hackTerminal/pickLock event domain');
 assert(interaction.includes('Socket.EmitWithAck(machine ? "tradeMachineExchange" : "npcTradeExchange", payload'),
   'Unity trade must keep a closed machine/NPC event domain');
+
+assert(server.includes('Object.entries(SERVER_ITEM_BASE_PRICES)')
+  && server.includes('Math.floor(Number(price) * 0.45)'),
+  'server barter sell prices must derive from the authoritative item catalog');
+assert(barterCanvas.includes('int catalogPrice = RoaItemData.BasePrice(baseId);')
+  && barterCanvas.includes('Mathf.FloorToInt(catalogPrice * 0.45f)'),
+  'Unity barter previews must derive from the downloaded item catalog');
+assert(barterCanvas.includes('TradeSkillNorm(self) * 0.24d')
+  && barterCanvas.includes('TalentLevel(self, "merchant", 3) * 0.05d')
+  && barterCanvas.includes('TradeSkillNorm(self) * 0.30d')
+  && barterCanvas.includes('TalentLevel(self, "merchant", 3) * 0.08d')
+  && barterCanvas.includes('HasTrait(self, "traderStart") ? 0.15d')
+  && barterCanvas.includes('TradeBuyPrice(stockPriceForItem, self) * 0.85d')
+  && barterCanvas.includes('interested ? 1.24d : 0.84d'),
+  'Unity barter totals no longer mirror the server discount, bonus, cap, or interest formula');
+assert(barterCanvas.includes('TradeSellPrice(baseId, market, self)')
+  && barterCanvas.includes('TradeBuyPrice(StockPrice(market, baseId), self)'),
+  'Unity barter ledger is not using the authoritative-price mirror for both sides');
 assert.deepStrictEqual(
   (unity.match(/\bSocket\.EmitWithAck\(\s*[A-Za-z_][A-Za-z0-9_]*/g) || []).sort(),
   ['Socket.EmitWithAck(action', 'Socket.EmitWithAck(eventName', 'Socket.EmitWithAck(machine'],
@@ -206,8 +225,33 @@ assert.deepStrictEqual(
 );
 
 const unityEmits = uniqueSorted([...unityTransportEmits, ...dynamicUnityEvents]);
-assert.deepStrictEqual(unityEmits, webEmits,
-  'Unity must be able to send every event sent by the production browser client, and no private substitute');
+const unityOnlyKromkaEmits = [
+  'artifactLoadoutAction',
+  'kromkaClanAction',
+  'kromkaOnboardingAction',
+  'kromkaQuestAction',
+  'kromkaQuestObjectInteract',
+  'kromkaSiegeAction',
+  'medicalConsentAction',
+  'personalBaseAction',
+  'playerTradeAction',
+  'pickupArtifact',
+  'requestArtifactState',
+  'requestKromkaClanState',
+  'requestKromkaSiegeState',
+  'requestPersonalBaseState',
+  'stabilizeArtifact',
+  'throwBolt'
+];
+assert.deepStrictEqual(
+  unityEmits.filter(name => !unityOnlyKromkaEmits.includes(name)),
+  webEmits,
+  'Unity must retain every event sent by the frozen legacy browser client');
+for (const name of unityOnlyKromkaEmits) {
+  assert(unityEmits.includes(name), `Kromka Unity event ${name} is no longer emitted`);
+  assert(!webEmits.includes(name),
+    `Kromka Unity event ${name} must not be added to the frozen legacy browser client`);
+}
 
 // Server -> client. Socket lifecycle has first-class callbacks in the C#
 // transport rather than named user-event handlers.
@@ -215,7 +259,19 @@ const webHandlers = uniqueSorted(collect(web,
   /\b(?:multiplayer\.socket|socket)\.(?:on|once)\(\s*(['"])([^'"]+)\1/g, 2));
 const lifecycle = ['connect', 'connect_error', 'disconnect'];
 const unityHandlers = uniqueSorted(collect(unity, /\b_connection\.On\(\s*"([^"]+)"/g));
-const unityOnlyHandlers = ['worldActivityFeedChanged'];
+const unityOnlyHandlers = [
+  'anomalyState',
+  'artifactState',
+  'boltThrown',
+  'kromkaClanState',
+  'kromkaOnboardingState',
+  'kromkaSiegeState',
+  'medicalConsentRequested',
+  'medicalConsentResolved',
+  'personalBaseState',
+  'playerTradeUpdated',
+  'worldActivityFeedChanged'
+];
 assert.deepStrictEqual(
   unityHandlers.filter(name => !unityOnlyHandlers.includes(name)),
   webHandlers.filter(name => !lifecycle.includes(name)),
@@ -254,12 +310,29 @@ const unityItemSource = read('unity-client/Assets/Scripts/Game/RoaItemData.cs');
 const unityItems = {};
 for (const match of unityItemSource.matchAll(/Add\(result,\s*"([^"]+)",\s*"([^"]*)",\s*(-?\d+(?:\.\d+)?)f?\);/g))
   unityItems[match[1]] = { name: match[2], weight: Number(match[3]) };
-assert.deepStrictEqual(Object.keys(unityItems).sort(), Object.keys(browserItems).sort(),
-  'Unity item catalog ids drifted from browser ITEMS');
+const unityOnlyKromkaItems = [
+  'artifactAnchor', 'artifactBelt2', 'artifactBelt3', 'artifactBelt4',
+  'artifactBloodkin', 'artifactContainer', 'artifactDetectorMk1',
+  'artifactDetectorMk2', 'artifactDetectorMk3', 'artifactDew', 'artifactDrop',
+  'artifactHusher', 'artifactMemory', 'artifactNode', 'artifactShell',
+  'artifactSieve', 'artifactSpring', 'artifactThunderer', 'artifactVein',
+  'artifactWarmer', 'blue'
+];
+assert.deepStrictEqual(
+  Object.keys(unityItems).filter(id => !unityOnlyKromkaItems.includes(id)).sort(),
+  Object.keys(browserItems).sort(),
+  'Unity item catalog lost an item from the frozen browser ITEMS catalog');
+for (const id of unityOnlyKromkaItems)
+  assert(unityItems[id], `Kromka-only Unity item ${id} is missing`);
 const itemNameDrift = [];
+const kromkaRenamedItems = { silver: 'Марки Тракта' };
 for (const [id, item] of Object.entries(browserItems)) {
-  if (unityItems[id].name !== item.name)
+  if (Object.prototype.hasOwnProperty.call(kromkaRenamedItems, id)) {
+    assert.strictEqual(unityItems[id].name, kromkaRenamedItems[id],
+      `${id}: Kromka player-facing item name drifted`);
+  } else if (unityItems[id].name !== item.name) {
     itemNameDrift.push(`${id}: ${JSON.stringify(unityItems[id].name)} != ${JSON.stringify(item.name)}`);
+  }
   assert(Math.abs(unityItems[id].weight - Number(item.weight || 0)) < 1e-6,
     `${id}: Unity item weight drifted from browser ITEMS`);
 }
@@ -277,6 +350,14 @@ for (const match of unityRecipeSource.matchAll(/Recipe\("([^"]+)",\s*"([^"]+)",\
   for (let i = 0; i + 1 < tokens.length; i += 2) cost[tokens[i]] = tokens[i + 1];
   unityRecipes.push({ id: match[1], name: match[2], outputId: match[3], outputQty: Number(match[4]), station: match[5], cost });
 }
+const unityOnlyKromkaRecipes = [{
+  id: 'reagentcraft',
+  name: 'Промышленные реагенты',
+  outputId: 'chemicals',
+  outputQty: 3,
+  station: 'chem_station',
+  cost: { oil: 2, water: 1, scrap: 1 }
+}];
 const expectedRecipes = browserRecipes.map(row => ({
   id: row.id,
   name: row.name,
@@ -285,6 +366,8 @@ const expectedRecipes = browserRecipes.map(row => ({
   station: recipeStations[row.id] || 'tool_bench',
   cost: normalizeCost(row.cost)
 }));
+const medicineRecipeIndex = expectedRecipes.findIndex(row => row.id === 'medicinecraft');
+expectedRecipes.splice(medicineRecipeIndex + 1, 0, ...unityOnlyKromkaRecipes);
 const actualRecipes = unityRecipes.map(row => ({ ...row, cost: normalizeCost(row.cost) }));
 assert.deepEqual(actualRecipes, expectedRecipes, 'Unity crafting catalog drifted from the browser client');
 
@@ -299,24 +382,28 @@ const missingCraftOutputIds = requiredCraftOutputIds.filter(id => !craftedOutput
 assert.deepStrictEqual(missingCraftOutputIds, [],
   `Crafting catalog is missing weapons, equipment, ammo or medicine: ${missingCraftOutputIds.join(', ')}`);
 
-const serverRecipeCosts = Object.fromEntries(Object.entries(
-  extractExpression(server, 'const SERVER_CRAFT_RECIPE_COSTS ='))
-  .map(([id, cost]) => [id, normalizeCost(cost)]));
-const serverRecipeOutputs = Object.fromEntries(Object.entries(
-  extractExpression(server, 'const SERVER_CRAFT_RECIPE_OUTPUTS ='))
-  .map(([id, output]) => [id, { id: String(output.id), qty: Number(output.qty) }]));
-const serverRecipeStations = Object.fromEntries(Object.entries(
-  extractExpression(server, 'const SERVER_CRAFT_RECIPE_STATIONS =')));
-const expectedServerCosts = Object.fromEntries(expectedRecipes.map(row => [row.id, row.cost]));
-const expectedServerOutputs = Object.fromEntries(expectedRecipes
-  .map(row => [row.id, { id: row.outputId, qty: row.outputQty }]));
-const expectedServerStations = Object.fromEntries(expectedRecipes.map(row => [row.id, row.station]));
-assert.deepStrictEqual(serverRecipeCosts, expectedServerCosts,
-  'Server crafting costs drifted from the browser client');
-assert.deepStrictEqual(serverRecipeOutputs, expectedServerOutputs,
-  'Server crafting outputs drifted from the browser client');
-assert.deepStrictEqual(serverRecipeStations, expectedServerStations,
-  'Server crafting stations drifted from the browser client');
+const authoredRecipeCatalog = JSON.parse(read('data/kromka/field-recipes.json'));
+const authoredRecipes = (authoredRecipeCatalog.recipes || []).map(row => ({
+  id: String(row.id),
+  name: String(row.name),
+  outputId: String(row.output?.id),
+  outputQty: Number(row.output?.qty),
+  station: String(row.station),
+  cost: normalizeCost(row.inputs)
+}));
+const recipeMechanics = rows => rows.map(({ id, outputId, outputQty, station, cost }) => ({
+  id,
+  outputId,
+  outputQty,
+  station,
+  cost: normalizeCost(cost)
+}));
+assert.strictEqual(JSON.stringify(recipeMechanics(authoredRecipes)), JSON.stringify(recipeMechanics(expectedRecipes)),
+  'The authoritative Kromka recipe mechanics drifted from the frozen parity source');
+assert(server.includes('const SERVER_CRAFT_RECIPE_COSTS = KROMKA_FIELD_RECIPE_INDEXES.costs;')
+  && server.includes('const SERVER_CRAFT_RECIPE_OUTPUTS = KROMKA_FIELD_RECIPE_INDEXES.outputs;')
+  && server.includes('const SERVER_CRAFT_RECIPE_STATIONS = KROMKA_FIELD_RECIPE_INDEXES.stations;'),
+  'Server crafting must read all costs, outputs and stations from the Kromka recipe catalog');
 
 // Weapon modification effects are server-authoritative. The Unity UI still must
 // expose each canonical modification in its correct slot.
@@ -351,8 +438,8 @@ for (const [id, row] of Object.entries(browserMods)) {
 }
 
 // Creation choices that influence the initial authoritative join.
-const serverTraits = collect(server.match(/const SERVER_START_TRAITS = new Set\(\[([^\]]+)\]\)/)?.[1] || '',
-  /['"]([^'"]+)['"]/g);
+const progressionCatalog = JSON.parse(read('data/kromka/character-progression.json'));
+const serverTraits = progressionCatalog.startTraits.items.map(row => row.id);
 const browserCreatorSource = read('public/js/game/08_character_creation_save.js');
 const browserTraitRows = extractExpression(browserCreatorSource, 'const START_TRAITS =');
 const browserStatRows = extractExpression(browserCreatorSource, 'const STAT_DEFS =');
@@ -364,19 +451,37 @@ const unityStatRows = [...creator.matchAll(/new StatDef\("([^"]+)",\s*"([^"]+)",
   .map(row => ({ key: row[1], code: row[2], name: row[3], desc: row[4] }));
 assert.deepStrictEqual(unityTraitRows.map(row => row.id), serverTraits,
   'Unity starting traits drifted from server validation');
-assert.deepStrictEqual(unityTraitRows, Array.from(browserTraitRows,
-  ({ id, name, desc }) => ({ id, name, desc })),
+const expectedTraitRows = Array.from(browserTraitRows, ({ id, name, desc }) => ({
+  id,
+  name,
+  desc: id === 'traderStart' ? 'Лучшие цены продажи и +15 марок на старте.' : desc
+}));
+assert.deepStrictEqual(unityTraitRows, expectedTraitRows,
   'Unity starting-trait labels drifted from the browser creator');
-assert.deepStrictEqual(unityStatRows, Array.from(browserStatRows,
-  ({ key, code, name, desc }) => ({ key, code, name, desc })),
-  'Unity SPECIAL labels/tooltips drifted from the browser creator');
+assert.deepStrictEqual(unityStatRows.map(row => row.key),
+  Array.from(browserStatRows, row => row.key),
+  'Unity character-stat keys drifted from the frozen browser creator');
+assert.deepStrictEqual(unityStatRows.map(({ key, code, name }) => ({ key, code, name })), [
+  { key: 'str', code: 'МЩ', name: 'Мощь' },
+  { key: 'per', code: 'НБ', name: 'Наблюдательность' },
+  { key: 'end', code: 'СТ', name: 'Стойкость' },
+  { key: 'cha', code: 'ВЛ', name: 'Влияние' },
+  { key: 'int', code: 'ИН', name: 'Интеллект' },
+  { key: 'agi', code: 'РЕ', name: 'Реакция' },
+  { key: 'luck', code: 'ЧУ', name: 'Чутьё' }
+], 'Unity character-stat labels drifted from Kromka terminology');
+for (const row of unityStatRows) {
+  assert(row.desc.startsWith('Формулы:') && row.desc.includes(row.name),
+    `${row.key}: Kromka character-stat tooltip lost its formula or display name`);
+}
 for (const marker of [
   'private static readonly string[] SexIds = { "male", "female" };',
   'private static readonly string[] BodyIds = { "slim", "medium", "large" };',
   'private static readonly string[] FaceSuffixes = { "01", "02", "03", "04" };',
-  'public const int SpecialTotal = 40;',
-  'public const int MaxTaggedSkills = 2;',
-  'public const int MaxTraits = 2;'
+  'public static int SpecialTotal { get; private set; } = 40;',
+  'public static int MaxTaggedSkills { get; private set; } = 2;',
+  'public static int MaxTraits { get; private set; } = 2;',
+  'public static bool ApplyCatalog(JObject catalog, out string error)'
 ]) assert(creator.includes(marker), `Unity character creation contract is missing: ${marker}`);
 assert(protocol.includes('[JsonProperty("schema")] public string Schema = "realm.character-appearance.v1";')
   && protocol.includes('[JsonProperty("skinToneId")] public string SkinToneId = "skin_03";'),
@@ -432,7 +537,9 @@ assert(unityGlobalMap.includes('private const string CameraPosePrefsPrefix = "ro
   && /SaveStrategicCameraPose\(\);\s*RestoreCamera\(\);/.test(unityGlobalMap),
   'Unity strategic camera pose must persist across location entry and client restarts');
 
-// Pip-Boy radio: the four browser channels keep their names, and in Unity the
+// Pip-Boy radio: the frozen browser keeps its legacy labels while the shipping
+// Unity client uses the Kromka stations. Both still expose four equivalent
+// channels, and in Unity the
 // selected channel streams real records from the built library
 // (tools/radio-library.py → public/radio/manifest.json + MP3): one station per
 // track so the channels sound different, and one shared schedule for every
@@ -444,9 +551,14 @@ const unityRadio = read('unity-client/Assets/Scripts/Game/RoaRadio.cs');
 const unityRadioPipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
 const unityRadioCanvas = read('unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs');
 const browserRadioTabs = read('public/js/game/03a_pipboy_social_world_tasks.js');
-for (const title of ['Поселенческий маяк', 'Пепельная частота', 'Канал безопасности', 'Тишина']) {
-  assert(browserRadioTabs.includes(title) && unityRadioPipboy.includes(title),
-    `Radio channel "${title}" must exist in both the browser and Unity Pip-Boy`);
+for (const [legacyTitle, kromkaTitle] of [
+  ['Поселенческий маяк', 'Голос Тесьмы'],
+  ['Пепельная частота', 'Шум Стеколья'],
+  ['Канал безопасности', 'Сводка Тракта'],
+  ['Тишина', 'Тишина']
+]) {
+  assert(browserRadioTabs.includes(legacyTitle) && unityRadioPipboy.includes(kromkaTitle),
+    `Radio channel migration "${legacyTitle}" -> "${kromkaTitle}" must stay covered`);
 }
 assert(unityRadio.includes('private const string ChannelPrefsKey = "roa.radio.channel.v1";')
   && unityRadio.includes('public static int ChannelForEvent(string type, string title)')

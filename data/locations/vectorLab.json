@@ -1,0 +1,1830 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "vectorLab",
+  "name": "Объект «Вектор»",
+  "seed": 2026091204,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "story_complex",
+  "respawnAllowed": false,
+  "enemyCap": 12,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "glassAsh",
+    "label": "Объект «Вектор»"
+  },
+  "map": {
+    "width": 72,
+    "depth": 72,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "east_shell",
+      "model": "concreteWall",
+      "name": "Восточная оболочка",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "vector-deep-research-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_left",
+      "model": "utilityPole",
+      "name": "Входной пилон",      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_right",
+      "model": "utilityPole",
+      "name": "Входной пилон",      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_gate",
+      "model": "cargoStack",
+      "name": "Герметичная секция",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 2.0,
+        "z": 2.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "story-gate",
+        "interior"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.947,
+        "z": 2.21
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "relayAntenna",
+      "name": "Объект «Вектор»",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 2.2,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "landmark",
+        "impossible-lattice",
+        "buried-field-rings"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.96,
+        "z": 3.08
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "records",
+      "model": "storageLeanTo",
+      "name": "Архивный терминал",      "position": {
+        "x": 7.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lore",
+        "quest"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 2.25
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "service",
+      "model": "workshopBench",
+      "name": "Служебный пульт",      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "service",
+        "interaction"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 1.75
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vector-glass-01",
+      "model": "glass",
+      "name": "Anomaly vector-glass-01",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-buried-lab",
+      "model": "bunker_corridors",
+      "name": "vectorLab-buried-lab EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bunker",
+        "sealed",
+        "story"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-functional-01",
+      "model": "concrete_wall",
+      "name": "vectorLab-dressing-functional-01",
+      "position": {
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.725,
+        "z": 2.475
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-functional-02",
+      "model": "relay_antenna",
+      "name": "vectorLab-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.0,
+        "z": 1.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "vectorLab-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.555,
+        "z": 1.421
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-functional-04",
+      "model": "roadblock_barricade",
+      "name": "vectorLab-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.469,
+        "z": 1.881
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-functional-05",
+      "model": "cargo_stack",
+      "name": "vectorLab-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.455,
+        "z": 1.806
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-01",
+      "model": "dead_tree_a",
+      "name": "vectorLab-dressing-region-01",
+      "position": {
+        "x": 10.151,
+        "y": 0.0,
+        "z": -29.133
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.159,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.046,
+        "z": 2.298
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-02",
+      "model": "relay_antenna",
+      "name": "vectorLab-dressing-region-02",
+      "position": {
+        "x": 10.319,
+        "y": 0.0,
+        "z": -29.57
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.342,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.663,
+        "z": 2.77
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-03",
+      "model": "utility_pole",
+      "name": "vectorLab-dressing-region-03",
+      "position": {
+        "x": 10.332,
+        "y": 0.0,
+        "z": -29.566
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.834,
+        "z": 1.807
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "vectorLab-dressing-region-04",
+      "position": {
+        "x": 15.498,
+        "y": 0.0,
+        "z": -27.218
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.286,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.995,
+        "z": 2.24
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-05",
+      "model": "dead_tree_a",
+      "name": "vectorLab-dressing-region-05",
+      "position": {
+        "x": 15.412,
+        "y": 0.0,
+        "z": -27.058
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.286,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.172,
+        "z": 2.331
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-06",
+      "model": "relay_antenna",
+      "name": "vectorLab-dressing-region-06",
+      "position": {
+        "x": 15.431,
+        "y": 0.0,
+        "z": -27.044
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.474,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.741,
+        "z": 2.757
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-07",
+      "model": "utility_pole",
+      "name": "vectorLab-dressing-region-07",
+      "position": {
+        "x": 15.435,
+        "y": 0.0,
+        "z": -27.042
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.473,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.049,
+        "z": 1.728
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "vectorLab-dressing-region-08",
+      "position": {
+        "x": 13.656,
+        "y": 0.0,
+        "z": -28.501
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.398,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.096,
+        "z": 2.213
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-09",
+      "model": "dead_tree_a",
+      "name": "vectorLab-dressing-region-09",
+      "position": {
+        "x": 13.651,
+        "y": 0.0,
+        "z": -28.502
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.398,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.215,
+        "y": 1.215,
+        "z": 1.215
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.254,
+        "z": 2.329
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-10",
+      "model": "relay_antenna",
+      "name": "vectorLab-dressing-region-10",
+      "position": {
+        "x": 13.629,
+        "y": 0.0,
+        "z": -28.511
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.621,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.804,
+        "z": 2.224
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-11",
+      "model": "utility_pole",
+      "name": "vectorLab-dressing-region-11",
+      "position": {
+        "x": 18.606,
+        "y": 0.0,
+        "z": -25.549
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.622,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.625,
+        "z": 2.43
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "vectorLab-dressing-region-12",
+      "position": {
+        "x": 18.51,
+        "y": 0.0,
+        "z": -25.44
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.547,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.357,
+        "z": 2.004
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-13",
+      "model": "dead_tree_a",
+      "name": "vectorLab-dressing-region-13",
+      "position": {
+        "x": 18.497,
+        "y": 0.0,
+        "z": -25.447
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.548,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.576,
+        "z": 1.995
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-14",
+      "model": "relay_antenna",
+      "name": "vectorLab-dressing-region-14",
+      "position": {
+        "x": 17.074,
+        "y": 0.0,
+        "z": -26.428
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.684,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.68,
+        "z": 2.13
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-dressing-region-15",
+      "model": "utility_pole",
+      "name": "vectorLab-dressing-region-15",
+      "position": {
+        "x": 17.343,
+        "y": 0.0,
+        "z": -26.818
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.685,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.158,
+        "y": 1.158,
+        "z": 1.158
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.589,
+        "z": 2.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-landmark",
+      "model": "impossible-lattice",
+      "name": "Landmark impossible-lattice EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "impossible-lattice"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-lattice",
+      "model": "vector_lattice",
+      "name": "vectorLab-lattice EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "vector",
+        "distortion",
+        "impossible-geometry"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-0",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-1",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-2",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-2 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-3",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-3 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-4",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-4 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-5",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-5 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-glass-6",
+      "model": "fused_glass",
+      "name": "vectorLab-region-glass-6 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-leaning-pylon-0",
+      "model": "power_pylon",
+      "name": "vectorLab-region-leaning-pylon-0 EDITABLE",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-leaning-pylon-1",
+      "model": "power_pylon",
+      "name": "vectorLab-region-leaning-pylon-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 6.074
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.624,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vectorLab-region-leaning-pylon-2",
+      "model": "power_pylon",
+      "name": "vectorLab-region-leaning-pylon-2 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_a",
+      "model": "watchPost",
+      "name": "Пост А",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -15.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_b",
+      "model": "watchPost",
+      "name": "Пост Б",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -15.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "west_shell",
+      "model": "concreteWall",
+      "name": "Западная оболочка",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "vector-deep-research-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "vector-glass-01",
+      "type": "glass",
+      "x": 0,
+      "z": 12,
+      "radius": 3.6,
+      "placement": "authored"
+    }
+  ],
+  "visualProfile": {
+    "id": "vector-deep-research-v1",
+    "macroRegion": "glasslands",
+    "ambientProfile": "witness-field-resonance",
+    "fogDensityDay": 0.0025,
+    "exposureDay": 0.9
+  },
+  "lore": "Объект «Вектор»: witness-field-resonance. impossible-lattice, buried-field-rings.",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "glasslands",
+  "kromkaVisualProfile": "vector-deep-research-v1",
+  "ambientProfile": "witness-field-resonance",
+  "anomalyDensity": 0.7,
+  "unityScene": "Assets/Scenes/Kromka/Locations/vectorLab.unity",
+  "respawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 16,
+    "tz": 8,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "vector-observation-lock",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "vectorLab-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

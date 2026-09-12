@@ -77,12 +77,15 @@ namespace RealmOfAshes.EditorTools
                     new Vector3(80f, 3f, -90f), 100f, 120f);
                 Check(Mathf.Approximately(clamped.x, 50f)
                       && Mathf.Approximately(clamped.z, -60f)
-                      && Mathf.Approximately(clamped.y, 3f),
-                    "anchor карты вышел за границы или потерял высоту");
+                      && Mathf.Approximately(clamped.y,
+                          RoaGlobalMap.StrategicMinimumCameraAnchorY),
+                    "anchor карты вышел за границы или опустился ниже минимальной высоты");
 
                 Check(Mathf.Approximately(RoaGlobalMap.StrategicDefaultPitchDeg, 55f)
                       && Mathf.Approximately(RoaGlobalMap.StrategicDefaultYawDeg, 45f),
                     "глобальная камера потеряла стандартный наклон 55/45");
+                Check(Mathf.Approximately(RoaGlobalMap.StrategicMinimumCameraAnchorY, 0f),
+                    "минимальная высота anchor глобальной камеры не равна 0");
                 Vector2 orbit = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
                     new Vector2(10f, -20f));
                 Check(Mathf.Abs(orbit.x - 58.6f) < 0.001f
@@ -101,13 +104,12 @@ namespace RealmOfAshes.EditorTools
                       && Mathf.Abs(orbitWrapped.y - 2.6f) < 0.001f,
                     "орбита глобальной камеры не ограничивает наклон или не замыкает yaw");
                 float strategicNear = RoaGlobalMap.StrategicMinimumCameraDistance(90f);
+                float kromkaNear = RoaGlobalMap.StrategicMinimumCameraDistance(38f);
                 float strategicFar = RoaGlobalMap.StrategicMaximumCameraDistance(90f);
-                float closestHeight = strategicNear * Mathf.Sin(
-                    RoaGlobalMap.StrategicMinimumPitchDeg * Mathf.Deg2Rad);
-                Check(Mathf.Abs(strategicNear - 18f) < 0.001f
-                      && Mathf.Abs(strategicFar - 150f) < 0.001f
-                      && closestHeight >= RoaGlobalMap.StrategicMinimumCameraClearance,
-                    "ближний zoom глобальной карты не расширен или опускает камеру в землю");
+                Check(Mathf.Abs(strategicNear - 1f) < 0.001f
+                      && Mathf.Abs(kromkaNear - 1f) < 0.001f
+                      && Mathf.Abs(strategicFar - 20f) < 0.001f,
+                    "диапазон дистанции глобальной камеры не равен 1–20");
 
                 Vector2 touchStart = new Vector2(100f, 100f);
                 Check(!RoaGlobalMap.TouchDragReached(touchStart, new Vector2(108f, 106f), 14f),
@@ -281,7 +283,7 @@ namespace RealmOfAshes.EditorTools
 
                 Debug.Log("[GLOBAL MAP UX 4.2] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, orbit=55/45+MMB, WASD=camera-relative, RMB=Y-inverted, mapZoom=18–150, pointer=tap/drag/pinch-pan, labels=canvas/activities, route=progress/contact, lists=stable");
+                    + ", clamp=50:-60, orbit=55/45+MMB, WASD=camera-relative, RMB=Y-inverted, mapZoom=1–20, pointer=tap/drag/pinch-pan, labels=canvas/activities, route=progress/contact, lists=stable");
             }
             finally
             {

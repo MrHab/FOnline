@@ -52,6 +52,8 @@ const seamAuthoring = read('unity-client', 'Assets', 'Editor', 'RoaGlobalMapSeam
 const roadAuthoring = read('unity-client', 'Assets', 'Editor', 'RoaGlobalMapRoadAuthoring.cs');
 const environmentAuthoring = read('unity-client', 'Assets', 'Editor',
   'RoaGlobalMapEnvironmentAuthoring.cs');
+const lowFogAuthoring = read('unity-client', 'Assets', 'Editor',
+  'RoaGlobalMapSandstormAuthoring.cs');
 const landmarkAuthoring = read('unity-client', 'Assets', 'Editor',
   'RoaGlobalMapLandmarkAuthoring.cs');
 const guide = read('docs', 'UNITY_GLOBAL_MAP_AUTHORING.md');
@@ -82,7 +84,10 @@ const horizonPrefab = read('unity-client', 'Assets', 'Prefabs', 'GlobalMap',
   'GM_HorizonTerrain.prefab');
 const toxicFogPrefab = read('unity-client', 'Assets', 'Prefabs', 'GlobalMap',
   'GM_ToxicBoundaryFog.prefab');
-const map = JSON.parse(read('data', 'global-map.json'));
+// GlobalMapAuthored is the preserved pre-Kromka visual source. The live
+// data/global-map.json now belongs to KromkaGlobalMap and is deliberately
+// validated by check-kromka-world-revision.js instead of against this scene.
+const archivedNodeIds = ['settlement', 'scrapTown', 'relayStation', 'caravanCamp'];
 
 for (const layer of [
   'StaticContent',
@@ -97,9 +102,9 @@ for (const layer of [
   assert(scene.includes(`m_Name: ${layer}`), `Authored global-map layer is missing: ${layer}`);
 }
 
-for (const node of map.nodes || []) {
-  assert(node && node.id, 'global-map node has no stable id');
-  assert(scene.includes(`_nodeId: ${node.id}`), `Unity scene has no node anchor for ${node.id}`);
+for (const nodeId of archivedNodeIds) {
+  assert(scene.includes(`_nodeId: ${nodeId}`),
+    `Archived Unity scene has no preserved node anchor for ${nodeId}`);
 }
 
 const prefabInstances = (scene.match(/m_SourcePrefab:/g) || []).length;
@@ -157,13 +162,8 @@ assert(roadAuthoring.includes('ExpectedRoadPieceCount = 0')
   && roadAuthoring.includes('EditorSceneManager.SaveScene(scene)'),
   'Road authoring cannot deterministically rebuild safe prefab infrastructure');
 
-const waterCells = Object.values(map.cells || {}).filter(cell => {
-  const texture = String(cell?.texture || '').trim().toLowerCase();
-  return texture === 'water' || texture === 'ocean'
-    || texture === 'sea' || texture === 'lake';
-}).length;
-assert(waterCells === 101,
-  `Global-map west ocean must remain exactly 101 authored water cells (found ${waterCells})`);
+assert(environmentAuthoring.includes('ExpectedWaterCellCount = 101'),
+  'Archived global-map environment lost its 101-cell west-ocean contract');
 assert(scene.includes('m_Name: BiomeDetail_AUTHORED')
   && (scene.match(/value: BiomeDetail_/g) || []).length === 0,
   'GlobalMapAuthored must keep the biome-detail layer empty (art decision 2026-09-02)');
@@ -178,7 +178,7 @@ assert(environmentAuthoring.includes('ExpectedBiomeDetailCount = 0')
   && environmentAuthoring.includes('ExpectedCoastDetailCount = 0')
   && environmentAuthoring.includes('ExpectedWaterCellCount = 101')
   && environmentAuthoring.includes('HorizonExtent = 220f')
-  && environmentAuthoring.includes('ToxicFogInnerExtent = 41.5f')
+  && environmentAuthoring.includes('ToxicFogInnerExtent = 34f')
   && environmentAuthoring.includes('ToxicFogOuterExtent = 170f')
   && environmentAuthoring.includes('ExpectedVisibleGroundY = -0.13f')
   && environmentAuthoring.includes('ExpectedGroundedExistingCount = 18')
@@ -188,11 +188,20 @@ assert(environmentAuthoring.includes('ExpectedBiomeDetailCount = 0')
   && environmentAuthoring.includes('SaveMesh(BuildOceanMesh(), OceanMeshPath)')
   && environmentAuthoring.includes('SaveMesh(BuildHorizonMesh(), HorizonMeshPath)')
   && environmentAuthoring.includes('SaveMesh(BuildToxicFogMesh(), ToxicFogMeshPath)')
-  && environmentAuthoring.includes('vertices.Add(new Vector3(x, 0.24f, z))')
+  && environmentAuthoring.includes('RoaGlobalMapSandstormAuthoring.Apply()')
   && environmentAuthoring.includes('ResolveVisibleGroundY(')
   && environmentAuthoring.includes('GroundExistingDecoration(')
   && environmentAuthoring.includes('EditorSceneManager.SaveScene(scene)'),
   'Environment authoring cannot deterministically rebuild 3.4 biome/ocean/fog/grounding assets');
+
+assert(lowFogAuthoring.includes('ToxicFogBillows_North')
+  && lowFogAuthoring.includes('ToxicFogBillows_South')
+  && lowFogAuthoring.includes('ToxicFogBillows_East')
+  && lowFogAuthoring.includes('ToxicFogBillows_West')
+  && lowFogAuthoring.includes('main.startSizeY = new ParticleSystem.MinMaxCurve(1.6f, 2.5f)')
+  && lowFogAuthoring.includes('shape.scale = new Vector3(EmitterLength, 0.04f, 6f)')
+  && !lowFogAuthoring.includes('BuildFarWall(root.transform'),
+  'Toxic boundary fog must remain a saved low-billow prefab without a high far wall');
 
 const oceanShaderGuid = assetGuid('unity-client', 'Assets', 'Art', 'GlobalMap',
   'Shaders', 'GM_WestOcean.shader');
@@ -216,10 +225,11 @@ assert(oceanShader.includes('Shader "Universal Render Pipeline/Realm of Ashes/Gl
   && horizonShader.includes('Shader "Universal Render Pipeline/Realm of Ashes/Global Map Horizon"')
   && toxicFogShader.includes('Shader "Universal Render Pipeline/Realm of Ashes/Global Map Toxic Boundary Fog"')
   && toxicFogShader.includes('Blend SrcAlpha OneMinusSrcAlpha')
-  && toxicFogShader.includes('smoothstep(-3.50h, 0.15h, outside)')
+  && toxicFogShader.includes('input.billboardSize.x')
+  && toxicFogShader.includes('half billboard = step(0.5h, input.fogData.b)')
   && toxicFogShader.includes('smoothstep(2.0h, 8.0h, cameraDistance)')
-  && toxicFogMaterial.includes('- _Density: 0.96')
-  && toxicFogMaterial.includes('- _VerticalMotion: 0')
+  && toxicFogMaterial.includes('- _Density: 0.78')
+  && toxicFogMaterial.includes('- _VerticalMotion: 0.16')
   && toxicFogShader.includes('ComputeFogIntensity(input.fogFactor)'),
   'Global-map ocean/horizon/toxic fog must use their custom URP shaders');
 assert(oceanMaterial.includes(`guid: ${oceanShaderGuid}`)
@@ -378,6 +388,8 @@ assert(lifecycleProbe.includes('NullManagedState(map)')
 assert(presentationProbe.includes('PresentationProfile(RoaGlobalMap.MapDetailTier.Far)')
   && presentationProbe.includes('TargetKindVisibleAtTier')
   && presentationProbe.includes('InfrastructureLabelLimit == 3')
+  && presentationProbe.includes('far.PartyBucket == 0f')
+  && presentationProbe.includes('far.ThreatBucket == 0f')
   && presentationProbe.includes('RouteVisualScale(0.6f, 0.6f'),
   'Unity presentation probe does not cover semantic zoom and hidden target layers');
 assert(runtime.includes('Dictionary<string, PartyActorState> _partyActors')
@@ -389,6 +401,9 @@ assert(runtime.includes('Dictionary<string, PartyActorState> _partyActors')
   && runtime.includes('_ = _playerActor.ConfigurePlayer(BaseUrl, self ?? new JObject())')
   && runtime.includes('WastelandSnapshotIsStale'),
   'Unity global map does not preserve, render and smoothly advance authoritative live actors');
+assert(runtime.includes('if (_playerMarker != null) _playerMarker.SetActive(true);')
+  && runtime.includes('if (_selectionMarker != null) _selectionMarker.SetActive(true);'),
+  'Authored player/selection handles are not enabled when the strategic map opens');
 assert(actorView.includes('sealed class RoaGlobalMapActorView')
   && actorView.includes('Dictionary<string, Task<GltfImport>> ModelCache')
   && actorView.includes('if (Ready) return Task.CompletedTask')
@@ -473,9 +488,11 @@ assert(guide.includes('StaticContent/Decor')
   && guide.includes('RoaGlobalMapNodeAnchor')
   && guide.includes('No Generated Global Map'),
   'Global-map manual authoring guide is incomplete');
-assert(build.includes('Assets/Scenes/GlobalMapAuthored.unity'),
-  'GlobalMapAuthored is not included in Unity build settings');
+assert(!build.includes('Assets/Scenes/GlobalMapAuthored.unity'),
+  'Archived GlobalMapAuthored must not ship in the Kromka build');
+assert(build.includes('Assets/Scenes/Kromka/KromkaGlobalMap.unity'),
+  'KromkaGlobalMap is not included in Unity build settings');
 
-console.log(`Unity no-generated global map OK: ${map.nodes.length} nodes, ${prefabInstances} scene prefab instances, ${curatedLandmarks} curated landmarks, ${requiredPrefabs.length} visual prefabs`);
+console.log(`Archived Unity global-map source OK: ${archivedNodeIds.length} preserved nodes, ${prefabInstances} scene prefab instances, ${curatedLandmarks} curated landmarks, ${requiredPrefabs.length} visual prefabs`);
 require('./check-unity-model-prefabs').run();
 require('./check-unity-global-map-stress').run();

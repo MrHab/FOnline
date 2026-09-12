@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "mutantCrater",
-  "name": "Кратер супермутантов",
+  "name": "Воронка Складней",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvpFullDrop",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,57 +52,1710 @@
   "containers": [],
   "objects": [
     {
-      "id": "mutant_crater_cargo_01",
-      "model": "cargoStack",
-      "name": "Украденный груз",
-      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "id": "fold-carousel-01",
+      "model": "carousel",
+      "name": "Anomaly fold-carousel-01",
       "position": {
-        "x": 7,
-        "y": 0,
-        "z": -6
+        "x": 6.0,
+        "y": 0.08,
+        "z": 3.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-functional-01",
+      "model": "dead_tree_a",
+      "name": "mutantCrater-dressing-functional-01",
+      "position": {
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.51,
+        "z": 1.7
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-functional-02",
+      "model": "deadwood",
+      "name": "mutantCrater-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.152,
+        "z": 1.356
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "mutantCrater-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.821,
+        "z": 2.222
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-functional-04",
+      "model": "car_wreck",
+      "name": "mutantCrater-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.875,
+        "z": 3.99
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-functional-05",
+      "model": "perimeter_debris",
+      "name": "mutantCrater-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.617,
+        "z": 1.589
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-01",
+      "model": "dead_tree_a",
+      "name": "mutantCrater-dressing-region-01",
+      "position": {
+        "x": 8.801,
+        "y": 0.0,
+        "z": 18.952
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.247,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.449,
+        "z": 1.707
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-02",
+      "model": "relay_antenna",
+      "name": "mutantCrater-dressing-region-02",
+      "position": {
+        "x": 8.992,
+        "y": 0.0,
+        "z": 19.386
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.435,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.517,
+        "z": 1.835
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-03",
+      "model": "utility_pole",
+      "name": "mutantCrater-dressing-region-03",
+      "position": {
+        "x": 8.983,
+        "y": 0.0,
+        "z": 19.391
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.434,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.323,
+        "z": 1.956
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "mutantCrater-dressing-region-04",
+      "position": {
+        "x": 5.236,
+        "y": 0.0,
+        "z": 20.715
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.379,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.123,
+        "z": 1.624
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-05",
+      "model": "dead_tree_a",
+      "name": "mutantCrater-dressing-region-05",
+      "position": {
+        "x": 5.187,
+        "y": 0.0,
+        "z": 20.533
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.379,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.299,
+        "z": 1.623
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-06",
+      "model": "relay_antenna",
+      "name": "mutantCrater-dressing-region-06",
+      "position": {
+        "x": 5.171,
+        "y": 0.0,
+        "z": 20.535
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.562,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.317,
+        "z": 1.686
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-07",
+      "model": "utility_pole",
+      "name": "mutantCrater-dressing-region-07",
+      "position": {
+        "x": 5.218,
+        "y": 0.0,
+        "z": 20.523
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.561,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.267,
+        "z": 1.935
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "mutantCrater-dressing-region-08",
+      "position": {
+        "x": 6.878,
+        "y": 0.0,
+        "z": 20.533
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.505,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.951,
+        "z": 1.541
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-09",
+      "model": "dead_tree_a",
+      "name": "mutantCrater-dressing-region-09",
+      "position": {
+        "x": 6.881,
+        "y": 0.0,
+        "z": 20.531
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.506,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.93,
+        "y": 0.93,
+        "z": 0.93
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.145,
+        "z": 1.516
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-10",
+      "model": "relay_antenna",
+      "name": "mutantCrater-dressing-region-10",
+      "position": {
+        "x": 6.846,
+        "y": 0.0,
+        "z": 20.542
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.673,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.943,
+        "y": 0.943,
+        "z": 0.943
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.486,
+        "z": 1.823
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-11",
+      "model": "utility_pole",
+      "name": "mutantCrater-dressing-region-11",
+      "position": {
+        "x": 2.93,
+        "y": 0.0,
+        "z": 21.452
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.674,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.943,
+        "y": 0.943,
+        "z": 0.943
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.316,
+        "z": 1.915
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "mutantCrater-dressing-region-12",
+      "position": {
+        "x": 2.921,
+        "y": 0.0,
+        "z": 21.314
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.618,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.943,
+        "y": 0.943,
+        "z": 0.943
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.937,
+        "z": 1.547
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-13",
+      "model": "dead_tree_a",
+      "name": "mutantCrater-dressing-region-13",
+      "position": {
+        "x": 2.931,
+        "y": 0.0,
+        "z": 21.31
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.619,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.942,
+        "y": 0.942,
+        "z": 0.942
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.126,
+        "z": 1.519
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-14",
+      "model": "relay_antenna",
+      "name": "mutantCrater-dressing-region-14",
+      "position": {
+        "x": 4.096,
+        "y": 0.0,
+        "z": 21.115
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.377,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.943,
+        "y": 0.943,
+        "z": 0.943
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.085,
+        "z": 2.149
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-dressing-region-15",
+      "model": "utility_pole",
+      "name": "mutantCrater-dressing-region-15",
+      "position": {
+        "x": 4.175,
+        "y": 0.0,
+        "z": 21.576
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.377,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.943,
+        "y": 0.943,
+        "z": 0.943
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.471,
+        "z": 1.35
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-elder-den",
+      "model": "ring_structure",
+      "name": "mutantCrater-elder-den EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-landmark",
+      "model": "medical-ring",
+      "name": "Landmark medical-ring EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "medical-ring"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-main-nest",
+      "model": "ring_structure",
+      "name": "mutantCrater-main-nest EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-medical-containers",
+      "model": "medical_container_ring",
+      "name": "mutantCrater-medical-containers EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "fold",
+        "medical",
+        "mutant-trace"
+      ],
+      "footprint": {
+        "x": 16.0,
+        "z": 16.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-outer-trace-0",
+      "model": "terrain_mound",
+      "name": "mutantCrater-outer-trace-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-outer-trace-1",
+      "model": "terrain_mound",
+      "name": "mutantCrater-outer-trace-1 EDITABLE",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-outer-trace-2",
+      "model": "terrain_mound",
+      "name": "mutantCrater-outer-trace-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-outer-trace-3",
+      "model": "terrain_mound",
+      "name": "mutantCrater-outer-trace-3 EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-outer-trace-4",
+      "model": "terrain_mound",
+      "name": "mutantCrater-outer-trace-4 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-0",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-1",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-2",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-2 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-3",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-3 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-4",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-4 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-5",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-5 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-glass-6",
+      "model": "fused_glass",
+      "name": "mutantCrater-region-glass-6 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-leaning-pylon-0",
+      "model": "power_pylon",
+      "name": "mutantCrater-region-leaning-pylon-0 EDITABLE",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-leaning-pylon-1",
+      "model": "power_pylon",
+      "name": "mutantCrater-region-leaning-pylon-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 6.074
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.624,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutantCrater-region-leaning-pylon-2",
+      "model": "power_pylon",
+      "name": "mutantCrater-region-leaning-pylon-2 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "mutant_crater_cargo_01",
+      "model": "cargoStack",
+      "name": "Украденный груз",      "position": {
+        "x": 7.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.973,
+        "z": 1.105
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "mutant_crater_fire_01",
       "model": "campfireRest",
-      "name": "Кострище мутантов",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 2,
-        "y": 0,
-        "z": 8
+      "name": "Кострище мутантов",      "position": {
+        "x": 2.0,
+        "y": 0.0,
+        "z": 8.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
         "camp"
-      ]
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.2,
+        "z": 1.8
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "glasslands",
+  "kromkaVisualProfile": "fold-mutant-medical-crater-v1",
+  "ambientProfile": "biological-glasslands-crater",
+  "anomalyDensity": 0.47,
+  "unityScene": "Assets/Scenes/Kromka/Locations/mutantCrater.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "crater-observation-road",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "mutantCrater-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

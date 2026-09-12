@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace RealmOfAshes.Game
 {
@@ -15,11 +16,14 @@ namespace RealmOfAshes.Game
         public string Station;
         public string Description;
         public Dictionary<string, int> Cost;
+        public int SilverFee;
+        public int WorkSeconds;
 
         public int Fee
         {
             get
             {
+                if (SilverFee > 0) return SilverFee;
                 int total = 0;
                 foreach (int qty in Cost.Values) total += qty;
                 return System.Math.Max(1, (total + 4) / 5);
@@ -44,6 +48,7 @@ namespace RealmOfAshes.Game
             { "medkitcraft", "Комплект для восстановления здоровья." },
             { "doctorbagcraft", "Медицинский набор для лечения тяжёлых травм." },
             { "antibioticscraft", "Препарат для лечения инфекции." },
+            { "reagentcraft", "Промышленные реагенты из масла, воды и очищенного лома." },
             { "repairkitcraft", "Набор для ремонта оружия и брони." },
             { "knifecraft", "Запасное оружие ближнего боя." },
             { "pistolcraft", "Лёгкий одноручный пистолет." },
@@ -82,7 +87,7 @@ namespace RealmOfAshes.Game
             { "electronicscraft", "Платы и датчики. Нужны для прицелов и энергетических модификаций." },
         };
 
-        public static readonly IReadOnlyList<RoaCraftRecipe> Recipes = new[]
+        private static IReadOnlyList<RoaCraftRecipe> _recipes = new[]
         {
             Recipe("ammo9craft", "Самодельные патроны 9mm", "ammo9", 8, "ammo_bench", "ore", 1, "wood", 1),
             Recipe("ammo556craft", "Патроны .223", "ammo556", 5, "ammo_bench", "ore", 2, "wood", 1),
@@ -95,6 +100,7 @@ namespace RealmOfAshes.Game
             Recipe("doctorbagcraft", "Набор доктора", "doctorBag", 1, "chem_station", "medicine", 5, "electronics", 1, "scrap", 2),
             Recipe("antibioticscraft", "Антибиотики", "antibiotics", 2, "chem_station", "medicine", 3, "chemicals", 2),
             Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
+            Recipe("reagentcraft", "Промышленные реагенты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
             Recipe("knifecraft", "Боевой нож", "knife", 1, "weapon_bench", "ore", 2, "wood", 1),
             Recipe("pistolcraft", "9mm пистолет", "pistol", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),
@@ -132,6 +138,69 @@ namespace RealmOfAshes.Game
             Recipe("weaponpartscraft", "Оружейные детали", "weaponParts", 2, "weapon_bench", "ore", 6, "scrap", 5),
             Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1)
         };
+
+        public static IReadOnlyList<RoaCraftRecipe> Recipes { get { return _recipes; } }
+
+        /// <summary>Atomically replaces the baked fallback recipes with server-authored rows.</summary>
+        public static bool ApplyCatalog(JObject catalog, out string error)
+        {
+            error = string.Empty;
+            JArray rows = catalog?["recipes"] as JArray;
+            if (rows == null || rows.Count < 40)
+            {
+                error = "Каталог полевого крафта пуст или неполон.";
+                return false;
+            }
+            var next = new List<RoaCraftRecipe>();
+            var ids = new HashSet<string>();
+            foreach (JToken token in rows)
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? string.Empty;
+                string name = row?["name"]?.ToString() ?? string.Empty;
+                string station = row?["station"]?.ToString() ?? string.Empty;
+                string outputId = row?["output"]?["id"]?.ToString() ?? string.Empty;
+                int outputQty = row?["output"]?["qty"]?.ToObject<int?>() ?? 0;
+                JObject inputs = row?["inputs"] as JObject;
+                if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name)
+                    || string.IsNullOrEmpty(station) || string.IsNullOrEmpty(outputId)
+                    || outputQty < 1 || inputs == null || !ids.Add(id))
+                {
+                    error = "Повреждён рецепт: " + id;
+                    return false;
+                }
+                var cost = new Dictionary<string, int>();
+                foreach (JProperty property in inputs.Properties())
+                {
+                    int qty = property.Value.ToObject<int>();
+                    if (string.IsNullOrEmpty(property.Name) || qty < 1)
+                    {
+                        error = "Повреждены материалы рецепта: " + id;
+                        return false;
+                    }
+                    cost[property.Name] = qty;
+                }
+                if (cost.Count == 0)
+                {
+                    error = "Рецепт не содержит материалов: " + id;
+                    return false;
+                }
+                next.Add(new RoaCraftRecipe
+                {
+                    Id = id,
+                    Name = name,
+                    Description = row?["description"]?.ToString() ?? string.Empty,
+                    OutputId = outputId,
+                    OutputQty = outputQty,
+                    Station = station,
+                    Cost = cost,
+                    SilverFee = System.Math.Max(0, row?["silverFee"]?.ToObject<int?>() ?? 0),
+                    WorkSeconds = System.Math.Max(1, row?["workSeconds"]?.ToObject<int?>() ?? 1)
+                });
+            }
+            _recipes = next;
+            return true;
+        }
 
         /// <summary>
         /// Ключ модели станка нужного типа: авторские объекты станций

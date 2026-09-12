@@ -25,15 +25,15 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Density: 0.96
-    - _NoiseScale: 0.075
+    - _Density: 0.78
+    - _NoiseScale: 0.082
     - _PulseSpeed: 0.52
-    - _VerticalMotion: 0
+    - _VerticalMotion: 0.16
     m_Colors:
-    - _BoundaryColor: {r: 0.55, g: 0.42, b: 0.26, a: 1}
-    - _DarkColor: {r: 0.14, g: 0.1, b: 0.06, a: 1}
+    - _BoundaryColor: {r: 0.47, g: 0.68, b: 0.06, a: 1}
+    - _DarkColor: {r: 0.002, g: 0.018, b: 0.002, a: 1}
     - _FlowSpeed: {r: 0.035, g: 0.018, b: -0.026, a: 0.029}
-    - _GlowColor: {r: 0.66, g: 0.5, b: 0.3, a: 1}
-    - _ToxicColor: {r: 0.46, g: 0.35, b: 0.22, a: 1}
+    - _GlowColor: {r: 0.33, g: 0.62, b: 0.05, a: 1}
+    - _ToxicColor: {r: 0.1, g: 0.33, b: 0.025, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

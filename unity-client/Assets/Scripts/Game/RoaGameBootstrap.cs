@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using RealmOfAshes.World;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace RealmOfAshes.Game
 {
@@ -29,9 +30,9 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                return Active != null && !RoaHudLayout.Editing
-                    && (Active._gameMenuOpen || Active._tutorialOpen
-                        || Active._graphicsOpen || Active.AnyGameplayPanelOpen());
+                return Active != null && (Active._cinematicActive
+                    || (!RoaHudLayout.Editing && (Active._gameMenuOpen || Active._tutorialOpen
+                        || Active._graphicsOpen || Active.AnyGameplayPanelOpen())));
             }
         }
 
@@ -74,6 +75,12 @@ namespace RealmOfAshes.Game
         public RoaAudio Audio;
         public RoaRadio Radio;
         public RoaMovementFx MovementFx;
+        public RoaAnomalyFieldRenderer Anomalies;
+        public RoaSettlementLifePresentation SettlementLifePresentation;
+        public RoaBoltThrower BoltThrower;
+        public RoaKromkaShiftAndDetector ShiftAndDetector;
+        public RoaPersonalBaseCanvas PersonalBaseCanvas;
+        public RoaKromkaSiegePresentation SiegePresentation;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
         public RoaActorNameplates ActorNameplates;
@@ -83,6 +90,8 @@ namespace RealmOfAshes.Game
         public RoaWorkbenchCanvas WorkbenchCanvas;
         public RoaMapWindowCanvas MapWindow;
         public RoaWorldActivityCanvas WorldActivityCanvas;
+        public RoaKromkaOnboarding Onboarding;
+        public RoaCaravanDepartureCinematic CaravanDepartureCinematic;
         public RoaFirstRunCoach FirstRunCoach;
         public RoaRecoveryCanvas RecoveryCanvas;
 
@@ -170,6 +179,7 @@ namespace RealmOfAshes.Game
         private bool _tutorialOpen;
         private Vector2 _tutorialScroll;
         private bool _graphicsOpen;
+        private bool _cinematicActive;
 
         private GameObject _player;
         private RoaPlayerController _controller;
@@ -180,6 +190,7 @@ namespace RealmOfAshes.Game
 
         private void Awake()
         {
+            if (RoaLocalModelReview.TryStart()) return;
             Active = this;
             RoaUiTheme.Ensure(gameObject);
             ApplyAutomationEnvironment();
@@ -262,6 +273,12 @@ namespace RealmOfAshes.Game
             if (Interaction == null) Interaction = GetComponent<RoaInteraction>();
             if (Interaction == null) Interaction = gameObject.AddComponent<RoaInteraction>();
             Interaction.Configure(BaseUrl, Socket, Enemies, Fog, Loader);
+            if (CaravanDepartureCinematic == null)
+                CaravanDepartureCinematic = GetComponent<RoaCaravanDepartureCinematic>();
+            if (CaravanDepartureCinematic == null)
+                CaravanDepartureCinematic = gameObject.AddComponent<RoaCaravanDepartureCinematic>();
+            CaravanDepartureCinematic.Configure(this, Socket, CameraRig);
+            Interaction.CaravanDepartureCinematic = CaravanDepartureCinematic;
             Interaction.GroundItems = GroundItems;
             Minimap.Configure(Enemies, RemotePlayers, GroundItems, Interaction);
             if (GroundItems != null) GroundItems.Interaction = Interaction;
@@ -306,9 +323,30 @@ namespace RealmOfAshes.Game
             if (_automationForceMobile) MobileControls.ForceVisible = true;
             MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);
             MobileControls.MenuRequested = ToggleGameMenu;
+
+            if (Anomalies == null) Anomalies = GetComponent<RoaAnomalyFieldRenderer>();
+            if (Anomalies == null) Anomalies = gameObject.AddComponent<RoaAnomalyFieldRenderer>();
+            Anomalies.Configure(Socket);
+            Anomalies.SetLocalWorldActive(false);
+            if (SettlementLifePresentation == null) SettlementLifePresentation = GetComponent<RoaSettlementLifePresentation>();
+            if (SettlementLifePresentation == null) SettlementLifePresentation = gameObject.AddComponent<RoaSettlementLifePresentation>();
+            SettlementLifePresentation.Configure(Loader);
+            if (BoltThrower == null) BoltThrower = GetComponent<RoaBoltThrower>();
+            if (BoltThrower == null) BoltThrower = gameObject.AddComponent<RoaBoltThrower>();
+            BoltThrower.Configure(Socket, movementFxCamera, MobileControls);
+            if (ShiftAndDetector == null) ShiftAndDetector = GetComponent<RoaKromkaShiftAndDetector>();
+            if (ShiftAndDetector == null) ShiftAndDetector = gameObject.AddComponent<RoaKromkaShiftAndDetector>();
+            ShiftAndDetector.Configure(this, Socket);
+            if (PersonalBaseCanvas == null) PersonalBaseCanvas = GetComponent<RoaPersonalBaseCanvas>();
+            if (PersonalBaseCanvas == null) PersonalBaseCanvas = gameObject.AddComponent<RoaPersonalBaseCanvas>();
+            PersonalBaseCanvas.Configure(this, Socket);
+            if (SiegePresentation == null) SiegePresentation = GetComponent<RoaKromkaSiegePresentation>();
+            if (SiegePresentation == null) SiegePresentation = gameObject.AddComponent<RoaKromkaSiegePresentation>();
+            SiegePresentation.Configure(this, Socket);
+
             var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
             if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();
-            mobileCanvas.Configure(MobileControls);
+            mobileCanvas.Configure(MobileControls, BoltThrower);
             MobileControls.CanvasDriven = true;
 
             if (Quickbar == null) Quickbar = GetComponent<RoaQuickbar>();
@@ -346,6 +384,7 @@ namespace RealmOfAshes.Game
             PipboyCanvas.Interaction = Interaction;
             PipboyCanvas.Fog = Fog;
             PipboyCanvas.Quickbar = Quickbar;
+            PipboyCanvas.PersonalBaseCanvas = PersonalBaseCanvas;
             if (Combat != null) Combat.PipboyCanvas = PipboyCanvas;
             if (Inventory != null) Inventory.CanvasDriven = true;
             if (Pipboy != null) Pipboy.CanvasDriven = true;
@@ -427,6 +466,10 @@ namespace RealmOfAshes.Game
             if (HudCanvas != null) HudCanvas.SetWorldActivity(WorldActivityCanvas);
             if (Minimap != null) Minimap.WorldActivity = WorldActivityCanvas;
 
+            if (Onboarding == null) Onboarding = GetComponent<RoaKromkaOnboarding>();
+            if (Onboarding == null) Onboarding = gameObject.AddComponent<RoaKromkaOnboarding>();
+            Onboarding.Configure(this, Socket);
+
             if (FirstRunCoach == null) FirstRunCoach = GetComponent<RoaFirstRunCoach>();
             if (FirstRunCoach == null) FirstRunCoach = gameObject.AddComponent<RoaFirstRunCoach>();
             FirstRunCoach.Configure(this);
@@ -460,6 +503,8 @@ namespace RealmOfAshes.Game
 
         private void Start()
         {
+            StartCoroutine(FetchCharacterProgressionCatalog());
+            StartCoroutine(FetchItemCatalog());
             if (!AutoLoginOnStart) return;
             if (string.IsNullOrEmpty(AutoLoginName) || string.IsNullOrEmpty(AutoLoginPassword))
             {
@@ -475,6 +520,81 @@ namespace RealmOfAshes.Game
             AutoLoginName = string.Empty;
             AutoLoginPassword = string.Empty;
             StartCoroutine(AutoFlow());
+        }
+
+        private IEnumerator FetchCharacterProgressionCatalog()
+        {
+            string url = BaseUrl.TrimEnd('/') + "/api/kromka/character-progression";
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                request.timeout = 12;
+                yield return request.SendWebRequest();
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogWarning("[ROA] Каталог развития недоступен: " + request.error);
+                    yield break;
+                }
+                JObject response;
+                try { response = JObject.Parse(request.downloadHandler.text); }
+                catch (Exception error)
+                {
+                    Debug.LogWarning("[ROA] Каталог развития повреждён: " + error.Message);
+                    yield break;
+                }
+                JObject catalog = response["catalog"] as JObject;
+                if (response["ok"]?.ToObject<bool>() != true || catalog == null)
+                {
+                    Debug.LogWarning("[ROA] Сервер не вернул каталог развития персонажа.");
+                    yield break;
+                }
+                string progressionError;
+                string creatorError;
+                bool progressionOk = RoaProgressionData.ApplyCatalog(catalog, out progressionError);
+                bool creatorOk = RoaCharacterCreator.ApplyCatalog(catalog, out creatorError);
+                if (!progressionOk || !creatorOk)
+                {
+                    Debug.LogWarning("[ROA] Каталог развития отклонён: "
+                        + (!string.IsNullOrEmpty(progressionError) ? progressionError : creatorError));
+                    yield break;
+                }
+                ProgressionCatalogVersion++;
+            }
+        }
+
+        private IEnumerator FetchItemCatalog()
+        {
+            string url = BaseUrl.TrimEnd('/') + "/api/kromka/items";
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                request.timeout = 12;
+                yield return request.SendWebRequest();
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogWarning("[ROA] Каталог предметов недоступен: " + request.error);
+                    yield break;
+                }
+                JObject response;
+                try { response = JObject.Parse(request.downloadHandler.text); }
+                catch (Exception error)
+                {
+                    Debug.LogWarning("[ROA] Каталог предметов повреждён: " + error.Message);
+                    yield break;
+                }
+                JObject catalog = response["catalog"] as JObject;
+                string catalogError = string.Empty;
+                if (response["ok"]?.ToObject<bool>() != true || catalog == null
+                    || !RoaItemData.ApplyCatalog(catalog, out catalogError))
+                {
+                    Debug.LogWarning("[ROA] Каталог предметов отклонён: "
+                        + (string.IsNullOrEmpty(catalogError) ? "нет данных" : catalogError));
+                    yield break;
+                }
+                JObject fieldRecipes = response["fieldRecipes"] as JObject;
+                if (!RoaCraftingData.ApplyCatalog(fieldRecipes, out catalogError))
+                {
+                    Debug.LogWarning("[ROA] Каталог полевого крафта отклонён: " + catalogError);
+                }
+            }
         }
 
         /// <summary>
@@ -522,15 +642,19 @@ namespace RealmOfAshes.Game
             if (_characterPreview != null)
                 _characterPreview.SetVisible(_stage == Stage.CreateCharacter);
 
-            if (_stage == Stage.InWorld && !_gameMenuOpen && Input.GetKeyDown(KeyCode.G) && GlobalMap != null)
+            if (!_cinematicActive && CurrentLocationAllowsGlobalMapExit
+                && _stage == Stage.InWorld && !_gameMenuOpen
+                && Input.GetKeyDown(KeyCode.G) && GlobalMap != null)
                 GlobalMap.RequestEnterFromLocation();
             UpdateWorldMapEdgeExit();
 
-            if ((_stage == Stage.InWorld || _stage == Stage.GlobalMap) && Input.GetKeyDown(KeyCode.F1)
+            if (!_cinematicActive && (_stage == Stage.InWorld || _stage == Stage.GlobalMap)
+                && Input.GetKeyDown(KeyCode.F1)
                 && !RoaHudLayout.Editing && (_tutorialOpen || !AnyGameplayPanelOpen()))
                 SetTutorialOpen(!_tutorialOpen);
 
-            if ((_stage == Stage.InWorld || _stage == Stage.GlobalMap) && Input.GetKeyDown(KeyCode.Escape))
+            if (!_cinematicActive && (_stage == Stage.InWorld || _stage == Stage.GlobalMap)
+                && Input.GetKeyDown(KeyCode.Escape))
             {
                 if (RoaHudLayout.Editing) EndHudEdit();
                 else if (_graphicsOpen) SetGraphicsOpen(false);
@@ -588,13 +712,14 @@ namespace RealmOfAshes.Game
         private void UpdateWorldMapEdgeExit()
         {
             if (_stage != Stage.InWorld || GlobalMap == null || _controller == null || Minimap == null) return;
-            if (_gameMenuOpen || _tutorialOpen || _graphicsOpen || RoaHudLayout.Editing || AnyGameplayPanelOpen()) return;
+            if (!CurrentLocationAllowsGlobalMapExit) return;
+            if (_cinematicActive || _gameMenuOpen || _tutorialOpen || _graphicsOpen
+                || RoaHudLayout.Editing || AnyGameplayPanelOpen()) return;
             if (Time.unscaledTime < _edgeExitRetryAt) return;
             int width = Minimap.MapWidth, depth = Minimap.MapDepth;
             if (width <= 0 || depth <= 0) return;
-            RoaCoords.WorldToTile(_controller.transform.position, width, depth, out int tx, out int tz);
-            const int innerOffset = 1; // WORLD_MAP_EXIT_BAND_TILES - 1
-            bool inBand = tx <= innerOffset || tz <= innerOffset || tx >= width - 1 - innerOffset || tz >= depth - 1 - innerOffset;
+            bool inBand = RoaWorldExitBoundary.IsInExitBand(
+                _controller.transform.position, width, depth);
             if (!inBand) return;
             _edgeExitRetryAt = Time.unscaledTime + 0.75f;
             GlobalMap.RequestEnterFromLocation();
@@ -630,7 +755,8 @@ namespace RealmOfAshes.Game
 
         private void ApplyOverlayInputState()
         {
-            bool input = !_gameMenuOpen && !_tutorialOpen && !_graphicsOpen && !RoaHudLayout.Editing;
+            bool input = !_cinematicActive && !_gameMenuOpen && !_tutorialOpen
+                && !_graphicsOpen && !RoaHudLayout.Editing;
             if (_controller != null) _controller.InputEnabled = input;
             if (Combat != null) Combat.InputEnabled = input;
             if (Quickbar != null) Quickbar.InputEnabled = input;
@@ -640,6 +766,32 @@ namespace RealmOfAshes.Game
             if (Pipboy != null) Pipboy.InputEnabled = input;
             if (PipboyCanvas != null) PipboyCanvas.InputEnabled = input;
             if (MapWindow != null) MapWindow.InputEnabled = input;
+        }
+
+        public bool CinematicActive { get { return _cinematicActive; } }
+        public bool CurrentLocationAllowsGlobalMapExit
+        {
+            get { return AllowsGlobalMapExit(Loader?.Current, Onboarding?.Phase); }
+        }
+
+        public static bool AllowsGlobalMapExit(LocationDefinition location, string onboardingPhase)
+        {
+            if (location == null) return true;
+            if (!location.CanExitToGlobalMap) return false;
+            return !(string.Equals(location.Id, "randomRuinedRoad", StringComparison.Ordinal)
+                && onboardingPhase == "firstMission");
+        }
+
+        public void RefreshGlobalMapExitAvailability()
+        {
+            Minimap?.SetGlobalMapExitAllowed(CurrentLocationAllowsGlobalMapExit);
+        }
+
+        public void SetCinematicActive(bool active)
+        {
+            if (_cinematicActive == active) return;
+            _cinematicActive = active;
+            ApplyOverlayInputState();
         }
 
         private bool AnyGameplayPanelOpen()
@@ -997,10 +1149,15 @@ namespace RealmOfAshes.Game
         /// <summary>Растёт при загрузке каталога локаций — канва перестраивает карточки.</summary>
         public int AuthCatalogVersion { get; private set; }
 
+        /// <summary>Растёт после принятия общего каталога создания, навыков и перков.</summary>
+        public int ProgressionCatalogVersion { get; private set; }
+
         #endregion
 
         private void HandleWorldStateVisuals(JObject state)
         {
+            Anomalies?.ApplyWorldState(state);
+            SettlementLifePresentation?.ApplyWorldState(state);
             if (!(state?["map"] is JArray map)) return;
             Minimap?.SetWorldMap(map);
             Fog?.ApplyWorldMap(map);
@@ -1278,7 +1435,7 @@ namespace RealmOfAshes.Game
             if (!_creator.Ready(_newCharacterName))
             {
                 _stage = Stage.CreateCharacter;
-                _status = "Завершите имя, SPECIAL, профильный навык и стартовый перк.";
+                _status = "Завершите имя, характеристики, профильный навык и стартовый перк.";
                 return;
             }
 
@@ -1377,6 +1534,8 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocalWorldActive(false);
                 Lighting.SetLocation(null, null);
             }
+            SettlementLifePresentation?.SetLocalWorldActive(false);
+            Anomalies?.SetLocalWorldActive(false);
             if (Minimap != null)
             {
                 Minimap.SetLocation(null);
@@ -1564,10 +1723,18 @@ namespace RealmOfAshes.Game
                 Lighting.SetLocation(location, Loader.CurrentGroundRenderer);
                 Lighting.SetLocalWorldActive(true);
             }
-            if (Minimap != null) Minimap.SetLocation(location, ack.WorldState?["map"] as JArray);
+            SettlementLifePresentation?.SetLocalWorldActive(true);
+            Anomalies?.SetLocalWorldActive(true);
+            if (Minimap != null)
+            {
+                Minimap.SetLocation(location, ack.WorldState?["map"] as JArray);
+                RefreshGlobalMapExitAvailability();
+            }
             if (Fog != null) Fog.Build(location, ack.WorldState?["map"] as JArray);
             if (Interaction != null) Interaction.SetLocation(location);
             if (RoofCutaway != null) RoofCutaway.Build(location, Loader);
+            Anomalies?.ApplyWorldState(ack.WorldState);
+            SettlementLifePresentation?.ApplyWorldState(ack.WorldState);
 
             SetLoading("Синхронизирую локацию с сервером...", 0.9f);
             SpawnPlayer(ack);
@@ -1628,6 +1795,7 @@ namespace RealmOfAshes.Game
         private void HandleAuthoritativeSelf(JObject payload)
         {
             if (payload == null) return;
+            Audio?.ApplyArtifactEffects(payload);
 
             // Group world tasks can move a player out of the local Socket.IO room immediately.
             // The ack carries the same authoritative onGlobalMap/self.globalMap contract as join,
@@ -1688,13 +1856,16 @@ namespace RealmOfAshes.Game
 
                 var body = _player.AddComponent<CharacterController>();
                 body.height = PlayerHeight;
-                body.radius = 0.35f;
+                RoaPlayerController.ConfigureAuthoritativeCollision(body);
                 body.center = Vector3.zero;
 
                 // Модель — дочерний объект: её начало координат в ступнях,
                 // а трансформ игрока — в центре капсулы контроллера.
+                var presentationGo = new GameObject("NetworkPresentation");
+                presentationGo.transform.SetParent(_player.transform, false);
+
                 var viewGo = new GameObject("View");
-                viewGo.transform.SetParent(_player.transform, false);
+                viewGo.transform.SetParent(presentationGo.transform, false);
                 viewGo.transform.localPosition = new Vector3(0f, -PlayerHeight * 0.5f, 0f);
 
                 var view = viewGo.AddComponent<RoaCharacterView>();
@@ -1703,6 +1874,7 @@ namespace RealmOfAshes.Game
                 _controller.Socket = Socket;
                 _controller.Camera = CameraRig;
                 _controller.View = view;
+                _controller.PresentationRoot = presentationGo.transform;
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
                 _controller.Audio = Audio;
@@ -1749,7 +1921,10 @@ namespace RealmOfAshes.Game
 
             Vector3 spawn = RoaCoords.ToUnity(ack.X, ack.Z);
             spawn.y = PlayerHeight * 0.5f + 0.1f;
-            _controller.Teleport(spawn);
+            bool spawnAdjusted = _controller.TeleportToSafeSpawn(spawn);
+            Vector3 placed = _controller.transform.position;
+            if (spawnAdjusted)
+                Debug.LogWarning("[ROA] Safe spawn adjusted: " + spawn + " -> " + placed + ".");
 
             if (CameraRig != null)
             {
@@ -1757,7 +1932,7 @@ namespace RealmOfAshes.Game
                 CameraRig.SnapToTarget();
             }
 
-            Debug.Log("[ROA] Игрок поставлен в " + spawn + " (сервер: x=" + ack.X + " z=" + ack.Z + ")");
+            Debug.Log("[ROA] Игрок поставлен в " + placed + " (сервер: x=" + ack.X + " z=" + ack.Z + ")");
         }
 
         #endregion
@@ -1815,8 +1990,8 @@ namespace RealmOfAshes.Game
 
             if (frontendPanel)
             {
-                GUILayout.Label("REALM OF ASHES", RoaUiTheme.BrandStyle, GUILayout.Height(38f));
-                GUILayout.Label("Единый мир · авторитетный сервер · PIP-ASH интерфейс",
+                GUILayout.Label("КРОМКА", RoaUiTheme.BrandStyle, GUILayout.Height(38f));
+                GUILayout.Label("Единый мир · авторитетный сервер · терминал ПУТНИК",
                     RoaUiTheme.SubtitleStyle, GUILayout.Height(24f));
                 GUILayout.Space(7f);
                 GUILayout.Label("<b>" + FrontendTitle() + "</b>", RichLabel(), GUILayout.Height(24f));
@@ -1825,7 +2000,7 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                GUILayout.Label("<b>Realm of Ashes — Unity клиент</b>", RichLabel());
+                GUILayout.Label("<b>Кромка — Unity-клиент</b>", RichLabel());
                 if (!string.IsNullOrEmpty(_status)) GUILayout.Label(_status);
                 GUILayout.Space(6f);
             }
@@ -1848,7 +2023,8 @@ namespace RealmOfAshes.Game
                         GUILayout.Label("Комната: " + Socket.Session.RoomId);
                         GUILayout.Label("Локация: " + Socket.Session.LocationId);
                     }
-                    if (GUILayout.Button("Выйти на глобальную карту (G)"))
+                    if (CurrentLocationAllowsGlobalMapExit
+                        && GUILayout.Button("Выйти на глобальную карту (G)"))
                         GlobalMap?.RequestEnterFromLocation();
                     if (GlobalMap != null && !string.IsNullOrEmpty(GlobalMap.StatusText))
                         GUILayout.Label(GlobalMap.StatusText);
@@ -2180,7 +2356,7 @@ namespace RealmOfAshes.Game
             var area = new Rect((Screen.width - width) * 0.5f, 12f, width, height);
             DrawPanelBackdrop(area);
             GUILayout.BeginArea(area, GUI.skin.box);
-            GUILayout.Label("<b>Realm of Ashes — новый персонаж</b>", RichLabel());
+            GUILayout.Label("<b>Кромка — новый персонаж</b>", RichLabel());
             if (!string.IsNullOrEmpty(_status)) GUILayout.Label(_status);
 
             RoaCharacterCreator.DrawResult result;

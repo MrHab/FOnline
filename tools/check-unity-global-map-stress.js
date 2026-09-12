@@ -29,6 +29,7 @@ function run() {
 
   for (const marker of [
     'RoaStrategicActorFitMode',
+    'StrategicActorModelScale = 0.5f',
     'TargetWorldSpan',
     'AnimatedLocalBounds',
     'HasAnimatedBounds',
@@ -37,9 +38,9 @@ function run() {
     'RoaStrategicActorFitMode.Height',
     'RoaStrategicActorFitMode.Footprint',
     'case "enemySuperMutant"',
-    'Profile(1.95f, 0.37f, RoaEnemyModels.YawOffset(modelKey)',
+    'Profile(1.12f, 0.22f, RoaEnemyModels.YawOffset(modelKey)',
     'case "enemyRadscorpion"',
-    'Profile(1.82f, 0.37f, RoaEnemyModels.YawOffset(modelKey)',
+    'Profile(1.02f, 0.22f, RoaEnemyModels.YawOffset(modelKey)',
     'TryRendererContentBounds',
     'TryGetStrategicWorldBounds',
     '-bounds.center.x * factor',
@@ -57,6 +58,13 @@ function run() {
     && map.includes('UpdateStrategicActorPresentation();')
     && map.includes('state.Presentation.TargetVisible'),
   'Global map does not drive actor animation LOD from semantic zoom and visibility');
+
+  assert(map.includes('Sites = true')
+    && map.includes('Parties = true')
+    && map.includes('Threats = true')
+    && map.includes('PartyBucket = 0f')
+    && map.includes('ThreatBucket = 0f'),
+  'Global-map actors or environment can still be hidden by camera distance');
 
   for (const marker of [
     'public const int PartyCount = 33',

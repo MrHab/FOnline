@@ -5,6 +5,7 @@ const vm = require('vm');
 const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 const { normalizeRecipeCatalog, normalizeTraderProfiles } = require('../src/server/faction-economy');
+const { isRetiredEnvironmentModel } = require('../src/server/retired-environment-models');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -216,10 +217,12 @@ requireText('client crafting server fee', functionBody(clientInventory, 'craftRe
 requireText('client crafting sends inventory snapshot', functionBody(clientInventory, 'craftRecipe'), 'inventory: multiplayerInventorySnapshot()');
 requireText('client crafting applies server inventory', functionBody(clientInventory, 'craftRecipe'), 'applyServerInventorySnapshot(ack.inventory)');
 requireText('client crafting offline block', functionBody(clientInventory, 'craftRecipe'), 'if (!multiplayer?.socket?.connected)');
-requireText('server crafting output table', server, 'const SERVER_CRAFT_RECIPE_OUTPUTS = {');
+requireText('server authored crafting output index', server, 'const SERVER_CRAFT_RECIPE_OUTPUTS = KROMKA_FIELD_RECIPE_INDEXES.outputs');
 requireText('server crafting inventory transaction', server, 'function serverInventoryApplyCraftTransaction');
 const serverCrafting = functionBody(server, 'recordWastelandCraftingStationFee');
-requireText('server crafting uses inventory transaction', serverCrafting, 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor)');
+requireText('server crafting uses inventory transaction', serverCrafting, 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor,');
+requireText('server crafting previews clan modifiers', serverCrafting, 'serverPreviewClanCraftBenefit(');
+requireText('server crafting commits clan modifiers only after carry validation', serverCrafting, 'serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);');
 requireText('server crafting uses authoritative room', serverCrafting, "rooms.get(String(player?.roomId || ''))");
 requireText('server crafting uses authoritative location', serverCrafting, 'normalizeLocationId(playerRoom.locationId');
 requireText('server crafting rejects forged location', serverCrafting, 'normalizeLocationId(requestedLocationId) !== locationId');
@@ -536,7 +539,9 @@ if (new Set(Object.values(craftingStationModels).map(row => row.file)).size !== 
 }
 for (const row of Object.values(craftingStationModels)) {
   const modelPath = path.join(ROOT, 'public', 'assets', 'models', 'wasteland', row.file);
-  if (!fs.existsSync(modelPath)) errors.push(`crafting station model is missing: ${row.file}`);
+  if (isRetiredEnvironmentModel(row.model)) {
+    if (fs.existsSync(modelPath)) errors.push(`Retired station GLB returned: ${row.file}`);
+  } else if (!fs.existsSync(modelPath)) errors.push(`crafting station model is missing: ${row.file}`);
 }
 
 function dedicatedCraftingStationRows(loc = {}) {
@@ -563,8 +568,17 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
     }
     const expected = craftingStationModels[ids[0]];
     const actualFile = path.basename(String(row.url || row.file || '')).toLowerCase();
-    if (!expected || row.model !== expected.model || actualFile !== expected.file) {
+    const nativeStation = expected && isRetiredEnvironmentModel(expected.model);
+    if (!expected || row.model !== expected.model
+      || (nativeStation ? (row.unityAuthored !== true || row.url || row.file) : actualFile !== expected.file)) {
       errors.push(`location ${loc.id || file}: crafting station ${row.id || 'unknown'} has the wrong dedicated model for ${ids[0]} (${relPath})`);
+    }
+    if (nativeStation) {
+      const sceneFile = path.join(ROOT, 'unity-client', 'Assets', 'Scenes', 'Kromka', 'Locations', `${loc.id}.unity`);
+      const scene = fs.existsSync(sceneFile) ? fs.readFileSync(sceneFile, 'utf8') : '';
+      if (!scene.includes(`_stableObjectId: ${row.id}\n`) && !scene.includes(`_stableObjectId: ${row.id}\r\n`)) {
+        errors.push(`location ${loc.id}: native crafting station ${row.id} has no authored scene anchor`);
+      }
     }
   });
   const capitalStorageFaction = capitalStorageFactions[loc.id] || '';

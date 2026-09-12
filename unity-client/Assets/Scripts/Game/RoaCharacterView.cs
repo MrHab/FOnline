@@ -90,6 +90,20 @@ namespace RealmOfAshes.Game
         private static GltfImport _animationLibrary;
         private static bool _animationLibraryTried;
         private static Task<GltfImport> _animationLibraryLoad;
+        private static int _modelCacheSession;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache()
+        {
+            _modelCacheSession++;
+            RoaModelImportLifetime.Clear(ModelCache);
+            RoaModelImportLifetime.Clear(ModelLoads);
+            if (_animationLibrary != null) _animationLibrary.Dispose();
+            else RoaModelImportLifetime.Release(_animationLibraryLoad);
+            _animationLibrary = null;
+            _animationLibraryLoad = null;
+            _animationLibraryTried = false;
+        }
 
         private Animation _animation;
         private readonly HashSet<string> _clips = new HashSet<string>();
@@ -448,6 +462,27 @@ namespace RealmOfAshes.Game
             return false;
         }
 
+        /// <summary>
+        /// Current animated right-hand position. Tools thrown by the character use the
+        /// skeleton instead of a fixed offset so crouching, locomotion and body variants
+        /// cannot detach the projectile from the hand.
+        /// </summary>
+        public bool TryGetRightHand(out Vector3 worldPosition)
+        {
+            if (!_bones.TryGetValue("hand_r", out Transform hand) || hand == null)
+            {
+                hand = FindDeep(transform, "hand_r");
+                if (hand != null) _bones["hand_r"] = hand;
+            }
+            if (hand != null)
+            {
+                worldPosition = hand.position;
+                return true;
+            }
+            worldPosition = Vector3.zero;
+            return false;
+        }
+
         /// <summary>Дать обеим поднятым рукам короткий контактный толчок.</summary>
         public void PlayBlockedFireContact()
         {
@@ -707,6 +742,23 @@ namespace RealmOfAshes.Game
             return death != null ? Mathf.Max(0f, death.length - DeathClipEndPaddingSeconds) : 0f;
         }
 
+        /// <summary>Restore an already fallen presentation actor without replaying its fall.</summary>
+        public void SetCorpsePresentationImmediate()
+        {
+            SetDead(true);
+            _deathStartedAt = Time.unscaledTime - 100f;
+            if (_animation != null && _clips.Contains("death"))
+            {
+                _animation.Play("death", PlayMode.StopAll);
+                _animation["death"].enabled = true;
+                _animation["death"].weight = 1f;
+                _deathPoseFrozen = false;
+            }
+            FreezeDeathPose(100f);
+            ApplyDeathSettleForDiagnostics(100f);
+            GroundDeathForDiagnostics(transform.parent != null ? transform.parent.position.y : 0f);
+        }
+
         public static float DeathSettleWeightAt(float elapsed)
         {
             float t = Mathf.Clamp01(elapsed / DeathSettleDurationSeconds);
@@ -780,13 +832,17 @@ namespace RealmOfAshes.Game
             NotifyVisualChanged();
         }
 
-        /// <summary>Надеть четыре видимых слота на тот же скелет, что анимирует тело.</summary>
+        /// <summary>Надеть шесть видимых слотов на тот же скелет, что анимирует тело.</summary>
         public async Task EquipItems(string baseUrl, JObject equipment)
         {
             if (!Ready || _modelRoot == null) return;
 
             int request = ++_equipmentRequest;
-            if (_equipment == null) _equipment = new RoaEquipmentView();
+            if (_equipment == null)
+            {
+                _equipment = new RoaEquipmentView();
+                _equipment.VisualChanged += EquipmentVisualChanged;
+            }
             if (_offhandWeapon == null) _offhandWeapon = new RoaOffhandWeaponView();
             string offhandId = BaseItemId(equipment?["offhand"]?.ToString());
             await Task.WhenAll(
@@ -794,8 +850,7 @@ namespace RealmOfAshes.Game
                 _offhandWeapon.Load(baseUrl, offhandId, _modelRoot, _bones));
             if (request != _equipmentRequest) return;
             UpdateDualWieldState();
-            bool helmetOn = !string.IsNullOrEmpty(BaseItemId(equipment?["helmet"]?.ToString()));
-            ApplyAppearanceVisuals(helmetOn);
+            ApplyAppearanceVisuals();
             NotifyVisualChanged();
         }
 
@@ -816,7 +871,8 @@ namespace RealmOfAshes.Game
             if (_weapon == null) return;
             _weapon.DualWield = _weapon.Ready
                 && RoaOffhandWeaponView.IsSupported(_weapon.WeaponId)
-                && _offhandWeapon != null && _offhandWeapon.Ready;
+                && _offhandWeapon != null && _offhandWeapon.Ready
+                && RoaOffhandWeaponView.IsSupported(_offhandWeapon.WeaponId);
         }
 
         /// <summary>Модель по умолчанию для старых сохранений без внешности (PLAYER_SYSTEM.md).</summary>
@@ -844,7 +900,7 @@ namespace RealmOfAshes.Game
 
             _appearance = next;
             ReadAppearanceVariants();
-            ApplyAppearanceVisuals(false);
+            ApplyAppearanceVisuals();
             NotifyVisualChanged();
             return true;
         }
@@ -882,7 +938,9 @@ namespace RealmOfAshes.Game
             }
             if (!LoadIsCurrent(loadRequest)) return;
 
-            _animation = GetComponentInChildren<Animation>();
+            // Cinematic/prewarmed actors are intentionally inactive while their
+            // models load. Still bind their animation and equipment skeleton.
+            _animation = GetComponentInChildren<Animation>(true);
             if (_animation == null)
             {
                 Debug.LogWarning("[ROA] У модели " + key + " нет компонента Animation — локомоция отключена.");
@@ -911,7 +969,7 @@ namespace RealmOfAshes.Game
             _hitReaction.Bind(_modelRoot != null ? _modelRoot : transform);
 
             PrepareAppearance();
-            ApplyAppearanceVisuals(false);
+            ApplyAppearanceVisuals();
 
             _animation.wrapMode = WrapMode.Loop;
             Play("idle");
@@ -988,10 +1046,18 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private void ApplyAppearanceVisuals(bool helmetOn)
+        private void EquipmentVisualChanged()
+        {
+            if (!Ready || _modelRoot == null) return;
+            ApplyAppearanceVisuals();
+            NotifyVisualChanged();
+        }
+
+        private void ApplyAppearanceVisuals()
         {
             string hairId = _appearance?["hairId"]?.ToString() ?? "short_crop";
-            bool showHair = !helmetOn && hairId != "shaved";
+            bool covered = _equipment != null && _equipment.CoversHair(_modelRoot);
+            bool showHair = !covered && hairId != "shaved";
             foreach (GameObject hairObject in _hairObjects)
                 if (hairObject != null && hairObject.activeSelf != showHair) hairObject.SetActive(showHair);
             ApplyHeadShape();
@@ -1034,6 +1100,7 @@ namespace RealmOfAshes.Game
 
         private static async Task<GltfImport> LoadCached(string key, string url)
         {
+            int session = _modelCacheSession;
             if (ModelCache.TryGetValue(key, out GltfImport cached)) return cached;
             if (!ModelLoads.TryGetValue(key, out Task<GltfImport> loading))
             {
@@ -1052,6 +1119,7 @@ namespace RealmOfAshes.Game
                     && ReferenceEquals(current, loading))
                     ModelLoads.Remove(key);
             }
+            if (session != _modelCacheSession) return null;
             if (import != null) ModelCache[key] = import;
             return import;
         }

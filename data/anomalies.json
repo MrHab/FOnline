@@ -1,0 +1,101 @@
+{
+  "schema": "kromka.anomalies.v1",
+  "version": 1,
+  "bolt": {
+    "rangeMeters": 10,
+    "cooldownMs": 750,
+    "magneticRangeMeters": 13,
+    "magneticEdgeToleranceMeters": 1.5,
+    "magneticDischargeBonusMs": 2000
+  },
+  "types": [
+    {
+      "id": "pull",
+      "displayName": "Тяга",
+      "damageType": "anomalous",
+      "damagePerSecond": 16,
+      "dischargeMs": 4000,
+      "statusEffect": "притяжение",
+      "visualProfile": "inward-debris-and-compressed-air",
+      "audioProfile": "low-inward-rumble",
+      "readability": "Мусор непрерывно ползёт к центру, над землёй видны сходящиеся линии пыли."
+    },
+    {
+      "id": "seam",
+      "displayName": "Шов",
+      "damageType": "anomalous",
+      "damagePerSecond": 24,
+      "dischargeMs": 3000,
+      "statusEffect": "рассечение",
+      "visualProfile": "thin-jitter-line-and-crossing-sparks",
+      "audioProfile": "dry-electric-crackle",
+      "readability": "Тонкая дрожащая линия режет площадку, на пересечениях постоянно бегут искры."
+    },
+    {
+      "id": "carousel",
+      "displayName": "Карусель",
+      "damageType": "anomalous",
+      "damagePerSecond": 18,
+      "dischargeMs": 5000,
+      "statusEffect": "дезориентация",
+      "visualProfile": "orbiting-dust-and-metal",
+      "audioProfile": "rotating-metal-whistle",
+      "readability": "Пыль и металлические обломки непрерывно вращаются по заметным круговым дорожкам."
+    },
+    {
+      "id": "glass",
+      "displayName": "Стекло",
+      "damageType": "anomalous",
+      "damagePerSecond": 20,
+      "dischargeMs": 4000,
+      "statusEffect": "ожог",
+      "visualProfile": "heat-haze-and-fused-ground",
+      "audioProfile": "high-glass-hum",
+      "readability": "Спёкшаяся блестящая земля окружена постоянным маревом и белыми бликами."
+    },
+    {
+      "id": "dew",
+      "displayName": "Роса",
+      "damageType": "toxic",
+      "damagePerSecond": 14,
+      "dischargeMs": 5000,
+      "statusEffect": "коррозия",
+      "visualProfile": "colored-mist-and-corroded-props",
+      "audioProfile": "wet-acid-hiss",
+      "readability": "Цветной туман держится над корродировавшими предметами даже при слабой графике."
+    },
+    {
+      "id": "sink",
+      "displayName": "Провал",
+      "damageType": "anomalous",
+      "damagePerSecond": 22,
+      "dischargeMs": 4000,
+      "statusEffect": "замедление",
+      "visualProfile": "pulsing-subsiding-surface",
+      "audioProfile": "subsoil-heartbeat",
+      "readability": "Поверхность ритмично проседает, а концентрические трещины светлеют перед импульсом."
+    },
+    {
+      "id": "chime",
+      "displayName": "Звон",
+      "damageType": "electric",
+      "damagePerSecond": 12,
+      "dischargeMs": 6000,
+      "statusEffect": "электризация",
+      "visualProfile": "blue-arcs-between-metal",
+      "audioProfile": "clear-metallic-ring",
+      "readability": "Голубые дуги постоянно перебегают между металлическими обломками."
+    },
+    {
+      "id": "mute",
+      "displayName": "Молчун",
+      "damageType": "anomalous",
+      "damagePerSecond": 17,
+      "dischargeMs": 5000,
+      "statusEffect": "глухота",
+      "visualProfile": "silent-counterflow-particles",
+      "audioProfile": "local-sound-damping",
+      "readability": "Тёмные частицы движутся против ветра, внутри круга заметно глохнет окружающий звук."
+    }
+  ]
+}

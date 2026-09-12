@@ -94,9 +94,9 @@ assert(shootingVisualSource.includes("pair ? 'два пистолета' : w.nam
   'Reload must cover both equipped pistols');
 
 assert(clientSource.includes("offhand: 'Левая рука'"), 'Client equipment UI must expose the left-hand slot');
-assert(serverSource.includes("offhand: new Set([...VALID_HAND_EQUIPMENT, ''])"), 'Server must authorize the offhand slot');
+assert(serverSource.includes("offhand: serverCatalogItemIdsForSlot('offhand', true)"), 'Server must authorize the offhand slot from the item catalog');
 assert(combatClientSource.includes("equipment?.[activeSlot] || w?.id"), 'Combat snapshots must target the active hand runtime id');
-assert(modernVisualSource.includes("modernCharacterJoint(torsoRig, [-0.5, 0.34, -0.27])"), 'Character models must expose a mirrored left-hand weapon mount');
+assert(playerVisualSource.includes('offhandWeaponGroup.position.set(-0.5, 1.06, -0.27)'), 'Character models must expose a mirrored left-hand weapon mount');
 assert(playerVisualSource.includes("[playerParts.offhandWeaponGroup, leftWeaponId, 'offhand']"), 'Local equipment visuals must render the left-hand slot separately');
 assert(playerVisualSource.includes('function activeActorWeaponGroup(actor)'), 'Weapon effects must be able to resolve the active hand');
 assert(shootingVisualSource.includes('activeActorWeaponGroup(playerGroup)'), 'Local recoil must use the active hand mount');

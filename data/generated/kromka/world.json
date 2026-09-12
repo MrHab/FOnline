@@ -1,0 +1,1353 @@
+{
+  "schema": "kromka.generatedWorld.v1",
+  "version": 1,
+  "worldRevision": "kromka-1",
+  "unityScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
+  "grid": {
+    "cols": 38,
+    "rows": 30,
+    "cellPoints": 10,
+    "cellKm": 10
+  },
+  "regions": [
+    {
+      "id": "northern_sluices",
+      "displayName": "Северные затворы",
+      "visualProfile": "wet-concrete-sluices",
+      "dangerBand": 2,
+      "center": [
+        155,
+        262
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "unityBoundary": [
+        [
+          35,
+          285
+        ],
+        [
+          80,
+          297
+        ],
+        [
+          245,
+          292
+        ],
+        [
+          275,
+          270
+        ],
+        [
+          252,
+          238
+        ],
+        [
+          205,
+          226
+        ],
+        [
+          142,
+          234
+        ],
+        [
+          68,
+          245
+        ]
+      ]
+    },
+    {
+      "id": "middle_vein",
+      "displayName": "Срединная жила",
+      "visualProfile": "river-valley-settled",
+      "dangerBand": 1,
+      "center": [
+        184,
+        195
+      ],
+      "size": [
+        152,
+        104
+      ],
+      "unityBoundary": [
+        [
+          118,
+          238
+        ],
+        [
+          202,
+          242
+        ],
+        [
+          252,
+          216
+        ],
+        [
+          250,
+          174
+        ],
+        [
+          222,
+          140
+        ],
+        [
+          160,
+          142
+        ],
+        [
+          118,
+          169
+        ],
+        [
+          104,
+          205
+        ]
+      ]
+    },
+    {
+      "id": "ore_arc",
+      "displayName": "Рудная дуга",
+      "visualProfile": "rust-quarries-foundries",
+      "dangerBand": 2,
+      "center": [
+        82,
+        220
+      ],
+      "size": [
+        150,
+        140
+      ],
+      "unityBoundary": [
+        [
+          18,
+          260
+        ],
+        [
+          52,
+          286
+        ],
+        [
+          126,
+          276
+        ],
+        [
+          156,
+          242
+        ],
+        [
+          148,
+          205
+        ],
+        [
+          126,
+          168
+        ],
+        [
+          72,
+          150
+        ],
+        [
+          25,
+          176
+        ]
+      ]
+    },
+    {
+      "id": "tract_isthmus",
+      "displayName": "Трактовый перешеек",
+      "visualProfile": "road-rail-caravan",
+      "dangerBand": 1,
+      "center": [
+        175,
+        145
+      ],
+      "size": [
+        350,
+        82
+      ],
+      "unityBoundary": [
+        [
+          0,
+          178
+        ],
+        [
+          72,
+          184
+        ],
+        [
+          132,
+          177
+        ],
+        [
+          195,
+          168
+        ],
+        [
+          258,
+          145
+        ],
+        [
+          312,
+          126
+        ],
+        [
+          307,
+          99
+        ],
+        [
+          244,
+          118
+        ],
+        [
+          181,
+          132
+        ],
+        [
+          120,
+          139
+        ],
+        [
+          58,
+          142
+        ],
+        [
+          0,
+          138
+        ]
+      ]
+    },
+    {
+      "id": "chalk_lowland",
+      "displayName": "Меловая низь",
+      "visualProfile": "white-dust-reeds",
+      "dangerBand": 3,
+      "center": [
+        307,
+        88
+      ],
+      "size": [
+        145,
+        136
+      ],
+      "unityBoundary": [
+        [
+          238,
+          148
+        ],
+        [
+          300,
+          154
+        ],
+        [
+          372,
+          123
+        ],
+        [
+          378,
+          48
+        ],
+        [
+          326,
+          18
+        ],
+        [
+          268,
+          33
+        ],
+        [
+          242,
+          76
+        ]
+      ]
+    },
+    {
+      "id": "glasslands",
+      "displayName": "Стеколье",
+      "visualProfile": "fused-soil-electric-haze",
+      "dangerBand": 4,
+      "center": [
+        306,
+        184
+      ],
+      "size": [
+        150,
+        154
+      ],
+      "unityBoundary": [
+        [
+          230,
+          245
+        ],
+        [
+          298,
+          270
+        ],
+        [
+          365,
+          242
+        ],
+        [
+          378,
+          178
+        ],
+        [
+          360,
+          118
+        ],
+        [
+          318,
+          100
+        ],
+        [
+          269,
+          123
+        ],
+        [
+          243,
+          166
+        ]
+      ]
+    },
+    {
+      "id": "zero_basin",
+      "displayName": "Нулевая котловина",
+      "visualProfile": "black-basin-blue-glow",
+      "dangerBand": 5,
+      "center": [
+        215,
+        58
+      ],
+      "size": [
+        232,
+        120
+      ],
+      "unityBoundary": [
+        [
+          102,
+          108
+        ],
+        [
+          164,
+          124
+        ],
+        [
+          235,
+          118
+        ],
+        [
+          303,
+          98
+        ],
+        [
+          334,
+          52
+        ],
+        [
+          302,
+          8
+        ],
+        [
+          158,
+          5
+        ],
+        [
+          104,
+          43
+        ]
+      ]
+    },
+    {
+      "id": "silent_ring",
+      "displayName": "Глухой обвод",
+      "visualProfile": "dead-forest-signal-fog",
+      "dangerBand": 5,
+      "center": [
+        190,
+        150
+      ],
+      "size": [
+        372,
+        292
+      ],
+      "ring": true,
+      "unityBoundary": [
+        [
+          4,
+          296
+        ],
+        [
+          376,
+          296
+        ],
+        [
+          376,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "klimAmmoWorks",
+      "x": 145,
+      "y": 274,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "klimAmmoWorks",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Патронный двор «Створ-2». numbered-workshop, loading-tower.",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "sluice-munitions-yard-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "resourceKlimQuarry",
+      "x": 112,
+      "y": 250,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceKlimQuarry",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Карьер Девятый. bucket-excavator, aggregate-silos.",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "ninth-dam-quarry-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "sluiceCity",
+      "x": 190,
+      "y": 262,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "sluiceCity",
+      "capital": true,
+      "capitalFaction": "uprava",
+      "danger": 2,
+      "model": "relayAntenna",
+      "modelScale": 1.25,
+      "rotationY": 0,
+      "note": "Створ. command-dam, vertical-warning-light.",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "uprava-command-dam-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanHydroNode2",
+      "x": 235,
+      "y": 271,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanHydroNode2",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "ГЭС-2. turbine-hall, spillway-bridge.",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "clan-hydro-node-two-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "settlement",
+      "x": 195,
+      "y": 205,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "settlement",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Ключи. water-tower, rail-bridge.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "keys-river-junction-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "roadOutpost",
+      "x": 166,
+      "y": 224,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "roadOutpost",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Застава 17. bridge-gate, searchlight-mast.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "uprava-river-checkpoint-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "resourceDryWaterPump",
+      "x": 226,
+      "y": 229,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceDryWaterPump",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Водозабор «Сухой». intake-tower, empty-channel.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "dry-cascade-intake-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "resourceOldKlimFarm",
+      "x": 151,
+      "y": 190,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceOldKlimFarm",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Ферма «Дальний ряд». irrigation-wheel, long-greenhouse.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "clean-soil-strip-farm-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanFilterT6",
+      "x": 235,
+      "y": 184,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanFilterT6",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Фильтровальная Т-6. filter-tanks, control-tower.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "clan-filter-t6-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "scrapTown",
+      "x": 76,
+      "y": 210,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "scrapTown",
+      "capital": true,
+      "capitalFaction": "free_artels",
+      "danger": 2,
+      "model": "relayAntenna",
+      "modelScale": 1.25,
+      "rotationY": 0,
+      "note": "Раздолье. blast-furnace, gantry-crane.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "razdolye-foundry-town-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "scrapOutpost",
+      "x": 116,
+      "y": 206,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "scrapOutpost",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Сторожевая артель. signal-gantry, painted-gate.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "artel-rail-watch-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "scrapFoundry",
+      "x": 52,
+      "y": 236,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "scrapFoundry",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Литейная Раздолья. furnace-stack, slag-channel.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "razdolye-foundry-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "resourceIronMine",
+      "x": 58,
+      "y": 252,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceIronMine",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Шахта «Три смены». headframe, ore-bunker.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "three-shifts-mine-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "resourceScrapFields",
+      "x": 95,
+      "y": 237,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceScrapFields",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Сортировочные поля. magnet-crane, sorted-metal-ridges.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "sorted-scrap-fields-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "antHive",
+      "x": 42,
+      "y": 174,
+      "kind": "lair",
+      "locationCount": 1,
+      "locationId": "antHive",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "brahminPen",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Колония Пыльников. shredded-cables, vent-mound.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "dustling-cable-colony-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanOreExchange",
+      "x": 84,
+      "y": 265,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanOreExchange",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Рудный перевал. ore-conveyor, transfer-tower.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "clan-ore-transfer-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "clanFactoryCycle",
+      "x": 128,
+      "y": 244,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanFactoryCycle",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 2,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Цех обратного цикла. reaction-towers, pipe-bridge.",
+      "macroRegion": "ore_arc",
+      "visualProfile": "clan-reagent-cycle-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "caravanCamp",
+      "x": 125,
+      "y": 155,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "caravanCamp",
+      "capital": true,
+      "capitalFaction": "tract_league",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Перекрёсток. route-pylon, cargo-crane.",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "crossroads-caravan-yard-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "oldDepot",
+      "x": 170,
+      "y": 161,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "oldDepot",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Арсенал №6. armored-rail-door, collapsed-watchtower.",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "buried-military-depot-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "resourceTireDepot",
+      "x": 82,
+      "y": 144,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceTireDepot",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Полимерный склад. collapsed-canopy, rubber-bales.",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "polymer-road-depot-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanDepotBypass",
+      "x": 210,
+      "y": 145,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanDepotBypass",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Депо Обводное. roundhouse, cargo-turntable.",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "clan-bypass-depot-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "resourceSiliconRidge",
+      "x": 274,
+      "y": 139,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceSiliconRidge",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 3,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Керамический уступ. white-cut-face, kiln-shell.",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "ceramic-chalk-escarpment-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "geckoCanyon",
+      "x": 332,
+      "y": 83,
+      "kind": "lair",
+      "locationCount": 1,
+      "locationId": "geckoCanyon",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 3,
+      "model": "brahminPen",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Овраг Слухачей. echo-pillars, chalk-caves.",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "listener-karst-ravine-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "secondHaven",
+      "x": 297,
+      "y": 110,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "secondHaven",
+      "capital": true,
+      "capitalFaction": "seconds",
+      "danger": 3,
+      "model": "relayAntenna",
+      "modelScale": 1.25,
+      "rotationY": 0,
+      "note": "Меловой двор. quarry-houses, filter-canopy.",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "seconds-chalk-quarry-town-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanChalkSluice",
+      "x": 267,
+      "y": 88,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanChalkSluice",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 3,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Меловой шлюз. karst-gate, cloth-filter-racks.",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "clan-chalk-sluice-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "relayStation",
+      "x": 300,
+      "y": 181,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "relayStation",
+      "capital": true,
+      "capitalFaction": "contour",
+      "danger": 4,
+      "model": "relayAntenna",
+      "modelScale": 1.25,
+      "rotationY": 0,
+      "note": "Контур-3. dish-array, sealed-tower.",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-three-sealed-dispatch-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "relayOutpost",
+      "x": 272,
+      "y": 205,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "relayOutpost",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Периметр К-3. decon-frame, warning-beacon.",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-sealed-checkpoint-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "relayWorkshop",
+      "x": 330,
+      "y": 196,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "relayWorkshop",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Опытная мастерская К-3. cable-spire, amber-airlock.",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-experimental-workshop-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "solarArray",
+      "x": 345,
+      "y": 154,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "solarArray",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Солнечное поле №4. tilted-panel-field, lightning-mast.",
+      "macroRegion": "glasslands",
+      "visualProfile": "glasslands-solar-array-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "mutantCrater",
+      "x": 315,
+      "y": 143,
+      "kind": "lair",
+      "locationCount": 1,
+      "locationId": "mutantCrater",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "brahminPen",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Воронка Складней. medical-ring, folded-concrete.",
+      "macroRegion": "glasslands",
+      "visualProfile": "fold-mutant-medical-crater-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "vectorLab",
+      "x": 338,
+      "y": 225,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "vectorLab",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Объект «Вектор». impossible-lattice, buried-field-rings.",
+      "macroRegion": "glasslands",
+      "visualProfile": "vector-deep-research-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "clanRelayEast",
+      "x": 358,
+      "y": 184,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanRelayEast",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 4,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Ретранслятор В-9. split-dish, storm-vanes.",
+      "macroRegion": "glasslands",
+      "visualProfile": "clan-relay-v9-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "resourceChemSpring",
+      "x": 168,
+      "y": 76,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceChemSpring",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Сток 4-Б. drain-stack, black-settling-pool.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "toxic-drain-four-b-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "resourceOilPump",
+      "x": 147,
+      "y": 45,
+      "kind": "resource",
+      "locationCount": 1,
+      "locationId": "resourceOilPump",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "storageLeanTo",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Топливная рампа. loading-rack, leaning-tanks.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "lower-bypass-fuel-rack-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "radscorpionNest",
+      "x": 286,
+      "y": 34,
+      "kind": "lair",
+      "locationCount": 1,
+      "locationId": "radscorpionNest",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "brahminPen",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Гнездовье Рыхляков. broken-settling-wall, burrow-ridge.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "burrower-settling-pit-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "balanceBunker",
+      "x": 247,
+      "y": 49,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "balanceBunker",
+      "capital": true,
+      "capitalFaction": "continuity",
+      "danger": 5,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Бункер «Баланс». administrative-shaft, cold-status-column.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "continuity-balance-bunker-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "cascadeRegenerator",
+      "x": 205,
+      "y": 65,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "cascadeRegenerator",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Регенератор Р-12. regenerator-column, black-water-rings.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "cascade-regenerator-r12-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "clanFortZero",
+      "x": 220,
+      "y": 22,
+      "kind": "clan_base",
+      "locationCount": 1,
+      "locationId": "clanFortZero",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Форт 14. armored-gate, command-bastion.",
+      "macroRegion": "zero_basin",
+      "visualProfile": "clan-fort-fourteen-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "wasteland",
+      "x": 78,
+      "y": 65,
+      "kind": "outpost",
+      "locationCount": 1,
+      "locationId": "wasteland",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 5,
+      "model": "watchPost",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Глухой обвод. defense-tower, subsurface-fire.",
+      "macroRegion": "silent_ring",
+      "visualProfile": "silent-ring-expedition-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    }
+  ],
+  "routes": [
+    {
+      "id": "tesma_service_road",
+      "displayName": "Дорога вдоль Тесьмы",
+      "kind": "road",
+      "travelFactor": 0.62,
+      "widthKm": 1.2,
+      "points": [
+        [
+          184,
+          286
+        ],
+        [
+          174,
+          250
+        ],
+        [
+          180,
+          222
+        ],
+        [
+          195,
+          205
+        ],
+        [
+          211,
+          160
+        ],
+        [
+          207,
+          116
+        ],
+        [
+          205,
+          65
+        ]
+      ]
+    },
+    {
+      "id": "cascade_canal",
+      "displayName": "Канал Каскада",
+      "kind": "cascade_canal",
+      "travelFactor": 0.78,
+      "widthKm": 0.8,
+      "points": [
+        [
+          220,
+          292
+        ],
+        [
+          216,
+          262
+        ],
+        [
+          211,
+          228
+        ],
+        [
+          205,
+          205
+        ],
+        [
+          216,
+          171
+        ],
+        [
+          225,
+          132
+        ],
+        [
+          220,
+          96
+        ],
+        [
+          205,
+          65
+        ]
+      ]
+    },
+    {
+      "id": "ore_freight_rail",
+      "displayName": "Рудная ветвь",
+      "kind": "railway",
+      "travelFactor": 0.55,
+      "widthKm": 0.7,
+      "points": [
+        [
+          28,
+          246
+        ],
+        [
+          74,
+          214
+        ],
+        [
+          120,
+          201
+        ],
+        [
+          195,
+          205
+        ],
+        [
+          254,
+          196
+        ],
+        [
+          300,
+          180
+        ],
+        [
+          364,
+          158
+        ]
+      ]
+    },
+    {
+      "id": "tract_main",
+      "displayName": "Большой Тракт",
+      "kind": "road",
+      "travelFactor": 0.5,
+      "widthKm": 1.4,
+      "points": [
+        [
+          0,
+          155
+        ],
+        [
+          54,
+          155
+        ],
+        [
+          125,
+          155
+        ],
+        [
+          195,
+          205
+        ],
+        [
+          245,
+          165
+        ],
+        [
+          295,
+          110
+        ],
+        [
+          380,
+          85
+        ]
+      ]
+    },
+    {
+      "id": "zero_service_line",
+      "displayName": "Служебная линия Нуля",
+      "kind": "service_tunnel",
+      "travelFactor": 0.7,
+      "widthKm": 0.5,
+      "points": [
+        [
+          125,
+          155
+        ],
+        [
+          160,
+          126
+        ],
+        [
+          205,
+          91
+        ],
+        [
+          205,
+          65
+        ],
+        [
+          245,
+          50
+        ],
+        [
+          304,
+          54
+        ]
+      ]
+    }
+  ],
+  "migration": [
+    {
+      "legacyArea": "north-west",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    },
+    {
+      "legacyArea": "north-east",
+      "targetLocationId": "scrapTown",
+      "spawnId": "razdolye-gate"
+    },
+    {
+      "legacyArea": "south-west",
+      "targetLocationId": "caravanCamp",
+      "spawnId": "crossroads-yard"
+    },
+    {
+      "legacyArea": "south-east",
+      "targetLocationId": "relayStation",
+      "spawnId": "contour-three-airlock"
+    },
+    {
+      "legacyArea": "unknown",
+      "targetLocationId": "settlement",
+      "spawnId": "keys-arrival"
+    }
+  ],
+  "contentHash": "5fa8e2a612c24fcfa6ef5b9d573bff6980e83c5917b8d8d3617abd343a2c99eb"
+}

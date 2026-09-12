@@ -7,14 +7,26 @@ const { safeId } = require('./wasteland-sim-utils');
 // remember robberies and defend their camp, but players do not join them and
 // never build a reputation meter with them.
 const JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order']);
-const TERRITORIAL_WORLD_FACTIONS = new Set([...JOINABLE_WORLD_FACTIONS, 'caravans']);
+const TERRITORIAL_WORLD_FACTIONS = new Set([
+  ...JOINABLE_WORLD_FACTIONS,
+  'caravans',
+  'uprava',
+  'free_artels',
+  'contour',
+  'tract_league',
+  'seconds',
+  'continuity'
+]);
 const INDEPENDENT_WORLD_FACTIONS = new Set(['caravans', 'neutral']);
 const HOSTILE_WORLD_FACTIONS = new Set(['raiders', 'mutants', 'wild']);
 const FACTION_CAPITAL_SITES = {
   settlement: 'old_klim',
+  sluiceCity: 'uprava',
   scrapTown: 'scrap_union',
   relayStation: 'relay_order',
-  caravanCamp: 'caravans'
+  caravanCamp: 'caravans',
+  secondHaven: 'seconds',
+  balanceBunker: 'continuity'
 };
 const FACTION_CAPITAL_SITE_IDS = new Set(Object.keys(FACTION_CAPITAL_SITES));
 
@@ -48,9 +60,9 @@ function factionCategory(faction = '') {
 
 function factionLabel(faction = '') {
   const key = factionGroup(faction);
-  if (key === 'old_klim') return 'Старый Клим';
+  if (key === 'old_klim') return 'Управа';
   if (key === 'caravans') return 'вольные караваны';
-  if (key === 'scrap_union') return 'Свалочный союз';
+  if (key === 'scrap_union') return 'Вольные артели';
   if (key === 'relay_order') return 'техники Ретранслятора';
   if (key === 'raiders') return 'рейдеры';
   if (key === 'mutants') return 'супермутанты';

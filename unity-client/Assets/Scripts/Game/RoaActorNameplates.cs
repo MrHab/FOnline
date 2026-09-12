@@ -300,8 +300,13 @@ namespace RealmOfAshes.Game
             _hintName.text = string.Empty;
             _hintChance.text = label;
             _hintChance.color = color;
-            _hintChance.fontSize = label.EndsWith("%") ? 16 : 12;
-            _hintRect.sizeDelta = new Vector2(label.EndsWith("%") ? 80f : 154f, 44f);
+            bool detailed = label.Contains("·") || label.Contains("\n");
+            _hintChance.fontSize = detailed ? 11 : (label.EndsWith("%") ? 16 : 12);
+            _hintChance.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _hintChance.verticalOverflow = VerticalWrapMode.Overflow;
+            _hintRect.sizeDelta = detailed
+                ? new Vector2(330f, label.Contains("\n") ? 64f : 48f)
+                : new Vector2(label.EndsWith("%") ? 80f : 154f, 44f);
             Vector2 mouse = Input.mousePosition;
             const float pad = 14f;
             float x = Mathf.Min(Screen.width - _hintRect.sizeDelta.x - 8f,

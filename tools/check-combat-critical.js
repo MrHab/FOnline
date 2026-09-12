@@ -37,11 +37,12 @@ invariant(!melee.critical && melee.chance === 0 && melee.rawDamage === 21,
 for (const snippet of [
   "resolveCriticalShot(baseRawRoll, serverStatValue(p, 'luck'), weapon)",
   'critical: explosionCritical.critical',
-  "resolveCriticalShot(raw, serverStatValue(p, 'luck'), bulletWeapon)",
-  "resolveCriticalShot(raw, serverStatValue(attacker, 'luck'), bulletWeapon)",
+  'const dmgInfo = resolveWeaponDamage({',
+  "luck: serverStatValue(p, 'luck')",
+  "luck: serverStatValue(attacker, 'luck')",
   'criticalHits = hits.filter(row => row.critical).length',
-  'critical: criticalShot.critical',
-  'criticalChance: Math.round(criticalShot.chance * 100)'
+  'critical: dmgInfo.critical',
+  'criticalChance: Math.round(dmgInfo.criticalChance * 100)'
 ]) {
   invariant(serverSource.includes(snippet), `Server critical-shot integration missing: ${snippet}`);
 }

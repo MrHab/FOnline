@@ -1,0 +1,2289 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "clanDepotBypass",
+  "name": "Депо Обводное",
+  "seed": 2026091404,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "clanBase",
+  "clanBaseId": "bypass_depot",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Депо Обводное"
+  },
+  "map": {
+    "width": 80,
+    "depth": 80,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "clanDepotBypass-approach-0",
+      "model": "siege_approach",
+      "name": "clanDepotBypass-approach-0 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-approach-1",
+      "model": "siege_approach",
+      "name": "clanDepotBypass-approach-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-approach-2",
+      "model": "siege_approach",
+      "name": "clanDepotBypass-approach-2 EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-breach-gate",
+      "model": "checkpoint_gate",
+      "name": "clanDepotBypass-breach-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-command-core",
+      "model": "ring_structure",
+      "name": "clanDepotBypass-command-core EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-01",
+      "model": "scrap_watch_tower",
+      "name": "clanDepotBypass-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.551,
+        "z": 2.914
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-02",
+      "model": "scrap_wall_segment",
+      "name": "clanDepotBypass-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.429,
+        "z": 2.257
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-03",
+      "model": "roadblock_barricade",
+      "name": "clanDepotBypass-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.89,
+        "z": 2.084
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-04",
+      "model": "armory_rack",
+      "name": "clanDepotBypass-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.661,
+        "z": 2.424
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-05",
+      "model": "storage_chest",
+      "name": "clanDepotBypass-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.411,
+        "z": 1.543
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-functional-06",
+      "model": "craft_station_repair",
+      "name": "clanDepotBypass-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.189,
+        "z": 3.374
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-01",
+      "model": "car_wreck",
+      "name": "clanDepotBypass-dressing-region-01",
+      "position": {
+        "x": -11.307,
+        "y": 0.0,
+        "z": -26.679
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.438,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.587,
+        "z": 5.301
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-02",
+      "model": "tire_stack",
+      "name": "clanDepotBypass-dressing-region-02",
+      "position": {
+        "x": -11.51,
+        "y": 0.0,
+        "z": -27.101
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.124,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.499,
+        "z": 2.623
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-03",
+      "model": "highway_sign",
+      "name": "clanDepotBypass-dressing-region-03",
+      "position": {
+        "x": -11.497,
+        "y": 0.0,
+        "z": -27.104
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.124,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.829,
+        "z": 1.899
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-04",
+      "model": "dry_bush",
+      "name": "clanDepotBypass-dressing-region-04",
+      "position": {
+        "x": -6.384,
+        "y": 0.0,
+        "z": -28.746
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.068,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.991,
+        "z": 2.076
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-05",
+      "model": "car_wreck",
+      "name": "clanDepotBypass-dressing-region-05",
+      "position": {
+        "x": -6.348,
+        "y": 0.0,
+        "z": -28.605
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.069,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.796,
+        "z": 5.292
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-06",
+      "model": "tire_stack",
+      "name": "clanDepotBypass-dressing-region-06",
+      "position": {
+        "x": -6.362,
+        "y": 0.0,
+        "z": -28.604
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.256,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.369,
+        "z": 2.574
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-07",
+      "model": "highway_sign",
+      "name": "clanDepotBypass-dressing-region-07",
+      "position": {
+        "x": -6.323,
+        "y": 0.0,
+        "z": -28.612
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.256,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.722,
+        "z": 1.892
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-08",
+      "model": "dry_bush",
+      "name": "clanDepotBypass-dressing-region-08",
+      "position": {
+        "x": -7.735,
+        "y": 0.0,
+        "z": -27.432
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.18,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.913,
+        "z": 2.065
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-09",
+      "model": "car_wreck",
+      "name": "clanDepotBypass-dressing-region-09",
+      "position": {
+        "x": -7.706,
+        "y": 0.0,
+        "z": -27.439
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.179,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.498,
+        "z": 5.372
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-10",
+      "model": "tire_stack",
+      "name": "clanDepotBypass-dressing-region-10",
+      "position": {
+        "x": -7.694,
+        "y": 0.0,
+        "z": -27.445
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.863,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.248,
+        "z": 2.57
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-11",
+      "model": "highway_sign",
+      "name": "clanDepotBypass-dressing-region-11",
+      "position": {
+        "x": -15.822,
+        "y": 0.0,
+        "z": -23.71
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.863,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.277,
+        "z": 1.839
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-12",
+      "model": "dry_bush",
+      "name": "clanDepotBypass-dressing-region-12",
+      "position": {
+        "x": -15.724,
+        "y": 0.0,
+        "z": -23.602
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.789,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.693,
+        "z": 1.834
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-13",
+      "model": "car_wreck",
+      "name": "clanDepotBypass-dressing-region-13",
+      "position": {
+        "x": -15.736,
+        "y": 0.0,
+        "z": -23.595
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.788,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.845,
+        "z": 5.229
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-14",
+      "model": "tire_stack",
+      "name": "clanDepotBypass-dressing-region-14",
+      "position": {
+        "x": -17.036,
+        "y": 0.0,
+        "z": -22.676
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.332,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.593,
+        "z": 2.307
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-dressing-region-15",
+      "model": "highway_sign",
+      "name": "clanDepotBypass-dressing-region-15",
+      "position": {
+        "x": -17.31,
+        "y": 0.0,
+        "z": -23.063
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.332,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.176,
+        "y": 1.176,
+        "z": 1.176
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.859,
+        "z": 1.336
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-landmark",
+      "model": "roundhouse",
+      "name": "Landmark roundhouse EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "roundhouse"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-1",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-1 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-2",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-2 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-3",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-3 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-4",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-4 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-5",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-5 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-module-socket-6",
+      "model": "module_socket",
+      "name": "clanDepotBypass-module-socket-6 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-region-culvert-east",
+      "model": "concrete_culvert",
+      "name": "clanDepotBypass-region-culvert-east EDITABLE",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -20.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-region-culvert-west",
+      "model": "concrete_culvert",
+      "name": "clanDepotBypass-region-culvert-west EDITABLE",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-region-raised-tract",
+      "model": "raised_road",
+      "name": "clanDepotBypass-region-raised-tract EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.24,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "raised_road",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-relay-1",
+      "model": "siege_relay",
+      "name": "clanDepotBypass-relay-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-relay-2",
+      "model": "siege_relay",
+      "name": "clanDepotBypass-relay-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanDepotBypass-relay-3",
+      "model": "siege_relay",
+      "name": "clanDepotBypass-relay-3 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "command",
+      "model": "wastelandShack",
+      "name": "Командный узел: Депо Обводное",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "command-core"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 10.34,
+        "z": 8.409
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "cargoStack",
+      "name": "Депо Обводное",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "landmark",
+        "cargo_turntable"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.342,
+        "z": 2.431
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_a",
+      "model": "utilityPole",
+      "name": "Внешний передатчик А",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_b",
+      "model": "utilityPole",
+      "name": "Внешний передатчик Б",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_c",
+      "model": "utilityPole",
+      "name": "Внешний передатчик В",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-c"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_s",
+      "model": "concreteWall",
+      "name": "Южный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "storage",
+      "model": "storageLeanTo",
+      "name": "Клановый склад",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.5,
+        "y": 1.0,
+        "z": 1.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "clan-storage"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.5,
+        "z": 2.7
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_a",
+      "model": "watchPost",
+      "name": "Башня А",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_b",
+      "model": "watchPost",
+      "name": "Башня Б",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "workshop",
+      "model": "workshopBench",
+      "name": "Модульный двор",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.0,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-yard"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.2,
+        "z": 1.96
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-clan-bypass_depot-v1",
+    "skyDay": "#5d625f",
+    "fogDay": "#6d716c",
+    "hemiSkyDay": "#a9aca0",
+    "hemiGroundDay": "#3c403d",
+    "fillDay": "#9fa58e",
+    "sunDay": "#d4c28f",
+    "rimDay": "#7b9c98",
+    "fogDensityDay": 0.00212,
+    "exposureDay": 0.98,
+    "colorGrade": "kromka-tract_isthmus"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "tract_isthmus",
+  "kromkaVisualProfile": "clan-bypass-depot-v1",
+  "ambientProfile": "fortified-rail-depot",
+  "anomalyDensity": 0.1,
+  "unityScene": "Assets/Scenes/Kromka/Locations/clanDepotBypass.unity",
+  "respawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 18,
+    "tz": 10,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "bypass-depot-neutral-yard",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "clanDepotBypass-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

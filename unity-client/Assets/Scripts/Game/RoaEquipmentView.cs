@@ -38,10 +38,11 @@ namespace RealmOfAshes.Game
             public float RetryAt;
             public bool RetryScheduled;
             public string BodyKey = string.Empty;
+            public string ArmorFit = string.Empty;
             public Transform CharacterRoot;
         }
 
-        private static readonly string[] Slots = { "armor", "helmet", "boots", "backpack" };
+        private static readonly string[] Slots = { "armor", "helmet", "boots", "backpack", "detector", "artifactBelt" };
 
         private static readonly Dictionary<string, Definition> Definitions =
             new Dictionary<string, Definition>
@@ -62,14 +63,38 @@ namespace RealmOfAshes.Game
                 { "assaultBoots", new Definition("boots", "equipment_assault_boots") },
                 { "reinforcedBoots", new Definition("boots", "equipment_reinforced_boots") },
                 { "scoutBoots", new Definition("boots", "equipment_scout_boots") },
-                { "backpack", new Definition("backpack", "equipment_backpack") }
+                { "backpack", new Definition("backpack", "equipment_backpack") },
+                { "artifactDetectorMk1", new Definition("detector", "") },
+                { "artifactDetectorMk2", new Definition("detector", "") },
+                { "artifactDetectorMk3", new Definition("detector", "") },
+                { "artifactBelt2", new Definition("artifactBelt", "") },
+                { "artifactBelt3", new Definition("artifactBelt", "") },
+                { "artifactBelt4", new Definition("artifactBelt", "") }
             };
 
         private static readonly Dictionary<string, Task<GltfImport>> Cache =
             new Dictionary<string, Task<GltfImport>>();
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache() => RoaModelImportLifetime.Clear(Cache);
+
         private readonly Dictionary<string, SlotState> _states =
             new Dictionary<string, SlotState>();
+
+        public event System.Action VisualChanged;
+
+        /// <summary>Only successfully mounted head coverings hide this body's hair.</summary>
+        public bool CoversHair(Transform characterRoot)
+        {
+            if (characterRoot == null) return false;
+            foreach (string slot in new[] { "helmet", "armor" })
+            {
+                if (!_states.TryGetValue(slot, out SlotState state) || state.Root == null
+                    || !state.Root.activeSelf || state.CharacterRoot != characterRoot) continue;
+                if (slot == "helmet" || state.ItemId == "hazmatSuit") return true;
+            }
+            return false;
+        }
 
         public int LoadedSlotCount
         {
@@ -106,10 +131,12 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(bodyKey)) bodyKey = "male_medium";
 
             var tasks = new List<Task>(Slots.Length);
+            string armorFit = RoaWornUtilityCatalog.ArmorFit(BaseItemId(equipment?["armor"]?.ToString()));
             foreach (string slot in Slots)
             {
                 string itemId = BaseItemId(equipment?[slot]?.ToString() ?? string.Empty);
-                tasks.Add(ApplySlot(baseUrl, bodyKey, slot, itemId, characterRoot, bones));
+                tasks.Add(ApplySlot(baseUrl, bodyKey, slot, itemId, characterRoot, bones,
+                    slot == "detector" || slot == "artifactBelt" ? armorFit : "none"));
             }
             await Task.WhenAll(tasks);
         }
@@ -119,18 +146,20 @@ namespace RealmOfAshes.Game
             foreach (SlotState state in _states.Values)
             {
                 state.Request++;
-                if (state.Root != null) Object.Destroy(state.Root);
+                if (state.Root != null) { state.Root.SetActive(false); Object.Destroy(state.Root); }
                 state.Root = null;
                 state.ItemId = string.Empty;
                 state.BodyKey = string.Empty;
+                state.ArmorFit = string.Empty;
                 state.CharacterRoot = null;
                 state.RetryAt = 0f;
                 state.RetryScheduled = false;
             }
+            VisualChanged?.Invoke();
         }
 
         private async Task ApplySlot(string baseUrl, string bodyKey, string slot, string itemId,
-                                     Transform characterRoot, Dictionary<string, Transform> bones)
+                                     Transform characterRoot, Dictionary<string, Transform> bones, string armorFit)
         {
             if (!_states.TryGetValue(slot, out SlotState state))
             {
@@ -138,7 +167,7 @@ namespace RealmOfAshes.Game
                 _states[slot] = state;
             }
 
-            bool sameOwner = state.BodyKey == bodyKey && state.CharacterRoot == characterRoot;
+            bool sameOwner = state.BodyKey == bodyKey && state.CharacterRoot == characterRoot && state.ArmorFit == armorFit;
             if (sameOwner && state.ItemId == itemId && (string.IsNullOrEmpty(itemId)
                 || state.Root != null || Time.unscaledTime < state.RetryAt)) return;
 
@@ -146,10 +175,13 @@ namespace RealmOfAshes.Game
             int request = state.Request;
             state.ItemId = itemId;
             state.BodyKey = bodyKey;
+            state.ArmorFit = armorFit;
             state.CharacterRoot = characterRoot;
             state.RetryScheduled = false;
-            if (state.Root != null) Object.Destroy(state.Root);
+            if (state.Root != null) { state.Root.SetActive(false); Object.Destroy(state.Root); }
             state.Root = null;
+            UpdateBuiltinFootwear();
+            VisualChanged?.Invoke();
 
             RoaVisibilityGate gate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
             if (gate != null) gate.Invalidate();
@@ -161,8 +193,10 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            string url = baseUrl.TrimEnd('/') + "/assets/models/equipment/" + slot + "/"
-                + definition.Prefix + "_" + bodyKey + ".glb";
+            string path = RoaWornUtilityCatalog.TryModelPath(itemId, bodyKey, armorFit, out string utility)
+                ? utility : RoaEquipmentModelCatalog.TryModelPath(itemId, bodyKey, out string replacement)
+                ? replacement : "/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb";
+            string url = baseUrl.TrimEnd('/') + path;
 
             try
             {
@@ -175,6 +209,9 @@ namespace RealmOfAshes.Game
                 }
 
                 var sourceRoot = new GameObject("EquipmentSource:" + itemId);
+                // This is an import staging rig, never a visible second outfit.
+                // It may span a frame during async import or deferred Destroy.
+                sourceRoot.SetActive(false);
                 sourceRoot.transform.SetParent(characterRoot, false);
                 if (!await import.InstantiateMainSceneAsync(sourceRoot.transform))
                 {
@@ -205,10 +242,13 @@ namespace RealmOfAshes.Game
                 }
 
                 state.Root = instance;
+                UpdateBuiltinFootwear();
                 state.RetryAt = 0f;
                 state.RetryScheduled = false;
                 gate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
-                if (gate != null) gate.Invalidate();
+                if (gate != null) { gate.Invalidate(); gate.SetVisible(gate.IsVisible); }
+                instance.SetActive(true);
+                VisualChanged?.Invoke();
             }
             catch (MissingReferenceException)
             {
@@ -220,6 +260,18 @@ namespace RealmOfAshes.Game
                     ScheduleRetry(state, baseUrl, bodyKey, slot, itemId, characterRoot, bones, request);
                 Debug.LogWarning("[ROA] Сбой загрузки экипировки " + itemId + ": " + error.Message);
             }
+        }
+
+        private void UpdateBuiltinFootwear()
+        {
+            if (!_states.TryGetValue("armor", out SlotState armor) || armor.Root == null) return;
+            bool separateBoots = _states.TryGetValue("boots", out SlotState boots) && boots.Root != null
+                && boots.CharacterRoot == armor.CharacterRoot && boots.BodyKey == armor.BodyKey;
+            foreach (var renderer in armor.Root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (renderer.name.Contains(RoaSuitModelCatalog.FootwearLayer))
+                    // Use object activity: a fog gate may change renderer.enabled,
+                    // but must never restore a deliberately hidden outfit layer.
+                    renderer.gameObject.SetActive(!separateBoots);
         }
 
         private void ScheduleRetry(SlotState state, string baseUrl, string bodyKey, string slot,
@@ -245,7 +297,7 @@ namespace RealmOfAshes.Game
             while (Time.unscaledTime < state.RetryAt);
             if (!Current(state, itemId, request, characterRoot)) return;
             state.RetryScheduled = false;
-            await ApplySlot(baseUrl, bodyKey, slot, itemId, characterRoot, bones);
+            await ApplySlot(baseUrl, bodyKey, slot, itemId, characterRoot, bones, state.ArmorFit);
         }
 
         private static GameObject BindSkinnedMeshes(GameObject sourceRoot, Transform characterRoot,
@@ -255,6 +307,7 @@ namespace RealmOfAshes.Game
             if (sources.Length == 0) return null;
 
             var output = new GameObject("Equipment:" + itemId);
+            output.SetActive(false);
             output.transform.SetParent(characterRoot, false);
 
             foreach (SkinnedMeshRenderer source in sources)

@@ -76,6 +76,7 @@ namespace RealmOfAshes.Game
         private JArray _worldMap;
         private Texture2D _staticTexture;
         private Texture2D _arrowTexture;
+        private bool _globalMapExitAllowed = true;
         private float _nextRefresh;
 
         public void Configure(RoaEnemies enemies, RoaRemotePlayers remotePlayers,
@@ -115,6 +116,16 @@ namespace RealmOfAshes.Game
         public void SetWorldMap(JArray worldMap)
         {
             _worldMap = worldMap != null ? (JArray)worldMap.DeepClone() : null;
+            if (_location == null || MapWidth <= 0 || MapDepth <= 0) return;
+            DestroyRuntime(_staticTexture);
+            _staticTexture = null;
+            BuildStaticTexture(_location);
+        }
+
+        public void SetGlobalMapExitAllowed(bool allowed)
+        {
+            if (_globalMapExitAllowed == allowed) return;
+            _globalMapExitAllowed = allowed;
             if (_location == null || MapWidth <= 0 || MapDepth <= 0) return;
             DestroyRuntime(_staticTexture);
             _staticTexture = null;
@@ -291,8 +302,29 @@ namespace RealmOfAshes.Game
                 }
             }
 
+            if ((_location == null || _location.CanExitToGlobalMap) && _globalMapExitAllowed)
+                PaintGlobalMapExitBand(pixels);
+
             _staticTexture.SetPixels32(pixels);
             _staticTexture.Apply(false, false);
+        }
+
+        private void PaintGlobalMapExitBand(Color32[] pixels)
+        {
+            int band = Mathf.Min(RoaWorldExitBoundary.ExitBandTileCount,
+                Mathf.Max(1, Mathf.Min(MapWidth, MapDepth) / 2));
+            var gold = new Color32(246, 177, 47, 255);
+            for (int tz = 0; tz < MapDepth; tz++)
+            for (int tx = 0; tx < MapWidth; tx++)
+            {
+                int edge = Mathf.Min(Mathf.Min(tx, MapWidth - 1 - tx),
+                    Mathf.Min(tz, MapDepth - 1 - tz));
+                if (edge >= band) continue;
+                int pixelY = MapDepth - 1 - tz;
+                int index = pixelY * MapWidth + tx;
+                float strength = edge == 0 ? 0.82f : 0.48f;
+                pixels[index] = Color32.Lerp(pixels[index], gold, strength);
+            }
         }
 
         private void PaintAuthoritativeMap(Color32[] pixels)

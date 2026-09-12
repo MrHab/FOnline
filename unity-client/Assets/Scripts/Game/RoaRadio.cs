@@ -606,7 +606,7 @@ namespace RealmOfAshes.Game
                         + ". " + LibraryLine();
                     break;
                 case ChannelAsh:
-                    StatusLine = "Пепельная частота · несущая " + worldHour + "h";
+                    StatusLine = "Шум Стеколья · несущая " + worldHour + "h";
                     SignalLine = "В сети " + sites + " узлов. " + LibraryLine();
                     break;
                 case ChannelSafety:

@@ -1,0 +1,454 @@
+{
+  "schema": "realm.free-item-sources.v1",
+  "verifiedDate": "2026-09-09",
+  "sources": [
+    {
+      "id": "space-bones",
+      "file": "space/bones.glb",
+      "title": "bones",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/bones.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "D42D859E91BEB903A09C4EECF4CCB169AE77B84E475A6B773D6ECF30644371BE",
+      "bytes": 14212,
+      "dependencies": []
+    },
+    {
+      "id": "space-meteor",
+      "file": "space/meteor.glb",
+      "title": "meteor",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/meteor.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "83C75071D3A48955FF3F719992F7D69DC13E915DA988878BFF441FD3DBB472F8",
+      "bytes": 6496,
+      "dependencies": []
+    },
+    {
+      "id": "space-meteor_half",
+      "file": "space/meteor_half.glb",
+      "title": "meteor_half",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/meteor_half.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "EF611F9D1DE4196023686A9977EA32CD15858F626D0D7DBB1240450EDB92C4C2",
+      "bytes": 4680,
+      "dependencies": []
+    },
+    {
+      "id": "space-meteor_detailed",
+      "file": "space/meteor_detailed.glb",
+      "title": "meteor_detailed",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/meteor_detailed.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "F30379ABD7D772A2FDC52EBB72AD2B5FC94768343CB8F6788614820F632C5E63",
+      "bytes": 14208,
+      "dependencies": []
+    },
+    {
+      "id": "space-rock",
+      "file": "space/rock.glb",
+      "title": "rock",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/rock.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "DBC02AF619E176D10676CEB0E788D0BF8838731BEF0D50972F11C7BF5D1F4922",
+      "bytes": 13172,
+      "dependencies": []
+    },
+    {
+      "id": "space-rock_crystals",
+      "file": "space/rock_crystals.glb",
+      "title": "rock_crystals",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/rock_crystals.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "FBE5CE9CF6A036594B0EB4FC475633753BCD05780BF60BD82AA9C63FCBFD4E76",
+      "bytes": 25156,
+      "dependencies": []
+    },
+    {
+      "id": "space-rock_crystalsLargeA",
+      "file": "space/rock_crystalsLargeA.glb",
+      "title": "rock_crystalsLargeA",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/rock_crystalsLargeA.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "CFE8F339F6BE4A321E5F3822237002B6A70F9C5D03596A7C347ADABD5247FBD9",
+      "bytes": 26160,
+      "dependencies": []
+    },
+    {
+      "id": "space-rock_crystalsLargeB",
+      "file": "space/rock_crystalsLargeB.glb",
+      "title": "rock_crystalsLargeB",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/rock_crystalsLargeB.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "3FE54711B8D0FBEAEBCC055409F256BF414AD7493E7F97ADBA4B213E44F11117",
+      "bytes": 25924,
+      "dependencies": []
+    },
+    {
+      "id": "space-pipe_ringHigh",
+      "file": "space/pipe_ringHigh.glb",
+      "title": "pipe_ringHigh",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/pipe_ringHigh.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "9091694F93359E720150B85C6F576485BEB888CC43D80B020B391263F5B047F1",
+      "bytes": 14028,
+      "dependencies": []
+    },
+    {
+      "id": "space-pipe_cross",
+      "file": "space/pipe_cross.glb",
+      "title": "pipe_cross",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/pipe_cross.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "9550AF4D18BD747FDDFCA37439C9B46264DD588B68401F3B3CBF9D41A878C33C",
+      "bytes": 13504,
+      "dependencies": []
+    },
+    {
+      "id": "space-machine_generator",
+      "file": "space/machine_generator.glb",
+      "title": "machine_generator",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/machine_generator.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "98E8AC6ACEADA3B2483ED1ECEB59BFF7190EE774EDAC799350CCC11AD140F7F3",
+      "bytes": 28044,
+      "dependencies": []
+    },
+    {
+      "id": "space-machine_wireless",
+      "file": "space/machine_wireless.glb",
+      "title": "machine_wireless",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip",
+      "archiveSha256": "D5D7CDF2635ED5A43A9187DEAF409B6F47484E402321128341D3C3698E9EF4D9",
+      "member": "Models/GLTF format/machine_wireless.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "space-LICENSE.txt",
+      "sha256": "9D49E70D51515BC38628FB0D6E43F4EDA7F9CD5326882FD02E8815E61F2259D7",
+      "bytes": 13420,
+      "dependencies": []
+    },
+    {
+      "id": "station-container-flat",
+      "file": "station/container-flat.glb",
+      "title": "container-flat",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/container-flat.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "F76BDEBF96AD858DD8A6BE5CB71694616A63488CBAC3F61D01485DCCDE99FD0C",
+      "bytes": 12196,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "station-container-tall",
+      "file": "station/container-tall.glb",
+      "title": "container-tall",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/container-tall.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "E790F12CDAB2E50D266D54E1BBB8A05A1CD77629A065254BE3734A67B6053358",
+      "bytes": 13052,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "station-container",
+      "file": "station/container.glb",
+      "title": "container",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/container.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "719B77F62979E9E02047489FCC1E86432BE300AC35ED02FE496A2DFC6A3FCDD6",
+      "bytes": 9716,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "station-computer-screen",
+      "file": "station/computer-screen.glb",
+      "title": "computer-screen",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/computer-screen.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "DD2A95A9C46F430E6FD0D2AF6C6A94B4542D0501DDA2700504642CECC33369E3",
+      "bytes": 19584,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "station-wall-switch",
+      "file": "station/wall-switch.glb",
+      "title": "wall-switch",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/wall-switch.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "2B297783053AA9B091972F31F5FC3892B7CB7572D017DD37FC22AF9AC2640C20",
+      "bytes": 3192,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "station-pipe-ring",
+      "file": "station/pipe-ring.glb",
+      "title": "pipe-ring",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/space-station-kit",
+      "download": "https://kenney.nl/media/pages/assets/space-station-kit/6475288f2e-1712749919/kenney_space-station-kit.zip",
+      "archiveSha256": "215E79BD5415CFF93665183390F0343ED9ACF87780306331013B78520170C6D8",
+      "member": "Models/GLB format/pipe-ring.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "station-LICENSE.txt",
+      "sha256": "5E5821B9E9579C60C1200414EECE3D8AD3C5FFAA3488E9C3A172EB49700F64F8",
+      "bytes": 5344,
+      "dependencies": [
+        {
+          "file": "station/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "survival-bedroll-packed",
+      "file": "survival/bedroll-packed.glb",
+      "title": "bedroll-packed",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/survival-kit",
+      "download": "https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip",
+      "archiveSha256": "C3586341B5932C87EB43D75D915434F47DAED168B17ED36A03E8CA9977C7443E",
+      "member": "Models/GLB format/bedroll-packed.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "survival-LICENSE.txt",
+      "sha256": "980C222917E8564C68AA184AF025D701612C7395E8AD8EF55B5B00785637A98F",
+      "bytes": 13680,
+      "dependencies": [
+        {
+          "file": "survival/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "survival-bottle",
+      "file": "survival/bottle.glb",
+      "title": "bottle",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/survival-kit",
+      "download": "https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip",
+      "archiveSha256": "C3586341B5932C87EB43D75D915434F47DAED168B17ED36A03E8CA9977C7443E",
+      "member": "Models/GLB format/bottle.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "survival-LICENSE.txt",
+      "sha256": "23F847B8812838830DF686FB8B472FA225693A3B85C526F2796F7B0790831A9A",
+      "bytes": 10468,
+      "dependencies": [
+        {
+          "file": "survival/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "survival-metal-panel-screws-half",
+      "file": "survival/metal-panel-screws-half.glb",
+      "title": "metal-panel-screws-half",
+      "creator": "Kenney",
+      "page": "https://kenney.nl/assets/survival-kit",
+      "download": "https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip",
+      "archiveSha256": "C3586341B5932C87EB43D75D915434F47DAED168B17ED36A03E8CA9977C7443E",
+      "member": "Models/GLB format/metal-panel-screws-half.glb",
+      "license": "CC0-1.0",
+      "licenseFile": "survival-LICENSE.txt",
+      "sha256": "EB8834BE52B9766A6A553799DFACAAFF63E7FAC191B9392C154725FF102FAA91",
+      "bytes": 28272,
+      "dependencies": [
+        {
+          "file": "survival/Textures/colormap.png",
+          "sha256": "6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1"
+        }
+      ]
+    },
+    {
+      "id": "heart",
+      "title": "Heart",
+      "creator": "Quaternius",
+      "sha256": "A4ACAC986A8D557AA1BD9FFAD4291EC26C7E49F6FAAA716943C22394F42F5793",
+      "file": "heart.glb",
+      "page": "https://poly.pizza/m/1yCRUwFnwX",
+      "url": "https://static.poly.pizza/a53d4e74-46dd-43d3-9815-82cef1fa8ccc.glb",
+      "license": "CC0-1.0",
+      "bytes": 13984
+    },
+    {
+      "id": "spring",
+      "title": "Spring",
+      "creator": "Quaternius",
+      "sha256": "5AC89D36B8D748E6B2FE6974D4D8CC19B04682835B38C8B6DD90496E367184E5",
+      "file": "spring.glb",
+      "page": "https://poly.pizza/m/vKySckBbyb",
+      "url": "https://static.poly.pizza/c8301112-1eee-45cb-aa31-f8b161f6f25c.glb",
+      "license": "CC0-1.0",
+      "bytes": 38064
+    },
+    {
+      "id": "medkit",
+      "title": "Pickup Health",
+      "creator": "Quaternius",
+      "sha256": "9C8436DA2DE11C937BE7FB5541DE1CE81FEA45FA5B0D3A769104799D28CCBAF0",
+      "file": "medkit.glb",
+      "page": "https://poly.pizza/m/ijqVDSeIM5",
+      "url": "https://static.poly.pizza/5b1bed20-e3b8-4687-b50a-43085ff69500.glb",
+      "license": "CC0-1.0",
+      "bytes": 42508
+    },
+    {
+      "id": "gem-green",
+      "title": "Gem Green",
+      "creator": "Quaternius",
+      "sha256": "6A29E5681BD6525AF84F1016E3E32B18C9008EFBA128DE8131232911504B1515",
+      "file": "gem-green.glb",
+      "page": "https://poly.pizza/m/kbgiCMzdxg",
+      "url": "https://static.poly.pizza/975e55e6-5400-4fd1-97a1-6deaebb19c1a.glb",
+      "license": "CC0-1.0",
+      "bytes": 15056
+    },
+    {
+      "id": "gem-pink",
+      "title": "Gem Pink",
+      "creator": "Quaternius",
+      "sha256": "AD216953C74193455A56F0EA40F36B1ED7BD714F21459A59ED74FA0E34EFE312",
+      "file": "gem-pink.glb",
+      "page": "https://poly.pizza/m/PJnKvWluqs",
+      "url": "https://static.poly.pizza/97fcdb07-9d4d-46f2-8c17-392bb61915e6.glb",
+      "license": "CC0-1.0",
+      "bytes": 13920
+    },
+    {
+      "id": "backpack",
+      "title": "Backpack",
+      "creator": "Quaternius",
+      "sha256": "404AF15A4BC0A955D9D8133D16DE7A4B900663F3A11F5364624AB8E7E9B6F68A",
+      "file": "backpack.glb",
+      "page": "https://poly.pizza/m/vF7TuXCPDH",
+      "url": "https://static.poly.pizza/2eb5178b-0c98-4a0d-b0ea-ad8925525d1e.glb",
+      "license": "CC0-1.0",
+      "bytes": 217084
+    },
+    {
+      "id": "radio",
+      "title": "Radio",
+      "creator": "Kenney",
+      "sha256": "2DF48F5B08A00608E6E98A3AD18E1F0049E09BA6C1AF0549DA82E6F347694629",
+      "file": "radio.glb",
+      "page": "https://poly.pizza/m/ShNRjTDU3i",
+      "url": "https://static.poly.pizza/33bdb52a-7a35-40f5-92db-870db8b1955e.glb",
+      "license": "CC0-1.0",
+      "bytes": 49604
+    },
+    {
+      "id": "anchor",
+      "title": "Prop Anchor",
+      "creator": "Quaternius",
+      "file": "anchor.gltf",
+      "page": "https://quaternius.com/packs/piratekit.html",
+      "url": "https://raw.githubusercontent.com/agentkaerf/FreeModels/db3df04d1e4714298a09510b26fb6de6645138a2/Pirate%20Kit%20-%20Nov%202023/glTF/Prop_Anchor.gltf",
+      "sha256": "98504894D03160B86F8B4A34D6E1B9B31BAC173CE424378100F13143FD0223FC",
+      "license": "CC0-1.0",
+      "bytes": 43082
+    }
+  ]
+}

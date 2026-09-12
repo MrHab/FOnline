@@ -341,9 +341,10 @@ namespace RealmOfAshes.EditorTools
             Material toxicFogMaterial = toxicFogRenderer != null
                 ? toxicFogRenderer.sharedMaterial : null;
             Require(toxicFogMaterial != null
-                    && toxicFogMaterial.GetFloat("_Density") >= 0.95f
-                    && toxicFogMaterial.GetFloat("_VerticalMotion") <= 0.001f,
-                    "Toxic boundary fog is no longer dense and seam-safe.");
+                    && toxicFogMaterial.GetFloat("_Density") >= 0.75f
+                    && toxicFogMaterial.GetFloat("_Density") <= 0.82f
+                    && toxicFogMaterial.GetFloat("_VerticalMotion") <= 0.18f,
+                    "Toxic boundary fog no longer matches the low-billow profile.");
             float toxicExtent = RoaGlobalMapEnvironmentAuthoring.ToxicFogOuterExtent;
             Require(toxicFogBounds.min.x <= -toxicExtent + 1f
                     && toxicFogBounds.max.x >= toxicExtent - 1f
@@ -472,12 +473,16 @@ namespace RealmOfAshes.EditorTools
             MeshFilter[] filters = fog.GetComponentsInChildren<MeshFilter>(true);
             int vertexCount = 0;
             int triangleCount = 0;
+            int billboardVertexCount = 0;
+            float maximumBillboardHalfHeight = 0f;
             for (int i = 0; i < filters.Length; i++)
             {
                 MeshFilter filter = filters[i];
                 Mesh mesh = filter != null ? filter.sharedMesh : null;
                 if (mesh == null) continue;
                 Vector3[] vertices = mesh.vertices;
+                Color[] colors = mesh.colors;
+                Vector2[] billboardSizes = mesh.uv2;
                 vertexCount += vertices.Length;
                 triangleCount += mesh.triangles.Length / 3;
                 for (int v = 0; v < vertices.Length; v++)
@@ -486,12 +491,21 @@ namespace RealmOfAshes.EditorTools
                     Require(Mathf.Abs(world.x) >= innerExtent - 0.05f
                             || Mathf.Abs(world.z) >= innerExtent - 0.05f,
                             "Toxic fog intrudes beyond its authored soft perimeter overlap.");
+                    if (v < colors.Length && colors[v].b > 0.5f)
+                    {
+                        billboardVertexCount++;
+                        if (v < billboardSizes.Length)
+                            maximumBillboardHalfHeight = Mathf.Max(maximumBillboardHalfHeight,
+                                billboardSizes[v].y);
+                    }
                 }
             }
-            Require(vertexCount >= 2000 && vertexCount <= 3200
-                    && triangleCount >= 1000 && triangleCount <= 1600,
+            Require(vertexCount >= 2000 && vertexCount <= 2800
+                    && triangleCount >= 1000 && triangleCount <= 1400,
                     "Toxic fog mesh complexity changed unexpectedly: vertices="
                     + vertexCount + ", triangles=" + triangleCount + ".");
+            Require(billboardVertexCount == 0 && maximumBillboardHalfHeight <= 0.001f,
+                    "Toxic fog mesh must remain a ground veil; low billows live in the saved prefab.");
             // Эпоха песчаной бури: у границы один меш-рендерер (стена,
             // может быть выключена) плюс системы частиц — все без теней.
             Renderer[] renderers = fog.GetComponentsInChildren<Renderer>(true);
@@ -506,6 +520,23 @@ namespace RealmOfAshes.EditorTools
             }
             Require(meshRenderers >= 1 && meshRenderers <= 2,
                     "Boundary must keep the wall mesh and at most a border line.");
+            MeshRenderer groundVeil = fog.GetComponent<MeshRenderer>();
+            Require(groundVeil != null && groundVeil.enabled,
+                    "Ground fog veil must remain enabled to hide the perimeter seam.");
+
+            ParticleSystem[] billows = fog.GetComponentsInChildren<ParticleSystem>(true);
+            Require(billows.Length == 4,
+                    "Boundary fog must contain exactly four saved low-billow emitters.");
+            for (int i = 0; i < billows.Length; i++)
+            {
+                ParticleSystem.MainModule main = billows[i].main;
+                ParticleSystem.ShapeModule shape = billows[i].shape;
+                float highestPoint = billows[i].transform.localPosition.y
+                    + shape.scale.y * 0.5f + main.startSizeY.constantMax * 0.5f;
+                Require(main.startSize3D && main.startSizeY.constantMax <= 2.51f
+                        && shape.scale.y <= 0.041f && highestPoint <= 2.48f,
+                        "Boundary fog billow rises above its 2.5 m ground-hugging envelope.");
+            }
         }
 
         /// <summary>

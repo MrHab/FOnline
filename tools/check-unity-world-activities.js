@@ -133,7 +133,7 @@ requireText(simulation, 'contractKey: worldContractSemanticKey(',
 requireText(simulation, 'dedupeActiveWorldContracts(orderedTaskCandidates',
   'the public contract feed no longer removes semantic duplicates');
 requirePattern(server,
-  /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
+  /function publicWorldState\([\s\S]{0,1800}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
 requirePattern(server,
   /function transferPlayerToServerRoom\([\s\S]{0,2600}ensureServerWorldActivityForRoom\(room, Date\.now\(\)\)[\s\S]{0,160}refreshRoomWorldState\(room, \{ force: true \}\)/,
@@ -495,6 +495,11 @@ requireText(globalMapCanvas, '_worldChangeToastUntil = Time.unscaledTime + 5.5f;
   'world-change feedback no longer has a bounded non-blocking lifetime');
 requireText(globalMap, '_activityOverlayLabels.Add(new ActivityOverlayState',
   'priority activities no longer receive readable labels on the live map');
+requireText(globalMap, 'Name = RoaPipboy.KromkaPublicText(',
+  'live global-map targets can expose retired world names');
+requirePattern(globalMap,
+  /string title = RoaPipboy\.KromkaPublicText\([\s\S]{0,120}task\?\["title"\]/,
+  'live activity labels can expose retired world names');
 for (const [kind, label] of [
   ['escort_caravan', 'Караван'],
   ['distress_signal', 'Сигнал бедствия'],
@@ -614,7 +619,7 @@ requirePattern(server,
   /completeWorldActivityTask\(taskId[\s\S]{0,900}performServerWorldTaskAction\(player, \{[\s\S]{0,120}action: 'claim'[\s\S]{0,120}taskId/,
   'the extracting player is no longer paid inside the acknowledged extraction action');
 requirePattern(server,
-  /players\.set\(socket\.id, p\);[\s\S]{0,120}settleServerWorldActivityPlayers\(p\.worldTaskAccepted\);/,
+  /players\.set\(socket\.id, p\);[\s\S]{0,1000}settleServerWorldActivityPlayers\(p\.worldTaskAccepted\);/,
   'pending activity rewards are no longer recovered when the character joins');
 requireText(server, 'lastWorldActivityResult: sanitizeServerWorldActivityResult(savedState.lastWorldActivityResult)',
   'a pending or paid activity result is no longer restored from the character save');

@@ -30,10 +30,22 @@ function mergeRows(storedRows, bundledRows) {
   return added.length ? [...stored, ...added] : stored;
 }
 
+function authoredVersion(value) {
+  const version = Number(value?.version);
+  return Number.isInteger(version) && version >= 0 ? version : 0;
+}
+
 function mergeAuthoredGlobalMap(stored, bundled) {
   if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return bundled;
   if (!bundled || typeof bundled !== 'object' || Array.isArray(bundled)) return stored;
-  const merged = { ...stored };
+  // A higher authored-map version denotes a deliberate world replacement, not
+  // an incremental content addition. Keeping the old grid/nodes in that case
+  // mixes coordinates from two worlds (for example legacy 900x900 with Kromka
+  // 380x300) and scatters live parties outside the Unity scene. Same-version
+  // files still preserve operator edits and receive newly bundled rows.
+  if (authoredVersion(bundled) > authoredVersion(stored)) return bundled;
+
+  const merged = { ...bundled, ...stored };
   for (const key of MERGED_COLLECTIONS) {
     merged[key] = mergeRows(stored[key], bundled[key]);
   }
@@ -42,5 +54,6 @@ function mergeAuthoredGlobalMap(stored, bundled) {
 
 module.exports = {
   MERGED_COLLECTIONS,
+  authoredVersion,
   mergeAuthoredGlobalMap
 };

@@ -16,6 +16,18 @@ backups/
 .codex-npc-caps-inventory/
 .unity-global-map-bake/
 UnityMapMaterialBake/
+/.tmp/
+/Build/*
+# One pinned CC0 donor is referenced by the sealed suit manifests. Preserve its
+# original path and provenance; all other downloads/build products stay local.
+!/Build/SourceDownloads/
+/Build/SourceDownloads/*
+!/Build/SourceDownloads/free-armor-replacements-20260908/
+/Build/SourceDownloads/free-armor-replacements-20260908/*
+!/Build/SourceDownloads/free-armor-replacements-20260908/quaternius_male_spacesuit.gltf
+!/Build/SourceDownloads/free-armor-replacements-20260908/quaternius_modular_characters_license.txt
+!/Build/SourceDownloads/free-armor-replacements-20260908/download-manifest.json
+*.blend1
 
 # Local environment and logs.
 .env
@@ -65,6 +77,14 @@ unity-client/Assets/MEP.meta
 # Официальный сэмпл-пак террейна Unity (1.9 ГБ): ставится локально из Asset Store
 unity-client/Assets/TerrainSampleAssets/
 unity-client/Assets/TerrainSampleAssets.meta
+
+# Atomic Realm allows use in games, not redistribution of raw assets.
+# Keep import GUIDs and setup/license documentation, but install sources locally.
+unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/**
+!unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/**/
+!unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/**/*.meta
+!unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/README.md
+!unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic/Documentation/**
 
 # Служебные каталоги Unity, созданные при открытии корня репозитория как
 # проекта (bake глобальной карты). Настоящий проект — только unity-client/.

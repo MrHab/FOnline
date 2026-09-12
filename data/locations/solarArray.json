@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "solarArray",
-  "name": "Солнечная станция Ретранслятора",
+  "name": "Солнечное поле №4",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,184 +52,22 @@
   "containers": [],
   "objects": [
     {
-      "id": "solar_pole_01",
-      "model": "utilityPole",
-      "name": "Опора станции",
-      "url": "/assets/models/wasteland/utility_pole.glb",
-      "position": {
-        "x": -9,
-        "y": 0,
-        "z": -8
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "cover",
-      "tags": [
-        "cover"
-      ],
-      "vision": {
-        "mode": "cover"
-      }
-    },
-    {
-      "id": "solar_pole_02",
-      "model": "utilityPole",
-      "name": "Опора станции",
-      "url": "/assets/models/wasteland/utility_pole.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -8
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "cover",
-      "tags": [
-        "cover"
-      ],
-      "vision": {
-        "mode": "cover"
-      }
-    },
-    {
-      "id": "solar_energy_bench",
-      "model": "craftStationEnergy",
-      "name": "Энергетический стенд",
-      "url": "/assets/models/wasteland/craft_station_energy.glb",
-      "position": {
-        "x": -1.7,
-        "y": 0,
-        "z": 7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "energy_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "energy_bench"
-      ],
-      "stationSiteId": "solarArray",
-      "worksiteId": "solarArray",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "solarArray"
-      }
-    },
-    {
-      "id": "solar_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
-      "position": {
-        "x": 1.7,
-        "y": 0,
-        "z": 7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "solarArray",
-      "worksiteId": "solarArray",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "solarArray"
-      }
-    },
-    {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 17,
-        "y": 0,
-        "z": 14
+      "name": "Место отдыха",      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -230,16 +76,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 27,
       "tz": 26,
@@ -249,29 +87,1898 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar-chime-01",
+      "model": "chime",
+      "name": "Anomaly solar-chime-01",
+      "position": {
+        "x": 4.0,
+        "y": 0.08,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar-seam-01",
+      "model": "seam",
+      "name": "Anomaly solar-seam-01",
+      "position": {
+        "x": -8.0,
+        "y": 0.08,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-functional-01",
+      "model": "ore_outcrop",
+      "name": "solarArray-dressing-functional-01",
+      "position": {
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.463,
+        "z": 1.648
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-functional-02",
+      "model": "scrap_heap",
+      "name": "solarArray-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.155,
+        "z": 2.933
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-functional-03",
+      "model": "cargo_stack",
+      "name": "solarArray-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.619,
+        "z": 1.532
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-functional-04",
+      "model": "workshop_bench",
+      "name": "solarArray-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.355,
+        "z": 2.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-01",
+      "model": "dead_tree_a",
+      "name": "solarArray-dressing-region-01",
+      "position": {
+        "x": 17.442,
+        "y": 0.0,
+        "z": 7.663
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.282,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.49,
+        "z": 1.243
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-02",
+      "model": "relay_antenna",
+      "name": "solarArray-dressing-region-02",
+      "position": {
+        "x": 17.265,
+        "y": 0.0,
+        "z": 7.595
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.227,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.703,
+        "z": 1.456
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-03",
+      "model": "utility_pole",
+      "name": "solarArray-dressing-region-03",
+      "position": {
+        "x": 17.265,
+        "y": 0.0,
+        "z": 7.592
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.227,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.605,
+        "z": 1.173
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "solarArray-dressing-region-04",
+      "position": {
+        "x": 17.795,
+        "y": 0.0,
+        "z": 6.265
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.156,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.419,
+        "z": 0.953
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-05",
+      "model": "dead_tree_a",
+      "name": "solarArray-dressing-region-05",
+      "position": {
+        "x": 17.66,
+        "y": 0.0,
+        "z": 6.208
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.155,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.411,
+        "z": 1.11
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-06",
+      "model": "relay_antenna",
+      "name": "solarArray-dressing-region-06",
+      "position": {
+        "x": 17.661,
+        "y": 0.0,
+        "z": 6.2
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.589,
+        "z": 1.294
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-07",
+      "model": "utility_pole",
+      "name": "solarArray-dressing-region-07",
+      "position": {
+        "x": 17.65,
+        "y": 0.0,
+        "z": 6.235
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.674,
+        "z": 1.149
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "solarArray-dressing-region-08",
+      "position": {
+        "x": 17.839,
+        "y": 0.0,
+        "z": 5.184
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.044,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.349,
+        "z": 0.815
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-09",
+      "model": "dead_tree_a",
+      "name": "solarArray-dressing-region-09",
+      "position": {
+        "x": 17.843,
+        "y": 0.0,
+        "z": 5.171
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.045,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.324,
+        "z": 0.982
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-10",
+      "model": "relay_antenna",
+      "name": "solarArray-dressing-region-10",
+      "position": {
+        "x": 17.836,
+        "y": 0.0,
+        "z": 5.201
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.272,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.323,
+        "z": 1.817
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-11",
+      "model": "utility_pole",
+      "name": "solarArray-dressing-region-11",
+      "position": {
+        "x": 18.106,
+        "y": 0.0,
+        "z": 4.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.271,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.661,
+        "z": 1.744
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "solarArray-dressing-region-12",
+      "position": {
+        "x": 17.924,
+        "y": 0.0,
+        "z": 4.142
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.196,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.142,
+        "z": 1.351
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-13",
+      "model": "dead_tree_a",
+      "name": "solarArray-dressing-region-13",
+      "position": {
+        "x": 17.923,
+        "y": 0.0,
+        "z": 4.145
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.196,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.112,
+        "z": 1.6
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-14",
+      "model": "relay_antenna",
+      "name": "solarArray-dressing-region-14",
+      "position": {
+        "x": 18.171,
+        "y": 0.0,
+        "z": 2.859
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.414,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.699,
+        "z": 2.344
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-dressing-region-15",
+      "model": "utility_pole",
+      "name": "solarArray-dressing-region-15",
+      "position": {
+        "x": 18.033,
+        "y": 0.0,
+        "z": 2.834
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.413,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.279,
+        "y": 1.279,
+        "z": 1.279
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.446,
+        "z": 1.828
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-landmark",
+      "model": "tilted-panel-field",
+      "name": "Landmark tilted-panel-field EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "tilted-panel-field"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-lightning-mast",
+      "model": "power_pylon",
+      "name": "solarArray-lightning-mast EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-0-0",
+      "model": "solar_panel",
+      "name": "solarArray-panel-0-0 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-0-1",
+      "model": "solar_panel",
+      "name": "solarArray-panel-0-1 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-0-2",
+      "model": "solar_panel",
+      "name": "solarArray-panel-0-2 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-1-0",
+      "model": "solar_panel",
+      "name": "solarArray-panel-1-0 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-1-1",
+      "model": "solar_panel",
+      "name": "solarArray-panel-1-1 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-1-2",
+      "model": "solar_panel",
+      "name": "solarArray-panel-1-2 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-2-0",
+      "model": "solar_panel",
+      "name": "solarArray-panel-2-0 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-2-1",
+      "model": "solar_panel",
+      "name": "solarArray-panel-2-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-2-2",
+      "model": "solar_panel",
+      "name": "solarArray-panel-2-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-3-0",
+      "model": "solar_panel",
+      "name": "solarArray-panel-3-0 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-3-1",
+      "model": "solar_panel",
+      "name": "solarArray-panel-3-1 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-3-2",
+      "model": "solar_panel",
+      "name": "solarArray-panel-3-2 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-4-0",
+      "model": "solar_panel",
+      "name": "solarArray-panel-4-0 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-4-1",
+      "model": "solar_panel",
+      "name": "solarArray-panel-4-1 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-panel-4-2",
+      "model": "solar_panel",
+      "name": "solarArray-panel-4-2 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "resource",
+      "tags": [
+        "solar",
+        "electronics",
+        "glasslands"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-0",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-1",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-2",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-2 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-3",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-3 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-4",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-4 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-5",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-5 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-glass-6",
+      "model": "fused_glass",
+      "name": "solarArray-region-glass-6 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-leaning-pylon-0",
+      "model": "power_pylon",
+      "name": "solarArray-region-leaning-pylon-0 EDITABLE",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-leaning-pylon-1",
+      "model": "power_pylon",
+      "name": "solarArray-region-leaning-pylon-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 6.074
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.624,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solarArray-region-leaning-pylon-2",
+      "model": "power_pylon",
+      "name": "solarArray-region-leaning-pylon-2 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "solarArray_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -18,
-        "y": 0,
-        "z": 16
+      "name": "Койка НПС",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -283,27 +1990,31 @@
       ],
       "vision": {
         "blocks": false
-      }
+      },
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "solarArray_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": 16
+      "name": "Койка НПС",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -315,27 +2026,31 @@
       ],
       "vision": {
         "blocks": false
-      }
+      },
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "solarArray_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": 16
+      "name": "Койка НПС",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -347,7 +2062,258 @@
       ],
       "vision": {
         "blocks": false
-      }
+      },
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",      "position": {
+        "x": -1.7,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "solarArray",
+      "worksiteId": "solarArray",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.703,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar_pole_01",
+      "model": "utilityPole",
+      "name": "Опора станции",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar_pole_02",
+      "model": "utilityPole",
+      "name": "Опора станции",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "solar_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",      "position": {
+        "x": 1.7,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "solarArray",
+      "worksiteId": "solarArray",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "glasslands",
+  "kromkaVisualProfile": "glasslands-solar-array-v1",
+  "ambientProfile": "dry-electric-storm",
+  "anomalyDensity": 0.42,
+  "unityScene": "Assets/Scenes/Kromka/Locations/solarArray.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "solar-service-gate",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "solarArray-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

@@ -1,0 +1,256 @@
+{
+  "schema": "realm.weapon-audio-pilot.v1",
+  "version": 1,
+  "selectedAt": "2026-09-07",
+  "runtimeRoot": "unity-client/Assets/Resources/Audio/Weapons",
+  "encoding": {
+    "container": "ogg",
+    "codec": "vorbis",
+    "channels": 1,
+    "sampleRate": 44100,
+    "maxDurationSeconds": 1.7
+  },
+  "sources": [
+    {
+      "id": "oga-gunshots",
+      "creator": "Vincent (Vince) Sevedge",
+      "pack": "Gunshot Sounds",
+      "page": "https://opengameart.org/content/gunshot-sounds",
+      "license": "CC-BY-3.0"
+    },
+    {
+      "id": "oga-reloads",
+      "creator": "SpringySpringo",
+      "pack": "Gun reload sounds",
+      "page": "https://opengameart.org/content/gun-reload-sounds",
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "kenney-scifi",
+      "creator": "Kenney",
+      "pack": "Sci-fi Sounds",
+      "page": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "kenney-impact",
+      "creator": "Kenney",
+      "pack": "Impact Sounds",
+      "page": "https://kenney.nl/assets/impact-sounds",
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "kenney-rpg",
+      "creator": "Kenney Vleugels",
+      "pack": "RPG Audio",
+      "page": "https://kenney.nl/assets/rpg-audio",
+      "license": "CC0-1.0"
+    }
+  ],
+  "clips": [
+    {
+      "id": "ballistic_pistol",
+      "file": "ballistic_pistol.ogg",
+      "sourceId": "oga-gunshots",
+      "sourceFile": "cz.wav",
+      "sourceSha256": "4a8594b3cf3f2bfe49497c4a9ae6301b5c7000f21c7cbcb6650df8f594fce713",
+      "transform": "trim 0.12-1.04s; mono; high-pass; loudness normalize; fade",
+      "bytes": 12147,
+      "durationSeconds": 0.92,
+      "sha256": "0c36bd973e0b681ed65c203afbf5584df1b12b911a40d1e7df7eed7b1b4a9937",
+      "weaponIds": ["pistol", "revolver"]
+    },
+    {
+      "id": "ballistic_rifle",
+      "file": "ballistic_rifle.ogg",
+      "sourceId": "oga-gunshots",
+      "sourceFile": "mosin.wav",
+      "sourceSha256": "ece6fff8f3b21aa8bc41943c0293d3fab6a553db33dd2427a388838324a39719",
+      "transform": "trim 0.39-1.29s; mono; high-pass; loudness normalize; fade",
+      "bytes": 11897,
+      "durationSeconds": 0.9,
+      "sha256": "62386487223b851c27d735dd403ffd82605782c92c57cc6cececf958d55dc353",
+      "weaponIds": ["rifle", "assaultRifle"]
+    },
+    {
+      "id": "ballistic_shotgun",
+      "file": "ballistic_shotgun.ogg",
+      "sourceId": "oga-gunshots",
+      "sourceFile": "shotty.wav",
+      "sourceSha256": "2e4b51fafbc93ea2b9aa0cf2428d6bad6cfa79817f2d0d7aa38c64dc97afa02f",
+      "transform": "mono; high-pass; loudness normalize; fade",
+      "bytes": 10027,
+      "durationSeconds": 0.698,
+      "sha256": "91e9553c1021d2ea0073ca97b464e7cd330c965b413946878329ac365f18027f",
+      "weaponIds": ["shotgun", "sawedOffShotgun"]
+    },
+    {
+      "id": "ballistic_machinegun",
+      "file": "ballistic_machinegun.ogg",
+      "sourceId": "oga-gunshots",
+      "sourceFile": "sks.wav",
+      "sourceSha256": "236b1fbc029dd44efe930c9a75d383a92b2ae72b69a78b44830e449e83da61a4",
+      "transform": "trim 0.31-1.06s; mono; high-pass; loudness normalize; fade",
+      "bytes": 10509,
+      "durationSeconds": 0.75,
+      "sha256": "5029d6a8c42b6528bd1f71dfc25044168eabde148f1c0ad3b7699bf1f3f341fd",
+      "weaponIds": ["smg", "machineGun"]
+    },
+    {
+      "id": "energy_sidearm",
+      "file": "energy_sidearm.ogg",
+      "sourceId": "kenney-scifi",
+      "sourceFile": "laserSmall_000.ogg",
+      "sourceSha256": "72b589eadd41781257ac859e4f4d030222e623390e4a1a83f6d05329a6e026f1",
+      "transform": "mono; loudness normalize",
+      "bytes": 6172,
+      "durationSeconds": 0.239,
+      "sha256": "ecdd208882e989e6995fb3d914a73f46d722cfc7611ba085a850ae6f276d0f04",
+      "weaponIds": ["laserPistol"]
+    },
+    {
+      "id": "energy_longgun",
+      "file": "energy_longgun.ogg",
+      "sourceId": "kenney-scifi",
+      "sourceFile": "laserLarge_000.ogg",
+      "sourceSha256": "a56d95794cd732d6c2d66ce488c14cf557fe526c282897c9a77675c2bd9b77e6",
+      "transform": "mono; loudness normalize",
+      "bytes": 11282,
+      "durationSeconds": 0.677,
+      "sha256": "1d2670dc8509b2ccd7fb25068b79b0bba766cde30fb46cc007b73e9df2184bd2",
+      "weaponIds": ["plasmaRifle"]
+    },
+    {
+      "id": "launcher_fire",
+      "file": "launcher_fire.ogg",
+      "sourceId": "kenney-scifi",
+      "sourceFile": "thrusterFire_000.ogg",
+      "sourceSha256": "0fdc474d93f209debf1fc4ea77765a669dcb7676db31b4d8a0a509685bccf374",
+      "transform": "trim first 0.7s; mono; loudness normalize; fade",
+      "bytes": 11995,
+      "durationSeconds": 0.7,
+      "sha256": "44616ea83ebd40a4d0e30288252e7309cfa601cb1cf52e540f0f9bf95c122102",
+      "weaponIds": ["rocketLauncher"]
+    },
+    {
+      "id": "flamethrower_fire",
+      "file": "flamethrower_fire.ogg",
+      "sourceId": "kenney-scifi",
+      "sourceFile": "thrusterFire_004.ogg",
+      "sourceSha256": "5297afd01c3e91a13d08ec1f673d89997bd17012fa8645a20c94fba240f0f1b2",
+      "transform": "trim first 0.48s; mono; high-pass; loudness normalize; fade",
+      "bytes": 10094,
+      "durationSeconds": 0.48,
+      "sha256": "40bb8d4714ffaa1152276f0df09dbf2c9cc5c9f780df966ca33bf43b71920f63",
+      "weaponIds": ["flamethrower"]
+    },
+    {
+      "id": "projectile_impact",
+      "file": "projectile_impact.ogg",
+      "sourceId": "kenney-impact",
+      "sourceFile": "impactMetal_medium_000.ogg",
+      "sourceSha256": "a96f879fec0864a8938e0c745b6996a6c5679c16a234ce31a01cc995e8401003",
+      "transform": "mono; loudness normalize",
+      "bytes": 5924,
+      "durationSeconds": 0.272,
+      "sha256": "4ff37aff6bad1b9003c51c4c6719e10ac1e202a542b016517a7dcfd2f978fb41",
+      "weaponIds": ["allRanged"]
+    },
+    {
+      "id": "melee_light_swing",
+      "file": "melee_light_swing.ogg",
+      "sourceId": "kenney-rpg",
+      "sourceFile": "knifeSlice.ogg",
+      "sourceSha256": "4cd96dc630bed9840c15f1dd2306da2cc56a4da26a5d3f1a03c5a7265ac5e54f",
+      "transform": "mono; loudness normalize",
+      "bytes": 10037,
+      "durationSeconds": 0.6,
+      "sha256": "450ce4d7ec9e2e841c9e9c0a978d30aef02fa73bba241714b717d273e140806f",
+      "weaponIds": ["knife"]
+    },
+    {
+      "id": "melee_light_impact",
+      "file": "melee_light_impact.ogg",
+      "sourceId": "kenney-rpg",
+      "sourceFile": "chop.ogg",
+      "sourceSha256": "d00c2b3c9fff07e376145c8c8c45c90e5084ec192f6ce0387db233f7b86f1486",
+      "transform": "mono; loudness normalize",
+      "bytes": 6538,
+      "durationSeconds": 0.24,
+      "sha256": "f77913e95281abbb09ebed3384e312ed3e1fbea99f7896c70167b7552eff69ab",
+      "weaponIds": ["knife"]
+    },
+    {
+      "id": "melee_heavy_swing",
+      "file": "melee_heavy_swing.ogg",
+      "sourceId": "kenney-rpg",
+      "sourceFile": "knifeSlice2.ogg",
+      "sourceSha256": "6c2064d0ef988d1ec3d56868e823ea8823a5cac00f2742560052633529407def",
+      "transform": "mono; pitch down; loudness normalize",
+      "bytes": 10465,
+      "durationSeconds": 0.683,
+      "sha256": "146a1368590e526b5232a5bb1c3ab7c2de3a176146cea1566dab1723888a998e",
+      "weaponIds": ["axe", "pickaxe", "handPump"]
+    },
+    {
+      "id": "melee_heavy_impact",
+      "file": "melee_heavy_impact.ogg",
+      "sourceId": "kenney-impact",
+      "sourceFile": "impactMining_000.ogg",
+      "sourceSha256": "36b4ea107222d073c67ca64dde26944975609202d5090b2f2021213c1a7e35cd",
+      "transform": "trim first 0.65s; mono; loudness normalize; fade",
+      "bytes": 7462,
+      "durationSeconds": 0.65,
+      "sha256": "558d28bd96d5945c546d7b39a6dcae30cba33d1acb6caa97ad77b378ada6d97c",
+      "weaponIds": ["axe", "pickaxe", "handPump"]
+    },
+    {
+      "id": "reload_pistol",
+      "file": "reload_pistol.ogg",
+      "sourceId": "oga-reloads",
+      "sourceFile": "gunreload1.wav",
+      "sourceSha256": "685cac6a184e3cc3ec09a25b6ddb1d6feffd86d469778f339aa423d384035c50",
+      "transform": "mono; high-pass; loudness normalize",
+      "bytes": 21148,
+      "durationSeconds": 1.579,
+      "sha256": "aa224a8cf138bdc3609d5f1cfe5610d62df86e1490fd2325a027d882e9b7270d",
+      "weaponIds": ["pistol", "revolver", "laserPistol"]
+    },
+    {
+      "id": "reload_rifle",
+      "file": "reload_rifle.ogg",
+      "sourceId": "oga-reloads",
+      "sourceFile": "assaultriflereload1.wav",
+      "sourceSha256": "efb2d724d634eabe6ba8d3065686abca848bb7497d4d43a5e4aed5e5ea23016f",
+      "transform": "mono; high-pass; loudness normalize",
+      "bytes": 19717,
+      "durationSeconds": 1.556,
+      "sha256": "bad5358a9fb1eeb5b71b856e9722d1b59c1c5767ff301ebf16dae4f328f45b98",
+      "weaponIds": ["rifle", "assaultRifle", "smg", "machineGun", "plasmaRifle", "flamethrower", "rocketLauncher"]
+    },
+    {
+      "id": "reload_shotgun",
+      "file": "reload_shotgun.ogg",
+      "sourceId": "oga-reloads",
+      "sourceFile": "shotguncock.wav",
+      "sourceSha256": "33e007321ba83301c861aef573f2c40b70bc62f8f24c0164877e6dd123e24371",
+      "transform": "mono; high-pass; loudness normalize",
+      "bytes": 9392,
+      "durationSeconds": 0.474,
+      "sha256": "67261fece5f4cf7d8afb95fdd67d2bf9a278dcc90584569b712966a32d07a83d",
+      "weaponIds": ["shotgun", "sawedOffShotgun"]
+    },
+    {
+      "id": "dry_fire",
+      "file": "dry_fire.ogg",
+      "sourceId": "kenney-rpg",
+      "sourceFile": "metalClick.ogg",
+      "sourceSha256": "9851a69d0c613e13bceef08060ecc4148f098ef487927cbebe270d642398a3b3",
+      "transform": "mono; loudness normalize",
+      "bytes": 8921,
+      "durationSeconds": 0.446,
+      "sha256": "a81824c3295dd93b5a090de07de1f0e0e456b908d9ddb87bb496f742c14e3822",
+      "weaponIds": ["allRanged"]
+    }
+  ]
+}

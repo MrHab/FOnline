@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "scrapFoundry",
-  "name": "Литейная Свалочного поста",
+  "name": "Литейная Раздолья",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,78 +52,24 @@
   "containers": [],
   "objects": [
     {
-      "id": "foundry_weapon_bench",
-      "model": "craftStationWeapon",
-      "name": "Оружейный верстак",
-      "url": "/assets/models/wasteland/craft_station_weapon.glb",
-      "position": {
-        "x": -9,
-        "y": 0,
-        "z": -5
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "weapon_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "weapon_bench"
-      ],
-      "stationSiteId": "scrapFoundry",
-      "worksiteId": "scrapFoundry",
-      "stationOwner": "scrap_union",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "scrapFoundry"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "scrapFoundry"
-      }
-    },
-    {
       "id": "foundry_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",
-      "url": "/assets/models/wasteland/craft_station_ammo.glb",
-      "position": {
-        "x": -6,
-        "y": 0,
-        "z": -5
+      "name": "Патронный станок",      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": -5.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "tags": [
         "cover",
         "workshop",
@@ -123,7 +77,7 @@
         "ammo_bench"
       ],
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
       "craftingStations": [
         "ammo_bench"
@@ -145,29 +99,67 @@
           "ammo_bench"
         ],
         "stationSiteId": "scrapFoundry"
-      }
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.542,
+        "z": 1.509
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "foundry_barrels_01",
+      "model": "barrelCluster",
+      "name": "Топливные бочки",      "position": {
+        "x": 11.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 2.015
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "foundry_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
-      "position": {
-        "x": -3,
-        "y": 0,
-        "z": -5
+      "name": "Ремонтный верстак",      "position": {
+        "x": -3.0,
+        "y": 0.0,
+        "z": -5.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "tags": [
         "cover",
         "workshop",
@@ -175,7 +167,7 @@
         "repair_bench"
       ],
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
       "craftingStations": [
         "repair_bench"
@@ -197,81 +189,34 @@
           "repair_bench"
         ],
         "stationSiteId": "scrapFoundry"
-      }
-    },
-    {
-      "id": "foundry_tool_bench",
-      "model": "craftStationTools",
-      "name": "Инструментальный верстак",
-      "url": "/assets/models/wasteland/craft_station_tools.glb",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": -5
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
       },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "tool_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "tool_bench"
-      ],
-      "stationSiteId": "scrapFoundry",
-      "worksiteId": "scrapFoundry",
-      "stationOwner": "scrap_union",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "scrapFoundry"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "scrapFoundry"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "foundry_scrap_01",
       "model": "scrapHeap",
-      "name": "Куча металлолома",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -6
+      "name": "Куча металлолома",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -6.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "scrap"
@@ -280,56 +225,147 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.5,
+        "z": 1.84
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "foundry_barrels_01",
-      "model": "barrelCluster",
-      "name": "Топливные бочки",
-      "url": "/assets/models/wasteland/barrel_cluster.glb",
-      "position": {
-        "x": 11,
-        "y": 0,
-        "z": 8
+      "id": "foundry_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -5.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
-        "cover"
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.629,
+        "z": 1.476
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "foundry_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 3.162,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 17,
-        "y": 0,
-        "z": -14
+      "name": "Место отдыха",      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -338,16 +374,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 27,
       "tz": 12,
@@ -357,29 +385,1362 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-01",
+      "model": "scrap_heap",
+      "name": "scrapFoundry-dressing-functional-01",
+      "position": {
+        "x": 12.364,
+        "y": 0.0,
+        "z": 4.017
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.257,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.27,
+        "z": 2.652
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-02",
+      "model": "cargo_stack",
+      "name": "scrapFoundry-dressing-functional-02",
+      "position": {
+        "x": 5.692,
+        "y": 0.0,
+        "z": 15.167
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.359,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.207,
+        "z": 1.438
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "scrapFoundry-dressing-functional-03",
+      "position": {
+        "x": -9.95,
+        "y": 0.0,
+        "z": 16.654
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.745,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.388,
+        "z": 1.306
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-04",
+      "model": "craft_station_tools",
+      "name": "scrapFoundry-dressing-functional-04",
+      "position": {
+        "x": -12.882,
+        "y": 0.0,
+        "z": 1.745
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.847,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.852,
+        "z": 2.859
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-05",
+      "model": "workshop_bench",
+      "name": "scrapFoundry-dressing-functional-05",
+      "position": {
+        "x": -11.709,
+        "y": 0.0,
+        "z": -11.195
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.949,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.777,
+        "z": 2.822
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-06",
+      "model": "scrap_wall_segment",
+      "name": "scrapFoundry-dressing-functional-06",
+      "position": {
+        "x": 1.739,
+        "y": 0.0,
+        "z": -19.322
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.052,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.415,
+        "z": 1.776
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-functional-07",
+      "model": "cot_bed",
+      "name": "scrapFoundry-dressing-functional-07",
+      "position": {
+        "x": 10.849,
+        "y": 0.0,
+        "z": -7.162
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.154,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.754,
+        "z": 1.937
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-01",
+      "model": "scrap_heap",
+      "name": "scrapFoundry-dressing-region-01",
+      "position": {
+        "x": -21.315,
+        "y": 0.0,
+        "z": -17.808
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.711,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.326,
+        "z": 3.111
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-02",
+      "model": "ore_outcrop",
+      "name": "scrapFoundry-dressing-region-02",
+      "position": {
+        "x": -21.204,
+        "y": 0.0,
+        "z": -17.731
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.655,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.912,
+        "z": 1.716
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-03",
+      "model": "rust_barrel_v1",
+      "name": "scrapFoundry-dressing-region-03",
+      "position": {
+        "x": -21.206,
+        "y": 0.0,
+        "z": -17.727
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.656,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.723,
+        "z": 1.826
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "scrapFoundry-dressing-region-04",
+      "position": {
+        "x": -22.091,
+        "y": 0.0,
+        "z": -16.609
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.599,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.978,
+        "z": 1.645
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-05",
+      "model": "scrap_heap",
+      "name": "scrapFoundry-dressing-region-05",
+      "position": {
+        "x": -21.948,
+        "y": 0.0,
+        "z": -16.486
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.598,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.281,
+        "z": 2.957
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-06",
+      "model": "ore_outcrop",
+      "name": "scrapFoundry-dressing-region-06",
+      "position": {
+        "x": -21.954,
+        "y": 0.0,
+        "z": -16.475
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.543,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.883,
+        "z": 1.651
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-07",
+      "model": "rust_barrel_v1",
+      "name": "scrapFoundry-dressing-region-07",
+      "position": {
+        "x": -21.963,
+        "y": 0.0,
+        "z": -16.466
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.543,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.734,
+        "z": 1.825
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "scrapFoundry-dressing-region-08",
+      "position": {
+        "x": -22.995,
+        "y": 0.0,
+        "z": -14.728
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.468,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.944,
+        "z": 1.487
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-09",
+      "model": "scrap_heap",
+      "name": "scrapFoundry-dressing-region-09",
+      "position": {
+        "x": -23.006,
+        "y": 0.0,
+        "z": -14.711
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.469,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.178,
+        "z": 2.734
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-10",
+      "model": "ore_outcrop",
+      "name": "scrapFoundry-dressing-region-10",
+      "position": {
+        "x": -23.019,
+        "y": 0.0,
+        "z": -14.695
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.395,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.612,
+        "z": 2.113
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-11",
+      "model": "rust_barrel_v1",
+      "name": "scrapFoundry-dressing-region-11",
+      "position": {
+        "x": -23.786,
+        "y": 0.0,
+        "z": -13.406
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.394,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.766,
+        "z": 1.692
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "scrapFoundry-dressing-region-12",
+      "position": {
+        "x": -23.654,
+        "y": 0.0,
+        "z": -13.355
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.319,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.671,
+        "z": 2.09
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-13",
+      "model": "scrap_heap",
+      "name": "scrapFoundry-dressing-region-13",
+      "position": {
+        "x": -23.652,
+        "y": 0.0,
+        "z": -13.358
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.32,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.033,
+        "z": 3.441
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-14",
+      "model": "ore_outcrop",
+      "name": "scrapFoundry-dressing-region-14",
+      "position": {
+        "x": -24.375,
+        "y": 0.0,
+        "z": -11.997
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.822,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.986,
+        "z": 2.015
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-dressing-region-15",
+      "model": "rust_barrel_v1",
+      "name": "scrapFoundry-dressing-region-15",
+      "position": {
+        "x": -24.246,
+        "y": 0.0,
+        "z": -11.929
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.822,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.76,
+        "z": 1.895
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-external-pipes",
+      "model": "external_pipe",
+      "name": "scrapFoundry-external-pipes EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-landmark",
+      "model": "furnace-stack",
+      "name": "Landmark furnace-stack EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "furnace-stack"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-loading-gantry",
+      "model": "gantry_crane",
+      "name": "scrapFoundry-loading-gantry EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 15.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 16.5,
+        "z": 15.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-main-workshop",
+      "model": "warehouse",
+      "name": "scrapFoundry-main-workshop EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-process-stack",
+      "model": "blast_furnace",
+      "name": "scrapFoundry-process-stack EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-region-rail",
+      "model": "railway",
+      "name": "scrapFoundry-region-rail EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 2.0,
+        "z": 58.182
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-region-slag-0",
+      "model": "terrain_mound",
+      "name": "scrapFoundry-region-slag-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-region-slag-1",
+      "model": "terrain_mound",
+      "name": "scrapFoundry-region-slag-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-region-slag-2",
+      "model": "terrain_mound",
+      "name": "scrapFoundry-region-slag-2 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-region-slag-3",
+      "model": "terrain_mound",
+      "name": "scrapFoundry-region-slag-3 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapFoundry-service-bay",
+      "model": "modular_workshop",
+      "name": "scrapFoundry-service-bay EDITABLE",
+      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -390,16 +1751,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -410,27 +1763,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 16,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -441,16 +1794,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -461,27 +1806,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 18,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -492,16 +1837,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -512,27 +1849,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 20,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -543,16 +1880,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -563,27 +1892,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -594,16 +1923,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -614,27 +1935,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry_cot_06",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 16,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -645,16 +1966,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -665,7 +1978,74 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "ore_arc",
+  "kromkaVisualProfile": "razdolye-foundry-v1",
+  "ambientProfile": "active-heavy-industry",
+  "anomalyDensity": 0.12,
+  "unityScene": "Assets/Scenes/Kromka/Locations/scrapFoundry.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "foundry-loading-gate",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "scrapFoundry-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

@@ -1,0 +1,73 @@
+{
+  "schema": "realm.weapon-catalog-replacements.v1",
+  "creator": "Quaternius",
+  "pack": "Ultimate Guns Pack",
+  "page": "https://quaternius.com/packs/ultimategun.html",
+  "license": "CC0-1.0",
+  "weapons": {
+    "rifle": {
+      "path": "quaternius/ultimate-guns/SniperRifle_1.fbx",
+      "downloadFileId": "15iOCbvwHwFu7KDrbHurlzpMp9FBpUlsu",
+      "sha256": "d2191ecfe672362d20faaaed90639f34ea6c4ac6332c96d3b90e13518515d4a5",
+      "anchor": [0.02, 0.0, -0.15],
+      "support_anchor": [1.85, 0.0, -0.02],
+      "runtime_length": 1.07,
+      "keep": ["muzzle", "bolt", "bolt_knob", "cartridge_clip", "rear_sight"],
+      "parts": [{"name": null, "min": [-0.18, -0.17, 0.30], "max": [1.95, 0.17, 0.71]}],
+      "detail_anchors": {"bolt": [0.27, -0.16, 0.23], "bolt_knob": [0.27, -0.30, 0.23], "cartridge_clip": [0.65, 0.0, 0.33], "rear_sight": [0.1, 0.0, 0.34]}
+    },
+    "machineGun": {
+      "path": "quaternius/ultimate-guns/AssaultRifle2_1.fbx",
+      "material_overrides": {"Main": "paint_olive", "MainDark": "dark_metal", "MainLight": "metal"},
+      "downloadFileId": "1kIe2RIx_nnym-HDqjbDLaBlKrH4BRk4q",
+      "sha256": "4cd8e8258dcb84c534e201345e4a41c39c9bec948fa6537adbf0217d2b42fd2e",
+      "anchor": [-0.06, 0.0, -0.06],
+      "support_anchor": [1.20, 0.0, 0.39],
+      "runtime_length": 1.16,
+      "keep": ["muzzle", "ammo_box", "ammo_box_lid", "ammo_box_latch", "carry_handle"],
+      "parts": [{"name": null, "min": [0.63, -0.08, -0.74], "max": [1.21, 0.08, 0.38]}],
+      "detail_anchors": {"ammo_box": [0.48, -0.25, -0.02], "ammo_box_lid": [0.48, -0.25, 0.49], "ammo_box_latch": [0.48, -0.63, 0.26], "carry_handle": [0.52, 0.0, 0.80]}
+    },
+    "shotgun": {
+      "path": "quaternius/ultimate-guns/Shotgun_1.fbx",
+      "downloadFileId": "1VNVqPzeE7tRpVE7Yy9SOmrZ4WHi5Dgs5",
+      "sha256": "af7d88bb19ab533cb763516ff06b6c355336dcf4b2987f9c378d291ea12ab501",
+      "anchor": [0.03, 0.0, -0.18],
+      "support_anchor": [1.70, 0.0, 0.0],
+      "runtime_length": 1.04,
+      "keep": ["muzzle", "pump", "reload_shell", "loading_gate", "safety"],
+      "parts": [{"name": "pump", "min": [1.70, -0.13, -0.11], "max": [2.76, 0.13, 0.18]}],
+      "detail_anchors": {"reload_shell": [0.72, -0.14, -0.11], "loading_gate": [0.75, 0.0, -0.1], "safety": [0.44, -0.13, 0.16]}
+    },
+    "revolver": {
+      "path": "quaternius/ultimate-guns/Revolver_1.fbx",
+      "downloadFileId": "14vVEBiP1-TXtZdpxTPXbe1nTViHvtGco",
+      "sha256": "2a510aef860b4bb1452aa433322424b8ccae064da95db3a05632e3c29bcf8988",
+      "anchor": [0.0, 0.0, -0.04],
+      "runtime_length": 0.35,
+      "keep": ["muzzle", "cylinder", "hammer", "rear_sight", "drum_axis"],
+      "parts": [{"name": "cylinder", "min": [0.25, -0.16, 0.14], "max": [0.71, 0.16, 0.47]}],
+      "detail_anchors": {"hammer": [0.15, 0.0, 0.41], "drum_axis": [0.53, 0.0, 0.30], "rear_sight": [0.18, 0.0, 0.53]}
+    },
+    "sawedOffShotgun": {
+      "path": "quaternius/ultimate-guns/Shotgun_SawedOff.fbx",
+      "downloadFileId": "1oCa_yf1XtH4sGfHUtlXP8SaJdJ2rnoUb",
+      "sha256": "0cf769d40f8b669077e0070030afc5168d6e4394f66470551f6774b61fa7d9a5",
+      "anchor": [0.0, 0.0, -0.1],
+      "runtime_length": 0.40,
+      "keep": ["muzzle", "reload_shell", "hinge_pin", "hammer_left", "hammer_right"],
+      "detail_anchors": {"reload_shell": [0.87, 0.1, 0.39], "hinge_pin": [0.76, 0.0, 0.05], "hammer_left": [0.52, 0.07, 0.53], "hammer_right": [0.52, -0.07, 0.53]}
+    },
+    "smg": {
+      "path": "quaternius/ultimate-guns/SubmachineGun_1.fbx",
+      "downloadFileId": "1FfwQlsCiKpWxFWm6IcRPlJT7JW56ejnV",
+      "sha256": "f003b6904eac13e65863f8afb9495c81e83d4b4ce055484082f5b9c87fe83f53",
+      "anchor": [0.0, 0.0, -0.16],
+      "support_anchor": [1.63, 0.0, 0.40],
+      "runtime_length": 0.55,
+      "keep": ["muzzle", "magazine", "magazine_base", "charging_handle", "rear_sight"],
+      "parts": [{"name": "magazine", "min": [0.68, -0.09, -0.77], "max": [1.13, 0.09, 0.34]}],
+      "detail_anchors": {"magazine_base": [0.97, 0.0, -0.74], "charging_handle": [0.03, -0.12, 0.50], "rear_sight": [-0.36, 0.0, 0.90]}
+    }
+  }
+}

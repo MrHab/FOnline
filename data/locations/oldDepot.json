@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "oldDepot",
-  "name": "Старый военный склад",
+  "name": "Арсенал №6",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvpFullDrop",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 25
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 25
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,26 +52,150 @@
   "containers": [],
   "objects": [
     {
-      "id": "depot_armory_01",
-      "model": "armoryRack",
-      "name": "Стойка оружия",
-      "url": "/assets/models/wasteland/armory_rack.glb",
+      "id": "depot_raider_01",
+      "model": "enemyRaider",
+      "name": "Рейдер склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
       "position": {
-        "x": -5,
-        "y": 0,
-        "z": -9
+        "x": -8.0,
+        "y": 0.0,
+        "z": 2.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0.25,
-        "z": 0
+        "x": 0.0,
+        "y": 0.7,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
         "y": 1,
         "z": 1
       },
-      "collision": "resource",
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "depot_raider_02",
+      "model": "enemyRaider",
+      "name": "Рейдер склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.783,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "depot_raider_03",
+      "model": "enemyRaider",
+      "name": "Смотрящий склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "depot_armory_01",
+      "model": "armoryRack",
+      "name": "Стойка оружия",      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.25,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
       "tags": [
         "resource",
         "ammoParts",
@@ -73,30 +205,69 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.354,
+        "z": 1.416
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "depot_barrels_01",
+      "model": "barrelCluster",
+      "name": "Ржавые бочки",      "position": {
+        "x": 13.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.6,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "depot"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 3.035,
+        "z": 2.831
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "depot_electronics_01",
       "model": "workshopBench",
-      "name": "Разобранный терминал",
-      "url": "/assets/models/wasteland/workshop_bench.glb",
-      "position": {
-        "x": 7,
-        "y": 0,
-        "z": -6
+      "name": "Разобранный терминал",      "position": {
+        "x": 7.0,
+        "y": 0.0,
+        "z": -6.0
       },
       "rotation": {
-        "x": 0,
-        "y": -0.35,
-        "z": 0
+        "x": 0.0,
+        "y": 5.933,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "electronics"
@@ -105,30 +276,35 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 3.298,
+        "z": 2.344
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "depot_scrap_01",
       "model": "scrapHeap",
-      "name": "Военный лом",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 8
+      "name": "Военный лом",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.55,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "resource",
+      "collision": "none",
       "tags": [
         "resource",
         "scrap"
@@ -137,177 +313,1318 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 3.093,
+        "z": 2.875
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "depot_barrels_01",
-      "model": "barrelCluster",
-      "name": "Ржавые бочки",
-      "url": "/assets/models/wasteland/barrel_cluster.glb",
+      "id": "oldDepot-core-arena",
+      "model": "ring_structure",
+      "name": "oldDepot-core-arena EDITABLE",
       "position": {
-        "x": 13,
-        "y": 0,
-        "z": 8
+        "x": 0.0,
+        "y": 0.02,
+        "z": 23.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0.6,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "solid",
+      "role": "structure",
       "tags": [
-        "cover",
-        "depot"
+        "ring",
+        "readable-from-above"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "depot_raider_01",
-      "model": "enemyRaider",
-      "name": "Рейдер склада",
-      "url": "/assets/models/wasteland/npc_raider.glb",
+      "id": "oldDepot-dressing-functional-01",
+      "model": "concrete_wall",
+      "name": "oldDepot-dressing-functional-01",
       "position": {
-        "x": -8,
-        "y": 0,
-        "z": 2
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
       },
       "rotation": {
-        "x": 0,
-        "y": 0.7,
-        "z": 0
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
       },
-      "collision": "solid",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "raider"
+        "raid_complex",
+        "functional-dressing"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "raider",
-        "species": "raider",
-        "faction": "raiders",
-        "enemyType": "raider",
-        "hostileToPlayer": true,
-        "profile": "raider",
-        "statProfile": "raider",
-        "equipmentProfile": "raider",
-        "lootProfile": "raider"
-      }
+      "footprint": {
+        "x": 1.725,
+        "z": 2.475
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "depot_raider_02",
-      "model": "enemyRaider",
-      "name": "Рейдер склада",
-      "url": "/assets/models/wasteland/npc_raider.glb",
+      "id": "oldDepot-dressing-functional-02",
+      "model": "relay_antenna",
+      "name": "oldDepot-dressing-functional-02",
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": 1
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
       },
       "rotation": {
-        "x": 0,
-        "y": -0.5,
-        "z": 0
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
       },
-      "collision": "solid",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "raider"
+        "raid_complex",
+        "functional-dressing"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "raider",
-        "species": "raider",
-        "faction": "raiders",
-        "enemyType": "raider",
-        "hostileToPlayer": true,
-        "profile": "raider",
-        "statProfile": "raider",
-        "equipmentProfile": "raider",
-        "lootProfile": "raider"
-      }
+      "footprint": {
+        "x": 2.0,
+        "z": 1.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "depot_raider_03",
-      "model": "enemyRaider",
-      "name": "Смотрящий склада",
-      "url": "/assets/models/wasteland/npc_raider.glb",
+      "id": "oldDepot-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "oldDepot-dressing-functional-03",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": -1
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.555,
+        "z": 1.421
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-functional-04",
+      "model": "roadblock_barricade",
+      "name": "oldDepot-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.469,
+        "z": 1.881
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-functional-05",
+      "model": "cargo_stack",
+      "name": "oldDepot-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.455,
+        "z": 1.806
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-01",
+      "model": "car_wreck",
+      "name": "oldDepot-dressing-region-01",
+      "position": {
+        "x": -26.073,
+        "y": 0.0,
+        "z": -4.204
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.174,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.517,
+        "z": 2.316
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-02",
+      "model": "tire_stack",
+      "name": "oldDepot-dressing-region-02",
+      "position": {
+        "x": -25.615,
+        "y": 0.0,
+        "z": -4.118
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.988,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.242,
+        "z": 1.811
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-03",
+      "model": "highway_sign",
+      "name": "oldDepot-dressing-region-03",
+      "position": {
+        "x": -25.612,
+        "y": 0.0,
+        "z": -4.122
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.987,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.612,
+        "z": 1.26
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-04",
+      "model": "dry_bush",
+      "name": "oldDepot-dressing-region-04",
+      "position": {
+        "x": -25.933,
+        "y": 0.0,
+        "z": 0.582
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.063,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.637,
+        "z": 1.442
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-05",
+      "model": "car_wreck",
+      "name": "oldDepot-dressing-region-05",
+      "position": {
+        "x": -26.079,
+        "y": 0.0,
+        "z": 0.574
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.064,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.604,
+        "z": 2.512
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-06",
+      "model": "tire_stack",
+      "name": "oldDepot-dressing-region-06",
+      "position": {
+        "x": -26.077,
+        "y": 0.0,
+        "z": 0.594
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.876,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.273,
+        "z": 1.937
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-07",
+      "model": "highway_sign",
+      "name": "oldDepot-dressing-region-07",
+      "position": {
+        "x": -26.076,
+        "y": 0.0,
+        "z": 0.613
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.877,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.676,
+        "z": 1.393
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-08",
+      "model": "dry_bush",
+      "name": "oldDepot-dressing-region-08",
+      "position": {
+        "x": -25.594,
+        "y": 0.0,
+        "z": -0.851
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.932,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.735,
+        "z": 1.446
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-09",
+      "model": "car_wreck",
+      "name": "oldDepot-dressing-region-09",
+      "position": {
+        "x": -25.594,
+        "y": 0.0,
+        "z": -0.839
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.932,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.035,
+        "y": 1.035,
+        "z": 1.035
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.804,
+        "z": 3.051
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-10",
+      "model": "tire_stack",
+      "name": "oldDepot-dressing-region-10",
+      "position": {
+        "x": -25.593,
+        "y": 0.0,
+        "z": -0.828
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.727,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.546,
+        "z": 2.494
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-11",
+      "model": "highway_sign",
+      "name": "oldDepot-dressing-region-11",
+      "position": {
+        "x": -25.31,
+        "y": 0.0,
+        "z": 3.919
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.728,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.895,
+        "z": 1.672
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-12",
+      "model": "dry_bush",
+      "name": "oldDepot-dressing-region-12",
+      "position": {
+        "x": -25.494,
+        "y": 0.0,
+        "z": 3.967
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.784,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.015,
+        "z": 1.931
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-13",
+      "model": "car_wreck",
+      "name": "oldDepot-dressing-region-13",
+      "position": {
+        "x": -25.494,
+        "y": 0.0,
+        "z": 3.971
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.783,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 5.139,
+        "z": 4.65
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-14",
+      "model": "tire_stack",
+      "name": "oldDepot-dressing-region-14",
+      "position": {
+        "x": -25.718,
+        "y": 0.0,
+        "z": 2.022
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.787,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.976,
+        "z": 2.337
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-dressing-region-15",
+      "model": "highway_sign",
+      "name": "oldDepot-dressing-region-15",
+      "position": {
+        "x": -25.246,
+        "y": 0.0,
+        "z": 1.981
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.787,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.093,
+        "y": 1.093,
+        "z": 1.093
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.131,
+        "z": 1.676
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-landmark",
+      "model": "armored-rail-door",
+      "name": "Landmark armored-rail-door EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "raider"
+        "armored-rail-door"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "raider",
-        "species": "raider",
-        "faction": "raiders",
-        "enemyType": "raider",
-        "hostileToPlayer": true,
-        "profile": "raider",
-        "statProfile": "raider",
-        "equipmentProfile": "raider",
-        "lootProfile": "raider"
-      }
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-outer-perimeter",
+      "model": "checkpoint_gate",
+      "name": "oldDepot-outer-perimeter EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-production-level",
+      "model": "warehouse",
+      "name": "oldDepot-production-level EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-region-culvert-east",
+      "model": "concrete_culvert",
+      "name": "oldDepot-region-culvert-east EDITABLE",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -20.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-region-culvert-west",
+      "model": "concrete_culvert",
+      "name": "oldDepot-region-culvert-west EDITABLE",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-region-raised-tract",
+      "model": "raised_road",
+      "name": "oldDepot-region-raised-tract EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.24,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "raised_road",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot-technical-spine",
+      "model": "external_pipe",
+      "name": "oldDepot-technical-spine EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 2.0,
+        "z": 1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "oldDepot_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 17,
-        "y": 0,
-        "z": -11
+      "name": "Место отдыха",      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": -11.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.2,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -316,16 +1633,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.514,
+        "z": 2.201
       },
       "tx": 27,
       "tz": 13,
@@ -335,162 +1644,112 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "tract_isthmus",
+  "kromkaVisualProfile": "buried-military-depot-v1",
+  "ambientProfile": "sealed-military-storage",
+  "anomalyDensity": 0.16,
+  "unityScene": "Assets/Scenes/Kromka/Locations/oldDepot.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "arsenal-outer-road",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
     },
     {
-      "id": "oldDepot_cot_01",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
+      "id": "depot_raider_01",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
       "position": {
-        "x": 14,
-        "y": 0,
-        "z": -13
+        "x": -8.0,
+        "y": 0.0,
+        "z": 2.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
+      "rotationY": 0.7
     },
     {
-      "id": "oldDepot_cot_02",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
+      "id": "depot_raider_02",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
       "position": {
-        "x": 16,
-        "y": 0,
-        "z": -13
+        "x": 8.0,
+        "y": 0.0,
+        "z": 1.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
+      "rotationY": 5.783
     },
     {
-      "id": "oldDepot_cot_03",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
+      "id": "depot_raider_03",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
       "position": {
-        "x": 18,
-        "y": 0,
-        "z": -13
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+      "rotationY": 0.0
+    },
+    {
+      "id": "oldDepot-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
       },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
+      "rotationY": 0.0
     }
   ]
 }

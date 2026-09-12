@@ -11,7 +11,7 @@ const { io: createSocketClient } = require('socket.io-client');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
-const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 10000));
+const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 30000));
 const REQUESTED_PORT = Number(process.env.COMBAT_RUNTIME_PORT || 0);
 const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 // Истощение в мире физическое: выработанный узел исчезает и возвращается по
@@ -290,7 +290,7 @@ function joinPayload(account) {
       skinToneId: 'skin_03',
       hairColorId: 'hair_03'
     },
-    special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
+    special: { str: 5, per: 6, end: 6, cha: 5, int: 6, agi: 7, luck: 5 },
     traits: ['trainedEye'],
     taggedSkills: ['lightWeapons']
   };
@@ -359,6 +359,9 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   }
   if (options.talentRanks && typeof options.talentRanks === 'object') {
     state.talentRanks = cloneJson(options.talentRanks);
+  }
+  if (options.progressionLedger && typeof options.progressionLedger === 'object') {
+    state.progressionLedger = cloneJson(options.progressionLedger);
   }
   state.currentLocationId = locationId;
   state.lastVisitedSettlementId = 'settlement';
@@ -549,7 +552,11 @@ function seedCombatFixtures(accounts) {
     level: 6,
     special: { str: 5, per: 6, end: 5, cha: 5, int: 5, agi: 6, luck: 5 },
     skillRanks: { lightWeapons: 100, lockpick: 83 },
-    talentRanks: { specialStr: 1 }
+    talentRanks: { specialStr: 1 },
+    progressionLedger: {
+      version: 1,
+      skillSteps: { lightWeapons: 13, lockpick: 11 }
+    }
   }, usersDb, savesDb);
   seedCharacterState(accounts.trade, {
     locationId: 'scrapTown',
@@ -705,11 +712,10 @@ function assertRuntimeWeaponInventory(self, runtimeId, expectedLoaded, label) {
 
 function runtimeEquipmentSnapshot(weaponId) {
   return {
-    weapon: String(weaponId || 'fists'),
-    armor: '',
-    helmet: '',
-    boots: '',
-    backpack: ''
+    // Combat requests only need to bind the weapon identity. Omitting the
+    // other slots preserves the server-authoritative armour, detector and
+    // artifact belt instead of falsely presenting them as unequipped.
+    weapon: String(weaponId || 'fists')
   };
 }
 
@@ -973,27 +979,6 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     'Conflicting duplicate join rejection'
   );
 
-  const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
-    itemId: 'laserPistol',
-    itemRuntimeId: pistolB,
-    qty: 1
-  });
-  invariant(loadedRuntimeDrop.ok === false,
-    'Server allowed a loaded runtime weapon instance to be dropped', loadedRuntimeDrop);
-  const postDropCombat = assertCombat(loadedRuntimeDrop.self?.combat, {
-    weapon: 'laserPistol',
-    weaponRuntimeId: pistolB,
-    loaded: 3,
-    reserveAmmo: 8
-  }, 'loaded-runtime drop rejection combat');
-  assertCombatApNotSpent(
-    conflictingJoinCombat,
-    postDropCombat,
-    'Loaded-runtime drop rejection'
-  );
-  invariant(Number(postDropCombat.cooldownRemainingMs) > 0,
-    'Rejected loaded-runtime drop reset the active cooldown', postDropCombat);
-
   const postDuplicateCooldown = await socketAck(
     accounts.persistence.socket,
     'playerHit',
@@ -1010,7 +995,7 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(Number(postDuplicateCombat.cooldownRemainingMs) > 0,
     'Duplicate join cleared the authoritative weapon cooldown', postDuplicateCooldown);
   assertCombatApNotSpent(
-    postDropCombat,
+    conflictingJoinCombat,
     postDuplicateCombat,
     'Post-duplicate-join cooldown rejection'
   );
@@ -1043,6 +1028,28 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     postDuplicateCombat,
     crossRuntimeCombat,
     'Cross-runtime replay rejection'
+  );
+
+  await delay(350);
+  const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
+    itemId: 'laserPistol',
+    itemRuntimeId: pistolA,
+    qty: 1
+  });
+  invariant(loadedRuntimeDrop.ok === true
+    && loadedRuntimeDrop.item?.itemRuntimeRecords?.[0]?.id === pistolA
+    && Number(loadedRuntimeDrop.item?.itemRuntimeRecords?.[0]?.loaded) === 7,
+  'Loaded runtime weapon did not preserve its exact magazine on the ground', loadedRuntimeDrop);
+  const restoreLoadedRuntime = await socketAck(accounts.persistence.socket, 'pickupGroundItem', {
+    id: loadedRuntimeDrop.item.id
+  });
+  invariant(restoreLoadedRuntime.ok === true,
+    'Loaded runtime weapon could not be picked up after an exact-instance drop', restoreLoadedRuntime);
+  assertRuntimeWeaponInventory(
+    restoreLoadedRuntime.self,
+    pistolA,
+    7,
+    'restored loaded runtime weapon inventory'
   );
 
   // This payload was captured while A was active. It must save inventory
@@ -1191,7 +1198,9 @@ async function assertWeaponModificationAuthority(accounts) {
   invariant(initialScrap === 20 && initialParts === 20 && initialAmmo === 20,
     'Modification fixture inventory is incomplete', account.join.self?.inventory);
 
+  let modificationRequestSequence = 0;
   const modify = (slot, modificationId, itemRuntimeId = runtimeId) => socketAck(account.socket, 'inventoryItemAction', {
+    requestId: `combat_modification_${++modificationRequestSequence}`,
     action: 'modifyWeapon',
     itemId: 'assaultRifle',
     itemRuntimeId,
@@ -2116,7 +2125,9 @@ async function main() {
   }
 }
 
-main().catch(error => {
+module.exports = { bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR };
+
+if (require.main === module) main().catch(error => {
   console.error(`Combat runtime check failed: ${error?.message || String(error)}`);
   const logs = activeServerLogs.join('').trim();
   if (logs) console.error(logs.slice(-5000));

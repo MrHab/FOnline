@@ -1,0 +1,2534 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "clanFilterT6",
+  "name": "Фильтровальная Т-6",
+  "seed": 2026091401,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "clanBase",
+  "clanBaseId": "filter_t6",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Фильтровальная Т-6"
+  },
+  "map": {
+    "width": 80,
+    "depth": 80,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "clanFilterT6-approach-0",
+      "model": "siege_approach",
+      "name": "clanFilterT6-approach-0 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-approach-1",
+      "model": "siege_approach",
+      "name": "clanFilterT6-approach-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-approach-2",
+      "model": "siege_approach",
+      "name": "clanFilterT6-approach-2 EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-breach-gate",
+      "model": "checkpoint_gate",
+      "name": "clanFilterT6-breach-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-command-core",
+      "model": "ring_structure",
+      "name": "clanFilterT6-command-core EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-01",
+      "model": "scrap_watch_tower",
+      "name": "clanFilterT6-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.551,
+        "z": 2.914
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-02",
+      "model": "scrap_wall_segment",
+      "name": "clanFilterT6-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.429,
+        "z": 2.257
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-03",
+      "model": "roadblock_barricade",
+      "name": "clanFilterT6-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.89,
+        "z": 2.084
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-04",
+      "model": "armory_rack",
+      "name": "clanFilterT6-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.661,
+        "z": 2.424
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-05",
+      "model": "storage_chest",
+      "name": "clanFilterT6-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.411,
+        "z": 1.543
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-functional-06",
+      "model": "craft_station_repair",
+      "name": "clanFilterT6-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.189,
+        "z": 3.374
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-01",
+      "model": "dry_bush",
+      "name": "clanFilterT6-dressing-region-01",
+      "position": {
+        "x": -20.172,
+        "y": 0.0,
+        "z": -19.347
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.018,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.966,
+        "z": 2.019
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-02",
+      "model": "garden_patch",
+      "name": "clanFilterT6-dressing-region-02",
+      "position": {
+        "x": -20.494,
+        "y": 0.0,
+        "z": -19.625
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.723,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.074,
+        "z": 2.697
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-03",
+      "model": "utility_pole",
+      "name": "clanFilterT6-dressing-region-03",
+      "position": {
+        "x": -20.483,
+        "y": 0.0,
+        "z": -19.633
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.724,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.704,
+        "z": 1.632
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "clanFilterT6-dressing-region-04",
+      "position": {
+        "x": -16.908,
+        "y": 0.0,
+        "z": -22.783
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.648,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.982,
+        "z": 2.744
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-05",
+      "model": "dry_bush",
+      "name": "clanFilterT6-dressing-region-05",
+      "position": {
+        "x": -16.821,
+        "y": 0.0,
+        "z": -22.673
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.649,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.005,
+        "z": 1.843
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-06",
+      "model": "garden_patch",
+      "name": "clanFilterT6-dressing-region-06",
+      "position": {
+        "x": -16.832,
+        "y": 0.0,
+        "z": -22.667
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.831,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.022,
+        "z": 2.844
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-07",
+      "model": "utility_pole",
+      "name": "clanFilterT6-dressing-region-07",
+      "position": {
+        "x": -16.856,
+        "y": 0.0,
+        "z": -22.649
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.831,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.542,
+        "z": 1.749
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "clanFilterT6-dressing-region-08",
+      "position": {
+        "x": -17.594,
+        "y": 0.0,
+        "z": -21.112
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.779,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.009,
+        "z": 2.881
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-09",
+      "model": "dry_bush",
+      "name": "clanFilterT6-dressing-region-09",
+      "position": {
+        "x": -17.571,
+        "y": 0.0,
+        "z": -21.13
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.779,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.097,
+        "y": 1.097,
+        "z": 1.097
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.022,
+        "z": 1.935
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-10",
+      "model": "garden_patch",
+      "name": "clanFilterT6-dressing-region-10",
+      "position": {
+        "x": -17.613,
+        "y": 0.0,
+        "z": -21.097
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.465,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.989,
+        "z": 2.177
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-11",
+      "model": "utility_pole",
+      "name": "clanFilterT6-dressing-region-11",
+      "position": {
+        "x": -22.958,
+        "y": 0.0,
+        "z": -15.099
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.465,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.002,
+        "z": 1.537
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "clanFilterT6-dressing-region-12",
+      "position": {
+        "x": -22.79,
+        "y": 0.0,
+        "z": -15.013
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.41,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.745,
+        "z": 2.324
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-13",
+      "model": "dry_bush",
+      "name": "clanFilterT6-dressing-region-13",
+      "position": {
+        "x": -22.798,
+        "y": 0.0,
+        "z": -15.003
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.41,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.845,
+        "z": 1.602
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-14",
+      "model": "garden_patch",
+      "name": "clanFilterT6-dressing-region-14",
+      "position": {
+        "x": -23.86,
+        "y": 0.0,
+        "z": -13.239
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.307,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.877,
+        "z": 1.819
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-dressing-region-15",
+      "model": "utility_pole",
+      "name": "clanFilterT6-dressing-region-15",
+      "position": {
+        "x": -24.262,
+        "y": 0.0,
+        "z": -13.477
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.307,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.074,
+        "y": 1.074,
+        "z": 1.074
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.141,
+        "z": 1.517
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-landmark",
+      "model": "filter-tanks",
+      "name": "Landmark filter-tanks EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "filter-tanks"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-1",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-1 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-2",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-2 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-3",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-3 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-4",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-4 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-5",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-5 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-module-socket-6",
+      "model": "module_socket",
+      "name": "clanFilterT6-module-socket-6 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-field-0",
+      "model": "clean_soil",
+      "name": "clanFilterT6-region-field-0 EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-field-1",
+      "model": "clean_soil",
+      "name": "clanFilterT6-region-field-1 EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-field-2",
+      "model": "clean_soil",
+      "name": "clanFilterT6-region-field-2 EDITABLE",
+      "position": {
+        "x": 7.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-field-3",
+      "model": "clean_soil",
+      "name": "clanFilterT6-region-field-3 EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-irrigation",
+      "model": "irrigation",
+      "name": "clanFilterT6-region-irrigation EDITABLE",
+      "position": {
+        "x": -31.0,
+        "y": -0.03,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "irrigation",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-shelterbelt-0",
+      "model": "shelterbelt_tree",
+      "name": "clanFilterT6-region-shelterbelt-0 EDITABLE",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-shelterbelt-1",
+      "model": "shelterbelt_tree",
+      "name": "clanFilterT6-region-shelterbelt-1 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-shelterbelt-2",
+      "model": "shelterbelt_tree",
+      "name": "clanFilterT6-region-shelterbelt-2 EDITABLE",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-shelterbelt-3",
+      "model": "shelterbelt_tree",
+      "name": "clanFilterT6-region-shelterbelt-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-region-shelterbelt-4",
+      "model": "shelterbelt_tree",
+      "name": "clanFilterT6-region-shelterbelt-4 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-relay-1",
+      "model": "siege_relay",
+      "name": "clanFilterT6-relay-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-relay-2",
+      "model": "siege_relay",
+      "name": "clanFilterT6-relay-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanFilterT6-relay-3",
+      "model": "siege_relay",
+      "name": "clanFilterT6-relay-3 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "command",
+      "model": "wastelandShack",
+      "name": "Командный узел: Фильтровальная Т-6",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "command-core"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 10.34,
+        "z": 8.409
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "waterTank",
+      "name": "Фильтровальная Т-6",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "landmark",
+        "filter_tanks"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.955,
+        "z": 2.728
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_a",
+      "model": "utilityPole",
+      "name": "Внешний передатчик А",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_b",
+      "model": "utilityPole",
+      "name": "Внешний передатчик Б",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_c",
+      "model": "utilityPole",
+      "name": "Внешний передатчик В",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-c"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_s",
+      "model": "concreteWall",
+      "name": "Южный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "storage",
+      "model": "storageLeanTo",
+      "name": "Клановый склад",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.5,
+        "y": 1.0,
+        "z": 1.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "clan-storage"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.5,
+        "z": 2.7
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_a",
+      "model": "watchPost",
+      "name": "Башня А",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_b",
+      "model": "watchPost",
+      "name": "Башня Б",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "workshop",
+      "model": "workshopBench",
+      "name": "Модульный двор",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.0,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-yard"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.2,
+        "z": 1.96
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-clan-filter_t6-v1",
+    "skyDay": "#5d625f",
+    "fogDay": "#6d716c",
+    "hemiSkyDay": "#a9aca0",
+    "hemiGroundDay": "#3c403d",
+    "fillDay": "#9fa58e",
+    "sunDay": "#d4c28f",
+    "rimDay": "#7b9c98",
+    "fogDensityDay": 0.00188,
+    "exposureDay": 0.98,
+    "colorGrade": "kromka-middle_vein"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "middle_vein",
+  "kromkaVisualProfile": "clan-filter-t6-v1",
+  "ambientProfile": "working-filter-station",
+  "anomalyDensity": 0.08,
+  "unityScene": "Assets/Scenes/Kromka/Locations/clanFilterT6.unity",
+  "respawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 18,
+    "tz": 10,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "clanFilterT6-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "filter-t6-neutral-yard",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

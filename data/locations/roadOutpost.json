@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "roadOutpost",
-  "name": "Дорожный аванпост Старого Клима",
+  "name": "Застава 17",
   "seed": 20260709,
   "safe": false,
   "pvpMode": "pvp",
@@ -27,19 +27,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 25,
-    "x": 1,
-    "y": 0,
-    "z": 13,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 25,
-    "x": 1,
-    "y": 0,
-    "z": 13,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -69,63 +69,54 @@
     {
       "id": "outpost_cargo_01",
       "model": "cargoStack",
-      "name": "Груз аванпоста",
-      "url": "/assets/models/wasteland/cargo_stack.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": 7
+      "name": "Груз аванпоста",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 7.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.1,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover",
         "supplies"
       ],
       "footprint": {
-        "x": 4,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 2,
-          "z": 1
-        }
+        "x": 2.053,
+        "z": 1.181
       },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": -17,
-        "y": 0,
-        "z": 11
+      "name": "Место отдыха",      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": 11.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.3,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -134,141 +125,1681 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
+        "x": 2.634,
+        "z": 2.37
       },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      }
+      "role": "scenery",
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "road_outpost_ammo_bench",
-      "model": "craftStationAmmo",
-      "name": "Патронный станок",
-      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "id": "roadOutpost-checkpoint",
+      "model": "checkpoint_gate",
+      "name": "roadOutpost-checkpoint EDITABLE",
       "position": {
-        "x": -4,
-        "y": 0,
-        "z": 17
+        "x": 0.0,
+        "y": 0.0,
+        "z": -3.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "structure",
       "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "ammo_bench"
+        "checkpoint",
+        "gate",
+        "controlled-route"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
-      "craftingStations": [
-        "ammo_bench"
-      ],
-      "stationSiteId": "roadOutpost",
-      "worksiteId": "roadOutpost",
-      "stationOwner": "old_klim",
-      "stationKind": "outpost",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "roadOutpost"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "roadOutpost"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "road_outpost_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "id": "roadOutpost-checkpoint-road",
+      "model": "road",
+      "name": "roadOutpost-checkpoint-road EDITABLE",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 17
+        "x": 0.0,
+        "y": 0.08,
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "road",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-01",
+      "model": "roadblock_barricade",
+      "name": "roadOutpost-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.713,
+        "z": 2.203
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-02",
+      "model": "watch_post",
+      "name": "roadOutpost-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.623,
+        "z": 1.318
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-03",
+      "model": "scrap_watch_tower",
+      "name": "roadOutpost-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.928,
+        "z": 3.021
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-04",
+      "model": "highway_sign",
+      "name": "roadOutpost-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.479,
+        "z": 1.693
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-05",
+      "model": "barrel_cluster",
+      "name": "roadOutpost-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.464,
+        "z": 2.006
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-functional-06",
+      "model": "cot_bed",
+      "name": "roadOutpost-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "road_outpost",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.069,
+        "z": 2.177
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-01",
+      "model": "dry_bush",
+      "name": "roadOutpost-dressing-region-01",
+      "position": {
+        "x": -13.467,
+        "y": 0.0,
+        "z": -25.407
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.113,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.922,
+        "z": 2.031
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-02",
+      "model": "garden_patch",
+      "name": "roadOutpost-dressing-region-02",
+      "position": {
+        "x": -13.39,
+        "y": 0.0,
+        "z": -25.289
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.038,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.84,
+        "z": 3.047
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-03",
+      "model": "utility_pole",
+      "name": "roadOutpost-dressing-region-03",
+      "position": {
+        "x": -13.393,
+        "y": 0.0,
+        "z": -25.286
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.038,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.599,
+        "z": 2.027
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "roadOutpost-dressing-region-04",
+      "position": {
+        "x": -14.801,
+        "y": 0.0,
+        "z": -24.494
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.986,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.962,
+        "z": 3.014
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-05",
+      "model": "dry_bush",
+      "name": "roadOutpost-dressing-region-05",
+      "position": {
+        "x": -14.737,
+        "y": 0.0,
+        "z": -24.363
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.986,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.99,
+        "z": 2.025
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-06",
+      "model": "garden_patch",
+      "name": "roadOutpost-dressing-region-06",
+      "position": {
+        "x": -14.747,
+        "y": 0.0,
+        "z": -24.355
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.93,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.959,
+        "z": 2.965
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-07",
+      "model": "utility_pole",
+      "name": "roadOutpost-dressing-region-07",
+      "position": {
+        "x": -14.7,
+        "y": 0.0,
+        "z": -24.385
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.931,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.576,
+        "z": 1.897
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "roadOutpost-dressing-region-08",
+      "position": {
+        "x": -15.951,
+        "y": 0.0,
+        "z": -23.354
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.855,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.016,
+        "z": 2.954
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-09",
+      "model": "dry_bush",
+      "name": "roadOutpost-dressing-region-09",
+      "position": {
+        "x": -15.969,
+        "y": 0.0,
+        "z": -23.342
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.856,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.102,
+        "y": 1.102,
+        "z": 1.102
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.027,
+        "z": 1.985
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-10",
+      "model": "garden_patch",
+      "name": "roadOutpost-dressing-region-10",
+      "position": {
+        "x": -15.931,
+        "y": 0.0,
+        "z": -23.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.799,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.045,
+        "z": 2.808
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-11",
+      "model": "utility_pole",
+      "name": "roadOutpost-dressing-region-11",
+      "position": {
+        "x": -17.675,
+        "y": 0.0,
+        "z": -22.082
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.799,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.586,
+        "z": 1.702
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "roadOutpost-dressing-region-12",
+      "position": {
+        "x": -17.575,
+        "y": 0.0,
+        "z": -21.991
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.743,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.011,
+        "z": 2.852
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-13",
+      "model": "dry_bush",
+      "name": "roadOutpost-dressing-region-13",
+      "position": {
+        "x": -17.571,
+        "y": 0.0,
+        "z": -21.993
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.744,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.024,
+        "z": 1.916
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-14",
+      "model": "garden_patch",
+      "name": "roadOutpost-dressing-region-14",
+      "position": {
+        "x": -18.687,
+        "y": 0.0,
+        "z": -21.05
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.148,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.913,
+        "z": 1.785
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-dressing-region-15",
+      "model": "utility_pole",
+      "name": "roadOutpost-dressing-region-15",
+      "position": {
+        "x": -18.598,
+        "y": 0.0,
+        "z": -20.943
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.147,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.098,
+        "y": 1.098,
+        "z": 1.098
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.308,
+        "z": 1.562
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-landmark",
+      "model": "bridge-gate",
+      "name": "Landmark bridge-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
+        "bridge-gate"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
-      "craftingStations": [
-        "repair_bench"
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
       ],
-      "stationSiteId": "roadOutpost",
-      "worksiteId": "roadOutpost",
-      "stationOwner": "old_klim",
-      "stationKind": "outpost",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "roadOutpost"
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
       },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "roadOutpost"
-      }
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "road_outpost",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-field-0",
+      "model": "clean_soil",
+      "name": "roadOutpost-region-field-0 EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-field-1",
+      "model": "clean_soil",
+      "name": "roadOutpost-region-field-1 EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-field-2",
+      "model": "clean_soil",
+      "name": "roadOutpost-region-field-2 EDITABLE",
+      "position": {
+        "x": 7.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-field-3",
+      "model": "clean_soil",
+      "name": "roadOutpost-region-field-3 EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-irrigation",
+      "model": "irrigation",
+      "name": "roadOutpost-region-irrigation EDITABLE",
+      "position": {
+        "x": -31.0,
+        "y": -0.03,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "irrigation",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-shelterbelt-0",
+      "model": "shelterbelt_tree",
+      "name": "roadOutpost-region-shelterbelt-0 EDITABLE",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-shelterbelt-1",
+      "model": "shelterbelt_tree",
+      "name": "roadOutpost-region-shelterbelt-1 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-shelterbelt-2",
+      "model": "shelterbelt_tree",
+      "name": "roadOutpost-region-shelterbelt-2 EDITABLE",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-shelterbelt-3",
+      "model": "shelterbelt_tree",
+      "name": "roadOutpost-region-shelterbelt-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-region-shelterbelt-4",
+      "model": "shelterbelt_tree",
+      "name": "roadOutpost-region-shelterbelt-4 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-searchlight",
+      "model": "searchlight",
+      "name": "roadOutpost-searchlight EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "searchlight",
+        "uprava",
+        "night-readable"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-watch-east",
+      "model": "watch_tower",
+      "name": "roadOutpost-watch-east EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "watch",
+        "security",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "roadOutpost-watch-west",
+      "model": "watch_tower",
+      "name": "roadOutpost-watch-west EDITABLE",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "watch",
+        "security",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -19,
-        "y": 0,
-        "z": 9
+      "name": "Койка НПС",      "position": {
+        "x": -19.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -278,40 +1809,33 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "vision": {
-        "mode": "none"
-      }
+        "blocks": false
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -17,
-        "y": 0,
-        "z": 9
+      "name": "Койка НПС",      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 3.142,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -321,40 +1845,33 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "vision": {
-        "mode": "none"
-      }
+        "blocks": false
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -15,
-        "y": 0,
-        "z": 9
+      "name": "Койка НПС",      "position": {
+        "x": -15.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -364,40 +1881,33 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "vision": {
-        "mode": "none"
-      }
+        "blocks": false
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -13,
-        "y": 0,
-        "z": 9
+      "name": "Койка НПС",      "position": {
+        "x": -13.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 3.142,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -407,40 +1917,33 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "vision": {
-        "mode": "none"
-      }
+        "blocks": false
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -19,
-        "y": 0,
-        "z": 11
+      "name": "Койка НПС",      "position": {
+        "x": -19.0,
+        "y": 0.0,
+        "z": 11.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -450,20 +1953,129 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "vision": {
-        "mode": "none"
-      }
+        "blocks": false
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "road_outpost_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "roadOutpost",
+      "worksiteId": "roadOutpost",
+      "stationOwner": "old_klim",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.542,
+        "z": 1.509
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "road_outpost_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "roadOutpost",
+      "worksiteId": "roadOutpost",
+      "stationOwner": "old_klim",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "pvp": true,
@@ -475,11 +2087,68 @@
   "units": "game-meters",
   "entry": {
     "tx": 19,
-    "tz": 25,
-    "x": 1,
-    "y": 0,
-    "z": 13,
-    "rotationY": 0
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
-  "transitions": []
+  "transitions": [],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "middle_vein",
+  "kromkaVisualProfile": "uprava-river-checkpoint-v1",
+  "ambientProfile": "guarded-river-crossing",
+  "anomalyDensity": 0.03,
+  "unityScene": "Assets/Scenes/Kromka/Locations/roadOutpost.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "outpost-safe-side",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "roadOutpost-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
 }

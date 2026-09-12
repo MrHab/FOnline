@@ -36,6 +36,7 @@ namespace RealmOfAshes.Game
         private int _skillPoints;
         private bool _dead;
         private string _name = string.Empty;
+        private string _pvpMode = "peaceful";
 
         private string _weapon = string.Empty;
         private string _ammoType = string.Empty;
@@ -69,6 +70,28 @@ namespace RealmOfAshes.Game
         public int Hp { get { return _hp; } }
         public int MaxHp { get { return _maxHp; } }
         public float Ap { get { return _ap; } }
+        public float Hydration { get; private set; } = 100f;
+        private float _stimUntil, _wetUntil, _stunUntil;
+        public string ArtifactStatus
+        {
+            get
+            {
+                string text = "Вода " + Hydration.ToString("0") + "%";
+                if (_stimUntil > Time.unscaledTime) text += " · Стим " + Mathf.CeilToInt(_stimUntil - Time.unscaledTime) + "с";
+                if (_wetUntil > Time.unscaledTime) text += " · Намокание";
+                if (_stunUntil > Time.unscaledTime) text += " · Оглушение";
+                return text;
+            }
+        }
+
+        private void HandleArtifactRuntime(JObject payload)
+        {
+            if (!(payload?["artifactRuntime"] is JObject runtime)) return;
+            Hydration = Mathf.Clamp(runtime["hydration"]?.Value<float>() ?? 100f, 0f, 100f);
+            _stimUntil = Time.unscaledTime + (runtime["stimSeconds"]?.Value<float>() ?? 0f);
+            _wetUntil = Time.unscaledTime + (runtime["wetSeconds"]?.Value<float>() ?? 0f);
+            _stunUntil = Time.unscaledTime + (runtime["stunSeconds"]?.Value<float>() ?? 0f);
+        }
         public int MaxAp { get { return _maxAp; } }
         public string DisplayName { get { return string.IsNullOrEmpty(_name) ? "\u0421\u0422\u0420\u0410\u041d\u041d\u0418\u041a" : _name.ToUpperInvariant(); } }
         public int Level { get { return _level; } }
@@ -77,6 +100,7 @@ namespace RealmOfAshes.Game
         public int PerkPoints { get { return _perkPoints; } }
         public int SkillPoints { get { return _skillPoints; } }
         public bool Dead { get { return _dead; } }
+        public string PvpMode { get { return _pvpMode ?? "peaceful"; } }
         public int Loaded { get { return _loaded; } }
         public int MagSize { get { return _magSize; } }
         public int ReserveAmmo { get { return _reserveAmmo; } }
@@ -124,6 +148,7 @@ namespace RealmOfAshes.Game
             Socket.OnServerRespawn += HandleServerTransfer;
             Socket.OnServerWorldTransfer += HandleServerTransfer;
             Socket.OnAuthoritativeSelf += HandleSelf;
+            Socket.OnArtifactState += HandleArtifactRuntime;
             Socket.OnCombatState += ApplyCombat;
         }
 
@@ -138,6 +163,7 @@ namespace RealmOfAshes.Game
             Socket.OnServerRespawn -= HandleServerTransfer;
             Socket.OnServerWorldTransfer -= HandleServerTransfer;
             Socket.OnAuthoritativeSelf -= HandleSelf;
+            Socket.OnArtifactState -= HandleArtifactRuntime;
             Socket.OnCombatState -= ApplyCombat;
         }
 
@@ -150,11 +176,13 @@ namespace RealmOfAshes.Game
             // приходит только при изменениях, и без этого порог брони до первого
             // события оставался нулевым.
             ApplyEquipmentAndSkills(ack.Self);
+            _pvpMode = ack.Self?["pvpMode"]?.ToString() ?? _pvpMode;
         }
 
         private void ApplyEquipmentAndSkills(JObject payload)
         {
             if (payload == null) return;
+            HandleArtifactRuntime(payload);
 
             JObject equipment = payload["equipmentRuntime"] as JObject ?? payload["equipment"] as JObject;
             if (equipment != null)
@@ -231,6 +259,7 @@ namespace RealmOfAshes.Game
             if (payload == null) return;
             if (payload["hp"] != null) _hp = Mathf.RoundToInt(payload["hp"].ToObject<float>());
             if (payload["maxHp"] != null) _maxHp = Mathf.RoundToInt(payload["maxHp"].ToObject<float>());
+            _pvpMode = payload["pvpMode"]?.ToString() ?? _pvpMode;
             _dead = false;
         }
 
@@ -277,12 +306,14 @@ namespace RealmOfAshes.Game
         private void HandleSelf(JObject payload)
         {
             if (payload == null) return;
+            HandleArtifactRuntime(payload);
             _level = payload["level"]?.ToObject<int>() ?? _level;
             _xp = payload["xp"]?.ToObject<int>() ?? _xp;
             _xpNeeded = payload["xpNeeded"]?.ToObject<int>()
                 ?? payload["xpToNext"]?.ToObject<int>() ?? _xpNeeded;
             _perkPoints = payload["perkPoints"]?.ToObject<int>() ?? _perkPoints;
             _skillPoints = payload["skillPoints"]?.ToObject<int>() ?? _skillPoints;
+            _pvpMode = payload["pvpMode"]?.ToString() ?? _pvpMode;
 
             ApplyEquipmentAndSkills(payload);
             ApplyCombat(payload["combat"] as JObject);

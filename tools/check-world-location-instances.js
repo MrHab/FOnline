@@ -32,7 +32,7 @@ try {
   const roads = normalizeGlobalInfrastructure(globalMap.infrastructure || [], globalMap)
     .filter(row => row.type === 'road');
 
-  assert(districtSites.length >= 80, 'district locations were not generated');
+  assert(districtSites.length >= 20, 'Kromka district locations were not generated');
   assert.strictEqual(new Set(locationIds).size, locationIds.length,
     'two global map sites still lead to the same local location id');
   assert(locationIds.every(id => String(id).length <= 32),

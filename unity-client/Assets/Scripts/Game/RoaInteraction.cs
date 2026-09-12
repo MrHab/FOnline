@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using GLTFast;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using RealmOfAshes.World;
@@ -25,6 +23,7 @@ namespace RealmOfAshes.Game
         public RoaEnemies Enemies;
         public RoaFogOfWar Fog;
         public RoaPlayerController Player;
+        public RoaCaravanDepartureCinematic CaravanDepartureCinematic;
         public RoaLocationLoader Loader;
         public RoaGroundItems GroundItems;
 
@@ -73,7 +72,7 @@ namespace RealmOfAshes.Game
         [Tooltip("Радиус выбора контейнеров. Сервер разрешает открытие не дальше 3.2 м.")]
         public float ContainerRange = 3.1f;
 
-        private enum TargetKind { None, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, Transition }
+        private enum TargetKind { None, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
         private enum PanelKind { None, Npc, Trade, MachineTrade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
@@ -83,7 +82,6 @@ namespace RealmOfAshes.Game
             public GameObject Root;
             public GameObject Placeholder;
             public RoaVisibilityGate Gate;
-            public string ModelKey;
         }
 
         private sealed class StaticTarget
@@ -101,9 +99,6 @@ namespace RealmOfAshes.Game
             public Vector3 Position;
             public GameObject Marker;
         }
-
-        private static readonly Dictionary<string, Task<GltfImport>> ModelCache =
-            new Dictionary<string, Task<GltfImport>>();
 
         private readonly Dictionary<string, ContainerView> _containers =
             new Dictionary<string, ContainerView>();
@@ -234,6 +229,7 @@ namespace RealmOfAshes.Game
                 if (_candidateKind == TargetKind.Resource) action = "добыть";
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
                 else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
+                else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
@@ -268,6 +264,13 @@ namespace RealmOfAshes.Game
         {
             get
             {
+                JObject onboardingStep = ActiveOnboardingStepForNpc();
+                string onboardingDialogue = onboardingStep?["dialogue"]?.ToString();
+                if (!string.IsNullOrEmpty(onboardingDialogue)) return onboardingDialogue;
+
+                string kromkaQuest = KromkaQuestDialogueLine();
+                if (!string.IsNullOrEmpty(kromkaQuest)) return kromkaQuest;
+
                 string trader = TraderDialogueLine();
                 if (!string.IsNullOrEmpty(trader)) return trader;
 
@@ -312,7 +315,7 @@ namespace RealmOfAshes.Game
             if (profile == "scrap")
             {
                 string state = QuestState("scrapParts");
-                if (state == "available") return "Грач-Жестянщик стучит пальцем по мятым чертежам: \"Нужны детали для пресса. Принесёшь сырьё и ремкомплект — расплачусь крышками и патронами.\"";
+                if (state == "available") return "Грач-Жестянщик стучит пальцем по мятым чертежам: \"Нужны детали для пресса. Принесёшь сырьё и ремкомплект — расплачусь марками и патронами.\"";
                 if (state == "active") return HasQuestItems(("ore", 6), ("wood", 2), ("repairKit", 1))
                     ? "\"Вот это уже похоже на работу. Выкладывай железо, я проверю качество.\""
                     : "\"Мне нужно 6 руды, 2 древесины и ремкомплект. Без этого станок снова заклинит.\"";
@@ -330,13 +333,13 @@ namespace RealmOfAshes.Game
             }
 
             string supplies = QuestState("klimSupplies");
-            if (supplies == "available") return "Старый Клим смотрит поверх прилавка: \"Если ищешь работу, поселению нужны припасы. Платить буду честно, но без роскоши.\"";
+            if (supplies == "available") return "Дежурный снабженец Управы смотрит поверх прилавка: \"Если ищешь работу, Ключам нужны припасы. Платить буду честно, но без роскоши.\"";
             if (supplies == "active") return HasQuestItems(("ore", 3), ("wood", 3), ("water", 1))
                 ? "\"Вижу, рюкзак потяжелел. Принёс всё, о чём я просил?\""
                 : "\"Руда, древесина и вода. Без этого люди здесь долго не протянут.\"";
             string terminal = QuestState("klimTerminal");
-            if (terminal == "available") return "\"Есть ещё дело. В Пепельном лесу стоит редкий тайник с терминалом. Кто вскроет его аккуратно, тот принесёт мне данные.\"";
-            if (terminal == "active") return "\"Тайник ждёт в лесу. Не ломай терминал кулаками, ему нужна голова.\"";
+            if (terminal == "available") return "\"Есть ещё дело. В Полосе №8 уцелел служебный терминал. Кто вскроет его аккуратно, тот принесёт мне данные.\"";
+            if (terminal == "active") return "\"Терминал ждёт в Полосе №8. Не ломай его кулаками — ему нужна голова.\"";
             return "\"Пока новых поручений нет. Но торговля открыта, если нужны патроны или вода.\"";
         }
 
@@ -352,6 +355,91 @@ namespace RealmOfAshes.Game
 
         public bool NpcHasTradeOption { get { return _active != null && NpcHasTrade(_active); } }
         public bool NpcCanRob { get { return _active != null && CanRobEncounterActor(_active); } }
+
+        public sealed class DialogueChoice
+        {
+            public string Id;
+            public string Label;
+        }
+
+        public sealed class OnboardingDialogueCard
+        {
+            public string Title;
+            public string Description;
+            public readonly List<DialogueChoice> Choices = new List<DialogueChoice>();
+        }
+
+        public OnboardingDialogueCard NpcOnboarding()
+        {
+            JObject step = ActiveOnboardingStepForNpc();
+            if (step == null) return null;
+            var card = new OnboardingDialogueCard
+            {
+                Title = step["title"]?.ToString() ?? "Текущий этап",
+                Description = step["instruction"]?.ToString() ?? string.Empty
+            };
+            bool ready = step["ready"]?.Value<bool?>() != false;
+            string hintField = RoaGameBootstrap.Active?.Combat?.MobileInputMode == true ? "mobileHint" : "hint";
+            card.Description += "\n\n" + (step[hintField]?.ToString() ?? string.Empty);
+            if (!ready)
+            {
+                card.Choices.Add(new DialogueChoice { Id = "__practice", Label = "ПОНЯТНО, ПРИСТУПАЮ" });
+                return card;
+            }
+            foreach (JObject choice in step["choices"] as JArray ?? new JArray())
+            {
+                string id = choice?["id"]?.ToString() ?? string.Empty;
+                string label = choice?["label"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(label))
+                    card.Choices.Add(new DialogueChoice { Id = id, Label = label });
+            }
+            if (card.Choices.Count == 0)
+            {
+                string label = step["button"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(label))
+                    card.Choices.Add(new DialogueChoice { Id = string.Empty, Label = label });
+            }
+            return card;
+        }
+
+        public void NpcOnboardingAction(string choiceId)
+        {
+            if (choiceId == "__practice") { ClosePanel(false); return; }
+            JObject step = ActiveOnboardingStepForNpc();
+            string actorId = _active?["id"]?.ToString() ?? string.Empty;
+            string action = step?["action"]?.ToString() ?? string.Empty;
+            if (Socket == null || string.IsNullOrEmpty(actorId) || string.IsNullOrEmpty(action)) return;
+            string cinematicId = step?["cinematicId"]?.ToString() ?? string.Empty;
+            if (action == "depart_caravan" && CaravanDepartureCinematic != null
+                && CaravanDepartureCinematic.TryPlayDeparture(cinematicId,
+                    () => SubmitNpcOnboardingAction(actorId, action, choiceId)))
+            {
+                ClosePanel(false);
+                return;
+            }
+            SubmitNpcOnboardingAction(actorId, action, choiceId);
+        }
+
+        private void SubmitNpcOnboardingAction(string actorId, string action, string choiceId)
+        {
+            Socket.EmitWithAck("kromkaOnboardingAction", new Dictionary<string, object>
+            {
+                ["enemyId"] = actorId,
+                ["action"] = action,
+                ["choiceId"] = choiceId ?? string.Empty
+            }, ack =>
+            {
+                if (action == "depart_caravan")
+                    CaravanDepartureCinematic?.NotifyDepartureResult(ack);
+                ApplyActionAck(ack);
+                bool ok = ack?["ok"]?.ToObject<bool>() ?? false;
+                if (ok && ack?["onboarding"] is JObject onboarding && _self != null)
+                    _self["kromkaOnboarding"] = onboarding.DeepClone();
+                Show(ok ? "Этап подтверждён в диалоге."
+                    : (ack?["error"]?.ToString() ?? "Сервер отклонил действие обучения."));
+                if (ok && ack?["transition"] != null) ClosePanel(false);
+            });
+        }
 
         public sealed class QuestOption
         {
@@ -388,6 +476,106 @@ namespace RealmOfAshes.Game
                 });
             }
             return rows;
+        }
+
+        public sealed class KromkaQuestOption
+        {
+            public string Id;
+            public string Name;
+            public string State;
+            public string StateLabel;
+            public string Description;
+            public string Dialogue;
+            public bool CanAdvanceDialogue;
+            public readonly List<DialogueChoice> Outcomes = new List<DialogueChoice>();
+        }
+
+        private string KromkaQuestDialogueLine()
+        {
+            KromkaQuestOption selected = null;
+            int selectedPriority = int.MaxValue;
+            foreach (KromkaQuestOption quest in NpcKromkaQuests())
+            {
+                int priority = quest.State == "choice" ? 0
+                    : quest.State == "turnin" ? 1
+                    : quest.State == "active" ? 2
+                    : quest.State == "available" ? 3
+                    : quest.State == "locked" ? 4 : 5;
+                if (string.IsNullOrEmpty(quest.Dialogue) || priority >= selectedPriority) continue;
+                selected = quest;
+                selectedPriority = priority;
+            }
+            return selected?.Dialogue ?? string.Empty;
+        }
+
+        private bool CurrentActorMatchesQuestDialogueTarget(JObject quest)
+        {
+            string activeNpcId = _active?["kromkaNamedNpcId"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(activeNpcId)) return false;
+            foreach (JToken targetNpc in quest?["currentObjectiveNpcIds"] as JArray ?? new JArray())
+                if (targetNpc?.ToString() == activeNpcId) return true;
+            return false;
+        }
+
+        public List<KromkaQuestOption> NpcKromkaQuests()
+        {
+            var rows = new List<KromkaQuestOption>();
+            foreach (JToken token in _active?["kromkaQuestIds"] as JArray ?? new JArray())
+            {
+                string id = token?.ToString() ?? string.Empty;
+                JObject quest = KromkaQuestJournalRow(id);
+                if (string.IsNullOrEmpty(id) || quest == null) continue;
+                string state = quest["status"]?.ToString() ?? "available";
+                string description = quest["summary"]?.ToString() ?? string.Empty;
+                string dialogue = quest["dialogue"]?.ToString() ?? string.Empty;
+                string objective = quest["currentObjectiveLabel"]?.ToString() ?? string.Empty;
+                string objectiveHint = quest["currentObjectiveHint"]?.ToString() ?? string.Empty;
+                int current = quest["objectiveProgressCurrent"]?.ToObject<int>() ?? 0;
+                int target = quest["objectiveProgressTarget"]?.ToObject<int>() ?? 0;
+                if (!string.IsNullOrEmpty(objective))
+                {
+                    if (target > 1) objective += " (" + current + "/" + target + ")";
+                    description += (string.IsNullOrEmpty(description) ? string.Empty : "\n") + "Цель: " + objective;
+                }
+                if (state == "active" && !string.IsNullOrEmpty(objectiveHint))
+                    description += (string.IsNullOrEmpty(description) ? string.Empty : "\n") + objectiveHint;
+                if (state == "active")
+                    description += (string.IsNullOrEmpty(description) ? string.Empty : "\n")
+                        + "Продолжайте выполнять цель в игровом мире.";
+                if (state == "turnin")
+                    description += (string.IsNullOrEmpty(description) ? string.Empty : "\n")
+                        + "Все цели выполнены. Сдайте дело заказчику.";
+                if (!string.IsNullOrEmpty(dialogue))
+                    description = "«" + dialogue + "»"
+                        + (string.IsNullOrEmpty(description) ? string.Empty : "\n\n" + description);
+                bool canAdvanceDialogue = state == "active"
+                    && quest["currentObjectiveInteraction"]?.ToString() == "dialogue"
+                    && CurrentActorMatchesQuestDialogueTarget(quest);
+                var option = new KromkaQuestOption
+                {
+                    Id = id,
+                    Name = quest["title"]?.ToString() ?? id,
+                    State = state,
+                    StateLabel = QuestStateLabel(state == "completed" ? "done" : state),
+                    Description = description,
+                    Dialogue = dialogue,
+                    CanAdvanceDialogue = canAdvanceDialogue
+                };
+                foreach (JObject outcome in quest["outcomes"] as JArray ?? new JArray())
+                {
+                    string outcomeId = outcome?["id"]?.ToString() ?? string.Empty;
+                    string label = outcome?["label"]?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(outcomeId) && !string.IsNullOrEmpty(label))
+                        option.Outcomes.Add(new DialogueChoice { Id = outcomeId, Label = label });
+                }
+                rows.Add(option);
+            }
+            return rows;
+        }
+
+        public void NpcKromkaQuestAction(string questId, string mode, string outcomeId = "")
+        {
+            SubmitKromkaQuest(questId, mode, outcomeId);
         }
 
         public sealed class StoryQuestCard
@@ -470,7 +658,7 @@ namespace RealmOfAshes.Game
             int xp = Mathf.Max(0, reward?["xp"]?.ToObject<int>() ?? 0);
             int silver = Mathf.Max(0, reward?["silver"]?.ToObject<int>() ?? 0);
             if (xp > 0) parts.Add(xp + " XP");
-            if (silver > 0) parts.Add(silver + " крышек");
+            if (silver > 0) parts.Add(silver + " марок");
             foreach (JToken token in reward?["items"] as JArray ?? new JArray())
             {
                 JObject row = token as JObject;
@@ -519,16 +707,14 @@ namespace RealmOfAshes.Game
             string boardSiteId = _active?["boardSiteId"]?.ToString() ?? _locationId;
             JObject site = WorldSite(boardSiteId);
             string owner = site?["capitalFaction"]?.ToString() ?? site?["owner"]?.ToString() ?? string.Empty;
-            string current = _self?["worldFactionId"]?.ToString() ?? _self?["factionId"]?.ToString() ?? string.Empty;
             return new JobBoardSiteInfo
             {
                 Name = site?["name"]?.ToString() ?? boardSiteId,
-                Owner = owner,
+                Owner = RoaPipboy.CanonicalFactionId(owner),
                 OwnerLabel = FactionLabel(owner),
-                Joinable = IsJoinableFaction(owner),
-                IsMember = IsJoinableFaction(owner) && current == owner,
-                JoinLabel = IsJoinableFaction(owner) && current == owner ? "Фракция выбрана"
-                    : (IsJoinableFaction(current) ? "Сменить сторону" : "Вступить во фракцию")
+                Joinable = false,
+                IsMember = false,
+                JoinLabel = string.Empty
             };
         }
 
@@ -640,18 +826,18 @@ namespace RealmOfAshes.Game
                     : status == "resolved" ? "Решено миром"
                     : status == "expired" ? "Провалено"
                     : accepted ? "Взято" : "Контракт";
-                card.Title = task["title"]?.ToString() ?? "Контракт пустоши";
+                card.Title = RoaPipboy.KromkaPublicText(task["title"]?.ToString() ?? "Контракт пустоши");
 
                 float expires = task["expiresHour"]?.ToObject<float>() ?? worldHour;
                 int hoursLeft = status == "active" ? Mathf.Max(0, Mathf.CeilToInt(expires - worldHour)) : 0;
-                string text = task["text"]?.ToString() ?? string.Empty;
+                string text = RoaPipboy.KromkaPublicText(task["text"]?.ToString() ?? string.Empty);
                 if (status == "active" && hoursLeft > 0) text = (text + " Осталось около " + hoursLeft + " ч.").Trim();
                 card.Text = text;
 
                 // pipboyWorldTaskRouteText
-                string issuer = task["issuerSiteName"]?.ToString() ?? string.Empty;
-                string target = task["targetSiteName"]?.ToString() ?? task["siteName"]?.ToString() ?? string.Empty;
-                string party = task["targetPartyName"]?.ToString() ?? task["joinPartyName"]?.ToString() ?? string.Empty;
+                string issuer = RoaPipboy.KromkaPublicText(task["issuerSiteName"]?.ToString() ?? string.Empty);
+                string target = RoaPipboy.KromkaPublicText(task["targetSiteName"]?.ToString() ?? task["siteName"]?.ToString() ?? string.Empty);
+                string party = RoaPipboy.KromkaPublicText(task["targetPartyName"]?.ToString() ?? task["joinPartyName"]?.ToString() ?? string.Empty);
                 var route = new List<string>();
                 if (!string.IsNullOrEmpty(issuer)) route.Add("Где взять: " + issuer + ".");
                 if (type == "deliver_supplies") { if (!string.IsNullOrEmpty(target)) route.Add("Куда сдать ресурсы: " + target + "."); }
@@ -668,7 +854,7 @@ namespace RealmOfAshes.Game
 
                 card.Reward = statusOnly ? string.Empty : WorldTaskRewardText(task);
 
-                string joinName = task["joinPartyName"]?.ToString();
+                string joinName = RoaPipboy.KromkaPublicText(task["joinPartyName"]?.ToString());
                 card.JoinHint = task["actionMode"]?.ToString() == "join_party" && !string.IsNullOrEmpty(joinName)
                     ? "После принятия: присоединиться к группе " + joinName + "."
                     : type == "clear_lair" ? "Зачистку можно выполнить одному или собрать группу игроков." : string.Empty;
@@ -703,14 +889,14 @@ namespace RealmOfAshes.Game
                     {
                         string factionId = WorldTaskFactionId(task, site);
                         bool requires = type == "escort_caravan" || type == "join_patrol" || type == "defend_resource" || type == "retake_site";
-                        string mine = _self?["worldFactionId"]?.ToString() ?? _self?["factionId"]?.ToString() ?? string.Empty;
-                        if (requires && !string.IsNullOrEmpty(factionId) && mine != factionId)
+                        int reputation = _self?["worldFactionReputation"]?[factionId]?.ToObject<int>() ?? 0;
+                        if (requires && !string.IsNullOrEmpty(factionId) && reputation < -25)
                         {
                             accessOk = false;
-                            accessText = "Нужно вступить во фракцию: " + FactionLabel(factionId) + ".";
+                            accessText = "Заказчик отказал: репутация у стороны «" + FactionLabel(factionId) + "» слишком низкая.";
                         }
-                        else if (!string.IsNullOrEmpty(factionId) && mine == factionId)
-                            accessText = "Фракционный контракт: " + FactionLabel(factionId) + ".";
+                        else if (!string.IsNullOrEmpty(factionId))
+                            accessText = "При принятии будет выдан временный контракт стороны «" + FactionLabel(factionId) + "».";
                     }
                     card.CanAccept = placeOk && accessOk;
                     card.AcceptLabel = !placeOk ? "Нужна доска" : !accessOk ? "Недоступно" : "Взять контракт";
@@ -823,10 +1009,10 @@ namespace RealmOfAshes.Game
         private string WorldTaskFactionId(JObject task, JObject boardSite)
         {
             string explicitId = (task["joinPartyFaction"]?.ToString() ?? task["faction"]?.ToString() ?? task["owner"]?.ToString() ?? string.Empty).ToLowerInvariant();
-            if (IsJoinableFaction(explicitId)) return explicitId;
+            if (RoaPipboy.IsKnownFaction(explicitId)) return RoaPipboy.CanonicalFactionId(explicitId);
             JObject site = boardSite ?? WorldSite(task["siteId"]?.ToString() ?? string.Empty);
             string owner = (site?["owner"]?.ToString() ?? string.Empty).ToLowerInvariant();
-            return IsJoinableFaction(owner) ? owner : string.Empty;
+            return RoaPipboy.IsKnownFaction(owner) ? RoaPipboy.CanonicalFactionId(owner) : string.Empty;
         }
 
         private string WorldTaskReputationFactionId(JObject task)
@@ -836,7 +1022,7 @@ namespace RealmOfAshes.Game
                 ?? task["details"]?["rewardFactionId"]?.ToString()
                 ?? task["reputationFactionId"]?.ToString()
                 ?? string.Empty).ToLowerInvariant();
-            if (!string.IsNullOrEmpty(explicitId)) return IsJoinableFaction(explicitId) ? explicitId : string.Empty;
+            if (!string.IsNullOrEmpty(explicitId)) return RoaPipboy.IsKnownFaction(explicitId) ? RoaPipboy.CanonicalFactionId(explicitId) : string.Empty;
             string issuerId = task["issuerSiteId"]?.ToString() ?? task["boardSiteId"]?.ToString() ?? task["siteId"]?.ToString() ?? string.Empty;
             return WorldTaskFactionId(task, WorldSite(issuerId));
         }
@@ -849,7 +1035,7 @@ namespace RealmOfAshes.Game
             int caps = reward?["caps"]?.ToObject<int>() ?? 0;
             int reputation = reward?["reputation"]?.ToObject<int>() ?? 0;
             if (xp > 0) parts.Add(xp + " XP");
-            if (caps > 0) parts.Add(caps + " крышек");
+            if (caps > 0) parts.Add(caps + " марок");
             string reputationFactionId = WorldTaskReputationFactionId(task);
             if (reputation > 0 && !string.IsNullOrEmpty(reputationFactionId))
                 parts.Add("репутация " + FactionLabel(reputationFactionId) + " +" + reputation);
@@ -906,6 +1092,7 @@ namespace RealmOfAshes.Game
 
             Socket.EmitWithAck("storageTransfer", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["direction"] = deposit ? "deposit" : "withdraw",
                 ["rows"] = rows
             }, ack =>
@@ -972,6 +1159,9 @@ namespace RealmOfAshes.Game
                 string boardSiteId = kind == TargetKind.JobBoard
                     ? (entry.Interactive?["boardSiteId"]?.ToString() ?? _locationId)
                     : string.Empty;
+                string questObjective = kind == TargetKind.QuestObject
+                    ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
+                    : string.Empty;
 
                 _staticTargets.Add(new StaticTarget
                 {
@@ -986,6 +1176,7 @@ namespace RealmOfAshes.Game
                         ["staticKind"] = kind.ToString(),
                         ["station"] = station,
                         ["boardSiteId"] = boardSiteId,
+                        ["questObjective"] = questObjective,
                         ["locationId"] = _locationId
                     }
                 });
@@ -1352,19 +1543,20 @@ namespace RealmOfAshes.Game
             var view = new ContainerView
             {
                 Root = root,
-                Gate = root.AddComponent<RoaVisibilityGate>(),
-                ModelKey = ContainerModelKey(row)
+                Gate = root.AddComponent<RoaVisibilityGate>()
             };
 
             view.Placeholder = CreateContainerPlaceholder(root.transform, row);
-            _ = LoadContainerModel(view);
             return view;
         }
 
         private static GameObject CreateContainerPlaceholder(Transform parent, JObject row)
         {
+            if ((row["defId"]?.ToString() ?? string.Empty) == "yard_supply"
+                || (row["name"]?.ToString() ?? string.Empty).Contains("снаряжения Глеба"))
+                return RoaTutorialProps.Build("crate", parent);
             var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            marker.name = "LoadingContainer";
+            marker.name = "UnityContainerMarker";
             marker.transform.SetParent(parent, false);
             marker.transform.localPosition = new Vector3(0f, 0.38f, 0f);
             marker.transform.localScale = new Vector3(0.9f, 0.76f, 0.72f);
@@ -1383,74 +1575,6 @@ namespace RealmOfAshes.Game
                 renderer.sharedMaterial = material;
             }
             return marker;
-        }
-
-        private async Task LoadContainerModel(ContainerView view)
-        {
-            string path = view.ModelKey == "tradeMachine"
-                ? "/assets/models/wasteland/trade_machine.glb"
-                : (view.ModelKey == "crate"
-                    ? "/assets/models/wasteland/crate.glb"
-                    : "/assets/models/wasteland/storage_chest.glb");
-            string url = BaseUrl.TrimEnd('/') + path;
-
-            try
-            {
-                GltfImport import = await LoadCached(url);
-                if (import == null || view.Root == null) return;
-
-                var holder = new GameObject("Model:" + view.ModelKey);
-                holder.transform.SetParent(view.Root.transform, false);
-                if (!await import.InstantiateMainSceneAsync(holder.transform))
-                {
-                    Destroy(holder);
-                    return;
-                }
-
-                if (view.Root == null)
-                {
-                    Destroy(holder);
-                    return;
-                }
-
-                if (view.Placeholder != null) Destroy(view.Placeholder);
-                view.Gate.Invalidate();
-            }
-            catch (MissingReferenceException)
-            {
-                // Комната была очищена, пока загружалась модель.
-            }
-            catch (Exception error)
-            {
-                Debug.LogWarning("[ROA] Контейнер оставлен с резервной моделью: " + error.Message);
-            }
-        }
-
-        private static Task<GltfImport> LoadCached(string url)
-        {
-            Task<GltfImport> cached;
-            if (ModelCache.TryGetValue(url, out cached)) return cached;
-            Task<GltfImport> loading = LoadImport(url);
-            ModelCache[url] = loading;
-            return loading;
-        }
-
-        private static async Task<GltfImport> LoadImport(string url)
-        {
-            var import = new GltfImport();
-            if (await import.Load(RoaModelUrl.Lite(url))) return import;
-            import.Dispose();
-            ModelCache.Remove(url);
-            return null;
-        }
-
-        private static string ContainerModelKey(JObject row)
-        {
-            if (row?["terminalLocked"]?.ToObject<bool>() == true
-                || Value(row, "terminalDifficulty") > 0f) return "tradeMachine";
-            return string.Equals(row?["tier"]?.ToString(), "basic", StringComparison.OrdinalIgnoreCase)
-                ? "crate"
-                : "storageChest";
         }
 
         private void Update()
@@ -1678,6 +1802,11 @@ namespace RealmOfAshes.Game
                 OpenJobBoard(_candidate);
                 return;
             }
+            if (_candidateKind == TargetKind.QuestObject)
+            {
+                UseQuestObject(_candidate);
+                return;
+            }
             if (_candidateKind == TargetKind.Transition)
             {
                 UseLocationTransition(_candidate);
@@ -1844,6 +1973,7 @@ namespace RealmOfAshes.Game
                 ["active"] = active
             }, ack =>
             {
+                ApplyActionAck(ack);
                 if (ack?["enemy"] is JObject enemy)
                 {
                     Enemies?.ApplyPublicEnemy(enemy);
@@ -2103,6 +2233,7 @@ namespace RealmOfAshes.Game
 
             var payload = new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["buys"] = buys,
                 ["sells"] = sells
             };
@@ -2135,7 +2266,7 @@ namespace RealmOfAshes.Game
                     : net < 0 ? "получено " + Mathf.Abs(net)
                     : "без доплаты";
                 ClearTradeQueue();
-                Show("Обмен подтверждён сервером: " + balance + " крышек.", 5f);
+                Show("Обмен подтверждён сервером: " + balance + " марок.", 5f);
             });
         }
 
@@ -2152,6 +2283,7 @@ namespace RealmOfAshes.Game
 
             Socket.EmitWithAck("storageTransfer", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["direction"] = deposit ? "deposit" : "withdraw",
                 ["rows"] = new[] { row }
             }, ack =>
@@ -2174,6 +2306,7 @@ namespace RealmOfAshes.Game
             Show("Станок выполняет заказ…", 3f);
             Socket.EmitWithAck("craftingStationUsed", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["recipeId"] = recipe.Id,
                 ["station"] = recipe.Station,
                 ["fee"] = recipe.Fee,
@@ -2213,6 +2346,7 @@ namespace RealmOfAshes.Game
             Show("Сервер обновляет контракт…", 3f);
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["taskId"] = taskId,
                 ["action"] = action
             }, ack =>
@@ -2236,7 +2370,7 @@ namespace RealmOfAshes.Game
                 {
                     JObject reward = ack["reward"] as JObject;
                     Show("Награда: " + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP, "
-                        + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек.");
+                        + (reward?["caps"]?.ToObject<int>() ?? 0) + " марок.");
                 }
                 else Show("Контракт обновлён.");
                 completed?.Invoke(ack);
@@ -2300,6 +2434,7 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(actorId) || string.IsNullOrEmpty(questId)) return;
             Socket.EmitWithAck("npcQuestAction", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["enemyId"] = actorId,
                 ["questId"] = questId,
                 ["action"] = action
@@ -2510,6 +2645,7 @@ namespace RealmOfAshes.Game
             if (_candidateKind == TargetKind.Resource) action = "добыть";
             else if (_candidateKind == TargetKind.CraftingStation) action = "создать предмет";
             else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
+            else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
             else if (_candidateKind == TargetKind.Transition) action = "перейти";
             else if (_candidateKind == TargetKind.Container || _candidateKind == TargetKind.Storage) action = "открыть";
             else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
@@ -2548,6 +2684,8 @@ namespace RealmOfAshes.Game
             JObject personality = _active["personality"] as JObject;
             if (personality != null)
                 GUILayout.Label("Характер: " + (personality["label"]?.ToString() ?? personality["id"]?.ToString()), Dim());
+            string kromkaRole = _active["kromkaRoleDescription"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(kromkaRole)) GUILayout.Label(kromkaRole, Dim());
 
             GUILayout.Space(8f);
             if (NpcHasTrade(_active) && GUILayout.Button("Показать товары", GUILayout.Height(32f)))
@@ -2569,6 +2707,140 @@ namespace RealmOfAshes.Game
                     DrawQuest(id);
                 }
             }
+
+            JArray kromkaQuestIds = _active["kromkaQuestIds"] as JArray;
+            if (kromkaQuestIds != null && kromkaQuestIds.Count > 0)
+            {
+                GUILayout.Space(10f);
+                GUILayout.Label("<b>ДЕЛА КРОМКИ</b>", Rich());
+                foreach (JToken token in kromkaQuestIds)
+                {
+                    string id = token?.ToString();
+                    if (!string.IsNullOrEmpty(id)) DrawKromkaQuest(id);
+                }
+            }
+        }
+
+        private JObject ActiveOnboardingStepForNpc()
+        {
+            JObject onboarding = _self?["kromkaOnboarding"] as JObject;
+            JObject step = onboarding?["step"] as JObject;
+            if (step == null || onboarding?["phase"]?.ToString() == "complete") return null;
+            string expectedNpcId = step["npcId"]?.ToString() ?? string.Empty;
+            string activeNpcId = _active?["kromkaOnboardingNpcId"]?.ToString() ?? string.Empty;
+            return !string.IsNullOrEmpty(expectedNpcId) && expectedNpcId == activeNpcId ? step : null;
+        }
+
+        private void UseQuestObject(JObject target)
+        {
+            if (target == null || Socket == null) return;
+            string objectId = target["id"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(objectId)) return;
+            Show("Проверяем объект…", 2f);
+            Socket.EmitWithAck("kromkaQuestObjectInteract", new Dictionary<string, object>
+            {
+                ["objectId"] = objectId
+            }, ack =>
+            {
+                ApplyActionAck(ack);
+                bool ok = ack?["ok"]?.ToObject<bool>() == true;
+                string success = "Цель задания подтверждена.";
+                foreach (JObject row in ack?["questProgress"] as JArray ?? new JArray())
+                {
+                    if (row?["partial"]?.ToObject<bool>() != true) continue;
+                    int current = row?["current"]?.ToObject<int>() ?? 0;
+                    int targetCount = row?["target"]?.ToObject<int>() ?? 0;
+                    success = "Прогресс цели: " + current + "/" + targetCount + ".";
+                    break;
+                }
+                Show(ok ? success : (ack?["error"]?.ToString() ?? "Сервер отклонил взаимодействие."), 4f);
+            });
+        }
+
+        private JObject KromkaQuestJournalRow(string questId)
+        {
+            JObject journal = _self?["kromkaQuestJournal"] as JObject;
+            if (journal == null || string.IsNullOrEmpty(questId)) return null;
+            foreach (string section in new[] { "campaign", "mechanic", "personal" })
+            {
+                foreach (JObject row in journal[section] as JArray ?? new JArray())
+                    if (row?["id"]?.ToString() == questId) return row;
+            }
+            if (journal["factions"] is JObject factions)
+            {
+                foreach (JProperty faction in factions.Properties())
+                    foreach (JObject row in faction.Value as JArray ?? new JArray())
+                        if (row?["id"]?.ToString() == questId) return row;
+            }
+            return null;
+        }
+
+        private void DrawKromkaQuest(string questId)
+        {
+            JObject quest = KromkaQuestJournalRow(questId);
+            if (quest == null) return;
+            string status = quest["status"]?.ToString() ?? "available";
+            string title = quest["title"]?.ToString() ?? questId;
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label(title + "  [" + QuestStateLabel(status == "completed" ? "done" : status) + "]");
+            string summary = quest["summary"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(summary)) GUILayout.Label(summary, Wrap());
+            string objective = quest["currentObjectiveLabel"]?.ToString() ?? string.Empty;
+            string objectiveHint = quest["currentObjectiveHint"]?.ToString() ?? string.Empty;
+            int objectiveCurrent = quest["objectiveProgressCurrent"]?.ToObject<int>() ?? 0;
+            int objectiveTarget = quest["objectiveProgressTarget"]?.ToObject<int>() ?? 0;
+            if (!string.IsNullOrEmpty(objective) && objectiveTarget > 1)
+                objective += " (" + objectiveCurrent + "/" + objectiveTarget + ")";
+            if (!string.IsNullOrEmpty(objective)) GUILayout.Label("Цель: " + objective, Wrap());
+            if (status == "active" && !string.IsNullOrEmpty(objectiveHint)) GUILayout.Label(objectiveHint, Dim());
+            if (status == "available")
+            {
+                if (GUILayout.Button("Принять дело")) SubmitKromkaQuest(questId, "start", string.Empty);
+            }
+            else if (status == "active")
+            {
+                if (quest["currentObjectiveInteraction"]?.ToString() == "dialogue"
+                    && CurrentActorMatchesQuestDialogueTarget(quest))
+                {
+                    if (GUILayout.Button("Продолжить разговор")) SubmitKromkaQuest(questId, "dialogue", string.Empty);
+                }
+                else GUILayout.Label("Цель подтверждается действиями в мире.", Dim());
+            }
+            else if (status == "turnin")
+            {
+                if (GUILayout.Button("Сдать дело")) SubmitKromkaQuest(questId, "turnin", string.Empty);
+            }
+            else if (status == "choice")
+            {
+                foreach (JObject outcome in quest["outcomes"] as JArray ?? new JArray())
+                {
+                    string outcomeId = outcome?["id"]?.ToString() ?? string.Empty;
+                    string label = outcome?["label"]?.ToString() ?? "Принять решение";
+                    if (!string.IsNullOrEmpty(outcomeId) && GUILayout.Button(label))
+                        SubmitKromkaQuest(questId, "outcome", outcomeId);
+                }
+            }
+            GUILayout.EndVertical();
+        }
+
+        private void SubmitKromkaQuest(string questId, string mode, string outcomeId)
+        {
+            string actorId = _active?["id"]?.ToString() ?? string.Empty;
+            if (Socket == null || string.IsNullOrEmpty(actorId) || string.IsNullOrEmpty(questId)) return;
+            Socket.EmitWithAck("kromkaQuestAction", new Dictionary<string, object>
+            {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
+                ["enemyId"] = actorId,
+                ["questId"] = questId,
+                ["mode"] = mode,
+                ["outcomeId"] = outcomeId
+            }, ack =>
+            {
+                ApplyActionAck(ack);
+                bool ok = ack?["ok"]?.ToObject<bool>() ?? false;
+                Show(ok ? (mode == "start" ? "Дело принято." : "Решение записано.")
+                    : (ack?["error"]?.ToString() ?? "Сервер отклонил сюжетное действие."));
+            });
         }
 
         private void DrawQuest(string id)
@@ -2663,8 +2935,8 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            GUILayout.Label("Крышек у торговца: " + (_market["caps"]?.ToObject<int>() ?? 0));
-            GUILayout.Label("Ваши крышки: " + InventoryQuantity(_self?["inventory"] as JArray, "silver"));
+            GUILayout.Label("Марок у торговца: " + (_market["caps"]?.ToObject<int>() ?? 0));
+            GUILayout.Label("Ваши марки: " + InventoryQuantity(_self?["inventory"] as JArray, "silver"));
             GUILayout.Label("Цена в списке базовая; навыки, вес и итог сделки проверяет сервер.", Dim());
             DrawTradeQueue();
             GUILayout.Space(8f);
@@ -2826,11 +3098,12 @@ namespace RealmOfAshes.Game
                 bool available = HasCraftIngredients(recipe);
                 GUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.Label("<b>" + recipe.Name + "</b>  → " + RoaItemData.Name(recipe.OutputId) + " x" + recipe.OutputQty, Rich());
-                GUILayout.Label("Материалы: " + CraftCostText(recipe) + " · комиссия: " + recipe.Fee + " крышек", Dim());
+                GUILayout.Label("Материалы: " + CraftCostText(recipe) + " · комиссия: " + recipe.Fee + " марок"
+                    + (recipe.WorkSeconds > 0 ? " · работа: " + recipe.WorkSeconds + " с" : string.Empty), Dim());
                 GUI.enabled = available && !_craftPending;
                 if (GUILayout.Button(_craftPending ? "Станок занят…" : "Создать", GUILayout.Height(30f))) Craft(recipe);
                 GUI.enabled = true;
-                if (!available) GUILayout.Label("Не хватает материалов или крышек.", Dim());
+                if (!available) GUILayout.Label("Не хватает материалов или марок.", Dim());
                 GUILayout.EndVertical();
             }
 
@@ -2848,21 +3121,13 @@ namespace RealmOfAshes.Game
             string boardSiteId = _active?["boardSiteId"]?.ToString() ?? _locationId;
             JObject site = WorldSite(boardSiteId);
             string owner = site?["capitalFaction"]?.ToString() ?? site?["owner"]?.ToString() ?? string.Empty;
-            string currentFaction = _self?["worldFactionId"]?.ToString() ?? _self?["factionId"]?.ToString() ?? string.Empty;
-
-            if (IsJoinableFaction(owner))
+            if (RoaPipboy.IsKnownFaction(owner))
             {
                 GUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.Label("<b>" + (site?["name"]?.ToString() ?? boardSiteId) + "</b>", Rich());
-                GUILayout.Label("Владелец: " + FactionLabel(owner)
-                    + (currentFaction == owner ? " · вы состоите во фракции" : string.Empty), Dim());
-                GUI.enabled = !_worldRequestPending && currentFaction != owner;
-                string factionAction = currentFaction == owner
-                    ? "Фракция выбрана"
-                    : (IsJoinableFaction(currentFaction) ? "Сменить сторону" : "Вступить во фракцию");
-                if (GUILayout.Button(factionAction, GUILayout.Height(30f)))
-                    JoinWorldFaction(owner);
-                GUI.enabled = true;
+                int reputation = _self?["worldFactionReputation"]?[RoaPipboy.CanonicalFactionId(owner)]?.ToObject<int>() ?? 0;
+                GUILayout.Label("Заказчик: " + FactionLabel(owner) + " · репутация " + reputation, Dim());
+                GUILayout.Label("Каждая принятая работа выдаёт временный контракт. Наёмник не становится постоянным членом стороны.", Wrap());
                 GUILayout.EndVertical();
             }
 
@@ -3111,6 +3376,8 @@ namespace RealmOfAshes.Game
         private static string QuestStateLabel(string state)
         {
             if (state == "active") return "в работе";
+            if (state == "turnin") return "готово к сдаче";
+            if (state == "choice") return "нужно решение";
             if (state == "ready") return "готово к сдаче";
             if (state == "done") return "выполнено";
             if (state == "locked") return "закрыто";
@@ -3136,6 +3403,9 @@ namespace RealmOfAshes.Game
             if (kind == "jobboard" || role == "worldtaskboard"
                 || HasTag(entry, "jobBoard") || HasTag(entry, "questBoard"))
                 return TargetKind.JobBoard;
+
+            if (kind == "questobject" || HasTag(entry, "quest-object"))
+                return TargetKind.QuestObject;
 
             if (!string.IsNullOrEmpty(CraftingStationId(entry))
                 || kind == "craftingstation" || HasTag(entry, "crafting-station"))
@@ -3200,6 +3470,7 @@ namespace RealmOfAshes.Game
             if (kind == TargetKind.Storage) return "Хранилище";
             if (kind == TargetKind.CraftingStation) return RoaCraftingData.StationLabel(station);
             if (kind == TargetKind.JobBoard) return "Доска контрактов";
+            if (kind == TargetKind.QuestObject) return "Объект задания";
             return "Торговый автомат";
         }
 
@@ -3252,6 +3523,7 @@ namespace RealmOfAshes.Game
             if (type == "electronics") return "Электроника";
             if (type == "ammoParts") return "Детали боеприпасов";
             if (type == "weaponParts") return "Оружейные детали";
+            if (type == "blue") return "Синь";
             return "Ресурс";
         }
 
@@ -3308,11 +3580,7 @@ namespace RealmOfAshes.Game
 
         private static string FactionLabel(string factionId)
         {
-            if (factionId == "old_klim") return "Старый Клим";
-            if (factionId == "scrap_union") return "Свалочный союз";
-            if (factionId == "relay_order") return "Орден Ретранслятора";
-            if (factionId == "caravans") return "Вольные караваны";
-            return string.IsNullOrEmpty(factionId) ? "нет" : factionId;
+            return RoaPipboy.FactionLabel(factionId);
         }
 
         private static bool HasTag(LocationObject entry, string tag)

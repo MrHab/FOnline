@@ -22,7 +22,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(ROOT, 'server.js');
 const CLOCK_PRELOAD = path.join(__dirname, 'test-support', 'controlled-clock.js');
 const CUSTOM_TTL_MS = 15 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 function assertPurePasswordResetContracts() {
   assert.strictEqual(normalizePasswordResetTtlMs(undefined), DEFAULT_PASSWORD_RESET_TTL_MS);

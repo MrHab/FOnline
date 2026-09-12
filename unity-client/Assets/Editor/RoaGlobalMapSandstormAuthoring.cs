@@ -46,18 +46,14 @@ namespace RealmOfAshes.EditorTools
 
         // Кольцо эмиттеров: сразу за игровой зоной (selection 90×90,
         // внутренняя кромка тумана 41.5 юнита от центра).
-        private const float EmitterDistance = 49f;
+        private const float EmitterDistance = 47f;
         private const float EmitterLength = 116f;
 
         [MenuItem("Realm of Ashes/Авторинг/Песчаная буря на границе")]
         public static void Apply()
         {
             Texture2D puff = BakePuffTexture();
-            Material dust = BuildDustMaterial(puff);
-            RetintFogWall();
-
-            Material lineMaterial = BuildLineMaterial();
-            Mesh lineMesh = BuildLineMesh();
+            BuildDustMaterial(puff);
 
             GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
             try
@@ -66,12 +62,13 @@ namespace RealmOfAshes.EditorTools
                 // сама буря. Меш и материал остаются в префабе (запинены
                 // контрактом), гаснет только рендерер.
                 MeshRenderer wall = root.GetComponent<MeshRenderer>();
-                if (wall != null) wall.enabled = false;
+                if (wall != null) wall.enabled = true;
 
                 for (int i = root.transform.childCount - 1; i >= 0; i--)
                 {
                     Transform child = root.transform.GetChild(i);
-                    if (child.name.StartsWith("Sandstorm", StringComparison.Ordinal))
+                    if (child.name.StartsWith("Sandstorm", StringComparison.Ordinal)
+                        || child.name.StartsWith("ToxicFogBillows", StringComparison.Ordinal))
                         UnityEngine.Object.DestroyImmediate(child.gameObject);
                 }
 
@@ -80,48 +77,22 @@ namespace RealmOfAshes.EditorTools
                 Transform oldLine = root.transform.Find("BoundaryLine");
                 if (oldLine != null)
                     UnityEngine.Object.DestroyImmediate(oldLine.gameObject);
-                var line = new GameObject("BoundaryLine",
-                    typeof(MeshFilter), typeof(MeshRenderer));
-                line.transform.SetParent(root.transform, false);
-                line.transform.localPosition = new Vector3(0f, LineY, 0f);
-                line.GetComponent<MeshFilter>().sharedMesh = lineMesh;
-                MeshRenderer lineRenderer = line.GetComponent<MeshRenderer>();
-                lineRenderer.sharedMaterial = lineMaterial;
-                lineRenderer.shadowCastingMode =
-                    UnityEngine.Rendering.ShadowCastingMode.Off;
-                lineRenderer.receiveShadows = false;
 
                 // Ветер один на всю бурю — с северо-востока к юго-западу.
-                var wind = new Vector3(-0.38f, 0.02f, -0.23f);
-                BuildEmitter(root.transform, "Sandstorm_North",
-                    new Vector3(0f, 2.2f, EmitterDistance), 0f, wind);
-                BuildEmitter(root.transform, "Sandstorm_South",
-                    new Vector3(0f, 2.2f, -EmitterDistance), 0f, wind);
-                BuildEmitter(root.transform, "Sandstorm_East",
-                    new Vector3(EmitterDistance, 2.2f, 0f), 90f, wind);
-                BuildEmitter(root.transform, "Sandstorm_West",
-                    new Vector3(-EmitterDistance, 2.2f, 0f), 90f, wind);
+                var wind = new Vector3(-0.08f, 0f, -0.05f);
+                BuildEmitter(root.transform, "ToxicFogBillows_North",
+                    new Vector3(0f, 1.2f, EmitterDistance), 0f, wind);
+                BuildEmitter(root.transform, "ToxicFogBillows_South",
+                    new Vector3(0f, 1.2f, -EmitterDistance), 0f, wind);
+                BuildEmitter(root.transform, "ToxicFogBillows_East",
+                    new Vector3(EmitterDistance, 1.2f, 0f), 90f, wind);
+                BuildEmitter(root.transform, "ToxicFogBillows_West",
+                    new Vector3(-EmitterDistance, 1.2f, 0f), 90f, wind);
 
                 // Низовая пыль: стелющиеся горизонтальные клубы прямо по
                 // шву диорамы — прячут геометрический срез края.
-                BuildLowDust(root.transform, "SandstormLow_North",
-                    new Vector3(0f, 0.55f, 46f), 0f, wind);
-                BuildLowDust(root.transform, "SandstormLow_South",
-                    new Vector3(0f, 0.55f, -46f), 0f, wind);
-                BuildLowDust(root.transform, "SandstormLow_East",
-                    new Vector3(46f, 0.55f, 0f), 90f, wind);
-                BuildLowDust(root.transform, "SandstormLow_West",
-                    new Vector3(-46f, 0.55f, 0f), 90f, wind);
 
                 // Дальний ярус вместо стены: высокие крупные клубы фоном.
-                BuildFarWall(root.transform, "SandstormFar_North",
-                    new Vector3(0f, 6.5f, 58f), 0f, wind);
-                BuildFarWall(root.transform, "SandstormFar_South",
-                    new Vector3(0f, 6.5f, -58f), 0f, wind);
-                BuildFarWall(root.transform, "SandstormFar_East",
-                    new Vector3(58f, 6.5f, 0f), 90f, wind);
-                BuildFarWall(root.transform, "SandstormFar_West",
-                    new Vector3(-58f, 6.5f, 0f), 90f, wind);
 
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
@@ -165,23 +136,26 @@ namespace RealmOfAshes.EditorTools
             main.loop = true;
             main.prewarm = true;
             main.duration = 12f;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(11f, 17f);
+            main.startLifetime = new ParticleSystem.MinMaxCurve(10f, 16f);
             main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(9f, 21f);
+            main.startSize3D = true;
+            main.startSizeX = new ParticleSystem.MinMaxCurve(4f, 7f);
+            main.startSizeY = new ParticleSystem.MinMaxCurve(1.6f, 2.5f);
+            main.startSizeZ = 1f;
             main.startRotation = new ParticleSystem.MinMaxCurve(0f,
                 Mathf.PI * 2f);
             main.startColor = new ParticleSystem.MinMaxGradient(
-                new Color(0.82f, 0.66f, 0.45f, 0.55f),
-                new Color(0.62f, 0.47f, 0.30f, 0.35f));
-            main.maxParticles = 140;
+                new Color(0.06f, 0.18f, 0.018f, 0.32f),
+                new Color(0.34f, 0.72f, 0.07f, 0.58f));
+            main.maxParticles = 420;
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
 
             ParticleSystem.EmissionModule emission = ps.emission;
-            emission.rateOverTime = 6.5f;
+            emission.rateOverTime = 26f;
 
             ParticleSystem.ShapeModule shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(EmitterLength, 7f, 16f);
+            shape.scale = new Vector3(EmitterLength, 0.04f, 6f);
 
             // Постоянный снос ветром: скорость в мировых осях.
             ParticleSystem.VelocityOverLifetimeModule velocity =
@@ -195,9 +169,12 @@ namespace RealmOfAshes.EditorTools
             // Турбулентность — главный «характер» бури.
             ParticleSystem.NoiseModule noise = ps.noise;
             noise.enabled = true;
-            noise.strength = 1.15f;
-            noise.frequency = 0.09f;
-            noise.scrollSpeed = 0.16f;
+            noise.separateAxes = true;
+            noise.strengthX = 0.18f;
+            noise.strengthY = 0.025f;
+            noise.strengthZ = 0.14f;
+            noise.frequency = 0.11f;
+            noise.scrollSpeed = 0.10f;
             noise.quality = ParticleSystemNoiseQuality.Medium;
 
             ParticleSystem.ColorOverLifetimeModule colorOverLife =
@@ -213,8 +190,8 @@ namespace RealmOfAshes.EditorTools
                 new[]
                 {
                     new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(0.9f, 0.18f),
-                    new GradientAlphaKey(0.65f, 0.7f),
+                    new GradientAlphaKey(0.82f, 0.16f),
+                    new GradientAlphaKey(0.62f, 0.72f),
                     new GradientAlphaKey(0f, 1f)
                 });
             colorOverLife.color = gradient;
@@ -229,7 +206,8 @@ namespace RealmOfAshes.EditorTools
                 ps.sizeOverLifetime;
             sizeOverLife.enabled = true;
             sizeOverLife.size = new ParticleSystem.MinMaxCurve(1f,
-                AnimationCurve.Linear(0f, 0.75f, 1f, 1.3f));
+                new AnimationCurve(new Keyframe(0f, 0.76f),
+                    new Keyframe(0.35f, 1f), new Keyframe(1f, 0.88f)));
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.sharedMaterial =

@@ -1,0 +1,742 @@
+{
+  "schema": "kromka.fieldRecipes.v1",
+  "version": 1,
+  "recipes": [
+    {
+      "id": "ammo9craft",
+      "name": "Патроны 9mm",
+      "station": "ammo_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 1,
+      "output": {
+        "id": "ammo9",
+        "qty": 8
+      }
+    },
+    {
+      "id": "ammo556craft",
+      "name": "Патроны .223",
+      "station": "ammo_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "ammo556",
+        "qty": 5
+      }
+    },
+    {
+      "id": "energycellcraft",
+      "name": "Энергозаряды",
+      "station": "energy_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "energyCell",
+        "qty": 8
+      }
+    },
+    {
+      "id": "napalmcraft",
+      "name": "Напалм",
+      "station": "chem_station",
+      "inputs": {
+        "oil": 2,
+        "scrap": 1,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "napalm",
+        "qty": 12
+      }
+    },
+    {
+      "id": "shellcraft",
+      "name": "Патроны 12 калибра",
+      "station": "ammo_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "shotgunShell",
+        "qty": 6
+      }
+    },
+    {
+      "id": "rocketammocraft",
+      "name": "Ракета",
+      "station": "ammo_bench",
+      "inputs": {
+        "ore": 5,
+        "wood": 1,
+        "oil": 1,
+        "silver": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 6,
+      "output": {
+        "id": "rocketAmmo",
+        "qty": 2
+      }
+    },
+    {
+      "id": "stimcraft",
+      "name": "Стимулятор",
+      "station": "chem_station",
+      "inputs": {
+        "medicine": 2,
+        "chemicals": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "stim",
+        "qty": 3
+      }
+    },
+    {
+      "id": "medkitcraft",
+      "name": "Аптечка",
+      "station": "chem_station",
+      "inputs": {
+        "medicine": 4,
+        "chemicals": 1,
+        "scrap": 1
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "medkit",
+        "qty": 2
+      }
+    },
+    {
+      "id": "doctorbagcraft",
+      "name": "Набор доктора",
+      "station": "chem_station",
+      "inputs": {
+        "medicine": 5,
+        "electronics": 1,
+        "scrap": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "doctorBag",
+        "qty": 1
+      }
+    },
+    {
+      "id": "antibioticscraft",
+      "name": "Антибиотики",
+      "station": "chem_station",
+      "inputs": {
+        "medicine": 3,
+        "chemicals": 2
+      },
+      "silverFee": 1,
+      "workSeconds": 3,
+      "output": {
+        "id": "antibiotics",
+        "qty": 2
+      }
+    },
+    {
+      "id": "medicinecraft",
+      "name": "Медикаменты",
+      "station": "chem_station",
+      "inputs": {
+        "chemicals": 2,
+        "water": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "medicine",
+        "qty": 3
+      }
+    },
+    {
+      "id": "reagentcraft",
+      "name": "Химикаты",
+      "station": "chem_station",
+      "inputs": {
+        "oil": 2,
+        "water": 1,
+        "scrap": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "chemicals",
+        "qty": 3
+      }
+    },
+    {
+      "id": "repairkitcraft",
+      "name": "Ремкомплект",
+      "station": "repair_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 2
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "repairKit",
+        "qty": 1
+      }
+    },
+    {
+      "id": "knifecraft",
+      "name": "Боевой нож",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "knife",
+        "qty": 1
+      }
+    },
+    {
+      "id": "pistolcraft",
+      "name": "9mm пистолет",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 1,
+        "scrap": 4,
+        "ammoParts": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "pistol",
+        "qty": 1
+      }
+    },
+    {
+      "id": "revolvercraft",
+      "name": "Ржавый револьвер",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 4,
+        "scrap": 4,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "revolver",
+        "qty": 1
+      }
+    },
+    {
+      "id": "sawedoffcraft",
+      "name": "Обрез",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 5,
+        "wood": 3
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "sawedOffShotgun",
+        "qty": 1
+      }
+    },
+    {
+      "id": "smgcraft",
+      "name": "Самодельный ПП",
+      "station": "weapon_bench",
+      "inputs": {
+        "scrap": 8,
+        "weaponParts": 3,
+        "wood": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "smg",
+        "qty": 1
+      }
+    },
+    {
+      "id": "riflecraft",
+      "name": "Охотничья винтовка",
+      "station": "weapon_bench",
+      "inputs": {
+        "weaponParts": 2,
+        "scrap": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "rifle",
+        "qty": 1
+      }
+    },
+    {
+      "id": "assaultcraft",
+      "name": "Ржавый автомат",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 6,
+        "wood": 3
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "assaultRifle",
+        "qty": 1
+      }
+    },
+    {
+      "id": "machineguncraft",
+      "name": "Самодельный пулемёт",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "machineGun",
+        "qty": 1
+      }
+    },
+    {
+      "id": "lasercraft",
+      "name": "Лазерный пистолет",
+      "station": "energy_bench",
+      "inputs": {
+        "ore": 5,
+        "wood": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "laserPistol",
+        "qty": 1
+      }
+    },
+    {
+      "id": "flamercraft",
+      "name": "Огнемёт",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 9,
+        "wood": 3,
+        "oil": 2
+      },
+      "silverFee": 3,
+      "workSeconds": 7,
+      "output": {
+        "id": "flamethrower",
+        "qty": 1
+      }
+    },
+    {
+      "id": "plasmacraft",
+      "name": "Плазменное ружьё",
+      "station": "energy_bench",
+      "inputs": {
+        "ore": 10,
+        "wood": 2,
+        "silver": 10
+      },
+      "silverFee": 5,
+      "workSeconds": 11,
+      "output": {
+        "id": "plasmaRifle",
+        "qty": 1
+      }
+    },
+    {
+      "id": "shotguncraft",
+      "name": "Дробовик",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 7,
+        "wood": 4
+      },
+      "silverFee": 3,
+      "workSeconds": 6,
+      "output": {
+        "id": "shotgun",
+        "qty": 1
+      }
+    },
+    {
+      "id": "rocketcrafter",
+      "name": "Ракетница",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 14,
+        "wood": 4,
+        "silver": 14
+      },
+      "silverFee": 7,
+      "workSeconds": 16,
+      "output": {
+        "id": "rocketLauncher",
+        "qty": 1
+      }
+    },
+    {
+      "id": "leathercraft",
+      "name": "Кожаная куртка",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 5,
+        "chemicals": 1
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "leather",
+        "qty": 1
+      }
+    },
+    {
+      "id": "metalarmorcraft",
+      "name": "Металлическая броня",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 12,
+        "ore": 4
+      },
+      "silverFee": 4,
+      "workSeconds": 8,
+      "output": {
+        "id": "metalArmor",
+        "qty": 1
+      }
+    },
+    {
+      "id": "ballisticvestcraft",
+      "name": "Бронежилет",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 10,
+        "ammoParts": 5,
+        "chemicals": 2
+      },
+      "silverFee": 4,
+      "workSeconds": 9,
+      "output": {
+        "id": "ballisticVest",
+        "qty": 1
+      }
+    },
+    {
+      "id": "combatarmorcraft",
+      "name": "Боевая броня",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 18,
+        "electronics": 6,
+        "chemicals": 4
+      },
+      "silverFee": 6,
+      "workSeconds": 14,
+      "output": {
+        "id": "combatArmor",
+        "qty": 1
+      }
+    },
+    {
+      "id": "hazmatsuitcraft",
+      "name": "Костюм химзащиты",
+      "station": "chem_station",
+      "inputs": {
+        "chemicals": 10,
+        "scrap": 6
+      },
+      "silverFee": 4,
+      "workSeconds": 8,
+      "output": {
+        "id": "hazmatSuit",
+        "qty": 1
+      }
+    },
+    {
+      "id": "heavyarmorcraft",
+      "name": "Тяжёлая броня",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 26,
+        "ore": 10,
+        "electronics": 6
+      },
+      "silverFee": 9,
+      "workSeconds": 21,
+      "output": {
+        "id": "heavyArmor",
+        "qty": 1
+      }
+    },
+    {
+      "id": "energysuitcraft",
+      "name": "Энергозащитный костюм",
+      "station": "energy_bench",
+      "inputs": {
+        "electronics": 16,
+        "chemicals": 8,
+        "scrap": 10
+      },
+      "silverFee": 7,
+      "workSeconds": 17,
+      "output": {
+        "id": "energySuit",
+        "qty": 1
+      }
+    },
+    {
+      "id": "prewarhelmetcraft",
+      "name": "Довоенный боевой шлем",
+      "station": "energy_bench",
+      "inputs": {
+        "scrap": 6,
+        "electronics": 3
+      },
+      "silverFee": 2,
+      "workSeconds": 5,
+      "output": {
+        "id": "preWarHelmet",
+        "qty": 1
+      }
+    },
+    {
+      "id": "weldedhelmetcraft",
+      "name": "Сварной шлем",
+      "station": "tool_bench",
+      "inputs": {
+        "scrap": 4
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "weldedHelmet",
+        "qty": 1
+      }
+    },
+    {
+      "id": "helmetcraft",
+      "name": "Стальной шлем",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 4
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "helmet",
+        "qty": 1
+      }
+    },
+    {
+      "id": "tacticalhelmetcraft",
+      "name": "Тактический шлем",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 6,
+        "electronics": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "tacticalHelmet",
+        "qty": 1
+      }
+    },
+    {
+      "id": "assaulthelmetcraft",
+      "name": "Штурмовой шлем",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 8,
+        "electronics": 3
+      },
+      "silverFee": 3,
+      "workSeconds": 6,
+      "output": {
+        "id": "assaultHelmet",
+        "qty": 1
+      }
+    },
+    {
+      "id": "bootscraft",
+      "name": "Армейские ботинки",
+      "station": "tool_bench",
+      "inputs": {
+        "scrap": 3,
+        "chemicals": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "boots",
+        "qty": 1
+      }
+    },
+    {
+      "id": "scoutbootscraft",
+      "name": "Разведботинки",
+      "station": "tool_bench",
+      "inputs": {
+        "scrap": 4,
+        "chemicals": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "scoutBoots",
+        "qty": 1
+      }
+    },
+    {
+      "id": "assaultbootscraft",
+      "name": "Штурмовые ботинки",
+      "station": "tool_bench",
+      "inputs": {
+        "scrap": 5,
+        "wood": 1
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "assaultBoots",
+        "qty": 1
+      }
+    },
+    {
+      "id": "reinforcedbootscraft",
+      "name": "Усиленные ботинки",
+      "station": "repair_bench",
+      "inputs": {
+        "scrap": 6,
+        "ore": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 4,
+      "output": {
+        "id": "reinforcedBoots",
+        "qty": 1
+      }
+    },
+    {
+      "id": "backpackcraft",
+      "name": "Рюкзак",
+      "station": "tool_bench",
+      "inputs": {
+        "scrap": 5,
+        "chemicals": 1
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "backpack",
+        "qty": 1
+      }
+    },
+    {
+      "id": "pickaxecraft",
+      "name": "Кирка",
+      "station": "tool_bench",
+      "inputs": {
+        "ore": 2,
+        "wood": 2
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "pickaxe",
+        "qty": 1
+      }
+    },
+    {
+      "id": "axecraft",
+      "name": "Топор",
+      "station": "tool_bench",
+      "inputs": {
+        "ore": 1,
+        "wood": 3
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "axe",
+        "qty": 1
+      }
+    },
+    {
+      "id": "handpumpcraft",
+      "name": "Ручной насос",
+      "station": "tool_bench",
+      "inputs": {
+        "ore": 3,
+        "wood": 1,
+        "scrap": 2
+      },
+      "silverFee": 2,
+      "workSeconds": 3,
+      "output": {
+        "id": "handPump",
+        "qty": 1
+      }
+    },
+    {
+      "id": "weaponpartscraft",
+      "name": "Оружейные детали",
+      "station": "weapon_bench",
+      "inputs": {
+        "ore": 6,
+        "scrap": 5
+      },
+      "silverFee": 3,
+      "workSeconds": 6,
+      "output": {
+        "id": "weaponParts",
+        "qty": 2
+      }
+    },
+    {
+      "id": "electronicscraft",
+      "name": "Электроника",
+      "station": "energy_bench",
+      "inputs": {
+        "scrap": 3,
+        "chemicals": 1
+      },
+      "silverFee": 1,
+      "workSeconds": 2,
+      "output": {
+        "id": "electronics",
+        "qty": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema": "kromka.artifacts.v1",
+  "version": 1,
+  "shift": {
+    "cycleMs": 7200000,
+    "warningMs": 600000,
+    "activeMs": 240000,
+    "afterglowMs": 1200000,
+    "safeShelterLocationIds": ["settlement", "sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "personalBase"]
+  },
+  "detectors": [
+    { "itemId": "artifactDetectorMk1", "level": 1, "signalRange": 12, "revealRange": 3, "identifiesBeforePickup": false },
+    { "itemId": "artifactDetectorMk2", "level": 2, "signalRange": 18, "revealRange": 5, "identifiesBeforePickup": false },
+    { "itemId": "artifactDetectorMk3", "level": 3, "signalRange": 24, "revealRange": 7, "identifiesBeforePickup": true }
+  ],
+  "belts": [
+    { "itemId": "artifactBelt2", "slots": 2 },
+    { "itemId": "artifactBelt3", "slots": 3 },
+    { "itemId": "artifactBelt4", "slots": 4 }
+  ],
+  "hotContainerItemId": "artifactContainer",
+  "rules": {
+    "duplicateTypeAllowed": false,
+    "secondarySimilarEffectMultiplier": 0.5,
+    "maxSpeedBonusPct": 0.18,
+    "maxResistancePct": 0.6,
+    "maxCarryBonusKg": 30,
+    "maxRegenHpPerSecond": 1
+  },
+  "types": [
+    { "id": "spring", "itemId": "artifactSpring", "displayName": "Пружина", "rarity": "common", "color": "#72d8ff", "effects": { "speedPct": 0.08, "apRegenPct": 0.10, "resistances": { "electric": -0.20 } }, "benefit": "Скорость +8%, восстановление ОД +10%", "cost": "Электрический урон +20%" },
+    { "id": "vein", "itemId": "artifactVein", "displayName": "Жила", "rarity": "common", "color": "#d55c54", "effects": { "carryKg": 15, "meleeDamagePct": 0.12, "speedPct": -0.06 }, "benefit": "Грузоподъёмность +15 кг, ближний урон +12%", "cost": "Скорость −6%" },
+    { "id": "node", "itemId": "artifactNode", "displayName": "Узел", "rarity": "common", "color": "#b37af2", "effects": { "maxHpFlat": 25, "medkitEffectPct": -0.20 }, "benefit": "Максимум здоровья +25", "cost": "Лечение аптечками −20%" },
+    { "id": "drop", "itemId": "artifactDrop", "displayName": "Капля", "rarity": "common", "color": "#67c7ad", "effects": { "regenHpPerSecond": 0.6, "regenDelaySeconds": 6, "waterUsePct": 0.30 }, "benefit": "Через 6 секунд без урона восстанавливает 0,6 HP/с", "cost": "Расход воды +30%" },
+    { "id": "bloodkin", "itemId": "artifactBloodkin", "displayName": "Кровник", "rarity": "rare", "color": "#be2633", "effects": { "lowHealthThresholdPct": 0.30, "lowHealthHeal": 20, "lowHealthDurationSeconds": 10, "lowHealthCooldownSeconds": 90, "radiationOnTrigger": 15 }, "benefit": "Ниже 30% здоровья восстанавливает 20 HP за 10 секунд", "cost": "После срабатывания +15 радиации" },
+    { "id": "shell", "itemId": "artifactShell", "displayName": "Панцирь", "rarity": "common", "color": "#9c8b68", "effects": { "resistances": { "ballistic": 0.12, "explosive": 0.08 }, "speedPct": -0.08 }, "benefit": "Баллистическое сопротивление +12%, взрывное +8%", "cost": "Скорость −8%" },
+    { "id": "warmer", "itemId": "artifactWarmer", "displayName": "Тепляк", "rarity": "uncommon", "color": "#ff8e3b", "effects": { "resistances": { "fire": 0.35 }, "maxApPct": -0.15 }, "benefit": "Сопротивление огню +35%", "cost": "Максимум ОД −15%" },
+    { "id": "sieve", "itemId": "artifactSieve", "displayName": "Сито", "rarity": "uncommon", "color": "#b9d66b", "effects": { "resistances": { "radiation": 0.40 }, "maxHpFlat": -10 }, "benefit": "Сопротивление радиации +40%", "cost": "Максимум здоровья −10" },
+    { "id": "thunderer", "itemId": "artifactThunderer", "displayName": "Громник", "rarity": "rare", "color": "#8ab7ff", "effects": { "resistances": { "electric": 0.45 }, "wetElectricStun": true }, "benefit": "Сопротивление электричеству +45%", "cost": "Во влажной среде электрический удар дополнительно оглушает" },
+    { "id": "husher", "itemId": "artifactHusher", "displayName": "Молчун", "rarity": "uncommon", "color": "#68717c", "effects": { "movementNoisePct": -0.35, "resistances": { "explosive": 0.20 }, "hearingRangePct": -0.30 }, "benefit": "Шум движения −35%, сопротивление взрыву +20%", "cost": "Радиус слышимости −30%" },
+    { "id": "anchor", "itemId": "artifactAnchor", "displayName": "Якорь", "rarity": "uncommon", "color": "#596b82", "effects": { "knockbackResistance": 0.60, "carryKg": 8, "speedPct": -0.10 }, "benefit": "Сопротивление притяжению и отбрасыванию +60%, груз +8 кг", "cost": "Скорость −10%" },
+    { "id": "dew", "itemId": "artifactDew", "displayName": "Роса", "rarity": "uncommon", "color": "#83e39f", "effects": { "resistances": { "toxic": 0.35 }, "stimDurationPct": 0.20, "foodHealingDisabled": true }, "benefit": "Сопротивление токсинам +35%, стимуляторы действуют на 20% дольше", "cost": "Обычная еда не лечит" },
+    { "id": "memory", "itemId": "artifactMemory", "displayName": "Память", "rarity": "rare", "color": "#e2c4ff", "effects": { "detectorTraceDurationPct": 0.40, "falseDetectorSignals": true }, "benefit": "След виден детектору на 40% дольше", "cost": "Редкие ложные сигналы" }
+  ],
+  "spawnTables": {
+    "default": { "spring": 14, "vein": 13, "node": 12, "drop": 12, "shell": 11, "warmer": 8, "sieve": 8, "husher": 7, "anchor": 7, "dew": 6, "bloodkin": 3, "thunderer": 3, "memory": 2 },
+    "glasslands": { "spring": 15, "node": 10, "shell": 8, "warmer": 14, "sieve": 8, "thunderer": 7, "memory": 4 },
+    "chalk_lowland": { "drop": 14, "dew": 16, "sieve": 12, "anchor": 9, "bloodkin": 4 },
+    "zero_basin": { "memory": 14, "bloodkin": 10, "thunderer": 10, "node": 8, "husher": 12 }
+  }
+}

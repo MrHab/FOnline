@@ -12,6 +12,7 @@ const {
   staticCollisionBlockerBounds
 } = require('../src/server/static-collision-spatial-index');
 const { segmentIntersectsRotatedBlocker } = require('../src/server/enemy-ai');
+const { isArtifactStunned } = require('../src/server/artifact-runtime');
 
 const ROOT = path.join(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
@@ -628,8 +629,14 @@ function assertMovementIngressBudgetAndMetrics() {
     PLAYER_STATE_TOKEN_CAPACITY: 2,
     PLAYER_TRANSITION_EMERGENCY_INTERVAL_MS: 250,
     PLAYER_TRANSITION_EMERGENCY_CAPACITY: 1,
+    KROMKA_ARTIFACT_CATALOG: { types: [], detectors: [], belts: [], shift: {} },
+    calculateArtifactEffects: () => ({ speedPct: 0 }),
+    serverArtifactEffects: () => ({ speedPct: 0 }),
+    isArtifactStunned,
     clamp: (value, min, max) => Math.max(min, Math.min(max, Number(value))),
     rooms: new Map(),
+    serverClosedLocationMovementBounds: () => null,
+    serverPointInsideClosedLocationBounds: () => true,
     isRoomTerrainWalkableWorld: () => true,
     roomStaticCollisionMoveAllowed: () => true,
     roomEnemyCollisionMoveAllowed: () => true

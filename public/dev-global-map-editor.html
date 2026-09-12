@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Realm of Ashes - редактор глобальной карты</title>
   <script src="/vendor/three.min.js"></script>
-  <script src="/vendor/GLTFLoader.js"></script>
-  <script>
+    <script>
     (() => {
       if (window.location.protocol !== 'file:') return;
       const target = `http://127.0.0.1:3000/dev-global-map-editor.html${window.location.search || ''}${window.location.hash || ''}`;
@@ -597,19 +596,19 @@
     const WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
     const textureById = new Map(CELL_TEXTURES.map(row => [row.id, row]));
     const GLOBAL_MODEL_LIBRARY = [
-      { key: 'oldKlimYard', file: 'trader_awning.glb', name: 'Караванный двор', category: 'Город' },
-      { key: 'scrapTown', file: 'scrap_watch_tower.glb', name: 'Свалочный пост', category: 'Город' },
-      { key: 'relayStation', file: 'relay_antenna.glb', name: 'Станция ретранслятор', category: 'Город' },
-      { key: 'wastelandShack', file: 'wasteland_shack.glb', name: 'Хижина поселения', category: 'Город' },
-      { key: 'watchPost', file: 'watch_post.glb', name: 'Пост наблюдения', category: 'Город' },
-      { key: 'storageLeanTo', file: 'storage_lean_to.glb', name: 'Складской навес', category: 'Город' },
-      { key: 'waterTank', file: 'water_tank.glb', name: 'Водяной бак', category: 'Ориентир' },
-      { key: 'oilPumpJack', file: 'oil_pump_jack.glb', name: 'Нефтяная качалка', category: 'Ресурс' },
-      { key: 'ruinedBillboard', file: 'ruined_billboard.glb', name: 'Разрушенный щит', category: 'Ориентир' },
-      { key: 'highwaySign', file: 'highway_sign.glb', name: 'Дорожный знак', category: 'Ориентир' },
-      { key: 'carWreck', file: 'car_wreck.glb', name: 'Остов машины', category: 'Ориентир' },
-      { key: 'cargoStack', file: 'cargo_stack.glb', name: 'Грузовой штабель', category: 'Ориентир' }
-    ].map(row => ({ ...row, url: '/assets/models/wasteland/' + row.file }));
+      { key: 'oldKlimYard', name: 'Караванный двор', category: 'Город' },
+      { key: 'scrapTown', name: 'Свалочный пост', category: 'Город' },
+      { key: 'relayStation', name: 'Станция ретранслятор', category: 'Город' },
+      { key: 'wastelandShack', name: 'Хижина поселения', category: 'Город' },
+      { key: 'watchPost', name: 'Пост наблюдения', category: 'Город' },
+      { key: 'storageLeanTo', name: 'Складской навес', category: 'Город' },
+      { key: 'waterTank', name: 'Водяной бак', category: 'Ориентир' },
+      { key: 'oilPumpJack', name: 'Нефтяная качалка', category: 'Ресурс' },
+      { key: 'ruinedBillboard', name: 'Разрушенный щит', category: 'Ориентир' },
+      { key: 'highwaySign', name: 'Дорожный знак', category: 'Ориентир' },
+      { key: 'carWreck', name: 'Остов машины', category: 'Ориентир' },
+      { key: 'cargoStack', name: 'Грузовой штабель', category: 'Ориентир' }
+    ];
     const modelByKey = new Map(GLOBAL_MODEL_LIBRARY.map(model => [model.key, model]));
     const canvas = document.getElementById('map');
     const map3d = {
@@ -1312,29 +1311,8 @@
       return 'wastelandShack';
     }
 
-    function loadGlobalModel(modelKey) {
-      const def = modelByKey.get(modelKey) || modelByKey.get('wastelandShack');
-      if (!def || !map3d.loader) return Promise.reject(new Error('Загрузчик моделей недоступен'));
-      if (!map3d.modelCache.has(def.key)) {
-        map3d.modelCache.set(def.key, new Promise((resolve, reject) => {
-          map3d.loader.load(def.url, gltf => {
-            const root = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
-            if (!root) reject(new Error('Пустая модель: ' + def.key));
-            else resolve(root);
-          }, undefined, reject);
-        }));
-      }
-      return map3d.modelCache.get(def.key).then(template => {
-        const model = template.clone(true);
-        model.traverse(part => {
-          if (part.isMesh) {
-            part.material = cloneMaterial(part.material);
-            part.castShadow = true;
-            part.receiveShadow = true;
-          }
-        });
-        return model;
-      });
+    function loadGlobalModel() {
+      return Promise.reject(new Error('Legacy environment GLBs are retired; using a neutral marker.'));
     }
 
     function fitNodeModel(model, node = {}) {

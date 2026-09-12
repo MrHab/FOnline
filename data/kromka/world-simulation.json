@@ -1,0 +1,159 @@
+{
+  "schema": "realm.kromka-world-simulation.v1",
+  "version": 1,
+  "time": {
+    "gameDayRealMinutes": 60,
+    "economyStepHours": 1,
+    "strategyStepHours": 6,
+    "dailyStepHours": 24,
+    "maxCatchupSteps": 360
+  },
+  "economy": {
+    "minimumPriceMultiplier": 0.85,
+    "shortagePriceMultiplier": 1.35,
+    "crisisPriceMultiplier": 1.6
+  },
+  "settlementDefaults": {
+    "population": 80,
+    "consumptionPer100PerDay": {
+      "water": 8,
+      "food": 6,
+      "medicine": 1
+    },
+    "shortageReserveDays": 3,
+    "crisisReserveDays": 1,
+    "recoveryHours": 24,
+    "crisisMigrationDelayHours": 48,
+    "maxDailyMigrationRate": 0.05,
+    "protectedPopulationRatio": 0.55
+  },
+  "refugees": {
+    "maxActiveGroups": 24,
+    "maxHistory": 48,
+    "travelSpeedKmh": 7,
+    "minimumDestinationSecurity": 35,
+    "minimumWaterReserveDays": 1.5,
+    "departureDelayHoursMin": 2,
+    "departureDelayHoursMax": 8,
+    "humanitarianTaskDurationHours": 72,
+    "arrivalTensionPer100": 10
+  },
+  "settlements": {
+    "settlement": {
+      "population": 180,
+      "protected": true,
+      "protectedMinimum": 100,
+      "health": 72,
+      "integrity": 68,
+      "tension": 24,
+      "initialStock": { "water": 90, "food": 72, "medicine": 18, "oil": 12 }
+    },
+    "scrapTown": {
+      "population": 145,
+      "protected": true,
+      "protectedMinimum": 80,
+      "health": 64,
+      "integrity": 58,
+      "tension": 31,
+      "initialStock": { "water": 64, "food": 50, "medicine": 12, "oil": 16 }
+    },
+    "relayStation": {
+      "population": 96,
+      "protected": true,
+      "protectedMinimum": 55,
+      "health": 70,
+      "integrity": 82,
+      "tension": 20,
+      "initialStock": { "water": 48, "food": 36, "medicine": 14, "oil": 20 }
+    },
+    "caravanCamp": {
+      "population": 118,
+      "protected": true,
+      "protectedMinimum": 65,
+      "health": 67,
+      "integrity": 61,
+      "tension": 28,
+      "initialStock": { "water": 58, "food": 54, "medicine": 12, "oil": 22 }
+    },
+    "sluiceCity": {
+      "population": 230,
+      "protected": true,
+      "protectedMinimum": 130,
+      "health": 74,
+      "integrity": 76,
+      "tension": 35,
+      "initialStock": { "water": 120, "food": 94, "medicine": 24, "oil": 28 }
+    },
+    "secondHaven": {
+      "population": 104,
+      "protected": true,
+      "protectedMinimum": 60,
+      "health": 61,
+      "integrity": 52,
+      "tension": 38,
+      "initialStock": { "water": 52, "food": 44, "medicine": 16, "oil": 10 }
+    },
+    "balanceBunker": {
+      "population": 132,
+      "protected": true,
+      "protectedMinimum": 80,
+      "health": 78,
+      "integrity": 88,
+      "tension": 26,
+      "initialStock": { "water": 70, "food": 55, "medicine": 26, "oil": 18 }
+    }
+  },
+  "anomalyCycle": {
+    "minimumAffectedRegions": 1,
+    "regions": [
+      { "id": "glasslands", "weight": 1.25 },
+      { "id": "chalk_lowland", "weight": 1.0 },
+      { "id": "tract_isthmus", "weight": 0.9 },
+      { "id": "zero_basin", "weight": 0.75 }
+    ],
+    "protectedSitesNeverLosePopulation": true,
+    "artifactSpawnsRequireCausalHotspot": true
+  },
+  "causes": {
+    "shift_wave": {
+      "reason": "аномальная волна прошла через район и перегрузила старые системы",
+      "forecast": "после активной фазы в отмеченных аномалиях появятся артефакты",
+      "actions": ["укрыться на активной фазе", "после выброса взять детектор и болты"]
+    },
+    "stable_supplies": {
+      "reason": "основные склады обеспечивают жителей",
+      "forecast": "при текущем расходе положение останется стабильным",
+      "actions": ["плановая торговля", "сопровождение караванов"]
+    },
+    "low_water": {
+      "reason": "водный резерв близок к аварийному уровню",
+      "forecast": "без поставки появятся очереди, а мастерские сократят смены",
+      "actions": ["доставить воду", "сопроводить водный караван"]
+    },
+    "low_food": {
+      "reason": "продовольственный склад не покрывает текущий расход",
+      "forecast": "здоровье и достаток продолжат снижаться",
+      "actions": ["доставить пищу", "защитить фермерский маршрут"]
+    },
+    "low_medicine": {
+      "reason": "медицинский резерв почти исчерпан",
+      "forecast": "лечение подорожает, а восстановление жителей замедлится",
+      "actions": ["доставить лекарства", "найти медицинский груз"]
+    },
+    "unsafe_roads": {
+      "reason": "угрозы на дорогах сорвали снабжение",
+      "forecast": "следующий караван потребует охрану или выберет обход",
+      "actions": ["разведать дорогу", "защитить караван"]
+    },
+    "damaged_infrastructure": {
+      "reason": "насосы и мастерские требуют ремонта",
+      "forecast": "производство останется ограниченным до ремонта",
+      "actions": ["доставить лом", "выполнить ремонт"]
+    },
+    "recovering": {
+      "reason": "поставка пришла, но последствия кризиса ещё не устранены",
+      "forecast": "службы восстановятся постепенно в течение игровых суток",
+      "actions": ["поддержать ремонт", "доставить медикаменты"]
+    }
+  }
+}

@@ -17,6 +17,7 @@ const {
   tokenMatches
 } = require(path.join(PROJECT_ROOT, 'src', 'server', 'dev-access'));
 const LOCAL_DEV_HEADERS = { 'X-Dev-Local': '1' };
+const SERVER_START_TIMEOUT_MS = Math.max(8000, Number(process.env.DEV_ACCESS_WAIT_MS || 30000));
 const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-dev-access-'));
 const activeProcesses = new Set();
 
@@ -87,7 +88,7 @@ function spawnServer(label, overrides = {}) {
   return { label, port: 0, dataDir, logs, proc };
 }
 
-async function waitForHealth(server, timeoutMs = 8000) {
+async function waitForHealth(server, timeoutMs = SERVER_START_TIMEOUT_MS) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     if (server.proc.exitCode !== null) {

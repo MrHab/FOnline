@@ -148,36 +148,97 @@ namespace RealmOfAshes.Game
             return 0;
         }
 
-        /// <summary>SELL_PRICE_OVERRIDES из web (07c:96) — базы для оружия.</summary>
-        private static readonly Dictionary<string, int> SellOverrides = new Dictionary<string, int>
+        /// <summary>Серверные базовые цены выкупа. Держим полный список, чтобы итог до подтверждения совпадал с сервером.</summary>
+        private static int ClampInt(int value, int min, int max)
         {
-            { "pistol", 28 }, { "rifle", 38 }, { "shotgun", 48 }, { "rocketLauncher", 118 },
-            { "machineGun", 72 }, { "laserPistol", 60 }, { "flamethrower", 78 }, { "plasmaRifle", 92 }
-        };
+            return value < min ? min : (value > max ? max : value);
+        }
 
-        /// <summary>
-        /// Ориентир цены продажи — getSellPrice() web (07c:131) без караванных
-        /// интересов: override → 45% цены в стоке → база по типу, затем бонус
-        /// харизмы и бартера. Настоящую цену считает сервер при обмене.
-        /// </summary>
-        private int EstimateSellPrice(string baseId, JObject market)
+        private static int TalentLevel(JObject self, string id, int maxRank)
         {
-            int basePrice;
-            if (!SellOverrides.TryGetValue(baseId, out basePrice))
+            double raw = self?["talentRanks"]?[id]?.ToObject<double?>() ?? 0d;
+            return ClampInt((int)System.Math.Floor(raw), 0, maxRank);
+        }
+
+        private static bool HasTrait(JObject self, string id)
+        {
+            foreach (JToken token in self?["traits"] as JArray ?? new JArray())
+                if (token?.ToString() == id) return true;
+            return false;
+        }
+
+        private static int StatValue(JObject self, string key)
+        {
+            int value = self?["special"]?[key]?.ToObject<int?>() ?? 5;
+            return ClampInt(value + TalentLevel(self, "special" + char.ToUpperInvariant(key[0]) + key.Substring(1), 3), 1, 15);
+        }
+
+        /// <summary>Тот же процент бартера, который сервер использует для расчёта цены сделки.</summary>
+        private static int TradeSkillPercent(JObject self)
+        {
+            int baseValue = ClampInt(10 + StatValue(self, "cha") * 2 + StatValue(self, "int"), 20, 45);
+            foreach (JToken token in self?["taggedSkills"] as JArray ?? new JArray())
+                if (token?.ToString() == "barter") baseValue = ClampInt(baseValue + 5, 20, 50);
+
+            JToken rank = self?["skillRanks"]?["barter"];
+            if (rank == null || rank.Type == JTokenType.Null) return baseValue;
+            double raw = rank.ToObject<double>();
+            return ClampInt((int)System.Math.Floor(System.Math.Max(baseValue, raw) + 0.5d), 20, 100);
+        }
+
+        private static double TradeSkillNorm(JObject self)
+        {
+            return System.Math.Max(0d, System.Math.Min(1d, (TradeSkillPercent(self) - 20d) / 80d));
+        }
+
+        private static string TradeItemCategory(string baseId)
+        {
+            return RoaItemCategories.Category(baseId);
+        }
+
+        private static int TradeBuyPrice(int stockPrice, JObject self)
+        {
+            double discount = System.Math.Min(0.48d, TradeSkillNorm(self) * 0.24d + TalentLevel(self, "merchant", 3) * 0.05d);
+            return System.Math.Max(1, (int)System.Math.Ceiling(System.Math.Max(1, stockPrice) * (1d - discount)));
+        }
+
+        /// <summary>Персональная цена выкупа, полностью повторяющая серверную формулу.</summary>
+        private static int TradeSellPrice(string baseId, JObject market, JObject self)
+        {
+            int catalogPrice = RoaItemData.BasePrice(baseId);
+            int basePrice = catalogPrice > 0 ? Mathf.Max(1, Mathf.FloorToInt(catalogPrice * 0.45f)) : 0;
+            if (basePrice <= 0)
             {
                 int stockPrice = StockPrice(market, baseId);
                 if (stockPrice > 0) basePrice = Mathf.Max(1, Mathf.FloorToInt(stockPrice * 0.45f));
                 else
                 {
-                    RoaWeaponData.Weapon weapon = RoaWeaponData.Get(baseId);
-                    basePrice = weapon != null && weapon.Id == baseId ? 12 : 2;
+                    string category = TradeItemCategory(baseId);
+                    basePrice = category == "weapons" ? 12 : (category == "armor" ? 8 : (category == "materials" ? 2 : (baseId == "trophy" ? 10 : 1)));
                 }
             }
-            JObject self = Interaction.TradeSelf;
-            int cha = self?["special"]?["cha"]?.ToObject<int>() ?? 5;
-            int barter = RoaPipboy.SkillPercent(self, "barter");
-            float bonus = 1f + (cha - 5) * 0.04f + barter / 100f * 0.30f;
-            return Mathf.Max(1, Mathf.FloorToInt(basePrice * bonus));
+
+            double bonus = 1d
+                + (StatValue(self, "cha") - 5) * 0.04d
+                + (HasTrait(self, "traderStart") ? 0.15d : 0d)
+                + TradeSkillNorm(self) * 0.30d
+                + TalentLevel(self, "merchant", 3) * 0.08d;
+            int price = System.Math.Max(1, (int)System.Math.Floor(basePrice * bonus));
+
+            int stockPriceForItem = StockPrice(market, baseId);
+            if (stockPriceForItem > 0)
+                price = System.Math.Min(price, System.Math.Max(1, (int)System.Math.Floor(TradeBuyPrice(stockPriceForItem, self) * 0.85d)));
+
+            JArray interests = market?["buyInterests"] as JArray;
+            if (interests != null && interests.Count > 0)
+            {
+                bool interested = false;
+                string category = TradeItemCategory(baseId);
+                foreach (JToken token in interests)
+                    if (token?.ToString() == category) { interested = true; break; }
+                price = System.Math.Max(1, (int)System.Math.Floor(price * (interested ? 1.24d : 0.84d) + 0.5d));
+            }
+            return price;
         }
 
         private bool IsEquipped(string runtimeId, string baseId)
@@ -199,12 +260,12 @@ namespace RealmOfAshes.Game
             int money = CountInventory(self, "silver");
 
             _title.text = (Interaction.TradeIsMachine ? "ТОРГОВЫЙ АВТОМАТ" : traderName) + " · БАРТЕР";
-            _player.Meta.text = money + " кр.";
-            _vendor.Meta.text = traderName + " · " + traderCaps + " кр.";
+            _player.Meta.text = money + " мар.";
+            _vendor.Meta.text = traderName + " · " + traderCaps + " мар.";
 
             // Строка состояния: бартер, крышки торговца, интерес (buyInterests рынка).
-            int barter = RoaPipboy.SkillPercent(self, "barter");
-            string skillText = "Бартер " + barter + "% · крышки торговца: " + traderCaps;
+            int barter = TradeSkillPercent(self);
+            string skillText = "Бартер " + barter + "% · марки торговца: " + traderCaps;
             JArray interests = market?["buyInterests"] as JArray;
             if (interests != null && interests.Count > 0)
             {
@@ -223,7 +284,7 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, int> entry in Interaction.TradeSellsQueue)
             {
                 string baseId = RoaInteraction.TradeBaseId(entry.Key);
-                int price = EstimateSellPrice(baseId, market);
+                int price = TradeSellPrice(baseId, market, self);
                 sellEntries.Add(new Entry { RuntimeId = entry.Key, BaseId = baseId, Qty = entry.Value, Price = price });
                 sellTotal += price * entry.Value;
                 projectedWeight -= RoaItemData.Weight(baseId) * entry.Value;
@@ -231,7 +292,7 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, int> entry in Interaction.TradeBuysQueue)
             {
                 string baseId = RoaInteraction.TradeBaseId(entry.Key);
-                int price = StockPrice(market, entry.Key);
+                int price = TradeBuyPrice(StockPrice(market, baseId), self);
                 buyEntries.Add(new Entry { RuntimeId = entry.Key, BaseId = baseId, Qty = entry.Value, Price = price });
                 buyTotal += price * entry.Value;
                 projectedWeight += RoaItemData.Weight(baseId) * entry.Value;
@@ -242,8 +303,8 @@ namespace RealmOfAshes.Game
             string reason = string.Empty;
             if (Interaction.TradePending) reason = "Автомат проводит обмен на сервере.";
             else if (!hasTrade) reason = "Выберите предметы для обмена.";
-            else if (net > money) reason = "Не хватает крышек: нужно " + net + ", у вас " + money + ".";
-            else if (net < 0 && Mathf.Abs(net) > traderCaps) reason = "У торговца не хватает крышек: нужно " + Mathf.Abs(net) + ", у него " + traderCaps + ".";
+            else if (net > money) reason = "Не хватает марок: нужно " + net + ", у вас " + money + ".";
+            else if (net < 0 && Mathf.Abs(net) > traderCaps) reason = "У торговца не хватает марок: нужно " + Mathf.Abs(net) + ", у него " + traderCaps + ".";
             else if (overweight) reason = "Перегруз: " + projectedWeight.ToString("0.0") + "/" + capacity.ToString("0.0") + " кг.";
 
             _carryLine.text = "Вес " + projectedWeight.ToString("0.0") + "/" + capacity.ToString("0.0");
@@ -269,6 +330,20 @@ namespace RealmOfAshes.Game
         private void FillPlayer(JObject self, JObject market, int money, int net, float projectedWeight, float capacity)
         {
             var entries = new List<Entry>();
+            var seen = new HashSet<string>();
+            // self.inventory сервера — только рюкзак; надетое web добавляет в список
+            // продажи из equipment (applyServerInventorySnapshot 03:538), иначе
+            // персонаж с единственным оружием в руках получал пустую вкладку «Оружие».
+            if (Inventory != null)
+            {
+                foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
+                {
+                    string runtimeId = slot.Value;
+                    string baseId = RoaArmorData.BaseId(runtimeId);
+                    if (string.IsNullOrEmpty(baseId) || baseId == "fists" || !seen.Add(runtimeId)) continue;
+                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = 1, Price = TradeSellPrice(baseId, market, self) });
+                }
+            }
             JArray inventory = self?["inventory"] as JArray;
             if (inventory != null)
             {
@@ -277,8 +352,8 @@ namespace RealmOfAshes.Game
                     string runtimeId = row["id"]?.ToString();
                     string baseId = RoaInteraction.TradeBaseId(runtimeId);
                     int qty = row["qty"]?.ToObject<int>() ?? 0;
-                    if (string.IsNullOrEmpty(runtimeId) || qty <= 0 || baseId == "silver" || baseId == "fists") continue;
-                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty, Price = EstimateSellPrice(baseId, market) });
+                    if (string.IsNullOrEmpty(runtimeId) || qty <= 0 || baseId == "silver" || baseId == "fists" || !seen.Add(runtimeId)) continue;
+                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty, Price = TradeSellPrice(baseId, market, self) });
                 }
             }
             entries.Sort((a, b) =>
@@ -296,14 +371,19 @@ namespace RealmOfAshes.Game
                 int queued = Interaction.TradeQueuedQuantity(e.RuntimeId, false);
                 int free = Mathf.Max(0, e.Qty - queued);
                 bool equipped = IsEquipped(e.RuntimeId, e.BaseId);
+                // Сама надетая вещь: сервер проверяет продажу по рюкзаку, поэтому
+                // строка видна (вкладка категории активна), но продать её нельзя, пока не снята.
+                bool onBody = Inventory != null && Inventory.IsEquipped(e.RuntimeId);
                 Entry captured = e;
                 int capturedFree = free;
                 AddRow(_player, index++, e.BaseId, ItemName(e.BaseId), equipped ? "ЭКИПИРОВАНО" : null,
-                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · продажа " + e.Price + " кр.",
-                    "x" + free, queued > 0 ? "в обмене " + queued : null,
-                    queued > 0 ? RowQueued : (equipped ? RowEquipped : RowBorder), free <= 0,
+                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · продажа " + e.Price + " мар.",
+                    onBody ? "на теле" : "x" + free, queued > 0 ? "в обмене " + queued : null,
+                    queued > 0 ? RowQueued : (equipped ? RowEquipped : RowBorder), free <= 0 || onBody,
                     () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
-                    (equipped ? "Предмет сейчас на персонаже. Продавайте его только если точно хотите с ним расстаться. " : string.Empty) + "Продажа: " + e.Price + " крышек за 1 шт.");
+                    (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. "
+                            : (equipped ? "Предмет сейчас на персонаже. Продавайте его только если точно хотите с ним расстаться. " : string.Empty))
+                    + "Продажа: " + e.Price + " марок за 1 шт.");
             }
             SetEmpty(_player, index == 0, _player.Category == "all"
                 ? "Нет предметов для продажи."
@@ -320,7 +400,8 @@ namespace RealmOfAshes.Game
                 {
                     string id = row["id"]?.ToString();
                     if (string.IsNullOrEmpty(id)) continue;
-                    entries.Add(new Entry { RuntimeId = id, BaseId = RoaInteraction.TradeBaseId(id), Qty = row["qty"]?.ToObject<int>() ?? 0, Price = row["price"]?.ToObject<int>() ?? 0 });
+                    string baseId = RoaInteraction.TradeBaseId(id);
+                    entries.Add(new Entry { RuntimeId = id, BaseId = baseId, Qty = row["qty"]?.ToObject<int>() ?? 0, Price = TradeBuyPrice(row["price"]?.ToObject<int>() ?? 0, Interaction.TradeSelf) });
                 }
             }
             RefreshTabs(_vendor, entries);
@@ -338,11 +419,11 @@ namespace RealmOfAshes.Game
                 Entry captured = e;
                 int capturedAvailable = available;
                 AddRow(_vendor, index++, e.BaseId, ItemName(e.BaseId), null,
-                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · покупка " + e.Price + " кр. · осталось " + available,
-                    e.Price + " кр.", queued > 0 ? "в обмене " + queued : null,
+                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · покупка " + e.Price + " мар. · осталось " + available,
+                    e.Price + " мар.", queued > 0 ? "в обмене " + queued : null,
                     queued > 0 ? RowQueued : ((weightBlocked || moneyBlocked) ? RowBlocked : RowBorder), stockBlocked,
                     () => Interaction.TradeRequest(captured.RuntimeId, true, capturedAvailable, captured.Price),
-                    "Цена покупки: " + e.Price + " крышек" + (moneyBlocked ? " · возможна доплата" : (weightBlocked ? " · возможен перегруз" : string.Empty)));
+                    "Цена покупки: " + e.Price + " марок" + (moneyBlocked ? " · возможна доплата" : (weightBlocked ? " · возможен перегруз" : string.Empty)));
             }
             SetEmpty(_vendor, index == 0, _vendor.Category == "all"
                 ? "У торговца нет товаров."
@@ -545,6 +626,8 @@ namespace RealmOfAshes.Game
             Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(14f, -38f), new Vector2(-52f, -14f));
             Button close = UiButton(root, "×", out Text closeLabel, () => Interaction.TradeClose());
             closeLabel.fontSize = 14;
+            // Строка NotoSans 14px выше 18px подписи — с Truncate глиф исчезал целиком.
+            closeLabel.verticalOverflow = VerticalWrapMode.Overflow;
             Place((RectTransform)close.transform, 1f, 1f, 1f, 1f, new Vector2(-38f, -38f), new Vector2(-14f, -14f));
             RectTransform line = Child("TitleLine", root);
             Place(line, 0f, 1f, 1f, 1f, new Vector2(14f, -47f), new Vector2(-14f, -46f));

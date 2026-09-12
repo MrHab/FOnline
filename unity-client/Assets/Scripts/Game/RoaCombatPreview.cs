@@ -18,6 +18,8 @@ namespace RealmOfAshes.Game
             public float Distance;
             public float Range;
             public int ApCost;
+            public int RequiredStrength;
+            public int StrengthMissing;
             public int CriticalChance;
             public int EnergyFailureChance;
             public int DamageMin;
@@ -26,6 +28,9 @@ namespace RealmOfAshes.Game
             public int DamageExpected;
             public string DamageType;
             public string ModeLabel;
+            public int Threshold;
+            public int ProtectionPercent;
+            public int ResistancePercent;
             public bool InRange;
             public bool HasDamage;
         }
@@ -98,6 +103,8 @@ namespace RealmOfAshes.Game
             result.Range = weapon.Range * modeRange;
             result.InRange = result.Distance <= result.Range;
             result.ApCost = EffectiveApCost(self, combat, requestedMode);
+            result.RequiredStrength = weapon.Strength;
+            result.StrengthMissing = Mathf.Max(0, weapon.Strength - Stat(self, "str"));
             result.CriticalChance = weapon.Ammo ? Stat(self, "luck") : 0;
             result.DamageType = weapon.DamageType;
             result.EnergyFailureChance = EnergyFailurePercent(weapon, mode, self, combat);
@@ -123,7 +130,7 @@ namespace RealmOfAshes.Game
             if (weapon.Skill == "energyWeapons") skillBonus += Talent(self, "energyTech") * 0.05f;
             if (weapon.Skill == "unarmed") skillBonus += Talent(self, "unarmedFighter") * 0.04f;
 
-            float strengthMissing = Mathf.Max(0, weapon.Strength - Stat(self, "str"));
+            float strengthMissing = result.StrengthMissing;
             float strengthPenalty = strengthMissing * 0.055f;
             float movementPenalty = player.Moving && !player.Crouching ? 0.035f : 0f;
             float traumaPenalty = (Injury(self, "brokenArm") ? 0.12f : 0f)
@@ -147,9 +154,6 @@ namespace RealmOfAshes.Game
             chance = Mathf.Clamp(chance, 0.05f, cap);
             result.Chance = Round(chance * 100f);
 
-            // Browser/server enemy mitigation is name-based for player attacks.
-            // PvP uses a different armor path, so avoid presenting a false exact range.
-            if (target["isRemotePlayer"]?.ToObject<bool>() == true) return result;
             int bonus = 0;
             if (!weapon.Ammo)
             {
@@ -168,9 +172,14 @@ namespace RealmOfAshes.Game
             int minRaw = Mathf.Max(1, Round((weapon.Min + bonus) * multiplier));
             int maxRaw = Mathf.Max(minRaw, Round((weapon.Max + bonus) * multiplier));
             int avgRaw = Mathf.Max(1, Round((((weapon.Min + weapon.Max) / 2f) + bonus) * multiplier));
-            result.DamageMin = MitigateEnemy(minRaw, target, weapon.DamageType);
-            result.DamageMax = MitigateEnemy(maxRaw, target, weapon.DamageType);
-            result.DamageAverage = MitigateEnemy(avgRaw, target, weapon.DamageType);
+            ReadProtection(target, weapon.DamageType, out int threshold,
+                out float protection, out float resistance);
+            result.Threshold = threshold;
+            result.ProtectionPercent = Round(protection * 100f);
+            result.ResistancePercent = Round(resistance * 100f);
+            result.DamageMin = MitigateTarget(minRaw, threshold, protection, resistance);
+            result.DamageMax = MitigateTarget(maxRaw, threshold, protection, resistance);
+            result.DamageAverage = MitigateTarget(avgRaw, threshold, protection, resistance);
             if (result.DamageMin > result.DamageMax)
             {
                 int swap = result.DamageMin;
@@ -285,16 +294,23 @@ namespace RealmOfAshes.Game
             return Mathf.Clamp(falloff, 0.28f, 1.14f);
         }
 
-        private static int MitigateEnemy(int raw, JObject target, string type)
+        private static void ReadProtection(JObject target, string type, out int threshold,
+                                           out float protection, out float resistance)
         {
-            string name = (target?["name"]?.ToString() ?? string.Empty).ToLowerInvariant();
-            float protection = 0f;
-            int threshold = 0;
-            if (name.Contains("рейдер") && type == "ballistic") { protection = 0.08f; threshold = 1; }
-            else if (name.Contains("супермутант") && type == "ballistic") { protection = 0.10f; threshold = 2; }
-            else if (name.Contains("гуль") && type == "radiation") { protection = 0.35f; threshold = 1; }
+            JToken profile = target?["combatProtection"]?[type];
+            threshold = Mathf.Max(0, Mathf.RoundToInt(profile?["threshold"]?.ToObject<float>() ?? 0f));
+            protection = Mathf.Clamp(profile?["protection"]?.ToObject<float>() ?? 0f, -0.5f, 0.85f);
+            resistance = Mathf.Clamp(profile?["resistance"]?.ToObject<float>() ?? 0f, -0.5f, 0.85f);
+        }
+
+        private static int MitigateTarget(int raw, int threshold, float protection,
+                                          float resistance)
+        {
             int minimum = Mathf.Max(1, Mathf.FloorToInt(raw * 0.12f));
-            int damage = Mathf.Max(minimum, Round(Mathf.Max(0, raw - threshold) * (1f - protection)));
+            float afterThreshold = Mathf.Max(0, raw - threshold);
+            float afterProtection = Mathf.Max(0f, afterThreshold * (1f - protection));
+            float afterResistance = Mathf.Max(0f, afterProtection * (1f - resistance));
+            int damage = Mathf.Max(minimum, Round(afterResistance));
             return Mathf.Max(1, damage);
         }
 

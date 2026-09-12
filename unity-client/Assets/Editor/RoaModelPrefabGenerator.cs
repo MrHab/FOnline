@@ -27,8 +27,7 @@ namespace RealmOfAshes.Editor
         public static void RebuildAll()
         {
             string[] sourcePaths = FindModelPaths();
-            if (sourcePaths.Length == 0)
-                throw new InvalidOperationException("No GLB assets found in " + PackageRoot + ".");
+            ValidateSourceInventory(sourcePaths);
 
             EnsureFolder(PrefabRoot);
             ConfigureLegacyAnimation(sourcePaths);
@@ -74,16 +73,21 @@ namespace RealmOfAshes.Editor
                 }
             }
 
-            RemoveStalePrefabs(generated);
-            WriteRuntimeCatalog(runtimeEntries);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-
             if (failed > 0)
                 throw new InvalidOperationException("Failed to generate " + failed + " model prefab(s).");
             if (generated.Count != sourcePaths.Length)
                 throw new InvalidOperationException("Generated " + generated.Count + " of "
                     + sourcePaths.Length + " model prefabs.");
+
+            // A failed or incomplete import must not retire an existing prefab
+            // or replace the runtime catalog with a partial set of entries.
+            ValidateSourceInventory(sourcePaths);
+            if (runtimeEntries.Count != RuntimeModelUrls.Count)
+                throw new InvalidOperationException("Runtime model catalog is incomplete.");
+            RemoveStalePrefabs(generated);
+            WriteRuntimeCatalog(runtimeEntries);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
 
             Debug.Log("[ROA MODELS] PREFAB GENERATION PASS: " + generated.Count
                 + " prefabs, " + runtimeEntries.Count + " runtime catalog entries.");
@@ -111,6 +115,30 @@ namespace RealmOfAshes.Editor
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        public static void ValidateSourceInventory(IEnumerable<string> importedPaths)
+        {
+            // The local package is the repository's canonical model directory.
+            // Compare the import database with disk so unimported new GLBs cannot
+            // silently disappear from both the generator and its probe.
+            string diskRoot = Path.GetFullPath(Path.Combine(Application.dataPath,
+                "../../public/assets/models"));
+            string[] expected = Directory.GetFiles(diskRoot, "*", SearchOption.AllDirectories)
+                .Where(file => file.EndsWith(".glb", StringComparison.OrdinalIgnoreCase))
+                .Select(file => PackageRoot + "/" + file.Substring(diskRoot.Length + 1).Replace('\\', '/'))
+                .OrderBy(file => file, StringComparer.Ordinal).ToArray();
+            string[] actual = importedPaths.OrderBy(file => file, StringComparer.Ordinal).ToArray();
+            if (expected.Length == 0
+                || expected.Distinct(StringComparer.OrdinalIgnoreCase).Count() != expected.Length
+                || !expected.SequenceEqual(actual, StringComparer.Ordinal))
+            {
+                string missing = string.Join(", ", expected.Except(actual, StringComparer.Ordinal).Take(5));
+                string unexpected = string.Join(", ", actual.Except(expected, StringComparer.Ordinal).Take(5));
+                throw new InvalidOperationException("Canonical model import inventory mismatch: "
+                    + expected.Length + " disk GLBs, " + actual.Length + " imported; missing: "
+                    + missing + "; unexpected: " + unexpected);
+            }
         }
 
         public static string PackagePathToServerUrl(string packagePath)

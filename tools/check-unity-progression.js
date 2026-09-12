@@ -5,6 +5,7 @@ const assert = require('assert');
 
 const root = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
+const progressionCatalog = JSON.parse(read('data/kromka/character-progression.json'));
 const server = read('server.js');
 const data = read('unity-client/Assets/Scripts/Game/RoaProgressionData.cs');
 const pipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
@@ -90,12 +91,12 @@ function unityTalents() {
 
 const talents = unityTalents();
 const unityIds = talents.map(row => row.id);
-const serverIds = serverSet('SERVER_TALENT_IDS');
+const serverIds = progressionCatalog.perks.items.map(row => row.id);
 assert.equal(talents.length, 41, 'Unity must expose all 41 canonical talents');
 assert.deepEqual(unityIds, serverIds, 'Unity talent ids/order drifted from the authoritative server');
 
-const maxRanks = constObject(server, 'SERVER_TALENT_MAX_RANKS');
-const requirements = constObject(server, 'SERVER_TALENT_REQUIREMENTS');
+const maxRanks = Object.fromEntries(progressionCatalog.perks.items.map(row => [row.id, row.maxRank]));
+const requirements = Object.fromEntries(progressionCatalog.perks.items.map(row => [row.id, row.requirements]));
 for (const talent of talents) {
   assert.equal(talent.maxRank, maxRanks[talent.id], `${talent.id}: max rank drifted`);
   const expected = { level: talent.level };
@@ -111,17 +112,17 @@ for (const talent of talents) {
 
 const unitySkills = [...data.matchAll(/new SkillDef\("([^"]+)"/g)].map(row => row[1]);
 assert.equal(unitySkills.length, 16, 'Unity must expose all 16 canonical skills');
-assert.deepEqual(unitySkills, serverSet('SERVER_SKILL_IDS'), 'Unity skill ids/order drifted');
+assert.deepEqual(unitySkills, progressionCatalog.skills.items.map(row => row.id), 'Unity skill ids/order drifted');
 
 [
   'ranks[id] = current + 1;',
-  'Socket.SendProgressionProfile(null, ranks);',
+  'Socket.SendProgressionProfile(null, ranks, HandleProgressionAck);',
   '_status = "Ожидаю подтверждение сервера…";'
 ].forEach(marker => assert(pipboy.includes(marker), `Unity progression request contract is missing: ${marker}`));
 [
   '["profileOnly"] = true',
   'payload["talentRanks"] = talentRanks.DeepClone();',
-  '_connection.EmitAsync("state", payload);'
+  'EmitWithAck("state", payload, ack =>'
 ].forEach(marker => assert(socket.includes(marker), `Unity progression authority contract is missing: ${marker}`));
 assert(!pipboy.includes('_self["talentRanks"][id] ='),
   'Unity must not spend perk points or mutate accepted talent ranks locally');

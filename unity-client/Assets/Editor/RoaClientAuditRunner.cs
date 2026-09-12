@@ -16,6 +16,8 @@ namespace RealmOfAshes.EditorTools
         private static readonly Type[] Probes =
         {
             typeof(RoaCharacterCreatorProbe),
+            typeof(RoaMechanicsInventoryProbe),
+            typeof(RoaAnomalyVfxProbe),
             typeof(RealmOfAshes.Editor.RoaItemDataProbe),
             typeof(RealmOfAshes.Editor.RoaQuickbarProbe),
             typeof(RoaMinimapProbe),
@@ -25,6 +27,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaCombatConfirmationProbe),
             typeof(RoaCombatFlowProbe),
             typeof(RoaWeaponReadinessProbe),
+            typeof(RoaWeaponAudioProbe),
             typeof(RoaTargetingFeedbackProbe),
             typeof(RoaMobileControlsProbe),
             typeof(RoaHudCanvasProbe),
@@ -54,12 +57,15 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaHitReactionProbe),
             typeof(RoaRemoteDeathProbe),
             typeof(RoaFirstRunCoachProbe),
+            typeof(RoaCaravanDepartureCinematicProbe),
             typeof(RoaWorldActivityNavigationProbe),
             typeof(RoaActivityFeedbackProbe),
             typeof(RoaActivityHubPresentationProbe),
             typeof(RoaPipboyQuestSurfacesProbe),
             typeof(RoaEconomyFeedbackProbe),
+            typeof(RoaBarterProbe),
             typeof(RoaGroundDressingProbe)
+            ,typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
         };
 
         public static async void Run()

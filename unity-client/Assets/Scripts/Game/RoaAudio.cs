@@ -3,26 +3,32 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Newtonsoft.Json.Linq;
 
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Runtime soundscape for the Unity client. All clips are generated once at
-    /// startup, so desktop and WebGL receive a complete, license-free audio layer
-    /// without streamed assets. Gameplay remains server-authoritative: this class
-    /// only reacts to already accepted actions and visual relays.
+    /// Runtime soundscape for the Unity client. Short authored weapon clips are
+    /// loaded from Resources at startup; deterministic generated clips remain as
+    /// fallbacks and provide the ambience/UI layer. Gameplay remains
+    /// server-authoritative: this class only reacts to already accepted actions
+    /// and visual relays.
     /// </summary>
     public sealed class RoaAudio : MonoBehaviour
     {
         private const int SampleRate = 44100;
         private const int WorldVoiceCount = 14;
+        private const int WeaponPilotClipCount = 17;
         private const string VolumePrefsKey = "roa.audio.master.v1";
+        private const string WeaponAudioResourceRoot = "Audio/Weapons/";
 
         public static RoaAudio Active { get; private set; }
 
         public int VolumePercent { get { return Mathf.RoundToInt(_masterVolume * 100f); } }
         public bool Muted { get { return _masterVolume <= 0.001f; } }
         public int GeneratedClipCount { get { return _validatedClipCount; } }
+        public int ExternalWeaponClipCount { get { return _externalWeaponClipCount; } }
+        public bool WeaponPilotAudioReady { get { return _externalWeaponClipCount == WeaponPilotClipCount; } }
         public bool EconomyCuesReady { get { return _economyGain != null && _levelUp != null; } }
         public bool WeaponFeedbackCuesReady { get { return _reload != null && _dryFire != null; } }
         public bool ThreatWarningCueReady { get { return _threatWarning != null; } }
@@ -46,6 +52,7 @@ namespace RealmOfAshes.Game
             public float Speed;
             public bool Crouching;
             public bool RightFoot;
+            public float NoiseMultiplier;
         }
 
         /// <summary>Visual-only cadence signal emitted with the same accepted step as the sound.</summary>
@@ -68,13 +75,20 @@ namespace RealmOfAshes.Game
         private AudioClip _flame;
         private AudioClip _impact;
         private AudioClip _explosion;
+        private AudioClip _unarmedSwing;
+        private AudioClip _unarmedImpact;
         private AudioClip _meleeSwing;
         private AudioClip _meleeImpact;
+        private AudioClip _meleeHeavySwing;
+        private AudioClip _meleeHeavyImpact;
         private AudioClip _hurt;
         private AudioClip _hitConfirm;
         private AudioClip _criticalConfirm;
         private AudioClip _killConfirm;
         private AudioClip _reload;
+        private AudioClip _pistolReload;
+        private AudioClip _rifleReload;
+        private AudioClip _shotgunReload;
         private AudioClip _dryFire;
         private AudioClip _threatWarning;
         private AudioClip _uiClick;
@@ -105,8 +119,20 @@ namespace RealmOfAshes.Game
         private float _lastThreatWarningAt = -100f;
         private float _lastHitConfirmAt = -100f;
         private float _masterVolume;
+        private float _hearingMultiplier = 1f;
+        private float _movementNoiseMultiplier = 1f;
+
+        public float HearingMultiplier { get { return _hearingMultiplier; } }
+        public void ApplyArtifactEffects(JObject self)
+        {
+            JObject effects = self?["artifactEffects"] as JObject;
+            if (effects == null) return;
+            _hearingMultiplier = 1f + Mathf.Clamp(effects["hearingRangePct"]?.Value<float>() ?? 0f, -0.8f, 1f);
+            _movementNoiseMultiplier = 1f + Mathf.Clamp(effects["movementNoisePct"]?.Value<float>() ?? 0f, -0.8f, 1f);
+        }
         private int _worldCursor;
         private int _validatedClipCount;
+        private int _externalWeaponClipCount;
         private bool _rightFoot;
         private uint _variationState = 0x7f4a7c15u;
 
@@ -128,6 +154,7 @@ namespace RealmOfAshes.Game
             BuildSources();
             BuildClips();
             Debug.Log("[ROA] Audio ready: " + _validatedClipCount + " validated generated clips, "
+                + _externalWeaponClipCount + "/" + WeaponPilotClipCount + " authored weapon clips, "
                 + _worldVoices.Count + " pooled world voices, volume " + VolumePercent + "%");
             _ambience.clip = _wind;
             _ambience.loop = true;
@@ -192,8 +219,9 @@ namespace RealmOfAshes.Game
             int index = NextVariation() < 0.5f ? 0 : 1;
             float pace = Mathf.InverseLerp(1.2f, 6.5f, cue.Speed);
             float volume = cue.Crouching ? 0.055f : Mathf.Lerp(0.09f, 0.17f, pace);
-            PlayWorld(_steps[index], cue.Position, volume,
-                Pitch(0.92f, 1.07f) * (cue.Crouching ? 0.9f : 1f), 14f, false);
+            float noise = cue.NoiseMultiplier > 0f ? cue.NoiseMultiplier : 1f;
+            PlayWorld(_steps[index], cue.Position, volume * noise,
+                Pitch(0.92f, 1.07f) * (cue.Crouching ? 0.9f : 1f), 14f * noise, false);
         }
 
         public void PlayShot(Vector3 start, Vector3 end, string weaponId)
@@ -216,14 +244,14 @@ namespace RealmOfAshes.Game
             PlayWorld(_explosion, center, Mathf.Clamp01(0.72f + radius * 0.045f), Pitch(0.92f, 1.02f), 58f);
         }
 
-        public void PlayMeleeSwing(Vector3 center)
+        public void PlayMeleeSwing(Vector3 center, string weaponId)
         {
-            PlayWorld(_meleeSwing, center, 0.5f, Pitch(0.92f, 1.08f), 16f);
+            PlayWorld(MeleeSwingClip(weaponId), center, 0.5f, Pitch(0.92f, 1.08f), 16f);
         }
 
-        public void PlayMeleeImpact(Vector3 center, bool critical)
+        public void PlayMeleeImpact(Vector3 center, string weaponId, bool critical)
         {
-            PlayWorld(_meleeImpact, center, critical ? 0.82f : 0.62f,
+            PlayWorld(MeleeImpactClip(weaponId), center, critical ? 0.82f : 0.62f,
                 critical ? Pitch(0.78f, 0.9f) : Pitch(0.92f, 1.08f), 20f);
         }
 
@@ -295,9 +323,9 @@ namespace RealmOfAshes.Game
                 Pitch(level ? 0.995f : 0.98f, level ? 1.005f : 1.04f));
         }
 
-        public void PlayReload()
+        public void PlayReload(string weaponId)
         {
-            PlayUi(_reload, 0.42f, Pitch(0.97f, 1.03f));
+            PlayUi(ReloadClip(weaponId), 0.42f, Pitch(0.97f, 1.03f));
         }
 
         /// <summary>Сухой механический щелчок без ложного звука выстрела.</summary>
@@ -371,6 +399,7 @@ namespace RealmOfAshes.Game
             _feet.transform.position = _playerPosition;
             _feet.pitch = Pitch(0.9f, 1.08f) * (_crouching ? 0.88f : 1f);
             _feet.volume = _crouching ? 0.18f : Mathf.Lerp(0.24f, 0.4f, Mathf.InverseLerp(1.5f, 6.5f, speed));
+            _feet.volume *= _movementNoiseMultiplier;
             _feet.PlayOneShot(_steps[index]);
 
             _rightFoot = !_rightFoot;
@@ -426,7 +455,7 @@ namespace RealmOfAshes.Game
             source.clip = clip;
             source.pitch = pitch;
             source.volume = volume;
-            source.maxDistance = maxDistance;
+            source.maxDistance = Mathf.Max(source.minDistance + 0.1f, maxDistance * _hearingMultiplier);
             source.Play();
         }
 
@@ -434,7 +463,9 @@ namespace RealmOfAshes.Game
         {
             switch (weaponId ?? string.Empty)
             {
-                case "shotgun": return _shotgun;
+                case "shotgun":
+                case "sawedOffShotgun": return _shotgun;
+                case "smg":
                 case "machineGun": return _machineGun;
                 case "laserPistol": return _laser;
                 case "plasmaRifle": return _plasma;
@@ -443,6 +474,50 @@ namespace RealmOfAshes.Game
                 case "rifle":
                 case "assaultRifle": return _rifle;
                 default: return _pistol;
+            }
+        }
+
+        private AudioClip MeleeSwingClip(string weaponId)
+        {
+            switch (weaponId ?? string.Empty)
+            {
+                case "knife": return _meleeSwing;
+                case "axe":
+                case "pickaxe":
+                case "handPump": return _meleeHeavySwing;
+                default: return _unarmedSwing;
+            }
+        }
+
+        private AudioClip MeleeImpactClip(string weaponId)
+        {
+            switch (weaponId ?? string.Empty)
+            {
+                case "knife": return _meleeImpact;
+                case "axe":
+                case "pickaxe":
+                case "handPump": return _meleeHeavyImpact;
+                default: return _unarmedImpact;
+            }
+        }
+
+        private AudioClip ReloadClip(string weaponId)
+        {
+            switch (weaponId ?? string.Empty)
+            {
+                case "pistol":
+                case "revolver":
+                case "laserPistol": return _pistolReload;
+                case "shotgun":
+                case "sawedOffShotgun": return _shotgunReload;
+                case "rifle":
+                case "assaultRifle":
+                case "smg":
+                case "machineGun":
+                case "plasmaRifle":
+                case "flamethrower":
+                case "rocketLauncher": return _rifleReload;
+                default: return _reload;
             }
         }
 
@@ -490,13 +565,20 @@ namespace RealmOfAshes.Game
             _flame = BuildWhoosh("Flamethrower", 0.48f, 0x5219u, 0.82f);
             _impact = BuildImpact();
             _explosion = BuildExplosion();
-            _meleeSwing = BuildWhoosh("MeleeSwing", 0.24f, 0x85c3u, 0.58f);
-            _meleeImpact = BuildThud("MeleeImpact", 0.2f, 72f, 0.7f, 0xd1a3u);
+            _unarmedSwing = BuildWhoosh("MeleeSwing", 0.24f, 0x85c3u, 0.58f);
+            _unarmedImpact = BuildThud("MeleeImpact", 0.2f, 72f, 0.7f, 0xd1a3u);
+            _meleeSwing = _unarmedSwing;
+            _meleeImpact = _unarmedImpact;
+            _meleeHeavySwing = _unarmedSwing;
+            _meleeHeavyImpact = _unarmedImpact;
             _hurt = BuildThud("PlayerHurt", 0.27f, 58f, 0.55f, 0x9821u);
             _hitConfirm = BuildUiTone("HitConfirm", 0.075f, 980f, 720f);
             _criticalConfirm = BuildUiTone("CriticalConfirm", 0.13f, 720f, 1180f);
             _killConfirm = BuildUiTone("KillConfirm", 0.24f, 620f, 930f);
             _reload = BuildReload();
+            _pistolReload = _reload;
+            _rifleReload = _reload;
+            _shotgunReload = _reload;
             _dryFire = BuildDryFire();
             _threatWarning = BuildActivitySignal("ThreatWarning", 0.2f,
                 new[] { 329.63f, 659.25f }, 0.018f, 0x4d29u);
@@ -518,6 +600,41 @@ namespace RealmOfAshes.Game
             _levelUp = BuildActivitySignal("LevelUp", 0.78f,
                 new[] { 261.63f, 392f, 523.25f, 659.25f }, 0.014f, 0xc521u);
             _steps = new[] { BuildStep("StepA", 0x92a1u, 82f), BuildStep("StepB", 0x5c71u, 96f) };
+            LoadWeaponPilotClips();
+        }
+
+        private void LoadWeaponPilotClips()
+        {
+            _externalWeaponClipCount = 0;
+            ReplaceWeaponClip(ref _pistol, "ballistic_pistol");
+            ReplaceWeaponClip(ref _rifle, "ballistic_rifle");
+            ReplaceWeaponClip(ref _shotgun, "ballistic_shotgun");
+            ReplaceWeaponClip(ref _machineGun, "ballistic_machinegun");
+            ReplaceWeaponClip(ref _laser, "energy_sidearm");
+            ReplaceWeaponClip(ref _plasma, "energy_longgun");
+            ReplaceWeaponClip(ref _rocket, "launcher_fire");
+            ReplaceWeaponClip(ref _flame, "flamethrower_fire");
+            ReplaceWeaponClip(ref _impact, "projectile_impact");
+            ReplaceWeaponClip(ref _meleeSwing, "melee_light_swing");
+            ReplaceWeaponClip(ref _meleeImpact, "melee_light_impact");
+            ReplaceWeaponClip(ref _meleeHeavySwing, "melee_heavy_swing");
+            ReplaceWeaponClip(ref _meleeHeavyImpact, "melee_heavy_impact");
+            ReplaceWeaponClip(ref _pistolReload, "reload_pistol");
+            ReplaceWeaponClip(ref _rifleReload, "reload_rifle");
+            ReplaceWeaponClip(ref _shotgunReload, "reload_shotgun");
+            ReplaceWeaponClip(ref _dryFire, "dry_fire");
+        }
+
+        private void ReplaceWeaponClip(ref AudioClip target, string resourceName)
+        {
+            AudioClip authored = Resources.Load<AudioClip>(WeaponAudioResourceRoot + resourceName);
+            if (authored == null)
+            {
+                Debug.LogWarning("[ROA] Weapon audio fallback active: " + resourceName);
+                return;
+            }
+            target = authored;
+            _externalWeaponClipCount++;
         }
 
         private AudioClip BuildWind()

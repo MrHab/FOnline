@@ -3,7 +3,7 @@
   "version": 1,
   "profiles": {
     "oldKlim": {
-      "name": "Old Klim",
+      "name": "Ирена «Верста» Белова",
       "dialogueProfile": "oldKlim",
       "caps": 720,
       "restockHours": 24,
@@ -54,7 +54,7 @@
       ]
     },
     "guardKlimPatrol": {
-      "name": "Old Klim patrol",
+      "name": "Патруль Управы",
       "dialogueProfile": "guardKlimPatrol",
       "caps": 90,
       "restockHours": 24,

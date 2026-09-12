@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "randomRuinedRoad",
-  "name": "Старая дорога",
+  "name": "Разбитый тракт",
   "seed": 20260931,
   "safe": false,
   "pvpMode": "pvp",
@@ -25,16 +25,36 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 19
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromNorth": {
+    "tx": 19,
+    "tz": 4
+  },
+  "entryFromSouth": {
+    "tx": 19,
+    "tz": 34
+  },
+  "entryFromWest": {
+    "tx": 4,
     "tz": 19
   },
-  "entryFromNorth": { "tx": 19, "tz": 4 },
-  "entryFromSouth": { "tx": 19, "tz": 34 },
-  "entryFromWest": { "tx": 4, "tz": 19 },
-  "entryFromEast": { "tx": 34, "tz": 19 },
+  "entryFromEast": {
+    "tx": 34,
+    "tz": 19
+  },
   "worldZones": [
     {
       "id": "world_exit_edges",
@@ -46,82 +66,1392 @@
   ],
   "objects": [
     {
-      "id": "road_asphalt_01",
-      "model": "asphaltSlab",
-      "name": "Разбитый асфальт",
-      "url": "/assets/models/wasteland/asphalt_slab.glb",
+      "id": "randomRuinedRoad-cover-0",
+      "model": "wall",
+      "name": "randomRuinedRoad-cover-0 EDITABLE",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": -18.0,
+        "y": 0.7,
+        "z": -12.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-cover-1",
+      "model": "wall",
+      "name": "randomRuinedRoad-cover-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.7,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-cover-2",
+      "model": "wall",
+      "name": "randomRuinedRoad-cover-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.7,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-cover-3",
+      "model": "wall",
+      "name": "randomRuinedRoad-cover-3 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.7,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-cover-4",
+      "model": "wall",
+      "name": "randomRuinedRoad-cover-4 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.7,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-functional-01",
+      "model": "car_wreck",
+      "name": "randomRuinedRoad-dressing-functional-01",
+      "position": {
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.634,
+        "z": 4.287
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-functional-02",
+      "model": "dry_bush",
+      "name": "randomRuinedRoad-dressing-functional-02",
+      "position": {
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.873,
+        "z": 1.745
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "randomRuinedRoad-dressing-functional-03",
+      "position": {
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.293,
+        "z": 2.459
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-functional-04",
+      "model": "campfire_rest",
+      "name": "randomRuinedRoad-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "encounter_template",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.873,
+        "z": 2.738
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-01",
+      "model": "car_wreck",
+      "name": "randomRuinedRoad-dressing-region-01",
+      "position": {
+        "x": -12.663,
+        "y": 0.0,
+        "z": -25.918
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.147,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.654,
+        "z": 5.428
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-02",
+      "model": "tire_stack",
+      "name": "randomRuinedRoad-dressing-region-02",
+      "position": {
+        "x": -12.618,
+        "y": 0.0,
+        "z": -25.776
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.572,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.984,
+        "z": 2.466
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-03",
+      "model": "highway_sign",
+      "name": "randomRuinedRoad-dressing-region-03",
+      "position": {
+        "x": -12.622,
+        "y": 0.0,
+        "z": -25.776
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.371,
+        "z": 1.769
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-04",
+      "model": "dry_bush",
+      "name": "randomRuinedRoad-dressing-region-04",
+      "position": {
+        "x": -14.027,
+        "y": 0.0,
+        "z": -25.042
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.515,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.59,
+        "z": 1.903
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-05",
+      "model": "car_wreck",
+      "name": "randomRuinedRoad-dressing-region-05",
+      "position": {
+        "x": -13.968,
+        "y": 0.0,
+        "z": -24.909
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.516,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.308,
+        "z": 5.281
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-06",
+      "model": "tire_stack",
+      "name": "randomRuinedRoad-dressing-region-06",
+      "position": {
+        "x": -13.949,
+        "y": 0.0,
+        "z": -24.92
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.445,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.14,
+        "z": 2.508
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-07",
+      "model": "highway_sign",
+      "name": "randomRuinedRoad-dressing-region-07",
+      "position": {
+        "x": -13.931,
+        "y": 0.0,
+        "z": -24.932
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.444,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.541,
+        "z": 1.851
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-08",
+      "model": "dry_bush",
+      "name": "randomRuinedRoad-dressing-region-08",
+      "position": {
+        "x": -15.903,
+        "y": 0.0,
+        "z": -25.014
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.389,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.727,
+        "z": 2.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-09",
+      "model": "car_wreck",
+      "name": "randomRuinedRoad-dressing-region-09",
+      "position": {
+        "x": -15.892,
+        "y": 0.0,
+        "z": -25.022
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.389,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.141,
+        "y": 1.141,
+        "z": 1.141
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.832,
+        "z": 5.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-10",
+      "model": "tire_stack",
+      "name": "randomRuinedRoad-dressing-region-10",
+      "position": {
+        "x": -15.88,
+        "y": 0.0,
+        "z": -25.028
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.81,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.157,
+        "z": 2.525
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-11",
+      "model": "highway_sign",
+      "name": "randomRuinedRoad-dressing-region-11",
+      "position": {
+        "x": -4.166,
+        "y": 0.0,
+        "z": -29.35
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.811,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.208,
+        "z": 1.81
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-12",
+      "model": "dry_bush",
+      "name": "randomRuinedRoad-dressing-region-12",
+      "position": {
+        "x": -4.158,
+        "y": 0.0,
+        "z": -29.203
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.759,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.673,
+        "z": 1.792
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-13",
+      "model": "car_wreck",
+      "name": "randomRuinedRoad-dressing-region-13",
+      "position": {
+        "x": -4.154,
+        "y": 0.0,
+        "z": -29.207
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.758,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.689,
+        "z": 5.147
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-14",
+      "model": "tire_stack",
+      "name": "randomRuinedRoad-dressing-region-14",
+      "position": {
+        "x": -5.769,
+        "y": 0.0,
+        "z": -28.932
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.566,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.726,
+        "z": 2.666
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-dressing-region-15",
+      "model": "highway_sign",
+      "name": "randomRuinedRoad-dressing-region-15",
+      "position": {
+        "x": -5.738,
+        "y": 0.0,
+        "z": -28.752
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.567,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.172,
+        "y": 1.172,
+        "z": 1.172
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.03,
+        "z": 1.776
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-landmark",
+      "model": "raised-road",
+      "name": "Landmark raised-road EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "raised-road"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "encounter_template",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-region-culvert-east",
+      "model": "concrete_culvert",
+      "name": "randomRuinedRoad-region-culvert-east EDITABLE",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -20.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-region-culvert-west",
+      "model": "concrete_culvert",
+      "name": "randomRuinedRoad-region-culvert-west EDITABLE",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-region-raised-tract",
+      "model": "raised_road",
+      "name": "randomRuinedRoad-region-raised-tract EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.24,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "raised_road",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "randomRuinedRoad-route-segment",
+      "model": "encounter_route",
+      "name": "randomRuinedRoad-route-segment EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "encounter_route",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "road_asphalt_01",
+      "model": "asphaltSlab",
+      "name": "Разбитый асфальт",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
         "y": 0.15,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
         "x": 1.8,
-        "y": 1,
+        "y": 1.0,
         "z": 1.2
       },
       "collision": "none",
       "tags": [
         "road"
-      ]
-    },
-    {
-      "id": "road_sign_01",
-      "model": "highwaySign",
-      "name": "Старый дорожный знак",
-      "url": "/assets/models/wasteland/highway_sign.glb",
-      "position": {
-        "x": -15,
-        "y": 0,
-        "z": -9
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.53,
+        "z": 2.496
       },
-      "rotation": {
-        "x": 0,
-        "y": -0.3,
-        "z": 0
+      "vision": {
+        "blocks": false
       },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "road"
-      ]
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "road_car_01",
       "model": "carWreck",
-      "name": "Остов у дороги",
-      "url": "/assets/models/wasteland/car_wreck.glb",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": 7
+      "name": "Остов у дороги",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 7.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.8,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "cover": true
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 4.502,
+        "z": 4.548
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "road_sign_01",
+      "model": "highwaySign",
+      "name": "Старый дорожный знак",      "position": {
+        "x": -15.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.983,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "road"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.636,
+        "z": 1.384
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "twelve-seam-01",
+      "model": "seam",
+      "name": "Anomaly twelve-seam-01",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "tract_isthmus",
+  "kromkaVisualProfile": "broken-grand-tract-v1",
+  "ambientProfile": "windy-trade-road",
+  "anomalyDensity": 0.12,
+  "unityScene": "Assets/Scenes/Kromka/Locations/randomRuinedRoad.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "randomRuinedRoad-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "tract-approach",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

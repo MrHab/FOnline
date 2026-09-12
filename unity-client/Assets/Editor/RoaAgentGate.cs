@@ -30,6 +30,10 @@ namespace RealmOfAshes.EditorTools
 
         static RoaAgentGate()
         {
+            // Asset-import worker processes share the project Library folder
+            // with the main editor. They must never consume automation requests
+            // intended for the interactive editor instance.
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             EditorApplication.update += Poll;
         }
 
@@ -130,9 +134,13 @@ namespace RealmOfAshes.EditorTools
                     string path = request["path"]?.ToString() ?? string.Empty;
                     // Только меню проекта: никаких File/Save, Build и системных пунктов
                     // без явного намерения человека.
-                    if (!path.StartsWith("Realm of Ashes/", StringComparison.Ordinal))
+                    bool allowed = path.StartsWith("Realm of Ashes/", StringComparison.Ordinal)
+                        || path.StartsWith("Кромка/Авторинг/", StringComparison.Ordinal)
+                        || path.StartsWith("Кромка/Проверки/", StringComparison.Ordinal)
+                        || string.Equals(path, "Кромка/Build WebGL", StringComparison.Ordinal);
+                    if (!allowed)
                     {
-                        Respond(false, "Разрешены только пункты меню Realm of Ashes/.");
+                        Respond(false, "Разрешены только проверки, авторинг Кромки и безопасные пункты меню проекта.");
                         return;
                     }
                     bool executed = EditorApplication.ExecuteMenuItem(path);

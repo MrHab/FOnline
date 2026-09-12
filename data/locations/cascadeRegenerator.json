@@ -1,0 +1,1934 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "cascadeRegenerator",
+  "name": "Регенератор Р-12",
+  "seed": 2026091203,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "raid_complex",
+  "respawnAllowed": false,
+  "enemyCap": 12,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Регенератор Р-12"
+  },
+  "map": {
+    "width": 72,
+    "depth": 72,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "objects": [
+    {
+      "id": "cascadeRegenerator-core-arena",
+      "model": "ring_structure",
+      "name": "cascadeRegenerator-core-arena EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0.02,
+        "z": 23
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-functional-01",
+      "model": "concrete_wall",
+      "name": "cascadeRegenerator-dressing-functional-01",
+      "position": {
+        "x": 11.763,
+        "y": 0,
+        "z": 5.535
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.131,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.725,
+        "z": 2.475
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-functional-02",
+      "model": "relay_antenna",
+      "name": "cascadeRegenerator-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0,
+        "y": 6.158,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 1.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "cascadeRegenerator-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.901,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.555,
+        "z": 1.421
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-functional-04",
+      "model": "roadblock_barricade",
+      "name": "cascadeRegenerator-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.644,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.469,
+        "z": 1.881
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-functional-05",
+      "model": "cargo_stack",
+      "name": "cascadeRegenerator-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.388,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "raid_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.455,
+        "z": 1.806
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-01",
+      "model": "dead_tree_b",
+      "name": "cascadeRegenerator-dressing-region-01",
+      "position": {
+        "x": 11.058,
+        "y": 0,
+        "z": 17.321
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.129,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.486,
+        "z": 1.672
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "cascadeRegenerator-dressing-region-02",
+      "position": {
+        "x": 11.323,
+        "y": 0,
+        "z": 17.707
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.834,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.36,
+        "z": 1.465
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-03",
+      "model": "oil_pump_jack",
+      "name": "cascadeRegenerator-dressing-region-03",
+      "position": {
+        "x": 11.314,
+        "y": 0,
+        "z": 17.71
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.835,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.29,
+        "z": 3.362
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "cascadeRegenerator-dressing-region-04",
+      "position": {
+        "x": 7.911,
+        "y": 0,
+        "z": 19.475
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.759,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.412,
+        "z": 2.394
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-05",
+      "model": "dead_tree_b",
+      "name": "cascadeRegenerator-dressing-region-05",
+      "position": {
+        "x": 7.854,
+        "y": 0,
+        "z": 19.342
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.76,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.684,
+        "z": 1.67
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "cascadeRegenerator-dressing-region-06",
+      "position": {
+        "x": 7.863,
+        "y": 0,
+        "z": 19.339
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.947,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.312,
+        "z": 1.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-07",
+      "model": "oil_pump_jack",
+      "name": "cascadeRegenerator-dressing-region-07",
+      "position": {
+        "x": 7.836,
+        "y": 0,
+        "z": 19.349
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.947,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.169,
+        "z": 3.403
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "cascadeRegenerator-dressing-region-08",
+      "position": {
+        "x": 8.611,
+        "y": 0,
+        "z": 18.19
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.89,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.354,
+        "z": 2.427
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-09",
+      "model": "dead_tree_b",
+      "name": "cascadeRegenerator-dressing-region-09",
+      "position": {
+        "x": 8.591,
+        "y": 0,
+        "z": 18.198
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.89,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.885,
+        "y": 0.885,
+        "z": 0.885
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.64,
+        "z": 1.697
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "cascadeRegenerator-dressing-region-10",
+      "position": {
+        "x": 8.584,
+        "y": 0,
+        "z": 18.203
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.554,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.573,
+        "z": 1.451
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-11",
+      "model": "oil_pump_jack",
+      "name": "cascadeRegenerator-dressing-region-11",
+      "position": {
+        "x": 13.519,
+        "y": 0,
+        "z": 14.912
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.554,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.994,
+        "z": 3.06
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "cascadeRegenerator-dressing-region-12",
+      "position": {
+        "x": 13.378,
+        "y": 0,
+        "z": 14.778
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.499,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.697,
+        "z": 2.177
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-13",
+      "model": "dead_tree_b",
+      "name": "cascadeRegenerator-dressing-region-13",
+      "position": {
+        "x": 13.385,
+        "y": 0,
+        "z": 14.773
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.499,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.156,
+        "z": 1.528
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "cascadeRegenerator-dressing-region-14",
+      "position": {
+        "x": 14.462,
+        "y": 0,
+        "z": 13.723
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.869,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.609,
+        "z": 1.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-dressing-region-15",
+      "model": "oil_pump_jack",
+      "name": "cascadeRegenerator-dressing-region-15",
+      "position": {
+        "x": 14.799,
+        "y": 0,
+        "z": 14.055
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.869,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.934,
+        "y": 0.934,
+        "z": 0.934
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.745,
+        "z": 3.462
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-landmark",
+      "model": "regenerator-column",
+      "name": "Landmark regenerator-column EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "regenerator-column"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15,
+        "y": 1.4,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.571,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.314,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.341,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.084,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.827,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "raid_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-outer-perimeter",
+      "model": "checkpoint_gate",
+      "name": "cascadeRegenerator-outer-perimeter EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-production-level",
+      "model": "warehouse",
+      "name": "cascadeRegenerator-production-level EDITABLE",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-region-black-pool-0",
+      "model": "ring_structure",
+      "name": "cascadeRegenerator-region-black-pool-0 EDITABLE",
+      "position": {
+        "x": -23,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-region-black-pool-1",
+      "model": "ring_structure",
+      "name": "cascadeRegenerator-region-black-pool-1 EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-region-black-pool-2",
+      "model": "ring_structure",
+      "name": "cascadeRegenerator-region-black-pool-2 EDITABLE",
+      "position": {
+        "x": 23,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-region-main-pipe",
+      "model": "external_pipe",
+      "name": "cascadeRegenerator-region-main-pipe EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 1.1,
+        "z": -29
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "cascadeRegenerator-technical-spine",
+      "model": "external_pipe",
+      "name": "cascadeRegenerator-technical-spine EDITABLE",
+      "position": {
+        "x": 10,
+        "y": 2,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "east_shell",
+      "model": "concreteWall",
+      "name": "Восточная оболочка",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "cascade-regenerator-r12-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_left",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": -24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_right",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": -24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_gate",
+      "model": "cargoStack",
+      "name": "Герметичная секция",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 22
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 2,
+        "y": 2,
+        "z": 2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "story-gate",
+        "interior"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.947,
+        "z": 2.21
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "relayAntenna",
+      "name": "Регенератор Р-12",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 2.2,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "landmark",
+        "regenerator-column",
+        "black-water-rings"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.96,
+        "z": 3.08
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "r12-dew-01",
+      "model": "dew",
+      "name": "Anomaly r12-dew-01",
+      "position": {
+        "x": 3,
+        "y": 0.08,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "records",
+      "model": "storageLeanTo",
+      "name": "Архивный терминал",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lore",
+        "quest"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 2.25
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "service",
+      "model": "workshopBench",
+      "name": "Служебный пульт",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "service",
+        "interaction"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 1.75
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_a",
+      "model": "watchPost",
+      "name": "Пост А",
+      "position": {
+        "x": -18,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_b",
+      "model": "watchPost",
+      "name": "Пост Б",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "west_shell",
+      "model": "concreteWall",
+      "name": "Западная оболочка",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "cascade-regenerator-r12-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-committee-lock",
+      "model": "relayAntenna",
+      "name": "Блокировка Комитета",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "disable_committee_lock"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-regenerator-access",
+      "model": "workshopBench",
+      "name": "Сервисный пульт Регенератора Р-12",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": 18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "reach_regenerator"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-shift-shelter",
+      "model": "storageLeanTo",
+      "name": "Аварийный контур защиты от Сдвига",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": -18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "survive_artificial_shift"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-link-north",
+      "model": "utilityPole",
+      "name": "Северная линия управления",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "break_three_control_links"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-link-west",
+      "model": "utilityPole",
+      "name": "Западная линия управления",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "break_three_control_links"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-cascade-link-east",
+      "model": "utilityPole",
+      "name": "Восточная линия управления",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": 18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "break_three_control_links"
+      },
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "r12-dew-01",
+      "type": "dew",
+      "x": 3,
+      "z": 8,
+      "radius": 3.2,
+      "placement": "authored"
+    }
+  ],
+  "visualProfile": {
+    "id": "cascade-regenerator-r12-v1",
+    "macroRegion": "zero_basin",
+    "ambientProfile": "deep-industrial-anomaly",
+    "fogDensityDay": 0.0025,
+    "exposureDay": 0.9
+  },
+  "lore": "Регенератор Р-12: deep-industrial-anomaly. regenerator-column, black-water-rings.",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "zero_basin",
+  "kromkaVisualProfile": "cascade-regenerator-r12-v1",
+  "ambientProfile": "deep-industrial-anomaly",
+  "anomalyDensity": 0.5,
+  "unityScene": "Assets/Scenes/Kromka/Locations/cascadeRegenerator.unity",
+  "respawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entry": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWasteland": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "migrationArrival": {
+    "tx": 16,
+    "tz": 8,
+    "x": -4,
+    "y": 0.1,
+    "z": -19,
+    "rotationY": 0
+  },
+  "unitySpawns": [
+    {
+      "id": "cascadeRegenerator-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2,
+      "position": {
+        "x": 0,
+        "y": 0.1,
+        "z": -22
+      },
+      "rotationY": 0
+    },
+    {
+      "id": "r12-upper-lock",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3,
+      "position": {
+        "x": -4,
+        "y": 0.1,
+        "z": -19
+      },
+      "rotationY": 0
+    }
+  ]
+}

@@ -61,7 +61,7 @@ namespace RealmOfAshes.Game
         {
             ("ready", "★", "Доступные", "Перки, которые можно изучить прямо сейчас."),
             ("all", "≡", "Все", "Полный список перков по веткам развития."),
-            ("SPECIAL", "S", "Характеристики", "Прямое усиление SPECIAL."),
+            ("Характеристики", "Х", "Характеристики", "Прямое усиление основных характеристик."),
             ("Боевые", "Б", "Боевые", "Оружие, точность и урон."),
             ("Медицина", "+", "Медицина", "Лечение, травмы и выживание."),
             ("Обзор и выживание", "О", "Обзор и выживание", "Обзор, скрытность и пустошь."),
@@ -611,7 +611,7 @@ namespace RealmOfAshes.Game
         {
             switch (talent.Group)
             {
-                case "SPECIAL": return talent.Stat != null && talent.Stat.Length >= 2 ? talent.Stat.Substring(0, 2).ToUpperInvariant() : "S";
+                case "Характеристики": return talent.Stat != null && talent.Stat.Length >= 2 ? talent.Stat.Substring(0, 2).ToUpperInvariant() : "Х";
                 case "Боевые": return "Б";
                 case "Медицина": return "М";
                 case "Обзор и выживание": return "О";

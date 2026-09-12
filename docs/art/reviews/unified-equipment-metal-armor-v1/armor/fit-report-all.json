@@ -1,9 +1,8 @@
 {
-  "schema": "realm.equipment-metal-armor-review.v1",
+  "schema": "realm.free-armor-replacement-family.v1",
   "assetFamily": "equipment_metal_armor_unified_v1",
   "itemId": "metalArmor",
-  "itemNameRu": "Металлическая броня",
-  "artDirection": "геометрия B, материалы и износ C",
+  "slot": "armor",
   "bodyIds": [
     "female_slim",
     "female_medium",
@@ -15,756 +14,368 @@
   "variantCount": 6,
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
+  "triangleBudgetPerVariant": 12000,
+  "source": {
+    "creator": "Quaternius",
+    "pack": "Animated Mech Pack",
+    "page": "https://quaternius.com/packs/animatedmechs.html",
+    "license": "CC0-1.0",
+    "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7"
+  },
   "variants": [
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_female_slim_padded_liner",
-          "equipment_metal_armor_unified_v1_female_slim_plates",
-          "character_root"
-        ],
-        "positionVertices": 12162,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 8960
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_female_slim",
+      "itemId": "metalArmor",
+      "slot": "armor",
       "bodyId": "female_slim",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.18422,
-        "chestOutlinePoints": 9,
-        "frontY": -0.16459,
-        "halfWidth": 0.1902,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_female_slim.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00756,
-        "lowerHemZ": 1.071,
-        "shellPolygons": 5150,
-        "shellVertices": 2624,
-        "sleeveLimitX": 0.58716,
-        "torsoBounds": {
-          "maximum": [
-            0.1602,
-            0.15022,
-            1.48695
-          ],
-          "minimum": [
-            -0.1602,
-            -0.12659,
-            0.871
-          ]
-        },
-        "upperLimitZ": 1.48195
-      },
-      "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "0B8D5A49DB4CB982A3B3721BA7030CA9CD7E40C09F54790320E92D1F9E4D592B",
-      "slot": "armor"
+      "sha256": "8FBABC9A4843BE672DC9F1CF73F063CBB28D1908AB07F94BE23B0F5C7EEB9B7E",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 590904
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.13482,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.15548,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_female_medium_padded_liner",
-          "equipment_metal_armor_unified_v1_female_medium_plates",
-          "character_root"
-        ],
-        "positionVertices": 12458,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 9028
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_female_medium",
+      "itemId": "metalArmor",
+      "slot": "armor",
       "bodyId": "female_medium",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.19647,
-        "chestOutlinePoints": 9,
-        "frontY": -0.17823,
-        "halfWidth": 0.203,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_female_medium.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.01007,
-        "lowerHemZ": 1.07088,
-        "shellPolygons": 5230,
-        "shellVertices": 2664,
-        "sleeveLimitX": 0.58622,
-        "torsoBounds": {
-          "maximum": [
-            0.173,
-            0.16247,
-            1.48775
-          ],
-          "minimum": [
-            -0.173,
-            -0.14023,
-            0.87088
-          ]
-        },
-        "upperLimitZ": 1.48275
-      },
-      "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "F065526967915E474EB36118F9B9F6950EF487157CCA5DED067CDD9C2C7A0670",
-      "slot": "armor"
+      "sha256": "2823B4F34B3FED274E5F7022D9B5F8C7C20989E374615A543BABC665CC2E6CF7",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 590500
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.14514,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.16816,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_female_large_padded_liner",
-          "equipment_metal_armor_unified_v1_female_large_plates",
-          "character_root"
-        ],
-        "positionVertices": 11927,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 9112
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_female_large",
+      "itemId": "metalArmor",
+      "slot": "armor",
       "bodyId": "female_large",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.22187,
-        "chestOutlinePoints": 9,
-        "frontY": -0.20767,
-        "halfWidth": 0.2255,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_female_large.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.01593,
-        "lowerHemZ": 1.07074,
-        "shellPolygons": 5312,
-        "shellVertices": 2706,
-        "sleeveLimitX": 0.58734,
-        "torsoBounds": {
-          "maximum": [
-            0.1955,
-            0.18787,
-            1.48863
-          ],
-          "minimum": [
-            -0.1955,
-            -0.16967,
-            0.87074
-          ]
-        },
-        "upperLimitZ": 1.48363
-      },
-      "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "9E4255868650B31AA67BCEFC106355D68BE0E9B15DE208524CE9B519BA1984B1",
-      "slot": "armor"
+      "sha256": "72336E6235B3B4916CF31E9EAE0A37FDBF81929181D6845335EC21967114D1FC",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 591572
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.86366,
+          -0.17561,
+          -0.0087
+        ],
+        "targetBoundsMax": [
+          0.86366,
+          0.19445,
+          1.82848
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_male_slim_padded_liner",
-          "equipment_metal_armor_unified_v1_male_slim_plates",
-          "character_root"
-        ],
-        "positionVertices": 11790,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 8736
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_male_slim",
+      "itemId": "metalArmor",
+      "slot": "armor",
       "bodyId": "male_slim",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.18385,
-        "chestOutlinePoints": 9,
-        "frontY": -0.15143,
-        "halfWidth": 0.22315,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_male_slim.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00022,
-        "lowerHemZ": 1.09245,
-        "shellPolygons": 4902,
-        "shellVertices": 2512,
-        "sleeveLimitX": 0.65116,
-        "torsoBounds": {
-          "maximum": [
-            0.19315,
-            0.14985,
-            1.53285
-          ],
-          "minimum": [
-            -0.19315,
-            -0.11343,
-            0.89245
-          ]
-        },
-        "upperLimitZ": 1.52785
-      },
-      "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "1652F03683DFEB9750E0048CA98281F3B176B284057AB4146F010E15F60ABE31",
-      "slot": "armor"
+      "sha256": "591A1FA3C611B5CD2F52E929038C742DA0868ECE88F2BFABABD32EE3B15D0A9C",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 588164
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.15147,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_male_medium_padded_liner",
-          "equipment_metal_armor_unified_v1_male_medium_plates",
-          "character_root"
-        ],
-        "positionVertices": 12496,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 8728
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_male_medium",
-      "bodyId": "male_medium",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.19745,
-        "chestOutlinePoints": 9,
-        "frontY": -0.16334,
-        "halfWidth": 0.236,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_male_medium.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00116,
-        "lowerHemZ": 1.09362,
-        "shellPolygons": 4890,
-        "shellVertices": 2504,
-        "sleeveLimitX": 0.65114,
-        "torsoBounds": {
-          "maximum": [
-            0.206,
-            0.16345,
-            1.5333
-          ],
-          "minimum": [
-            -0.206,
-            -0.12534,
-            0.89362
-          ]
-        },
-        "upperLimitZ": 1.5283
-      },
       "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
+      "slot": "armor",
+      "bodyId": "male_medium",
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "5BF8FAFDE829C92F0F0291A54DF6755F2BA08171D20A7BC9A8A19091279A7559",
-      "slot": "armor"
+      "sha256": "12E528572D4C4289213A5AFD2C29BFED216420E944C121C389030CF4873CBD08",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 590740
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.12932,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.16509,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     },
     {
-      "actualGlb": {
-        "materials": 4,
-        "meshDefinitions": 2,
-        "nodes": [
-          "head",
-          "neck_01",
-          "index_04_leaf_l",
-          "index_03_l",
-          "index_02_l",
-          "index_01_l",
-          "middle_04_leaf_l",
-          "middle_03_l",
-          "middle_02_l",
-          "middle_01_l",
-          "pinky_04_leaf_l",
-          "pinky_03_l",
-          "pinky_02_l",
-          "pinky_01_l",
-          "ring_04_leaf_l",
-          "ring_03_l",
-          "ring_02_l",
-          "ring_01_l",
-          "thumb_04_leaf_l",
-          "thumb_03_l",
-          "thumb_02_l",
-          "thumb_01_l",
-          "hand_l",
-          "lowerarm_l",
-          "upperarm_l",
-          "clavicle_l",
-          "index_04_leaf_r",
-          "index_03_r",
-          "index_02_r",
-          "index_01_r",
-          "middle_04_leaf_r",
-          "middle_03_r",
-          "middle_02_r",
-          "middle_01_r",
-          "pinky_04_leaf_r",
-          "pinky_03_r",
-          "pinky_02_r",
-          "pinky_01_r",
-          "ring_04_leaf_r",
-          "ring_03_r",
-          "ring_02_r",
-          "ring_01_r",
-          "thumb_04_leaf_r",
-          "thumb_03_r",
-          "thumb_02_r",
-          "thumb_01_r",
-          "hand_r",
-          "lowerarm_r",
-          "upperarm_r",
-          "clavicle_r",
-          "spine_03",
-          "spine_02",
-          "spine_01",
-          "ball_leaf_l",
-          "ball_l",
-          "foot_l",
-          "calf_l",
-          "thigh_l",
-          "ball_leaf_r",
-          "ball_r",
-          "foot_r",
-          "calf_r",
-          "thigh_r",
-          "pelvis",
-          "root",
-          "equipment_metal_armor_unified_v1_male_large_padded_liner",
-          "equipment_metal_armor_unified_v1_male_large_plates",
-          "character_root"
-        ],
-        "positionVertices": 12794,
-        "skins": 1,
-        "textures": 12,
-        "triangles": 8744
-      },
+      "schema": "realm.free-armor-replacement-review.v1",
       "assetId": "equipment_metal_armor_unified_v1_male_large",
-      "bodyId": "male_large",
-      "details": {
-        "abdominalLames": 3,
-        "backOutlinePoints": 8,
-        "backY": 0.22473,
-        "chestOutlinePoints": 9,
-        "frontY": -0.19033,
-        "halfWidth": 0.26082,
-        "measuredArmPieces": 4,
-        "plateThickness": 0.03,
-        "rivetCount": 9
-      },
-      "file": "equipment_metal_armor_unified_v1_male_large.glb",
-      "fit": {
-        "frontOpeningThresholdY": -0.00482,
-        "lowerHemZ": 1.09324,
-        "shellPolygons": 4910,
-        "shellVertices": 2512,
-        "sleeveLimitX": 0.65113,
-        "torsoBounds": {
-          "maximum": [
-            0.23082,
-            0.19073,
-            1.53435
-          ],
-          "minimum": [
-            -0.23082,
-            -0.15233,
-            0.89324
-          ]
-        },
-        "upperLimitZ": 1.52935
-      },
       "itemId": "metalArmor",
-      "provenance": {
-        "directRuntimeUse": false,
-        "donor": null,
-        "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C scavenged steel plates on the exact current 65-bone player rig"
-      },
+      "slot": "armor",
+      "bodyId": "male_large",
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "8B81924959DD2151BD3AB44D99449372C591130198880BBECD8B6BBD4CAC36D2",
-      "slot": "armor"
+      "sha256": "3879175D47C279829D4225C9A6C28E910CEB25786F818FB31513EBFC9670A25A",
+      "source": {
+        "creator": "Quaternius",
+        "pack": "Animated Mech Pack",
+        "page": "https://quaternius.com/packs/animatedmechs.html",
+        "license": "CC0-1.0",
+        "downloadedFile": "quaternius_mech_stan.gltf",
+        "sha256": "C9A87E0DFE4E39E0C8D7DEE7696758AFFC5B13D011D94A60ACB1600A49045FE7",
+        "geometryOrigin": "downloaded_refit"
+      },
+      "optimization": {
+        "triangleBudget": 12000,
+        "sourceSelectedTriangles": 5972,
+        "removedFaces": 2125,
+        "donorCoverageTriangles": 0,
+        "fittedSourceTriangles": 3847,
+        "decimated": false,
+        "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+      },
+      "actualGlb": {
+        "triangles": 3847,
+        "meshes": 1,
+        "materials": 4,
+        "skins": 1,
+        "joints": 65,
+        "bytes": 592380
+      },
+      "materials": [
+        "metal_armour_charcoal_padding",
+        "metal_armour_worn_steel",
+        "metal_armour_oxidised_edges",
+        "metal_armour_aged_straps"
+      ],
+      "fit": {
+        "targetBoundsMin": [
+          -0.93873,
+          -0.15386,
+          -0.00961
+        ],
+        "targetBoundsMax": [
+          0.93873,
+          0.19263,
+          1.82818
+        ],
+        "sourceFitScale": [
+          1.1,
+          1.13,
+          0.99
+        ]
+      }
     }
   ]
 }

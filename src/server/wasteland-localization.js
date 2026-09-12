@@ -3,12 +3,12 @@
 function localizeLegacyWorldText(value = '') {
   let text = String(value || '');
   const replacements = [
-    ['Old Klim Supply Caravan', 'Снабженческий караван Старого Клима'],
-    ['Old Klim Road Patrol', 'Патруль Старого Клима'],
+    ['Old Klim Supply Caravan', 'Снабженческий караван Управы'],
+    ['Old Klim Road Patrol', 'Дозор Управы'],
     ['Road Raider Band', 'Дорожная банда рейдеров'],
     ['Mutant Roamers', 'Бродячие супермутанты'],
-    ['Old Klim Caravan Yard', 'Караванный двор Старого Клима'],
-    ['Free Caravans', 'Вольные караваны'],
+    ['Old Klim Caravan Yard', 'Ключи'],
+    ['Free Caravans', 'Лига Тракта'],
     ['Wasteland Wildlife', 'Дикие твари пустоши'],
     ['Neutral Wastelanders', 'Нейтральные жители пустоши'],
     ['Raider ambush', 'Засада рейдеров'],

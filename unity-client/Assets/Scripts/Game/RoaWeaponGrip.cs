@@ -247,12 +247,18 @@ namespace RealmOfAshes.Game
             Write(bones, true);
         }
 
-        private static void Write(Dictionary<string, Transform> bones, bool fingersOnly)
+        public static void ApplyLeftFingersTo(Dictionary<string, Transform> bones)
+        {
+            Write(bones, true, true);
+        }
+
+        private static void Write(Dictionary<string, Transform> bones, bool fingersOnly, bool leftOnly = false)
         {
             if (!Ready || bones == null) return;
 
             foreach (KeyValuePair<string, BonePose> entry in Pose)
             {
+                if (leftOnly && !entry.Key.EndsWith("_l", System.StringComparison.Ordinal)) continue;
                 if (fingersOnly && !IsFinger(entry.Key)) continue;
                 if (!fingersOnly && IsGripTorsoBone(entry.Key)) continue;
 

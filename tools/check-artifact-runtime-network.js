@@ -38,7 +38,10 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert(response.self.artifactRuntime.hydration < 36, 'Client cannot refill hydration');
   assert.equal(response.self.artifactRuntime.stimSeconds, 0, 'Client cannot inject buffs');
   response = await req('healPlayer', { targetId: selfId, itemId: 'water' });
-  assert.equal(response.hydrated, 40);
+  // Hydration decays continuously, so subtracting the before/after values can
+  // differ from 40 by a floating-point rounding bit.
+  assert(Number.isFinite(response.hydrated) && Math.abs(response.hydrated - 40) < 1e-9,
+    `Water must restore 40 hydration; received ${response.hydrated}`);
   assert.equal(qty(response.self, 'water'), 2);
   assert(response.self.artifactRuntime.hydration > 74 && response.self.artifactRuntime.hydration <= 75);
   response = await req('healPlayer', { targetId: selfId, itemId: 'stim' });

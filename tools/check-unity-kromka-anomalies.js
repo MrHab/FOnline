@@ -51,8 +51,17 @@ assert((bootstrap.match(/Anomalies\??\.SetLocalWorldActive\(false\)/g) || []).le
   && bootstrap.includes('Anomalies?.SetLocalWorldActive(true)')
   && /if\s*\(\s*!_localWorldActive\s*\)\s*return;/.test(renderer),
   'Local anomaly effects must not leak into the global map');
-const smokeMeta = read('unity-client/Assets/MEP/MEP_Environment/MEP_FX/MEP_Clouds/Textures/AEP_Smoke_02.png.meta');
-const smokeGuid = smokeMeta.match(/guid:\s*([0-9a-f]{32})/)[1];
+// The licensed MEP pack is installed locally, not redistributed in Git. Keep
+// checking the authored binding in clean/CI checkouts and verify the installed
+// pack's identity as well whenever its metadata is available.
+const smokeGuid = '46431ee48f9e612429a0a74b04c0b9c8';
+const smokeMetaPath = 'unity-client/Assets/MEP/MEP_Environment/MEP_FX/MEP_Clouds/Textures/AEP_Smoke_02.png.meta';
+if (fs.existsSync(path.join(root, smokeMetaPath))) {
+  assert.strictEqual(read(smokeMetaPath).match(/guid:\s*([0-9a-f]{32})/)?.[1], smokeGuid,
+    'Installed MEP smoke metadata no longer matches the authored Resources binding');
+} else {
+  console.log('MEP is not installed: checking the pinned smoke binding only; native VFX validation still requires the licensed pack.');
+}
 assert(mistTemplate.includes(smokeGuid) && mistTemplate.includes('_UseSmoke: 1')
   && renderer.includes('Resources.Load<Material>("RealmOfAshes/AnomalyMistTemplate")'),
   'Authored smoke must be included by a Resources material, not an editor-only texture lookup');

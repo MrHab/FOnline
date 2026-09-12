@@ -1,0 +1,1906 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "personalBase",
+  "name": "Личное убежище",
+  "seed": 2026091301,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "personalBase",
+  "privateInstance": true,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dampConcrete",
+    "label": "Старая сервисная площадка"
+  },
+  "map": {
+    "width": 56,
+    "depth": 56,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 1
+  },
+  "spawn": {
+    "tx": 14,
+    "tz": 3,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 14,
+    "tz": 3,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "base_exit",
+      "model": "highwaySign",
+      "name": "Выход к безопасному тракту",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "base-fixed",
+        "exit"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.494,
+        "z": 1.073
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "base_service_shelter",
+      "model": "wastelandShack",
+      "name": "Сервисный блок",      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "base-fixed",
+        "shelter",
+        "roof"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 4.7,
+        "z": 3.822
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "base_terminal",
+      "model": "relayAntenna",
+      "name": "Пульт участка",      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -11.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.57,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "base-fixed",
+        "base-terminal"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.401,
+        "z": 1.801
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-0-0",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-0-0 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.02,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-0-1",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-0-1 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.02,
+        "z": -2.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-0-2",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-0-2 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.02,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-1-0",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-1-0 EDITABLE",
+      "position": {
+        "x": -5.0,
+        "y": 0.02,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-1-1",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-1-1 EDITABLE",
+      "position": {
+        "x": -5.0,
+        "y": 0.02,
+        "z": -2.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-1-2",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-1-2 EDITABLE",
+      "position": {
+        "x": -5.0,
+        "y": 0.02,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-2-0",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-2-0 EDITABLE",
+      "position": {
+        "x": 5.0,
+        "y": 0.02,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-2-1",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-2-1 EDITABLE",
+      "position": {
+        "x": 5.0,
+        "y": 0.02,
+        "z": -2.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-2-2",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-2-2 EDITABLE",
+      "position": {
+        "x": 5.0,
+        "y": 0.02,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-3-0",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-3-0 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.02,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-3-1",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-3-1 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.02,
+        "z": -2.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-build-socket-3-2",
+      "model": "module_socket",
+      "name": "personalBase-build-socket-3-2 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.02,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "personal-build-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-01",
+      "model": "storage_chest",
+      "name": "personalBase-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.932,
+        "z": 2.533
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-02",
+      "model": "cot_bed",
+      "name": "personalBase-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.084,
+        "z": 1.422
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-03",
+      "model": "campfire_rest",
+      "name": "personalBase-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.505,
+        "z": 2.558
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-04",
+      "model": "craft_station_tools",
+      "name": "personalBase-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.366,
+        "z": 3.043
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-05",
+      "model": "garden_patch",
+      "name": "personalBase-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.405,
+        "z": 1.508
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-functional-06",
+      "model": "fence_segment",
+      "name": "personalBase-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "personal_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.937,
+        "z": 2.223
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-01",
+      "model": "cargo_stack",
+      "name": "personalBase-dressing-region-01",
+      "position": {
+        "x": 17.887,
+        "y": 0.0,
+        "z": 5.753
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.179,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.682,
+        "z": 1.607
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-02",
+      "model": "utility_pole",
+      "name": "personalBase-dressing-region-02",
+      "position": {
+        "x": 17.439,
+        "y": 0.0,
+        "z": 5.601
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.28,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.651,
+        "z": 1.732
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-03",
+      "model": "tire_stack",
+      "name": "personalBase-dressing-region-03",
+      "position": {
+        "x": 17.437,
+        "y": 0.0,
+        "z": 5.603
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.28,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.657,
+        "z": 2.166
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "personalBase-dressing-region-04",
+      "position": {
+        "x": 18.178,
+        "y": 0.0,
+        "z": 2.267
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.068,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.117,
+        "z": 1.31
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-05",
+      "model": "cargo_stack",
+      "name": "personalBase-dressing-region-05",
+      "position": {
+        "x": 18.315,
+        "y": 0.0,
+        "z": 2.292
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.069,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.591,
+        "z": 1.464
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-06",
+      "model": "utility_pole",
+      "name": "personalBase-dressing-region-06",
+      "position": {
+        "x": 18.316,
+        "y": 0.0,
+        "z": 2.278
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.169,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.68,
+        "z": 1.803
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-07",
+      "model": "tire_stack",
+      "name": "personalBase-dressing-region-07",
+      "position": {
+        "x": 18.311,
+        "y": 0.0,
+        "z": 2.309
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.17,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.741,
+        "z": 2.206
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "personalBase-dressing-region-08",
+      "position": {
+        "x": 33.446,
+        "y": 0.0,
+        "z": 6.077
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.224,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.106,
+        "z": 1.291
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-09",
+      "model": "cargo_stack",
+      "name": "personalBase-dressing-region-09",
+      "position": {
+        "x": 33.449,
+        "y": 0.0,
+        "z": 6.062
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.225,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.276,
+        "y": 1.276,
+        "z": 1.276
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.446,
+        "z": 1.496
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-10",
+      "model": "utility_pole",
+      "name": "personalBase-dressing-region-10",
+      "position": {
+        "x": 33.435,
+        "y": 0.0,
+        "z": 6.127
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.037,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.643,
+        "z": 1.839
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-11",
+      "model": "tire_stack",
+      "name": "personalBase-dressing-region-11",
+      "position": {
+        "x": 33.991,
+        "y": 0.0,
+        "z": -0.077
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.038,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.768,
+        "z": 2.327
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "personalBase-dressing-region-12",
+      "position": {
+        "x": 18.174,
+        "y": 0.0,
+        "z": -0.055
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.094,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.202,
+        "z": 1.52
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-13",
+      "model": "cargo_stack",
+      "name": "personalBase-dressing-region-13",
+      "position": {
+        "x": 18.174,
+        "y": 0.0,
+        "z": -0.058
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.093,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.287,
+        "z": 1.655
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-14",
+      "model": "utility_pole",
+      "name": "personalBase-dressing-region-14",
+      "position": {
+        "x": 18.134,
+        "y": 0.0,
+        "z": 1.236
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.102,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.653,
+        "z": 1.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-dressing-region-15",
+      "model": "tire_stack",
+      "name": "personalBase-dressing-region-15",
+      "position": {
+        "x": 33.631,
+        "y": 0.0,
+        "z": 2.298
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.101,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.262,
+        "y": 1.262,
+        "z": 1.262
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.747,
+        "z": 2.239
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-landmark",
+      "model": "build-platform",
+      "name": "Landmark build-platform EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "build-platform"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "personal_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-permanent-boundary",
+      "model": "welded_yard",
+      "name": "personalBase-permanent-boundary EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "post-industrial",
+        "editable-perimeter"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-region-departure-rail",
+      "model": "railway",
+      "name": "personalBase-region-departure-rail EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.03,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 61.818,
+        "z": 2.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-region-yard-fence",
+      "model": "wall",
+      "name": "personalBase-region-yard-fence EDITABLE",
+      "position": {
+        "x": -34.0,
+        "y": 1.2,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "personalBase-service-shaft",
+      "model": "modular_workshop",
+      "name": "personalBase-service-shaft EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "visualProfile": {
+    "id": "private-technical-yard-v1",
+    "skyDay": "#596064",
+    "fogDay": "#687276",
+    "hemiSkyDay": "#9faaa8",
+    "hemiGroundDay": "#343c3d",
+    "fillDay": "#96aaa4",
+    "sunDay": "#d1c59d",
+    "rimDay": "#75a7a8",
+    "fogDensityDay": 0.002,
+    "exposureDay": 0.96,
+    "colorGrade": "kromka-private-base"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "off_map",
+  "kromkaVisualProfile": "private-technical-yard-v1",
+  "ambientProfile": "quiet-private-shelter",
+  "anomalyDensity": 0.0,
+  "unityScene": "Assets/Scenes/Kromka/Locations/personalBase.unity",
+  "respawn": {
+    "tx": 14,
+    "tz": 3,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 14,
+    "tz": 3,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 14,
+    "tz": 3,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 12,
+    "tz": 4,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "personal-base-door",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "personalBase-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

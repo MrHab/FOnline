@@ -172,11 +172,12 @@ namespace RealmOfAshes.Game
         }
 
         public bool TrackActor(ref ActorStepState state, Vector3 position, Vector3 velocity,
-                               bool moving, bool visible, bool crouching, Vector3 observerPosition)
+                               bool moving, bool visible, bool crouching, Vector3 observerPosition, float noiseMultiplier = 1f)
         {
             bool active = visible && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
             if (!TryPlanActorStep(ref state, position, velocity, moving, active, crouching,
                                   Time.unscaledTime, out RoaAudio.FootstepCue cue)) return false;
+            cue.NoiseMultiplier = noiseMultiplier;
             EmitActorStep(cue);
             return true;
         }

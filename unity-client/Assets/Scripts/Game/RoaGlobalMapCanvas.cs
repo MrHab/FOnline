@@ -112,6 +112,7 @@ namespace RealmOfAshes.Game
         private Text _hoverKind;
         private Text _hoverTitle;
         private Text _hoverMeta;
+        private GameObject _fullLootModal;
         private RectTransform _workList;
         private readonly List<GameObject> _workRows = new List<GameObject>();
         private string _workSignature;
@@ -154,6 +155,7 @@ namespace RealmOfAshes.Game
             if (!_root.activeSelf) { _root.SetActive(true); _refreshAt = 0f; }
             ApplyResponsiveLayout();
             UpdateWorldChangeToastVisual();
+            RefreshFullLootConfirmation();
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.3f;
             Refresh();
@@ -531,7 +533,55 @@ namespace RealmOfAshes.Game
             _partyList.parent.gameObject.SetActive(false);
             SetDetailObjectsVisible(false);
 
+            RectTransform modal = Child("FullLootConfirmation", rootRect);
+            Stretch(modal, 0f);
+            Image blocker = modal.gameObject.AddComponent<Image>();
+            blocker.color = new Color(0f, 0f, 0f, 0.74f);
+            blocker.raycastTarget = true;
+
+            RectTransform warning = Child("Warning", modal);
+            Place(warning, 0.5f, 0.5f, 0.5f, 0.5f,
+                new Vector2(-230f, -135f), new Vector2(230f, 135f));
+            Image warningBg = warning.gameObject.AddComponent<Image>();
+            warningBg.color = new Color(0.16f, 0.025f, 0.018f, 0.98f);
+            var warningOutline = warning.gameObject.AddComponent<Outline>();
+            warningOutline.effectColor = new Color(1f, 0.26f, 0.12f, 0.96f);
+            warningOutline.effectDistance = new Vector2(2f, -2f);
+
+            Text warningTitle = Label("Title", warning, 18, TextAnchor.MiddleCenter,
+                new Color(1f, 0.68f, 0.42f, 1f), FontStyle.Bold);
+            warningTitle.text = "ПОЛНЫЙ ЛУТ";
+            Place(warningTitle.rectTransform, 0f, 1f, 1f, 1f,
+                new Vector2(18f, -54f), new Vector2(-18f, -14f));
+            Text warningText = Label("Description", warning, 12, TextAnchor.UpperCenter,
+                Mono);
+            warningText.text = "При смерти содержимое рюкзака и заряженные магазины\n"
+                + "останутся на земле. Валюта, сюжетные предметы, артефакты,\n"
+                + "личная база и клановое хранилище защищены.\n\n"
+                + "Это предупреждение показывается один раз.";
+            warningText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            Place(warningText.rectTransform, 0f, 0f, 1f, 1f,
+                new Vector2(22f, 66f), new Vector2(-22f, -62f));
+            Button cancel = UiButton(warning, "ОСТАТЬСЯ НА КАРТЕ", out _,
+                () => Map?.CancelFullLootEntry());
+            Place((RectTransform)cancel.transform, 0f, 0f, 0.5f, 0f,
+                new Vector2(18f, 16f), new Vector2(-5f, 52f));
+            Button confirm = UiButton(warning, "ВОЙТИ И ПРИНЯТЬ РИСК", out _,
+                () => Map?.ConfirmFullLootEntry());
+            Place((RectTransform)confirm.transform, 0.5f, 0f, 1f, 0f,
+                new Vector2(5f, 16f), new Vector2(-18f, 52f));
+            _fullLootModal = modal.gameObject;
+            _fullLootModal.SetActive(false);
+
             _root.SetActive(false);
+        }
+
+        private void RefreshFullLootConfirmation()
+        {
+            if (_fullLootModal == null) return;
+            bool visible = Map != null && Map.FullLootConfirmationPending;
+            if (_fullLootModal.activeSelf != visible) _fullLootModal.SetActive(visible);
+            if (visible) _fullLootModal.transform.SetAsLastSibling();
         }
 
         private void ToggleDetails()

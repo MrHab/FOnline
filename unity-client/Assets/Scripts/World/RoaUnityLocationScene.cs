@@ -13,12 +13,16 @@ namespace RealmOfAshes.World
     {
         [SerializeField] private string _locationId = string.Empty;
         [SerializeField] private Terrain _terrain;
+        [SerializeField] private Renderer _groundRenderer;
+        [SerializeField] private bool _replaceServerStaticGeometry = true;
 
         private readonly Dictionary<string, GameObject> _objects =
             new Dictionary<string, GameObject>(StringComparer.Ordinal);
 
         public string LocationId => _locationId;
         public Terrain Terrain => _terrain;
+        public Renderer GroundRenderer => _groundRenderer;
+        public bool ReplaceServerStaticGeometry => _replaceServerStaticGeometry;
         public int ObjectCount
         {
             get
@@ -30,8 +34,16 @@ namespace RealmOfAshes.World
 
         public void Configure(string locationId, Terrain terrain)
         {
+            Configure(locationId, terrain, null, true);
+        }
+
+        public void Configure(string locationId, Terrain terrain, Renderer groundRenderer,
+                              bool replaceServerStaticGeometry)
+        {
             _locationId = locationId ?? string.Empty;
             _terrain = terrain;
+            _groundRenderer = groundRenderer;
+            _replaceServerStaticGeometry = replaceServerStaticGeometry;
             RebuildIndex();
         }
 
@@ -67,17 +79,4 @@ namespace RealmOfAshes.World
         }
     }
 
-    /// <summary>Stable bridge between a server-authored object id and its Unity scene visual.</summary>
-    [DisallowMultipleComponent]
-    public sealed class RoaUnityLocationObject : MonoBehaviour
-    {
-        [SerializeField] private string _objectId = string.Empty;
-
-        public string ObjectId => _objectId;
-
-        public void Configure(string objectId)
-        {
-            _objectId = objectId ?? string.Empty;
-        }
-    }
 }

@@ -78,7 +78,7 @@ namespace RealmOfAshes.EditorTools
             {
                 layout.Inventory, layout.Map, layout.Pipboy, layout.Menu,
                 layout.Fire, layout.Interact, layout.Target, layout.Crouch,
-                layout.Reload, layout.Mode, layout.Player
+                layout.Reload, layout.Mode, layout.Player, layout.Bolt
             };
             for (int i = 0; i < rects.Length; i++)
             {
@@ -108,6 +108,7 @@ namespace RealmOfAshes.EditorTools
                     TargetSelected = true,
                     Crouching = true,
                     PingAvailable = true,
+                    BoltAiming = true,
                     FireMode = "Одиночный",
                     JoystickActive = true,
                     JoystickBase = new Vector2(220f, 108f),
@@ -116,13 +117,14 @@ namespace RealmOfAshes.EditorTools
                 };
                 canvas.PresentNow(state, width, height, safe);
                 Require(canvas.CanvasReady && canvas.InputReady
-                        && canvas.ButtonCount == 11 && canvas.ActiveButtonCount == 11
+                        && canvas.ButtonCount == 12 && canvas.ActiveButtonCount == 12
                         && canvas.GameplayButtonsVisible && canvas.JoystickVisible,
                         "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
                 Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ ✓"
                         && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
                         && canvas.ButtonLabel("Mode") == "ОДИНОЧНЫЙ"
-                        && canvas.ButtonLabel("Player") == "МЕТКА",
+                        && canvas.ButtonLabel("Player") == "МЕТКА"
+                        && canvas.ButtonLabel("Bolt") == "ОТМЕНА",
                         "mobile Canvas does not reflect live target, stance, ping or fire mode");
                 Require(canvas.TryGetButtonScreenRect("Fire", out Rect fireRect)
                         && RectNear(fireRect, layout.Fire),

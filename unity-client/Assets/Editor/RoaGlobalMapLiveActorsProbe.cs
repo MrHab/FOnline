@@ -29,6 +29,7 @@ namespace RealmOfAshes.EditorTools
             VerifyPartyRouteExtrapolation();
             VerifyWastelandSnapshotOrdering();
             VerifyPartyModelMappings();
+            VerifyPartyInteractionMarkers();
             VerifyOverlayLabelScaling();
             VerifyStrategicProfilesAndLod();
 
@@ -258,6 +259,51 @@ namespace RealmOfAshes.EditorTools
                 "новый serverNow одного и того же снимка должен приниматься");
         }
 
+        private static void VerifyPartyInteractionMarkers()
+        {
+            var encounter = new JObject
+            {
+                ["kind"] = "patrol",
+                ["state"] = "moving",
+                ["members"] = 4,
+                ["canEncounter"] = true
+            };
+            Check(RoaGlobalMap.PartyInteractionMarkerVisible(encounter),
+                "доступный для встречи отряд потерял маркер взаимодействия");
+
+            var refugees = new JObject
+            {
+                ["kind"] = "refugees",
+                ["state"] = "moving",
+                ["members"] = 12,
+                ["canEncounter"] = true
+            };
+            Check(!RoaGlobalMap.PartyInteractionMarkerVisible(refugees),
+                "у декоративной группы беженцев появился маркер взаимодействия");
+
+            encounter["canEncounter"] = false;
+            Check(!RoaGlobalMap.PartyInteractionMarkerVisible(encounter),
+                "невстречаемый отряд сохранил маркер взаимодействия");
+
+            var root = new GameObject("PartyInteractionMarkerProbe");
+            var marker = new GameObject("Tint_Heading");
+            marker.transform.SetParent(root.transform, false);
+            try
+            {
+                RoaGlobalMap.ApplyPartyInteractionMarker(root, refugees);
+                Check(!marker.activeSelf,
+                    "маркер под моделью беженцев остался видимым");
+                encounter["canEncounter"] = true;
+                RoaGlobalMap.ApplyPartyInteractionMarker(root, encounter);
+                Check(marker.activeSelf,
+                    "маркер доступного отряда не восстановился");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         private static void VerifyPartyModelMappings()
         {
             CheckModel("caravan", null, null, null, "friendlyBrahmin");
@@ -321,25 +367,28 @@ namespace RealmOfAshes.EditorTools
 
         private static void VerifyStrategicProfilesAndLod()
         {
-            CheckProfile("player", 2.15f, 0.50f, 0f,
+            Check(Mathf.Abs(RoaGlobalMapActorView.StrategicActorModelScale - 0.5f)
+                  <= Epsilon,
+                "strategic actor models are not scaled to one half");
+            CheckProfile("player", 1.15f, 0.27f, 0f,
                 RoaStrategicActorFitMode.Height);
-            CheckProfile("wastelandSettler", 1.68f, 0.37f, 0f,
+            CheckProfile("wastelandSettler", 0.96f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Height);
-            CheckProfile("enemySuperMutant", 1.95f, 0.37f, 180f,
+            CheckProfile("enemySuperMutant", 1.12f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Height);
-            CheckProfile("enemyGhoul", 1.68f, 0.37f, 180f,
+            CheckProfile("enemyGhoul", 0.96f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Height);
-            CheckProfile("friendlyBrahmin", 1.95f, 0.37f, 180f,
+            CheckProfile("friendlyBrahmin", 1.12f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Footprint);
-            CheckProfile("enemyAshWolf", 1.72f, 0.37f, 180f,
+            CheckProfile("enemyAshWolf", 0.98f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Footprint);
-            CheckProfile("enemyGecko", 1.75f, 0.37f, 180f,
+            CheckProfile("enemyGecko", 1.05f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Footprint);
-            CheckProfile("enemyFireGecko", 1.75f, 0.37f, 180f,
+            CheckProfile("enemyFireGecko", 1.05f, 0.22f, 0f,
                 RoaStrategicActorFitMode.Footprint);
-            CheckProfile("enemyRadscorpion", 1.82f, 0.37f, 0f,
+            CheckProfile("enemyRadscorpion", 1.02f, 0.22f, 180f,
                 RoaStrategicActorFitMode.Footprint);
-            CheckProfile("enemyMutantAnt", 1.68f, 0.37f, 0f,
+            CheckProfile("enemyMutantAnt", 0.94f, 0.22f, 180f,
                 RoaStrategicActorFitMode.Footprint);
 
             Vector3 observer = Vector3.zero;
@@ -382,7 +431,8 @@ namespace RealmOfAshes.EditorTools
                                          float yaw, RoaStrategicActorFitMode fitMode)
         {
             RoaStrategicActorProfile profile = RoaGlobalMapActorView.ProfileFor(modelKey);
-            Check(Mathf.Abs(profile.TargetWorldSpan - target) <= Epsilon
+            float scaledTarget = target * RoaGlobalMapActorView.StrategicActorModelScale;
+            Check(Mathf.Abs(profile.TargetWorldSpan - scaledTarget) <= Epsilon
                   && Mathf.Abs(profile.GroundDropWorld - groundDrop) <= Epsilon
                   && Mathf.Abs(profile.YawOffset - yaw) <= Epsilon
                   && profile.FitMode == fitMode

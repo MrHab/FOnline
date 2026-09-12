@@ -26,7 +26,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_leather_jacket_unified_v1',
     runtimePrefix: 'equipment_leather_jacket',
     meshCount: 2,
-    fitReportSha256: '9E2C59B485B53A577BCC9FD960F45AE7741C2669756FFF4B9DAC5119FDD72CF1'
+    fitReportSha256: 'D2EA208D9DA6B0B7391083010720A993D999C27255428BCC62D2F6FB3349209E'
   },
   {
     itemId: 'metalArmor',
@@ -34,8 +34,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-metal-armor-v1', 'armor'],
     sourcePrefix: 'equipment_metal_armor_unified_v1',
     runtimePrefix: 'equipment_metal_armor',
-    meshCount: 2,
-    fitReportSha256: '94C90C9AAE2B7451CECB99A42AAB24299D49CC2B4DE274D222FD2B928C47583A'
+    meshCount: 1,
+    fitReportSha256: 'B6891D03729BD31CA78FEB730B69AEE148A9DCD6DFD3A6804A69172976D29437'
   },
   {
     itemId: 'ballisticVest',
@@ -43,8 +43,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-ballistic-vest-v1', 'vest'],
     sourcePrefix: 'equipment_ballistic_vest_unified_v1',
     runtimePrefix: 'equipment_ballistic_vest',
-    meshCount: 2,
-    fitReportSha256: '5F49980FA0B260A8A75F6C4191131000D534E56BB9387C471565843C4A1F3FFE'
+    meshCount: 1,
+    fitReportSha256: '54372E09530FF5427FBBD84C162F11B87D7369B096292241D4F9E79659949250'
   },
   {
     itemId: 'combatArmor',
@@ -52,8 +52,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-combat-armor-v1', 'armor'],
     sourcePrefix: 'equipment_combat_armor_unified_v1',
     runtimePrefix: 'equipment_combat_armor',
-    meshCount: 2,
-    fitReportSha256: '2051BD18AEE6A3993BC9C03437AC4F2022E36995C597E1AAE12852BFAC8099E7'
+    meshCount: 1,
+    fitReportSha256: '6D1A7AB3221486022827705119CD6060A6F08D07318481AD64B6D287B1195AB7'
   },
   {
     itemId: 'heavyArmor',
@@ -61,8 +61,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-heavy-armor-v1', 'armor'],
     sourcePrefix: 'equipment_heavy_armor_unified_v1',
     runtimePrefix: 'equipment_heavy_armor',
-    meshCount: 2,
-    fitReportSha256: 'ED76707B9481F843881898BC7BFBA25AF0452084792A1FB9006DC4651F0E3550'
+    meshCount: 1,
+    fitReportSha256: 'D1A9D942A80AB6C1CD742D92D5192CC37D1ED69DCB0B6DBC027F93EE1EA1B257'
   },
   {
     itemId: 'backpack',
@@ -151,8 +151,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-hazmat-suit-v1', 'suit'],
     sourcePrefix: 'equipment_hazmat_suit_unified_v1',
     runtimePrefix: 'equipment_hazmat_suit',
-    meshCount: 3,
-    fitReportSha256: 'CE377C96F63DD4C9336315EA402C5ECE78E71C6BF70505E3AD966958A13049F4'
+    meshCount: 2,
+    fitReportSha256: 'B03B659C506DE62E37B15D8F7C980A7174B029B8E1E925FD9389CE110021AD99'
   },
   {
     itemId: 'energySuit',
@@ -161,7 +161,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_energy_suit_unified_v1',
     runtimePrefix: 'equipment_energy_suit',
     meshCount: 2,
-    fitReportSha256: '066FACF879B9BBFBFE44CF1CB717BF6B3428BA30A381F19DB05CCB748F757A0A'
+    fitReportSha256: '2545298E8590047243AC7DED3817EDA4C58886CA0BD41BFC5203C7EFF3BB7BA8'
   }
 ]);
 
@@ -171,6 +171,21 @@ function fromRoot(...segments) {
 
 function sha256(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').toUpperCase();
+}
+
+function writeFileWithRetry(file, data) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      fs.writeFileSync(file, data);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!['EBUSY', 'EPERM', 'UNKNOWN'].includes(error?.code)) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50 * (attempt + 1));
+    }
+  }
+  throw lastError;
 }
 
 function assertFile(label, file) {
@@ -277,10 +292,28 @@ function makeRuntimeGlb(source, destination, metadata = {}) {
     root.extras.realm_animation_family = 'long_gun';
     root.extras.realm_art_direction = 'geometry_b_materials_c';
     root.extras.realm_runtime_scale = 1;
+    root.extras.realm_source_license = 'CC0-1.0';
+    root.extras.realm_source_creator = 'Quaternius';
+    root.extras.realm_source_pack = 'Zombie Apocalypse Kit';
+    root.extras.realm_source_page = 'https://quaternius.com/packs/zombieapocalypse.html';
+    root.extras.realm_pilot_family = 'long_gun';
     root.scale = [1, 1, 1];
+    if (metadata.weaponId === 'assaultRifle') {
+      // Preserve the approved source bytes and grip geometry. Only seat the
+      // two authored repair plates against the stock in the runtime adapter;
+      // the old 5 mm air gap is not an intentional detachable assembly.
+      for (const [name, x] of [['stock_repair_plate_l', 0.006], ['stock_repair_plate_r', -0.006]]) {
+        const plate = nodes.find(node => node.name === name);
+        if (!plate || plate.matrix) throw new Error(`Cannot seat rifle attachment: ${name}`);
+        plate.translation = [...(plate.translation || [0, 0, 0])];
+        plate.translation[0] += x;
+        plate.extras = { ...(plate.extras || {}), realm_mount_surface: 'rifle_rebuilt_body' };
+      }
+      root.extras.realm_attachment_revision = 1;
+    }
   }
   fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.writeFileSync(destination, encodeGlb(json, chunks));
+  writeFileWithRetry(destination, encodeGlb(json, chunks));
   return { sourceSha256: sha256(source), runtimeSha256: sha256(destination) };
 }
 
@@ -420,13 +453,36 @@ function verifyRifleReview() {
   return { glb, gripRuntime };
 }
 
-function main() {
-  const npcSource = verifyNpcReview();
-  const boots = verifyBootReviews();
-  const equipment = verifyEquipmentReviews();
+function refreshApprovedWeaponManifest() {
+  const file = fromRoot('public', 'assets', 'models', 'approved-humanoid-assets.json');
+  if (!fs.existsSync(file)) throw new Error('Approved humanoid manifest must be built first');
+  const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const updates = [];
+  for (const [id, approval] of [['assaultRifle', RIFLE_REVIEW_SHA256], ['assaultRifleGrip', GRIP_RUNTIME_SHA256]]) {
+    const row = manifest.files.find(entry => entry.id === id);
+    if (!row || row.sourceSha256 !== approval) throw new Error(`Unapproved weapon manifest row: ${id}`);
+    const runtime = fromRoot('public', row.file.replace(/^\//, ''));
+    if (id === 'assaultRifle') {
+      const { json } = parseGlb(runtime);
+      const approved = json.nodes?.find(node => node.extras?.realm_weapon_id === id);
+      if (approved?.extras?.realm_approved_review_sha256 !== approval) throw new Error('Rifle approval mismatch');
+    } else if (sha256(runtime) !== approval) throw new Error('Grip approval mismatch');
+    updates.push([row, { bytes: fs.statSync(runtime).size, runtimeSha256: sha256(runtime) }]);
+  }
+  for (const [row, stats] of updates) Object.assign(row, stats);
+  writeFileWithRetry(file, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log('Approved weapon manifest synchronized; runtime models unchanged.');
+}
+
+function main(options = {}) {
+  const weaponsOnly = options.weaponsOnly === true;
+  const npcSource = weaponsOnly ? null : verifyNpcReview();
+  const boots = weaponsOnly ? [] : verifyBootReviews();
+  const equipment = weaponsOnly ? [] : verifyEquipmentReviews();
   const rifle = verifyRifleReview();
   const rows = [];
 
+  if (!weaponsOnly) {
   const npcOutput = fromRoot('public', 'assets', 'models', 'characters', 'npc', 'npc_humanoid_animations.glb');
   rows.push({
     id: 'npc_humanoid_animations',
@@ -477,6 +533,8 @@ function main() {
     });
   }
 
+  }
+
   const rifleOutput = fromRoot('public', 'assets', 'models', 'weapons', 'weapon_assaultRifle.glb');
   rows.push({
     id: 'assaultRifle',
@@ -507,12 +565,21 @@ function main() {
     },
     animations: ['idle', 'attack', 'reload'],
     gripSockets: ['socket_grip_r', 'socket_grip_l', 'socket_reload'],
-    reloadKind: 'magazine',
-    reloadPart: 'magazine',
-    approvedReviewSha256: RIFLE_REVIEW_SHA256,
-    source: 'Quaternius Zombie Apocalypse Kit / Rifle.gltf (CC0), rebuilt and critic-approved'
+      reloadKind: 'magazine',
+      reloadPart: 'magazine',
+      pilotFamily: 'long_gun',
+      approvedReviewSha256: RIFLE_REVIEW_SHA256,
+      source: {
+        creator: 'Quaternius',
+        pack: 'Zombie Apocalypse Kit',
+        page: 'https://quaternius.com/packs/zombieapocalypse.html',
+        license: 'CC0-1.0',
+        sourceFile: null,
+        sha256: null,
+        note: 'Rifle.gltf rebuilt and critic-approved; approval hash is the integration gate.'
+      }
   });
-  fs.writeFileSync(weaponManifestFile, `${JSON.stringify(weaponManifest, null, 2)}\n`);
+  writeFileWithRetry(weaponManifestFile, `${JSON.stringify(weaponManifest, null, 2)}\n`);
 
   const gripOutput = fromRoot('public', 'assets', 'models', 'weapons', 'approved_assault_rifle_grip.glb');
   fs.mkdirSync(path.dirname(gripOutput), { recursive: true });
@@ -523,6 +590,12 @@ function main() {
     sourceSha256: GRIP_RUNTIME_SHA256,
     runtimeSha256: sha256(gripOutput)
   });
+
+  if (weaponsOnly) {
+    refreshApprovedWeaponManifest();
+    console.log(`Approved weapon assets built: ${rows.length} files`);
+    return { files: rows };
+  }
 
   const manifest = {
     schema: 'realm.approved-humanoid-assets.v2',
@@ -542,14 +615,15 @@ function main() {
     }))
   };
   const manifestFile = fromRoot('public', 'assets', 'models', 'approved-humanoid-assets.json');
-  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileWithRetry(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Approved humanoid assets built: ${rows.length} files`);
   return manifest;
 }
 
 if (require.main === module) {
   try {
-    main();
+    if (process.argv.includes('--refresh-weapon-manifest')) refreshApprovedWeaponManifest();
+    else main();
   } catch (error) {
     console.error(error?.stack || error);
     process.exitCode = 1;
@@ -565,5 +639,6 @@ module.exports = {
   GRIP_RUNTIME_SHA256,
   parseGlb,
   makeRuntimeGlb,
+  refreshApprovedWeaponManifest,
   main
 };

@@ -127,7 +127,7 @@ namespace RealmOfAshes.Game
                 case MapDetailTier.Near:
                     return new MapPresentationProfile
                     {
-                        TerritoryFill = false,
+                        TerritoryFill = true,
                         TerritoryBorder = true,
                         Influence = true,
                         Settlements = true,
@@ -136,7 +136,7 @@ namespace RealmOfAshes.Game
                         Threats = true,
                         SiteBucket = 0f,
                         PartyBucket = 0f,
-                        ThreatBucket = 30f,
+                        ThreatBucket = 0f,
                         OverlayLabelLimit = 12,
                         ActivityLabelLimit = 3,
                         InfrastructureLabelLimit = 0
@@ -147,16 +147,16 @@ namespace RealmOfAshes.Game
                 case MapDetailTier.Medium:
                     return new MapPresentationProfile
                     {
-                        TerritoryFill = false,
+                        TerritoryFill = true,
                         TerritoryBorder = true,
-                        Influence = false,
+                        Influence = true,
                         Settlements = true,
                         Sites = true,
                         Parties = true,
                         Threats = true,
                         SiteBucket = 0f,
-                        PartyBucket = 42f,
-                        ThreatBucket = 72f,
+                        PartyBucket = 0f,
+                        ThreatBucket = 0f,
                         OverlayLabelLimit = 9,
                         ActivityLabelLimit = 3,
                         InfrastructureLabelLimit = 3
@@ -169,11 +169,11 @@ namespace RealmOfAshes.Game
                     {
                         TerritoryFill = true,
                         TerritoryBorder = true,
-                        Influence = false,
+                        Influence = true,
                         Settlements = true,
-                        Sites = false,
-                        Parties = false,
-                        Threats = false,
+                        Sites = true,
+                        Parties = true,
+                        Threats = true,
                         SiteBucket = 0f,
                         PartyBucket = 0f,
                         ThreatBucket = 0f,
@@ -289,13 +289,16 @@ namespace RealmOfAshes.Game
         public const float StrategicMinimumPitchDeg = 38f;
         public const float StrategicMaximumPitchDeg = 82f;
         public const float StrategicOrbitDegreesPerPixel = 0.18f;
-        public const float StrategicMinimumCameraClearance = 10f;
+        public const float StrategicMinimumCameraAnchorY = 0f;
+        public const float StrategicMinimumCameraDistanceValue = 1f;
+        public const float StrategicMaximumCameraDistanceValue = 20f;
         public const float StrategicKeyboardPanSpeedFactor = 0.28f;
         public const float StrategicKeyboardPanMinimumSpeed = 7.5f;
         public const float StrategicKeyboardPanMaximumSpeed = 32f;
         private const int LocationEntryAutomaticAttempts = 4;
         private const float LocationEntryRetryBaseSeconds = 1.25f;
-        private const string AuthoredSceneName = "GlobalMapAuthored";
+        private const string FullLootWarningAcceptedKey = "roa.fullLootWarningAccepted.v1";
+        private const string AuthoredSceneName = Kromka.KromkaLocationSceneCatalog.GlobalMapSceneName;
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorProperty = Shader.PropertyToID("_Color");
 
@@ -341,6 +344,7 @@ namespace RealmOfAshes.Game
 
         public bool ArrivalPending { get { return _arrivalPending; } }
         public bool LocationEntryPending { get { return _locationEntryPending; } }
+        public bool FullLootConfirmationPending { get { return _fullLootConfirmationPending; } }
         public bool ContactDecisionPending { get { return _contactDecisionPending; } }
         public bool HasPendingContact { get { return _pendingContact != null; } }
         public string PendingContactName { get { return _pendingContact?.Name ?? "Событие пустоши"; } }
@@ -625,6 +629,7 @@ namespace RealmOfAshes.Game
         private float _cameraPoseChangedAt = -1f;
         private Collider _terrainCollider;
         private MeshRenderer _boundaryDashRenderer;
+        private RoaGlobalMapBoundary _playableBoundary;
         private MaterialPropertyBlock _boundaryFlashBlock;
         private List<GameObject> _routeVisuals = new List<GameObject>();
         private List<Vector3> _routeVisualBaseScales = new List<Vector3>();
@@ -707,9 +712,13 @@ namespace RealmOfAshes.Game
         private int _routeRequestVersion;
         private bool _routeRequestPending;
         private bool _routeRequestWasReroute;
+        private bool _enterWorldRequestPending;
+        private float _enterWorldRetryAt;
         private bool _arrivalPending;
         private bool _locationEntryPending;
         private JObject _pendingArrival;
+        private JObject _fullLootArrival;
+        private bool _fullLootConfirmationPending;
         private string _pendingArrivalKey = string.Empty;
         private int _locationEntryAttempts;
         private float _locationEntryRetryAt;
@@ -993,6 +1002,8 @@ namespace RealmOfAshes.Game
             _locationEntryPending = false;
             _pendingArrival = null;
             _pendingArrivalKey = string.Empty;
+            _fullLootArrival = null;
+            _fullLootConfirmationPending = false;
             _locationEntryAttempts = 0;
             _locationEntryRetryAt = 0f;
             IsActive = false;
@@ -1001,6 +1012,8 @@ namespace RealmOfAshes.Game
             _routeRequestVersion++;
             _routeRequestPending = false;
             _routeRequestWasReroute = false;
+            _enterWorldRequestPending = false;
+            _enterWorldRetryAt = 0f;
             _travelActive = false;
             _arrivalPending = false;
             if (_wastelandPoll != null) StopCoroutine(_wastelandPoll);
@@ -1147,7 +1160,19 @@ namespace RealmOfAshes.Game
             _root.SetActive(true);
             _playerMarker = authored.PlayerMarker;
             _selectionMarker = authored.SelectionMarker;
+            // Runtime handles are intentionally stored disabled in the authored
+            // scene. Once the strategic map owns them they must be enabled: the
+            // player actor is parented to PlayerMarker and otherwise remains
+            // invisible for the whole journey.
+            if (_playerMarker != null) _playerMarker.SetActive(true);
+            if (_selectionMarker != null) _selectionMarker.SetActive(true);
             _cameraAnchor = authored.CameraAnchor != null ? authored.CameraAnchor.gameObject : null;
+            if (_cameraAnchor != null)
+            {
+                Vector3 anchorPosition = _cameraAnchor.transform.position;
+                anchorPosition.y = Mathf.Max(StrategicMinimumCameraAnchorY, anchorPosition.y);
+                _cameraAnchor.transform.position = anchorPosition;
+            }
             _terrainCollider = authored.SelectionSurface;
             Transform boundaryLine = authored.StaticContentRoot != null
                 ? authored.StaticContentRoot.Find(
@@ -1155,6 +1180,8 @@ namespace RealmOfAshes.Game
                 : null;
             _boundaryDashRenderer = boundaryLine != null
                 ? boundaryLine.GetComponent<MeshRenderer>() : null;
+            _playableBoundary = boundaryLine != null
+                ? boundaryLine.GetComponent<RoaGlobalMapBoundary>() : null;
             _dynamicRoot = authored.DynamicContentRoot != null ? authored.DynamicContentRoot.gameObject : null;
             _playerMarkerBaseScale = _playerMarker != null ? _playerMarker.transform.localScale : Vector3.one;
             _selectionMarkerBaseScale = _selectionMarker != null ? _selectionMarker.transform.localScale : Vector3.one;
@@ -1312,9 +1339,12 @@ namespace RealmOfAshes.Game
                             target.Point = WorldToPoint(partyActor.Root.transform.position);
                         }
 
-                        float size = string.Equals(row["kind"]?.ToString(), "caravan",
-                            StringComparison.OrdinalIgnoreCase) ? 0.72f : 0.54f;
+                        string actorKind = row["kind"]?.ToString() ?? string.Empty;
+                        float size = string.Equals(actorKind, "caravan", StringComparison.OrdinalIgnoreCase)
+                            ? 0.44f
+                            : (string.Equals(actorKind, "refugees", StringComparison.OrdinalIgnoreCase) ? 0.28f : 0.34f);
                         partyActor.Root.transform.localScale = partyActor.BaseScale * size;
+                        ApplyPartyInteractionMarker(partyActor.Root, row);
                         TintLivePrefab(partyActor.Root, target.Accent, "Tint");
                         partyActor.Target = target;
                         partyActor.Snapshot = row;
@@ -1519,7 +1549,9 @@ namespace RealmOfAshes.Game
             {
                 Kind = kind,
                 Id = row["id"]?.ToString() ?? string.Empty,
-                Name = row["name"]?.ToString() ?? row["title"]?.ToString() ?? row["id"]?.ToString() ?? kind,
+                Name = RoaPipboy.KromkaPublicText(
+                    row["name"]?.ToString() ?? row["title"]?.ToString()
+                    ?? row["id"]?.ToString() ?? kind),
                 Point = ReadPoint(row, "x", "y", null),
                 Data = row
             };
@@ -1681,12 +1713,12 @@ namespace RealmOfAshes.Game
         {
             switch (FactionGroupKey(factionId))
             {
-                case "old_klim": return "Старый Клим";
-                case "caravans": return "Вольные караваны";
-                case "scrap_union": return "Свалочный союз";
-                case "relay_order": return "Ретранслятор";
+                case "old_klim": return "Управа";
+                case "caravans": return "Лига Тракта";
+                case "scrap_union": return "Вольные артели";
+                case "relay_order": return "Контур";
                 case "raiders": return "Рейдеры";
-                case "mutants": return "Супермутанты";
+                case "mutants": return "Мутанты";
                 case "wild": return "Дикие земли";
                 default: return FactionName(factionId);
             }
@@ -2495,7 +2527,7 @@ namespace RealmOfAshes.Game
 
         private bool UpdateTouchMapInput()
         {
-            if (!InputEnabled)
+            if (!InputEnabled || _fullLootConfirmationPending)
             {
                 ResetTouchMapInput();
                 return false;
@@ -2690,15 +2722,12 @@ namespace RealmOfAshes.Game
 
         public static float StrategicMinimumCameraDistance(float mapSpan)
         {
-            float pitchRadians = StrategicMinimumPitchDeg * Mathf.Deg2Rad;
-            float clearanceDistance = StrategicMinimumCameraClearance
-                / Mathf.Max(0.01f, Mathf.Sin(pitchRadians));
-            return Mathf.Max(clearanceDistance, Mathf.Max(14f, Mathf.Max(0f, mapSpan) * 0.2f));
+            return StrategicMinimumCameraDistanceValue;
         }
 
         public static float StrategicMaximumCameraDistance(float mapSpan)
         {
-            return Mathf.Max(150f, Mathf.Max(0f, mapSpan) * 1.65f);
+            return StrategicMaximumCameraDistanceValue;
         }
 
         public static bool MapScreenPointCanGesture(Vector2 screenPoint, int screenWidth,
@@ -2715,7 +2744,7 @@ namespace RealmOfAshes.Game
             if (!_mousePrimaryTracking && UpdateCameraOrbit()) return true;
             if (!_mousePrimaryTracking && UpdateCameraPan()) return true;
 
-            if (!InputEnabled || Input.touchCount > 0
+            if (!InputEnabled || _fullLootConfirmationPending || Input.touchCount > 0
                 || Time.unscaledTime < _suppressSyntheticMouseUntil)
             {
                 ResetPrimaryMouseInput();
@@ -2765,7 +2794,7 @@ namespace RealmOfAshes.Game
 
         private void UpdateMouseHover()
         {
-            if (!InputEnabled || _cameraPanning || _cameraOrbiting || _mousePrimaryTracking
+            if (!InputEnabled || _fullLootConfirmationPending || _cameraPanning || _cameraOrbiting || _mousePrimaryTracking
                 || !Input.mousePresent
                 || Application.isMobilePlatform || _terrainCollider == null)
             {
@@ -2811,7 +2840,7 @@ namespace RealmOfAshes.Game
 
         private bool UpdateCameraOrbit()
         {
-            if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
+            if (!InputEnabled || _fullLootConfirmationPending || CameraRig == null || _cameraAnchor == null)
             {
                 _cameraOrbiting = false;
                 _lastOrbitPointer = Vector2.zero;
@@ -2851,7 +2880,7 @@ namespace RealmOfAshes.Game
 
         private bool UpdateCameraPan()
         {
-            if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
+            if (!InputEnabled || _fullLootConfirmationPending || CameraRig == null || _cameraAnchor == null)
             {
                 _cameraPanning = false;
                 return false;
@@ -2887,7 +2916,7 @@ namespace RealmOfAshes.Game
 
         private bool UpdateKeyboardCameraPan()
         {
-            if (!InputEnabled || CameraRig == null || _cameraAnchor == null
+            if (!InputEnabled || _fullLootConfirmationPending || CameraRig == null || _cameraAnchor == null
                 || Input.touchCount > 0 || RoaGameBootstrap.BlocksWorldHud)
                 return false;
 
@@ -2954,6 +2983,7 @@ namespace RealmOfAshes.Game
             float xLimit = Mathf.Max(0f, width) * 0.5f;
             float zLimit = Mathf.Max(0f, depth) * 0.5f;
             position.x = Mathf.Clamp(position.x, -xLimit, xLimit);
+            position.y = Mathf.Max(StrategicMinimumCameraAnchorY, position.y);
             position.z = Mathf.Clamp(position.z, -zLimit, zLimit);
             return position;
         }
@@ -3146,6 +3176,20 @@ namespace RealmOfAshes.Game
             var ground = new Plane(Vector3.up, new Vector3(0f, -0.13f, 0f));
             if (!ground.Raycast(ray, out float enter)) return;
             Vector3 hit = ray.GetPoint(enter);
+            if (_playableBoundary != null && _playableBoundary.PointCount >= 3)
+            {
+                if (_playableBoundary.ContainsWorldPoint(hit)) return;
+                Vector3 authoredFlashPoint =
+                    _playableBoundary.ClosestWorldPoint(hit);
+                if (_boundaryFlashBlock == null)
+                    _boundaryFlashBlock = new MaterialPropertyBlock();
+                _boundaryDashRenderer.GetPropertyBlock(_boundaryFlashBlock);
+                _boundaryFlashBlock.SetVector("_FlashCenter", authoredFlashPoint);
+                _boundaryFlashBlock.SetFloat("_FlashStart", Time.timeSinceLevelLoad);
+                _boundaryDashRenderer.SetPropertyBlock(_boundaryFlashBlock);
+                StatusText = "Дальше — буря. Пути нет.";
+                return;
+            }
             const float half = 44.6f; // периметр пунктира границы
             if (Mathf.Abs(hit.x) <= half && Mathf.Abs(hit.z) <= half) return;
 
@@ -3168,6 +3212,8 @@ namespace RealmOfAshes.Game
 
             Ray ray = camera.ScreenPointToRay(screenPoint);
             if (!_terrainCollider.Raycast(ray, out RaycastHit hit, 1000f)) return false;
+            if (_playableBoundary != null
+                && !_playableBoundary.ContainsWorldPoint(hit.point)) return false;
 
             _selectedPoint = WorldToPoint(hit.point);
             _selectedDynamic = NearestDynamicTarget(_selectedPoint,
@@ -3187,21 +3233,41 @@ namespace RealmOfAshes.Game
 
         public void RequestEnterFromLocation()
         {
+            if (_bootstrap != null && !_bootstrap.CurrentLocationAllowsGlobalMapExit)
+            {
+                StatusText = _bootstrap.Onboarding != null && _bootstrap.Onboarding.Phase == "firstMission"
+                    ? "Выход на глобальную карту закрыт до завершения пролога."
+                    : "Выход на глобальную карту откроется после завершения обучения.";
+                return;
+            }
             if (Socket == null || Socket.Phase != RoaSocketClient.ConnectionPhase.Joined)
             {
                 StatusText = "Нет соединения с сервером.";
                 return;
             }
 
+            if (_enterWorldRequestPending || Time.realtimeSinceStartup < _enterWorldRetryAt) return;
+
+            // Socket.IO preserves event order. Flush the current edge position
+            // before asking the server to validate that same position.
+            RoaPlayerController controller = _bootstrap?.PlayerView != null
+                ? _bootstrap.PlayerView.GetComponent<RoaPlayerController>()
+                : null;
+            controller?.SendStateImmediately();
+
+            _enterWorldRequestPending = true;
             StatusText = "Сервер проверяет выход с границы локации...";
             Socket.EmitWithAck("globalTravelEnterWorld", new { }, ack =>
             {
+                _enterWorldRequestPending = false;
                 if (!AckOk(ack))
                 {
                     StatusText = AckError(ack, "Не удалось выйти на глобальную карту.");
+                    _enterWorldRetryAt = Time.realtimeSinceStartup + 0.75f;
                     return;
                 }
 
+                _enterWorldRetryAt = 0f;
                 Socket.ApplyGlobalMapTransitionAck(ack);
                 JObject point = ack["worldPoint"] as JObject;
                 JObject state = StateFromWorldPoint(point, ack["fromLocationId"]?.ToString());
@@ -3390,7 +3456,8 @@ namespace RealmOfAshes.Game
                 Color color = ActivityColor(task);
                 string type = task?["type"]?.ToString() ?? string.Empty;
                 string kindLabel = ActivityKindLabel(type);
-                string title = task?["title"]?.ToString() ?? string.Empty;
+                string title = RoaPipboy.KromkaPublicText(
+                    task?["title"]?.ToString() ?? string.Empty);
                 string text = "<b>" + EscapeOverlayText(kindLabel.ToUpperInvariant()) + "</b>";
                 if (!string.IsNullOrEmpty(title)
                     && !string.Equals(title, kindLabel, StringComparison.OrdinalIgnoreCase))
@@ -3942,6 +4009,20 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            string arrivalPvpMode = arrival["pvpMode"]?.ToString() ?? string.Empty;
+            if (string.Equals(arrivalPvpMode, "pvpFullDrop", StringComparison.OrdinalIgnoreCase)
+                && PlayerPrefs.GetInt(FullLootWarningAcceptedKey, 0) != 1)
+            {
+                _pendingEntry = true;
+                _pendingArrival = (JObject)arrival.DeepClone();
+                _pendingArrival["targetLocationId"] = locationId;
+                _pendingArrivalKey = PendingArrivalKey(_pendingArrival);
+                _fullLootArrival = (JObject)_pendingArrival.DeepClone();
+                _fullLootConfirmationPending = true;
+                StatusText = "Нужно подтвердить вход в зону полного лута.";
+                return;
+            }
+
             _pendingEntry = true;
             _pendingArrival = (JObject)arrival.DeepClone();
             _pendingArrival["targetLocationId"] = locationId;
@@ -4016,6 +4097,28 @@ namespace RealmOfAshes.Game
                 _locationEntryAttempts = 0;
                 _locationEntryRetryAt = 0f;
             });
+        }
+
+        public void ConfirmFullLootEntry()
+        {
+            if (!_fullLootConfirmationPending || _fullLootArrival == null) return;
+            JObject arrival = (JObject)_fullLootArrival.DeepClone();
+            _fullLootConfirmationPending = false;
+            _fullLootArrival = null;
+            PlayerPrefs.SetInt(FullLootWarningAcceptedKey, 1);
+            PlayerPrefs.Save();
+            _locationEntryAttempts = 0;
+            _locationEntryRetryAt = 0f;
+            RequestLocationEntry(arrival);
+        }
+
+        public void CancelFullLootEntry()
+        {
+            if (!_fullLootConfirmationPending) return;
+            _fullLootConfirmationPending = false;
+            _fullLootArrival = null;
+            _locationEntryPending = false;
+            StatusText = "Вход отменён. Вы остались на глобальной карте.";
         }
 
         private void ResumePendingLocationEntry()
@@ -4104,7 +4207,9 @@ namespace RealmOfAshes.Game
 
         private void HandleEncounterDecision(JObject payload)
         {
-            if (payload == null || IsOwnLeaderEvent(payload)) return;
+            if (payload == null) return;
+            bool timedOut = payload["reason"]?.ToString() == "leaderDecisionTimeout";
+            if (IsOwnLeaderEvent(payload) && !timedOut) return;
             string title = payload["title"]?.ToString() ?? "событие мира";
             if (payload["pending"]?.ToObject<bool>() == true)
             {
@@ -4118,7 +4223,9 @@ namespace RealmOfAshes.Game
             if (payload["decision"]?.ToString() == "skip")
             {
                 _pendingContact = null;
-                StatusText = "Лидер обходит событие: " + title;
+                StatusText = timedOut
+                    ? "Время решения истекло. Группа обходит событие: " + title
+                    : "Лидер обходит событие: " + title;
             }
             else StatusText = "Лидер вступает в событие: " + title;
         }
@@ -4575,6 +4682,7 @@ namespace RealmOfAshes.Game
             _selectionMarker = null;
             _cameraAnchor = null;
             _terrainCollider = null;
+            _playableBoundary = null;
             _routeVisuals.Clear();
             _routeVisualBaseScales.Clear();
             _routeVisualProgress.Clear();
@@ -4864,6 +4972,7 @@ namespace RealmOfAshes.Game
         private static bool PartyCanEncounter(JObject row)
         {
             if (row == null || row["destroyed"]?.ToObject<bool>() == true) return false;
+            if (row["canEncounter"]?.ToObject<bool>() == false) return false;
             string state = row["state"]?.ToString()?.ToLowerInvariant() ?? string.Empty;
             if (state == "destroyed" || state == "engaged") return false;
             // Фуражирующий зверь («onsite» в чистом поле) встречаем — зеркалит
@@ -4872,6 +4981,21 @@ namespace RealmOfAshes.Game
                 StringComparison.OrdinalIgnoreCase);
             if (state == "onsite" && !foragingBeast) return false;
             return Float(row["members"], Float(row["strength"], 0f)) > 0f;
+        }
+
+        public static bool PartyInteractionMarkerVisible(JObject row)
+        {
+            if (row == null || string.Equals(row["kind"]?.ToString(), "refugees",
+                    StringComparison.OrdinalIgnoreCase)) return false;
+            return PartyCanEncounter(row);
+        }
+
+        public static void ApplyPartyInteractionMarker(GameObject root, JObject row)
+        {
+            Transform marker = root != null ? root.transform.Find("Tint_Heading") : null;
+            bool visible = PartyInteractionMarkerVisible(row);
+            if (marker != null && marker.gameObject.activeSelf != visible)
+                marker.gameObject.SetActive(visible);
         }
 
         private static float PartyRadius(JObject row)
@@ -4883,6 +5007,7 @@ namespace RealmOfAshes.Game
                             + (row?["name"]?.ToString() ?? string.Empty)).ToLowerInvariant();
             float radius = 5.8f;
             if (kind == "caravan") radius = 8.2f;
+            else if (kind == "refugees") radius = 5.2f;
             else if (kind == "patrol") radius = 6.4f;
             else if (faction == "raiders" || kind == "raider") radius = 6.2f;
             else if (faction == "mutants") radius = 7f;
@@ -5078,6 +5203,17 @@ namespace RealmOfAshes.Game
 
             float distancePoints = Distance(_playerPoint, _selectedPoint);
             float distanceKm = distancePoints / Mathf.Max(0.001f, _map.Grid.CellPoints) * _map.Grid.CellKm;
+            JObject anomalyCycle = _wasteland?["anomalyCycle"] as JObject;
+            string anomalyPhase = anomalyCycle?["phase"]?.ToString() ?? "calm";
+            if (!string.Equals(anomalyPhase, "calm", StringComparison.OrdinalIgnoreCase))
+            {
+                string phaseLabel = string.Equals(anomalyPhase, "warning", StringComparison.OrdinalIgnoreCase) ? "ПРЕДУПРЕЖДЕНИЕ"
+                    : string.Equals(anomalyPhase, "active", StringComparison.OrdinalIgnoreCase) ? "АКТИВЕН"
+                    : "ПОСЛЕСВЕЧЕНИЕ";
+                lines.Add("ВЫБРОС: " + phaseLabel + " · сила " + Mathf.RoundToInt(Float(anomalyCycle?["strength"], 1f)));
+                string forecast = anomalyCycle?["forecast"]?.ToString();
+                if (!string.IsNullOrEmpty(forecast)) lines.Add("Прогноз: " + forecast);
+            }
             if (distancePoints > 0.35f) lines.Add("До цели: " + distanceKm.ToString("0.0") + " км");
 
             JObject territory;
@@ -5100,6 +5236,45 @@ namespace RealmOfAshes.Game
                 string type = SiteTypeLabel(site["type"]?.ToString());
                 string control = site["controlStateLabel"]?.ToString() ?? site["controlState"]?.ToString() ?? "стабильно";
                 lines.Add(type + " · владелец: " + ownerLabel + " · контроль: " + control);
+                JObject settlementLife = site["settlementLife"] as JObject;
+                if (settlementLife != null)
+                {
+                    lines.Add("Состояние: " + (settlementLife["stateLabel"]?.ToString() ?? "нет данных"));
+                    lines.Add("Причина: " + (settlementLife["reason"]?.ToString() ?? "нет данных"));
+                    lines.Add("Прогноз: " + (settlementLife["forecast"]?.ToString() ?? "нет данных"));
+                    JArray actions = settlementLife["actions"] as JArray;
+                    lines.Add("Помощь: " + (actions != null && actions.Count > 0
+                        ? string.Join(", ", actions.ToObject<List<string>>())
+                        : "сейчас не требуется"));
+                    JObject reserve = settlementLife["reserveDays"] as JObject;
+                    if (reserve != null)
+                    {
+                        var reserveParts = new List<string>();
+                        foreach (JProperty property in reserve.Properties())
+                            reserveParts.Add(ReserveResourceLabel(property.Name) + " " + Float(property.Value, 0f).ToString("0.#") + " дн.");
+                        if (reserveParts.Count > 0) lines.Add("Резерв: " + string.Join(" · ", reserveParts));
+                    }
+                    JArray consequences = settlementLife["consequences"] as JArray;
+                    if (consequences != null)
+                    {
+                        int consequenceCount = Mathf.Min(3, consequences.Count);
+                        for (int i = 0; i < consequenceCount; i++)
+                        {
+                            string consequence = consequences[i]?["text"]?.ToString();
+                            if (!string.IsNullOrEmpty(consequence)) lines.Add("Последствие: " + consequence);
+                        }
+                    }
+                }
+                JObject sceneVariant = site["sceneVariant"] as JObject;
+                if (sceneVariant != null && (sceneVariant["actorBudget"]?.ToObject<int>() ?? 0) > 0)
+                    lines.Add("На месте: " + (sceneVariant["label"]?.ToString() ?? "изменения в поселении"));
+                JObject artifactOpportunity = site["artifactOpportunity"] as JObject;
+                if (artifactOpportunity != null)
+                {
+                    lines.Add("АРТЕФАКТЫ: после волны доступно до "
+                              + Mathf.Max(0, artifactOpportunity["artifactCount"]?.ToObject<int>() ?? 0)
+                              + " · нужен детектор");
+                }
                 JObject liveRegion = site["liveRegion"] as JObject;
                 if (liveRegion != null)
                 {
@@ -5147,6 +5322,18 @@ namespace RealmOfAshes.Game
             }
 
             return string.Join("\n", lines);
+        }
+
+        private static string ReserveResourceLabel(string id)
+        {
+            switch ((id ?? string.Empty).ToLowerInvariant())
+            {
+                case "water": return "вода";
+                case "food": return "пища";
+                case "medicine": return "медицина";
+                case "oil": return "топливо";
+                default: return id ?? string.Empty;
+            }
         }
 
         private JObject SelectedSiteData()
@@ -5231,12 +5418,12 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(name)) return name;
             switch (id)
             {
-                case "old_klim": return "Старый Клим";
-                case "caravans": return "Вольные караваны";
-                case "scrap_union": return "Свалочный союз";
-                case "relay_order": return "Техники Ретранслятора";
+                case "old_klim": return "Управа";
+                case "caravans": return "Лига Тракта";
+                case "scrap_union": return "Вольные артели";
+                case "relay_order": return "Контур";
                 case "raiders": return "Рейдеры";
-                case "mutants": return "Супермутанты";
+                case "mutants": return "Мутанты";
                 case "wild": return "Дикие твари";
                 default: return "Нейтральные";
             }
@@ -5260,7 +5447,10 @@ namespace RealmOfAshes.Game
         private static string PvpLabel(string mode)
         {
             string value = (mode ?? string.Empty).ToLowerInvariant();
-            return value == "peaceful" || value == "pve" ? "мирная зона" : (value == "pvp" ? "PvP" : mode);
+            if (value == "peaceful" || value == "pve") return "мирная зона";
+            if (value == "pvp") return "PvP: падают расходники";
+            if (value == "pvpfulldrop") return "PvP: полный дроп";
+            return mode;
         }
 
         public static string MarkerSemanticLabel(string targetKind, string subtype, bool hostile)
@@ -5272,6 +5462,7 @@ namespace RealmOfAshes.Game
             {
                 if (type == "caravan") return "КАРАВАН";
                 if (type == "patrol") return "ПАТРУЛЬ";
+                if (type == "refugees") return "БЕЖЕНЦЫ";
                 return "ОТРЯД";
             }
             if (kind == "zone") return "СОБЫТИЕ";
@@ -5299,6 +5490,7 @@ namespace RealmOfAshes.Game
             {
                 if (type == "caravan") return new Color(0.48f, 0.86f, 0.48f, 1f);
                 if (type == "patrol") return new Color(0.42f, 0.75f, 0.94f, 1f);
+                if (type == "refugees") return new Color(0.88f, 0.76f, 0.54f, 1f);
                 return new Color(0.78f, 0.72f, 0.56f, 1f);
             }
             if (kind == "zone") return new Color(1f, 0.48f, 0.18f, 1f);
@@ -5322,7 +5514,7 @@ namespace RealmOfAshes.Game
             string kind = (targetKind ?? string.Empty).ToLowerInvariant();
             string type = (subtype ?? string.Empty).ToLowerInvariant();
             if (kind == "zone") return 105;
-            if (kind == "party") return type == "patrol" ? 72 : (type == "caravan" ? 62 : 68);
+            if (kind == "party") return type == "patrol" ? 72 : (type == "caravan" ? 62 : (type == "refugees" ? 56 : 68));
             if (type == "settlement") return 100;
             if (type == "outpost") return 82;
             if (type == "resource") return 64;
@@ -5350,6 +5542,7 @@ namespace RealmOfAshes.Game
             {
                 case "caravan": return "Караван";
                 case "patrol": return "Патруль";
+                case "refugees": return "Беженцы";
                 case "raider": return "Рейдерский отряд";
                 default: return "Отряд";
             }

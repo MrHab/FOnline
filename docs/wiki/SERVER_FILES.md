@@ -43,20 +43,25 @@
 | `room-lifecycle.js` | жизненный цикл эфемерных комнат встреч и мировых точек |
 | `room-actor-spatial-index.js` | uniform-grid broad phase для коллизий плотной комнаты |
 | `static-collision-spatial-index.js` | индекс authored static blockers для движения, LOS и A* |
-| `model-colliders.js` | загрузка collider-каталога и преобразование bounds/parts в blockers |
+| `model-colliders.js` | загрузка actor collider-каталога для радиусов персонажей и существ |
 | `enemy-ai.js` | серверный ИИ NPC: восприятие, преследование, координация ближнего боя |
 | `combat-critical.js` | правила критических попаданий |
+| `kromka-combat-contract.js` | восемь типов урона и единый порядок крит → порог → броня → сопротивление для PvE/PvP |
+| `kromka-death-loot.js` | политика трёх PvP-режимов, сохранение состояния «ранен» и идемпотентная транзакция трупного лута |
 | `equipment-hands.js` | правила слотов рук (weapon/offhand) |
 | `npc-inventory.js` | фракционные запасы, доктрины экипировки, инвентарь NPC, торговый и трупный лут |
 | `npc-routines.js` | распорядок дня NPC поселений |
 | `npc-smart-objects.js` | smart-объекты, к которым привязаны занятия NPC |
 | `starting-loadout.js` | стартовый набор нового персонажа |
+| `kromka-character-progression.js` | нормализация единого каталога 7/16/41, строгая проверка создания и alias быстрого старта |
 
 ### Глобальная карта и живая пустошь
 
 | Файл | Назначение |
 |---|---|
 | `wasteland-sim.js` | автономная глобальная симуляция: точки, отряды, экономика, конфликты, задания, world zones |
+| `wasteland-anomaly-cycle.js` | детерминированные районы Сдвига, защищённые последствия и причинные возможности артефактов |
+| `wasteland-refugees.js` | агрегированные группы беженцев, выбор безопасного пункта, перенос населения и варианты локальной жизни |
 | `wasteland-party-speed.js` | чистые профили и пределы скорости мировых отрядов |
 | `wasteland-party-membership.js` | нормализация состава отрядов, лимиты, patrol duty и сверка с персонажами |
 | `wasteland-sim-utils.js` | нормализация значений, устойчивый PRNG, атомарное хранение состояния |
@@ -70,6 +75,7 @@
 | `wasteland-live-regions.js` | живые регионы, приоритетные события и aftermath-последствия |
 | `faction-economy.js` | экономика фракционных узлов |
 | `world-contracts.js` | нормализация мировых контрактов |
+| `kromka-clan-benefits.js` | недельные доходы владений, модификаторы крафта, особые заказы, маршрут и защищённый сбор |
 | `global-infrastructure.js` | дороги/трубопроводы, проверка суши и поиск маршрутов |
 | `global-map-merge.js` | подмешивание авторской глобальной карты из поставки в runtime-карту |
 | `global-exit-direction.js` | направление выхода из локальной карты на глобальную |
@@ -109,6 +115,7 @@
 | `data/quests.json` | квесты |
 | `data/traders.json` | торговые профили |
 | `data/loot-tables.json` | таблицы контейнеров и врагов |
+| `data/kromka/character-progression.json` | версионные названия, описания, лимиты, требования и быстрый старт персонажа |
 | `DATA_DIR/users.json` | аккаунты, email и сессии |
 | `DATA_DIR/saves.json` | персонажи по user id |
 | `DATA_DIR/wasteland-sim.json` | runtime-состояние живой пустоши |
@@ -153,8 +160,8 @@ SSH-туннель; штатный public Nginx его не пропускает
 
 ## Генераторы и проверки
 
-- `tools/build-wasteland-models.js` создаёт процедурные GLB.
-- `tools/build-model-colliders.js` пересобирает collider-каталог.
+- Старые процедурные GLB окружения больше не публикуются; статические локации оформляются в Unity-сценах.
+- `tools/build-model-colliders.js` пересобирает actor collider-каталог; старые коллизии окружения в него не входят.
 - `tools/account-admin.js` обновляет email/пароль runtime-аккаунта.
 - `tools/check-*.js` проверяют код, контент и синхронизационные контракты.
 - `tools/smoke-check.js` запускает изолированный end-to-end smoke.

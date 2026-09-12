@@ -113,7 +113,7 @@ namespace RealmOfAshes.Game
             if (_skin != null) return;
 
             _skin = Instantiate(GUI.skin);
-            _skin.name = "Realm of Ashes Web-Parity Skin";
+            _skin.name = "Kromka Web-Parity Skin";
             _skin.hideFlags = HideFlags.HideAndDontSave;
 
             Texture2D panel = Rounded("ui-panel", new Color(0.051f, 0.063f, 0.063f, 0.94f),

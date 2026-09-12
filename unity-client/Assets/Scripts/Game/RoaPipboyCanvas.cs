@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using UnityEngine;
@@ -21,9 +23,9 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaPipboyCanvas : MonoBehaviour
     {
-        public enum Page { Status, Items, Skills, Perks, Craft, Quests, Contracts, World, Factions, Friends, Clan, Radio }
+        public enum Page { Status, Items, Skills, Perks, Craft, Quests, Contracts, World, Factions, Friends, Clan, Base, Radio }
 
-        // Палитра фосфорного экрана — из .pipboy-screen (13_fallout_weapon_console.css:1004).
+        // Палитра фосфорного экрана «ПУТНИКА»; исходные значения сверены с frozen parity CSS.
         private static readonly Color ScreenInk = new Color(0.624f, 0.859f, 0.478f, 1f);      // #9fdb7a
         private static readonly Color ScreenInkDim = new Color(0.624f, 0.859f, 0.478f, 0.55f);
         private static readonly Color ScreenBg = new Color(0.027f, 0.067f, 0.043f, 0.99f);
@@ -42,6 +44,7 @@ namespace RealmOfAshes.Game
         public RealmOfAshes.World.RoaLocationLoader Loader;
         public RoaPlayerController Player;
         public RoaInteraction Interaction;
+        public RoaPersonalBaseCanvas PersonalBaseCanvas;
         public RoaFogOfWar Fog;
         public bool InputEnabled = true;
 
@@ -50,6 +53,7 @@ namespace RealmOfAshes.Game
 
         private Canvas _canvas;
         private GameObject _root;
+        private RectTransform _frameRect;
         private Page _page = Page.Items;
 
         private Text _locationLine;
@@ -125,7 +129,7 @@ namespace RealmOfAshes.Game
             (Page.Status, "Статус"), (Page.Items, "Инвентарь"), (Page.Skills, "Навыки"),
             (Page.Perks, "Перки"), (Page.Craft, "Крафт"), (Page.Quests, "Журнал"),
             (Page.Contracts, "Контракты"), (Page.World, "Мир"), (Page.Factions, "Фракции"), (Page.Friends, "Друзья"),
-            (Page.Clan, "Клан"), (Page.Radio, "Радио")
+            (Page.Clan, "Клан"), (Page.Base, "Укрытие"), (Page.Radio, "Радио")
         };
 
         private void Update()
@@ -144,6 +148,7 @@ namespace RealmOfAshes.Game
             else if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) Close();
 
             if (!IsOpen) return;
+            FitFrameToViewport();
 
             if (Time.unscaledTime >= _refreshAt)
             {
@@ -165,6 +170,16 @@ namespace RealmOfAshes.Game
             _root.SetActive(true);
             ApplyPage();
             Refresh();
+            Canvas.ForceUpdateCanvases();
+            FitFrameToViewport();
+        }
+
+        private void FitFrameToViewport()
+        {
+            if (_frameRect == null || _canvas == null) return;
+            Rect viewport = ((RectTransform)_canvas.transform).rect;
+            float fit = Mathf.Min(1f, (viewport.width - 20f) / 980f, (viewport.height - 20f) / 800f);
+            _frameRect.localScale = Vector3.one * Mathf.Max(0.1f, fit);
         }
 
         public void Close()
@@ -216,6 +231,7 @@ namespace RealmOfAshes.Game
 
             // Латунная рамка 980x780 по центру.
             RectTransform frame = Child("Frame", rootRect);
+            _frameRect = frame;
             frame.anchorMin = frame.anchorMax = new Vector2(0.5f, 0.5f);
             frame.pivot = new Vector2(0.5f, 0.5f);
             frame.sizeDelta = new Vector2(980f, 800f);
@@ -255,6 +271,7 @@ namespace RealmOfAshes.Game
             BuildFactionsPage(pageArea);
             BuildFriendsPage(pageArea);
             BuildClanPage(pageArea);
+            BuildPersonalBasePage(pageArea);
             BuildRadioPage(pageArea);
 
             foreach ((Page page, string label) in TabOrder)
@@ -283,7 +300,7 @@ namespace RealmOfAshes.Game
             title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
             title.rectTransform.offsetMin = Vector2.zero;
             title.rectTransform.offsetMax = Vector2.zero;
-            title.text = "PIP-ASH";
+            title.text = "ПУТНИК";
 
             _locationLine = Label("Location", row, 13, TextAnchor.LowerLeft, ScreenInkDim);
             _locationLine.rectTransform.anchorMin = new Vector2(0.13f, 0f);
@@ -434,10 +451,10 @@ namespace RealmOfAshes.Game
             RectTransform special = Panel_(right, new Color(0.03f, 0.06f, 0.04f, 1f), new Color(0.835f, 0.722f, 0.392f, 0.3f));
             Place_(special, 0f, 1f, 1f, 1f, new Vector2(0f, -88f), new Vector2(0f, 0f));
             Text specialTitle = Label("Title", special, 11, TextAnchor.UpperLeft, AccentWarm, FontStyle.Bold);
-            specialTitle.text = "SPECIAL";
+            specialTitle.text = "ХАРАКТЕРИСТИКИ";
             Place_(specialTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(9f, -24f), new Vector2(-9f, -8f));
             string[] keys = { "str", "per", "end", "cha", "int", "agi", "luck" };
-            string[] codes = { "ST", "PE", "EN", "CH", "IN", "AG", "LK" };
+            string[] codes = { "МЩ", "НБ", "СТ", "ВЛ", "ИН", "РЕ", "ЧУ" };
             for (int i = 0; i < keys.Length; i++)
             {
                 RectTransform cell = Panel_(special, CellBg, CellBorder);
@@ -615,11 +632,11 @@ namespace RealmOfAshes.Game
             _itemsModel.raycastTarget = false;
             _itemsModel.enabled = false;
 
-            string[] leftSlots = { "weapon", "armor", "boots" };
-            string[] rightSlots = { "offhand", "helmet", "backpack" };
-            string[] leftTitles = { "Правая рука", "Корпус", "Ноги" };
-            string[] rightTitles = { "Левая рука", "Голова", "Спина" };
-            for (int i = 0; i < 3; i++)
+            string[] leftSlots = { "weapon", "armor", "boots", "detector" };
+            string[] rightSlots = { "offhand", "helmet", "backpack", "artifactBelt" };
+            string[] leftTitles = { "Правая рука", "Корпус", "Ноги", "Детектор" };
+            string[] rightTitles = { "Левая рука", "Голова", "Спина", "Арт-пояс" };
+            for (int i = 0; i < leftSlots.Length; i++)
             {
                 BuildItemsSlot(stage, leftSlots[i], leftTitles[i], true, i);
                 BuildItemsSlot(stage, rightSlots[i], rightTitles[i], false, i);
@@ -841,6 +858,7 @@ namespace RealmOfAshes.Game
                 case Page.Factions: RefreshFactions(self); break;
                 case Page.Friends: RefreshFriends(); break;
                 case Page.Clan: RefreshClan(); break;
+                case Page.Base: RefreshPersonalBasePage(); break;
                 case Page.Radio: RefreshRadio(); break;
             }
         }
@@ -864,7 +882,8 @@ namespace RealmOfAshes.Game
             foreach ((string slot, string title) in new[]
             {
                 ("weapon", "Оружие"), ("offhand", "Втор. рука"), ("armor", "Броня"),
-                ("helmet", "Шлем"), ("boots", "Ботинки"), ("backpack", "Рюкзак")
+                ("helmet", "Шлем"), ("boots", "Ботинки"), ("backpack", "Рюкзак"),
+                ("detector", "Детектор"), ("artifactBelt", "Арт-пояс")
             })
             {
                 string runtimeId;
@@ -1206,18 +1225,24 @@ namespace RealmOfAshes.Game
             _selectedTitle.text = hasSelection
                 ? "Выбрано: " + ItemName(_selectedItemId)
                 : "Выберите предмет, чтобы действовать.";
+            if (!string.IsNullOrEmpty(Inventory.ArtifactStatus)) _selectedTitle.text += "   ·   " + Inventory.ArtifactStatus;
 
             bool equipped = hasSelection && IsEquippedBase(_selectedItemId);
             _equipButton.gameObject.SetActive(hasSelection);
             _useButton.gameObject.SetActive(hasSelection && Inventory.IsQuickAssignable(_selectedItemId));
             _dropButton.gameObject.SetActive(hasSelection && !equipped);
             _modifyButton.gameObject.SetActive(hasSelection && RoaWeaponModificationData.IsFirearm(_selectedItemId));
-            _equipLabel.text = equipped ? "Снять" : "Экипировать";
+            _equipLabel.text = Inventory.ArtifactsFor(_selectedItemId).Count > 0 ? "Артефакт…" : equipped ? "Снять" : "Экипировать";
         }
 
         private void OnEquipClicked()
         {
             if (string.IsNullOrEmpty(_selectedItemId) || Inventory == null) return;
+            if (Inventory.ArtifactsFor(_selectedItemId).Count > 0)
+            {
+                RoaItemPopups.Instance?.ShowMenu(BuildArtifactContextOptions(_selectedItemId));
+                return;
+            }
 
             if (IsEquippedBase(_selectedItemId))
             {
@@ -1254,6 +1279,12 @@ namespace RealmOfAshes.Game
             var parts = new List<string>();
             if (Inventory != null && (Inventory.IsRepairable(baseId)))
                 parts.Add("состояние " + Mathf.RoundToInt(Inventory.ConditionPercent(baseId)) + "%");
+            var artifacts = Inventory != null ? Inventory.ArtifactsFor(baseId) : new List<JObject>();
+            if (artifacts.Count > 0)
+            {
+                string note = artifacts[0]["implementationNote"]?.ToString();
+                if (!string.IsNullOrEmpty(note)) parts.Add(note);
+            }
             return parts.Count > 0 ? string.Join(" · ", parts) : null;
         }
 
@@ -1272,7 +1303,7 @@ namespace RealmOfAshes.Game
                 options.Add(new RoaItemPopups.Option("Модификация", () => { if (Inventory.OpenWorkbench(runtimeId)) Close(); }));
             if (Inventory.IsRepairable(baseId))
             {
-                bool intact = Inventory.ConditionPercent(baseId) >= 99.995f;
+                bool intact = Inventory.ConditionPercent(runtimeId) >= 99.995f;
                 options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", runtimeId); Submit(true, "Ремонтирую…"); }, intact));
             }
             if (Quickbar != null && Inventory.IsQuickAssignable(baseId))
@@ -1283,7 +1314,7 @@ namespace RealmOfAshes.Game
         /// <summary>Пункты showItemContextMenu web (03d:229) в том же порядке.</summary>
         private List<RoaItemPopups.Option> BuildItemContextOptions(string baseId)
         {
-            var options = new List<RoaItemPopups.Option>();
+            var options = BuildArtifactContextOptions(baseId);
             if (Inventory == null) return options;
             RoaItemInfo.Row info = RoaItemInfo.Get(baseId);
             string equippedSlot = null, equippedRuntime = null;
@@ -1322,9 +1353,15 @@ namespace RealmOfAshes.Game
                 options.Add(new RoaItemPopups.Option("Модификация", OnModifyClicked));
             if (Inventory.IsRepairable(baseId))
             {
-                string rt = equippedRuntime ?? baseId;
-                bool intact = Inventory.ConditionPercent(baseId) >= 99.995f;
-                options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", rt); Submit(true, "Ремонтирую…"); }, intact));
+                var runtimeIds = Inventory.RepairableRuntimeIds(baseId);
+                if (runtimeIds.Count > 1)
+                    options.Add(new RoaItemPopups.Option("Ремонт: выбрать экземпляр", () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, 0))));
+                else
+                {
+                    string rt = runtimeIds[0];
+                    bool intact = Inventory.ConditionPercent(rt) >= 99.995f;
+                    options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", rt); Submit(true, "Ремонтирую…"); }, intact));
+                }
             }
             if (Inventory.IsSalvageable(baseId))
                 options.Add(new RoaItemPopups.Option("Разобрать", () => { Inventory.ItemAction("salvage", baseId); Submit(true, "Разбираю…"); }));
@@ -1339,6 +1376,58 @@ namespace RealmOfAshes.Game
             bool cantDrop = equippedSlot != null || baseId == "fists";
             options.Add(new RoaItemPopups.Option(equippedSlot != null ? "Выбросить на землю (сначала снять)" : "Выбросить на землю",
                 () => Submit(Inventory.SubmitDropItem(baseId, 1, OnActionAck), "Бросаю…"), cantDrop));
+            return options;
+        }
+
+        private List<RoaItemPopups.Option> BuildArtifactContextOptions(string baseId)
+        {
+            return BuildArtifactContextPage(baseId, 0);
+        }
+
+        private List<RoaItemPopups.Option> BuildRepairContextPage(string baseId, int page)
+        {
+            var options = new List<RoaItemPopups.Option>();
+            var ids = Inventory.RepairableRuntimeIds(baseId);
+            int start = page * 4;
+            for (int i = start; i < Mathf.Min(start + 4, ids.Count); i++)
+            {
+                string id = ids[i];
+                float condition = Inventory.ConditionPercent(id);
+                options.Add(new RoaItemPopups.Option("Ремонт · экз. " + (i + 1) + " · " + Mathf.RoundToInt(condition) + "%",
+                    () => { Inventory.ItemAction("repair", id); Submit(true, "Ремонтирую…"); }, condition >= 99.995f));
+            }
+            if (page > 0) options.Add(new RoaItemPopups.Option("Предыдущие экземпляры",
+                () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, page - 1))));
+            if (start + 4 < ids.Count) options.Add(new RoaItemPopups.Option("Следующие экземпляры",
+                () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, page + 1))));
+            return options;
+        }
+
+        private List<RoaItemPopups.Option> BuildArtifactContextPage(string baseId, int page)
+        {
+            var options = new List<RoaItemPopups.Option>();
+            if (Inventory == null) return options;
+            var records = Inventory.ArtifactsFor(baseId);
+            const int pageSize = 4;
+            int start = Mathf.Max(0, page) * pageSize;
+            for (int i = start; i < Mathf.Min(start + pageSize, records.Count); i++)
+            {
+                JObject record = records[i];
+                string id = record["id"]?.ToString();
+                string suffix = records.Count > 1 ? " · №" + (i + 1) : string.Empty;
+                bool stable = record["stabilized"]?.ToObject<bool>() == true && record["hot"]?.ToObject<bool>() != true;
+                string action = !stable ? "stabilize" : Inventory.ArtifactEquipped(id) ? "unequip" : "equip";
+                string label = !stable ? "Стабилизировать" : action == "unequip" ? "Снять с пояса" : "Установить на пояс";
+                options.Add(new RoaItemPopups.Option(label + suffix,
+                    () => Submit(Inventory.SubmitArtifactAction(action, id, OnActionAck), "Артефакт…")));
+            }
+            if (start > 0) options.Add(new RoaItemPopups.Option("Предыдущие экземпляры",
+                () => RoaItemPopups.Instance?.ShowMenu(BuildArtifactContextPage(baseId, page - 1))));
+            if (start + pageSize < records.Count) options.Add(new RoaItemPopups.Option("Следующие экземпляры",
+                () => RoaItemPopups.Instance?.ShowMenu(BuildArtifactContextPage(baseId, page + 1))));
+            if (records.Count > 0 && !string.IsNullOrEmpty(records[0]["implementationNote"]?.ToString()))
+                options.Add(new RoaItemPopups.Option("Не все свойства реализованы",
+                    () => RoaItemPopups.Instance?.ShowItem(baseId, ItemExtraStat(baseId))));
             return options;
         }
 
@@ -1547,7 +1636,9 @@ namespace RealmOfAshes.Game
             station.verticalOverflow = VerticalWrapMode.Truncate;
             station.text = pending ? "Сервер создаёт предмет…" : (stationNear
                 ? RoaCraftingData.StationLabel(recipe.Station) + " рядом · комиссия " + recipe.Fee
-                : "нужен станок: " + RoaCraftingData.StationLabel(recipe.Station) + " · комиссия " + recipe.Fee);
+                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty)
+                : "нужен станок: " + RoaCraftingData.StationLabel(recipe.Station) + " · комиссия " + recipe.Fee
+                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty));
 
             var button = card.AddComponent<Button>();
             button.targetGraphic = back;
@@ -1668,6 +1759,7 @@ namespace RealmOfAshes.Game
 
             Socket.EmitWithAck("craftingStationUsed", new Dictionary<string, object>
             {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
                 ["recipeId"] = recipe.Id,
                 ["station"] = recipe.Station,
                 ["fee"] = recipe.Fee,
@@ -1708,6 +1800,7 @@ namespace RealmOfAshes.Game
         {
             RebuildRows(_questRows, _questsList, () =>
             {
+                AddKromkaJournalCards();
                 if (Interaction == null)
                 {
                     AddTextCard(_questRows, _questsList, "Заданий нет", "Нет связи с миром.");
@@ -1783,11 +1876,11 @@ namespace RealmOfAshes.Game
         private void AddContractCard(RoaInteraction.WorldTaskCard card)
         {
             var body = new System.Text.StringBuilder();
-            if (!string.IsNullOrEmpty(card.Text)) body.Append(card.Text);
-            if (!string.IsNullOrEmpty(card.Route)) body.Append('\n').Append(card.Route);
-            if (!string.IsNullOrEmpty(card.Reward)) body.Append('\n').Append(card.Reward);
-            if (!string.IsNullOrEmpty(card.JoinHint)) body.Append('\n').Append(card.JoinHint);
-            if (!string.IsNullOrEmpty(card.AcceptHint)) body.Append('\n').Append(card.AcceptHint);
+            if (!string.IsNullOrEmpty(card.Text)) body.Append(RoaPipboy.KromkaPublicText(card.Text));
+            if (!string.IsNullOrEmpty(card.Route)) body.Append('\n').Append(RoaPipboy.KromkaPublicText(card.Route));
+            if (!string.IsNullOrEmpty(card.Reward)) body.Append('\n').Append(RoaPipboy.KromkaPublicText(card.Reward));
+            if (!string.IsNullOrEmpty(card.JoinHint)) body.Append('\n').Append(RoaPipboy.KromkaPublicText(card.JoinHint));
+            if (!string.IsNullOrEmpty(card.AcceptHint)) body.Append('\n').Append(RoaPipboy.KromkaPublicText(card.AcceptHint));
 
             var actions = new List<(string, System.Action)>();
             string id = card.Id;
@@ -1798,7 +1891,7 @@ namespace RealmOfAshes.Game
             if (card.CanClaim) actions.Add(("Забрать награду", () => Interaction.PipboyWorldTaskAction(id, "claim")));
 
             AddTextCard(_contractRows, _contractsList,
-                card.Label.ToUpperInvariant() + "  " + card.Title, body.ToString(), actions);
+                card.Label.ToUpperInvariant() + "  " + RoaPipboy.KromkaPublicText(card.Title), body.ToString(), actions);
         }
 
         // ------------------------------------------------------------------
@@ -1883,7 +1976,9 @@ namespace RealmOfAshes.Game
         private void AddWorldCard(List<GameObject> rows, RectTransform list, string kicker, string name,
                                   string small, string em, string tone)
         {
-            int emLines = string.IsNullOrEmpty(em) ? 0 : Mathf.Max(1, Mathf.CeilToInt(em.Length / 80f));
+            int emLines = string.IsNullOrEmpty(em) ? 0 : Mathf.Max(
+                em.Split('\n').Length,
+                Mathf.CeilToInt(em.Length / 80f));
             float height = 10f + 14f + 20f + (string.IsNullOrEmpty(small) ? 0f : 17f) + emLines * 16f + 10f;
             var row = new GameObject("WorldCard", typeof(RectTransform));
             row.transform.SetParent(list, false);
@@ -1922,12 +2017,12 @@ namespace RealmOfAshes.Game
             rows.Add(row);
         }
 
-        /// <summary>.pipboy-faction-card: цветная полоса, kicker/имя/отношение, три мини-плитки и кнопка вступления.</summary>
+        /// <summary>Карточка стороны: цвет, репутация, открытая цена обещаний и состояние временного контракта.</summary>
         private void AddFactionCard(List<GameObject> rows, RectTransform list, string kicker, string name, string relation,
-                                    Color factionColor, int sites, int parties, int contested,
+                                    string description, Color factionColor, int sites, int parties, int contested,
                                     string actionLabel, System.Action onAction)
         {
-            float height = onAction != null || actionLabel != null ? 104f : 78f;
+            float height = onAction != null || actionLabel != null ? 148f : 122f;
             var row = new GameObject("FactionCard", typeof(RectTransform));
             row.transform.SetParent(list, false);
             row.AddComponent<LayoutElement>().preferredHeight = height;
@@ -1955,6 +2050,12 @@ namespace RealmOfAshes.Game
             Text rel = Label("Relation", rect, 12, TextAnchor.UpperLeft, SpecialValue, FontStyle.Bold);
             rel.text = relation.ToUpperInvariant();
             Place_(rel.rectTransform, 0f, 1f, 0.68f, 1f, new Vector2(29f, -58f), new Vector2(0f, -43f));
+
+            Text details = Label("Details", rect, 11, TextAnchor.UpperLeft, CardSmall);
+            details.text = description ?? string.Empty;
+            details.horizontalOverflow = HorizontalWrapMode.Wrap;
+            details.verticalOverflow = VerticalWrapMode.Truncate;
+            Place_(details.rectTransform, 0f, 0f, 0.68f, 1f, new Vector2(29f, 10f), new Vector2(-7f, -62f));
 
             string[] labels = { "Точки", "Отряды", "Спорно" };
             int[] values = { sites, parties, contested };
@@ -1990,12 +2091,14 @@ namespace RealmOfAshes.Game
 
         private static Color FactionTint(string id)
         {
-            switch (id)
+            switch (RoaPipboy.CanonicalFactionId(id))
             {
-                case "old_klim": return new Color(0.576f, 0.851f, 0.51f);   // #93d982
-                case "scrap_union": return new Color(0.843f, 0.663f, 0.369f); // #d7a95e
-                case "relay_order": return new Color(0.498f, 0.812f, 1f);   // #7fcfff
-                case "caravans": return new Color(0.937f, 0.816f, 0.471f);  // #efd078
+                case "uprava": return new Color(0.094f, 0.196f, 0.29f);       // #18324a
+                case "free_artels": return new Color(0.69f, 0.416f, 0.173f); // #b06a2c
+                case "contour": return new Color(0.333f, 0.4f, 0.365f);      // #55665d
+                case "tract_league": return new Color(0.718f, 0.612f, 0.439f); // #b79c70
+                case "seconds": return new Color(0.867f, 0.847f, 0.784f);    // #ddd8c8
+                case "continuity": return new Color(0.431f, 0.141f, 0.141f); // #6e2424
                 case "raiders": return new Color(1f, 0.482f, 0.325f);       // #ff7b53
                 case "mutants": return new Color(0.78f, 0.42f, 0.85f);
                 case "wild": return new Color(0.75f, 0.62f, 0.45f);
@@ -2025,10 +2128,20 @@ namespace RealmOfAshes.Game
                 if (!IsTrue(row?["destroyed"]) && row?["state"]?.ToString() != "destroyed") activeParties++;
 
             float worldHour = world["worldHour"]?.ToObject<float>() ?? 0f;
+            JObject anomalyCycle = world["anomalyCycle"] as JObject;
             _worldHeader.text = string.Empty;
 
             RebuildRows(_worldRows, _worldList, () =>
             {
+                string anomalyPhase = anomalyCycle?["phase"]?.ToString() ?? "calm";
+                if (!string.Equals(anomalyPhase, "calm", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    AddTextCard(_worldRows, _worldList,
+                        "ВЫБРОС · СИЛА " + (anomalyCycle?["strength"]?.ToObject<int>() ?? 1),
+                        (anomalyCycle?["reason"]?.ToString() ?? "Аномальная волна проходит через регион")
+                        + "\nПрогноз: " + (anomalyCycle?["forecast"]?.ToString() ?? "нет данных")
+                        + "\nДействие: " + ((anomalyCycle?["actions"] as JArray)?[0]?.ToString() ?? "следить за сводкой"));
+                }
                 AddDashboard(_worldRows, _worldList,
                     ("Час мира", Mathf.FloorToInt(worldHour).ToString()),
                     ("Точки", sites.Count.ToString()),
@@ -2050,7 +2163,7 @@ namespace RealmOfAshes.Game
                     string destination = party["destinationSiteId"]?.ToString();
                     AddTextCard(_worldRows, _worldList,
                         RoaPipboy.PartyKindLabel(party["kind"]?.ToString()) + ": "
-                        + (party["name"]?.ToString() ?? party["id"]?.ToString() ?? "Группа"),
+                        + RoaPipboy.KromkaPublicText(party["name"]?.ToString() ?? party["id"]?.ToString() ?? "Группа"),
                         RoaPipboy.FactionLabel(party["faction"]?.ToString())
                         + " · бойцов " + (party["members"]?.ToObject<int>() ?? 0)
                         + " · сила " + (party["strength"]?.ToObject<int>() ?? 0) + "\n"
@@ -2068,7 +2181,7 @@ namespace RealmOfAshes.Game
                     if (shown++ >= 8) break;
                     AddTextCard(_worldRows, _worldList,
                         RoaPipboy.EventTypeLabel(token?["type"]?.ToString()),
-                        token?["title"]?.ToString() ?? token?["text"]?.ToString() ?? "Событие мира");
+                        RoaPipboy.KromkaPublicText(token?["title"]?.ToString() ?? token?["text"]?.ToString() ?? "Событие мира"));
                 }
                 if (shown == 0) AddTextCard(_worldRows, _worldList, "Событий пока нет", string.Empty);
             });
@@ -2085,14 +2198,54 @@ namespace RealmOfAshes.Game
                 bool isSettlement = string.Equals(site["type"]?.ToString(), "settlement", System.StringComparison.OrdinalIgnoreCase);
                 if (isSettlement != settlements) continue;
 
+                string detail;
+                if (isSettlement && site["settlementLife"] is JObject life)
+                {
+                    JObject reserve = life["reserveDays"] as JObject;
+                    string reserves = reserve == null
+                        ? "нет данных"
+                        : "вода " + (reserve["water"]?.ToObject<float>() ?? 0f).ToString("0.#")
+                          + " дн. · пища " + (reserve["food"]?.ToObject<float>() ?? 0f).ToString("0.#")
+                          + " дн. · медицина " + (reserve["medicine"]?.ToObject<float>() ?? 0f).ToString("0.#") + " дн.";
+                    JArray actions = life["actions"] as JArray;
+                    string help = actions != null && actions.Count > 0 ? actions[0]?.ToString() : "сейчас не требуется";
+                    detail = "Состояние: " + (life["stateLabel"]?.ToString() ?? "нет данных")
+                        + "\nПричина: " + (life["reason"]?.ToString() ?? "нет данных")
+                        + "\nПрогноз: " + (life["forecast"]?.ToString() ?? "нет данных")
+                        + "\nПомощь: " + help
+                        + "\nРезерв: " + reserves;
+                    JArray consequences = life["consequences"] as JArray;
+                    if (consequences != null)
+                    {
+                        int recent = Mathf.Min(3, consequences.Count);
+                        for (int i = 0; i < recent; i++)
+                        {
+                            string text = consequences[i]?["text"]?.ToString();
+                            if (!string.IsNullOrEmpty(text)) detail += "\nПоследствие: " + text;
+                        }
+                    }
+                    if (site["sceneVariant"] is JObject scene
+                        && (scene["actorBudget"]?.ToObject<int>() ?? 0) > 0)
+                        detail += "\nНа месте: " + (scene["label"]?.ToString() ?? "видимые последствия");
+                }
+                else
+                {
+                    detail = "Контроль " + (site["controlPressure"]?.ToObject<float>() ?? 0f).ToString("0.0")
+                        + " · Запасы: " + RoaPipboy.StockText(site["stockpile"] as JObject);
+                }
+
+                if (site["artifactOpportunity"] is JObject artifactOpportunity)
+                {
+                    detail += "\nАртефактная возможность: до "
+                        + (artifactOpportunity["artifactCount"]?.ToObject<int>() ?? 0)
+                        + " · нужен детектор";
+                }
+
                 AddWorldCard(_worldRows, _worldList,
                     RoaPipboy.SiteTypeLabel(site["type"]?.ToString()),
-                    site["name"]?.ToString() ?? site["id"]?.ToString() ?? "Точка",
+                    RoaPipboy.WorldSiteName(sites, site["id"]?.ToString()),
                     RoaPipboy.SiteStatusLabel(site, worldHour) + " · " + RoaPipboy.FactionLabel(site["owner"]?.ToString()),
-                    (isSettlement
-                        ? "Безопасность " + (site["security"]?.ToObject<int>() ?? 0)
-                        : "Контроль " + (site["controlPressure"]?.ToObject<float>() ?? 0f).ToString("0.0"))
-                    + " · Запасы: " + RoaPipboy.StockText(site["stockpile"] as JObject),
+                    detail,
                     RoaPipboy.SiteStatusTone(site, worldHour));
                 shown++;
             }
@@ -2123,38 +2276,68 @@ namespace RealmOfAshes.Game
                     return;
                 }
 
-                string playerFaction = Pipboy.WorldFactionId();
-                int currentReputation = string.IsNullOrEmpty(playerFaction)
-                    ? 0
-                    : (self?["worldFactionReputation"]?[playerFaction]?.ToObject<int>() ?? 0);
+                JObject contracts = self?["factionContracts"] as JObject ?? new JObject();
+                JObject knownSecrets = self?["knownFactionSecrets"] as JObject ?? new JObject();
+                int activeContracts = 0;
+                foreach (JProperty property in contracts.Properties())
+                    if (FactionContractActive(property.Value)) activeContracts++;
+                int knownSecretCount = 0;
+                foreach (JProperty property in knownSecrets.Properties())
+                    if (property.Value != null && property.Value.Type != JTokenType.Null) knownSecretCount++;
                 AddDashboard(_factionRows, _factionsList,
-                    ("Текущая сторона", string.IsNullOrEmpty(playerFaction) ? "Независимый странник" : RoaPipboy.FactionLabel(playerFaction)),
-                    ("Основных фракций", RoaPipboy.PrimaryFactionIds.Length.ToString()),
-                    ("Репутация стороны", string.IsNullOrEmpty(playerFaction) ? "—" : currentReputation.ToString()),
-                    ("Другие группы", "без репутации"));
-                AddTextCard(_factionRows, _factionsList, "Независимые и угрозы", RoaPipboy.FactionGroupsExplanation);
+                    ("Статус", "Независимый наёмник"),
+                    ("Известных сторон", Pipboy.FactionCatalog.Count.ToString()),
+                    ("Контрактов активно", activeContracts.ToString()),
+                    ("Тайн раскрыто", knownSecretCount.ToString()));
+                AddTextCard(_factionRows, _factionsList, "Работа на стороны", RoaPipboy.FactionGroupsExplanation);
 
                 foreach (string id in RoaPipboy.PrimaryFactionIds)
                 {
+                    JObject lore = Pipboy.FactionLore(id);
+                    if (lore == null)
+                    {
+                        AddFactionCard(_factionRows, _factionsList, "зашифрованный источник", "НЕИЗВЕСТНАЯ СТОРОНА",
+                            "ДОСЬЕ НЕ ОТКРЫТО", "В эфире остаётся служебный сигнал без подписи.", FactionTint(id), 0, 0, 0, null, null);
+                        continue;
+                    }
                     int sites, parties, contested;
                     Pipboy.FactionStats(id, out sites, out parties, out contested);
                     int reputation = self?["worldFactionReputation"]?[id]?.ToObject<int>() ?? 0;
-                    bool joinable = RoaPipboy.IsJoinableFaction(id);
-                    string relationText = (id == playerFaction ? "Ваша фракция" : "Доступна для вступления")
-                        + " · репутация " + reputation;
-
-                    string actionLabel = null;
-                    System.Action onAction = null;
-                    if (joinable && id != playerFaction && Interaction != null)
-                    {
-                        string factionId = id;
-                        actionLabel = string.IsNullOrEmpty(playerFaction) ? "Вступить во фракцию" : "Сменить сторону";
-                        onAction = () => Interaction.SubmitWorldFactionJoin(factionId, null);
-                    }
-                    AddFactionCard(_factionRows, _factionsList, "основная фракция", RoaPipboy.FactionLabel(id), relationText,
-                        FactionTint(id), sites, parties, contested, actionLabel, onAction);
+                    bool contractActive = FactionContractActive(contracts[id]);
+                    string relationText = ReputationTier(reputation) + " · " + (reputation >= 0 ? "+" : string.Empty) + reputation
+                        + (contractActive ? " · КОНТРАКТ АКТИВЕН" : "");
+                    string secret = KnownFactionSecret(knownSecrets[id]);
+                    string description = "Обещание: " + (lore["promise"]?.ToString() ?? "—")
+                        + "\nЦена: " + (lore["price"]?.ToString() ?? "—")
+                        + "\nТайна: " + secret;
+                    AddFactionCard(_factionRows, _factionsList, "контрактная сторона", RoaPipboy.FactionLabel(id), relationText,
+                        description, FactionTint(id), sites, parties, contested, null, null);
                 }
             });
+        }
+
+        private static bool FactionContractActive(JToken token)
+        {
+            JObject contract = token as JObject;
+            if (contract == null) return false;
+            double expiresAt = contract["expiresAt"]?.ToObject<double>() ?? 0d;
+            return expiresAt <= 0d || expiresAt > System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+
+        private static string ReputationTier(int value)
+        {
+            if (value >= 75) return "Союзная репутация";
+            if (value >= 25) return "Доверие";
+            if (value > -25) return "Нейтрально";
+            if (value > -60) return "Подозрение";
+            return "Враждебность";
+        }
+
+        private static string KnownFactionSecret(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null) return "не раскрыта";
+            if (token.Type == JTokenType.String && !string.IsNullOrWhiteSpace(token.ToString())) return token.ToString();
+            return token.Type == JTokenType.Boolean && token.ToObject<bool>() ? "досье найдено" : "не раскрыта";
         }
 
         // ------------------------------------------------------------------
@@ -2189,6 +2372,95 @@ namespace RealmOfAshes.Game
                     ("В локации", (Pipboy.RemotePlayers != null ? Pipboy.RemotePlayers.Count : 0).ToString()),
                     ("Друзья", friends.ToString()),
                     ("Заявки", requests.ToString()));
+                JObject medicalConsent = Pipboy.MedicalConsentRequest;
+                if (medicalConsent != null)
+                {
+                    string healerName = medicalConsent["healerName"]?.ToString() ?? "Игрок";
+                    string itemName = RoaItemData.Name(medicalConsent["itemId"]?.ToString() ?? "medkit");
+                    AddTextCard(_friendRows, _friendsList, "ЗАПРОС ЛЕЧЕНИЯ",
+                        healerName + " хочет применить: " + itemName + ".",
+                        new List<(string, System.Action)>
+                        {
+                            ("Разрешить", () => Pipboy.SubmitMedicalConsent(true)),
+                            ("Отклонить", () => Pipboy.SubmitMedicalConsent(false))
+                        });
+                }
+                JObject trade = Pipboy.PlayerTrade;
+                if (trade != null)
+                {
+                    string otherName = trade["otherName"]?.ToString() ?? "Игрок";
+                    string status = trade["status"]?.ToString() ?? "pending";
+                    bool invitedMe = trade["inviterId"]?.ToString() != trade["selfId"]?.ToString();
+                    if (status == "pending")
+                    {
+                        var inviteActions = invitedMe
+                            ? new List<(string, System.Action)>
+                            {
+                                ("Принять", () => Pipboy.SubmitPlayerTradeAction("acceptInvite")),
+                                ("Отклонить", () => Pipboy.SubmitPlayerTradeAction("declineInvite"))
+                            }
+                            : new List<(string, System.Action)>
+                            {
+                                ("Отменить", () => Pipboy.SubmitPlayerTradeAction("cancel"))
+                            };
+                        AddTextCard(_friendRows, _friendsList, "ПРЕДЛОЖЕНИЕ ТОРГОВЛИ",
+                            invitedMe ? otherName + " предлагает безопасный обмен." : "Ожидаем ответ: " + otherName + ".",
+                            inviteActions);
+                    }
+                    else
+                    {
+                        string own = TradeOfferLabel(trade["ownOffer"] as JArray);
+                        string other = TradeOfferLabel(trade["otherOffer"] as JArray);
+                        bool ownAccepted = trade["ownAccepted"]?.ToObject<bool>() == true;
+                        bool otherAccepted = trade["otherAccepted"]?.ToObject<bool>() == true;
+                        AddTextCard(_friendRows, _friendsList, "БЕЗОПАСНАЯ СДЕЛКА · " + otherName,
+                            "Вы: " + own + (ownAccepted ? " · подтверждено" : "")
+                            + "\n" + otherName + ": " + other + (otherAccepted ? " · подтверждено" : ""),
+                            new List<(string, System.Action)>
+                            {
+                                (ownAccepted ? "Подтверждено" : "Подтвердить", () => Pipboy.SubmitPlayerTradeAction("confirm")),
+                                ("Отменить", () => Pipboy.SubmitPlayerTradeAction("cancel"))
+                            });
+                        if (Pipboy.Self?["inventory"] is JArray inventory)
+                        {
+                            foreach (JToken row in inventory.Take(18))
+                            {
+                                string itemId = RoaArmorData.BaseId(row["id"]?.ToString() ?? string.Empty);
+                                int available = row["qty"]?.ToObject<int>() ?? 0;
+                                if (string.IsNullOrEmpty(itemId) || itemId == "fists" || available <= 0) continue;
+                                int offered = TradeOfferQty(trade["ownOffer"] as JArray, itemId);
+                                var itemActions = new List<(string, System.Action)>();
+                                if (offered < available) itemActions.Add(("+1", () => Pipboy.SubmitPlayerTradeOfferDelta(itemId, 1)));
+                                if (offered > 0) itemActions.Add(("−1", () => Pipboy.SubmitPlayerTradeOfferDelta(itemId, -1)));
+                                AddTextCard(_friendRows, _friendsList, RoaItemData.Name(itemId) + " · " + available,
+                                    "В предложении: " + offered, itemActions);
+                            }
+                        }
+                        if (Pipboy.Self?["weaponInventoryRuntime"] is JArray runtimeWeapons)
+                        {
+                            foreach (JToken token in runtimeWeapons)
+                            {
+                                string runtimeId = token?["id"]?.ToString() ?? string.Empty;
+                                string itemId = token?["baseId"]?.ToString() ?? string.Empty;
+                                if (string.IsNullOrEmpty(runtimeId) || string.IsNullOrEmpty(itemId)
+                                    || runtimeId == itemId) continue;
+                                bool selected = TradeOfferHasRuntime(trade["ownOffer"] as JArray, itemId, runtimeId);
+                                int loaded = token?["loaded"]?.ToObject<int>() ?? 0;
+                                int condition = Mathf.RoundToInt(token?["condition"]?.ToObject<float>() ?? 100f);
+                                JObject mods = token?["weaponMods"] as JObject;
+                                int modCount = mods?.Properties().Count() ?? 0;
+                                AddTextCard(_friendRows, _friendsList,
+                                    RoaItemData.Name(itemId) + " · экземпляр " + runtimeId.Substring(Mathf.Max(0, runtimeId.Length - 6)),
+                                    "Состояние " + condition + "% · магазин " + loaded + " · модулей " + modCount,
+                                    new List<(string, System.Action)>
+                                    {
+                                        (selected ? "Убрать экземпляр" : "Предложить экземпляр",
+                                            () => Pipboy.SubmitPlayerTradeWeaponToggle(itemId, runtimeId))
+                                    });
+                            }
+                        }
+                    }
+                }
                 AddHeading(_friendRows, _friendsList, "ИГРОК РЯДОМ");
                 PublicPlayer target;
                 float distance;
@@ -2204,6 +2476,16 @@ namespace RealmOfAshes.Game
                     AddTextCard(_friendRows, _friendsList,
                         (target.Name ?? "Игрок") + " · ур. " + target.Level + " · " + distance.ToString("0.0") + " м",
                         "HP " + target.Hp + "/" + target.MaxHp, actions);
+                    AddTextCard(_friendRows, _friendsList, "Доступ к личной базе",
+                        "Гость только входит; работник использует склад и станции; строитель также ставит объекты.",
+                        new List<(string, System.Action)>
+                        {
+                            ("Гость", () => Pipboy.SubmitPersonalBasePermission(target, "guest")),
+                            ("Работник", () => Pipboy.SubmitPersonalBasePermission(target, "worker")),
+                            ("Строитель", () => Pipboy.SubmitPersonalBasePermission(target, "builder")),
+                            ("Закрыть", () => Pipboy.SubmitPersonalBasePermission(target, "revoke")),
+                            ("В гости", () => Pipboy.SubmitPersonalBaseVisit(target))
+                        });
 
                     bool inRange = distance <= RoaPipboy.HealRange;
                     var heal = new List<(string, System.Action)>();
@@ -2212,7 +2494,7 @@ namespace RealmOfAshes.Game
                     AddHeal(heal, target, "doctorBag", "Доктор", inRange && RoaPipboy.HasTreatableInjury(target));
                     AddHeal(heal, target, "antibiotics", "Антибиотик", inRange && RoaPipboy.HasInjury(target, "infection"));
                     AddTextCard(_friendRows, _friendsList, "Лечение",
-                        inRange ? "Предметы из вашего рюкзака, расход подтверждает сервер." : "Подойдите ближе, чтобы лечить.", heal);
+                        inRange ? "Предметы из вашего рюкзака. Другой игрок должен подтвердить лечение." : "Подойдите ближе, чтобы лечить.", heal);
                 }
                 else
                 {
@@ -2238,6 +2520,49 @@ namespace RealmOfAshes.Game
             int qty = Pipboy.InventoryQty(itemId);
             if (!applicable || qty <= 0) return;
             into.Add((label + " (" + qty + ")", () => Pipboy.SubmitHeal(target, itemId)));
+        }
+
+        private static int TradeOfferQty(JArray rows, string itemId)
+        {
+            if (rows == null) return 0;
+            foreach (JToken row in rows)
+                if (RoaArmorData.BaseId(row["id"]?.ToString() ?? string.Empty) == itemId)
+                    return Mathf.Max(0, row["qty"]?.ToObject<int>() ?? 0);
+            return 0;
+        }
+
+        private static bool TradeOfferHasRuntime(JArray rows, string itemId, string itemRuntimeId)
+        {
+            if (rows == null || string.IsNullOrEmpty(itemRuntimeId)) return false;
+            foreach (JToken row in rows)
+            {
+                if (RoaArmorData.BaseId(row?["id"]?.ToString() ?? string.Empty) != itemId) continue;
+                foreach (JToken token in row?["itemRuntimeIds"] as JArray ?? new JArray())
+                    if (token?.ToString() == itemRuntimeId) return true;
+            }
+            return false;
+        }
+
+        private static string TradeOfferLabel(JArray rows)
+        {
+            if (rows == null || rows.Count == 0) return "ничего";
+            return string.Join(", ", rows.Take(8).Select(row =>
+                RoaItemData.Name(RoaArmorData.BaseId(row["id"]?.ToString() ?? string.Empty))
+                + " ×" + Mathf.Max(1, row["qty"]?.ToObject<int>() ?? 1)
+                + (((row["itemRuntimeIds"] as JArray)?.Count ?? 0) > 0
+                    ? " (выбрано экземпляров: " + (row["itemRuntimeIds"] as JArray).Count + ")"
+                    : string.Empty)
+                + TradeOfferRuntimeSummary(row)));
+        }
+
+        private static string TradeOfferRuntimeSummary(JToken row)
+        {
+            JArray records = row?["itemRuntimeRecords"] as JArray;
+            if (records == null || records.Count == 0) return string.Empty;
+            return " [" + string.Join("; ", records.Take(3).Select(record =>
+                Mathf.RoundToInt(record?["condition"]?.ToObject<float>() ?? 100f) + "%"
+                + ", магазин " + (record?["loaded"]?.ToObject<int>() ?? 0)
+                + ", модулей " + ((record?["weaponMods"] as JObject)?.Properties().Count() ?? 0))) + "]";
         }
 
         private void AddSocialEntries(List<GameObject> rows, RectTransform list, JArray entries,
@@ -2307,6 +2632,7 @@ namespace RealmOfAshes.Game
                         ("Принять", () => Pipboy.SubmitSocialState("acceptClan", entry)),
                         ("Отклонить", () => Pipboy.SubmitSocialState("declineClan", entry))
                     });
+                AddKromkaClanBaseRows(clanName);
             });
         }
 
@@ -2417,6 +2743,12 @@ namespace RealmOfAshes.Game
                 {
                     AddTextCard(_radioRows, _radioList, radio.StatusLine,
                         string.IsNullOrEmpty(radio.SignalLine) ? "Настройка на несущую…" : radio.SignalLine);
+                    // Пластинка из библиотеки (public/radio): сводка может перезаписать
+                    // строку сигнала, поэтому «сейчас играет» показывается отдельной карточкой.
+                    if (radio.MusicPlaying && !string.IsNullOrEmpty(radio.NowPlayingTitle))
+                        AddTextCard(_radioRows, _radioList, "♪ Сейчас играет", radio.NowPlayingTitle);
+                    if (!string.IsNullOrEmpty(radio.NextUpTitle))
+                        AddTextCard(_radioRows, _radioList, "Далее в эфире", radio.NextUpTitle);
                     IReadOnlyList<RoaRadio.Broadcast> lines = radio.Lines;
                     if (lines.Count == 0)
                         AddTextCard(_radioRows, _radioList, "Несущая", "Эфир пуст — ждём сводку пустоши.");

@@ -63,6 +63,8 @@ function normalizeGlobalInfrastructure(rows = [], globalMap = {}) {
       walkable: source.walkable !== false,
       travelFactor: clamp(source.travelFactor ?? defaultFactor, 0.35, 1.5),
       width: clamp(source.width ?? defaultWidth, 2, 18),
+      allowCrossingsWith: (Array.isArray(source.allowCrossingsWith) ? source.allowCrossingsWith : [])
+        .map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)).filter(Boolean),
       points
     });
   }
@@ -171,7 +173,7 @@ function infrastructurePointIsWater(globalMap = {}, point = null) {
   if (!safe) return true;
   const nx = safe.x / Math.max(1, grid.width);
   const ny = safe.y / Math.max(1, grid.height);
-  if (nx <= coastlineXAtY(ny)) return true;
+  if (globalMap?.legacyCoastline !== false && nx <= coastlineXAtY(ny)) return true;
   const cx = clamp(Math.floor(safe.x / grid.cellPoints), 0, grid.cols - 1);
   const cy = clamp(Math.floor(safe.y / grid.cellPoints), 0, grid.rows - 1);
   const texture = String(globalMap?.cells?.[`${cx}:${cy}`]?.texture || '').trim().toLowerCase();

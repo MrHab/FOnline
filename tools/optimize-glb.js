@@ -79,7 +79,19 @@ async function optimize(file) {
 }
 
 (async () => {
-  const files = (targets.length ? targets : [defaultDir]).flatMap(t => listGlb(path.resolve(t)));
+  const fullBuild = targets.length === 0;
+  const files = (fullBuild ? [defaultDir] : targets).flatMap(t => listGlb(path.resolve(t)));
+  if (fullBuild && fs.existsSync(outRoot)) {
+    const expected = new Set(files.map(file => path.relative(defaultDir, file).toLowerCase()));
+    const stale = listGlb(outRoot)
+      .filter(file => !expected.has(path.relative(outRoot, file).toLowerCase()));
+    if (!dry) {
+      for (const file of stale) fs.unlinkSync(file);
+    }
+    if (stale.length > 0) {
+      console.log(`${dry ? '[dry] ' : ''}Removed ${stale.length} stale generated GLB file(s).`);
+    }
+  }
   let totalBefore = 0, totalAfter = 0;
   for (const file of files) {
     const r = await optimize(file);

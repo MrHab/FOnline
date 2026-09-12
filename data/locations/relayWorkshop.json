@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "relayWorkshop",
-  "name": "Техмастерская Ретранслятора",
+  "name": "Опытная мастерская К-3",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,264 +52,2015 @@
   "containers": [],
   "objects": [
     {
-      "id": "relay_energy_bench",
-      "model": "craftStationEnergy",
-      "name": "Энергетический стенд",
-      "url": "/assets/models/wasteland/craft_station_energy.glb",
+      "id": "relayWorkshop-dressing-functional-01",
+      "model": "scrap_heap",
+      "name": "relayWorkshop-dressing-functional-01",
       "position": {
-        "x": -8,
-        "y": 0,
-        "z": -6
+        "x": 12.364,
+        "y": 0.0,
+        "z": 4.017
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 1.257,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.27,
+        "z": 2.652
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-02",
+      "model": "cargo_stack",
+      "name": "relayWorkshop-dressing-functional-02",
+      "position": {
+        "x": 5.692,
+        "y": 0.0,
+        "z": 15.167
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.359,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.207,
+        "z": 1.438
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "relayWorkshop-dressing-functional-03",
+      "position": {
+        "x": -9.95,
+        "y": 0.0,
+        "z": 16.654
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.745,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.388,
+        "z": 1.306
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-04",
+      "model": "craft_station_tools",
+      "name": "relayWorkshop-dressing-functional-04",
+      "position": {
+        "x": -12.882,
+        "y": 0.0,
+        "z": 1.745
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.847,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.852,
+        "z": 2.859
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-05",
+      "model": "workshop_bench",
+      "name": "relayWorkshop-dressing-functional-05",
+      "position": {
+        "x": -11.709,
+        "y": 0.0,
+        "z": -11.195
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.949,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.777,
+        "z": 2.822
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-06",
+      "model": "scrap_wall_segment",
+      "name": "relayWorkshop-dressing-functional-06",
+      "position": {
+        "x": 1.739,
+        "y": 0.0,
+        "z": -19.322
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.052,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.415,
+        "z": 1.776
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-functional-07",
+      "model": "cot_bed",
+      "name": "relayWorkshop-dressing-functional-07",
+      "position": {
+        "x": 10.849,
+        "y": 0.0,
+        "z": -7.162
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.154,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.754,
+        "z": 1.937
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-01",
+      "model": "dead_tree_a",
+      "name": "relayWorkshop-dressing-region-01",
+      "position": {
+        "x": 24.846,
+        "y": 0.0,
+        "z": -20.55
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.462,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.33,
+        "z": 2.358
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-02",
+      "model": "relay_antenna",
+      "name": "relayWorkshop-dressing-region-02",
+      "position": {
+        "x": 24.68,
+        "y": 0.0,
+        "z": -20.444
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.887,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.724,
+        "z": 2.458
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-03",
+      "model": "utility_pole",
+      "name": "relayWorkshop-dressing-region-03",
+      "position": {
+        "x": 24.678,
+        "y": 0.0,
+        "z": -20.449
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.886,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.528,
+        "z": 1.826
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "relayWorkshop-dressing-region-04",
+      "position": {
+        "x": 23.088,
+        "y": 0.0,
+        "z": -22.232
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.83,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.279,
+        "z": 1.89
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-05",
+      "model": "dead_tree_a",
+      "name": "relayWorkshop-dressing-region-05",
+      "position": {
+        "x": 22.973,
+        "y": 0.0,
+        "z": -22.141
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.831,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.342,
+        "z": 2.09
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-06",
+      "model": "relay_antenna",
+      "name": "relayWorkshop-dressing-region-06",
+      "position": {
+        "x": 22.99,
+        "y": 0.0,
+        "z": -22.125
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.76,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.795,
+        "z": 2.614
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-07",
+      "model": "utility_pole",
+      "name": "relayWorkshop-dressing-region-07",
+      "position": {
+        "x": 23.008,
+        "y": 0.0,
+        "z": -22.108
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.759,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.434,
+        "z": 1.821
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "relayWorkshop-dressing-region-08",
+      "position": {
+        "x": 22.453,
+        "y": 0.0,
+        "z": -24.17
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.704,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.28,
+        "z": 2.036
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-09",
+      "model": "dead_tree_a",
+      "name": "relayWorkshop-dressing-region-09",
+      "position": {
+        "x": 22.464,
+        "y": 0.0,
+        "z": -24.16
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.704,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.238,
+        "y": 1.238,
+        "z": 1.238
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.374,
+        "z": 2.217
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-10",
+      "model": "relay_antenna",
+      "name": "relayWorkshop-dressing-region-10",
+      "position": {
+        "x": 22.474,
+        "y": 0.0,
+        "z": -24.149
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.125,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.534,
+        "z": 2.113
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-11",
+      "model": "utility_pole",
+      "name": "relayWorkshop-dressing-region-11",
+      "position": {
+        "x": 30.428,
+        "y": 0.0,
+        "z": -12.753
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.126,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.667,
+        "z": 1.815
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "relayWorkshop-dressing-region-12",
+      "position": {
+        "x": 30.287,
+        "y": 0.0,
+        "z": -12.711
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.073,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.228,
+        "z": 1.564
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-13",
+      "model": "dead_tree_a",
+      "name": "relayWorkshop-dressing-region-13",
+      "position": {
+        "x": 30.292,
+        "y": 0.0,
+        "z": -12.707
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.073,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.232,
+        "z": 1.802
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-14",
+      "model": "relay_antenna",
+      "name": "relayWorkshop-dressing-region-14",
+      "position": {
+        "x": 29.541,
+        "y": 0.0,
+        "z": -14.37
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.196,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.671,
+        "z": 2.862
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-dressing-region-15",
+      "model": "utility_pole",
+      "name": "relayWorkshop-dressing-region-15",
+      "position": {
+        "x": 29.374,
+        "y": 0.0,
+        "z": -14.294
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.197,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.268,
+        "y": 1.268,
+        "z": 1.268
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "glasslands",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.868,
+        "z": 2.502
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-external-pipes",
+      "model": "external_pipe",
+      "name": "relayWorkshop-external-pipes EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "structure",
       "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "energy_bench"
+        "pipe",
+        "cascade"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
-      "craftingStations": [
-        "energy_bench"
-      ],
-      "stationSiteId": "relayWorkshop",
-      "worksiteId": "relayWorkshop",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "relayWorkshop"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "relayWorkshop"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "relay_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "id": "relayWorkshop-landmark",
+      "model": "cable-spire",
+      "name": "Landmark cable-spire EDITABLE",
       "position": {
-        "x": -5,
-        "y": 0,
-        "z": -6
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
+        "cable-spire"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "relayWorkshop",
-      "worksiteId": "relayWorkshop",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "relayWorkshop"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "relayWorkshop"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "relay_chem_station",
-      "model": "craftStationChem",
-      "name": "Химический стол",
-      "url": "/assets/models/wasteland/craft_station_chem.glb",
+      "id": "relayWorkshop-loading-gantry",
+      "model": "gantry_crane",
+      "name": "relayWorkshop-loading-gantry EDITABLE",
       "position": {
-        "x": -2,
-        "y": 0,
-        "z": -6
+        "x": 14.0,
+        "y": 0.0,
+        "z": 15.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "cover",
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 16.5,
+        "z": 15.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-main-workshop",
+      "model": "warehouse",
+      "name": "relayWorkshop-main-workshop EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-process-stack",
+      "model": "blast_furnace",
+      "name": "relayWorkshop-process-stack EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-0",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-1",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-2",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-2 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-3",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-3 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-4",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-4 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.02,
+        "z": 21.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-5",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-5 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-glass-6",
+      "model": "fused_glass",
+      "name": "relayWorkshop-region-glass-6 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "glasslands",
+        "fused-ground"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-leaning-pylon-0",
+      "model": "power_pylon",
+      "name": "relayWorkshop-region-leaning-pylon-0 EDITABLE",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-leaning-pylon-1",
+      "model": "power_pylon",
+      "name": "relayWorkshop-region-leaning-pylon-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 6.074
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.624,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-region-leaning-pylon-2",
+      "model": "power_pylon",
+      "name": "relayWorkshop-region-leaning-pylon-2 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.157
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.469,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop-service-bay",
+      "model": "modular_workshop",
+      "name": "relayWorkshop-service-bay EDITABLE",
+      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
         "workshop",
-        "crafting-station",
-        "chem_station"
+        "sheet-metal",
+        "craft"
       ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
-      "craftingStations": [
-        "chem_station"
-      ],
-      "stationSiteId": "relayWorkshop",
-      "worksiteId": "relayWorkshop",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "relayWorkshop"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "relayWorkshop"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "relay_pole_01",
-      "model": "utilityPole",
-      "name": "Мачта питания",
-      "url": "/assets/models/wasteland/utility_pole.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -7
+      "id": "relayWorkshop_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": 12.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
+      "role": "bed",
       "tags": [
-        "cover"
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
       ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "relay_cargo_01",
-      "model": "cargoStack",
-      "name": "Ящики электроники",
-      "url": "/assets/models/wasteland/cargo_stack.glb",
-      "position": {
-        "x": -9,
-        "y": 0,
-        "z": 8
+      "id": "relayWorkshop_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 12.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
+      "role": "bed",
       "tags": [
-        "cover"
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
       ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relayWorkshop_cot_05",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": 14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relay_antenna_01",
       "model": "relayAntenna",
-      "name": "Малая антенна",
-      "url": "/assets/models/wasteland/relay_antenna.glb",
-      "position": {
-        "x": 9,
-        "y": 0,
-        "z": 8
+      "name": "Малая антенна",      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 8.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 0.75,
         "y": 0.75,
         "z": 0.75
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.35,
+        "z": 1.05
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relay_cargo_01",
+      "model": "cargoStack",
+      "name": "Ящики электроники",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.973,
+        "z": 1.105
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relay_chem_station",
+      "model": "craftStationChem",
+      "name": "Химический стол",      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "chem_station"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "chem_station"
+      ],
+      "stationSiteId": "relayWorkshop",
+      "worksiteId": "relayWorkshop",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.753,
+        "z": 1.574
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relay_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "relayWorkshop",
+      "worksiteId": "relayWorkshop",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.703,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relay_pole_01",
+      "model": "utilityPole",
+      "name": "Мачта питания",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "relay_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "relayWorkshop",
+      "worksiteId": "relayWorkshop",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "relayWorkshop"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": -17,
-        "y": 0,
-        "z": 14
+      "name": "Место отдыха",      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -310,16 +2069,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 10,
       "tz": 26,
@@ -329,264 +2080,76 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "glasslands",
+  "kromkaVisualProfile": "contour-experimental-workshop-v1",
+  "ambientProfile": "experimental-machinery",
+  "anomalyDensity": 0.35,
+  "unityScene": "Assets/Scenes/Kromka/Locations/relayWorkshop.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "relayWorkshop-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     },
     {
-      "id": "relayWorkshop_cot_01",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
+      "id": "workshop-clean-room",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
       "position": {
-        "x": -20,
-        "y": 0,
-        "z": 12
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "relayWorkshop_cot_02",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -18,
-        "y": 0,
-        "z": 12
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "relayWorkshop_cot_03",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": 12
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "relayWorkshop_cot_04",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": 12
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "relayWorkshop_cot_05",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -20,
-        "y": 0,
-        "z": 14
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
+      "rotationY": 0.0
     }
   ]
 }

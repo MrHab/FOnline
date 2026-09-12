@@ -221,6 +221,8 @@ namespace RealmOfAshes.Game
         private Image _connectionDot;
         private Text _connectionTitle;
         private Text _connectionDetail;
+        private GameObject _pvpPanel;
+        private Text _pvpText;
         private bool _connectionInterrupted;
         private float _connectionRestoredUntil;
         private GameObject _consolePanel;
@@ -309,6 +311,7 @@ namespace RealmOfAshes.Game
             AppendOccupiedScreenRect(_logPanel, output);
             AppendOccupiedScreenRect(_systemPanel, output);
             AppendOccupiedScreenRect(_connectionPanel, output);
+            AppendOccupiedScreenRect(_pvpPanel, output);
             AppendOccupiedScreenRect(_consolePanel, output);
             AppendOccupiedScreenRect(_compactConsolePanel, output);
             AppendOccupiedScreenRect(_economyRoot, output);
@@ -406,6 +409,7 @@ namespace RealmOfAshes.Game
             _logPanel.SetActive(worldHud && !mobile && !string.IsNullOrEmpty(latestCombat)
                 && Time.unscaledTime < _combatLogUntil);
             RefreshConnectionStatus(gameplayScreen);
+            RefreshPvpStatus(worldHud);
             RefreshSystemStatus(worldHud && !mobile);
             RefreshEconomyFeedback(worldHud);
             RefreshInteractionPrompt(worldHud);
@@ -422,6 +426,7 @@ namespace RealmOfAshes.Game
                 && _mapPanel != null && _mapGroup != null && _quickPanel != null
                 && _quickGroup != null && _logPanel != null && _systemPanel != null
                 && _connectionPanel != null && _connectionTitle != null && _connectionDetail != null
+                && _pvpPanel != null && _pvpText != null
                 && _economyRoot != null && _consolePanel != null && _compactConsolePanel != null
                 && _interactionPrompt != null
                 && _slotButtons[0] != null && _slotTexts[0] != null;
@@ -456,6 +461,7 @@ namespace RealmOfAshes.Game
             BuildInteractionPrompt();
             BuildSystemStatus();
             BuildConnectionStatus();
+            BuildPvpStatus();
             BuildEconomyFeedback();
             BuildCombatLog();
             if (FindAnyObjectByType<EventSystem>() == null)
@@ -534,7 +540,7 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Оружейная консоль в стиле Fallout — центральный нижний модуль HUD.
+        /// Оружейная консоль «Кромки» — центральный нижний модуль HUD.
         /// Точная копия web-раскладки: фон weapon_ui, поверх — проценты из
         /// 15_location_loading_screen.css:649-802. Внутри всегда есть действие,
         /// стоимость ОД, патроны, здоровье и броня — правило HUD web-клиента.
@@ -955,6 +961,52 @@ namespace RealmOfAshes.Game
             _connectionPanel.SetActive(false);
         }
 
+        private void BuildPvpStatus()
+        {
+            RectTransform panel = PanelRect("PvpStatus", _safeRoot, new Vector2(0.5f, 1f),
+                                            new Vector2(0.5f, 1f), new Vector2(0f, -78f),
+                                            new Vector2(360f, 32f));
+            _pvpPanel = panel.gameObject;
+            panel.GetComponent<Image>().color = new Color(0.22f, 0.035f, 0.025f, 0.92f);
+            panel.GetComponent<Outline>().effectColor = new Color(1f, 0.32f, 0.18f, 0.9f);
+            _pvpText = Label("Mode", panel, new Vector2(8f, -4f), new Vector2(344f, 24f), 11,
+                             TextAnchor.MiddleCenter, new Color(1f, 0.76f, 0.48f, 1f), FontStyle.Bold);
+            _pvpPanel.SetActive(false);
+        }
+
+        private void RefreshPvpStatus(bool worldHud)
+        {
+            string mode = _hud != null ? _hud.PvpMode : "peaceful";
+            bool visible = worldHud;
+            _pvpPanel.SetActive(visible);
+            if (!visible) return;
+            bool fullDrop = mode == "pvpFullDrop";
+            bool limitedDrop = mode == "pvp";
+            Image background = _pvpPanel.GetComponent<Image>();
+            Outline outline = _pvpPanel.GetComponent<Outline>();
+            if (fullDrop)
+            {
+                _pvpText.text = "ПОЛНЫЙ ЛУТ · ПОТЕРЯ ИНВЕНТАРЯ";
+                _pvpText.color = new Color(1f, 0.66f, 0.42f, 1f);
+                background.color = new Color(0.22f, 0.035f, 0.025f, 0.92f);
+                outline.effectColor = new Color(1f, 0.24f, 0.12f, 0.95f);
+            }
+            else if (limitedDrop)
+            {
+                _pvpText.text = "PvP · ПАДАЕТ ЧАСТЬ РАСХОДНИКОВ";
+                _pvpText.color = new Color(1f, 0.79f, 0.48f, 1f);
+                background.color = new Color(0.17f, 0.09f, 0.025f, 0.92f);
+                outline.effectColor = new Color(0.96f, 0.60f, 0.18f, 0.88f);
+            }
+            else
+            {
+                _pvpText.text = "МИРНЫЙ · PvP ОТКЛЮЧЁН";
+                _pvpText.color = new Color(0.62f, 0.94f, 0.66f, 1f);
+                background.color = new Color(0.025f, 0.14f, 0.075f, 0.88f);
+                outline.effectColor = new Color(0.28f, 0.78f, 0.42f, 0.80f);
+            }
+        }
+
         public static ConnectionBannerState DescribeConnection(
             RoaSocketClient.ConnectionPhase phase, int reconnectAttempt,
             float retryRemainingSeconds, string lastError, bool restored)
@@ -1123,7 +1175,8 @@ namespace RealmOfAshes.Game
             _nameText.text = _hud.DisplayName;
             _statsText.text =
                 "<color=#d7e3a2>УР.</color> <color=#ffd16b>" + _hud.Level + "</color>   "
-                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>";
+                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>"
+                + "   " + (_hud.Hydration <= 0f ? "<color=#ff805e>ВОДА 0%</color>" : "ВОДА " + _hud.Hydration.ToString("0") + "%");
         }
 
         /// <summary>

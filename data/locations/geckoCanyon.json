@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "geckoCanyon",
-  "name": "Каньон гекконов",
+  "name": "Овраг Слухачей",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvpFullDrop",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,79 +52,1532 @@
   "containers": [],
   "objects": [
     {
-      "id": "gecko_rock_01",
-      "model": "rubbleRock",
-      "name": "Тёплые камни",
-      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "id": "geckoCanyon-dressing-functional-01",
+      "model": "dead_tree_a",
+      "name": "geckoCanyon-dressing-functional-01",
       "position": {
-        "x": -9,
-        "y": 0,
-        "z": -6
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
       },
       "collision": "none",
+      "role": "scenery",
       "tags": [
-        "rock"
-      ]
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.51,
+        "z": 1.7
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "gecko_tree_01",
+      "id": "geckoCanyon-dressing-functional-02",
       "model": "deadwood",
-      "name": "Сухой ствол",
-      "url": "/assets/models/wasteland/deadwood.glb",
+      "name": "geckoCanyon-dressing-functional-02",
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": -8
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
       },
       "collision": "none",
+      "role": "scenery",
       "tags": [
-        "debris"
-      ]
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.152,
+        "z": 1.356
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "geckoCanyon-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.821,
+        "z": 2.222
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-functional-04",
+      "model": "car_wreck",
+      "name": "geckoCanyon-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.875,
+        "z": 3.99
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-functional-05",
+      "model": "perimeter_debris",
+      "name": "geckoCanyon-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.617,
+        "z": 1.589
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-01",
+      "model": "rubble_rock",
+      "name": "geckoCanyon-dressing-region-01",
+      "position": {
+        "x": -24.692,
+        "y": 0.0,
+        "z": 5.937
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.775,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.75,
+        "z": 2.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-02",
+      "model": "deadwood",
+      "name": "geckoCanyon-dressing-region-02",
+      "position": {
+        "x": -24.237,
+        "y": 0.0,
+        "z": 5.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.088,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.135,
+        "z": 1.448
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-03",
+      "model": "dry_bush",
+      "name": "geckoCanyon-dressing-region-03",
+      "position": {
+        "x": -24.239,
+        "y": 0.0,
+        "z": 5.805
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.089,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.625,
+        "z": 1.451
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-04",
+      "model": "ore_outcrop",
+      "name": "geckoCanyon-dressing-region-04",
+      "position": {
+        "x": -22.727,
+        "y": 0.0,
+        "z": 10.235
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.145,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.864,
+        "z": 1.392
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-05",
+      "model": "rubble_rock",
+      "name": "geckoCanyon-dressing-region-05",
+      "position": {
+        "x": -22.859,
+        "y": 0.0,
+        "z": 10.282
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.144,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.375,
+        "z": 1.804
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-06",
+      "model": "deadwood",
+      "name": "geckoCanyon-dressing-region-06",
+      "position": {
+        "x": -22.865,
+        "y": 0.0,
+        "z": 10.272
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.962,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.234,
+        "z": 1.408
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-07",
+      "model": "dry_bush",
+      "name": "geckoCanyon-dressing-region-07",
+      "position": {
+        "x": -22.869,
+        "y": 0.0,
+        "z": 10.261
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.962,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.724,
+        "z": 1.443
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-08",
+      "model": "ore_outcrop",
+      "name": "geckoCanyon-dressing-region-08",
+      "position": {
+        "x": -24.138,
+        "y": 0.0,
+        "z": 9.291
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.017,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.88,
+        "z": 1.363
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-09",
+      "model": "rubble_rock",
+      "name": "geckoCanyon-dressing-region-09",
+      "position": {
+        "x": -24.144,
+        "y": 0.0,
+        "z": 9.273
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.017,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.041,
+        "y": 1.041,
+        "z": 1.041
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.485,
+        "z": 1.979
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-10",
+      "model": "deadwood",
+      "name": "geckoCanyon-dressing-region-10",
+      "position": {
+        "x": -24.152,
+        "y": 0.0,
+        "z": 9.255
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.331,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.29,
+        "z": 1.679
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-11",
+      "model": "dry_bush",
+      "name": "geckoCanyon-dressing-region-11",
+      "position": {
+        "x": -25.831,
+        "y": 0.0,
+        "z": 1.376
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.331,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.767,
+        "z": 1.571
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-12",
+      "model": "ore_outcrop",
+      "name": "geckoCanyon-dressing-region-12",
+      "position": {
+        "x": -25.971,
+        "y": 0.0,
+        "z": 1.371
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.383,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.858,
+        "z": 1.532
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-13",
+      "model": "rubble_rock",
+      "name": "geckoCanyon-dressing-region-13",
+      "position": {
+        "x": -25.968,
+        "y": 0.0,
+        "z": 1.375
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.383,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.69,
+        "z": 2.255
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-14",
+      "model": "deadwood",
+      "name": "geckoCanyon-dressing-region-14",
+      "position": {
+        "x": -26.01,
+        "y": 0.0,
+        "z": -0.069
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.343,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.247,
+        "z": 2.266
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-dressing-region-15",
+      "model": "dry_bush",
+      "name": "geckoCanyon-dressing-region-15",
+      "position": {
+        "x": -25.542,
+        "y": 0.0,
+        "z": -0.071
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.344,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.064,
+        "y": 1.064,
+        "z": 1.064
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.937,
+        "z": 1.944
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-elder-den",
+      "model": "ring_structure",
+      "name": "geckoCanyon-elder-den EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-landmark",
+      "model": "echo-pillars",
+      "name": "Landmark echo-pillars EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "echo-pillars"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-main-nest",
+      "model": "ring_structure",
+      "name": "geckoCanyon-main-nest EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-outer-trace-0",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-outer-trace-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-outer-trace-1",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-outer-trace-1 EDITABLE",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-outer-trace-2",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-outer-trace-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-outer-trace-3",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-outer-trace-3 EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-outer-trace-4",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-outer-trace-4 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-chalk-cliff-0",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-region-chalk-cliff-0 EDITABLE",
+      "position": {
+        "x": -30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-chalk-cliff-1",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-region-chalk-cliff-1 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-chalk-cliff-2",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-region-chalk-cliff-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-chalk-cliff-3",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-region-chalk-cliff-3 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-chalk-cliff-4",
+      "model": "terrain_mound",
+      "name": "geckoCanyon-region-chalk-cliff-4 EDITABLE",
+      "position": {
+        "x": 30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "geckoCanyon-region-karst-window",
+      "model": "ring_structure",
+      "name": "geckoCanyon-region-karst-window EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 10.0,
+        "z": 10.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "gecko_bush_01",
       "model": "dryBush",
-      "name": "Сухой куст",
-      "url": "/assets/models/wasteland/dry_bush.glb",
-      "position": {
-        "x": 2,
-        "y": 0,
-        "z": 9
+      "name": "Сухой куст",      "position": {
+        "x": 2.0,
+        "y": 0.0,
+        "z": 9.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
         "bush"
-      ]
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.515,
+        "z": 1.405
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "gecko_rock_01",
+      "model": "rubbleRock",
+      "name": "Тёплые камни",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.28,
+        "z": 1.731
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "gecko_tree_01",
+      "model": "deadwood",
+      "name": "Сухой ствол",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.0,
+        "z": 1.436
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "chalk_lowland",
+  "kromkaVisualProfile": "listener-karst-ravine-v1",
+  "ambientProfile": "echoing-karst-hunt",
+  "anomalyDensity": 0.24,
+  "unityScene": "Assets/Scenes/Kromka/Locations/geckoCanyon.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "geckoCanyon-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "ravine-upper-lip",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
     }
   ]
 }

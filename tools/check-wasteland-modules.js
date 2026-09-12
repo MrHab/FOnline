@@ -121,11 +121,15 @@ function checkFactions() {
 }
 
 function checkFactionPresentationContract() {
-  const expected = ['old_klim', 'scrap_union', 'relay_order'];
-  assert.deepStrictEqual([...JOINABLE_WORLD_FACTIONS].sort(), [...expected].sort(),
-    'server player-faction allowlist must contain exactly the three main factions');
-  assert.deepStrictEqual([...TERRITORIAL_WORLD_FACTIONS].sort(), [...expected, 'caravans'].sort(),
-    'territorial simulation must retain caravans without making them a player faction');
+  const compatibilityFactions = ['old_klim', 'scrap_union', 'relay_order'];
+  const kromkaTerritorial = [
+    'uprava', 'free_artels', 'contour', 'tract_league', 'seconds', 'continuity'
+  ];
+  assert.deepStrictEqual([...JOINABLE_WORLD_FACTIONS].sort(), [...compatibilityFactions].sort(),
+    'background simulation must retain the three compatibility faction aliases');
+  assert.deepStrictEqual([...TERRITORIAL_WORLD_FACTIONS].sort(),
+    [...compatibilityFactions, 'caravans', ...kromkaTerritorial].sort(),
+    'territorial simulation must retain compatibility factions and all six Kromka sides');
 
   const pipboy = fs.readFileSync(path.join(ROOT, 'unity-client/Assets/Scripts/Game/RoaPipboy.cs'), 'utf8');
   const canvas = fs.readFileSync(path.join(ROOT, 'unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs'), 'utf8');
@@ -134,31 +138,32 @@ function checkFactionPresentationContract() {
 
   const unityAllowlist = pipboy.match(/PrimaryFactionIds\s*=\s*\{([^}]*)\}/);
   assert(unityAllowlist, 'Unity PIP-Boy main-faction allowlist is missing');
-  assert.deepStrictEqual(quotedIds(unityAllowlist[1]), expected,
-    'Unity RoaPipboy does not show exactly the three server player factions');
+  assert.deepStrictEqual(quotedIds(unityAllowlist[1]), kromkaTerritorial,
+    'Unity RoaPipboy does not show all six Kromka contract sides');
   const unityJoinability = pipboy.slice(
     pipboy.indexOf('public static bool IsJoinableFaction('),
-    pipboy.indexOf('public static string FactionLabel(', pipboy.indexOf('public static bool IsJoinableFaction('))
+    pipboy.indexOf('public static bool IsKnownFaction(', pipboy.indexOf('public static bool IsJoinableFaction('))
   );
-  assert.deepStrictEqual(quotedIds(unityJoinability), expected,
-    'Unity faction joinability drifted from its three-card PIP-Boy allowlist');
+  assert(unityJoinability.includes('return false;')
+    && pipboy.includes('Наёмник не вступает во фракцию навсегда'),
+    'Unity must present factions as temporary contracts for an independent mercenary');
 
   assert(canvas.includes('foreach (string id in RoaPipboy.PrimaryFactionIds)'),
     'RoaPipboyCanvas no longer renders the shared three-faction allowlist');
-  assert(canvas.includes('RoaPipboy.PrimaryFactionIds.Length'),
-    'RoaPipboyCanvas dashboard no longer counts the shared three-faction allowlist');
+  assert(canvas.includes('Pipboy.FactionCatalog.Count.ToString()'),
+    'RoaPipboyCanvas dashboard no longer counts the authoritative Kromka faction catalog');
   assert(!/\bFactionIds\s*=/.test(canvas),
     'RoaPipboyCanvas reintroduced a separate faction allowlist that can drift');
 }
 
 function checkMapGeometry() {
   const size = districtInterestMapSize(globalMap);
-  assert.strictEqual(size.cols, 30);
+  assert.strictEqual(size.cols, 38);
   assert.strictEqual(size.rows, 30);
-  assert.strictEqual(size.cellPoints, 30);
-  assert.strictEqual(mapPointKm(globalMap), 1 / 3);
-  assert.deepStrictEqual(globalMapCellCenter({ x: 0, y: 0 }, globalMap), { x: 15, y: 15 });
-  assert(Math.abs(pointDistanceKm({ x: 0, y: 0 }, { x: 30, y: 40 }, globalMap) - 50 / 3) < 1e-9);
+  assert.strictEqual(size.cellPoints, 10);
+  assert.strictEqual(mapPointKm(globalMap), 1);
+  assert.deepStrictEqual(globalMapCellCenter({ x: 0, y: 0 }, globalMap), { x: 5, y: 5 });
+  assert(Math.abs(pointDistanceKm({ x: 0, y: 0 }, { x: 30, y: 40 }, globalMap) - 50) < 1e-9);
 }
 
 function checkDistrictSites() {
@@ -168,7 +173,7 @@ function checkDistrictSites() {
 
   const sites = Object.values(first);
   const roads = globalMapRoadRows(globalMap);
-  assert(sites.length >= 80, 'district generation produced too few sites');
+  assert(sites.length >= 30, 'district generation produced too few Kromka interest sites');
   assert.strictEqual(new Set(sites.map(site => site.id)).size, sites.length);
   assert.strictEqual(new Set(sites.map(site => site.locationId)).size, sites.length);
   assert.strictEqual(new Set(sites.map(site => site.name)).size, sites.length);
@@ -229,7 +234,7 @@ function checkTaskNormalization() {
   assert.strictEqual(task.id, 'legacy_task');
   assert.strictEqual(task.type, 'deliver_supplies');
   assert.strictEqual(task.status, 'active');
-  assert.strictEqual(task.title, 'Снабженческий караван Старого Клима');
+  assert.strictEqual(task.title, 'Снабженческий караван Управы');
   assert.strictEqual(task.expiresHour, 48);
   assert.strictEqual(task.priority, 5);
   assert.deepStrictEqual(task.reward, { xp: 12, caps: 17, reputation: 2 });

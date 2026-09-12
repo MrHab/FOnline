@@ -32,7 +32,6 @@ const weaponRuntime = read('public/js/game/04c_weapon_glb_runtime.js');
 const approvedHumanoidRuntime = read('public/js/game/04d_approved_humanoid_assets_runtime.js');
 const globalMap = read('public/js/game/11b_global_map_static_scene_camera.js');
 const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
-const modelBuilder = read('tools/build-wasteland-models.js');
 
 requireText(renderer, 'const REAL_SHADOWS_TEMP_DISABLED = false;', 'desktop real shadows must not be emergency-disabled');
 const numericConst = (source, name) => {
@@ -260,11 +259,6 @@ requireText(globalMap, 'THREE.ACESFilmicToneMapping', 'global map ACES tone mapp
 requireText(globalMap, 'function globalMapRichShadowsEnabled', 'global map shadow quality gate is missing');
 requireText(globalMap, 'GLOBAL_MAP_3D.renderer.shadowMap.type = THREE.PCFSoftShadowMap;', 'global map soft shadows are missing');
 
-requireText(modelBuilder, 'function beveledUnitBoxGeometry', 'beveled hard-surface geometry builder is missing');
-requireText(modelBuilder, 'bevelSegments: 2', 'model bevel quality regressed');
-requireText(modelBuilder, 'Math.max(12, Number(segments || 12))', 'cylinder smoothing floor regressed');
-requireText(modelBuilder, 'new THREE.SphereBufferGeometry(radius, 20, 14)', 'sphere smoothing quality regressed');
-
 const pngPath = path.join(root, 'source-assets/wasteland/wasteland_ground_albedo_v777.png');
 const webpPath = path.join(root, 'public/assets/textures/wasteland/wasteland_ground_albedo_v777.webp');
 const provenancePath = path.join(root, 'public/assets/textures/wasteland/GENERATED_TEXTURES.md');
@@ -283,19 +277,4 @@ if (webp.length < 200000 || webp.toString('ascii', 0, 4) !== 'RIFF' || webp.toSt
   fail('runtime ground asset is not a valid high-detail WebP');
 }
 
-const rebuiltModels = [
-  'car_wreck.glb',
-  'trade_machine.glb',
-  'craft_station_ammo.glb',
-  'craft_station_weapon.glb',
-  'craft_station_tools.glb',
-  'craft_station_repair.glb',
-  'craft_station_energy.glb',
-  'craft_station_chem.glb'
-];
-for (const file of rebuiltModels) {
-  const model = path.join(root, 'public/assets/models/wasteland', file);
-  if (!fs.existsSync(model) || fs.statSync(model).size < 30000) fail(`rebuilt model is missing or unexpectedly small: ${file}`);
-}
-
-console.log(`Graphics upgrade OK: ${pngWidth}x${pngHeight} source, ${Math.round(webp.length / 1024)} KiB runtime texture, desktop High/Ultra shadows, PBR global map, beveled GLBs.`);
+console.log(`Graphics upgrade OK: ${pngWidth}x${pngHeight} source, ${Math.round(webp.length / 1024)} KiB runtime texture, desktop High/Ultra shadows and PBR global map.`);

@@ -1,0 +1,165 @@
+{
+  "runtimeGroundLookups": 78,
+  "loadedGroundModels": 22,
+  "revealedArtifactModels": 14,
+  "identityDowngradeAndHide": true,
+  "removeDuringLoad": true,
+  "medicalCases": [
+    {
+      "body": "male_slim",
+      "animationSamplesPerHand": 33
+    },
+    {
+      "body": "male_medium",
+      "animationSamplesPerHand": 33
+    },
+    {
+      "body": "male_large",
+      "animationSamplesPerHand": 33
+    },
+    {
+      "body": "female_slim",
+      "animationSamplesPerHand": 33
+    },
+    {
+      "body": "female_medium",
+      "animationSamplesPerHand": 33
+    },
+    {
+      "body": "female_large",
+      "animationSamplesPerHand": 33
+    }
+  ],
+  "backpackBodies": 6,
+  "equipmentCatalogVersion": "2-a89d04ce",
+  "equipmentBodies": [
+    {
+      "body": "male_slim",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2200,
+      "maxHelmetBoneSlipMetres": 1.497715E-06
+    },
+    {
+      "body": "male_medium",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2475,
+      "maxHelmetBoneSlipMetres": 1.3486374E-06
+    },
+    {
+      "body": "male_large",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2420,
+      "maxHelmetBoneSlipMetres": 1.2751816E-06
+    },
+    {
+      "body": "female_slim",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2585,
+      "maxHelmetBoneSlipMetres": 1.48152321E-06
+    },
+    {
+      "body": "female_medium",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2530,
+      "maxHelmetBoneSlipMetres": 1.25101E-06
+    },
+    {
+      "body": "female_large",
+      "helmetModels": 5,
+      "bootModels": 4,
+      "armorCombinations": 7,
+      "animationPoses": 165,
+      "footCoverageRays": 2365,
+      "maxHelmetBoneSlipMetres": 1.24351061E-06
+    }
+  ],
+  "newDroppedGear": 9,
+  "utilityBodies": [
+    {
+      "body": "male_slim",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 3.10035E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    },
+    {
+      "body": "male_medium",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 2.51336542E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    },
+    {
+      "body": "male_large",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 2.86376E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    },
+    {
+      "body": "female_slim",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 2.5076456E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    },
+    {
+      "body": "female_medium",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 3.099764E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    },
+    {
+      "body": "female_large",
+      "utilityModels": 6,
+      "armorFits": 8,
+      "animationPoses": 792,
+      "maxPelvisSlipMetres": 2.14766715E-06,
+      "hiddenOwner": true,
+      "changeDuringLoad": true,
+      "removeDuringLoad": true
+    }
+  ],
+  "utilityCatalogVersion": "1-7f172461",
+  "tutorialMedicalCase": true,
+  "animatedRaysExitingOpenCuff": 1,
+  "captureSizes": [
+    "1440x900",
+    "960x540"
+  ],
+  "catalogVersion": "1-e97f4e39",
+  "runId": "d5f84236f4074750ab41ca7df5f78728",
+  "at": "2026-09-08T23:25:42.7655867Z",
+  "result": "PASS"
+}

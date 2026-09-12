@@ -1,0 +1,109 @@
+{
+  "schema": "realm.kromka.character-progression.v1",
+  "version": 1,
+  "special": {
+    "budget": 40,
+    "min": 1,
+    "max": 10,
+    "effectiveMax": 15,
+    "stats": [
+      { "id": "str", "code": "МЩ", "name": "Мощь", "description": "Переносимый вес = 30 + Мощь×8; штраф оружия −5,5 п.п. за каждую недостающую единицу Мощи; ближний урон +floor((Мощь−5)/2)." },
+      { "id": "per", "code": "НБ", "name": "Наблюдательность", "description": "Меткость +(Наблюдательность−5)×2,5 п.п.; обзор = clamp 6–16 клеток: round(5,5 + Наблюдательность×0,7)." },
+      { "id": "end", "code": "СТ", "name": "Стойкость", "description": "ОЗ = 55 + Стойкость×9 + 12 за каждый полученный уровень + перки; сопротивление = round(Стойкость×0,7)%." },
+      { "id": "cha", "code": "ВЛ", "name": "Влияние", "description": "Продажа +(Влияние−5)×4%; речь +(Влияние−5)×3,5 п.п.; награды заданий +(Влияние−5)×2%." },
+      { "id": "int", "code": "ИН", "name": "Интеллект", "description": "Терминалы +(Интеллект−5)×3 п.п.; лечение Доктором +(Интеллект−5)×2,5 п.п.; энергоурон +floor((Интеллект−5)/2)." },
+      { "id": "agi", "code": "РЕ", "name": "Реакция", "description": "ОД = 5 + floor(Реакция/2) + Живчик; скорость = 4,35 + Реакция×0,13; взлом получает бонус от Реакции." },
+      { "id": "luck", "code": "ЧУ", "name": "Чутьё", "description": "Шанс критического выстрела = Чутьё%; меткость +max(0, Чутьё−5)×0,6 п.п.; проверки чутья +max(0, Чутьё−5)×2,5 п.п." }
+    ]
+  },
+  "taggedSkills": { "min": 1, "max": 2, "bonusPercent": 5 },
+  "startTraits": {
+    "min": 1,
+    "max": 2,
+    "items": [
+      { "id": "trainedEye", "name": "Меткий глаз", "description": "+6 п.п. к шансу попадания из огнестрельного оружия." },
+      { "id": "bruiser", "name": "Тяжёлый удар", "description": "+18 ОЗ и +2 урона в ближнем бою, но скорость −0,18 м/с." },
+      { "id": "scavengerStart", "name": "Падальщик", "description": "Больше полезных находок в трофеях и стартовый запас патронов." },
+      { "id": "traderStart", "name": "Барыга", "description": "+15% к цене продажи и +15 марок на старте." },
+      { "id": "craftsmanStart", "name": "Ремесленник", "description": "+10% к крафту и сбору, стартовый ремкомплект." },
+      { "id": "educatedStart", "name": "Образованный", "description": "+5 свободных очков навыков после создания персонажа." }
+    ]
+  },
+  "skills": {
+    "pointsPerLevel": 5,
+    "items": [
+      { "id": "lightWeapons", "name": "Лёгкое оружие", "group": "Боевые", "description": "Шанс попадания и снижение штрафа автоматического огня из лёгкого оружия." },
+      { "id": "heavyWeapons", "name": "Тяжёлое оружие", "group": "Боевые", "description": "Шанс попадания и снижение штрафа автоматического огня из тяжёлого оружия." },
+      { "id": "energyWeapons", "name": "Энергетическое оружие", "group": "Боевые", "description": "Шанс попадания, снижение штрафа автоматического огня и риска перегрева." },
+      { "id": "throwing", "name": "Метательное оружие", "group": "Боевые", "description": "Точность и радиус поражения гранат и другого метательного оружия." },
+      { "id": "melee", "name": "Ближний бой", "group": "Боевые", "description": "Шанс попадания и урон оружием ближнего боя." },
+      { "id": "unarmed", "name": "Рукопашный бой", "group": "Боевые", "description": "Шанс попадания и урон без оружия." },
+      { "id": "doctor", "name": "Доктор", "group": "Мирные", "description": "Лечение переломов, контузии и инфекции." },
+      { "id": "firstAid", "name": "Первая помощь", "group": "Мирные", "description": "Быстрое восстановление ОЗ медикаментами." },
+      { "id": "stealth", "name": "Скрытность", "group": "Мирные", "description": "Снижает вероятность обнаружения существами и игроками." },
+      { "id": "lockpick", "name": "Взлом", "group": "Мирные", "description": "Открытие запертых дверей, ящиков и контейнеров." },
+      { "id": "traps", "name": "Ловушки", "group": "Мирные", "description": "Работа с ловушками и защитными системами, снижение задержки после провала." },
+      { "id": "science", "name": "Наука", "group": "Мирные", "description": "Терминалы, технологический крафт, техпроверки и энергетическое оружие." },
+      { "id": "repair", "name": "Ремонт", "group": "Мирные", "description": "Починка оружия, брони и техники." },
+      { "id": "speech", "name": "Красноречие", "group": "Мирные", "description": "Шанс диалоговых проверок, опыт и награды за задания." },
+      { "id": "barter", "name": "Бартер", "group": "Мирные", "description": "Более выгодные цены покупки и продажи." },
+      { "id": "wanderer", "name": "Странник", "group": "Мирные", "description": "Находки, сбор ресурсов, дорожные встречи и скорость на глобальной карте." }
+    ]
+  },
+  "perks": {
+    "levelInterval": 3,
+    "items": [
+      { "id": "gunslinger", "name": "Меткий стрелок", "group": "Боевые", "maxRank": 3, "requirements": { "level": 3, "per": 6, "skill": { "lightWeapons": 40 } }, "description": "+7 п.п. к одиночному и прицельному выстрелу за ранг." },
+      { "id": "automaticMan", "name": "Автоматчик", "group": "Боевые", "maxRank": 3, "requirements": { "level": 6, "skill": { "lightWeapons": 50 } }, "description": "Штраф автоматического огня из лёгкого оружия −3 п.п. за ранг." },
+      { "id": "heavyShooter", "name": "Тяжёлый стрелок", "group": "Боевые", "maxRank": 3, "requirements": { "level": 6, "str": 6, "skill": { "heavyWeapons": 50 } }, "description": "+6 п.п. к попаданию из тяжёлого оружия за ранг." },
+      { "id": "machineGunner", "name": "Пулемётчик", "group": "Боевые", "maxRank": 3, "requirements": { "level": 9, "str": 7, "skill": { "heavyWeapons": 65 } }, "description": "Штраф автоматического огня из тяжёлого оружия −4 п.п. за ранг." },
+      { "id": "pyromaniac", "name": "Поджигатель", "group": "Боевые", "maxRank": 3, "requirements": { "level": 6, "str": 6, "skill": { "heavyWeapons": 50 } }, "description": "+4 п.п. к попаданию и +12% сырого огненного урона за ранг." },
+      { "id": "energyTech", "name": "Энергетик", "group": "Боевые", "maxRank": 3, "requirements": { "level": 6, "int": 6, "skill": { "energyWeapons": 50 } }, "description": "+5 п.п. к попаданию, −3 п.п. к штрафу автоогня и −3,5 п.п. к риску сбоя за ранг." },
+      { "id": "grenadier", "name": "Гренадёр", "group": "Боевые", "maxRank": 2, "requirements": { "level": 6, "skill": { "throwing": 50 } }, "description": "+6 п.п. к попаданию и +0,2 м к радиусу взрыва за ранг." },
+      { "id": "meleeBreaker", "name": "Костолом", "group": "Боевые", "maxRank": 2, "requirements": { "level": 6, "str": 6, "skill": { "melee": 50 } }, "description": "+2 урона оружием ближнего боя за ранг." },
+      { "id": "unarmedFighter", "name": "Кулачный боец", "group": "Боевые", "maxRank": 2, "requirements": { "level": 6, "skill": { "unarmed": 50 } }, "description": "+4 п.п. к попаданию и +2 урона без оружия за ранг." },
+      { "id": "sharpshooter", "name": "Прицельная концентрация", "group": "Боевые", "maxRank": 2, "requirements": { "level": 12, "per": 7, "luck": 5 }, "description": "+2 сырого урона оружия с патронами за ранг до расчёта брони." },
+      { "id": "ambush", "name": "Засада", "group": "Боевые", "maxRank": 2, "requirements": { "level": 9, "agi": 6, "skill": { "stealth": 60 } }, "description": "Из приседа вне погони: +8 п.п. к попаданию и множитель урона ×(1+14%×ранг)." },
+      { "id": "vigilance", "name": "Бдительность", "group": "Обзор и выживание", "maxRank": 2, "requirements": { "level": 3, "per": 6 }, "description": "+1 клетка обзора за ранг." },
+      { "id": "awareness", "name": "Осведомлённость", "group": "Обзор и выживание", "maxRank": 1, "requirements": { "level": 3, "per": 5 }, "description": "Показывает точные ОЗ цели и прогноз урона; боевой бонус +0." },
+      { "id": "ghost", "name": "Привидение", "group": "Обзор и выживание", "maxRank": 2, "requirements": { "level": 6, "agi": 6, "skill": { "stealth": 60 } }, "description": "В приседе обнаружение −11 п.п. и шум −17 п.п. за ранг." },
+      { "id": "fieldMedic", "name": "Полевой санитар", "group": "Медицина", "maxRank": 2, "requirements": { "level": 3, "skill": { "firstAid": 50 } }, "description": "Первая помощь восстанавливает на 8 ОЗ больше за ранг." },
+      { "id": "quickTreatment", "name": "Быстрое лечение", "group": "Медицина", "maxRank": 2, "requirements": { "level": 6, "agi": 5, "skill": { "firstAid": 60 } }, "description": "Медицинские действия −0,12 с за ранг; штраф контузии = max(0, 25%−12%×ранг)." },
+      { "id": "surgeon", "name": "Хирург", "group": "Медицина", "maxRank": 2, "requirements": { "level": 9, "int": 6, "skill": { "doctor": 60 } }, "description": "+8 п.п. к лечению переломов и контузии за ранг." },
+      { "id": "immunologist", "name": "Иммунолог", "group": "Медицина", "maxRank": 2, "requirements": { "level": 9, "end": 6, "skill": { "doctor": 50 } }, "description": "Риск инфекции и токсичных осложнений ×max(45%, 1−25%×ранг)." },
+      { "id": "fieldSurgeon", "name": "Полевой хирург", "group": "Медицина", "maxRank": 2, "requirements": { "level": 12, "int": 7, "skill": { "doctor": 70 } }, "description": "Шанс сохранить набор: 25%×ранг + 8%×норма Доктора, максимум 70%." },
+      { "id": "quickHands", "name": "Быстрые руки", "group": "Техника и торговля", "maxRank": 3, "requirements": { "level": 3, "agi": 5 }, "description": "Перезарядка −1 ОД за ранг, минимум 1 ОД." },
+      { "id": "engineer", "name": "Инженер", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "int": 6, "skill": { "repair": 50 } }, "description": "+1 результат техкрафта, +3,5 п.п. к терминалам и +7 п.п. к техпроверке за ранг." },
+      { "id": "merchant", "name": "Торговец", "group": "Техника и торговля", "maxRank": 3, "requirements": { "level": 3, "cha": 5, "skill": { "barter": 50 } }, "description": "+8% к продаже и +5 п.п. к скидке покупки за ранг." },
+      { "id": "diplomat", "name": "Дипломат", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "cha": 6, "skill": { "speech": 50 } }, "description": "+8 п.п. к диалоговым проверкам и +8% к наградам заданий за ранг." },
+      { "id": "scrounger", "name": "Редкая находка", "group": "Техника и торговля", "maxRank": 3, "requirements": { "level": 6, "luck": 6 }, "description": "+1 очко поиска добычи за ранг." },
+      { "id": "cacheSense", "name": "Нюх на тайники", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 9, "luck": 6, "skill": { "wanderer": 50 } }, "description": "+1 очко поиска; особая находка 18%×ранг, редкий трофей 8%×ранг." },
+      { "id": "weaponSmith", "name": "Оружейник", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "int": 6, "skill": { "repair": 55 } }, "description": "Ремонт оружия +8/+4, крафт +7 состояния; износ max(0,25, 0,55−0,12×ранг)." },
+      { "id": "recycler", "name": "Утилизация", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "int": 5, "skill": { "repair": 45 } }, "description": "Открывает разбор; +12 п.п. к успеху и +2 п.п. к дополнительному ресурсу за ранг." },
+      { "id": "actionBoy", "name": "Живчик", "group": "Защита и удача", "maxRank": 3, "requirements": { "level": 6, "agi": 6 }, "description": "+1 максимальное ОД и ускоренное восстановление ОД за ранг." },
+      { "id": "toughness", "name": "Крепкий организм", "group": "Защита и удача", "maxRank": 3, "requirements": { "level": 3, "end": 6 }, "description": "+12 к максимальным ОЗ за ранг." },
+      { "id": "armorTraining", "name": "Бронник", "group": "Защита и удача", "maxRank": 3, "requirements": { "level": 9, "skill": { "repair": 60 } }, "description": "С бронёй: защита +1,2 п.п., порог +1 и класс брони +2 за ранг." },
+      { "id": "steadfastness", "name": "Несгибаемость", "group": "Защита и удача", "maxRank": 2, "requirements": { "level": 6, "end": 7 }, "description": "Шанс тяжёлых травм −2,5 п.п. от урона и −2,8 п.п. от самоповреждения за ранг." },
+      { "id": "lucky", "name": "Счастливчик", "group": "Защита и удача", "maxRank": 2, "requirements": { "level": 3, "luck": 6 }, "description": "Шанс перелома или контузии −3,5 п.п. от урона и −4 п.п. от самоповреждения за ранг." },
+      { "id": "secondChance", "name": "Второй шанс", "group": "Защита и удача", "maxRank": 2, "requirements": { "level": 12, "luck": 7 }, "description": "Раз в 90 с смертельный удар может оставить 1 ОЗ: 22% за ранг плюс бонус Чутья." },
+      { "id": "ironBones", "name": "Железные кости", "group": "Защита и удача", "maxRank": 2, "requirements": { "level": 12, "end": 8 }, "description": "Шанс перелома руки или ноги −28% за ранг." },
+      { "id": "specialStr", "name": "Мощь +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Мощи за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialPer", "name": "Наблюдательность +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Наблюдательности за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialEnd", "name": "Стойкость +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Стойкости за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialCha", "name": "Влияние +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Влиянию за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialInt", "name": "Интеллект +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Интеллекту за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialAgi", "name": "Реакция +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Реакции за ранг, но не выше 15 с временными эффектами." },
+      { "id": "specialLuck", "name": "Чутьё +1", "group": "Характеристики", "maxRank": 3, "requirements": { "level": 3 }, "description": "+1 к Чутью за ранг, но не выше 15 с временными эффектами." }
+    ]
+  },
+  "quickStarts": [
+    {
+      "id": "independentMercenary",
+      "aliases": ["quick", "quickStart", "mercenary", "legacyQuickStart"],
+      "name": "Независимый наёмник",
+      "special": { "str": 5, "per": 7, "end": 6, "cha": 5, "int": 5, "agi": 7, "luck": 5 },
+      "taggedSkills": ["lightWeapons", "wanderer"],
+      "traits": ["trainedEye", "scavengerStart"]
+    }
+  ]
+}

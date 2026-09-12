@@ -1,0 +1,99 @@
+{
+  "schema": "kromka.terminology.v1",
+  "version": 1,
+  "rules": [
+    {
+      "id": "game-title",
+      "legacy": ["Realm of Ashes"],
+      "canonical": "Кромка",
+      "match": "phrase"
+    },
+    {
+      "id": "field-terminal",
+      "legacy": ["Pip-Boy", "PIP-ASH"],
+      "canonical": "ПУТНИК",
+      "match": "phrase"
+    },
+    {
+      "id": "attributes-heading",
+      "legacy": ["SPECIAL"],
+      "canonical": "Характеристики",
+      "match": "word"
+    },
+    {
+      "id": "currency",
+      "legacy": ["крышка", "крышки", "крышек"],
+      "canonical": "марка Тракта",
+      "match": "word"
+    },
+    {
+      "id": "burned-human",
+      "legacy": ["гуль", "гули", "гулей"],
+      "canonical": "Выжженный",
+      "match": "word"
+    },
+    {
+      "id": "fold-mutant",
+      "legacy": ["супермутант", "супермутанты", "супермутантов"],
+      "canonical": "Складень",
+      "match": "word"
+    },
+    {
+      "id": "burrow-mutant",
+      "legacy": ["радскорпион", "радскорпионы", "радскорпионов"],
+      "canonical": "Рыхляк",
+      "match": "word"
+    },
+    {
+      "id": "dust-mutant",
+      "legacy": ["мутировавший муравей", "мутировавшие муравьи"],
+      "canonical": "Пыльник",
+      "match": "phrase"
+    },
+    {
+      "id": "listener-mutant",
+      "legacy": ["геккон", "гекконы", "гекконов"],
+      "canonical": "Слухач",
+      "match": "word"
+    },
+    {
+      "id": "old-klim-faction",
+      "legacy": ["Старый Клим", "Старого Клима"],
+      "canonical": "Управа",
+      "match": "phrase"
+    },
+    {
+      "id": "scrap-faction",
+      "legacy": ["Свалочный союз", "Свалочного союза"],
+      "canonical": "Вольные артели",
+      "match": "phrase"
+    },
+    {
+      "id": "relay-faction",
+      "legacy": ["техники Ретранслятора", "Орден Ретранслятора"],
+      "canonical": "Контур",
+      "match": "phrase"
+    }
+  ],
+  "attributeLabels": {
+    "str": "Мощь",
+    "per": "Наблюдательность",
+    "end": "Стойкость",
+    "cha": "Влияние",
+    "int": "Интеллект",
+    "agi": "Реакция",
+    "luck": "Чутьё"
+  },
+  "scanRoots": [
+    "data/kromka",
+    "src/server/kromka",
+    "unity-client/Assets/Scripts/Kromka",
+    "unity-client/Assets/Scenes/Kromka",
+    "unity-client/Assets/Prefabs/Kromka"
+  ],
+  "scanExclusions": [
+    "data/kromka/terminology.json",
+    "data/kromka/migration-aliases.json",
+    "data/kromka/character-progression.json"
+  ]
+}

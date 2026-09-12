@@ -1,0 +1,2394 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "clanChalkSluice",
+  "name": "Меловой шлюз",
+  "seed": 2026091405,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "clanBase",
+  "clanBaseId": "chalk_sluice",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "chalkMud",
+    "label": "Меловой шлюз"
+  },
+  "map": {
+    "width": 80,
+    "depth": 80,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "objects": [
+    {
+      "id": "clanChalkSluice-approach-0",
+      "model": "siege_approach",
+      "name": "clanChalkSluice-approach-0 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-approach-1",
+      "model": "siege_approach",
+      "name": "clanChalkSluice-approach-1 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-approach-2",
+      "model": "siege_approach",
+      "name": "clanChalkSluice-approach-2 EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.04,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "siege_approach",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-breach-gate",
+      "model": "checkpoint_gate",
+      "name": "clanChalkSluice-breach-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "checkpoint",
+        "gate",
+        "controlled-route"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-command-core",
+      "model": "ring_structure",
+      "name": "clanChalkSluice-command-core EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-01",
+      "model": "scrap_watch_tower",
+      "name": "clanChalkSluice-dressing-functional-01",
+      "position": {
+        "x": 12.137,
+        "y": 0.0,
+        "z": 4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.204,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.551,
+        "z": 2.914
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-02",
+      "model": "scrap_wall_segment",
+      "name": "clanChalkSluice-dressing-functional-02",
+      "position": {
+        "x": 2.534,
+        "y": 0.0,
+        "z": 16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.157,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.429,
+        "z": 2.257
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-03",
+      "model": "roadblock_barricade",
+      "name": "clanChalkSluice-dressing-functional-03",
+      "position": {
+        "x": -15.077,
+        "y": 0.0,
+        "z": 12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.89,
+        "z": 2.084
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-04",
+      "model": "armory_rack",
+      "name": "clanChalkSluice-dressing-functional-04",
+      "position": {
+        "x": -12.137,
+        "y": 0.0,
+        "z": -4.659
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.346,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.661,
+        "z": 2.424
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-05",
+      "model": "storage_chest",
+      "name": "clanChalkSluice-dressing-functional-05",
+      "position": {
+        "x": -2.534,
+        "y": 0.0,
+        "z": -16.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.299,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.411,
+        "z": 1.543
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-functional-06",
+      "model": "craft_station_repair",
+      "name": "clanChalkSluice-dressing-functional-06",
+      "position": {
+        "x": 15.077,
+        "y": 0.0,
+        "z": -12.209
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.251,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "clan_base",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.189,
+        "z": 3.374
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-01",
+      "model": "rubble_rock",
+      "name": "clanChalkSluice-dressing-region-01",
+      "position": {
+        "x": -3.483,
+        "y": 0.0,
+        "z": -29.499
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.726,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.004,
+        "z": 2.629
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-02",
+      "model": "deadwood",
+      "name": "clanChalkSluice-dressing-region-02",
+      "position": {
+        "x": -3.561,
+        "y": 0.0,
+        "z": -29.967
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.412,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.775,
+        "z": 2.531
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-03",
+      "model": "dry_bush",
+      "name": "clanChalkSluice-dressing-region-03",
+      "position": {
+        "x": -3.548,
+        "y": 0.0,
+        "z": -29.966
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.412,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.707,
+        "z": 1.995
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-04",
+      "model": "ore_outcrop",
+      "name": "clanChalkSluice-dressing-region-04",
+      "position": {
+        "x": 2.099,
+        "y": 0.0,
+        "z": -30.101
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.357,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.667,
+        "z": 2.127
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-05",
+      "model": "rubble_rock",
+      "name": "clanChalkSluice-dressing-region-05",
+      "position": {
+        "x": 2.094,
+        "y": 0.0,
+        "z": -29.962
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.357,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.641,
+        "z": 3.02
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-06",
+      "model": "deadwood",
+      "name": "clanChalkSluice-dressing-region-06",
+      "position": {
+        "x": 2.08,
+        "y": 0.0,
+        "z": -29.964
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.539,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.549,
+        "z": 2.458
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-07",
+      "model": "dry_bush",
+      "name": "clanChalkSluice-dressing-region-07",
+      "position": {
+        "x": 2.049,
+        "y": 0.0,
+        "z": -29.966
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.539,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.592,
+        "z": 1.895
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-08",
+      "model": "ore_outcrop",
+      "name": "clanChalkSluice-dressing-region-08",
+      "position": {
+        "x": 0.389,
+        "y": 0.0,
+        "z": -29.233
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.468,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.524,
+        "z": 2.106
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-09",
+      "model": "rubble_rock",
+      "name": "clanChalkSluice-dressing-region-09",
+      "position": {
+        "x": 0.42,
+        "y": 0.0,
+        "z": -29.231
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.467,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.437,
+        "z": 2.904
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-10",
+      "model": "deadwood",
+      "name": "clanChalkSluice-dressing-region-10",
+      "position": {
+        "x": 0.363,
+        "y": 0.0,
+        "z": -29.234
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.173,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.121,
+        "z": 2.51
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-11",
+      "model": "dry_bush",
+      "name": "clanChalkSluice-dressing-region-11",
+      "position": {
+        "x": -8.647,
+        "y": 0.0,
+        "z": -27.924
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.173,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.918,
+        "z": 2.065
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-12",
+      "model": "ore_outcrop",
+      "name": "clanChalkSluice-dressing-region-12",
+      "position": {
+        "x": -8.585,
+        "y": 0.0,
+        "z": -27.798
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.118,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.865,
+        "z": 2.045
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-13",
+      "model": "rubble_rock",
+      "name": "clanChalkSluice-dressing-region-13",
+      "position": {
+        "x": -8.598,
+        "y": 0.0,
+        "z": -27.795
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.118,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.916,
+        "z": 3.085
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-14",
+      "model": "deadwood",
+      "name": "clanChalkSluice-dressing-region-14",
+      "position": {
+        "x": -10.143,
+        "y": 0.0,
+        "z": -27.264
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.402,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.76,
+        "z": 2.487
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-dressing-region-15",
+      "model": "dry_bush",
+      "name": "clanChalkSluice-dressing-region-15",
+      "position": {
+        "x": -10.293,
+        "y": 0.0,
+        "z": -27.707
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.401,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.126,
+        "y": 1.126,
+        "z": 1.126
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "chalk_lowland",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.689,
+        "z": 1.965
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-landmark",
+      "model": "karst-gate",
+      "name": "Landmark karst-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "karst-gate"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clan_base",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-1",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-1 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-2",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-2 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-3",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-3 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 30.258
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-4",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-4 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.02,
+        "z": 19.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-5",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-5 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-module-socket-6",
+      "model": "module_socket",
+      "name": "clanChalkSluice-module-socket-6 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.02,
+        "z": 7.742
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "build_socket",
+      "tags": [
+        "clan-module-socket",
+        "fixed-placement"
+      ],
+      "footprint": {
+        "x": 5.4,
+        "z": 5.4
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-chalk-cliff-0",
+      "model": "terrain_mound",
+      "name": "clanChalkSluice-region-chalk-cliff-0 EDITABLE",
+      "position": {
+        "x": -30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-chalk-cliff-1",
+      "model": "terrain_mound",
+      "name": "clanChalkSluice-region-chalk-cliff-1 EDITABLE",
+      "position": {
+        "x": -15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-chalk-cliff-2",
+      "model": "terrain_mound",
+      "name": "clanChalkSluice-region-chalk-cliff-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-chalk-cliff-3",
+      "model": "terrain_mound",
+      "name": "clanChalkSluice-region-chalk-cliff-3 EDITABLE",
+      "position": {
+        "x": 15.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-chalk-cliff-4",
+      "model": "terrain_mound",
+      "name": "clanChalkSluice-region-chalk-cliff-4 EDITABLE",
+      "position": {
+        "x": 30.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-region-karst-window",
+      "model": "ring_structure",
+      "name": "clanChalkSluice-region-karst-window EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.02,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 10.0,
+        "z": 10.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-relay-1",
+      "model": "siege_relay",
+      "name": "clanChalkSluice-relay-1 EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-relay-2",
+      "model": "siege_relay",
+      "name": "clanChalkSluice-relay-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "clanChalkSluice-relay-3",
+      "model": "siege_relay",
+      "name": "clanChalkSluice-relay-3 EDITABLE",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "siege_objective",
+      "tags": [
+        "clan",
+        "relay",
+        "objective"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 3.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "command",
+      "model": "wastelandShack",
+      "name": "Командный узел: Меловой шлюз",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "command-core"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 10.34,
+        "z": 8.409
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "cargoStack",
+      "name": "Меловой шлюз",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 1.0,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "landmark",
+        "karst_gate"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.342,
+        "z": 2.431
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_a",
+      "model": "utilityPole",
+      "name": "Внешний передатчик А",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_b",
+      "model": "utilityPole",
+      "name": "Внешний передатчик Б",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_relay_c",
+      "model": "utilityPole",
+      "name": "Внешний передатчик В",      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "siege-relay",
+        "relay-c"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.492,
+        "z": 1.627
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",      "position": {
+        "x": 23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_s",
+      "model": "concreteWall",
+      "name": "Южный периметр",      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -23.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 21.6,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.7,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "storage",
+      "model": "storageLeanTo",
+      "name": "Клановый склад",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.5,
+        "y": 1.0,
+        "z": 1.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "clan-storage"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.5,
+        "z": 2.7
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_a",
+      "model": "watchPost",
+      "name": "Башня А",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_a"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "tower_b",
+      "model": "watchPost",
+      "name": "Башня Б",      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.0,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-socket",
+        "tower_b"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.728,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "workshop",
+      "model": "workshopBench",
+      "name": "Модульный двор",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 7.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.0,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "clan-base",
+        "module-yard"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.2,
+        "z": 1.96
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-clan-chalk_sluice-v1",
+    "skyDay": "#5d625f",
+    "fogDay": "#6d716c",
+    "hemiSkyDay": "#a9aca0",
+    "hemiGroundDay": "#3c403d",
+    "fillDay": "#9fa58e",
+    "sunDay": "#d4c28f",
+    "rimDay": "#7b9c98",
+    "fogDensityDay": 0.0022,
+    "exposureDay": 0.98,
+    "colorGrade": "kromka-chalk_lowland"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "chalk_lowland",
+  "kromkaVisualProfile": "clan-chalk-sluice-v1",
+  "ambientProfile": "chalk-underground-water",
+  "anomalyDensity": 0.23,
+  "unityScene": "Assets/Scenes/Kromka/Locations/clanChalkSluice.unity",
+  "respawn": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 20,
+    "tz": 9,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 18,
+    "tz": 10,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "chalk-sluice-neutral-yard",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "clanChalkSluice-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

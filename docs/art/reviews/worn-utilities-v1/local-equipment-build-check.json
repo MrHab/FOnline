@@ -1,0 +1,29 @@
+{
+  "result": "CONTENT_MATCH_WITH_BUILD_ERRORS",
+  "buildErrors": 600,
+  "buildWarnings": 3,
+  "buildStartedAt": "2026-09-08T23:28:39.7279847Z",
+  "versions": [
+    "1-7f172461",
+    "1-e97f4e39",
+    "2-a89d04ce",
+    "3-e5d409ce"
+  ],
+  "files": [
+    {
+      "file": "a06576479bae58490997962eb6f3179c.data.unityweb",
+      "sha256": "67758f64bbd89ccc1112595bdf0fd1f7d3fd6856a59e4a591b64f141ab4b064c",
+      "bytes": 310482795
+    },
+    {
+      "file": "2abcdf22713638f6eebeb1bca66335f2.framework.js.unityweb",
+      "sha256": "7173f8ffb326c460ef26c1dedd40bfb26272d3a8534a4f5449769f72ca5b54cf",
+      "bytes": 81492
+    },
+    {
+      "file": "5a25fdd599429c3e0755273baa0067c6.wasm.unityweb",
+      "sha256": "ad6f33502ddbb055bea8f5bfce0a2a66b30cf9fa9e4233558f8c13d75b14ea78",
+      "bytes": 15764601
+    }
+  ]
+}

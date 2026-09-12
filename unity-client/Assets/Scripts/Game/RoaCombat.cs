@@ -124,6 +124,9 @@ namespace RealmOfAshes.Game
         private const float ReloadVisualSeconds = 0.82f;
         private float _combatPresentationUntil = -100f;
         private const float CombatPresentationSeconds = 7f;
+        private const float BlockedAttackFeedbackSeconds = 1f;
+        private float _nextBlockedAttackFeedbackAt = -100f;
+        private bool _desktopBlockedAttackHeld;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
@@ -329,7 +332,9 @@ namespace RealmOfAshes.Game
             EnsureFireMode();
             if (inputAllowed && Input.GetKeyDown(ModeKey)) CycleFireMode();
             if (inputAllowed && Input.GetKeyDown(ReloadKey)) Reload();
-            if (!MobileInputMode && inputAllowed && Input.GetMouseButton(0) && Time.time >= _nextRequestAt) Attack();
+            bool mouseHeld = !MobileInputMode && Input.GetMouseButton(0);
+            if (!mouseHeld) _desktopBlockedAttackHeld = false;
+            if (inputAllowed && mouseHeld && Time.time >= _nextRequestAt) Attack();
             UpdateHoverTarget(inputAllowed);
             UpdateTargetingFeedback(inputAllowed);
 
@@ -491,6 +496,7 @@ namespace RealmOfAshes.Game
             if (Socket.Phase != RoaSocketClient.ConnectionPhase.Joined || !InputAllowed()) return false;
             if (Time.time < _nextRequestAt) return false;
             EnsureFireMode();
+            if (BlockForbiddenAttack()) return false;
             Player.AimAtWorld(worldTarget);
             AttackAt(worldTarget);
             return true;
@@ -507,6 +513,7 @@ namespace RealmOfAshes.Game
             if (Socket.Phase != RoaSocketClient.ConnectionPhase.Joined || !InputAllowed()) return false;
             if (Time.time < _nextRequestAt || !TryScreenPointToWorld(screenPoint, out Vector3 cursor)) return false;
             EnsureFireMode();
+            if (BlockForbiddenAttack()) return false;
             AttackAt(cursor);
             return true;
         }
@@ -540,6 +547,54 @@ namespace RealmOfAshes.Game
         private void Attack()
         {
             TriggerAttackAtScreenPoint(Input.mousePosition);
+        }
+
+        /// <summary>
+        /// Known server-side action bans that the client can determine without a
+        /// round trip. They must be checked before recoil, muzzle flash, audio and
+        /// the volatile shoot/melee relay are started.
+        /// </summary>
+        public static string ForbiddenAttackReason(bool downed, LocationDefinition location)
+        {
+            if (downed) return "Вы без сознания и не можете атаковать.";
+            return string.Empty;
+        }
+
+        public static bool IsFactionCapitalLocation(LocationDefinition location)
+        {
+            string id = location?.Id ?? string.Empty;
+            return id == "settlement" || id == "scrapTown"
+                || id == "relayStation" || id == "caravanCamp";
+        }
+
+        private string CurrentForbiddenAttackReason()
+        {
+            bool downed = (Player != null && Player.Downed)
+                || Socket?.Session?.Self?["downed"]?.ToObject<bool>() == true;
+            LocationDefinition location = Bootstrap?.Loader?.Current;
+            if (location == null && Bootstrap?.Loader != null)
+                location = Bootstrap.Loader.GetDefinition(Socket?.Session?.LocationId);
+            return ForbiddenAttackReason(downed, location);
+        }
+
+        private bool BlockForbiddenAttack()
+        {
+            string reason = CurrentForbiddenAttackReason();
+            if (string.IsNullOrEmpty(reason)) return false;
+
+            // Holding the mouse must remain silent after the first denied press.
+            // Touch controls can generate repeated pointer events, so they also
+            // share a short feedback cooldown.
+            bool mayReport = MobileInputMode || !_desktopBlockedAttackHeld;
+            if (!MobileInputMode) _desktopBlockedAttackHeld = true;
+            if (mayReport && Time.unscaledTime >= _nextBlockedAttackFeedbackAt)
+            {
+                _nextBlockedAttackFeedbackAt = Time.unscaledTime + BlockedAttackFeedbackSeconds;
+                AddLog(reason);
+            }
+
+            _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.18f);
+            return true;
         }
 
         private RoaWeaponReadiness.Frame EvaluateWeaponReadiness()
@@ -639,6 +694,7 @@ namespace RealmOfAshes.Game
         }
         private void AttackAt(Vector3 cursor)
         {
+            if (TryApplyHeldMedicine(cursor)) return;
             NotifyCombatPresentation();
             string weapon = ActiveWeapon();
             if (_reloadRequestInFlight)
@@ -741,13 +797,49 @@ namespace RealmOfAshes.Game
                 if (meleeAttack)
                     Enemies.BeginMeleePresentationHold(enemyId, RoaMeleeGrip.StrikeContactSeconds());
                 RoaCoords.ToServer(enemyPosition, out targetX, out targetZ);
+                Vector3 aimedDirection = cursor - self;
+                aimedDirection.y = 0f;
+                aimedDirection.Normalize();
+                RoaCoords.ToServer(aimedDirection, out float aimedX, out float aimedZ);
                 SendAuthoritativeHit(enemyId, selfX, selfZ, targetX, targetZ, angle,
-                    enemyPosition, attackToken);
+                    enemyPosition, attackToken, false, 0f, 0f, aimedX, aimedZ);
             }
             else
             {
                 SendUntargetedAttack(selfX, selfZ, angle, attackToken);
             }
+        }
+
+        public bool HasHeldMedkit => RoaArmorData.BaseId(
+            Socket?.Session?.Self?["equipment"]?["weapon"]?.ToString() ?? string.Empty) == "medkit";
+
+        private bool TryApplyHeldMedicine(Vector3 cursor)
+        {
+            if (!HasHeldMedkit) return false;
+            _nextRequestAt = Time.time + 0.5f;
+            string targetId = null;
+            if (Enemies.TryFindTarget(cursor, 2.2f, out string npcId, out Vector3 position)
+                && Enemies.TryGetSnapshot(npcId, out JObject npc)
+                && npc?["hostileToPlayer"]?.Value<bool?>() == false
+                && npc?["trainingTarget"]?.Value<bool?>() != true)
+                targetId = npcId;
+            if (string.IsNullOrEmpty(targetId))
+            {
+                AddLog("С аптечкой в руке нажмите на раненого персонажа.");
+                return true;
+            }
+            Socket.EmitWithAck("healPlayer", new Dictionary<string, object>
+            {
+                ["targetId"] = targetId, ["itemId"] = "medkit"
+            }, ack =>
+            {
+                if (ack?["self"] is JObject self) Socket.ApplyAuthoritativeSelf(self);
+                if (ack?["enemy"] is JObject healedNpc) Enemies?.ApplyPublicEnemy(healedNpc);
+                bool ok = ack?["ok"]?.Value<bool?>() == true;
+                AddLog(ok ? "Раненому восстановлено " + ack["healed"] + " HP."
+                    : ack?["error"]?.ToString() ?? "Не удалось применить аптечку.");
+            });
+            return true;
         }
 
         private bool TryScreenPointToWorld(Vector2 screenPoint, out Vector3 cursor)
@@ -822,7 +914,7 @@ namespace RealmOfAshes.Game
 
             if (melee)
             {
-                Audio?.PlayMeleeSwing(Player.transform.position);
+                Audio?.PlayMeleeSwing(Player.transform.position, weapon);
                 Socket.Emit("melee", new Dictionary<string, object>
                 {
                     ["targetX"] = targetX,
@@ -878,6 +970,7 @@ namespace RealmOfAshes.Game
                                                      string handSlot, string weaponId)
         {
             yield return new WaitForSecondsRealtime(0.09f);
+            if (!string.IsNullOrEmpty(CurrentForbiddenAttackReason())) yield break;
             PlayRangedVisual(self, target, selfX, selfZ, targetX, targetZ,
                 angle, handSlot, weaponId, false);
         }
@@ -1101,11 +1194,13 @@ namespace RealmOfAshes.Game
             if (!accepted)
             {
                 // Отказы сервера уже на русском и пригодны для показа игроку:
-                // мало ОД, пустой магазин, мирная локация, цель недоступна.
+                // мало ОД, пустой магазин, цель недоступна.
                 string error = ack["error"]?.ToString();
                 if (!string.IsNullOrEmpty(error)) AddLog(error);
                 return;
             }
+
+            if (ack["protected"]?.ToObject<bool>() == true) return;
 
             if (!hit)
             {
@@ -1126,7 +1221,7 @@ namespace RealmOfAshes.Game
             bool dead = enemy?["dead"]?.ToObject<bool>() ?? false;
             string weapon = resultWeapon;
             if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
-                Audio?.PlayMeleeImpact(targetPosition, critical);
+                Audio?.PlayMeleeImpact(targetPosition, weapon, critical);
             Audio?.PlayHitConfirm(critical);
             Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, dead);
             ConfirmHit(targetPosition, critical, dead);
@@ -1181,6 +1276,7 @@ namespace RealmOfAshes.Game
             }
 
             bool hit = ack["hit"]?.ToObject<bool>() ?? false;
+            if (ack["protected"]?.ToObject<bool>() == true) return;
             if (!hit)
             {
                 string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
@@ -1201,7 +1297,7 @@ namespace RealmOfAshes.Game
             bool killed = ack["killed"]?.ToObject<bool>() ?? false;
             string weapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
             if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
-                Audio?.PlayMeleeImpact(targetPosition, critical);
+                Audio?.PlayMeleeImpact(targetPosition, weapon, critical);
             Audio?.PlayHitConfirm(critical);
             if (killed) Audio?.PlayKillConfirm();
             Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, killed);
@@ -1504,7 +1600,7 @@ namespace RealmOfAshes.Game
                 float apCost = ack["apCost"]?.ToObject<float>() ?? 0f;
                 _reloadVisualEndsAt = Time.unscaledTime + ReloadVisualSeconds;
                 Player.View?.StartReload(ReloadVisualSeconds);
-                Audio?.PlayReload();
+                Audio?.PlayReload(ActiveWeapon());
                 AddLog("Перезарядка: +" + take + " патр., -" + apCost.ToString("0.#") + " ОД");
             });
         }
@@ -1638,6 +1734,22 @@ namespace RealmOfAshes.Game
             color = Color.white;
             if (!TryBuildTargetFrame(out name, out _, out RoaTargetingFeedback.Frame frame)) return false;
             label = frame.Label;
+            if (frame.State == RoaTargetingFeedback.Status.Ready && _hoverTarget != null
+                && Player != null && Socket?.Session?.Self != null)
+            {
+                RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
+                    Socket.Session.Self, Socket.Session.Combat, _hoverTarget,
+                    Player, _hoverPosition, _fireMode);
+                label += " · " + preview.ApCost + " ОД · " + preview.ModeLabel;
+                if (preview.StrengthMissing > 0)
+                    label += " · Мощь " + preview.RequiredStrength
+                        + " (не хватает " + preview.StrengthMissing + ")";
+                bool awareness = Socket.Session.Self["talentRanks"]?["awareness"]?.ToObject<int>() > 0;
+                if (awareness)
+                    label += "\nПорог " + preview.Threshold + " · броня "
+                        + preview.ProtectionPercent + "% · сопротивление "
+                        + preview.ResistancePercent + "%";
+            }
             // Keep the requested bright-red percentage; only explicit invalid
             // states use the matching blocked/range colour.
             color = frame.State == RoaTargetingFeedback.Status.Ready
@@ -1738,8 +1850,11 @@ namespace RealmOfAshes.Game
                     + " · средний " + preview.DamageAverage + " · с шансом ≈" + preview.DamageExpected,
                     TargetHintStyle());
             }
-            else if (awareness && remote)
-                GUILayout.Label("Урон по игроку окончательно определяет его серверная экипировка.", TargetHintStyle());
+
+            if (awareness)
+                GUILayout.Label("Защита: порог " + preview.Threshold + " · броня "
+                    + preview.ProtectionPercent + "% · сопротивление "
+                    + preview.ResistancePercent + "%", TargetHintStyle());
 
             string note = lineBlocked
                 ? "Линия огня перекрыта"
@@ -1750,6 +1865,9 @@ namespace RealmOfAshes.Game
                 note += " · крит " + preview.CriticalChance + "% (×2)";
             if (preview.InRange && !lineBlocked && preview.EnergyFailureChance > 0)
                 note += " · риск сбоя " + preview.EnergyFailureChance + "%";
+            if (preview.StrengthMissing > 0)
+                note += " · требуется Мощь " + preview.RequiredStrength
+                    + " (не хватает " + preview.StrengthMissing + ")";
             GUILayout.Label(note, TargetHintStyle());
             GUILayout.EndArea();
         }
@@ -1802,8 +1920,10 @@ namespace RealmOfAshes.Game
             if (type == "explosive") return "взрывной";
             if (type == "energy") return "энергетический";
             if (type == "fire") return "огненный";
+            if (type == "electric") return "электрический";
             if (type == "radiation") return "радиационный";
             if (type == "toxic") return "токсичный";
+            if (type == "anomalous") return "аномальный";
             return "баллистический";
         }
 

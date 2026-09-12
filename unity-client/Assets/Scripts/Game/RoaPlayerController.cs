@@ -32,6 +32,32 @@ namespace RealmOfAshes.Game
         public const float ServerSpeedLimit = 7f;
 
         /// <summary>
+        /// Авторитетный радиус игрока при проверке рельефа, статических объектов
+        /// и живых актёров. Локальная капсула обязана иметь тот же радиус, иначе
+        /// Unity пропускает игрока в позиции, которые сервер уже считает занятыми.
+        /// </summary>
+        public const float AuthoritativeCollisionRadius = 0.48f;
+
+        /// <summary>
+        /// Maximum local correction used only when an authoritative arrival point
+        /// overlaps authored Unity geometry. The corrected position is sent back
+        /// through the normal server-authoritative movement channel on the next frame.
+        /// </summary>
+        public const float SafeSpawnSearchRadius = 8f;
+
+        public const float SafeSpawnSearchStep = 0.65f;
+
+        /// <summary>
+        /// The physics root accepts an authoritative correction immediately. The
+        /// visible character keeps its previous world position and closes this
+        /// presentation offset smoothly, so networking stays authoritative without
+        /// a visible teleport.
+        /// </summary>
+        public const float PositionReconciliationSmoothTime = 0.18f;
+        public const float PositionReconciliationMaxSpeed = 18f;
+        private const float PositionReconciliationStopDistance = 0.015f;
+
+        /// <summary>
         /// Скорость персонажа по умолчанию, пока не пришли SPECIAL
         /// (04_player_model_visuals.js:18).
         /// </summary>
@@ -41,7 +67,7 @@ namespace RealmOfAshes.Game
         public const float CrouchSpeedFactorValue = 0.62f;
 
         [Header("Движение")]
-        [Tooltip("Скорость из SPECIAL. Пересчитывается по авторитетному состоянию, вручную не задавать.")]
+        [Tooltip("Скорость из характеристик. Пересчитывается по авторитетному состоянию, вручную не задавать.")]
         public float Speed = DefaultSpeed;
 
         [Tooltip("Скорость доворота корпуса к прицелу, град/с.")]
@@ -60,6 +86,7 @@ namespace RealmOfAshes.Game
         public RoaAudio Audio;
         public RoaPipboy Pipboy;
         public RoaInventory Inventory;
+        public Transform PresentationRoot;
 
         public bool InputEnabled = true;
 
@@ -76,6 +103,8 @@ namespace RealmOfAshes.Game
         private float _baseSpeed = DefaultSpeed;
         private Vector2 _virtualMove;
         private bool _virtualCrouch;
+        private Vector3 _presentationCorrectionOffset;
+        private Vector3 _presentationCorrectionVelocity;
 
         public bool Moving { get; private set; }
         public bool Colliding { get { return _colliding; } }
@@ -105,13 +134,26 @@ namespace RealmOfAshes.Game
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
-            _controller.slopeLimit = 50f;
-            _controller.stepOffset = Mathf.Clamp(_controller.height * 0.14f, 0.18f, 0.28f);
-            _controller.skinWidth = Mathf.Clamp(_controller.radius * 0.16f, 0.045f, 0.075f);
-            _controller.minMoveDistance = 0f;
-            _controller.detectCollisions = true;
+            ConfigureAuthoritativeCollision(_controller);
             _controller.enableOverlapRecovery = true;
             _yawDeg = transform.eulerAngles.y;
+        }
+
+        /// <summary>
+        /// Настраивает локальную капсулу по тем же размерам, которые сервер
+        /// использует при авторитетной проверке перемещения.
+        /// </summary>
+        public static void ConfigureAuthoritativeCollision(CharacterController controller)
+        {
+            if (controller == null) return;
+
+            controller.radius = AuthoritativeCollisionRadius;
+            controller.slopeLimit = 50f;
+            controller.stepOffset = Mathf.Clamp(controller.height * 0.14f, 0.18f, 0.28f);
+            controller.skinWidth = Mathf.Clamp(controller.radius * 0.16f, 0.045f, 0.075f);
+            controller.minMoveDistance = 0f;
+            controller.detectCollisions = true;
+            controller.enableOverlapRecovery = true;
         }
 
         private void OnEnable()
@@ -127,7 +169,7 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
-            if (!InputEnabled || Downed || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
+            if (!InputEnabled || Downed || Time.unscaledTime < _artifactStunUntil || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
             {
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
@@ -138,6 +180,7 @@ namespace RealmOfAshes.Game
                 _collisionPressure = 0f;
                 Moving = false;
                 Audio?.StopLocomotion();
+                UpdatePresentationReconciliation();
                 if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, false, _crouching);
                 if (Socket != null)
                     Socket.SendState(transform.position, _yawDeg, _velocity, false, _crouching, false);
@@ -146,6 +189,7 @@ namespace RealmOfAshes.Game
 
             if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
+            UpdatePresentationReconciliation();
             Vector3 footPosition = transform.position;
             footPosition.y = FeetY() + 0.025f;
             Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);
@@ -160,6 +204,13 @@ namespace RealmOfAshes.Game
 
             if (Socket != null)
                 Socket.SendState(transform.position, _yawDeg, _velocity, Moving, _crouching, turning);
+        }
+
+        public void SendStateImmediately()
+        {
+            bool turning = View != null && View.Turning;
+            Socket?.SendStateImmediately(transform.position, _yawDeg, _velocity,
+                Moving, _crouching, turning);
         }
 
         /// <summary>
@@ -330,9 +381,13 @@ namespace RealmOfAshes.Game
         /// Поверх базового значения применяются бонус надетых ботинок и авторитетные
         /// штрафы травм — те же speedBonus()/injurySpeedMultiplier(), что в web.
         /// </summary>
+        private float _artifactStunUntil;
+
         public void ApplySpecial(JObject self)
         {
             if (self == null) return;
+            if (self["artifactRuntime"] is JObject runtime)
+                _artifactStunUntil = Time.unscaledTime + Mathf.Max(0f, runtime["stunSeconds"]?.Value<float>() ?? 0f);
 
             bool downed = self.Value<bool?>("downed") == true;
             if (Downed != downed)
@@ -381,8 +436,10 @@ namespace RealmOfAshes.Game
                 ?? self["equipment"] as JObject;
             float bootBonus = BootSpeedBonus(BaseItemId(equipment?["boots"]?.ToString()));
             float injuryMultiplier = (HasBrokenLeg ? 0.68f : 1f) * (HasInfection ? 0.92f : 1f);
+            float artifactSpeedMultiplier = 1f + Mathf.Clamp(
+                self["artifactEffects"]?["speedPct"]?.ToObject<float>() ?? 0f, -0.45f, 0.18f);
             float previousSpeed = Speed;
-            Speed = (_baseSpeed + bootBonus) * injuryMultiplier;
+            Speed = (_baseSpeed + bootBonus) * injuryMultiplier * artifactSpeedMultiplier;
 
             if (View != null) View.SetInjuries(injuries);
 
@@ -443,16 +500,177 @@ namespace RealmOfAshes.Game
             Vector3 corrected = RoaCoords.ToUnity(xToken.ToObject<float>(), zToken.ToObject<float>());
             corrected.y = transform.position.y;
 
-            Teleport(corrected);
+            if (reason == "movementCorrection")
+            {
+                ApplyAuthoritativePositionCorrection(corrected);
+                return;
+            }
+
+            TeleportToSafeSpawn(corrected);
             Debug.Log("[ROA] Серверная поправка позиции: " + reason);
         }
 
-        /// <summary>Переставить персонажа, минуя коллизии CharacterController.</summary>
+        /// <summary>
+        /// Moves the collision/network root to the server position immediately,
+        /// while counter-moving the presentation root. Gameplay remains in sync;
+        /// only the visible correction is spread over subsequent frames.
+        /// </summary>
+        private void ApplyAuthoritativePositionCorrection(Vector3 corrected)
+        {
+            Vector3 rootDelta = corrected - transform.position;
+            rootDelta.y = 0f;
+            if (rootDelta.sqrMagnitude < 0.000001f) return;
+
+            Vector3 currentOffset = PresentationRoot != null
+                ? PresentationRoot.position - transform.position
+                : _presentationCorrectionOffset;
+            currentOffset.y = 0f;
+            Vector3 nextOffset = CompensatePresentationOffset(currentOffset, rootDelta);
+            if (Vector3.Dot(currentOffset, nextOffset) < 0f)
+                _presentationCorrectionVelocity = Vector3.zero;
+            _presentationCorrectionOffset = nextOffset;
+
+            if (_controller == null) _controller = GetComponent<CharacterController>();
+            if (_controller != null)
+            {
+                bool wasEnabled = _controller.enabled;
+                _controller.enabled = false;
+                transform.position = corrected;
+                Physics.SyncTransforms();
+                _controller.enabled = wasEnabled;
+            }
+            else
+            {
+                transform.position = corrected;
+            }
+
+            if (PresentationRoot != null)
+                PresentationRoot.position = transform.position + _presentationCorrectionOffset;
+            Camera?.PreservePresentationAfterTargetCorrection(rootDelta);
+        }
+
+        public static Vector3 CompensatePresentationOffset(Vector3 currentOffset,
+                                                           Vector3 authoritativeDelta)
+        {
+            currentOffset.y = 0f;
+            authoritativeDelta.y = 0f;
+            return currentOffset - authoritativeDelta;
+        }
+
+        public static Vector3 SmoothPresentationOffset(Vector3 currentOffset,
+                                                       ref Vector3 velocity,
+                                                       float deltaTime)
+        {
+            currentOffset.y = 0f;
+            velocity.y = 0f;
+            if (currentOffset.sqrMagnitude
+                <= PositionReconciliationStopDistance * PositionReconciliationStopDistance)
+            {
+                velocity = Vector3.zero;
+                return Vector3.zero;
+            }
+
+            if (deltaTime <= 0f) return currentOffset;
+            Vector3 next = Vector3.SmoothDamp(currentOffset, Vector3.zero, ref velocity,
+                PositionReconciliationSmoothTime, PositionReconciliationMaxSpeed, deltaTime);
+            next.y = 0f;
+            return next;
+        }
+
+        private void UpdatePresentationReconciliation()
+        {
+            if (PresentationRoot == null) return;
+
+            _presentationCorrectionOffset = SmoothPresentationOffset(
+                _presentationCorrectionOffset, ref _presentationCorrectionVelocity,
+                Time.unscaledDeltaTime);
+            PresentationRoot.position = transform.position + _presentationCorrectionOffset;
+        }
+
+        /// <summary>
+        /// Deterministic nearest-point search shared by runtime placement and the
+        /// editor probe. The requested point wins whenever it is already free.
+        /// </summary>
+        public static Vector3 FindSafeSpawnPosition(Vector3 requested,
+                                                    System.Func<Vector3, bool> blocked)
+        {
+            if (blocked == null || !blocked(requested)) return requested;
+
+            Vector2 towardCenter = new Vector2(-requested.x, -requested.z);
+            float startAngle = towardCenter.sqrMagnitude > 0.001f
+                ? Mathf.Atan2(towardCenter.y, towardCenter.x)
+                : 0f;
+
+            for (float radius = SafeSpawnSearchStep;
+                 radius <= SafeSpawnSearchRadius + 0.001f;
+                 radius += SafeSpawnSearchStep)
+            {
+                int samples = Mathf.Max(8, Mathf.CeilToInt(
+                    Mathf.PI * 2f * radius / SafeSpawnSearchStep));
+                for (int index = 0; index < samples; index++)
+                {
+                    float angle = startAngle + index * Mathf.PI * 2f / samples;
+                    Vector3 candidate = requested + new Vector3(
+                        Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                    if (!blocked(candidate)) return candidate;
+                }
+            }
+
+            return requested;
+        }
+
+        /// <summary>
+        /// Places a newly created, respawned or transferred character outside any
+        /// authored collider. Returns true when the requested point was adjusted.
+        /// </summary>
+        public bool TeleportToSafeSpawn(Vector3 position)
+        {
+            if (_controller == null) _controller = GetComponent<CharacterController>();
+            if (_controller == null)
+            {
+                transform.position = position;
+                ResetTeleportMotion();
+                return false;
+            }
+
+            bool wasEnabled = _controller.enabled;
+            _controller.enabled = false;
+            Physics.SyncTransforms();
+            Vector3 resolved = FindSafeSpawnPosition(position, SpawnCapsuleBlocked);
+            transform.position = resolved;
+            Physics.SyncTransforms();
+            _controller.enabled = wasEnabled;
+            ResetTeleportMotion();
+            return (resolved - position).sqrMagnitude > 0.0025f;
+        }
+
+        private bool SpawnCapsuleBlocked(Vector3 position)
+        {
+            float radius = Mathf.Max(0.05f, _controller.radius * 0.92f);
+            float halfSegment = Mathf.Max(0f, _controller.height * 0.5f - _controller.radius);
+            Vector3 center = position + _controller.center;
+            return Physics.CheckCapsule(center - Vector3.up * halfSegment,
+                center + Vector3.up * halfSegment, radius,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        }
+
         public void Teleport(Vector3 position)
         {
+            if (_controller == null) _controller = GetComponent<CharacterController>();
+            if (_controller == null)
+            {
+                transform.position = position;
+                ResetTeleportMotion();
+                return;
+            }
             _controller.enabled = false;
             transform.position = position;
             _controller.enabled = true;
+            ResetTeleportMotion();
+        }
+
+        private void ResetTeleportMotion()
+        {
             _velocity = Vector3.zero;
             _visualVelocity = Vector3.zero;
             _colliding = false;
@@ -460,6 +678,9 @@ namespace RealmOfAshes.Game
             _collisionNormal = Vector3.zero;
             _collisionPressure = 0f;
             _requestedVelocity = Vector3.zero;
+            _presentationCorrectionOffset = Vector3.zero;
+            _presentationCorrectionVelocity = Vector3.zero;
+            if (PresentationRoot != null) PresentationRoot.localPosition = Vector3.zero;
             Audio?.StopLocomotion();
 
             if (Camera != null) Camera.SnapToTarget();

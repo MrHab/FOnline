@@ -72,7 +72,9 @@ function districtInterestPointIsWater(globalMap = {}, x = 0, y = 0, marginPoints
   const py = clamp(y, 0, Math.max(0, size.height - 0.001));
   const nx = px / Math.max(1, size.width);
   const ny = py / Math.max(1, size.height);
-  if (nx <= districtInterestCoastNormXAtY(ny) + Math.max(0, Number(marginPoints || 0)) / Math.max(1, size.width)) return true;
+  if (globalMap?.legacyCoastline !== false
+    && nx <= districtInterestCoastNormXAtY(ny)
+      + Math.max(0, Number(marginPoints || 0)) / Math.max(1, size.width)) return true;
   const cx = clamp(Math.floor(px / size.cellPoints), 0, size.cols - 1);
   const cy = clamp(Math.floor(py / size.cellPoints), 0, size.rows - 1);
   const cell = (globalMap.cells && globalMap.cells[`${cx}:${cy}`]) || {};
@@ -282,14 +284,14 @@ function districtInterestVariantPool(terrain = '', owner = 'neutral') {
     {
       key: 'old_klim_watch',
       weight: group === 'old_klim' || text.includes('клим') || text.includes('караван') ? 5 : 1,
-      name: 'Дозорный костер Старого Клима',
+      name: 'Дозорный костёр Управы',
       type: 'pointOfInterest',
       locationId: 'randomAshGrove',
       owner: 'old_klim',
       stockpile: { water: 5, medicine: 1, ammoParts: 3, silver: 12 },
       danger: 1.2,
       security: 38,
-      note: 'Малый дозор Старого Клима держит огонь и дорожный знак. Тут можно переждать путь, но место видно издалека.'
+      note: 'Малый дозор Управы держит огонь и дорожный знак. Тут можно переждать путь, но место видно издалека.'
     },
     {
       key: 'field_clinic',

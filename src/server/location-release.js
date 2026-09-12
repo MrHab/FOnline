@@ -1,19 +1,50 @@
 'use strict';
 
-// The Unity release intentionally exposes a small, finished slice of the
-// authored world. Hidden locations stay in the simulation and in the location
-// catalog so encounters, old saves and a future rotation can still use them.
+// Every permanent marker authored on the active global map is enterable. The
+// journal can still gate a location's story purpose, while private, encounter
+// and siege instances remain outside this public-map release list.
 const LOCATION_RELEASE_SCHEMA = 'realm.locationRelease.v1';
-const LOCATION_RELEASE_VERSION = 1;
+const LOCATION_RELEASE_VERSION = 3;
 const RELEASED_LOCATION_IDS = Object.freeze([
+  'klimAmmoWorks',
+  'resourceKlimQuarry',
+  'sluiceCity',
+  'clanHydroNode2',
   'settlement',
+  'roadOutpost',
+  'resourceDryWaterPump',
+  'resourceOldKlimFarm',
+  'clanFilterT6',
   'scrapTown',
-  'relayStation',
+  'scrapOutpost',
+  'scrapFoundry',
+  'resourceIronMine',
+  'resourceScrapFields',
+  'antHive',
+  'clanOreExchange',
+  'clanFactoryCycle',
   'caravanCamp',
   'oldDepot',
-  'roadOutpost',
-  'scrapFoundry',
-  'relayWorkshop'
+  'resourceTireDepot',
+  'clanDepotBypass',
+  'resourceSiliconRidge',
+  'geckoCanyon',
+  'secondHaven',
+  'clanChalkSluice',
+  'relayStation',
+  'relayOutpost',
+  'relayWorkshop',
+  'solarArray',
+  'mutantCrater',
+  'vectorLab',
+  'clanRelayEast',
+  'resourceChemSpring',
+  'resourceOilPump',
+  'radscorpionNest',
+  'balanceBunker',
+  'cascadeRegenerator',
+  'clanFortZero',
+  'wasteland'
 ]);
 
 const RELEASED_LOCATION_ID_SET = new Set(RELEASED_LOCATION_IDS);

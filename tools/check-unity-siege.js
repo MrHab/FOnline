@@ -1,0 +1,12 @@
+'use strict';
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const root = path.resolve(__dirname, '..');
+const socket = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Net/RoaSocketClient.cs'), 'utf8');
+const clan = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaPipboyCanvas.KromkaClans.cs'), 'utf8');
+const view = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaKromkaSiegePresentation.cs'), 'utf8');
+for (const token of ['OnKromkaSiegeState', 'kromkaSiegeState']) assert(socket.includes(token), `Missing siege socket token ${token}.`);
+for (const token of ['КАЛЕНДАРЬ ОСАД', 'registerSelf', 'ОБЪЯВИТЬ ВЫЗОВ', 'ВОЙТИ В ОСАДУ', 'РЕЗУЛЬТАТ']) assert(clan.includes(token), `Missing siege calendar token ${token}.`);
+for (const token of ['AttackerZone', 'DefenderZone', 'captureRelay', 'damageGate', 'captureCore', 'contestCore', 'ОСАДА ЗАВЕРШЕНА']) assert(view.includes(token), `Missing siege presentation token ${token}.`);
+console.log('Unity siege check passed: calendar, roster, timer, objectives, side zones and result view.');

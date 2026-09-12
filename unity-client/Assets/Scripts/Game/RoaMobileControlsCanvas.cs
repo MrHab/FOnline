@@ -23,6 +23,7 @@ namespace RealmOfAshes.Game
             public bool TargetSelected;
             public bool Crouching;
             public bool PingAvailable;
+            public bool BoltAiming;
             public string FireMode;
             public bool JoystickActive;
             public Vector2 JoystickBase;
@@ -44,6 +45,7 @@ namespace RealmOfAshes.Game
             public Rect Reload;
             public Rect Mode;
             public Rect Player;
+            public Rect Bolt;
 
             public Rect Action(int index)
             {
@@ -55,6 +57,7 @@ namespace RealmOfAshes.Game
                     case 4: return Reload;
                     case 5: return Mode;
                     case 6: return Player;
+                    case 7: return Bolt;
                     default: return default;
                 }
             }
@@ -76,6 +79,7 @@ namespace RealmOfAshes.Game
         private static readonly Color Fire = new Color(0.57f, 0.18f, 0.075f, 0.97f);
 
         public RoaMobileControls Controls;
+        public RoaBoltThrower BoltThrower;
 
         private Canvas _canvas;
         private GraphicRaycaster _raycaster;
@@ -116,7 +120,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_raycaster == null || _buttons.Count != 11) return false;
+                if (_raycaster == null || _buttons.Count != 12) return false;
                 foreach (ButtonView view in _buttons.Values)
                 {
                     if (!view.Back.raycastTarget || view.Icon.raycastTarget
@@ -150,9 +154,10 @@ namespace RealmOfAshes.Game
             PresentFromControls();
         }
 
-        public void Configure(RoaMobileControls controls)
+        public void Configure(RoaMobileControls controls, RoaBoltThrower boltThrower = null)
         {
             Controls = controls;
+            BoltThrower = boltThrower;
             EnsureCanvas();
             PresentFromControls();
         }
@@ -195,14 +200,18 @@ namespace RealmOfAshes.Game
             SetVisible("Reload", _gameplayButtonsVisible);
             SetVisible("Mode", _gameplayButtonsVisible);
             SetVisible("Player", _gameplayButtonsVisible);
+            SetVisible("Bolt", _gameplayButtonsVisible);
             SetSelected("Target", state.TargetSelected, false);
             SetLabel("Target", state.TargetSelected ? "ЦЕЛЬ ✓" : "ЦЕЛЬ");
+            SetLabel("Fire", Controls != null ? Controls.FireLabel : "ОГОНЬ");
             SetSelected("Crouch", state.Crouching, false);
             SetLabel("Crouch", state.Crouching ? "ВСТАТЬ" : "ПРИСЕСТЬ");
             SetLabel("Mode", string.IsNullOrWhiteSpace(state.FireMode)
                 ? "РЕЖИМ" : state.FireMode.ToUpperInvariant());
             SetSelected("Player", state.PingAvailable, false);
             SetLabel("Player", state.PingAvailable ? "МЕТКА" : "ИГРОК");
+            SetSelected("Bolt", state.BoltAiming, false);
+            SetLabel("Bolt", state.BoltAiming ? "ОТМЕНА" : "БОЛТ");
 
             bool joystickVisible = _gameplayButtonsVisible && state.JoystickActive;
             _joystickOuter.gameObject.SetActive(joystickVisible);
@@ -229,6 +238,7 @@ namespace RealmOfAshes.Game
                 case "Reload": rect = _layout.Reload; return true;
                 case "Mode": rect = _layout.Mode; return true;
                 case "Player": rect = _layout.Player; return true;
+                case "Bolt": rect = _layout.Bolt; return true;
                 default: return false;
             }
         }
@@ -290,7 +300,7 @@ namespace RealmOfAshes.Game
                 Inventory = Rail(0), Map = Rail(1), Pipboy = Rail(2), Menu = Rail(3),
                 Fire = fire,
                 Interact = Action(1), Target = Action(2), Crouch = Action(3),
-                Reload = Action(4), Mode = Action(5), Player = Action(6)
+                Reload = Action(4), Mode = Action(5), Player = Action(6), Bolt = Action(7)
             };
         }
 
@@ -314,6 +324,7 @@ namespace RealmOfAshes.Game
                 TargetSelected = Controls.TargetSelected,
                 Crouching = Controls.Crouching,
                 PingAvailable = Controls.PingAvailable,
+                BoltAiming = BoltThrower != null && BoltThrower.IsAiming,
                 FireMode = Controls.CurrentFireMode,
                 JoystickActive = joystick,
                 JoystickBase = new Vector2(guiBase.x, Screen.height - guiBase.y),
@@ -381,6 +392,8 @@ namespace RealmOfAshes.Game
                 () => Controls?.TriggerFireMode());
             CreateButton("Player", "ИГРОК", "RealmUi/mobile/right/radial_menu",
                 () => Controls?.TriggerPlayerOrPing());
+            CreateButton("Bolt", "БОЛТ", "RealmUi/mobile/right/bolt",
+                () => BoltThrower?.ToggleAim());
             CreateJoystick();
             Hide();
         }
@@ -480,6 +493,7 @@ namespace RealmOfAshes.Game
             SetScreenRect("Reload", _layout.Reload, width, height);
             SetScreenRect("Mode", _layout.Mode, width, height);
             SetScreenRect("Player", _layout.Player, width, height);
+            SetScreenRect("Bolt", _layout.Bolt, width, height);
         }
 
         private void ApplyJoystick(Vector2 screenBase, Vector2 screenPoint, float radius,

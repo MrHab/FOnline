@@ -93,6 +93,18 @@ namespace RealmOfAshes.Game
             TrackedTargetSpeed = 0f;
         }
 
+        /// <summary>
+        /// Keeps an authoritative correction out of teleport detection. The camera
+        /// remains where it is and follows the corrected target through its normal
+        /// SmoothDamp path.
+        /// </summary>
+        public void PreservePresentationAfterTargetCorrection(Vector3 targetDelta)
+        {
+            if (!_hasTargetPosition || Target == null) return;
+            targetDelta.y = 0f;
+            _lastTargetPosition += targetDelta;
+        }
+
         public static Vector3 CalculateMovementLookAhead(
             Vector3 planarVelocity, float distance, float deadSpeed, float fullSpeed)
         {

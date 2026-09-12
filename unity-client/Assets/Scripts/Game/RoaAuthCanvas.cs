@@ -85,7 +85,9 @@ namespace RealmOfAshes.Game
             if (!_root.activeSelf) _root.SetActive(true);
 
             string step = Bootstrap.AuthStep;
-            int characters = Bootstrap.AuthCharacters.Count * 1000 + Bootstrap.AuthCatalogVersion;
+            int characters = Bootstrap.AuthCharacters.Count * 100000
+                + Bootstrap.AuthCatalogVersion * 100
+                + Bootstrap.ProgressionCatalogVersion;
             if (step != _builtStep || characters != _builtCharacters)
             {
                 _builtStep = step;
@@ -528,6 +530,7 @@ namespace RealmOfAshes.Game
             var sb = new System.Text.StringBuilder();
             foreach (RoaCharacterCreator.StatDef stat in RoaCharacterCreator.Stats) sb.Append(c.Stat(stat.Id)).Append(',');
             sb.Append(string.Join("|", c.TaggedSkills)).Append('#').Append(string.Join("|", c.SelectedTraits));
+            sb.Append('#').Append(Bootstrap.ProgressionCatalogVersion);
             return sb.ToString();
         }
 
@@ -599,7 +602,7 @@ namespace RealmOfAshes.Game
             RectTransform traitBlock = Block("TraitBlock", panel, edges[2], 1f, edges[3], 1f, new Vector2(6f, gridBottom), new Vector2(-6f, gridTop));
             RectTransform derivedBlock = Block("DerivedBlock", panel, edges[3], 1f, edges[4], 1f, new Vector2(6f, gridBottom), new Vector2(0f, gridTop));
 
-            BlockTitle(nameBlock, "Имя и SPECIAL", null);
+            BlockTitle(nameBlock, "Имя и характеристики", null);
             InputField nameField = TextInput(nameBlock, 34f, "Имя персонажа", Bootstrap.NewCharacterName, false, v => Bootstrap.NewCharacterName = v);
             nameField.characterLimit = 18;
             var nameRect = (RectTransform)nameField.transform;
@@ -891,7 +894,7 @@ namespace RealmOfAshes.Game
             _readiness.text = !string.IsNullOrEmpty(notice) ? notice
                 : Bootstrap.CreatorBusy ? Bootstrap.StatusText
                 : string.IsNullOrEmpty(hint)
-                    ? "Распределите SPECIAL и обязательно выберите профильный навык и стартовый перк. Прогресс, карта, инвентарь и хранилище привязаны к серверному персонажу."
+                    ? "Распределите характеристики и обязательно выберите профильный навык и стартовый перк. Прогресс, карта, инвентарь и хранилище привязаны к серверному персонажу."
                     : hint;
             _readiness.color = !string.IsNullOrEmpty(notice) ? StatusErr : SmallNote;
             _createButton.interactable = ready;
@@ -995,10 +998,10 @@ namespace RealmOfAshes.Game
         {
             bool select = step == "select";
             bool creator = step == "creator";
-            _title.text = creator ? "НОВЫЙ ПЕРСОНАЖ"
-                : select ? "ВЫБОР ПЕРСОНАЖА" : (step == "connecting" ? "ПОДКЛЮЧЕНИЕ" : "ВХОД В ИГРУ");
+            _title.text = "КРОМКА · " + (creator ? "НОВЫЙ ПЕРСОНАЖ"
+                : select ? "ВЫБОР ПЕРСОНАЖА" : (step == "connecting" ? "ПОДКЛЮЧЕНИЕ" : "ВХОД В ИГРУ"));
             _subtitle.text = creator
-                ? "Соберите внешность, распределите SPECIAL и выберите профильный навык и стартовый перк. Персонаж хранится на сервере."
+                ? "Соберите внешность, распределите характеристики и выберите профильный навык и стартовый перк. Персонаж хранится на сервере."
                 : select
                 ? "Выберите персонажа, чтобы войти в мир, или создайте нового. Прогресс, карта, инвентарь и хранилище привязаны к серверному аккаунту."
                 : "Войдите в серверный аккаунт, чтобы выбрать уже созданного персонажа или создать нового. Прогресс, карта, инвентарь и хранилище привязаны к серверному аккаунту.";

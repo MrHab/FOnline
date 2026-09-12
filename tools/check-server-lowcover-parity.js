@@ -1,9 +1,10 @@
-// Паритет низких укрытий: серверный SERVER_LOW_BALLISTIC_COVER_MODEL_FILES
-// обязан зеркалить клиентский LOW_BALLISTIC_COVER_MODELS (по именам GLB),
+// Паритет низких укрытий: серверные нормализованные ключи авторских объектов
+// обязаны зеркалить клиентский LOW_BALLISTIC_COVER_MODELS (не удалённые GLB),
 // иначе клиент разрешает выстрел поверх укрытия, а сервер отвечает
 // «Линия атаки перекрыта».
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const failures = [];
@@ -15,34 +16,30 @@ const clientSetMatch = clientSrc.match(/LOW_BALLISTIC_COVER_MODELS = new Set\(\[
 if (!clientSetMatch) failures.push('клиент: не найден LOW_BALLISTIC_COVER_MODELS в 02a_materials_static_models.js');
 const clientKeys = (clientSetMatch ? clientSetMatch[1] : '').match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
 
-const urlBlockMatch = clientSrc.match(/STATIC_MODEL_URLS = \{([\s\S]*?)\n  \};/);
-const urlMap = {};
-if (urlBlockMatch) {
-  for (const m of urlBlockMatch[1].matchAll(/(\w+):\s*'([^']+\.glb)'/g)) {
-    urlMap[m[1]] = m[2].split('/').pop().toLowerCase();
+const normalizeKey = key => key.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase();
+const expectedKeys = new Set(clientKeys.map(normalizeKey));
+const serverSetMatch = serverSrc.match(/SERVER_LOW_BALLISTIC_COVER_MODEL_KEYS = new Set\(\[([\s\S]*?)\]\)/);
+if (!serverSetMatch) failures.push('сервер: не найден SERVER_LOW_BALLISTIC_COVER_MODEL_KEYS в server.js');
+const serverKeys = new Set(((serverSetMatch ? serverSetMatch[1] : '').match(/'([^']+)'/g) || []).map(s => s.slice(1, -1)));
+for (const key of expectedKeys) {
+  if (!serverKeys.has(key)) failures.push(`сервер: в whitelist нет ${key} (есть у клиента)`);
+}
+for (const key of serverKeys) {
+  if (!expectedKeys.has(key)) failures.push(`сервер: лишний ${key} (нет у клиента)`);
+}
+const classifier = serverSrc.match(/function serverBlockerIsLowBallisticCover\(blocker = \{\}\) \{[\s\S]*?\n\}/);
+if (!classifier) failures.push('сервер: не найден классификатор авторского укрытия');
+else {
+  const context = vm.createContext({ SERVER_LOW_BALLISTIC_COVER_MODEL_KEYS: serverKeys });
+  vm.runInContext(classifier[0], context);
+  for (const key of clientKeys) {
+    for (const modelRef of [key, key.replace(/([A-Z])/g, '_$1')]) {
+      if (!context.serverBlockerIsLowBallisticCover({ modelRef })) failures.push(`сервер: не распознано укрытие ${modelRef}`);
+    }
   }
-} else {
-  failures.push('клиент: не найден STATIC_MODEL_URLS в 02a_materials_static_models.js');
-}
-
-function toSnakeFile(key) {
-  return key.replace(/([A-Z])/g, '_$1').toLowerCase() + '.glb';
-}
-
-const expectedFiles = new Set();
-for (const key of clientKeys) {
-  expectedFiles.add(urlMap[key] || toSnakeFile(key));
-}
-
-const serverSetMatch = serverSrc.match(/SERVER_LOW_BALLISTIC_COVER_MODEL_FILES = new Set\(\[([\s\S]*?)\]\)/);
-if (!serverSetMatch) failures.push('сервер: не найден SERVER_LOW_BALLISTIC_COVER_MODEL_FILES в server.js');
-const serverFiles = new Set(((serverSetMatch ? serverSetMatch[1] : '').match(/'([^']+)'/g) || []).map(s => s.slice(1, -1).toLowerCase()));
-
-for (const file of expectedFiles) {
-  if (!serverFiles.has(file)) failures.push(`сервер: в whitelist нет ${file} (есть у клиента)`);
-}
-for (const file of serverFiles) {
-  if (!expectedFiles.has(file)) failures.push(`сервер: лишний ${file} (нет у клиента)`);
+  for (const modelRef of ['', 'unknownCover', 'concreteWall']) {
+    if (context.serverBlockerIsLowBallisticCover({ modelRef })) failures.push(`сервер: ошибочно пропускает ${modelRef}`);
+  }
 }
 
 if (!/ignoreLowCover:\s*!opts\.shooterCrouching/.test(serverSrc)) {
@@ -60,4 +57,4 @@ if (failures.length) {
   failures.forEach(msg => console.error(' -', msg));
   process.exit(1);
 }
-console.log(`[check-server-lowcover-parity] OK (${expectedFiles.size} моделей, клиент и сервер совпадают)`);
+console.log(`[check-server-lowcover-parity] OK (${expectedKeys.size} ключей, клиент и сервер совпадают; классификатор проверен)`);

@@ -676,15 +676,10 @@
   const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.10-ghoul-bc-v3-death-v2';
   const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';
   const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';
-  const PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION = '7.79.0-priority-environment-bc-v1';
   // Fingerprint of all canonical wasteland GLBs. Specific authored libraries
   // keep their own version above; this value protects every remaining model
   // from a stale immutable response after an in-place asset rebuild.
-  const STATIC_MODEL_GLB_ASSET_VERSION = '65a947da938a3e7f';
-  const PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS = new Set([
-    'carWreck', 'deadTreeA', 'deadTreeB', 'deadTreeC',
-    'dryBush', 'rubbleRock', 'scrapHeap', 'wastelandShack'
-  ]);
+  const STATIC_MODEL_GLB_ASSET_VERSION = 'dc4379d763d32d52';
   const APPROVED_CREATURE_STATIC_MODEL_KEYS = new Set([
     'brahmin',
     'friendlyBrahmin',
@@ -700,48 +695,8 @@
     ...APPROVED_CREATURE_STATIC_MODEL_KEYS
   ]);
   const STATIC_MODEL_URLS = {
-    barrel: '/assets/models/wasteland/rust_barrel_v1.glb',
-    rustBarrel: '/assets/models/wasteland/rust_barrel_v1.glb',
-    deadTreeA: '/assets/models/wasteland/dead_tree_a.glb',
-    deadTreeB: '/assets/models/wasteland/dead_tree_b.glb',
-    deadTreeC: '/assets/models/wasteland/dead_tree_c.glb',
-    rubbleRock: '/assets/models/wasteland/rubble_rock.glb',
-    oreOutcrop: '/assets/models/wasteland/ore_outcrop.glb',
-    oilPumpJack: '/assets/models/wasteland/oil_pump_jack.glb',
-    deadwood: '/assets/models/wasteland/deadwood.glb',
-    carWreck: '/assets/models/wasteland/car_wreck.glb',
-    concreteWall: '/assets/models/wasteland/concrete_wall.glb',
-    barrelCluster: '/assets/models/wasteland/barrel_cluster.glb',
-    tireStack: '/assets/models/wasteland/tire_stack.glb',
-    scrapHeap: '/assets/models/wasteland/scrap_heap.glb',
-    crate: '/assets/models/wasteland/crate.glb',
-    tradeMachine: '/assets/models/wasteland/trade_machine.glb',
-    storageChest: '/assets/models/wasteland/storage_chest.glb',
-    jobBoard: '/assets/models/wasteland/job_board.glb',
-    cactus: '/assets/models/wasteland/cactus.glb',
-    wastelandShack: '/assets/models/wasteland/wasteland_shack.glb',
-    fenceSegment: '/assets/models/wasteland/fence_segment.glb',
-    perimeterDebris: '/assets/models/wasteland/perimeter_debris.glb',
-    lowRuinedWall: '/assets/models/wasteland/low_ruined_wall.glb',
-    watchPost: '/assets/models/wasteland/watch_post.glb',
-    relayAntenna: '/assets/models/wasteland/relay_antenna.glb',
-    waterTank: '/assets/models/wasteland/water_tank.glb',
-    armoryRack: '/assets/models/wasteland/armory_rack.glb',
-    cotBed: '/assets/models/wasteland/cot_bed.glb',
-    workshopBench: '/assets/models/wasteland/workshop_bench.glb',
-    craftStationAmmo: '/assets/models/wasteland/craft_station_ammo.glb',
-    craftStationWeapon: '/assets/models/wasteland/craft_station_weapon.glb',
-    craftStationTools: '/assets/models/wasteland/craft_station_tools.glb',
-    craftStationRepair: '/assets/models/wasteland/craft_station_repair.glb',
-    craftStationEnergy: '/assets/models/wasteland/craft_station_energy.glb',
-    craftStationChem: '/assets/models/wasteland/craft_station_chem.glb',
-    gardenPatch: '/assets/models/wasteland/garden_patch.glb',
-    latrineOuthouse: '/assets/models/wasteland/latrine_outhouse.glb',
-    campfireRest: '/assets/models/wasteland/campfire_rest.glb',
     brahmin: '/assets/models/wasteland/brahmin.glb',
     friendlyBrahmin: '/assets/models/wasteland/brahmin.glb',
-    brahminPen: '/assets/models/wasteland/brahmin_pen.glb',
-    cargoStack: '/assets/models/wasteland/cargo_stack.glb',
     traderNpc: '/assets/models/wasteland/trader_npc.glb',
     caravanMerchant: '/assets/models/wasteland/npc_caravan_trader.glb',
     caravanGuard: '/assets/models/wasteland/npc_caravan_guard.glb',
@@ -754,42 +709,14 @@
     enemyRadscorpion: '/assets/models/wasteland/npc_radscorpion.glb',
     enemyMutantAnt: '/assets/models/wasteland/npc_mutant_ant.glb',
     enemyGecko: '/assets/models/wasteland/npc_gecko.glb',
-    enemyFireGecko: '/assets/models/wasteland/npc_fire_gecko.glb',
-    traderAwning: '/assets/models/wasteland/trader_awning.glb',
-    traderWallBlock: '/assets/models/wasteland/trader_wall_block.glb',
-    traderWindowBlock: '/assets/models/wasteland/trader_window_block.glb',
-    traderFloorSlab: '/assets/models/wasteland/trader_floor_slab.glb',
-    traderRoofBlock: '/assets/models/wasteland/trader_roof_block.glb',
-    wallWoodBlock: '/assets/models/wasteland/mod_wall_wood.glb',
-    wallBrickBlock: '/assets/models/wasteland/mod_wall_brick.glb',
-    wallMetalBlock: '/assets/models/wasteland/mod_wall_metal.glb',
-    roofWoodBlock: '/assets/models/wasteland/mod_roof_wood.glb',
-    roofMetalBlock: '/assets/models/wasteland/mod_roof_metal.glb',
-    floorWoodBlock: '/assets/models/wasteland/mod_floor_wood.glb',
-    floorTileBlock: '/assets/models/wasteland/mod_floor_tile.glb',
-    storageLeanTo: '/assets/models/wasteland/storage_lean_to.glb',
-    scrapWallSegment: '/assets/models/wasteland/scrap_wall_segment.glb',
-    scrapWatchTower: '/assets/models/wasteland/scrap_watch_tower.glb',
-    openScrapGate: '/assets/models/wasteland/open_scrap_gate.glb',
-    highwaySign: '/assets/models/wasteland/highway_sign.glb',
-    ruinedBillboard: '/assets/models/wasteland/ruined_billboard.glb',
-    utilityPole: '/assets/models/wasteland/utility_pole.glb',
-    roadblockBarricade: '/assets/models/wasteland/roadblock_barricade.glb',
-    dryBush: '/assets/models/wasteland/dry_bush.glb',
-    asphaltSlab: '/assets/models/wasteland/asphalt_slab.glb'
+    enemyFireGecko: '/assets/models/wasteland/npc_fire_gecko.glb'
   };
 
   // Old Klim presentation now lives in the additive Unity scene. These sets
   // remain as empty compatibility hooks for the retired browser renderer.
   const OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS = new Set();
   const OLD_KLIM_INSTANCED_MODEL_KEYS = new Set();
-  const AUTHORED_STATIC_INSTANCED_MODEL_KEYS = new Set([
-    ...OLD_KLIM_INSTANCED_MODEL_KEYS,
-    // The caravan yard repeats this multi-primitive GLB five times. Keeping the
-    // model available everywhere while batching it only in Old Klim removes
-    // dozens of draws without changing authored collision or LOS semantics.
-    'cargoStack'
-  ]);
+  const AUTHORED_STATIC_INSTANCED_MODEL_KEYS = new Set(OLD_KLIM_INSTANCED_MODEL_KEYS);
   const OLD_KLIM_CLIFF_MODEL_KEYS = new Set();
   const OLD_KLIM_STATIC_MODEL_KEYS = new Set(OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS);
 
@@ -1435,9 +1362,7 @@ varying float vInstanceOpacity;`
           ? NPC_SUPER_MUTANT_GLB_ASSET_VERSION
           : (APPROVED_CREATURE_STATIC_MODEL_KEYS.has(key)
           ? APPROVED_CREATURE_GLB_ASSET_VERSION
-          : (PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS.has(key)
-              ? PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION
-              : STATIC_MODEL_GLB_ASSET_VERSION)));
+          : STATIC_MODEL_GLB_ASSET_VERSION));
     const url = assetVersion
       ? `${sourceUrl}?v=${encodeURIComponent(assetVersion)}`
       : sourceUrl;

@@ -8,6 +8,7 @@ weapon's forward axis; the glTF exporter converts that to the client's -Z axis.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -16,7 +17,8 @@ import sys
 
 import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Quaternion, Vector
+from mathutils.bvhtree import BVHTree
 
 
 WEAPONS = (
@@ -56,6 +58,132 @@ WEAPON_RUNTIME_SCALES = {
     "axe": 0.44,
     "handPump": 0.50,
 }
+
+# Child details must follow their moving assembly, not remain on the root
+# while the magazine/tank/bolt moves away. All transforms are kept in place.
+PART_ATTACHMENTS = {
+    "laserPistol": {"emitter_ring": "muzzle"},
+    "rifle": {"bolt_knob": "bolt"},
+    "machineGun": {"ammo_box_lid": "ammo_box", "ammo_box_latch": "ammo_box"},
+    "smg": {"magazine_base": "magazine"},
+    "flamethrower": {"pressure_gauge": "fuel_tank", "gauge_face": "pressure_gauge",
+                     "fuel_valve": "fuel_tank", "pilot": "muzzle"},
+}
+
+# Retained functional details whose old mounting surface vanished with the
+# procedural body. Re-seat them on the real replacement, in model space.
+SURFACE_MOUNTS = {
+    "laserPistol": {"rear_sight": "pilot_laser_pistol_cc0"},
+    "plasmaRifle": {"rear_sight": "pilot_plasma_rifle_cc0"},
+    "rocketLauncher": {"sight": "launcher_tube"},
+    "flamethrower": {"pressure_gauge": "fuel_tank", "fuel_valve": "fuel_tank"},
+}
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+# One CC0 donor per gameplay family is enough for the first fit pass. The
+# complete upstream packs stay out of the repository until the representatives
+# have passed the in-character review. Coordinates below are measured in the
+# unmodified source files; the importer normalizes them to the generator's +Y
+# forward axis and aligns their primary handhold with the runtime grip socket.
+PILOT_DONORS = {
+    "pistol": {
+        "path": "quaternius/ultimate-guns/Pistol_1.fbx",
+        "creator": "Quaternius",
+        "pack": "Ultimate Guns Pack",
+        "page": "https://quaternius.com/packs/ultimategun.html",
+        "sha256": "4a1f77b488f23e1758a4e9a5289cf076c876e3455a176dc8e0f4abea613aae1d",
+        "rotation": ("Z", math.pi / 2),
+        "anchor": (-0.05, 0.0, -0.15),
+        "runtime_length": 0.32,
+        "body_name": "pilot_pistol_cc0",
+        "keep": {"breech_cap", "muzzle", "joint_clamp", "grip_tape_top", "spare_round"},
+    },
+    "laserPistol": {
+        "path": "quaternius/sci-fi-modular/Pistol_1.fbx",
+        "creator": "Quaternius",
+        "pack": "Sci-Fi Modular Gun Pack",
+        "page": "https://quaternius.com/packs/scifimodularguns.html",
+        "sha256": "900e5eaf56065b2fe9870057f3ac01a74e5eba0e9d2193f05883200387c65617",
+        "rotation": ("Z", math.pi / 2),
+        "anchor": (0.0, 0.0, -0.05),
+        "runtime_length": 0.40,
+        "body_name": "pilot_laser_pistol_cc0",
+        "keep": {"energy_core", "muzzle", "emitter_ring", "rear_sight"},
+    },
+    "flamethrower": {
+        "path": "opengameart/flamethrower/Flamethrower.fbx",
+        "creator": "Alexandr Mischenko",
+        "pack": "Flamethrower PBR/Unity CC0",
+        "page": "https://opengameart.org/content/flamethrower-pbrunity-cc0",
+        "sha256": "954ad0ea00d83aaff4245a89ad378108f61cbf21d1c5c1fd2532865e43e6cc02",
+        "rotation": ("Z", math.pi / 2),
+        "anchor": (-1.15, 0.0, -0.38),
+        "runtime_length": 1.06,
+        "body_name": "pilot_flamethrower_cc0",
+        "keep": {"fuel_tank", "muzzle", "pilot", "hose", "pressure_gauge", "gauge_face", "fuel_valve"},
+    },
+    "plasmaRifle": {
+        "path": "quaternius/sci-fi-modular/AR_1.fbx",
+        "creator": "Quaternius",
+        "pack": "Sci-Fi Modular Gun Pack",
+        "page": "https://quaternius.com/packs/scifimodularguns.html",
+        "sha256": "3d2e58f6d89a9aedf2e25f769ca4c3dfd3981d0fa5ecbf0ebbd37c6c2da196b7",
+        "rotation": ("Z", math.pi / 2),
+        "anchor": (-0.16, 0.0, -0.10),
+        "runtime_length": 1.03,
+        "body_name": "pilot_plasma_rifle_cc0",
+        "keep": {"energy_core", "muzzle", "plasma_core_ring_01", "rear_sight"},
+    },
+    "rocketLauncher": {
+        "path": "opengameart/rocket-launcher/rocket_launcher.blend",
+        "creator": "KennyNL",
+        "pack": "Low Poly Rocket Launcher",
+        "page": "https://opengameart.org/content/low-poly-rocket-launcher",
+        "sha256": "763251a23c9a43e0560075d093c91057d331c9c3ca8cbf578a844f9dcdad5563",
+        "rotation": ("Z", -math.pi / 2),
+        "anchor": (1.20, 0.0, -0.55),
+        "runtime_length": 1.12,
+        "body_names": {"launcher": "launcher_tube", "rocket": "rocket_round"},
+        "keep": {"muzzle", "grip", "sight", "shoulder_pad"},
+    },
+    "knife": {
+        "path": "quaternius/survival/Knife.fbx",
+        "creator": "Quaternius",
+        "pack": "Survival Pack",
+        "page": "https://quaternius.com/packs/survival.html",
+        "sha256": "6a2d5250870ebc62aef8dc1c5bd6de88e921d36f976d06f61c2e9f190f7ec030",
+        "rotation": ("X", -math.pi / 2),
+        "anchor": (0.0, 0.0, -0.10),
+        "runtime_length": 0.31,
+        "body_name": "blade",
+        "keep": {"grip", "guard", "pommel", "lanyard_ring", "grip_wrap_-0.34"},
+    },
+    "axe": {
+        "path": "quaternius/survival/Axe.fbx",
+        "creator": "Quaternius",
+        "pack": "Survival Pack",
+        "page": "https://quaternius.com/packs/survival.html",
+        "sha256": "41537fbef651a0931b42b1786658ea1ef116dbe4a2315a38d12644251e4c52f4",
+        "rotation": ("X", -math.pi / 2),
+        "anchor": (0.0, 0.0, -0.40),
+        "runtime_length": 0.79,
+        "body_name": "blade",
+        "keep": {"handle", "grip", "head_socket", "head_wedge", "axe_lashing"},
+    },
+}
+
+# Complete the original family pilot with a distinct donor for each remaining
+# firearm. These entries are source-pinned, including the mesh-part selections.
+CATALOG_REPLACEMENTS = json.loads((REPOSITORY_ROOT / "source-assets/weapons/pilot/catalog-replacements.json").read_text(encoding="utf-8"))
+for donor_id, donor_config in CATALOG_REPLACEMENTS["weapons"].items():
+    PILOT_DONORS[donor_id] = {
+        **{key: CATALOG_REPLACEMENTS[key] for key in ("creator", "pack", "page")},
+        **donor_config,
+        "sha256": donor_config["sha256"].lower(),
+        "rotation": ("Z", math.pi / 2),
+        "body_name": f"catalog_{donor_id}_cc0",
+    }
 
 WEAPON_INTERACTION_PROFILES = {
     # Пистолет — однозарядный самопал: перезарядка открывает казённую крышку
@@ -100,6 +228,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--texture-size", type=int, default=96)
+    parser.add_argument("--weapon", choices=[row[0] for row in WEAPONS], action="append")
     parser.add_argument("--report", type=Path)
     return parser.parse_args(argv)
 
@@ -463,6 +592,24 @@ def smart_uv(obj: bpy.types.Object):
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.02)
     bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def deterministic_planar_uv(obj: bpy.types.Object):
+    """Assign stable per-face UVs to a beveled box without threaded packing."""
+    mesh = obj.data
+    layer = mesh.uv_layers.active or mesh.uv_layers.new(name="UVMap")
+    minimum = [min(vertex.co[axis] for vertex in mesh.vertices) for axis in range(3)]
+    maximum = [max(vertex.co[axis] for vertex in mesh.vertices) for axis in range(3)]
+    for polygon in mesh.polygons:
+        dropped = max(range(3), key=lambda axis: abs(polygon.normal[axis]))
+        axes = [axis for axis in range(3) if axis != dropped]
+        for loop_index in polygon.loop_indices:
+            coordinate = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            values = []
+            for axis in axes:
+                span = maximum[axis] - minimum[axis]
+                values.append(0.5 if span <= 1e-9 else (coordinate[axis] - minimum[axis]) / span)
+            layer.data[loop_index].uv = values
 
 
 
@@ -1152,12 +1299,47 @@ def build_hand_pump(root, m):
     add_grip_ribs(root, m, "pump_side_grip", (0.14, 0.12, -0.15), (0.16, 0.24, 0.35), count=6, axis="Z")
     add_cylinder(root, m, "pressure_ring", (0, 0.72, 0.03), 0.098, 0.085, "brass", vertices=24, bevel=0.005)
     add_box(root, m, "foot_plate", (0, 0.89, -0.10), (0.44, 0.16, 0.085), "dark_metal", bevel=0.018)
-    add_box(root, m, "foot_pad", (0, 0.89, -0.15), (0.38, 0.14, 0.035), "rubber", bevel=0.009)
+    foot_pad = add_box(root, m, "foot_pad", (0, 0.89, -0.15), (0.38, 0.14, 0.035), "rubber", bevel=0.009)
+    deterministic_planar_uv(foot_pad)
     add_curve_tube(root, m, "pump_hose", [(0.07, 0.70, 0.05), (0.18, 0.78, 0.10), (0.22, 0.93, 0.03), (0.11, 1.03, 0.03)], 0.020, "rubber")
     add_sphere(root, m, "pressure_gauge", (-0.12, 0.65, 0.13), 0.075, "dark_metal", scale=(0.35, 1.0, 1.0))
     add_cylinder(root, m, "gauge_face", (-0.148, 0.65, 0.13), 0.055, 0.015, "bone", direction="X", vertices=24)
     add_box(root, m, "gauge_needle", (-0.158, 0.65, 0.13), (0.008, 0.060, 0.012), "energy_red", rotation=(0.35, 0, 0), bevel=0.002)
     add_wear(root, m, "pump", [((0, 0.34, 0.105), (0.05, 0.22, 0.012))])
+
+
+def build_catalog_pickaxe(root, m):
+    # A forged, asymmetric mattock head and a curved timber haft replace the
+    # old pair of straight cones. Keep the gameplay sockets and length.
+    add_loft(root, m, "handle", [(-0.55, 0.05, -0.055, 0.055),
+        (-0.05, 0.06, -0.04, 0.07), (0.60, 0.07, -0.025, 0.08),
+        (1.03, 0.08, -0.035, 0.08)], "wood", bevel=0.012)
+    add_cylinder(root, m, "grip", (0, -0.39, 0.01), 0.073, 0.40, "rubber", vertices=12)
+    add_box(root, m, "head_socket", (0, 1.03, 0.02), (0.26, 0.24, 0.22), "paint_olive", bevel=0.025)
+    add_prism(root, m, "pick_left", [(-0.07,1.15),(-0.32,1.16),(-0.55,1.07),
+        (-0.73,0.82),(-0.46,0.96),(-0.20,0.98),(-0.07,0.98)], 0.105, "metal")
+    add_prism(root, m, "mattock_adze", [(0.07,1.14),(0.35,1.14),(0.58,1.04),
+        (0.64,0.90),(0.44,0.89),(0.25,0.99),(0.07,0.98)], 0.19, "dark_metal")
+    add_box(root, m, "head_wedge", (0, 1.155, 0.02), (0.13, 0.04, 0.13), "brass", bevel=0.006)
+    for y in (-0.50,-0.37,-0.24):
+        add_box(root, m, f"pickaxe_safety_band_{y}", (0,y,0.01), (0.15,0.06,0.15), "rust", bevel=0.015)
+
+
+def build_catalog_hand_pump(root, m):
+    # A red workshop floor pump: broad foot, offset hose and an enclosed gauge.
+    add_cylinder(root, m, "pump_tube", (0,0.34,0.02), 0.105, 1.02, "rust", vertices=16, bevel=0.01)
+    add_cylinder(root, m, "inner_rod", (0,-0.22,0.02), 0.033, 0.40, "metal", vertices=12)
+    add_box(root, m, "pump_handle", (0,-0.40,0.02), (0.59,0.16,0.15), "rubber", bevel=0.025)
+    add_cylinder(root, m, "nozzle", (0,0.93,0.02), 0.042, 0.19, "brass", vertices=12)
+    add_box(root, m, "foot_plate", (0,0.87,-0.10), (0.58,0.22,0.10), "dark_metal", bevel=0.018)
+    add_box(root, m, "side_grip", (0.13,0.10,-0.12), (0.13,0.27,0.35), "rubber", bevel=0.026)
+    add_cylinder(root, m, "pump_collar", (0,-0.13,0.02), 0.13, 0.09, "metal", vertices=16)
+    add_curve_tube(root,m,"pump_hose", [(0.10,0.68,0.02),(0.28,0.60,0.02),
+        (0.29,0.13,0.02),(0.24,-0.03,0.02),(0.18,0.02,0.02)],0.023,"rubber")
+    add_cylinder(root,m,"pressure_gauge",(0,0.58,0.15),0.13,0.055,"dark_metal",direction="Z",vertices=16)
+    add_cylinder(root,m,"gauge_face",(0,0.58,0.182),0.103,0.012,"bone",direction="Z",vertices=16)
+    add_box(root,m,"gauge_needle",(0.025,0.61,0.194),(0.018,0.12,0.007),"brass",rotation=(0,0,-0.50),bevel=0.001)
+    add_box(root,m,"service_label",(0,0.24,0.127),(0.10,0.25,0.012),"bone",bevel=0.004)
 
 
 BUILDERS = {
@@ -1174,9 +1356,9 @@ BUILDERS = {
     "shotgun": build_shotgun,
     "rocketLauncher": build_rocket_launcher,
     "knife": build_knife,
-    "pickaxe": build_pickaxe,
+    "pickaxe": build_catalog_pickaxe,
     "axe": build_axe,
-    "handPump": build_hand_pump,
+    "handPump": build_catalog_hand_pump,
 }
 
 
@@ -1323,12 +1505,433 @@ def animate_weapon(root: bpy.types.Object, weapon_id: str, family: str):
         ])
 
 
-def scene_bounds() -> tuple[list[float], list[float]]:
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    points = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
+def glb_scene_bounds(path: Path) -> tuple[list[float], list[float]]:
+    """Measure the actual exported rest pose, including serialized root scale."""
+    data = path.read_bytes()
+    if data[:4] != b"glTF":
+        raise RuntimeError(f"Invalid GLB while measuring bounds: {path}")
+    json_chunk = None
+    offset = 12
+    while offset + 8 <= len(data):
+        length = int.from_bytes(data[offset:offset + 4], "little")
+        chunk_type = data[offset + 4:offset + 8]
+        chunk = data[offset + 8:offset + 8 + length]
+        if chunk_type == b"JSON":
+            json_chunk = json.loads(chunk.rstrip(b"\0 \t\r\n").decode("utf-8"))
+            break
+        offset += 8 + length
+    if json_chunk is None:
+        raise RuntimeError(f"GLB has no JSON chunk: {path}")
+
+    def local_matrix(node: dict[str, object]) -> Matrix:
+        if "matrix" in node:
+            values = node["matrix"]
+            return Matrix((
+                values[0:4], values[4:8], values[8:12], values[12:16]
+            )).transposed()
+        translation = Vector(node.get("translation", (0.0, 0.0, 0.0)))
+        rotation_values = node.get("rotation", (0.0, 0.0, 0.0, 1.0))
+        rotation = Quaternion((
+            rotation_values[3], rotation_values[0], rotation_values[1], rotation_values[2]
+        )).to_matrix().to_4x4()
+        scale_values = node.get("scale", (1.0, 1.0, 1.0))
+        scale = Matrix.Diagonal(Vector((*scale_values, 1.0)))
+        return Matrix.Translation(translation) @ rotation @ scale
+
+    nodes = json_chunk.get("nodes", [])
+    meshes = json_chunk.get("meshes", [])
+    accessors = json_chunk.get("accessors", [])
+    points: list[Vector] = []
+
+    def visit(node_index: int, parent_matrix: Matrix):
+        node = nodes[node_index]
+        world = parent_matrix @ local_matrix(node)
+        mesh_index = node.get("mesh")
+        if mesh_index is not None:
+            for primitive in meshes[mesh_index].get("primitives", []):
+                accessor_index = primitive.get("attributes", {}).get("POSITION")
+                if accessor_index is None:
+                    continue
+                accessor = accessors[accessor_index]
+                minimum = accessor.get("min")
+                maximum = accessor.get("max")
+                if minimum is None or maximum is None:
+                    continue
+                for x in (minimum[0], maximum[0]):
+                    for y in (minimum[1], maximum[1]):
+                        for z in (minimum[2], maximum[2]):
+                            gltf_point = world @ Vector((x, y, z))
+                            # glTF is Y-up/-Z-forward; reports keep the
+                            # generator's Blender +Y-forward convention.
+                            points.append(Vector((gltf_point.x, -gltf_point.z, gltf_point.y)))
+        for child_index in node.get("children", []):
+            visit(child_index, world)
+
+    scene_index = int(json_chunk.get("scene", 0))
+    scenes = json_chunk.get("scenes", [])
+    for root_index in scenes[scene_index].get("nodes", []):
+        visit(root_index, Matrix.Identity(4))
+    if not points:
+        raise RuntimeError(f"GLB has no measurable mesh bounds: {path}")
     minimum = [min(point[axis] for point in points) for axis in range(3)]
     maximum = [max(point[axis] for point in points) for axis in range(3)]
     return [round(value, 6) for value in minimum], [round(value, 6) for value in maximum]
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def pilot_material(material_name: str, materials: dict[str, bpy.types.Material]):
+    name = material_name.lower().replace("_", "").replace(" ", "")
+    if "green" in name:
+        return materials["paint_olive"]
+    if "darkwood" in name or name == "wood":
+        return materials["wood"]
+    if "darkmetal" in name or "black" in name:
+        return materials["dark_metal"]
+    if "lightgrey" in name or "lightmetal" in name or "white" in name:
+        return materials["bone"]
+    if "yellow" in name:
+        return materials["brass"]
+    if "red" in name:
+        return materials["rust"]
+    if "main" in name:
+        return materials["paint_teal"]
+    if "flamethrower" in name:
+        return materials["paint_olive"]
+    if "grey" in name or "metal" in name or name.startswith("material"):
+        return materials["metal"]
+    return materials["dark_metal"]
+
+
+def import_pilot_source(path: Path, config: dict[str, object]) -> list[bpy.types.Object]:
+    before = set(bpy.data.objects)
+    if path.suffix.lower() == ".fbx":
+        result = bpy.ops.import_scene.fbx(filepath=str(path))
+        if "FINISHED" not in result:
+            raise RuntimeError(f"Cannot import pilot FBX {path}: {result}")
+        imported = [obj for obj in bpy.data.objects if obj not in before]
+    elif path.suffix.lower() == ".blend":
+        requested = set(config.get("body_names", {}).keys())
+        with bpy.data.libraries.load(str(path), link=False) as (source, target):
+            target.objects = [name for name in source.objects if name in requested]
+        imported = []
+        for obj in target.objects:
+            if obj is None:
+                continue
+            bpy.context.collection.objects.link(obj)
+            imported.append(obj)
+    else:
+        raise RuntimeError(f"Unsupported pilot source format: {path}")
+
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    if not meshes:
+        raise RuntimeError(f"Pilot source has no mesh objects: {path}")
+    return meshes
+
+
+def move_muzzle_to_donor(root: bpy.types.Object, donor_objects: list[bpy.types.Object]):
+    muzzle = bpy.data.objects.get("muzzle")
+    if muzzle is None:
+        return
+    points = [
+        obj.matrix_basis @ vertex.co
+        for obj in donor_objects
+        for vertex in obj.data.vertices
+    ]
+    if not points:
+        return
+    minimum_y = min(point.y for point in points)
+    maximum_y = max(point.y for point in points)
+    front_band = max(0.012, (maximum_y - minimum_y) * 0.035)
+    front = [point for point in points if point.y >= maximum_y - front_band]
+    front_x = sum(point.x for point in front) / len(front)
+    front_z = sum(point.z for point in front) / len(front)
+    muzzle_corners = [muzzle.matrix_basis @ Vector(corner) for corner in muzzle.bound_box]
+    muzzle_tip = max(point.y for point in muzzle_corners)
+    muzzle_x = sum(point.x for point in muzzle_corners) / len(muzzle_corners)
+    muzzle_z = sum(point.z for point in muzzle_corners) / len(muzzle_corners)
+    muzzle.location += Vector((front_x - muzzle_x, maximum_y - muzzle_tip, front_z - muzzle_z))
+
+
+def apply_pilot_donor(
+    root: bpy.types.Object,
+    weapon_id: str,
+    materials: dict[str, bpy.types.Material],
+) -> dict[str, object] | None:
+    config = PILOT_DONORS.get(weapon_id)
+    if config is None:
+        return None
+    source_root = REPOSITORY_ROOT / "source-assets" / "weapons" / "pilot"
+    relative_path = Path(str(config["path"]))
+    source = source_root / relative_path
+    if not source.is_file():
+        raise RuntimeError(f"Pilot source is missing: {source}")
+    actual_hash = file_sha256(source)
+    if actual_hash != config["sha256"]:
+        raise RuntimeError(
+            f"Pilot source hash drifted for {weapon_id}: {actual_hash} != {config['sha256']}"
+        )
+
+    keep = set(config["keep"])
+    for child in list(root.children):
+        if child.name not in keep:
+            bpy.data.objects.remove(child, do_unlink=True)
+
+    donor_objects = import_pilot_source(source, config)
+    # Split connected source parts before normalizing the donor. Reloading must
+    # move the visible magazine/cylinder/pump rather than an overlapping old part.
+    separated = []
+    for obj in donor_objects:
+        if not config.get("parts"):
+            continue
+        obj.data.transform(obj.matrix_world)
+        obj.parent = None
+        obj.matrix_world = Matrix.Identity(4)
+        obj.animation_data_clear()
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        unseen = set(bm.verts)
+        selections = {index: set() for index in range(len(config["parts"]))}
+        while unseen:
+            seed = min(unseen, key=lambda v: v.index)
+            todo, island = [seed], {seed}
+            while todo:
+                for edge in todo.pop().link_edges:
+                    for vertex in edge.verts:
+                        if vertex not in island:
+                            island.add(vertex)
+                            todo.append(vertex)
+            unseen -= island
+            for index, part in enumerate(config["parts"]):
+                if all(all(part["min"][axis] <= v.co[axis] <= part["max"][axis]
+                           for axis in range(3)) for v in island):
+                    selections[index].update(island)
+                    break
+        removed = set()
+        for index, selected in selections.items():
+            if not selected:
+                raise RuntimeError(f"{weapon_id}: source part selection {index} is empty")
+            part_name = config["parts"][index]["name"]
+            if part_name:
+                part_bm = bm.copy()
+                selected_indices = {v.index for v in selected}
+                bmesh.ops.delete(part_bm, geom=[v for v in part_bm.verts if v.index not in selected_indices], context="VERTS")
+                mesh = bpy.data.meshes.new(f"{weapon_id}_{part_name}_CC0")
+                part_bm.to_mesh(mesh)
+                part_bm.free()
+                for material in obj.data.materials:
+                    mesh.materials.append(material)
+                part_obj = bpy.data.objects.new(f"source_{part_name}", mesh)
+                bpy.context.collection.objects.link(part_obj)
+                part_obj["runtime_part_name"] = part_name
+                separated.append(part_obj)
+            removed.update(selected)
+        bmesh.ops.delete(bm, geom=list(removed), context="VERTS")
+        bm.to_mesh(obj.data)
+        bm.free()
+    donor_objects.extend(separated)
+    axis, angle = config["rotation"]
+    rotation = Matrix.Rotation(float(angle), 4, str(axis))
+    raw_points = [
+        rotation @ (obj.matrix_world @ vertex.co)
+        for obj in donor_objects
+        for vertex in obj.data.vertices
+    ]
+    raw_length = max(point.y for point in raw_points) - min(point.y for point in raw_points)
+    runtime_scale = WEAPON_RUNTIME_SCALES[weapon_id]
+    geometry_scale = float(config["runtime_length"]) / runtime_scale / raw_length
+    source_anchor = rotation @ Vector(config["anchor"])
+    target_anchor = Vector(WEAPON_INTERACTION_PROFILES[weapon_id]["grip_r"])
+    translation = target_anchor - source_anchor * geometry_scale
+    transform_scale = Matrix.Scale(geometry_scale, 4)
+
+    for obj in donor_objects:
+        baked = obj.data.copy()
+        baked.name = f"{clean_name(weapon_id)}_{obj.data.name}_CC0"
+        baked.transform(
+            Matrix.Translation(translation)
+            @ transform_scale
+            @ rotation
+            @ obj.matrix_world
+        )
+        obj.data = baked
+        obj.parent = root
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+        obj.matrix_basis = Matrix.Identity(4)
+        obj.animation_data_clear()
+        obj.hide_render = False
+        for index, slot in enumerate(obj.material_slots):
+            source_name = slot.material.name if slot.material else ""
+            override = config.get("material_overrides", {}).get(source_name.split(".")[0])
+            obj.data.materials[index] = materials[override] if override else pilot_material(source_name, materials)
+
+    for obj in separated:
+        part_name = obj["runtime_part_name"]
+        previous = bpy.data.objects.get(part_name)
+        if previous is not None:
+            bpy.data.objects.remove(previous, do_unlink=True)
+        center = sum((v.co for v in obj.data.vertices), Vector()) / len(obj.data.vertices)
+        obj.data.transform(Matrix.Translation(-center))
+        obj.location = center
+        obj.name = part_name
+        obj["realm_weapon_part"] = part_name
+
+    def donor_point(point):
+        return translation + rotation @ Vector(point) * geometry_scale
+
+    bpy.context.view_layer.update()
+    for part_name, point in config.get("detail_anchors", {}).items():
+        detail = bpy.data.objects.get(part_name)
+        if detail is not None:
+            # Some authored parts (curves and baked spheres) carry their offset
+            # in vertices rather than the object origin. Align the visible part.
+            corners = [detail.matrix_basis @ Vector(corner) for corner in detail.bound_box]
+            center = sum(corners, Vector()) / len(corners)
+            detail.location += donor_point(point) - center
+    if config.get("support_anchor"):
+        WEAPON_INTERACTION_PROFILES[weapon_id]["grip_l"] = tuple(donor_point(config["support_anchor"]))
+
+    body_names = config.get("body_names")
+    if body_names:
+        for obj in donor_objects:
+            source_name = obj.name
+            obj.name = str(body_names.get(source_name, f"pilot_{weapon_id}_{source_name}_cc0"))
+            obj["realm_weapon_part"] = obj.name.lower()
+            if obj.name == "rocket_round":
+                # The source projectile is a separate mesh, but its authored
+                # origin sits at the file origin. Keep the visible geometry in
+                # place while restoring the reachable reload pivot used by the
+                # character rig and reload animation.
+                reload_origin = Vector((0.0, -0.05, 0.16))
+                obj.data.transform(Matrix.Translation(-reload_origin))
+                obj.location = reload_origin
+    else:
+        donor_objects[0].name = str(config["body_name"])
+        donor_objects[0]["realm_weapon_part"] = "pilot_donor_body"
+        for index, obj in enumerate([o for o in donor_objects[1:] if o not in separated], start=2):
+            obj.name = f"pilot_{weapon_id}_part_{index:02d}_cc0"
+            obj["realm_weapon_part"] = "pilot_donor_body"
+
+    muzzle_donors = [obj for obj in donor_objects if obj.name != "rocket_round"]
+    if weapon_id in CATALOG_REPLACEMENTS["weapons"]:
+        # The imported barrel already has its full silhouette; the old large
+        # muzzle sleeve is only a small bore cap on these donors.
+        muzzle_part = bpy.data.objects.get("muzzle")
+        if muzzle_part is not None:
+            muzzle_part.scale *= 0.55
+    move_muzzle_to_donor(root, muzzle_donors)
+    root["realm_source_license"] = "CC0-1.0"
+    root["realm_source_creator"] = config["creator"]
+    root["realm_source_pack"] = config["pack"]
+    root["realm_source_page"] = config["page"]
+    root["realm_source_file"] = relative_path.as_posix()
+    root["realm_source_sha256"] = actual_hash
+    root["realm_model_revision"] = 3
+    root["realm_pilot_family"] = next(family for wid, family, _label in WEAPONS if wid == weapon_id)
+    return {
+        "creator": config["creator"],
+        "pack": config["pack"],
+        "page": config["page"],
+        "license": "CC0-1.0",
+        "file": relative_path.as_posix(),
+        "sha256": actual_hash,
+    }
+
+
+def mount_retained_details(root, weapon_id):
+    """Repair actual surface contact and preserve coherent moving assemblies."""
+    bpy.context.view_layer.update()
+    root_inverse = root.matrix_world.inverted()
+
+    def mesh_points(obj):
+        mesh = obj.to_mesh()
+        mesh.calc_loop_triangles()
+        transform = root_inverse @ obj.matrix_world
+        points = [transform @ v.co for v in mesh.vertices]
+        triangles = [tuple(t.vertices) for t in mesh.loop_triangles]
+        obj.to_mesh_clear()
+        return points, triangles
+
+    # Seat the gauge face on its existing housing before moving the whole
+    # gauge assembly to the fuel bottle.
+    if weapon_id == "flamethrower":
+        housing = bpy.data.objects.get("pressure_gauge")
+        face = bpy.data.objects.get("gauge_face")
+        if housing is not None and face is not None:
+            matrix = face.matrix_world.copy()
+            face.parent = housing
+            face.matrix_world = matrix
+
+    for detail_name, surface_name in SURFACE_MOUNTS.get(weapon_id, {}).items():
+        detail = bpy.data.objects.get(detail_name)
+        surface = bpy.data.objects.get(surface_name)
+        if detail is None or surface is None:
+            raise RuntimeError(f"{weapon_id}: mounting pair missing: {detail_name}/{surface_name}")
+        surface_points, surface_triangles = mesh_points(surface)
+        detail_points, detail_triangles = mesh_points(detail)
+        target = BVHTree.FromPolygons(surface_points, surface_triangles, all_triangles=True)
+        source = BVHTree.FromPolygons(detail_points, detail_triangles, all_triangles=True)
+        if not source.overlap(target):
+            best = None
+            for point in detail_points:
+                hit, normal, index, distance = target.find_nearest(point)
+                if hit is not None and (best is None or distance < best[0]):
+                    best = distance, hit - point
+            if best is None:
+                raise RuntimeError(f"{weapon_id}: no mounting surface for {detail_name}")
+            if best[0] > 0.0001:
+                # Half a millimetre of seating avoids a hairline gap after
+                # GLB compression. Move in root space, not in scaled bone space.
+                offset = best[1] + best[1].normalized() * (0.0005 / WEAPON_RUNTIME_SCALES[weapon_id])
+                detail.matrix_world.translation += root.matrix_world.to_3x3() @ offset
+                bpy.context.view_layer.update()
+        detail["realm_mount_surface"] = surface_name
+
+    if weapon_id == "laserPistol":
+        # The focusing collar must be coaxial with the imported muzzle, not
+        # hang below the new emitter at the procedural barrel's old height.
+        ring = bpy.data.objects.get("emitter_ring")
+        muzzle = bpy.data.objects.get("muzzle")
+        ring_points, _ = mesh_points(ring)
+        muzzle_points, _ = mesh_points(muzzle)
+        def center(points):
+            return (Vector([min(p[a] for p in points) for a in range(3)])
+                    + Vector([max(p[a] for p in points) for a in range(3)])) * 0.5
+        ring.matrix_world.translation += root.matrix_world.to_3x3() @ (center(muzzle_points) - center(ring_points))
+        bpy.context.view_layer.update()
+
+    if weapon_id == "flamethrower":
+        pilot = bpy.data.objects.get("pilot")
+        muzzle = bpy.data.objects.get("muzzle")
+        points, _ = mesh_points(muzzle)
+        target = Vector((sum(p.x for p in points) / len(points),
+                         max(p.y for p in points) - 0.02,
+                         sum(p.z for p in points) / len(points)))
+        points, _ = mesh_points(pilot)
+        center = (Vector([min(p[a] for p in points) for a in range(3)])
+                  + Vector([max(p[a] for p in points) for a in range(3)])) * 0.5
+        pilot.location += target - center
+        bpy.context.view_layer.update()
+
+    for child_name, parent_name in PART_ATTACHMENTS.get(weapon_id, {}).items():
+        child = bpy.data.objects.get(child_name)
+        parent = bpy.data.objects.get(parent_name)
+        if child is None or parent is None:
+            raise RuntimeError(f"{weapon_id}: attachment missing: {child_name}/{parent_name}")
+        world = child.matrix_world.copy()
+        child.parent = parent
+        child.matrix_world = world
+        child["realm_attachment_parent"] = parent_name
+        if child_name == "pilot":
+            child["realm_attachment_allow_scale"] = True  # ignition glow, not hardware
+    root["realm_attachment_revision"] = 1
+    bpy.context.view_layer.update()
 
 
 def quantize_uv_layers(step: float = 1.0 / 8192.0):
@@ -1357,7 +1960,7 @@ def export_weapon(output: Path):
         filepath=str(output),
         export_format="GLB",
         use_selection=True,
-        export_copyright="Realm of Ashes original B+C weapon library.",
+        export_copyright="Realm of Ashes runtime weapon catalog; CC0 pilot donors are listed in the manifest.",
         export_extras=True,
         export_yup=True,
         export_apply=False,
@@ -1389,6 +1992,7 @@ def build_one(weapon_id: str, family: str, label: str, output: Path, texture_siz
     bpy.context.collection.objects.link(root)
     root["realm_schema"] = "realm.weapon-runtime.v1"
     root["realm_weapon_id"] = weapon_id
+    root["realm_model_revision"] = 3
     root["realm_animation_family"] = family
     root["realm_art_direction"] = "geometry_b_materials_c"
     root["realm_interaction_profile"] = "physical_grips_reload_v2"
@@ -1396,12 +2000,14 @@ def build_one(weapon_id: str, family: str, label: str, output: Path, texture_siz
     root["realm_runtime_scale"] = runtime_scale
     root.scale = (runtime_scale, runtime_scale, runtime_scale)
     BUILDERS[weapon_id](root, materials)
+    pilot_source = apply_pilot_donor(root, weapon_id, materials)
+    mount_retained_details(root, weapon_id)
     interaction = add_weapon_interaction_sockets(root, weapon_id)
     root["realm_reload_kind"] = interaction["reloadKind"]
     animate_weapon(root, weapon_id, family)
     bpy.context.view_layer.update()
-    minimum, maximum = scene_bounds()
     export_weapon(output.resolve())
+    minimum, maximum = glb_scene_bounds(output.resolve())
     return {
         "id": weapon_id,
         "label": label,
@@ -1415,6 +2021,9 @@ def build_one(weapon_id: str, family: str, label: str, output: Path, texture_siz
         "reloadKind": interaction["reloadKind"],
         "reloadPart": interaction["reloadPart"],
         "boundsBlender": {"min": minimum, "max": maximum},
+        "pilotFamily": family if pilot_source else None,
+        "modelRevision": 3,
+        "source": pilot_source,
     }
 
 
@@ -1424,6 +2033,8 @@ def main():
     texture_size = max(32, min(256, int(args.texture_size)))
     reports = []
     for weapon_id, family, label in WEAPONS:
+        if args.weapon and weapon_id not in args.weapon:
+            continue
         reports.append(
             build_one(
                 weapon_id,

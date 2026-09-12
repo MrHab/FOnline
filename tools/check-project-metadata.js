@@ -37,6 +37,11 @@ function assertGameVersion(relPath, expected, packageRequirePath) {
   }
 }
 
+function assertMatch(relPath, pattern, label) {
+  const source = read(relPath);
+  if (!pattern.test(source)) fail(`${label} is not synced in ${relPath}`);
+}
+
 const pkg = JSON.parse(read('package.json'));
 const lock = JSON.parse(read('package-lock.json'));
 const expectedName = pkg.name;
@@ -68,6 +73,19 @@ if (fs.existsSync(removedServerReference)) {
 }
 
 assertGameVersion('server.js', expectedVersion, './package.json');
+assertIncludes('server.js', "const GAME_NAME = 'Кромка';", 'server product name');
+assertIncludes(path.join('public', 'unity-unavailable.html'), '<title>Кромка — подготовка клиента</title>', 'Unity fallback product name');
+assertIncludes(path.join('unity-client', 'Assets', 'WebGLTemplates', 'RealmOfAshes', 'index.html'), '<title>Кромка — Unity</title>', 'Unity WebGL title');
+assertIncludes(path.join('unity-client', 'Assets', 'WebGLTemplates', 'RealmOfAshes', 'index.html'), '<h1>Кромка</h1>', 'Unity WebGL heading');
+assertMatch(
+  path.join('unity-client', 'ProjectSettings', 'ProjectSettings.asset'),
+  /productName: (?:Кромка|"\\u041A\\u0440\\u043E\\u043C\\u043A\\u0430")/,
+  'Unity product name',
+);
+assertIncludes(path.join('unity-client', 'ProjectSettings', 'ProjectSettings.asset'), 'companyName: Kromka Studio', 'Unity company name');
+assertMatch('server.js', /if \(fs\.existsSync\(UNITY_INDEX_FILE\)\) return res\.sendFile\(UNITY_INDEX_FILE\);\s*return res\.sendFile\(UNITY_UNAVAILABLE_FILE\);/, 'Unity-first root fallback');
+
+// Замороженный клиент проверяется только как версия источника parity на /legacy/.
 assertIncludes(path.join('public', 'index.html'), `<title>Realm of Ashes v${expectedVersion}</title>`, 'HTML title version');
 assertIncludes(path.join('public', 'js', 'game', '01_bootstrap_online_save.js'), `Realm of Ashes v${expectedVersion} client bootstrap`, 'client bootstrap version');
 assertIncludes(path.join('public', 'js', 'game', '13_minimap_hud_loop.js'), `Realm of Ashes v${expectedVersion}.`, 'welcome log version');

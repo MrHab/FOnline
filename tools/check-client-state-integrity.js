@@ -2181,9 +2181,12 @@ function assertServerNetworkHotPath() {
 
   const stateHandler = socketEventSource(server, 'state');
   assertContainsAll('state progression hot-path guard', stateHandler, [
-    'const progressionChanged = serverStateHasProgressionProfile(data)',
-    '? serverApplyProgressionRequest(p, data)',
-    ": false;"
+    'const progressionResult = serverStateHasProgressionProfile(data)',
+    '? (profileOnly',
+    '? serverApplyProgressionProposal(p, data, { strict: true })',
+    ': { ok: true, changed: serverApplyProgressionRequest(p, data), error:',
+    ': null;',
+    'const progressionChanged = progressionResult?.changed === true;'
   ]);
 
   const movementPayload = statementSource(socketRoom, 'const movementPayload =');
@@ -2239,8 +2242,8 @@ function assertServerNetworkHotPath() {
     'writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true })'
   ]);
   assertContainsAll('compact runtime JSON write call sites', server, [
-    '() => writeJsonAtomic(USERS_FILE, usersDb)',
-    'function persistSaves() { writeJsonAtomic(SAVES_FILE, savesDb); }'
+    "() => KROMKA_STATE_STORE.commit({ users: usersDb }, 'accounts')",
+    "function persistSaves() { KROMKA_STATE_STORE.commit({ saves: savesDb }, 'world-and-characters'); }"
   ]);
 
   const failingFs = makeFs(true);

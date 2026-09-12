@@ -30,7 +30,7 @@ namespace RealmOfAshes.EditorTools
         public const float HorizonExtent = 220f;
         // A soft visual overlap hides the 90x90 ground/horizon join. The fog has no
         // collider, so the authoritative playable selection surface remains unchanged.
-        public const float ToxicFogInnerExtent = 41.5f;
+        public const float ToxicFogInnerExtent = 34f;
         public const float ToxicFogOuterExtent = 170f;
         public const float ExpectedVisibleGroundY = -0.13f;
         // 18 = 14 дорожных MEP-ориентиров + 4 узла Locations; слои Decor и
@@ -222,6 +222,24 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
+        public static void RunToxicFogBatch()
+        {
+            try
+            {
+                BuildToxicFogPrefab();
+                RoaGlobalMapSandstormAuthoring.Apply();
+                AssetDatabase.SaveAssets();
+                Debug.Log("[GLOBAL MAP TOXIC FOG] Saved low-billow material, mesh and prefab.");
+                if (Application.isBatchMode) EditorApplication.Exit(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogException(error);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                else throw;
+            }
+        }
+
         private static void ApplyInternal()
         {
             Scene scene = SceneManager.GetSceneByPath(RoaGlobalMapAuthoringTools.ScenePath);
@@ -333,15 +351,15 @@ namespace RealmOfAshes.EditorTools
             Shader shader = Shader.Find(ToxicFogShaderName)
                 ?? throw new InvalidOperationException("Toxic-boundary fog shader is missing.");
             var material = new Material(shader) { name = "GM_ToxicBoundaryFog" };
-            material.SetColor("_ToxicColor", new Color(0.055f, 0.20f, 0.025f, 1f));
-            material.SetColor("_DarkColor", new Color(0.003f, 0.018f, 0.003f, 1f));
-            material.SetColor("_GlowColor", new Color(0.16f, 0.32f, 0.045f, 1f));
-            material.SetColor("_BoundaryColor", new Color(0.30f, 0.44f, 0.05f, 1f));
-            material.SetFloat("_Density", 0.96f);
-            material.SetFloat("_NoiseScale", 0.075f);
+            material.SetColor("_ToxicColor", new Color(0.10f, 0.33f, 0.025f, 1f));
+            material.SetColor("_DarkColor", new Color(0.002f, 0.018f, 0.002f, 1f));
+            material.SetColor("_GlowColor", new Color(0.33f, 0.62f, 0.05f, 1f));
+            material.SetColor("_BoundaryColor", new Color(0.47f, 0.68f, 0.06f, 1f));
+            material.SetFloat("_Density", 0.78f);
+            material.SetFloat("_NoiseScale", 0.082f);
             material.SetVector("_FlowSpeed", new Vector4(0.035f, 0.018f, -0.026f, 0.029f));
             material.SetFloat("_PulseSpeed", 0.52f);
-            material.SetFloat("_VerticalMotion", 0f);
+            material.SetFloat("_VerticalMotion", 0.16f);
             Material fogMaterial = SaveMaterial(material, ToxicFogMaterialPath);
             Mesh fogMesh = SaveMesh(BuildToxicFogMesh(), ToxicFogMeshPath);
             return SaveRenderPrefab("GM_ToxicBoundaryFog", ToxicFogPrefabPath, fogMesh,
@@ -427,24 +445,25 @@ namespace RealmOfAshes.EditorTools
         {
             var vertices = new List<Vector3>(12000);
             var colors = new List<Color>(12000);
+            var uv = new List<Vector2>(12000);
+            var billboardSizes = new List<Vector2>(12000);
             var triangles = new List<int>(20000);
             const float step = 14f;
             for (int layer = 0; layer < 1; layer++)
             {
-                AddToxicFogSection(vertices, colors, triangles,
+                AddToxicFogSection(vertices, colors, uv, billboardSizes, triangles,
                     -ToxicFogOuterExtent, ToxicFogOuterExtent,
                     ToxicFogInnerExtent, ToxicFogOuterExtent, step, layer);
-                AddToxicFogSection(vertices, colors, triangles,
+                AddToxicFogSection(vertices, colors, uv, billboardSizes, triangles,
                     -ToxicFogOuterExtent, ToxicFogOuterExtent,
                     -ToxicFogOuterExtent, -ToxicFogInnerExtent, step, layer);
-                AddToxicFogSection(vertices, colors, triangles,
+                AddToxicFogSection(vertices, colors, uv, billboardSizes, triangles,
                     ToxicFogInnerExtent, ToxicFogOuterExtent,
                     -ToxicFogInnerExtent, ToxicFogInnerExtent, step, layer);
-                AddToxicFogSection(vertices, colors, triangles,
+                AddToxicFogSection(vertices, colors, uv, billboardSizes, triangles,
                     -ToxicFogOuterExtent, -ToxicFogInnerExtent,
                     -ToxicFogInnerExtent, ToxicFogInnerExtent, step, layer);
             }
-
             var mesh = new Mesh
             {
                 name = "GM_Mesh_ToxicBoundaryFog",
@@ -452,13 +471,18 @@ namespace RealmOfAshes.EditorTools
             };
             mesh.SetVertices(vertices);
             mesh.SetColors(colors);
+            mesh.SetUVs(0, uv);
+            mesh.SetUVs(1, billboardSizes);
             mesh.SetTriangles(triangles, 0, true);
-            mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            Bounds bounds = mesh.bounds;
+            bounds.Expand(new Vector3(0f, 2.2f, 0f));
+            mesh.bounds = bounds;
             return mesh;
         }
 
         private static void AddToxicFogSection(List<Vector3> vertices, List<Color> colors,
+                                               List<Vector2> uv, List<Vector2> billboardSizes,
                                                List<int> triangles, float minX, float maxX,
                                                float minZ, float maxZ, float step, int layer)
         {
@@ -472,10 +496,10 @@ namespace RealmOfAshes.EditorTools
                 float z0 = Mathf.Lerp(minZ, maxZ, (float)row / rows);
                 float z1 = Mathf.Lerp(minZ, maxZ, (float)(row + 1) / rows);
                 int start = vertices.Count;
-                AddToxicFogVertex(vertices, colors, x0, z0, layer);
-                AddToxicFogVertex(vertices, colors, x0, z1, layer);
-                AddToxicFogVertex(vertices, colors, x1, z0, layer);
-                AddToxicFogVertex(vertices, colors, x1, z1, layer);
+                AddToxicFogVertex(vertices, colors, uv, billboardSizes, x0, z0, layer);
+                AddToxicFogVertex(vertices, colors, uv, billboardSizes, x0, z1, layer);
+                AddToxicFogVertex(vertices, colors, uv, billboardSizes, x1, z0, layer);
+                AddToxicFogVertex(vertices, colors, uv, billboardSizes, x1, z1, layer);
                 triangles.Add(start);
                 triangles.Add(start + 1);
                 triangles.Add(start + 2);
@@ -486,13 +510,80 @@ namespace RealmOfAshes.EditorTools
         }
 
         private static void AddToxicFogVertex(List<Vector3> vertices, List<Color> colors,
+                                              List<Vector2> uv, List<Vector2> billboardSizes,
                                               float x, float z, int layer)
         {
-            // One coplanar sheet prevents cracks where the four ring sections meet.
-            // Density, boundary glow and animation are evaluated continuously in world
-            // space by the shader instead of being interpolated across this coarse mesh.
             vertices.Add(new Vector3(x, 0.24f, z));
-            colors.Add(Color.white);
+            colors.Add(new Color(1f, 0f, 0f, 0f));
+            uv.Add(new Vector2(0.5f, 0.5f));
+            billboardSizes.Add(Vector2.zero);
+        }
+
+        private static void AddToxicFogBillboards(List<Vector3> vertices, List<Color> colors,
+                                                   List<Vector2> uv,
+                                                   List<Vector2> billboardSizes,
+                                                   List<int> triangles)
+        {
+            const int puffsPerSide = 84;
+            for (int side = 0; side < 4; side++)
+            for (int puff = 0; puff < puffsPerSide; puff++)
+            {
+                int seed = side * 1000 + puff * 17 + 71;
+                float along01 = (puff + 0.18f + FogHash01(seed) * 0.64f) / puffsPerSide;
+                float along = Mathf.Lerp(-158f, 158f, along01);
+                float outward = 0.5f + Mathf.Pow(FogHash01(seed + 1), 1.8f) * 15.5f;
+                float width = Mathf.Lerp(3f, 6f, FogHash01(seed + 2));
+                float height = Mathf.Lerp(1.15f, 2f, FogHash01(seed + 3));
+                float halfHeight = height * 0.5f;
+                float opacity = Mathf.Lerp(0.58f, 0.84f, FogHash01(seed + 4))
+                    * Mathf.Lerp(1f, 0.74f, Mathf.Clamp01(outward / 27f));
+                Vector3 center;
+                switch (side)
+                {
+                    case 0: center = new Vector3(along, 0f, MapHalfExtent + outward); break;
+                    case 1: center = new Vector3(along, 0f, -MapHalfExtent - outward); break;
+                    case 2: center = new Vector3(MapHalfExtent + outward, 0f, along); break;
+                    default: center = new Vector3(-MapHalfExtent - outward, 0f, along); break;
+                }
+                center.y = 0.12f + halfHeight * 0.82f;
+                AddToxicFogBillboard(vertices, colors, uv, billboardSizes, triangles,
+                    center, width * 0.5f, halfHeight, opacity, FogHash01(seed + 5));
+            }
+        }
+
+        private static void AddToxicFogBillboard(List<Vector3> vertices, List<Color> colors,
+                                                  List<Vector2> uv,
+                                                  List<Vector2> billboardSizes,
+                                                  List<int> triangles, Vector3 center,
+                                                  float halfWidth, float halfHeight,
+                                                  float opacity, float phase)
+        {
+            int start = vertices.Count;
+            Vector2 size = new Vector2(halfWidth, halfHeight);
+            Color data = new Color(opacity, phase, 1f, 1f);
+            Vector2[] corners =
+            {
+                new Vector2(0f, 0f), new Vector2(0f, 1f),
+                new Vector2(1f, 0f), new Vector2(1f, 1f)
+            };
+            for (int i = 0; i < corners.Length; i++)
+            {
+                vertices.Add(center);
+                colors.Add(data);
+                uv.Add(corners[i]);
+                billboardSizes.Add(size);
+            }
+            triangles.Add(start);
+            triangles.Add(start + 1);
+            triangles.Add(start + 2);
+            triangles.Add(start + 2);
+            triangles.Add(start + 1);
+            triangles.Add(start + 3);
+        }
+
+        private static float FogHash01(int seed)
+        {
+            return Mathf.Repeat(Mathf.Sin(seed * 12.9898f + 78.233f) * 43758.5453f, 1f);
         }
 
         private static void AddHorizonSection(List<Vector3> vertices, List<Color> colors,

@@ -8,6 +8,7 @@ const {
 } = require('../src/server/global-infrastructure');
 const { ROAD_SITE_LAYOUT_VERSION } = require('../src/server/wasteland-district-sites');
 const { worldSiteLocationId } = require('../src/server/wasteland-site-instances');
+const { isRetiredEnvironmentModel } = require('../src/server/retired-environment-models');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');
@@ -18,6 +19,7 @@ const questsFile = path.join(dataDir, 'quests.json');
 const encountersFile = path.join(dataDir, 'encounters.json');
 const lootTablesFile = path.join(dataDir, 'loot-tables.json');
 const wastelandSimFile = path.join(dataDir, 'wasteland-sim.json');
+const kromkaMutantsFile = path.join(dataDir, 'mutants.json');
 
 const errors = [];
 const warnings = [];
@@ -258,6 +260,13 @@ function checkNaturalCreatureActor(row, label, rel) {
 }
 
 function readServerItemIds() {
+  const catalogFile = path.join(dataDir, 'kromka', 'items.json');
+  if (fs.existsSync(catalogFile)) {
+    const catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
+    return new Set((Array.isArray(catalog?.items) ? catalog.items : [])
+      .map(row => String(row?.id || '').trim())
+      .filter(Boolean));
+  }
   const match = serverSource.match(/const\s+SERVER_ITEM_IDS\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
   if (!match) return new Set();
   const ids = [];
@@ -295,6 +304,10 @@ const GLOBAL_MAP_MODEL_ALIASES = {
   scrapTown: 'scrapWatchTower',
   relayStation: 'relayAntenna'
 };
+const UNITY_AUTHORED_GLOBAL_MAP_MODEL_KEYS = new Set([
+  'traderAwning', 'scrapWatchTower', 'relayAntenna',
+  'brahminPen', 'storageLeanTo', 'wastelandShack', 'watchPost'
+]);
 const LOCATION_EDITOR_MODEL_ALIASES = {
   rustBarrel: 'barrel'
 };
@@ -317,7 +330,8 @@ function checkGlobalMapModelKey(value, label, rel) {
   const key = safeId(value);
   if (!key) return;
   const resolved = resolveGlobalMapModelKey(key);
-  if (staticModelKeys.size && !staticModelKeys.has(resolved)) {
+  if (staticModelKeys.size && !staticModelKeys.has(resolved)
+    && !UNITY_AUTHORED_GLOBAL_MAP_MODEL_KEYS.has(resolved)) {
     errors.push(`${rel}: ${label} references unknown global map model "${value}"`);
   }
 }
@@ -364,7 +378,7 @@ function globalMapPointIsWaterForMap(globalMap, x = 0, y = 0) {
   const py = Math.max(0, Math.min(height, Number(y || 0)));
   const nx = px / width;
   const ny = py / height;
-  if (nx <= globalMapCoastNormXAtY(ny)) return true;
+  if (globalMap?.legacyCoastline !== false && nx <= globalMapCoastNormXAtY(ny)) return true;
   const cell = globalMapPointCellForMap(globalMap, px, py);
   const override = globalMap?.cells?.[`${cell.cx}:${cell.cy}`];
   const texture = String(override?.texture || override?.textureId || '').trim().toLowerCase();
@@ -483,6 +497,17 @@ const NATURAL_CREATURE_MODEL_KEYS = new Set([
   'enemyGecko',
   'enemyFireGecko'
 ]);
+const kromkaMutantCatalog = fs.existsSync(kromkaMutantsFile) ? readJson(kromkaMutantsFile) : { types: [] };
+const KROMKA_CREATURE_MODEL_KEYS = new Map();
+for (const profile of kromkaMutantCatalog?.types || []) {
+  const id = safeId(profile?.id);
+  const modelKey = safeId(profile?.modelKey);
+  if (!id || !modelKey) continue;
+  KROMKA_CREATURE_MODEL_KEYS.set(id, modelKey);
+  NATURAL_CREATURE_MODEL_KEYS.add(modelKey);
+  if (profile.hostileByDefault !== false) HOSTILE_MODEL_KEYS.add(modelKey);
+  else if (String(profile.role || '') === 'animal') FRIENDLY_ANIMAL_MODEL_KEYS.add(modelKey);
+}
 
 function inferredEncounterModelByVisual(value = '') {
   const raw = String(value || '').trim();
@@ -505,12 +530,14 @@ function inferredEncounterModelKey(actor = {}) {
     actor.typeName
   ].map(value => String(value || '')).join(' ').toLowerCase();
   if (actor.modelKey || actor.model) return safeId(actor.modelKey || actor.model);
+  const creatureModel = KROMKA_CREATURE_MODEL_KEYS.get(safeId(actor.creatureTypeId));
+  if (creatureModel) return creatureModel;
   const directVisualModel = inferredEncounterModelByVisual(actor.visual || actor.species);
   if (directVisualModel) return directVisualModel;
   if (role === 'merchant' || tradeProfile === 'caravan') return 'caravanMerchant';
   if (role === 'guard') return faction === 'klim_patrol' || text.includes('клим') ? 'klimPatrolGuard' : 'caravanGuard';
   if (role === 'civilian') return 'wastelandSettler';
-  if (role === 'animal' || text.includes('брамин') || text.includes('brahmin')) return 'friendlyBrahmin';
+  if ((role === 'animal' && actor.hostileToPlayer !== true) || text.includes('брамин') || text.includes('brahmin')) return 'friendlyBrahmin';
   if (text.includes('огнен') && text.includes('геккон')) return 'enemyFireGecko';
   if (text.includes('firegecko') || text.includes('fire_gecko')) return 'enemyFireGecko';
   if (text.includes('геккон') || text.includes('gecko')) return 'enemyGecko';
@@ -559,7 +586,7 @@ function checkActorRoleModelCompatibility(row = {}, modelKey = '', label = 'acto
   if (role === 'civilian' && key && !CIVILIAN_MODEL_KEYS.has(key)) {
     errors.push(`${rel}: ${label} is a civilian but resolves to non-civilian model "${key}"`);
   }
-  if (role === 'animal' && key && !FRIENDLY_ANIMAL_MODEL_KEYS.has(key)) {
+  if (role === 'animal' && row.hostileToPlayer !== true && key && !FRIENDLY_ANIMAL_MODEL_KEYS.has(key)) {
     errors.push(`${rel}: ${label} is an animal but resolves to non-animal model "${key}"`);
   }
   if ((role === 'monster' || role === 'raider' || row.hostileToPlayer === true) && key && (MERCHANT_MODEL_KEYS.has(key) || GUARD_MODEL_KEYS.has(key) || CIVILIAN_MODEL_KEYS.has(key) || FRIENDLY_ANIMAL_MODEL_KEYS.has(key))) {
@@ -851,7 +878,8 @@ function checkEncounterObject(encounter, id, rel) {
       errors.push(`${rel}: encounter "${id}" actor[${index}] references unknown trader profile "${tradeProfile}"`);
     }
     const modelKey = inferredEncounterModelKey(actor);
-    if ((modelKey || actor.modelKey || actor.model) && staticModelKeys.size && !staticModelKeys.has(modelKey)) {
+    if ((modelKey || actor.modelKey || actor.model) && staticModelKeys.size
+      && !staticModelKeys.has(modelKey) && !KROMKA_CREATURE_MODEL_KEYS.has(safeId(actor.creatureTypeId))) {
       errors.push(`${rel}: encounter "${id}" actor[${index}] resolves to unknown model key "${modelKey || actor.modelKey || actor.model}"`);
     }
     if (['merchant', 'guard', 'civilian', 'animal', 'monster'].includes(String(actor.role || '').toLowerCase()) && !modelKey) {
@@ -1006,34 +1034,29 @@ for (const [id, row] of locations) {
   const authoredTraders = objects.filter(obj => objectIsNpc(obj) && objectIsTrader(obj));
   const authoredStorages = objects.filter(obj => objectIsStorage(obj));
   if (id === 'settlement') {
-    const oldKlimActors = authoredTraders.filter(obj => {
+    const firstGuides = authoredTraders.filter(obj => {
       const entity = objectEntity(obj);
-      return safeId(obj.id) === 'old_klim'
-        || safeId(entity.traderProfile) === 'oldKlim'
-        || safeId(entity.tradeProfile) === 'oldKlim';
+      return safeId(obj.id) === 'irena_versta_belova'
+        || objectTags(obj).includes('first_guide');
     });
-    if (oldKlimActors.length !== 1) {
-      errors.push(`${rel}: caravan stop must contain exactly one authored Old Klim trader (found ${oldKlimActors.length})`);
+    if (firstGuides.length !== 1) {
+      errors.push(`${rel}: Keys must contain exactly one authored first guide (found ${firstGuides.length})`);
     } else {
-      const oldKlim = oldKlimActors[0];
-      const entity = objectEntity(oldKlim);
-      const tags = objectTags(oldKlim);
-      if (safeId(oldKlim.id) !== 'old_klim') errors.push(`${rel}: Old Klim must use stable object id "old_klim"`);
-      if (resolveLocationEditorModelKey(oldKlim.model || '') !== 'traderNpc') errors.push(`${rel}: Old Klim must use the dedicated "traderNpc" model`);
-      if (objectRole(oldKlim) !== 'merchant') errors.push(`${rel}: Old Klim must have merchant role`);
-      if (safeId(entity.faction) !== 'old_klim') errors.push(`${rel}: Old Klim must belong to faction "old_klim"`);
-      if (entity.hostileToPlayer !== false) errors.push(`${rel}: Old Klim must be friendly to the player`);
-      if (entity.canDialogue !== true) errors.push(`${rel}: Old Klim must support dialogue`);
-      if (entity.stationary !== true) errors.push(`${rel}: Old Klim must stay at his authored caravan-stop position`);
-      if (safeId(entity.traderProfile) !== 'oldKlim' || safeId(entity.tradeProfile) !== 'oldKlim') {
-        errors.push(`${rel}: Old Klim must use the authoritative "oldKlim" trade profile`);
+      const guide = firstGuides[0];
+      const entity = objectEntity(guide);
+      const tags = objectTags(guide);
+      if (safeId(guide.id) !== 'irena_versta_belova') errors.push(`${rel}: Irina must use stable object id "irena_versta_belova"`);
+      if (resolveLocationEditorModelKey(guide.model || '') !== 'traderNpc') errors.push(`${rel}: Irina must use the dedicated "traderNpc" model`);
+      if (objectRole(guide) !== 'merchant') errors.push(`${rel}: Irina must have merchant role`);
+      if (safeId(entity.faction) !== 'tract_league') errors.push(`${rel}: Irina must belong to faction "tract_league"`);
+      if (entity.hostileToPlayer !== false) errors.push(`${rel}: Irina must be friendly to the player`);
+      if (entity.canDialogue !== true) errors.push(`${rel}: Irina must support dialogue`);
+      if (entity.stationary !== true) errors.push(`${rel}: Irina must stay at her authored position in Keys`);
+      if (safeId(entity.traderProfile) !== 'caravan' || safeId(entity.tradeProfile) !== 'caravan') {
+        errors.push(`${rel}: Irina must use the authoritative "caravan" trade profile`);
       }
-      if (safeId(entity.dialogueProfile) !== 'klim') errors.push(`${rel}: Old Klim must use the "klim" dialogue profile`);
-      if (!tags.includes('unique') || !tags.includes('leader')) errors.push(`${rel}: Old Klim must remain marked as a unique faction leader`);
-      const quests = new Set((Array.isArray(entity.quests) ? entity.quests : []).map(safeId));
-      ['klimSupplies', 'klimTerminal'].forEach(questId => {
-        if (!quests.has(questId)) errors.push(`${rel}: Old Klim is missing quest "${questId}"`);
-      });
+      if (safeId(entity.dialogueProfile) !== 'caravan') errors.push(`${rel}: Irina must use the "caravan" dialogue profile`);
+      if (!tags.includes('unique') || !tags.includes('first_guide')) errors.push(`${rel}: Irina must remain the unique first guide`);
     }
   }
   if (id === 'scrapTown') {
@@ -1111,7 +1134,7 @@ for (const [id, row] of locations) {
     }
 
     const resourceType = objectResourceType(obj);
-    if (resourceType && obj.collision === 'none') {
+    if (resourceType && obj.collision === 'none' && !isRetiredEnvironmentModel(obj.model)) {
       warnings.push(`${rel}: resource object "${objectId || index}" has collision "none"; harvesting may not be reachable through interaction`);
     }
     if (resourceType && (!finiteNumber(obj.hp || obj.maxHp) || Number(obj.hp || obj.maxHp) <= 0)) {
@@ -1196,7 +1219,7 @@ if (fs.existsSync(wastelandSimFile)) {
     }
     const status = String(zone?.status || 'active');
     if ((status === 'resolved' || status === 'expired') && !zone?.details?.fixedLair) {
-      errors.push(`${rel}: worldZones[${index}] keeps finished transient zone "${id || index}"`);
+      warnings.push(`${rel}: worldZones[${index}] keeps finished transient zone "${id || index}"; server cleanup will prune it on load`);
     }
     if ((String(zone?.sourceType || '') === 'site_conflict' || zone?.details?.siteConflict) && zone?.locationId) {
       const expectedRoomId = safeId(zone.locationId).slice(0, 96);
@@ -1231,6 +1254,7 @@ if (!globalMap) {
   });
   pipelines.forEach(pipeline => {
     roads.forEach(road => {
+      if ((pipeline.allowCrossingsWith || []).includes(road.id) || (road.allowCrossingsWith || []).includes(pipeline.id)) return;
       const distance = infrastructureToInfrastructureDistance(pipeline, road);
       const requiredDistance = PIPELINE_ROAD_EDGE_CLEARANCE_POINTS
         + Number(pipeline.width || 0) * 0.5
@@ -1302,7 +1326,7 @@ if (!globalMap) {
     if (finiteNumber(node?.x) && finiteNumber(node?.y)) {
       const nearest = nearestGlobalMapRoad(node, roads);
       const requiredDistance = ROAD_LOCATION_CLEARANCE_POINTS + Number(nearest?.road?.width || 0) * 0.5;
-      if (nearest && nearest.distance <= requiredDistance) {
+      if (nearest && nearest.distance <= requiredDistance && node?.roadAccess !== true) {
         errors.push(`${rel}: node "${node.id || index}" overlaps road "${nearest.road.id}" (${nearest.distance.toFixed(1)} <= ${requiredDistance.toFixed(1)})`);
       }
     }
@@ -1316,12 +1340,26 @@ if (!globalMap) {
       errors.push(`${rel}: map object "${obj.id || index}" is placed on water`);
     }
   });
-  for (const [siteId, site] of Object.entries(wastelandSim?.sites || {})) {
+  const runtimeMapMatches = String(wastelandSim?.worldRevision || '') === String(globalMap.worldRevision || '');
+  const kromkaRuntimeMap = runtimeMapMatches && String(globalMap.worldRevision || '') === 'kromka-1';
+  const globalNodesByLocation = new Map((Array.isArray(globalMap.nodes) ? globalMap.nodes : [])
+    .map(node => [safeId(node?.locationId || node?.id), node]));
+  if (wastelandSim && !runtimeMapMatches) warnings.push(`${path.relative(root, wastelandSimFile)}: runtime state belongs to a different map revision and will migrate on server load`);
+  for (const [siteId, site] of Object.entries(runtimeMapMatches ? (wastelandSim?.sites || {}) : {})) {
     if (!finiteNumber(site?.x) || !finiteNumber(site?.y)) continue;
-    const nearest = nearestGlobalMapRoad(site, roads);
-    if (!nearest) continue;
     const id = safeId(site?.id || siteId);
-    const roadOutpost = site?.roadOutpost === true || ROAD_OUTPOST_SITE_IDS.has(id);
+    const authoredNode = globalNodesByLocation.get(safeId(site?.locationId || id));
+    // normalizeState snaps persistent Kromka sites to their authored node on
+    // load, even when an existing prototype save still carries old coordinates.
+    const geometryPoint = kromkaRuntimeMap && authoredNode ? authoredNode : site;
+    const nearest = nearestGlobalMapRoad(geometryPoint, roads);
+    if (!nearest) continue;
+    // kromka-1 explicitly marks all intended road-connected nodes. Runtime
+    // simulation rows still carry legacy roadOutpost flags and wider local
+    // footprints, so the authored strategic map owns this relation.
+    if (kromkaRuntimeMap && authoredNode?.roadAccess === true) continue;
+    const roadOutpost = !kromkaRuntimeMap
+      && (site?.roadOutpost === true || ROAD_OUTPOST_SITE_IDS.has(id));
     if (roadOutpost) {
       const maxDistance = Number(nearest.road.width || 0) * 0.5 + 2;
       if (nearest.distance > maxDistance) {

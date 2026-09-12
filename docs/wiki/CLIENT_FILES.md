@@ -44,7 +44,7 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 |---|---|
 | `RoaCoords.cs` | **единственное** место преобразования координат/углов Three.js ↔ Unity |
 | `RoaLocationData.cs` | модель `data/locations/*.json` (`realm.location.v1`) |
-| `RoaLocationLoader.cs` | сборка сцены из JSON/GLB, точный collider-каталог, детерминированные модели динамических точек |
+| `RoaLocationLoader.cs` | привязка JSON к Unity-authored сцене и загрузка совместимых моделей без legacy-коллайдеров окружения |
 | `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`, рельеф, вода, физика тайлов и границы `playableBounds` |
 | `RoaGroundDressing.cs` | процедурная растительность и разбивка однообразия земли |
 | `RoaEnvironmentPalette.cs` | палитры окружения локаций |
@@ -78,6 +78,10 @@ partial-части того же класса):
 авторитетного состояния), `RoaCombatFx` (пулы трассеров/вспышек, взрывы, речь
 NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaCombatFeedbackCanvas`, `RoaTargetingFeedback`, `RoaWeaponReadiness`.
+Прогноз читает опубликованный сервером профиль защиты цели и показывает ОД,
+режим, требование Мощи, а с «Осведомлённостью» — порог, броню и сопротивление.
+`RoaHudCanvas` всегда обозначает режим зоны; `RoaGlobalMapCanvas` отдельно
+подтверждает первый вход в полный лут.
 
 **Камера, свет и видимость** — `RoaCameraRig` (+`.Presentation`),
 `RoaWorldLighting` (день/ночь и авторские профили), `RoaFogOfWar`,
@@ -92,8 +96,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 
 **Взаимодействия и мир** — `RoaInteraction` (диалоги, квесты, бартер, переходы,
 лут, ресурсы, станки, доски работ), `RoaCraftingData`, `RoaPipboy` и
-`RoaPipboyCanvas` (+`.Progression`) — SPECIAL, навыки, таланты, работы, мир,
-фракции, радио, друзья, кланы; `RoaProgressionData`, `RoaEconomyFeedback`.
+`RoaPipboyCanvas` (+`.Progression`) — пользовательский ПУТНИК: семь
+характеристик, навыки, перки, задания, контракты, мир, фракции, радио, друзья,
+кланы и укрытие; `RoaProgressionData`, `RoaEconomyFeedback`.
 
 **Глобальная карта и активности** — `RoaGlobalMap` (серверный маршрут,
 территории, живой слой), `RoaGlobalMapCanvas`, `RoaGlobalMapActorView`,
@@ -119,9 +124,9 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
 
 ## Редакторские инструменты (`Assets/Editor/`)
 
-- **Пробы** `Roa*Probe.cs` — детерминированные проверки подсистем из меню
-  **Realm of Ashes** (камера, создание персонажа, fog, крыши, боевые эффекты,
-  мобильное управление, quickbar, глобальная карта, mission director и др.).
+- **Пробы** `Roa*Probe.cs` — детерминированные проверки подсистем. Новые
+  авторские проверки находятся в меню **Кромка**, часть прежних технических
+  проб пока сохраняет внутреннее меню **Realm of Ashes** до KRM-20.
 - `RoaClientAuditRunner.cs` — запускает набор проб одним batchmode-процессом и
   завершает Unity с кодом 1 при любой ошибке.
 - Генераторы: `RoaUiPrefabGenerator` (24 редактируемых UI-префаба),
@@ -132,15 +137,15 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
   `RoaGlobalMapMountainsRiversAuthoring` (горы из композиций демо-сцен MEP,
   реки стоком) и генератор ориентиров `RoaGlobalMapLandmarkAuthoring`
   (слой Decor из композиций демо-сцен по биомам карты).
-- `RoaWebGlBuild.cs` — меню «Realm of Ashes → Build WebGL», результат в
+- `RoaWebGlBuild.cs` — меню «Кромка → Build WebGL», результат в
   `public/unity/` (в .gitignore).
 - `RoaCredentialGuard.cs` — защита от коммита включённого `AutoLoginOnStart`
   с заполненными учётными данными.
 - `RoaAgentGate.cs` — файловый канал команд для внешней автоматизации
   (`Library/roa-agent-request.json` → `roa-agent-response.json`): ping,
   `AssetDatabase.Refresh` без фокуса окна, детерминированные снимки авторской
-  глобальной карты и запуск пунктов меню Realm of Ashes; сцены не открывает и
-  не сохраняет.
+  глобальной карты и запуск разрешённых пунктов обоих технических меню; сцены
+  не открывает и не сохраняет.
 
 ## Сборка и проверка без редактора
 
@@ -149,7 +154,7 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
 | `unity-client/Tools/compile-check.ps1` (`.sh` для Git Bash) | компиляция тем же Roslyn и reference-сборками, что у Editor |
 | `unity-client/Tools/build-windows.ps1` | полная Windows-сборка через чистую копию в ASCII-пути (обязательно для кириллического пути проекта) |
 | `unity-client/Tools/sync-ui-prefabs.ps1` | пересборка UI-префабов |
-| `npm run check:unity-parity` | чётность с legacy-клиентом: события Socket.IO, предметы, рецепты, модификации, стартовые перки |
+| `npm run check:unity-parity` | чётность с legacy-клиентом: события Socket.IO, предметы, рецепты, модификации, стартовые черты |
 | `npm run check:coords` | контракт преобразования координат |
 | `npm run start:unity-assets` | раздача ассетов на loopback для редакторских проб без игрового сервера |
 

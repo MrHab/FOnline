@@ -15,6 +15,7 @@ const RESOURCE_LABELS = {
   energyCell: 'энергоячейки',
   napalm: 'напалм',
   weaponParts: 'оружейные детали',
+  blue: 'кассеты сини',
   // Заказы фракций перечисляют не только сырьё, но и готовые вещи, и без
   // названий в объявление лезли служебные имена: «28 shotgunShell» рядом с
   // «30 патроны 9мм». Названия взяты из игрового каталога предметов.
@@ -53,6 +54,7 @@ const RESOURCE_LABELS = {
 function emptyStockpile() {
   return {
     silver: 0,
+    blue: 0,
     water: 0,
     ore: 0,
     scrap: 0,

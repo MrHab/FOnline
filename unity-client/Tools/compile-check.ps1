@@ -39,6 +39,7 @@ try {
         (Join-Path $UnityData 'NetStandard\compat\2.1.0\shims\unity\*.dll'),
         (Join-Path $UnityData 'Managed\UnityEngine\UnityEngine*.dll'),
         (Join-Path $UnityData 'Managed\UnityEngine\UnityEditor*.dll'),
+        (Join-Path $UnityData 'Managed\UnityEngine\Unity.Scripting.dll'),
         (Join-Path $client 'Library\PackageCache\com.unity.nuget.newtonsoft-json@*\Runtime\Newtonsoft.Json.dll'),
         (Join-Path $scriptAssemblies 'glTFast*.dll'),
         (Join-Path $scriptAssemblies 'Unity.RenderPipelines*.dll')
@@ -67,11 +68,12 @@ try {
     Write-Host "Compiling $($sources.Count) files..."
     $outputAssembly = Join-Path $resolvedWork 'RoaCompileCheck.dll'
     & $dotnet $csc -nologo -target:library -langversion:9 -nostdlib+ -noconfig `
+        -define:UNITY_EDITOR `
         -nowarn:1701 ("-out:" + $outputAssembly) `
         "@$refsPath" "@$sourcesPath"
     if ($LASTEXITCODE -ne 0) { throw "Compiler exited with code $LASTEXITCODE." }
 
-    Write-Host 'Compilation completed without errors or warnings.'
+    Write-Host 'Compilation completed without errors.'
 }
 finally {
     if ([System.IO.Directory]::Exists($resolvedWork)) {

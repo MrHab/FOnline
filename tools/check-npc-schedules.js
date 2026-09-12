@@ -12,11 +12,10 @@ const {
 const { buildActivitySlotCatalog } = require('../src/server/npc-smart-objects');
 
 const ROOT = path.resolve(__dirname, '..');
-// The current authored map produces 117 sites, 125 friendly groups and 285
-// friendly NPCs. Keep headroom for content edits while rejecting empty or
-// severely truncated fixtures.
-const MIN_GENERATED_SITES = 100;
-const MIN_FRIENDLY_WORKER_GROUPS = 100;
+// The lore-first Kromka map is intentionally smaller than the retired region
+// while still keeping enough populated sites for schedule coverage.
+const MIN_GENERATED_SITES = 50;
+const MIN_FRIENDLY_WORKER_GROUPS = 80;
 const MIN_FRIENDLY_SIMULATED_NPCS = 200;
 
 function readText(relPath) {

@@ -10,7 +10,6 @@ const manifestPath = path.join(root, 'unity-client', 'Packages', 'manifest.json'
 const lockPath = path.join(root, 'unity-client', 'Packages', 'packages-lock.json');
 const catalogPath = path.join(root, 'unity-client', 'Assets', 'Resources',
   'RealmOfAshes', 'GlobalMapModelPrefabs.asset');
-const expectedModelCount = 202;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -63,6 +62,24 @@ function expectedRuntimeUrls() {
   return urls.sort();
 }
 
+function assertPrefabInventory(models, prefabs) {
+  assert(models.length > 0, 'canonical GLB inventory is empty');
+  assert(new Set(models.map(file => file.toLowerCase())).size === models.length,
+    'duplicate canonical model paths');
+  assert(new Set(prefabs.map(file => file.toLowerCase())).size === prefabs.length,
+    'duplicate Unity prefab paths');
+  const expected = models.map(file => file.replace(/\.glb$/i, '.prefab'));
+  const expectedSet = new Set(expected);
+  const actualSet = new Set(prefabs);
+  const missing = expected.filter(file => !actualSet.has(file));
+  const unexpected = prefabs.filter(file => !expectedSet.has(file));
+  assert(missing.length === 0 && unexpected.length === 0,
+    `Unity prefab inventory incomplete: ${models.length} canonical GLBs, ${prefabs.length} prefabs; `
+      + `${missing.length} missing (${missing.slice(0, 5).join(', ')}); `
+      + `${unexpected.length} unexpected (${unexpected.slice(0, 5).join(', ')})`);
+  return expected;
+}
+
 function run() {
   const packageJson = JSON.parse(fs.readFileSync(path.join(modelRoot, 'package.json'), 'utf8'));
   assert(packageJson.name === 'com.realmofashes.models',
@@ -82,14 +99,9 @@ function run() {
 
   const models = walk(modelRoot, '.glb');
   const prefabs = walk(prefabRoot, '.prefab');
-  assert(models.length === expectedModelCount,
-    `expected ${expectedModelCount} canonical GLBs, found ${models.length}`);
-  assert(prefabs.length === models.length,
-    `expected ${models.length} Unity prefabs, found ${prefabs.length}`);
-
-  const expectedPrefabs = models.map(relative => relative.replace(/\.glb$/i, '.prefab'));
-  assert(JSON.stringify(prefabs) === JSON.stringify(expectedPrefabs),
-    'Unity prefab tree does not exactly mirror public/assets/models');
+  // The catalog grows with item/equipment additions. Require an exact path
+  // counterpart for every actual GLB instead of a historical total count.
+  const expectedPrefabs = assertPrefabInventory(models, prefabs);
 
   const sourceGuids = new Set();
   const prefabGuids = new Map();
@@ -156,4 +168,4 @@ function run() {
 
 if (require.main === module) run();
 
-module.exports = { run };
+module.exports = { run, assertPrefabInventory };

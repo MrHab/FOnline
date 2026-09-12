@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "resourceScrapFields",
-  "name": "Поля металлолома",
+  "name": "Сортировочные поля",
   "seed": 20260707,
   "safe": true,
   "pvpMode": "peaceful",
@@ -25,11 +25,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -42,117 +50,1282 @@
   ],
   "objects": [
     {
-      "id": "scrap_resource_01",
-      "model": "scrapHeap",
-      "name": "Куча металлолома",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "id": "resourceScrapFields-dressing-functional-01",
+      "model": "ore_outcrop",
+      "name": "resourceScrapFields-dressing-functional-01",
       "position": {
-        "x": -7,
-        "y": 0,
-        "z": -8
+        "x": 11.084,
+        "y": 0.0,
+        "z": 6.792
       },
       "rotation": {
-        "x": 0,
-        "y": 0.25,
-        "z": 0
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
       },
-      "collision": "resource",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "resource",
-        "scrap"
+        "resource_site",
+        "functional-dressing"
       ],
-      "resourceType": "scrap",
-      "hp": 6,
-      "maxHp": 6,
+      "footprint": {
+        "x": 1.463,
+        "z": 1.648
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "scrap_resource_02",
-      "model": "scrapHeap",
-      "name": "Куча металлолома",
-      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "id": "resourceScrapFields-dressing-functional-02",
+      "model": "scrap_heap",
+      "name": "resourceScrapFields-dressing-functional-02",
       "position": {
-        "x": 10,
-        "y": 0,
-        "z": -5
+        "x": -8.464,
+        "y": 0.0,
+        "z": 13.813
       },
       "rotation": {
-        "x": 0,
-        "y": -0.45,
-        "z": 0
+        "x": 0.0,
+        "y": 5.733,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
       },
-      "collision": "resource",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "resource",
-        "scrap"
+        "resource_site",
+        "functional-dressing"
       ],
-      "resourceType": "scrap",
-      "hp": 5,
-      "maxHp": 5,
+      "footprint": {
+        "x": 3.155,
+        "z": 2.933
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "scrap_car_01",
-      "model": "carWreck",
-      "name": "Остов машины",
-      "url": "/assets/models/wasteland/car_wreck.glb",
+      "id": "resourceScrapFields-dressing-functional-03",
+      "model": "cargo_stack",
+      "name": "resourceScrapFields-dressing-functional-03",
       "position": {
-        "x": 1,
-        "y": 0,
-        "z": 12
+        "x": -16.541,
+        "y": 0.0,
+        "z": -10.136
       },
       "rotation": {
-        "x": 0,
-        "y": -0.8,
-        "z": 0
+        "x": 0.0,
+        "y": 4.163,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
       },
-      "collision": "cover",
+      "collision": "none",
+      "role": "scenery",
       "tags": [
-        "cover",
-        "wreck"
+        "resource_site",
+        "functional-dressing"
       ],
+      "footprint": {
+        "x": 1.619,
+        "z": 1.532
+      },
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-functional-04",
+      "model": "workshop_bench",
+      "name": "resourceScrapFields-dressing-functional-04",
+      "position": {
+        "x": 6.792,
+        "y": 0.0,
+        "z": -11.084
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.592,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "resource_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.355,
+        "z": 2.816
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-01",
+      "model": "scrap_heap",
+      "name": "resourceScrapFields-dressing-region-01",
+      "position": {
+        "x": 17.586,
+        "y": 0.0,
+        "z": 7.136
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.273,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.388,
+        "z": 2.012
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-02",
+      "model": "ore_outcrop",
+      "name": "resourceScrapFields-dressing-region-02",
+      "position": {
+        "x": 17.452,
+        "y": 0.0,
+        "z": 7.091
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.218,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.438,
+        "z": 1.17
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-03",
+      "model": "rust_barrel_v1",
+      "name": "resourceScrapFields-dressing-region-03",
+      "position": {
+        "x": 17.452,
+        "y": 0.0,
+        "z": 7.088
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.218,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.306,
+        "z": 1.422
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "resourceScrapFields-dressing-region-04",
+      "position": {
+        "x": 17.829,
+        "y": 0.0,
+        "z": 6.093
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.147,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.413,
+        "z": 0.941
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-05",
+      "model": "scrap_heap",
+      "name": "resourceScrapFields-dressing-region-05",
+      "position": {
+        "x": 17.694,
+        "y": 0.0,
+        "z": 6.038
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.146,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.255,
+        "z": 1.797
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-06",
+      "model": "ore_outcrop",
+      "name": "resourceScrapFields-dressing-region-06",
+      "position": {
+        "x": 17.695,
+        "y": 0.0,
+        "z": 6.03
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.091,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.46,
+        "z": 1.115
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-07",
+      "model": "rust_barrel_v1",
+      "name": "resourceScrapFields-dressing-region-07",
+      "position": {
+        "x": 17.685,
+        "y": 0.0,
+        "z": 6.065
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.091,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.823,
+        "y": 0.823,
+        "z": 0.823
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.294,
+        "z": 1.411
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "resourceScrapFields-dressing-region-08",
+      "position": {
+        "x": 17.863,
+        "y": 0.0,
+        "z": 5.014
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.035,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.822,
+        "y": 0.822,
+        "z": 0.822
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.342,
+        "z": 0.802
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-09",
+      "model": "scrap_heap",
+      "name": "resourceScrapFields-dressing-region-09",
+      "position": {
+        "x": 17.867,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.036,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.822,
+        "y": 0.822,
+        "z": 0.822
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.109,
+        "z": 1.586
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-10",
+      "model": "ore_outcrop",
+      "name": "resourceScrapFields-dressing-region-10",
+      "position": {
+        "x": 17.861,
+        "y": 0.0,
+        "z": 5.03
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.243,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.297,
+        "z": 1.699
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-11",
+      "model": "rust_barrel_v1",
+      "name": "resourceScrapFields-dressing-region-11",
+      "position": {
+        "x": 18.12,
+        "y": 0.0,
+        "z": 3.998
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.242,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.975,
+        "z": 2.144
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "resourceScrapFields-dressing-region-12",
+      "position": {
+        "x": 17.939,
+        "y": 0.0,
+        "z": 3.973
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.186,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.147,
+        "z": 1.367
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-13",
+      "model": "scrap_heap",
+      "name": "resourceScrapFields-dressing-region-13",
+      "position": {
+        "x": 17.938,
+        "y": 0.0,
+        "z": 3.975
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.187,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.403,
+        "z": 2.645
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-14",
+      "model": "ore_outcrop",
+      "name": "resourceScrapFields-dressing-region-14",
+      "position": {
+        "x": 18.173,
+        "y": 0.0,
+        "z": 2.688
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.478,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.68,
+        "z": 2.34
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-dressing-region-15",
+      "model": "rust_barrel_v1",
+      "name": "resourceScrapFields-dressing-region-15",
+      "position": {
+        "x": 18.035,
+        "y": 0.0,
+        "z": 2.665
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.478,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.277,
+        "y": 1.277,
+        "z": 1.277
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.043,
+        "z": 1.909
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-landmark",
+      "model": "magnet-crane",
+      "name": "Landmark magnet-crane EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "magnet-crane"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-magnet-crane",
+      "model": "gantry_crane",
+      "name": "resourceScrapFields-magnet-crane EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 14.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "resource_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-region-rail",
+      "model": "railway",
+      "name": "resourceScrapFields-region-rail EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 2.0,
+        "z": 58.182
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-region-slag-0",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-region-slag-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-region-slag-1",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-region-slag-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-region-slag-2",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-region-slag-2 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-region-slag-3",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-region-slag-3 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-sorted-pile-0",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-sorted-pile-0 EDITABLE",
+      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-sorted-pile-1",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-sorted-pile-1 EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-sorted-pile-2",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-sorted-pile-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-sorted-pile-3",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-sorted-pile-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "resourceScrapFields-sorted-pile-4",
+      "model": "terrain_mound",
+      "name": "resourceScrapFields-sorted-pile-4 EDITABLE",
+      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 17,
-        "y": 0,
-        "z": 16
+      "name": "Место отдыха",      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": 16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -161,16 +1334,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 27,
       "tz": 27,
@@ -180,10 +1345,185 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrap_car_01",
+      "model": "carWreck",
+      "name": "Остов машины",      "position": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.483,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "wreck"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 4.502,
+        "z": 4.548
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrap_resource_01",
+      "model": "scrapHeap",
+      "name": "Куча металлолома",      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.25,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 6,
+      "maxHp": 6,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.878,
+        "z": 2.401
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrap_resource_02",
+      "model": "scrapHeap",
+      "name": "Куча металлолома",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.833,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 5,
+      "maxHp": 5,
+      "vision": {
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 3.052,
+        "z": 2.745
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
-  "kind": "resource"
+  "kind": "resource",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "ore_arc",
+  "kromkaVisualProfile": "sorted-scrap-fields-v1",
+  "ambientProfile": "light-industrial-salvage",
+  "anomalyDensity": 0.04,
+  "unityScene": "Assets/Scenes/Kromka/Locations/resourceScrapFields.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "resourceScrapFields-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "sorting-weighbridge",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    }
+  ]
 }

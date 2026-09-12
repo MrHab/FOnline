@@ -58,7 +58,7 @@ function buildPasswordResetEmail({ publicGameUrl, login, token, ttlMs }) {
   const duration = formatPasswordResetTtl(ttlMs);
   const expiryText = `Ссылка действует ${duration}.`;
   return {
-    subject: 'Realm of Ashes — восстановление пароля',
+    subject: 'Кромка — восстановление пароля',
     text: `Для установки нового пароля откройте ссылку:\n${resetUrlText}\n\n${expiryText} Если вы не запрашивали восстановление, проигнорируйте письмо.`,
     html: `<p>Для установки нового пароля откройте ссылку:</p><p><a href="${escapeHtmlAttribute(resetUrlText)}">Восстановить пароль</a></p><p>${expiryText} Если вы не запрашивали восстановление, проигнорируйте письмо.</p>`
   };

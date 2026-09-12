@@ -1,0 +1,933 @@
+{
+  "schema": "kromka.locations.v1",
+  "version": 1,
+  "worldRevision": "kromka-1",
+  "unityGlobalMapScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
+  "regions": [
+    {
+      "id": "northern_sluices",
+      "displayName": "Северные затворы",
+      "dangerBand": 2
+    },
+    {
+      "id": "middle_vein",
+      "displayName": "Срединная жила",
+      "dangerBand": 1
+    },
+    {
+      "id": "ore_arc",
+      "displayName": "Рудная дуга",
+      "dangerBand": 2
+    },
+    {
+      "id": "tract_isthmus",
+      "displayName": "Трактовый перешеек",
+      "dangerBand": 1
+    },
+    {
+      "id": "chalk_lowland",
+      "displayName": "Меловая низь",
+      "dangerBand": 3
+    },
+    {
+      "id": "glasslands",
+      "displayName": "Стеколье",
+      "dangerBand": 4
+    },
+    {
+      "id": "zero_basin",
+      "displayName": "Нулевая котловина",
+      "dangerBand": 5
+    },
+    {
+      "id": "silent_ring",
+      "displayName": "Глухой обвод",
+      "dangerBand": 5
+    }
+  ],
+  "locations": [
+    {
+      "id": "settlement",
+      "displayName": "Ключи",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "keys-river-junction-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "water-tower",
+        "rail-bridge"
+      ],
+      "ambientProfile": "inhabited-river-valley",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "keys-arrival",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/settlement.unity"
+    },
+    {
+      "id": "caravanCamp",
+      "displayName": "Перекрёсток",
+      "locationType": "caravan_hub",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "crossroads-caravan-yard-v1",
+      "anomalyDensity": 0.05,
+      "landmarkTags": [
+        "route-pylon",
+        "cargo-crane"
+      ],
+      "ambientProfile": "busy-caravan-yard",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "crossroads-yard",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/caravanCamp.unity"
+    },
+    {
+      "id": "scrapTown",
+      "displayName": "Раздолье",
+      "locationType": "faction_capital",
+      "macroRegion": "ore_arc",
+      "visualProfile": "razdolye-foundry-town-v1",
+      "anomalyDensity": 0.08,
+      "landmarkTags": [
+        "blast-furnace",
+        "gantry-crane"
+      ],
+      "ambientProfile": "working-foundry-town",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "razdolye-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/scrapTown.unity"
+    },
+    {
+      "id": "relayStation",
+      "displayName": "Контур-3",
+      "locationType": "faction_capital",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-three-sealed-dispatch-v1",
+      "anomalyDensity": 0.3,
+      "landmarkTags": [
+        "dish-array",
+        "sealed-tower"
+      ],
+      "ambientProfile": "filtered-science-perimeter",
+      "anomalyFields": [
+        {
+          "id": "contour-mute-01",
+          "type": "mute",
+          "x": 14.0,
+          "z": 8.0,
+          "radius": 2.8,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "contour-three-airlock",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/relayStation.unity"
+    },
+    {
+      "id": "roadOutpost",
+      "displayName": "Застава 17",
+      "locationType": "road_outpost",
+      "macroRegion": "middle_vein",
+      "visualProfile": "uprava-river-checkpoint-v1",
+      "anomalyDensity": 0.03,
+      "landmarkTags": [
+        "bridge-gate",
+        "searchlight-mast"
+      ],
+      "ambientProfile": "guarded-river-crossing",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "outpost-safe-side",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/roadOutpost.unity"
+    },
+    {
+      "id": "klimAmmoWorks",
+      "displayName": "Патронный двор «Створ-2»",
+      "locationType": "industrial_site",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "sluice-munitions-yard-v1",
+      "anomalyDensity": 0.08,
+      "landmarkTags": [
+        "numbered-workshop",
+        "loading-tower"
+      ],
+      "ambientProfile": "guarded-industrial-yard",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "ammo-yard-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/klimAmmoWorks.unity"
+    },
+    {
+      "id": "scrapOutpost",
+      "displayName": "Сторожевая артель",
+      "locationType": "road_outpost",
+      "macroRegion": "ore_arc",
+      "visualProfile": "artel-rail-watch-v1",
+      "anomalyDensity": 0.1,
+      "landmarkTags": [
+        "signal-gantry",
+        "painted-gate"
+      ],
+      "ambientProfile": "ore-rail-frontier",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "artel-watch-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/scrapOutpost.unity"
+    },
+    {
+      "id": "scrapFoundry",
+      "displayName": "Литейная Раздолья",
+      "locationType": "industrial_site",
+      "macroRegion": "ore_arc",
+      "visualProfile": "razdolye-foundry-v1",
+      "anomalyDensity": 0.12,
+      "landmarkTags": [
+        "furnace-stack",
+        "slag-channel"
+      ],
+      "ambientProfile": "active-heavy-industry",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "foundry-loading-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/scrapFoundry.unity"
+    },
+    {
+      "id": "relayOutpost",
+      "displayName": "Периметр К-3",
+      "locationType": "road_outpost",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-sealed-checkpoint-v1",
+      "anomalyDensity": 0.28,
+      "landmarkTags": [
+        "decon-frame",
+        "warning-beacon"
+      ],
+      "ambientProfile": "anomaly-perimeter",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "k3-clean-side",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/relayOutpost.unity"
+    },
+    {
+      "id": "relayWorkshop",
+      "displayName": "Опытная мастерская К-3",
+      "locationType": "industrial_site",
+      "macroRegion": "glasslands",
+      "visualProfile": "contour-experimental-workshop-v1",
+      "anomalyDensity": 0.35,
+      "landmarkTags": [
+        "cable-spire",
+        "amber-airlock"
+      ],
+      "ambientProfile": "experimental-machinery",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "workshop-clean-room",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/relayWorkshop.unity"
+    },
+    {
+      "id": "solarArray",
+      "displayName": "Солнечное поле №4",
+      "locationType": "resource_site",
+      "macroRegion": "glasslands",
+      "visualProfile": "glasslands-solar-array-v1",
+      "anomalyDensity": 0.42,
+      "landmarkTags": [
+        "tilted-panel-field",
+        "lightning-mast"
+      ],
+      "ambientProfile": "dry-electric-storm",
+      "anomalyFields": [
+        {
+          "id": "solar-chime-01",
+          "type": "chime",
+          "x": 4.0,
+          "z": 10.0,
+          "radius": 2.6,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "solar-seam-01",
+          "type": "seam",
+          "x": -8.0,
+          "z": 12.0,
+          "radius": 2.2,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "solar-service-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/solarArray.unity"
+    },
+    {
+      "id": "oldDepot",
+      "displayName": "Арсенал №6",
+      "locationType": "raid_complex",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "buried-military-depot-v1",
+      "anomalyDensity": 0.16,
+      "landmarkTags": [
+        "armored-rail-door",
+        "collapsed-watchtower"
+      ],
+      "ambientProfile": "sealed-military-storage",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "arsenal-outer-road",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/oldDepot.unity"
+    },
+    {
+      "id": "resourceDryWaterPump",
+      "displayName": "Водозабор «Сухой»",
+      "locationType": "resource_site",
+      "macroRegion": "middle_vein",
+      "visualProfile": "dry-cascade-intake-v1",
+      "anomalyDensity": 0.09,
+      "landmarkTags": [
+        "intake-tower",
+        "empty-channel"
+      ],
+      "ambientProfile": "idle-pump-station",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "dry-intake-yard",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceDryWaterPump.unity"
+    },
+    {
+      "id": "resourceChemSpring",
+      "displayName": "Сток 4-Б",
+      "locationType": "resource_site",
+      "macroRegion": "zero_basin",
+      "visualProfile": "toxic-drain-four-b-v1",
+      "anomalyDensity": 0.38,
+      "landmarkTags": [
+        "drain-stack",
+        "black-settling-pool"
+      ],
+      "ambientProfile": "toxic-lower-drain",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "drain-upper-platform",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceChemSpring.unity"
+    },
+    {
+      "id": "resourceIronMine",
+      "displayName": "Шахта «Три смены»",
+      "locationType": "resource_site",
+      "macroRegion": "ore_arc",
+      "visualProfile": "three-shifts-mine-v1",
+      "anomalyDensity": 0.13,
+      "landmarkTags": [
+        "headframe",
+        "ore-bunker"
+      ],
+      "ambientProfile": "working-debt-mine",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "mine-pay-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceIronMine.unity"
+    },
+    {
+      "id": "resourceKlimQuarry",
+      "displayName": "Карьер Девятый",
+      "locationType": "resource_site",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "ninth-dam-quarry-v1",
+      "anomalyDensity": 0.08,
+      "landmarkTags": [
+        "bucket-excavator",
+        "aggregate-silos"
+      ],
+      "ambientProfile": "wet-granite-quarry",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "quarry-service-ramp",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceKlimQuarry.unity"
+    },
+    {
+      "id": "resourceOilPump",
+      "displayName": "Топливная рампа",
+      "locationType": "resource_site",
+      "macroRegion": "zero_basin",
+      "visualProfile": "lower-bypass-fuel-rack-v1",
+      "anomalyDensity": 0.31,
+      "landmarkTags": [
+        "loading-rack",
+        "leaning-tanks"
+      ],
+      "ambientProfile": "volatile-fuel-yard",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "fuel-ramp-high-ground",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceOilPump.unity"
+    },
+    {
+      "id": "resourceOldKlimFarm",
+      "displayName": "Ферма «Дальний ряд»",
+      "locationType": "resource_site",
+      "macroRegion": "middle_vein",
+      "visualProfile": "clean-soil-strip-farm-v1",
+      "anomalyDensity": 0.02,
+      "landmarkTags": [
+        "irrigation-wheel",
+        "long-greenhouse"
+      ],
+      "ambientProfile": "inhabited-clean-farmland",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "farm-road-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceOldKlimFarm.unity"
+    },
+    {
+      "id": "resourceScrapFields",
+      "displayName": "Сортировочные поля",
+      "locationType": "resource_site",
+      "macroRegion": "ore_arc",
+      "visualProfile": "sorted-scrap-fields-v1",
+      "anomalyDensity": 0.04,
+      "landmarkTags": [
+        "magnet-crane",
+        "sorted-metal-ridges"
+      ],
+      "ambientProfile": "light-industrial-salvage",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "sorting-weighbridge",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceScrapFields.unity"
+    },
+    {
+      "id": "resourceSiliconRidge",
+      "displayName": "Керамический уступ",
+      "locationType": "resource_site",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "ceramic-chalk-escarpment-v1",
+      "anomalyDensity": 0.22,
+      "landmarkTags": [
+        "white-cut-face",
+        "kiln-shell"
+      ],
+      "ambientProfile": "chalk-and-static-wind",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "ceramic-upper-track",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceSiliconRidge.unity"
+    },
+    {
+      "id": "resourceTireDepot",
+      "displayName": "Полимерный склад",
+      "locationType": "resource_site",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "polymer-road-depot-v1",
+      "anomalyDensity": 0.07,
+      "landmarkTags": [
+        "collapsed-canopy",
+        "rubber-bales"
+      ],
+      "ambientProfile": "windy-road-warehouse",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "polymer-yard-gate",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/resourceTireDepot.unity"
+    },
+    {
+      "id": "antHive",
+      "displayName": "Колония Пыльников",
+      "locationType": "mutant_lair",
+      "macroRegion": "ore_arc",
+      "visualProfile": "dustling-cable-colony-v1",
+      "anomalyDensity": 0.18,
+      "landmarkTags": [
+        "shredded-cables",
+        "vent-mound"
+      ],
+      "ambientProfile": "scratching-cable-tunnels",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "colony-service-mouth",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/antHive.unity"
+    },
+    {
+      "id": "geckoCanyon",
+      "displayName": "Овраг Слухачей",
+      "locationType": "mutant_lair",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "listener-karst-ravine-v1",
+      "anomalyDensity": 0.24,
+      "landmarkTags": [
+        "echo-pillars",
+        "chalk-caves"
+      ],
+      "ambientProfile": "echoing-karst-hunt",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "ravine-upper-lip",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/geckoCanyon.unity"
+    },
+    {
+      "id": "radscorpionNest",
+      "displayName": "Гнездовье Рыхляков",
+      "locationType": "mutant_lair",
+      "macroRegion": "zero_basin",
+      "visualProfile": "burrower-settling-pit-v1",
+      "anomalyDensity": 0.36,
+      "landmarkTags": [
+        "broken-settling-wall",
+        "burrow-ridge"
+      ],
+      "ambientProfile": "unstable-toxic-earth",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "nest-upper-catwalk",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/radscorpionNest.unity"
+    },
+    {
+      "id": "mutantCrater",
+      "displayName": "Воронка Складней",
+      "locationType": "mutant_lair",
+      "macroRegion": "glasslands",
+      "visualProfile": "fold-mutant-medical-crater-v1",
+      "anomalyDensity": 0.47,
+      "landmarkTags": [
+        "medical-ring",
+        "folded-concrete"
+      ],
+      "ambientProfile": "biological-glasslands-crater",
+      "anomalyFields": [
+        {
+          "id": "fold-carousel-01",
+          "type": "carousel",
+          "x": 6.0,
+          "z": 3.0,
+          "radius": 3.4,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "crater-observation-road",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/mutantCrater.unity"
+    },
+    {
+      "id": "randomAshGrove",
+      "displayName": "Полоса №8",
+      "locationType": "encounter_template",
+      "macroRegion": "middle_vein",
+      "visualProfile": "shelterbelt-eight-v1",
+      "anomalyDensity": 0.09,
+      "landmarkTags": [
+        "windbreak-trees",
+        "abandoned-dachas"
+      ],
+      "ambientProfile": "quiet-inhabited-fringe",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "shelterbelt-road",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/randomAshGrove.unity"
+    },
+    {
+      "id": "randomDryBasin",
+      "displayName": "Меловая чаша",
+      "locationType": "encounter_template",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "chalk-sinkhole-v1",
+      "anomalyDensity": 0.27,
+      "landmarkTags": [
+        "sinkhole-rim",
+        "blue-karst-window"
+      ],
+      "ambientProfile": "open-chalk-basin",
+      "anomalyFields": [
+        {
+          "id": "chalk-pull-01",
+          "type": "pull",
+          "x": 2.0,
+          "z": -4.0,
+          "radius": 3.1,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "chalk-rim-road",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/randomDryBasin.unity"
+    },
+    {
+      "id": "randomRuinedRoad",
+      "displayName": "Разбитый тракт",
+      "locationType": "encounter_template",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "broken-grand-tract-v1",
+      "anomalyDensity": 0.12,
+      "landmarkTags": [
+        "raised-road",
+        "vehicle-graveyard"
+      ],
+      "ambientProfile": "windy-trade-road",
+      "anomalyFields": [
+        {
+          "id": "twelve-seam-01",
+          "type": "seam",
+          "x": 0.0,
+          "z": 3.0,
+          "radius": 2.3,
+          "dischargeMs": 3000,
+          "permanentDischarge": true,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "tract-approach",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/randomRuinedRoad.unity"
+    },
+    {
+      "id": "randomEncounter",
+      "displayName": "Событие пути",
+      "locationType": "encounter_template",
+      "macroRegion": "regional",
+      "visualProfile": "inherit-macro-region",
+      "anomalyDensity": 0.15,
+      "landmarkTags": [
+        "regional-anchor"
+      ],
+      "ambientProfile": "inherit-macro-region",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "regional-safe-edge",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/randomEncounter.unity"
+    },
+    {
+      "id": "wasteland",
+      "displayName": "Глухой обвод",
+      "locationType": "boundary_expedition",
+      "macroRegion": "silent_ring",
+      "visualProfile": "silent-ring-expedition-v1",
+      "anomalyDensity": 0.55,
+      "landmarkTags": [
+        "defense-tower",
+        "subsurface-fire"
+      ],
+      "ambientProfile": "dead-border-storm",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "expedition-return-point",
+      "legacyStable": true,
+      "unityScene": "Assets/Scenes/Kromka/Locations/wasteland.unity"
+    },
+    {
+      "id": "tutorialCaravanYard",
+      "displayName": "Сборный двор №12",
+      "locationType": "tutorial",
+      "macroRegion": "off_map",
+      "visualProfile": "mercenary-departure-yard-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "departure-gate",
+        "training-tower"
+      ],
+      "ambientProfile": "working-caravan-depot",
+      "anomalyFields": [
+        {
+          "id": "training-chime-01",
+          "type": "chime",
+          "x": 8.0,
+          "z": 0.0,
+          "radius": 2.4,
+          "dischargeMs": 6000,
+          "training": true,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "tutorial-contract-desk",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/tutorialCaravanYard.unity"
+    },
+    {
+      "id": "sluiceCity",
+      "displayName": "Створ",
+      "locationType": "faction_capital",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "uprava-command-dam-v1",
+      "anomalyDensity": 0.06,
+      "landmarkTags": [
+        "command-dam",
+        "vertical-warning-light"
+      ],
+      "ambientProfile": "misty-guarded-reservoir",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "sluice-lower-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/sluiceCity.unity"
+    },
+    {
+      "id": "secondHaven",
+      "displayName": "Меловой двор",
+      "locationType": "faction_capital",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "seconds-chalk-quarry-town-v1",
+      "anomalyDensity": 0.14,
+      "landmarkTags": [
+        "quarry-houses",
+        "filter-canopy"
+      ],
+      "ambientProfile": "inhabited-chalk-shelter",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "chalk-yard-upper-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/secondHaven.unity"
+    },
+    {
+      "id": "balanceBunker",
+      "displayName": "Бункер «Баланс»",
+      "locationType": "story_complex",
+      "macroRegion": "zero_basin",
+      "visualProfile": "continuity-balance-bunker-v1",
+      "anomalyDensity": 0.22,
+      "landmarkTags": [
+        "administrative-shaft",
+        "cold-status-column"
+      ],
+      "ambientProfile": "automated-command-bunker",
+      "anomalyFields": [
+        {
+          "id": "balance-sink-01",
+          "type": "sink",
+          "x": -5.0,
+          "z": 6.0,
+          "radius": 3.0,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "balance-service-lock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/balanceBunker.unity"
+    },
+    {
+      "id": "cascadeRegenerator",
+      "displayName": "Регенератор Р-12",
+      "locationType": "raid_complex",
+      "macroRegion": "zero_basin",
+      "visualProfile": "cascade-regenerator-r12-v1",
+      "anomalyDensity": 0.5,
+      "landmarkTags": [
+        "regenerator-column",
+        "black-water-rings"
+      ],
+      "ambientProfile": "deep-industrial-anomaly",
+      "anomalyFields": [
+        {
+          "id": "r12-dew-01",
+          "type": "dew",
+          "x": 3.0,
+          "z": 8.0,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "r12-upper-lock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/cascadeRegenerator.unity"
+    },
+    {
+      "id": "vectorLab",
+      "displayName": "Объект «Вектор»",
+      "locationType": "story_complex",
+      "macroRegion": "glasslands",
+      "visualProfile": "vector-deep-research-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "impossible-lattice",
+        "buried-field-rings"
+      ],
+      "ambientProfile": "witness-field-resonance",
+      "anomalyFields": [
+        {
+          "id": "vector-glass-01",
+          "type": "glass",
+          "x": 0.0,
+          "z": 12.0,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ],
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "vector-observation-lock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/vectorLab.unity"
+    },
+    {
+      "id": "personalBase",
+      "displayName": "Личное убежище",
+      "locationType": "personal_base",
+      "macroRegion": "off_map",
+      "visualProfile": "private-technical-yard-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "build-platform",
+        "service-shelter"
+      ],
+      "ambientProfile": "quiet-private-shelter",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "personal-base-door",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/personalBase.unity"
+    },
+    {
+      "id": "clanHydroNode2",
+      "displayName": "ГЭС-2",
+      "locationType": "clan_base",
+      "macroRegion": "northern_sluices",
+      "visualProfile": "clan-hydro-node-two-v1",
+      "anomalyDensity": 0.12,
+      "landmarkTags": [
+        "turbine-hall",
+        "spillway-bridge"
+      ],
+      "ambientProfile": "active-hydroelectric-node",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "hydro-two-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanHydroNode2.unity"
+    },
+    {
+      "id": "clanFilterT6",
+      "displayName": "Фильтровальная Т-6",
+      "locationType": "clan_base",
+      "macroRegion": "middle_vein",
+      "visualProfile": "clan-filter-t6-v1",
+      "anomalyDensity": 0.08,
+      "landmarkTags": [
+        "filter-tanks",
+        "control-tower"
+      ],
+      "ambientProfile": "working-filter-station",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "filter-t6-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanFilterT6.unity"
+    },
+    {
+      "id": "clanOreExchange",
+      "displayName": "Рудный перевал",
+      "locationType": "clan_base",
+      "macroRegion": "ore_arc",
+      "visualProfile": "clan-ore-transfer-v1",
+      "anomalyDensity": 0.17,
+      "landmarkTags": [
+        "ore-conveyor",
+        "transfer-tower"
+      ],
+      "ambientProfile": "mountain-ore-transfer",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "ore-exchange-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanOreExchange.unity"
+    },
+    {
+      "id": "clanFactoryCycle",
+      "displayName": "Цех обратного цикла",
+      "locationType": "clan_base",
+      "macroRegion": "ore_arc",
+      "visualProfile": "clan-reagent-cycle-v1",
+      "anomalyDensity": 0.2,
+      "landmarkTags": [
+        "reaction-towers",
+        "pipe-bridge"
+      ],
+      "ambientProfile": "industrial-reagent-cycle",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "cycle-workshop-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanFactoryCycle.unity"
+    },
+    {
+      "id": "clanDepotBypass",
+      "displayName": "Депо Обводное",
+      "locationType": "clan_base",
+      "macroRegion": "tract_isthmus",
+      "visualProfile": "clan-bypass-depot-v1",
+      "anomalyDensity": 0.1,
+      "landmarkTags": [
+        "roundhouse",
+        "cargo-turntable"
+      ],
+      "ambientProfile": "fortified-rail-depot",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "bypass-depot-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanDepotBypass.unity"
+    },
+    {
+      "id": "clanChalkSluice",
+      "displayName": "Меловой шлюз",
+      "locationType": "clan_base",
+      "macroRegion": "chalk_lowland",
+      "visualProfile": "clan-chalk-sluice-v1",
+      "anomalyDensity": 0.23,
+      "landmarkTags": [
+        "karst-gate",
+        "cloth-filter-racks"
+      ],
+      "ambientProfile": "chalk-underground-water",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "chalk-sluice-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanChalkSluice.unity"
+    },
+    {
+      "id": "clanRelayEast",
+      "displayName": "Ретранслятор В-9",
+      "locationType": "clan_base",
+      "macroRegion": "glasslands",
+      "visualProfile": "clan-relay-v9-v1",
+      "anomalyDensity": 0.4,
+      "landmarkTags": [
+        "split-dish",
+        "storm-vanes"
+      ],
+      "ambientProfile": "glasslands-shift-relay",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "relay-v9-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanRelayEast.unity"
+    },
+    {
+      "id": "clanFortZero",
+      "displayName": "Форт 14",
+      "locationType": "clan_base",
+      "macroRegion": "zero_basin",
+      "visualProfile": "clan-fort-fourteen-v1",
+      "anomalyDensity": 0.37,
+      "landmarkTags": [
+        "armored-gate",
+        "command-bastion"
+      ],
+      "ambientProfile": "lower-basin-military-fort",
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "fort-fourteen-neutral-yard",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/clanFortZero.unity"
+    }
+  ]
+}

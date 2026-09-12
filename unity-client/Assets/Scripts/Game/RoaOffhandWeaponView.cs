@@ -14,7 +14,7 @@ namespace RealmOfAshes.Game
     {
         private static readonly HashSet<string> Supported = new HashSet<string>
         {
-            "pistol", "laserPistol"
+            "pistol", "laserPistol", "revolver", "sawedOffShotgun"
         };
 
         private static readonly Vector3 MirroredSocketOffset = new Vector3(-0.03f, -0.02f, 0.025f);
@@ -62,6 +62,13 @@ namespace RealmOfAshes.Game
             return !string.IsNullOrEmpty(weaponId) && Supported.Contains(weaponId);
         }
 
+        /// <summary>Physical items allowed in the authoritative offhand slot.
+        /// IsSupported remains firearm-only so a knife/case never selects dual-gun IK.</summary>
+        public static bool CanRender(string itemId)
+        {
+            return IsSupported(itemId) || itemId == "knife" || itemId == "medkit";
+        }
+
         public bool TryGetMuzzle(out Vector3 worldPosition)
         {
             if (_socketMuzzle != null)
@@ -94,7 +101,7 @@ namespace RealmOfAshes.Game
         public async Task Load(string baseUrl, string weaponId, Transform characterRoot,
                                Dictionary<string, Transform> bones)
         {
-            weaponId = IsSupported(weaponId) ? weaponId : string.Empty;
+            weaponId = CanRender(weaponId) ? weaponId : string.Empty;
             if (WeaponId == weaponId && (string.IsNullOrEmpty(weaponId) || Ready)) return;
 
             int request = ++_loadRequest;
@@ -112,6 +119,26 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            if (weaponId == "medkit")
+            {
+                Transform medicalHand = _leftHand;
+                GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
+                if (request != _loadRequest || characterRoot == null || medical == null
+                    || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
+                {
+                    if (medical != null) Object.Destroy(medical);
+                    return;
+                }
+                _weapon = medical.transform;
+                _socketGrip = RoaItemModelCatalog.FindSocket(_weapon, "socket_grip_r");
+                RoaVisibilityGate medicalGate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
+                if (medicalGate != null) { medicalGate.Invalidate(); medicalGate.SetVisible(medicalGate.IsVisible); }
+                medical.SetActive(true);
+                WeaponId = weaponId;
+                Ready = true;
+                return;
+            }
+
             await RoaWeaponGrip.Ensure(baseUrl);
             if (request != _loadRequest || !RoaWeaponGrip.Ready) return;
 
@@ -126,6 +153,7 @@ namespace RealmOfAshes.Game
             }
 
             var holder = new GameObject("OffhandWeapon:" + weaponId);
+            holder.SetActive(false);
             holder.transform.SetParent(characterRoot, false);
             if (!await import.InstantiateMainSceneAsync(holder.transform))
             {
@@ -141,7 +169,7 @@ namespace RealmOfAshes.Game
             _weapon = holder.transform;
             _socketGrip = FindDeep(_weapon, "socket_grip_r");
             _socketMuzzle = FindDeep(_weapon, "socket_muzzle");
-            if (_socketGrip == null || _socketMuzzle == null)
+            if (_socketGrip == null || (weaponId != "knife" && _socketMuzzle == null))
             {
                 Debug.LogError("[ROA] У оружия второй руки " + weaponId + " нет сокетов хвата или дула.");
                 WeaponId = weaponId;
@@ -157,19 +185,34 @@ namespace RealmOfAshes.Game
 
             WeaponId = weaponId;
             Ready = _leftArm.Ready;
+            Mount();
+            RoaVisibilityGate gate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
+            if (gate != null) { gate.Invalidate(); gate.SetVisible(gate.IsVisible); }
+            holder.SetActive(true);
             Debug.Log("[ROA] Оружие второй руки " + weaponId + " подключено.");
         }
 
         /// <summary>Дешёвый дальний LOD без решения цепи левой руки.</summary>
         public void ApplyReduced()
         {
+            if (WeaponId == "medkit") return;
             if (!Ready || _weapon == null || _leftHand == null) return;
             Mount();
         }
 
         public void Apply(Vector3 aimPoint, bool hasAim)
         {
+            if (WeaponId == "medkit") return;
             if (!Ready || _weapon == null || _characterRoot == null) return;
+
+            if (WeaponId == "knife")
+            {
+                // A passive offhand blade follows the animated left wrist.
+                // Do not mirror the right firearm arm or invent a muzzle.
+                RoaWeaponGrip.ApplyLeftFingersTo(_bones);
+                Mount();
+                return;
+            }
 
             RoaWeaponGrip.ApplyFingersTo(_bones);
             Matrix4x4 targetHandWorld = MirroredRightHandPose();
@@ -301,7 +344,7 @@ namespace RealmOfAshes.Game
 
         private void Clear()
         {
-            if (_weapon != null) Object.Destroy(_weapon.gameObject);
+            if (_weapon != null) { _weapon.gameObject.SetActive(false); Object.Destroy(_weapon.gameObject); }
             _weapon = null;
             _socketGrip = null;
             _socketMuzzle = null;

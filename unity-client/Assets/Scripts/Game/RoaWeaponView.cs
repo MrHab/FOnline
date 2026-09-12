@@ -174,6 +174,17 @@ namespace RealmOfAshes.Game
         };
 
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
+        private static int _weaponCacheSession;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetWeaponCache()
+        {
+            _weaponCacheSession++;
+            // Enter Play Mode can preserve static C# fields while Unity destroys
+            // native animation clips from the previous session. Never instantiate
+            // that previous session's importer (MissingReferenceException).
+            RoaModelImportLifetime.Clear(WeaponCache);
+        }
 
         /// <summary>
         /// Огнестрел: всё это держится одним и тем же хватом
@@ -333,7 +344,7 @@ namespace RealmOfAshes.Game
 
         private void ClearWeapon()
         {
-            if (_weapon != null) Object.Destroy(_weapon.gameObject);
+            if (_weapon != null) { _weapon.gameObject.SetActive(false); Object.Destroy(_weapon.gameObject); }
 
             _weapon = null;
             _socketGrip = null;
@@ -367,6 +378,28 @@ namespace RealmOfAshes.Game
             ClearWeapon();
             _bones = bones;
             _owner = characterRoot != null ? characterRoot.root : null;
+
+            // A held medical item follows the real right hand, without firearm
+            // aim/recoil IK. Unknown-item fallback used to leave it invisible.
+            if (weaponId == "medkit" && bones != null && bones.TryGetValue("hand_r", out _hand) && _hand != null)
+            {
+                Transform medicalHand = _hand;
+                GameObject medical = await RoaItemModelCatalog.InstantiateInactive(baseUrl, weaponId, medicalHand);
+                if (request != _loadRequest || characterRoot == null || medical == null
+                    || !RoaItemModelCatalog.MountMedicalCase(medical, medicalHand))
+                {
+                    if (medical != null) Object.Destroy(medical);
+                    return;
+                }
+                _weapon = medical.transform;
+                _socketGrip = RoaItemModelCatalog.FindSocket(_weapon, "socket_grip_r");
+                RoaVisibilityGate medicalGate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
+                if (medicalGate != null) { medicalGate.Invalidate(); medicalGate.SetVisible(medicalGate.IsVisible); }
+                medical.SetActive(true);
+                WeaponId = weaponId;
+                Ready = true;
+                return;
+            }
 
             _melee = RoaMeleeGrip.Get(weaponId);
 
@@ -482,6 +515,7 @@ namespace RealmOfAshes.Game
 
         internal static async Task<GltfImport> LoadCached(string key, string url)
         {
+            int session = _weaponCacheSession;
             GltfImport cached;
             if (WeaponCache.TryGetValue(key, out cached)) return cached;
 
@@ -492,6 +526,7 @@ namespace RealmOfAshes.Game
                 return null;
             }
 
+            if (session != _weaponCacheSession) { import.Dispose(); return null; }
             WeaponCache[key] = import;
             return import;
         }
@@ -527,6 +562,7 @@ namespace RealmOfAshes.Game
         public void ApplyReduced()
         {
             if (!Ready || _weapon == null || _hand == null) return;
+            if (WeaponId == "medkit") return;
             Mount();
         }
 
@@ -539,6 +575,7 @@ namespace RealmOfAshes.Game
         public void Apply(Vector3 aimPoint, bool hasAim)
         {
             if (!Ready) return;
+            if (WeaponId == "medkit") return;
 
             TorsoResidual = 0f;
             WeaponConverge = 0f;
@@ -720,6 +757,8 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyMelee()
         {
+            PrimaryHandSolved = false;
+            SupportHandSolved = false;
             Vector3 primary;
             Vector3 direction;
             Vector3 spine;
@@ -759,8 +798,13 @@ namespace RealmOfAshes.Game
             if (_primaryArm != null && _primaryArm.Ready)
             {
                 Matrix4x4 handToSocket = RoaWeaponGrip.HandToMount * Matrix4x4.Translate(PrimarySocketOffset);
-                Matrix4x4 handWorld = _socketGrip.localToWorldMatrix * handToSocket.inverse;
-                _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
+                // Model scale sizes the mesh, not the hand-to-grip offset in
+                // metres. Using the scaled socket matrix left the knife's
+                // handle several centimetres away from the palm.
+                Matrix4x4 socketWorld = Matrix4x4.TRS(_socketGrip.position,
+                    _socketGrip.rotation, Vector3.one);
+                Matrix4x4 handWorld = socketWorld * handToSocket.inverse;
+                PrimaryHandSolved = _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
             }
 
             if (!_melee.TwoHanded || _socketGripLeft == null) return;
@@ -776,7 +820,7 @@ namespace RealmOfAshes.Game
                     _melee.SupportRotation.z * Mathf.Rad2Deg);
 
                 Matrix4x4 handWorld = _weapon.localToWorldMatrix * Matrix4x4.TRS(position, rot, Vector3.one);
-                _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
+                SupportHandSolved = _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
             }
         }
 

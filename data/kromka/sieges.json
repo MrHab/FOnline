@@ -1,0 +1,20 @@
+{
+  "schema": "kromka.sieges.v1",
+  "version": 1,
+  "announceLeadMs": 86400000,
+  "rosterLockLeadMs": 3600000,
+  "membershipMinAgeMs": 259200000,
+  "maxParticipantsPerClan": 20,
+  "pledge": { "silver": 500, "blue": 3 },
+  "relayDurationMs": 600000,
+  "breachDurationMs": 1200000,
+  "coreDurationMs": 1200000,
+  "coreHoldMs": 180000,
+  "gateHp": 1000,
+  "gateDamagePerAction": 25,
+  "objectiveActionCooldownMs": 900,
+  "respawnWavesPerSide": 3,
+  "resultRoomGraceMs": 60000,
+  "reward": { "winnerSilver": 240, "defenderSilver": 80 },
+  "loreReason": "Командное ядро принимает нового оператора только в неизменяемое окно синхронизации с Каскадом."
+}

@@ -26,40 +26,24 @@ assert(!exists('public', 'assets', 'models', 'wasteland', 'old-klim-environment-
 
 const location = JSON.parse(read('data', 'locations', 'settlement.json'));
 const oldKlimObjects = location.objects.filter(entry => /^oldKlim/.test(String(entry.model || '')));
-assert(oldKlimObjects.length >= 35, 'Old Klim authored object set is unexpectedly incomplete');
-assert(oldKlimObjects.every(entry => !entry.url),
-  'Unity-authored Old Klim objects still reference removed GLBs');
-const tradeHall = location.objects.find(entry => entry.id === 'old_klim_trade_hall');
-const caravan = location.objects.find(entry => entry.id === 'obj_0142');
-const mainGate = location.objects.find(entry => entry.id === 'old_klim_main_gate');
-const serviceGate = location.objects.find(entry => entry.id === 'old_klim_loading_gate');
-const perimeter = location.objects.find(entry => entry.id === 'old_klim_defensive_perimeter');
-const pens = location.objects.find(entry => entry.id === 'old_klim_brahmin_pens');
-const gardens = location.objects.find(entry => entry.id === 'old_klim_gardens');
-const housing = location.objects.find(entry => entry.id === 'old_klim_residential_row');
-const workshop = location.objects.find(entry => entry.id === 'old_klim_workshop_shelter');
-assert(tradeHall?.collisionParts?.length === 5,
-  'MEP trade hall doorway is not preserved by multipart authored collision');
-assert(caravan?.collisionParts?.length === 2,
-  'MEP caravan counter/back wall collision is missing');
-assert(mainGate?.model === 'oldKlimMainGate' && mainGate.collisionParts?.length === 2,
-  'Main settlement gate must keep two blocking posts and a clear central entrance');
-assert(serviceGate?.model === 'oldKlimServiceGate' && serviceGate.collisionParts?.length === 2,
-  'Service gate must keep two blocking posts and a clear caravan entrance');
-assert(perimeter?.collisionParts?.length === 21,
-  'Fortified perimeter must preserve wall runs and four authored tower footprints');
-assert(pens?.collisionParts?.length === 10,
-  'Two brahmin pens must preserve their separate open entrances');
-assert(gardens?.model === 'oldKlimGardens' && housing?.collisionParts?.length === 3,
-  'Garden plots or the three-building residential row are missing');
-assert(workshop?.collisionParts?.length === 3,
-  'Workshop shelter must remain open-fronted with three blocking wall sections');
-const mepCliffs = oldKlimObjects.filter(entry => /^oldKlimCliff/.test(String(entry.model || '')));
-assert(mepCliffs.length === 16 && mepCliffs.every(entry => Number(entry.collisionSize?.width) > 0
-  && Number(entry.collisionSize?.depth) > 0),
-  'MEP cliff collision sizes do not match the Unity scene');
-assert(oldKlimObjects.filter(entry => entry.model === 'oldKlimWatchtower').length === 1,
-  'The loading yard must preserve its separate fifth watchtower');
+const oldKlimActors = location.objects.filter(entry => entry.id === 'old_klim'
+  || /Стар(?:ый|ого) Клим/i.test(String(entry.name || '')));
+assert.strictEqual(location.name, 'Ключи', 'The active settlement must use Kromka canon');
+assert.strictEqual(location.worldRevision, 'kromka-1', 'The active settlement needs Kromka revision');
+assert.strictEqual(location.runtimeMode, 'unity-authored', 'Unity must own settlement geometry');
+assert(location.unityScene.endsWith('/Kromka/Locations/settlement.unity'),
+  'The active settlement must load the Kromka scene');
+assert.strictEqual(oldKlimObjects.length, 0,
+  'Retired Old Klim geometry leaked back into the active Kromka settlement');
+assert.strictEqual(oldKlimActors.length, 0,
+  'Retired Old Klim actor leaked back into the active Kromka settlement');
+assert(location.objects.some(entry => entry.id === 'irena_versta_belova'
+  && entry.name === 'Ирена «Верста» Белова'),
+  'Keys must spawn the canonical first guide instead of Old Klim');
+for (const id of ['settlement-keys-water-tower', 'settlement-keys-rail-bridge',
+  'settlement-keys-market', 'settlement-keys-workshops', 'settlement-keys-clinic']) {
+  assert(location.objects.some(entry => entry.id === id), `Kromka settlement landmark is missing: ${id}`);
+}
 
 const generator = read('unity-client', 'Assets', 'Editor', 'RoaOldKlimSceneGenerator.cs');
 for (const token of [
@@ -116,8 +100,10 @@ assert(exists('unity-client', 'Assets', 'Scenes', 'Locations', 'OldKlimCaravan.u
 assert(exists('unity-client', 'Assets', 'Scenes', 'Locations', 'OldKlimCaravan', 'OldKlimTerrain.asset'),
   'Old Klim Unity TerrainData is missing');
 const buildSettings = read('unity-client', 'ProjectSettings', 'EditorBuildSettings.asset');
-assert(buildSettings.includes('Assets/Scenes/Locations/OldKlimCaravan.unity'),
-  'Old Klim scene is absent from build settings');
+assert(!buildSettings.includes('Assets/Scenes/Locations/OldKlimCaravan.unity'),
+  'Archived Old Klim scene must not ship in the Kromka build');
+assert(buildSettings.includes('Assets/Scenes/Kromka/Locations/settlement.unity'),
+  'Kromka settlement scene is absent from build settings');
 const webGlBuild = read('unity-client', 'Assets', 'Editor', 'RoaWebGlBuild.cs');
 assert(webGlBuild.includes('EditorBuildSettings.scenes')
   && webGlBuild.includes('.Where(scene => scene.enabled)')

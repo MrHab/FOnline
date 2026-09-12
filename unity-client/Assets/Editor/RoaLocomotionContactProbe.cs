@@ -56,6 +56,40 @@ namespace RealmOfAshes.EditorTools
                     && Mathf.Abs(backToFast - 1f / 12f) < 0.001f
                     && Mathf.Abs(wrappedFast - 53f / 60f) < 0.001f,
                 "семейства fast gait или переход через границу цикла рассинхронизированы");
+
+            var controllerRoot = new GameObject("AuthoritativePlayerCollisionProbe");
+            CharacterController body = controllerRoot.AddComponent<CharacterController>();
+            body.radius = 0.2f;
+            RoaPlayerController.ConfigureAuthoritativeCollision(body);
+            Require(Mathf.Abs(body.radius - RoaPlayerController.AuthoritativeCollisionRadius) < 0.001f,
+                "локальная капсула игрока не совпадает с авторитетным радиусом коллизий");
+            Object.DestroyImmediate(controllerRoot);
+
+            Vector3 correctionOffset = RoaPlayerController.CompensatePresentationOffset(
+                Vector3.zero, new Vector3(-1f, 0f, 0f));
+            Vector3 correctionVelocity = Vector3.zero;
+            Vector3 firstCorrectionFrame = RoaPlayerController.SmoothPresentationOffset(
+                correctionOffset, ref correctionVelocity, 1f / 60f);
+            Require(firstCorrectionFrame.x > 0f && firstCorrectionFrame.x < correctionOffset.x,
+                "визуальная серверная поправка не сглаживается между кадрами");
+            for (int i = 0; i < 180; i++)
+                firstCorrectionFrame = RoaPlayerController.SmoothPresentationOffset(
+                    firstCorrectionFrame, ref correctionVelocity, 1f / 60f);
+            Require(firstCorrectionFrame.sqrMagnitude < 0.0004f,
+                "визуальная серверная поправка не сходится к физической позиции");
+
+            Vector3 requestedSpawn = new Vector3(1f, 1f, 21f);
+            Vector3 safeSpawn = RoaPlayerController.FindSafeSpawnPosition(requestedSpawn,
+                point => Mathf.Abs(point.x - requestedSpawn.x) < 1.25f
+                         && Mathf.Abs(point.z - requestedSpawn.z) < 1.25f);
+            float spawnOffset = Vector2.Distance(
+                new Vector2(requestedSpawn.x, requestedSpawn.z),
+                new Vector2(safeSpawn.x, safeSpawn.z));
+            Require(spawnOffset >= 1.2f
+                    && spawnOffset <= RoaPlayerController.SafeSpawnSearchRadius
+                    && safeSpawn.z < requestedSpawn.z,
+                "safe spawn did not move the player outside an occupied primitive");
+
             var root = new GameObject("LocomotionContactPoseProbe");
             Transform pelvis = Node(root.transform, "pelvis");
             Transform spine01 = Node(pelvis, "spine_01");

@@ -160,6 +160,7 @@ namespace RealmOfAshes.Net
     /// <summary>Полное публичное состояние игрока. Портирует publicPlayer(), server.js:18236.</summary>
     public sealed class PublicPlayer
     {
+        [JsonProperty("movementNoiseMultiplier")] public float MovementNoiseMultiplier = 1f;
         [JsonProperty("id")] public string Id;
         [JsonProperty("characterId")] public string CharacterId;
         [JsonProperty("name")] public string Name;

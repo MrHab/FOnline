@@ -28,6 +28,14 @@ namespace RealmOfAshes.Game
             { "enemyMutantAnt", Wasteland + "npc_mutant_ant.glb" },
             { "enemyGecko", Wasteland + "npc_gecko.glb" },
             { "enemyFireGecko", Wasteland + "npc_fire_gecko.glb" },
+            { "kromkaBurned", Wasteland + "npc_ghoul.glb" },
+            { "kromkaFold", Wasteland + "npc_ghoul.glb" },
+            { "kromkaGari", Wasteland + "npc_ash_wolf.glb" },
+            { "kromkaRykhlyak", Wasteland + "npc_radscorpion.glb" },
+            { "kromkaDustling", Wasteland + "npc_mutant_ant.glb" },
+            { "kromkaListener", Wasteland + "npc_gecko.glb" },
+            { "kromkaMourner", Wasteland + "npc_fire_gecko.glb" },
+            { "kromkaLantern", Wasteland + "brahmin.glb" },
             { "brahmin", Wasteland + "brahmin.glb" },
             { "friendlyBrahmin", Wasteland + "brahmin.glb" }
         };
@@ -48,7 +56,26 @@ namespace RealmOfAshes.Game
             { "mutantant", "enemyMutantAnt" },
             { "gecko", "enemyGecko" },
             { "firegecko", "enemyFireGecko" },
+            { "burned", "kromkaBurned" },
+            { "fold", "kromkaFold" },
+            { "gari", "kromkaGari" },
+            { "rykhlyak", "kromkaRykhlyak" },
+            { "dustling", "kromkaDustling" },
+            { "listener", "kromkaListener" },
+            { "mourner", "kromkaMourner" },
+            { "lantern", "kromkaLantern" },
             { "brahmin", "friendlyBrahmin" }
+        };
+
+        private static readonly Dictionary<string, string> CanonicalLegacy = new Dictionary<string, string>
+        {
+            { "enemyGhoul", "kromkaBurned" },
+            { "enemySuperMutant", "kromkaFold" },
+            { "enemyAshWolf", "kromkaGari" },
+            { "enemyRadscorpion", "kromkaRykhlyak" },
+            { "enemyMutantAnt", "kromkaDustling" },
+            { "enemyGecko", "kromkaListener" },
+            { "enemyFireGecko", "kromkaMourner" }
         };
 
         /// <summary>Путь к модели, либо пусто если ключ неизвестен.</summary>
@@ -67,7 +94,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         private static readonly HashSet<string> FacingHalfTurn = new HashSet<string>
         {
-            "enemyRadscorpion", "enemyMutantAnt"
+            "enemyRadscorpion", "enemyMutantAnt", "kromkaRykhlyak", "kromkaDustling"
         };
 
         /// <summary>Доворот модели в градусах.</summary>
@@ -97,6 +124,9 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static string ResolveKey(string modelKey, string visual, string species)
         {
+            string canonical;
+            if (!string.IsNullOrEmpty(modelKey) && CanonicalLegacy.TryGetValue(modelKey, out canonical))
+                return canonical;
             if (!string.IsNullOrEmpty(modelKey) && Urls.ContainsKey(modelKey)) return modelKey;
 
             string key = Normalize(visual);

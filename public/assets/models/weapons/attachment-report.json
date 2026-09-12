@@ -1,0 +1,147 @@
+{
+  "toleranceMetres": 0.002,
+  "weapons": [
+    {
+      "weapon": "assaultRifle",
+      "sha256": "4385f4d7e250990b599e63cc3d80c27cc08c445ac71354b9d970329bd8209f22",
+      "meshCount": 4,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "axe",
+      "sha256": "95beb345e74278efc7b73e5eeabe9c66f9ec90d1c87f9d3100a97eb01cfd845f",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 16
+    },
+    {
+      "weapon": "flamethrower",
+      "sha256": "478fe404f4c782082d3c4097f9630076573f7b87c580e9b6d06238e471f79596",
+      "meshCount": 8,
+      "detached": [],
+      "attachedParts": {
+        "fuel_valve": "fuel_tank",
+        "pressure_gauge": "fuel_tank",
+        "gauge_face": "pressure_gauge",
+        "pilot": "muzzle"
+      },
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "handPump",
+      "sha256": "d7d9c1a2d83081224dc4e38ebf477f466bda1ad2ea1bcb7364e97e7c84950d6d",
+      "meshCount": 12,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 16
+    },
+    {
+      "weapon": "knife",
+      "sha256": "ac417d6e344d9d4b4d76cca0f33c825febc3b6ef3bde3b030260d397c044d97d",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 16
+    },
+    {
+      "weapon": "laserPistol",
+      "sha256": "8f5c4493d72cc4e400815940bd6aef2231dad87726bfc5ef68b08b1413d41726",
+      "meshCount": 5,
+      "detached": [],
+      "attachedParts": {
+        "emitter_ring": "muzzle"
+      },
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "machineGun",
+      "sha256": "112978d3def1f107c8822e1025182e261cabb32ce755cb1e453cf568fb5f3720",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {
+        "ammo_box_latch": "ammo_box",
+        "ammo_box_lid": "ammo_box"
+      },
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "pickaxe",
+      "sha256": "c315cf2c6fafdc1e2bd9ba062a29a9e6cfa48c55a44c8fd82691cdab52e2c648",
+      "meshCount": 9,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 16
+    },
+    {
+      "weapon": "pistol",
+      "sha256": "bc3dbf8dc9a8f872fbce28b39e656a4ff2de8d080508e050f28ca86d8b2e7e39",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "plasmaRifle",
+      "sha256": "6567ccf44665af2435521307dd47453441db1df5060a142ec3142b0235e74e64",
+      "meshCount": 5,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "revolver",
+      "sha256": "2c129e35b681a18f6e84eab642a545f2fb98f76eaf0870e65f0862d51b70a10a",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "rifle",
+      "sha256": "54daca9aa5004282f8f16d9ffd6e2e2f1c716bc62a445fde0ab431674af3dd8e",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {
+        "bolt_knob": "bolt"
+      },
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "rocketLauncher",
+      "sha256": "328c77c230347a1268c0caa4b3dfe53f1b69365a28998e742e0ba0986dae4210",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "sawedOffShotgun",
+      "sha256": "58bc34798bc93b42cc85e0a1cb6f6ca5a59bb81894c084095c2237d08863f6d3",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "shotgun",
+      "sha256": "b5767c8d952f8eff3a48dc6f66282d735125bc46f6439b2430471be83fd9f0e2",
+      "meshCount": 5,
+      "detached": [],
+      "attachedParts": {},
+      "animationPoseChecks": 24
+    },
+    {
+      "weapon": "smg",
+      "sha256": "59866c9ecd4091e9b07bd9c9bce1c65131bda216fcd5d312a5e8069955037696",
+      "meshCount": 6,
+      "detached": [],
+      "attachedParts": {
+        "magazine_base": "magazine"
+      },
+      "animationPoseChecks": 24
+    }
+  ]
+}

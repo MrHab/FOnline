@@ -55,6 +55,7 @@ namespace RealmOfAshes.EditorTools
             Directory.CreateDirectory(output);
 
             StrategicLighting(marker);
+            SimulateParticleSystems(scene);
             Capture(Path.Combine(output, "01-overview-oblique.png"),
                 new Vector3(0f, 0f, 0f), 112f, 55f, 45f, 1920, 1080);
             Capture(Path.Combine(output, "02-west-ocean-coast.png"),
@@ -65,7 +66,19 @@ namespace RealmOfAshes.EditorTools
                 new Vector3(43f, 0f, 0f), 32f, 48f, 90f, 1600, 900);
             Capture(Path.Combine(output, "05-toxic-west-ocean.png"),
                 new Vector3(-43f, 0f, 0f), 34f, 50f, 270f, 1600, 900);
+            Capture(Path.Combine(output, "06-mobile-landscape-toxic-east.png"),
+                new Vector3(43f, 0f, 0f), 32f, 48f, 90f, 1280, 720);
             Debug.Log("[ГЛОБАЛЬНАЯ КАРТА 3.4] контрольные снимки: " + output, marker);
+        }
+
+        private static void SimulateParticleSystems(Scene scene)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
+                for (int i = 0; i < systems.Length; i++)
+                    systems[i].Simulate(12f, true, true, true);
+            }
         }
 
         private static void StrategicLighting(RoaUnityGlobalMapScene marker)

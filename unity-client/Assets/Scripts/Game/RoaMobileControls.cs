@@ -72,6 +72,7 @@ namespace RealmOfAshes.Game
             get { return _combat != null ? _combat.FireMode : "Режим"; }
         }
         public bool FireHeldForCanvas { get { return _fireHeld; } }
+        public string FireLabel { get { return _combat != null && _combat.HasHeldMedkit ? "ЛЕЧИТЬ" : "ОГОНЬ"; } }
 
         public void Configure(RoaCombat combat, RoaInteraction interaction, RoaInventory inventory,
                               RoaPipboy pipboy, RoaEnemies enemies, RoaGlobalMap globalMap,
@@ -268,7 +269,8 @@ namespace RealmOfAshes.Game
                 _selectedId = string.Empty;
                 return;
             }
-            _enemies.CollectMobileTargets(_player.transform.position, TargetRange, _targets);
+            _enemies.CollectMobileTargets(_player.transform.position, TargetRange, _targets,
+                _combat != null && _combat.HasHeldMedkit);
             if (string.IsNullOrEmpty(_selectedId)) return;
             for (int i = 0; i < _targets.Count; i++) if (_targets[i].Id == _selectedId) return;
             _selectedId = string.Empty;
@@ -329,8 +331,8 @@ namespace RealmOfAshes.Game
             if (IsPanelOpen()) return;
 
             Rect fire = FireRect(Screen.width, Screen.height);
-            if (Event.current.isMouse && IconButton(fire, "ОГОНЬ", _fireIcon, true)) Fire();
-            else IconButton(fire, "ОГОНЬ", _fireIcon);
+            if (Event.current.isMouse && IconButton(fire, FireLabel, _fireIcon, true)) Fire();
+            else IconButton(fire, FireLabel, _fireIcon);
 
             Rect interact = ActionRect(Screen.width, Screen.height, 1);
             Rect target = ActionRect(Screen.width, Screen.height, 2);

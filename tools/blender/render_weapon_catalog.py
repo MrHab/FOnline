@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 WEAPON_IDS = (
@@ -64,8 +64,8 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE_NEXT"
-    scene.render.resolution_x = 1400
-    scene.render.resolution_y = 1050
+    scene.render.resolution_x = 1600
+    scene.render.resolution_y = 1400
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
@@ -80,8 +80,21 @@ def main():
         col = index % columns
         row = index // columns
         root = import_weapon(args.model_directory.resolve(), weapon_id)
-        root.location = (col * spacing_x, -row * spacing_y, 0.16)
-        root.rotation_euler = (0.42, 0.0, -0.18)
+        # Lay out the side silhouettes. A top-down view along the weapon's up
+        # axis shows only a thin barrel and cannot verify a replaced body.
+        if weapon_id in {"knife", "pickaxe", "axe", "handPump"}:
+            root.rotation_euler = (0, 0, -math.pi / 2)
+        else:
+            root.rotation_euler = Matrix(((0,1,0),(0,0,1),(1,0,0))).to_euler()
+        bpy.context.view_layer.update()
+        points = [obj.matrix_world @ Vector(corner)
+                  for obj in root.children_recursive if obj.type == "MESH"
+                  for corner in obj.bound_box]
+        low = Vector(tuple(min(point[a] for point in points) for a in range(3)))
+        high = Vector(tuple(max(point[a] for point in points) for a in range(3)))
+        scale = min(2.6 / (high.x - low.x), 1.5 / (high.y - low.y))
+        root.scale = (scale,) * 3
+        root.location = Vector((col * spacing_x, -row * spacing_y, 0.45)) - (low + high) * 0.5 * scale
 
         bpy.ops.object.text_add(location=(col * spacing_x - 0.72, -row * spacing_y - 1.15, 0.025))
         label = bpy.context.object
@@ -120,7 +133,7 @@ def main():
     camera = bpy.context.object
     look_at(camera, (center[0], center[1], 0))
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = 13.8
+    camera.data.ortho_scale = 14.8
     scene.camera = camera
     scene.view_settings.look = "AgX - Medium High Contrast"
     scene.render.image_settings.color_mode = "RGBA"

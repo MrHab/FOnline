@@ -3,6 +3,9 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
+const progressionCatalog = JSON.parse(fs.readFileSync(
+  path.join(root, 'data', 'kromka', 'character-progression.json'), 'utf8'
+));
 
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf8');
@@ -221,8 +224,12 @@ for (const snippet of ["const intVal = serverStatValue(p, 'int')", "const luckVa
 if (!craftingSource.includes("effectiveSpecialStats(characterProfile)") || !serverSource.includes("30 + serverStatValue(p, 'str') * 8")) {
   fail('Carry capacity must use perk-adjusted Strength on both client and server');
 }
-for (const snippet of ['const SERVER_SPECIAL_MAX = 10', 'const SERVER_SPECIAL_TOTAL = 40', 'const SERVER_SPECIAL_EFFECTIVE_MAX = 15']) {
-  if (!serverSource.includes(snippet)) fail(`Server SPECIAL cap missing: ${snippet}`);
+if (progressionCatalog.special.max !== 10 || progressionCatalog.special.budget !== 40
+  || progressionCatalog.special.effectiveMax !== 15
+  || !serverSource.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.max')
+  || !serverSource.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.budget')
+  || !serverSource.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.effectiveMax')) {
+  fail('Server SPECIAL caps are not sourced from the Kromka progression catalog');
 }
 for (const snippet of ["function serverPlayerMaxHp", "function serverPlayerMaxAp", "serverTalentLevel(p, 'toughness') * 12", "serverTalentLevel(p, 'actionBoy')", '99']) {
   if (!serverSource.includes(snippet)) fail(`Server derived vital formula missing: ${snippet}`);

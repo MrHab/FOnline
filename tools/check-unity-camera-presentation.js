@@ -13,6 +13,8 @@ const probe = read('unity-client', 'Assets', 'Editor', 'RoaCameraPresentationPro
 const cameraProbe = read('unity-client', 'Assets', 'Editor', 'RoaCameraProbe.cs');
 const globalMap = read(game, 'RoaGlobalMap.cs');
 const scene = read('unity-client', 'Assets', 'Scenes', 'Wasteland.unity');
+const kromkaScene = read('unity-client', 'Assets', 'Scenes', 'Kromka', 'KromkaGlobalMap.unity');
+const kromkaBuilder = read('unity-client', 'Assets', 'Editor', 'KromkaWorldSceneBuilder.cs');
 
 assert(rig.includes('public sealed partial class RoaCameraRig')
   && rig.includes('UpdatePresentationTarget(Target, orbit, out teleported)')
@@ -33,6 +35,14 @@ assert(globalMap.includes('_savedFieldOfView = CameraRig.CurrentFieldOfView;')
   && globalMap.includes('CameraRig.SetFieldOfView(RoaCameraRig.StrategicFieldOfView);')
   && globalMap.includes('CameraRig.SetFieldOfView(_savedFieldOfView);'),
   'Global map no longer preserves its independent strategic field of view');
+assert(globalMap.includes('public const float StrategicMinimumCameraAnchorY = 0f;')
+  && globalMap.includes('public const float StrategicMinimumCameraDistanceValue = 1f;')
+  && globalMap.includes('public const float StrategicMaximumCameraDistanceValue = 20f;')
+  && globalMap.includes('anchorPosition.y = Mathf.Max(StrategicMinimumCameraAnchorY, anchorPosition.y);')
+  && globalMap.includes('position.y = Mathf.Max(StrategicMinimumCameraAnchorY, position.y);')
+  && kromkaScene.includes('m_LocalPosition: {x: 0, y: 0, z: -18}')
+  && kromkaBuilder.includes('RoaGlobalMap.StrategicMinimumCameraAnchorY, -18f'),
+  'Kromka camera anchor is no longer authored or guarded at ground level');
 assert(globalMap.includes('public const float StrategicDefaultPitchDeg = 55f;')
   && globalMap.includes('public const float StrategicDefaultYawDeg = 45f;')
   && globalMap.includes('public const float StrategicMinimumPitchDeg = 38f;')
@@ -58,7 +68,7 @@ assert(globalMap.includes('private bool UpdateKeyboardCameraPan()')
   && globalMap.includes('CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);')
   && cameraProbe.includes('WASD=camera-relative')
   && cameraProbe.includes('RMB=Y-inverted')
-  && cameraProbe.includes('mapZoom=18–150'),
+  && cameraProbe.includes('mapZoom=1–20'),
   'Global map lost camera-relative WASD, vertical-only RMB inversion or its closer safe zoom');
 assert(scene.includes('  Distance: 11.5')
   && scene.includes('  MaxDistance: 21.5')

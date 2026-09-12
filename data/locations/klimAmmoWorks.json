@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "klimAmmoWorks",
-  "name": "Патронная мастерская Старого Клима",
+  "name": "Патронный двор «Створ-2»",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvp",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,26 +52,1564 @@
   "containers": [],
   "objects": [
     {
+      "id": "klimAmmoWorks-dressing-functional-01",
+      "model": "scrap_heap",
+      "name": "klimAmmoWorks-dressing-functional-01",
+      "position": {
+        "x": 12.364,
+        "y": 0.0,
+        "z": 4.017
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.257,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.27,
+        "z": 2.652
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-02",
+      "model": "cargo_stack",
+      "name": "klimAmmoWorks-dressing-functional-02",
+      "position": {
+        "x": 5.692,
+        "y": 0.0,
+        "z": 15.167
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.359,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.207,
+        "z": 1.438
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "klimAmmoWorks-dressing-functional-03",
+      "position": {
+        "x": -9.95,
+        "y": 0.0,
+        "z": 16.654
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.745,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.388,
+        "z": 1.306
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-04",
+      "model": "craft_station_tools",
+      "name": "klimAmmoWorks-dressing-functional-04",
+      "position": {
+        "x": -12.882,
+        "y": 0.0,
+        "z": 1.745
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.847,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.852,
+        "z": 2.859
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-05",
+      "model": "workshop_bench",
+      "name": "klimAmmoWorks-dressing-functional-05",
+      "position": {
+        "x": -11.709,
+        "y": 0.0,
+        "z": -11.195
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.949,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.777,
+        "z": 2.822
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-06",
+      "model": "scrap_wall_segment",
+      "name": "klimAmmoWorks-dressing-functional-06",
+      "position": {
+        "x": 1.739,
+        "y": 0.0,
+        "z": -19.322
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.052,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 7.415,
+        "z": 1.776
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-functional-07",
+      "model": "cot_bed",
+      "name": "klimAmmoWorks-dressing-functional-07",
+      "position": {
+        "x": 10.849,
+        "y": 0.0,
+        "z": -7.162
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.154,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "industrial_site",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.754,
+        "z": 1.937
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-01",
+      "model": "concrete_wall",
+      "name": "klimAmmoWorks-dressing-region-01",
+      "position": {
+        "x": 1.689,
+        "y": 0.0,
+        "z": 21.74
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.367,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.761,
+        "z": 2.619
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "klimAmmoWorks-dressing-region-02",
+      "position": {
+        "x": 1.637,
+        "y": 0.0,
+        "z": 21.276
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.68,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.614,
+        "z": 1.479
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-03",
+      "model": "utility_pole",
+      "name": "klimAmmoWorks-dressing-region-03",
+      "position": {
+        "x": 1.634,
+        "y": 0.0,
+        "z": 21.278
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.681,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.313,
+        "z": 1.904
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "klimAmmoWorks-dressing-region-04",
+      "position": {
+        "x": 5.482,
+        "y": 0.0,
+        "z": 20.619
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.737,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.1,
+        "z": 1.624
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-05",
+      "model": "concrete_wall",
+      "name": "klimAmmoWorks-dressing-region-05",
+      "position": {
+        "x": 5.51,
+        "y": 0.0,
+        "z": 20.762
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.736,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.546,
+        "z": 2.612
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "klimAmmoWorks-dressing-region-06",
+      "position": {
+        "x": 5.501,
+        "y": 0.0,
+        "z": 20.766
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.55,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.581,
+        "z": 1.457
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-07",
+      "model": "utility_pole",
+      "name": "klimAmmoWorks-dressing-region-07",
+      "position": {
+        "x": 5.541,
+        "y": 0.0,
+        "z": 20.754
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.549,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.285,
+        "z": 1.956
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "klimAmmoWorks-dressing-region-08",
+      "position": {
+        "x": 4.517,
+        "y": 0.0,
+        "z": 21.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.624,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.943,
+        "z": 1.547
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-09",
+      "model": "concrete_wall",
+      "name": "klimAmmoWorks-dressing-region-09",
+      "position": {
+        "x": 4.501,
+        "y": 0.0,
+        "z": 21.82
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.624,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.939,
+        "y": 0.939,
+        "z": 0.939
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.61,
+        "z": 2.568
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "klimAmmoWorks-dressing-region-10",
+      "position": {
+        "x": 4.537,
+        "y": 0.0,
+        "z": 21.814
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.941,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.321,
+        "z": 1.424
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-11",
+      "model": "utility_pole",
+      "name": "klimAmmoWorks-dressing-region-11",
+      "position": {
+        "x": -2.447,
+        "y": 0.0,
+        "z": 22.142
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.94,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.293,
+        "z": 1.672
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "klimAmmoWorks-dressing-region-12",
+      "position": {
+        "x": -2.473,
+        "y": 0.0,
+        "z": 22.286
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.017,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.444,
+        "z": 1.64
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-13",
+      "model": "concrete_wall",
+      "name": "klimAmmoWorks-dressing-region-13",
+      "position": {
+        "x": -2.469,
+        "y": 0.0,
+        "z": 22.284
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.017,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.806,
+        "z": 2.378
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "klimAmmoWorks-dressing-region-14",
+      "position": {
+        "x": -3.702,
+        "y": 0.0,
+        "z": 22.112
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.946,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.536,
+        "z": 1.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-dressing-region-15",
+      "model": "utility_pole",
+      "name": "klimAmmoWorks-dressing-region-15",
+      "position": {
+        "x": -3.627,
+        "y": 0.0,
+        "z": 21.644
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.946,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.889,
+        "y": 0.889,
+        "z": 0.889
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "northern_sluices",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.267,
+        "z": 1.728
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-external-pipes",
+      "model": "external_pipe",
+      "name": "klimAmmoWorks-external-pipes EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-landmark",
+      "model": "numbered-workshop",
+      "name": "Landmark numbered-workshop EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "numbered-workshop"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-loading-gantry",
+      "model": "gantry_crane",
+      "name": "klimAmmoWorks-loading-gantry EDITABLE",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 15.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 16.5,
+        "z": 15.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-main-workshop",
+      "model": "warehouse",
+      "name": "klimAmmoWorks-main-workshop EDITABLE",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 3.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "industrial_site",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-process-stack",
+      "model": "blast_furnace",
+      "name": "klimAmmoWorks-process-stack EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-canal",
+      "model": "water_channel",
+      "name": "klimAmmoWorks-region-canal EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": -0.02,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "water_channel",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-dam-bank",
+      "model": "wall",
+      "name": "klimAmmoWorks-region-dam-bank EDITABLE",
+      "position": {
+        "x": -1.0,
+        "y": 1.2,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-pylon-0",
+      "model": "power_pylon",
+      "name": "klimAmmoWorks-region-pylon-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-pylon-1",
+      "model": "power_pylon",
+      "name": "klimAmmoWorks-region-pylon-1 EDITABLE",
+      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-pylon-2",
+      "model": "power_pylon",
+      "name": "klimAmmoWorks-region-pylon-2 EDITABLE",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-region-pylon-3",
+      "model": "power_pylon",
+      "name": "klimAmmoWorks-region-pylon-3 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "power-grid",
+        "vertical"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks-service-bay",
+      "model": "modular_workshop",
+      "name": "klimAmmoWorks-service-bay EDITABLE",
+      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.121
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klimAmmoWorks_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 1.943,
+        "z": 1.122
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "klim_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",
-      "url": "/assets/models/wasteland/craft_station_ammo.glb",
-      "position": {
-        "x": -7,
-        "y": 0,
-        "z": -6
+      "name": "Патронный станок",      "position": {
+        "x": -7.0,
+        "y": 0.0,
+        "z": -6.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "tags": [
         "cover",
         "workshop",
@@ -71,7 +1617,7 @@
         "ammo_bench"
       ],
       "vision": {
-        "mode": "cover"
+        "blocks": true
       },
       "craftingStations": [
         "ammo_bench"
@@ -93,188 +1639,213 @@
           "ammo_bench"
         ],
         "stationSiteId": "klimAmmoWorks"
-      }
-    },
-    {
-      "id": "klim_weapon_bench",
-      "model": "craftStationWeapon",
-      "name": "Оружейный верстак",
-      "url": "/assets/models/wasteland/craft_station_weapon.glb",
-      "position": {
-        "x": -4,
-        "y": 0,
-        "z": -6
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.542,
+        "z": 1.509
       },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "weapon_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "weapon_bench"
-      ],
-      "stationSiteId": "klimAmmoWorks",
-      "worksiteId": "klimAmmoWorks",
-      "stationOwner": "old_klim",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "klimAmmoWorks"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "klimAmmoWorks"
-      }
-    },
-    {
-      "id": "klim_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
-      "position": {
-        "x": -1,
-        "y": 0,
-        "z": -6
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "klimAmmoWorks",
-      "worksiteId": "klimAmmoWorks",
-      "stationOwner": "old_klim",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "klimAmmoWorks"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "klimAmmoWorks"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "klim_armory_01",
       "model": "armoryRack",
-      "name": "Стойка с деталями",
-      "url": "/assets/models/wasteland/armory_rack.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -4
+      "name": "Стойка с деталями",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -4.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "tags": [
         "cover",
         "workshop"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 2.2,
+        "z": 1.064
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "klim_cargo_01",
       "model": "cargoStack",
-      "name": "Ящики патронов",
-      "url": "/assets/models/wasteland/cargo_stack.glb",
-      "position": {
-        "x": -9,
-        "y": 0,
-        "z": 7
+      "name": "Ящики патронов",      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 7.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 1.973,
+        "z": 1.105
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klim_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",      "position": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "klimAmmoWorks",
+      "worksiteId": "klimAmmoWorks",
+      "stationOwner": "old_klim",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "klimAmmoWorks"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "klimAmmoWorks"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "klim_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "klimAmmoWorks",
+      "worksiteId": "klimAmmoWorks",
+      "stationOwner": "old_klim",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "klimAmmoWorks"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "klimAmmoWorks"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 3.162,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": -17,
-        "y": 0,
-        "z": -14
+      "name": "Место отдыха",      "position": {
+        "x": -17.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -283,16 +1854,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.2,
+        "z": 1.8
       },
       "tx": 10,
       "tz": 12,
@@ -302,213 +1865,76 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "northern_sluices",
+  "kromkaVisualProfile": "sluice-munitions-yard-v1",
+  "ambientProfile": "guarded-industrial-yard",
+  "anomalyDensity": 0.08,
+  "unityScene": "Assets/Scenes/Kromka/Locations/klimAmmoWorks.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "ammo-yard-gate",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
     },
     {
-      "id": "klimAmmoWorks_cot_01",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
+      "id": "klimAmmoWorks-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
       "position": {
-        "x": -20,
-        "y": 0,
-        "z": -16
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "klimAmmoWorks_cot_02",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -18,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "klimAmmoWorks_cot_03",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
-    },
-    {
-      "id": "klimAmmoWorks_cot_04",
-      "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "role": "bed",
-      "tags": [
-        "sleep",
-        "bed",
-        "cot",
-        "personal-bed"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "building": {
-        "module": false,
-        "tileSize": 2,
-        "height": 0.55,
-        "bottomOnGround": true,
-        "lockScale": true
-      },
-      "vision": {
-        "blocks": false
-      }
+      "rotationY": 0.0
     }
   ]
 }

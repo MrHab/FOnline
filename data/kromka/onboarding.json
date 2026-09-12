@@ -1,0 +1,540 @@
+{
+  "schema": "kromka.onboarding.v1",
+  "version": 2,
+  "tutorialLocationId": "tutorialCaravanYard",
+  "firstMissionLocationId": "randomRuinedRoad",
+  "arrivalLocationId": "settlement",
+  "npcs": [
+    {
+      "id": "yard_contract_clerk",
+      "displayName": "Вера Рубеж",
+      "role": "Регистратор каравана",
+      "locationId": "tutorialCaravanYard",
+      "x": 0,
+      "z": -20
+    },
+    {
+      "id": "yard_versta_guide",
+      "displayName": "Ирена «Верста» Белова",
+      "role": "Картограф каравана",
+      "locationId": "tutorialCaravanYard",
+      "x": -12,
+      "z": -10
+    },
+    {
+      "id": "yard_quartermaster",
+      "displayName": "Снабженец Глеб",
+      "role": "Кладовщик «Двенадцатого»",
+      "locationId": "tutorialCaravanYard",
+      "x": -12,
+      "z": 2
+    },
+    {
+      "id": "yard_range_instructor",
+      "displayName": "Инструктор Лада",
+      "role": "Начальник стрельбища",
+      "locationId": "tutorialCaravanYard",
+      "x": -14,
+      "z": 14
+    },
+    {
+      "id": "yard_casualty_shurik",
+      "displayName": "Грузчик Шурик",
+      "role": "Учебный пострадавший",
+      "locationId": "tutorialCaravanYard",
+      "x": 10,
+      "z": 12
+    },
+    {
+      "id": "yard_mechanic",
+      "displayName": "Механик Влас",
+      "role": "Ремонтник каравана",
+      "locationId": "tutorialCaravanYard",
+      "x": 15,
+      "z": 2
+    },
+    {
+      "id": "yard_dispatcher",
+      "displayName": "Старший колонны Мирон",
+      "role": "Диспетчер отправки",
+      "locationId": "tutorialCaravanYard",
+      "x": 0,
+      "z": 24
+    },
+    {
+      "id": "ambush_quartermaster",
+      "displayName": "Раненый кладовщик",
+      "role": "Выживший караванщик",
+      "locationId": "randomRuinedRoad",
+      "x": -15,
+      "z": -14
+    },
+    {
+      "id": "ambush_medic",
+      "displayName": "Фельдшер Дина",
+      "role": "Старшая среди выживших",
+      "locationId": "randomRuinedRoad",
+      "x": -8,
+      "z": -4
+    },
+    {
+      "id": "ambush_pathfinder",
+      "displayName": "Разведчик Ланин",
+      "role": "Проводник через пятно",
+      "locationId": "randomRuinedRoad",
+      "x": 0,
+      "z": 3
+    },
+    {
+      "id": "ambush_radio_operator",
+      "displayName": "Связист Дан",
+      "role": "Оператор аварийного передатчика",
+      "locationId": "randomRuinedRoad",
+      "x": 9,
+      "z": 8
+    },
+    {
+      "id": "ambush_cargo_master",
+      "displayName": "Приёмщик Нестор",
+      "role": "Ответственный за груз",
+      "locationId": "randomRuinedRoad",
+      "x": 14,
+      "z": 15
+    },
+    {
+      "id": "ambush_guide",
+      "displayName": "Проводница Ася",
+      "role": "Проводник до Ключей",
+      "locationId": "randomRuinedRoad",
+      "x": 0,
+      "z": 28
+    }
+  ],
+  "tutorial": {
+    "id": "mercenary_preparation",
+    "title": "Подготовка наёмника",
+    "steps": [
+      {
+        "id": "contract",
+        "title": "Контракт",
+        "action": "sign_contract",
+        "instruction": "Подойдите к Вере Рубеж и подпишите договор охраны каравана.",
+        "x": 0,
+        "z": -20,
+        "radius": 4,
+        "npcId": "yard_contract_clerk",
+        "dialogue": "Подойдите к Вере Рубеж и подпишите договор охраны каравана.",
+        "button": "ПОДПИСАТЬ КОНТРАКТ",
+        "hint": "WASD — движение. Подойдите к Вере, нажмите E и выберите «Подписать контракт».",
+        "mobileHint": "Левый джойстик — движение. Подойдите к Вере и нажмите кнопку взаимодействия.",
+        "requirements": []
+      },
+      {
+        "id": "inspection",
+        "title": "Движение и осмотр",
+        "action": "inspect_yard",
+        "instruction": "Найдите Ирену «Версту» и доложитесь ей.",
+        "x": -12,
+        "z": -10,
+        "radius": 4,
+        "npcId": "yard_versta_guide",
+        "dialogue": "Найдите Ирену «Версту» и доложитесь ей.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "WASD — движение; колесо мыши — масштаб камеры. Метка показывает путь к Ирене. E — разговор.",
+        "mobileHint": "Двигайтесь левым джойстиком к метке. Разведите два пальца для масштаба. Рядом с Иреной нажмите взаимодействие.",
+        "requirements": []
+      },
+      {
+        "id": "equipment",
+        "title": "Получить снаряжение",
+        "action": "confirm_equipment",
+        "instruction": "Глеб: ваш комплект в ящике рядом. Заберите вещи, возьмите пистолет в правую руку, наденьте одежду и ботинки.",
+        "x": -12,
+        "z": 2,
+        "radius": 4,
+        "npcId": "yard_quartermaster",
+        "dialogue": "Глеб: ваш комплект в ящике рядом. Заберите вещи, возьмите пистолет в правую руку, наденьте одежду и ботинки.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "suppliesTaken",
+            "count": 1,
+            "label": "Забрать комплект из ящика",
+            "hint": "Подойдите к ящику рядом с Глебом → E → «Забрать всё».",
+            "mobileHint": "Подойдите к ящику рядом с Глебом → взаимодействие → «Забрать всё».",
+            "target": {
+              "x": -15,
+              "z": 1
+            }
+          },
+          {
+            "key": "equipmentWorn",
+            "count": 1,
+            "label": "Экипировать пистолет, одежду и ботинки",
+            "hint": "Tab → сумка. Пистолет → «В правую руку»; одежда и ботинки → «Надеть».",
+            "mobileHint": "Откройте сумку. Пистолет → «В правую руку»; одежда и ботинки → «Надеть».",
+            "target": {
+              "x": -12,
+              "z": 2
+            }
+          }
+        ]
+      },
+      {
+        "id": "reload",
+        "title": "Зарядить оружие",
+        "action": "reload_training_weapon",
+        "instruction": "Лада: пистолет разряжен. Зарядите его патроном из выданного комплекта.",
+        "x": -14,
+        "z": 14,
+        "radius": 4,
+        "npcId": "yard_range_instructor",
+        "dialogue": "Лада: пистолет разряжен. Зарядите его патроном из выданного комплекта.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "weaponReloaded",
+            "count": 1,
+            "label": "Зарядить пистолет",
+            "hint": "Закройте сумку. Возьмите пистолет в правую руку и нажмите R. Дождитесь перезарядки.",
+            "mobileHint": "Закройте сумку. С пистолетом в правой руке нажмите кнопку перезарядки.",
+            "target": {
+              "x": -10,
+              "z": 15
+            }
+          }
+        ]
+      },
+      {
+        "id": "range",
+        "title": "Попасть в мишень",
+        "action": "hit_training_target",
+        "instruction": "Лада: с огневого рубежа попадите в круглую мишень. Затем доложите мне.",
+        "x": -14,
+        "z": 14,
+        "radius": 4,
+        "npcId": "yard_range_instructor",
+        "dialogue": "Лада: с огневого рубежа попадите в круглую мишень. Затем доложите мне.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "targetHit",
+            "count": 1,
+            "label": "Попасть выстрелом в мишень",
+            "hint": "Встаньте перед мишенью. Наведите мышь на неё и нажмите ЛКМ. R — перезарядка.",
+            "mobileHint": "Подойдите к круглой мишени. Кнопкой «ЦЕЛЬ» выберите её и нажмите «ОГОНЬ». Пустой магазин: кнопка перезарядки.",
+            "target": {
+              "x": -10,
+              "z": 22
+            }
+          }
+        ]
+      },
+      {
+        "id": "cover",
+        "title": "Воспользоваться укрытием",
+        "action": "take_cover",
+        "instruction": "Лада: зайдите за бетонный блок и присядьте в отмеченной зоне.",
+        "x": -14,
+        "z": 14,
+        "radius": 4,
+        "npcId": "yard_range_instructor",
+        "dialogue": "Лада: зайдите за бетонный блок и присядьте в отмеченной зоне.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "coverUsed",
+            "count": 1,
+            "label": "Присесть за бетонным блоком",
+            "hint": "Подойдите к метке с южной стороны блока и удерживайте C — присесть.",
+            "mobileHint": "Подойдите к метке с южной стороны блока и нажмите кнопку приседания.",
+            "target": {
+              "x": 0,
+              "z": 12
+            }
+          }
+        ]
+      },
+      {
+        "id": "first_aid",
+        "title": "Вылечить грузчика",
+        "action": "apply_first_aid",
+        "instruction": "Шурик ранен. Возьмите аптечку в правую руку, примените к нему и проверьте результат.",
+        "x": 10,
+        "z": 12,
+        "radius": 4,
+        "npcId": "yard_casualty_shurik",
+        "dialogue": "Шурик ранен. Возьмите аптечку в правую руку, примените к нему и проверьте результат.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "npcHealed",
+            "count": 1,
+            "label": "Вылечить Шурика аптечкой",
+            "hint": "Tab → аптечка → «В правую руку». Закройте сумку, подойдите к Шурику и нажмите ЛКМ по нему.",
+            "mobileHint": "Сумка → аптечка → «В правую руку». Закройте сумку, выберите Шурика кнопкой «ЦЕЛЬ» и нажмите «ЛЕЧИТЬ».",
+            "target": {
+              "x": 10,
+              "z": 12
+            }
+          }
+        ]
+      },
+      {
+        "id": "resources",
+        "title": "Добыть ресурсы",
+        "action": "gather_training_resources",
+        "instruction": "Влас: для ремкомплекта нужны 2 руды и 2 древесины. Кирка и топор лежали в ящике Глеба.",
+        "x": 15,
+        "z": 2,
+        "radius": 4,
+        "npcId": "yard_mechanic",
+        "dialogue": "Влас: для ремкомплекта нужны 2 руды и 2 древесины. Кирка и топор лежали в ящике Глеба.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "oreGathered",
+            "count": 2,
+            "label": "Добыть руду",
+            "hint": "Tab → кирка → «В правую руку». Подойдите к залежи и нажимайте E: нужно 2 руды.",
+            "mobileHint": "Сумка → кирка → «В правую руку». Подойдите к залежи и нажимайте взаимодействие: нужно 2 руды.",
+            "target": {
+              "x": 21,
+              "z": 7
+            }
+          },
+          {
+            "key": "woodGathered",
+            "count": 2,
+            "label": "Заготовить древесину",
+            "hint": "Tab → топор → «В правую руку». Подойдите к древесине и нажимайте E: нужно 2 древесины.",
+            "mobileHint": "Сумка → топор → «В правую руку». Подойдите к древесине и нажимайте взаимодействие: нужно 2 древесины.",
+            "target": {
+              "x": 23,
+              "z": -1
+            }
+          }
+        ]
+      },
+      {
+        "id": "craft_repair",
+        "title": "Создать ремкомплект",
+        "action": "craft_training_repair_kit",
+        "instruction": "Влас: откройте ремонтный верстак рядом и создайте ремкомплект из добытых материалов.",
+        "x": 15,
+        "z": 2,
+        "radius": 4,
+        "npcId": "yard_mechanic",
+        "dialogue": "Влас: откройте ремонтный верстак рядом и создайте ремкомплект из добытых материалов.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "kitCrafted",
+            "count": 1,
+            "label": "Создать ремкомплект на верстаке",
+            "hint": "Подойдите к ремонтному верстаку → E → «Ремкомплект» → «Создать». Цена: 2 руды, 2 древесины и 1 марка.",
+            "mobileHint": "Подойдите к верстаку → взаимодействие → «Ремкомплект» → «Создать». Нужно: 2 руды, 2 древесины и 1 марка.",
+            "target": {
+              "x": 17,
+              "z": 5
+            }
+          }
+        ]
+      },
+      {
+        "id": "repair",
+        "title": "Починить своё оружие",
+        "action": "repair_training_weapon",
+        "instruction": "Влас: выданный пистолет изношен. Используйте созданный ремкомплект для его ремонта.",
+        "x": 15,
+        "z": 2,
+        "radius": 4,
+        "npcId": "yard_mechanic",
+        "dialogue": "Влас: выданный пистолет изношен. Используйте созданный ремкомплект для его ремонта.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "weaponRepaired",
+            "count": 1,
+            "label": "Починить пистолет ремкомплектом",
+            "hint": "Tab → пистолет → «Починить». Игра израсходует ремкомплект и повысит состояние оружия.",
+            "mobileHint": "Сумка → пистолет → «Починить». Игра израсходует ремкомплект и повысит состояние оружия.",
+            "target": {
+              "x": 15,
+              "z": 2
+            }
+          }
+        ]
+      },
+      {
+        "id": "anomaly",
+        "title": "Разрядить «Звон»",
+        "action": "discharge_training_chime",
+        "instruction": "Влас: бросьте обычный болт в видимый «Звон» и возвращайтесь. Детектор не требуется.",
+        "x": 15,
+        "z": 2,
+        "radius": 4,
+        "npcId": "yard_mechanic",
+        "dialogue": "Влас: бросьте обычный болт в видимый «Звон» и возвращайтесь. Детектор не требуется.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "",
+        "mobileHint": "",
+        "requirements": [
+          {
+            "key": "chimeDischarged",
+            "count": 1,
+            "label": "Разрядить аномалию болтом",
+            "hint": "Нажмите B — достать болт, наведите мышь на аномалию и нажмите ЛКМ — бросить.",
+            "mobileHint": "Подойдите к аномалии, направьте прицел на неё и нажмите кнопку болта.",
+            "target": {
+              "x": 8,
+              "z": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "departure",
+        "title": "Отправка",
+        "action": "depart_caravan",
+        "instruction": "Все упражнения выполнены. Доложите Мирону о готовности к отправке.",
+        "x": 0,
+        "z": 24,
+        "radius": 4,
+        "npcId": "yard_dispatcher",
+        "dialogue": "Все упражнения выполнены. Доложите Мирону о готовности к отправке.",
+        "button": "ДОЛОЖИТЬ О ВЫПОЛНЕНИИ",
+        "hint": "Верните пистолет в правую руку, зарядите его и поговорите с Мироном: E.",
+        "mobileHint": "Верните пистолет в правую руку, зарядите его и поговорите с Мироном.",
+        "requirements": [],
+        "cinematicId": "caravan_departure_ambush"
+      }
+    ]
+  },
+  "firstMission": {
+    "id": "caravan_twelve_missing",
+    "title": "Двенадцатый не пришёл",
+    "steps": [
+      {
+        "id": "recover",
+        "title": "Прийти в себя",
+        "action": "recover_gear",
+        "instruction": "Найдите раненого кладовщика у разорванного тюка и заберите уцелевшее снаряжение.",
+        "x": -15,
+        "z": -14,
+        "radius": 3,
+        "npcId": "ambush_quartermaster",
+        "dialogue": "Ваш тюк разорвало, но основное снаряжение цело. Забирайте — здесь ещё стреляют.",
+        "button": "ЗАБРАТЬ СНАРЯЖЕНИЕ"
+      },
+      {
+        "id": "survivors",
+        "title": "Проверить выживших",
+        "action": "check_survivors",
+        "instruction": "Поговорите с фельдшером Диной и решите, кого спасать.",
+        "x": -8,
+        "z": -4,
+        "radius": 4,
+        "npcId": "ambush_medic",
+        "dialogue": "Двое раненых и ящик фильтров. Времени хватит только на одно решение.",
+        "choices": [
+          {
+            "id": "save_scout",
+            "label": "СПАСТИ РАЗВЕДЧИКА",
+            "outcomeTag": "intro_saved_scout"
+          },
+          {
+            "id": "save_filters",
+            "label": "ВЫНЕСТИ ФИЛЬТРЫ",
+            "outcomeTag": "intro_saved_filters"
+          }
+        ]
+      },
+      {
+        "id": "anomaly_crossing",
+        "title": "Пройти пятно",
+        "action": "cross_ambush_anomaly",
+        "instruction": "Разрядите «Шов» болтом и доложите разведчику Ланину.",
+        "x": 0,
+        "z": 3,
+        "radius": 6,
+        "npcId": "ambush_pathfinder",
+        "dialogue": "Если «Шов» погас, путь через рельсы открыт. Подтверждаете разряд?",
+        "button": "ПОДТВЕРДИТЬ ПРОХОД"
+      },
+      {
+        "id": "transmitter",
+        "title": "Аварийный передатчик",
+        "action": "activate_transmitter",
+        "instruction": "Найдите связиста Дана у аварийного передатчика.",
+        "x": 9,
+        "z": 8,
+        "radius": 3,
+        "npcId": "ambush_radio_operator",
+        "dialogue": "Передатчик ещё дышит. Держите питание, пока я запускаю аварийную частоту.",
+        "button": "ЗАПУСТИТЬ ПЕРЕДАТЧИК"
+      },
+      {
+        "id": "cargo",
+        "title": "След груза",
+        "action": "resolve_cargo",
+        "instruction": "Поговорите с приёмщиком Нестором и решите судьбу уцелевшего груза.",
+        "x": 14,
+        "z": 15,
+        "radius": 4,
+        "npcId": "ambush_cargo_master",
+        "dialogue": "Контейнер можно отбить сейчас или пометить след тех, кто унёс остальное. Решайте.",
+        "choices": [
+          {
+            "id": "recover_cargo",
+            "label": "ОТБИТЬ ГРУЗ",
+            "outcomeTag": "intro_recovered_cargo"
+          },
+          {
+            "id": "track_raiders",
+            "label": "ПОМЕТИТЬ СЛЕД",
+            "outcomeTag": "intro_tracked_raiders"
+          }
+        ]
+      },
+      {
+        "id": "keys",
+        "title": "Добраться до Ключей",
+        "action": "reach_keys",
+        "instruction": "Доберитесь до проводницы Аси и подтвердите выход к Ключам.",
+        "x": 0,
+        "z": 28,
+        "radius": 5,
+        "npcId": "ambush_guide",
+        "dialogue": "До Ключей доведу. После доклада откроется дорога по всей Кромке.",
+        "button": "ИДТИ В КЛЮЧИ"
+      }
+    ]
+  },
+  "completionReward": {
+    "xp": 120,
+    "marks": 80,
+    "items": [
+      {
+        "id": "water",
+        "qty": 1
+      }
+    ]
+  }
+}

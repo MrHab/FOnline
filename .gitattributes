@@ -1,6 +1,7 @@
 * text=auto
 
 *.css text eol=lf
+*.cs text eol=lf
 *.html text eol=lf
 *.js text eol=lf
 *.json text eol=lf
@@ -10,6 +11,14 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 .nvmrc text eol=lf
+
+# Reviewed manifests/reports are SHA-256 evidence. Preserve the approved bytes
+# across Windows/Linux checkouts; normalizing newlines invalidates their seals.
+source-assets/** -text
+Build/SourceDownloads/free-armor-replacements-20260908/** -text
+docs/art/reviews/**/*.json -text
+public/assets/models/**/manifest.json -text
+public/assets/models/**/attachment-report.json -text
 
 *.avif binary
 *.gif binary

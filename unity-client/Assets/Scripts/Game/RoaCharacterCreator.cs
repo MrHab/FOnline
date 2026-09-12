@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using UnityEngine;
 
@@ -21,9 +22,9 @@ namespace RealmOfAshes.Game
         public sealed class StatDef
         {
             public readonly string Id;
-            public readonly string Code;
-            public readonly string Name;
-            public readonly string Description;
+            public string Code;
+            public string Name;
+            public string Description;
 
             public StatDef(string id, string code, string name, string description)
             {
@@ -37,8 +38,8 @@ namespace RealmOfAshes.Game
         public sealed class TraitDef
         {
             public readonly string Id;
-            public readonly string Name;
-            public readonly string Description;
+            public string Name;
+            public string Description;
 
             public TraitDef(string id, string name, string description)
             {
@@ -63,21 +64,22 @@ namespace RealmOfAshes.Game
             public int LuckChecks;
         }
 
-        public const int SpecialTotal = 40;
-        public const int SpecialMin = 1;
-        public const int SpecialMax = 10;
-        public const int MaxTaggedSkills = 2;
-        public const int MaxTraits = 2;
+        public static int SpecialTotal { get; private set; } = 40;
+        public static int SpecialMin { get; private set; } = 1;
+        public static int SpecialMax { get; private set; } = 10;
+        public static int MaxTaggedSkills { get; private set; } = 2;
+        public static int MaxTraits { get; private set; } = 2;
+        public static int CatalogVersion { get; private set; }
 
         public static readonly StatDef[] Stats =
         {
-            new StatDef("str", "ST", "Сила", "Формулы: переносимый вес = 30 + Сила×8; штраф оружия −5.5 п.п. за каждую недостающую Силу; ближний урон +floor((Сила−5)/2)."),
-            new StatDef("per", "PE", "Восприятие", "Формулы: меткость оружием +(Восприятие−5)×2.5 п.п.; обзор = clamp 6–16 клеток: round(5.5 + Восприятие×0.7). Влияет на боевые и технические базовые навыки."),
-            new StatDef("end", "EN", "Выносливость", "Формулы: HP = 55 + Выносливость×9 + уровни×12 + перки; сопротивление = round(Выносливость×0.7)%. Влияет на выживание и базовые навыки."),
-            new StatDef("cha", "CH", "Харизма", "Формулы: продажа +(Харизма−5)×4%; речь +(Харизма−5)×3.5 п.п.; награды квестов +(Харизма−5)×2%. Даёт базу речи и бартера."),
-            new StatDef("int", "IN", "Интеллект", "Формулы: терминалы +(Интеллект−5)×3 п.п.; лечение Доктором +(Интеллект−5)×2.5 п.п.; энергоурон +floor((Интеллект−5)/2). Даёт базу науки, ремонта и медицины."),
-            new StatDef("agi", "AG", "Ловкость", "Формулы: ОД = 5 + floor(Ловкость/2) + Живчик; скорость = 4.35 + Ловкость×0.13; взлом замков получает бонус от Ловкости. Даёт базу оружейных и скрытных навыков."),
-            new StatDef("luck", "LK", "Удача", "Формулы: шанс критического выстрела = Удача%; крит удваивает сырой урон до брони; меткость +max(0, Удача−5)×0.6 п.п.; проверки удачи +max(0, Удача−5)×2.5 п.п.")
+            new StatDef("str", "МЩ", "Мощь", "Формулы: переносимый вес = 30 + Мощь×8; штраф оружия −5.5 п.п. за каждую недостающую единицу Мощи; ближний урон +floor((Мощь−5)/2)."),
+            new StatDef("per", "НБ", "Наблюдательность", "Формулы: меткость оружием +(Наблюдательность−5)×2.5 п.п.; обзор = clamp 6–16 клеток: round(5.5 + Наблюдательность×0.7). Влияет на боевые и технические базовые навыки."),
+            new StatDef("end", "СТ", "Стойкость", "Формулы: HP = 55 + Стойкость×9 + уровни×12 + перки; сопротивление = round(Стойкость×0.7)%. Влияет на выживание и базовые навыки."),
+            new StatDef("cha", "ВЛ", "Влияние", "Формулы: продажа +(Влияние−5)×4%; речь +(Влияние−5)×3.5 п.п.; награды квестов +(Влияние−5)×2%. Даёт базу речи и бартера."),
+            new StatDef("int", "ИН", "Интеллект", "Формулы: терминалы +(Интеллект−5)×3 п.п.; лечение Доктором +(Интеллект−5)×2.5 п.п.; энергоурон +floor((Интеллект−5)/2). Даёт базу науки, ремонта и медицины."),
+            new StatDef("agi", "РЕ", "Реакция", "Формулы: ОД = 5 + floor(Реакция/2) + Живчик; скорость = 4.35 + Реакция×0.13; взлом замков получает бонус от Реакции. Даёт базу оружейных и скрытных навыков."),
+            new StatDef("luck", "ЧУ", "Чутьё", "Формулы: шанс критического выстрела = Чутьё%; крит удваивает сырой урон до брони; меткость +max(0, Чутьё−5)×0.6 п.п.; проверки чутья +max(0, Чутьё−5)×2.5 п.п.")
         };
 
         public static readonly TraitDef[] Traits =
@@ -85,10 +87,133 @@ namespace RealmOfAshes.Game
             new TraitDef("trainedEye", "Меткий глаз", "+6% к шансу попадания из огнестрельного оружия."),
             new TraitDef("bruiser", "Тяжёлый удар", "+18 HP и +2 урона в ближнем бою, но немного ниже скорость."),
             new TraitDef("scavengerStart", "Падальщик", "Больше полезных находок в трофеях и стартовый запас патронов."),
-            new TraitDef("traderStart", "Барыга", "Лучшие цены продажи и +15 крышек на старте."),
+            new TraitDef("traderStart", "Барыга", "Лучшие цены продажи и +15 марок на старте."),
             new TraitDef("craftsmanStart", "Ремесленник", "Стартовый ремкомплект и бонус к сбору ресурсов."),
             new TraitDef("educatedStart", "Образованный", "+5 свободных очков навыков после создания персонажа.")
         };
+
+        private static readonly Dictionary<string, int> QuickStartSpecial = new Dictionary<string, int>
+        {
+            ["str"] = 5, ["per"] = 7, ["end"] = 6, ["cha"] = 5,
+            ["int"] = 5, ["agi"] = 7, ["luck"] = 5
+        };
+        private static string[] QuickStartSkills = { "lightWeapons", "wanderer" };
+        private static string[] QuickStartTraits = { "trainedEye", "scavengerStart" };
+
+        public static bool ApplyCatalog(JObject catalog, out string error)
+        {
+            error = string.Empty;
+            JArray statRows = catalog?["special"]?["stats"] as JArray;
+            JArray traitRows = catalog?["startTraits"]?["items"] as JArray;
+            if (statRows == null || statRows.Count != Stats.Length
+                || traitRows == null || traitRows.Count != Traits.Length)
+            {
+                error = "Каталог содержит неверное число характеристик или стартовых перков.";
+                return false;
+            }
+            var statsById = RowsById(statRows, out error);
+            if (statsById == null) return false;
+            var traitsById = RowsById(traitRows, out error);
+            if (traitsById == null) return false;
+            foreach (StatDef stat in Stats) if (!statsById.ContainsKey(stat.Id))
+            {
+                error = "Каталог не содержит характеристику " + stat.Id + ".";
+                return false;
+            }
+            foreach (TraitDef trait in Traits) if (!traitsById.ContainsKey(trait.Id))
+            {
+                error = "Каталог не содержит стартовый перк " + trait.Id + ".";
+                return false;
+            }
+
+            SpecialTotal = NonNegativeInt(catalog["special"]?["budget"], 40);
+            SpecialMin = NonNegativeInt(catalog["special"]?["min"], 1);
+            SpecialMax = Mathf.Max(SpecialMin, NonNegativeInt(catalog["special"]?["max"], 10));
+            MaxTaggedSkills = NonNegativeInt(catalog["taggedSkills"]?["max"], 2);
+            MaxTraits = NonNegativeInt(catalog["startTraits"]?["max"], 2);
+            foreach (StatDef stat in Stats)
+            {
+                JObject row = statsById[stat.Id];
+                stat.Code = CatalogText(row, "code", stat.Code);
+                stat.Name = CatalogText(row, "name", stat.Name);
+                stat.Description = CatalogText(row, "description", stat.Description);
+            }
+            foreach (TraitDef trait in Traits)
+            {
+                JObject row = traitsById[trait.Id];
+                trait.Name = CatalogText(row, "name", trait.Name);
+                trait.Description = CatalogText(row, "description", trait.Description);
+            }
+
+            JObject preset = catalog["quickStarts"]?.First as JObject;
+            JObject presetSpecial = preset?["special"] as JObject;
+            if (presetSpecial != null)
+            {
+                QuickStartSpecial.Clear();
+                foreach (StatDef stat in Stats)
+                    QuickStartSpecial[stat.Id] = NonNegativeInt(presetSpecial[stat.Id], 5);
+                QuickStartSkills = StringArray(preset["taggedSkills"] as JArray);
+                QuickStartTraits = StringArray(preset["traits"] as JArray);
+            }
+            CatalogVersion = NonNegativeInt(catalog["version"], CatalogVersion + 1);
+            return true;
+        }
+
+        public static string StatName(string id)
+        {
+            StatDef stat = Array.Find(Stats, row => row.Id == id);
+            return stat != null ? stat.Name : (id ?? string.Empty).ToUpperInvariant();
+        }
+
+        private static Dictionary<string, JObject> RowsById(JArray rows, out string error)
+        {
+            error = string.Empty;
+            var output = new Dictionary<string, JObject>();
+            foreach (JToken token in rows)
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id) || output.ContainsKey(id))
+                {
+                    error = "В каталоге повторяется или отсутствует ID.";
+                    return null;
+                }
+                output[id] = row;
+            }
+            return output;
+        }
+
+        private static string CatalogText(JObject row, string key, string fallback)
+        {
+            string value = row?[key]?.ToString()?.Trim();
+            return string.IsNullOrEmpty(value) ? fallback : value;
+        }
+
+        private static int NonNegativeInt(JToken token, int fallback)
+        {
+            if (token == null || token.Type != JTokenType.Integer) return fallback;
+            try
+            {
+                int? value = token.Value<int?>();
+                return value.HasValue && value.Value >= 0 ? value.Value : fallback;
+            }
+            catch (Exception)
+            {
+                return fallback;
+            }
+        }
+
+        private static string[] StringArray(JArray rows)
+        {
+            if (rows == null) return new string[0];
+            var output = new List<string>();
+            foreach (JToken row in rows)
+            {
+                string value = row?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(value) && !output.Contains(value)) output.Add(value);
+            }
+            return output.ToArray();
+        }
 
         private static readonly string[] SexIds = { "male", "female" };
         private static readonly string[] SexLabels = { "Мужской", "Женский" };
@@ -170,14 +295,11 @@ namespace RealmOfAshes.Game
         public void PrepareQuickStart()
         {
             Reset();
-            // AdjustStat шагает по одному очку.
-            AdjustStat("per", 1); AdjustStat("per", 1);
-            AdjustStat("end", 1);
-            AdjustStat("agi", 1); AdjustStat("agi", 1);
-            ToggleSkill("lightWeapons");
-            ToggleSkill("wanderer");
-            ToggleTrait("trainedEye");
-            ToggleTrait("scavengerStart");
+            foreach (StatDef stat in Stats)
+                if (QuickStartSpecial.TryGetValue(stat.Id, out int value))
+                    _stats[stat.Id] = Mathf.Clamp(value, SpecialMin, SpecialMax);
+            foreach (string id in QuickStartSkills) ToggleSkill(id);
+            foreach (string id in QuickStartTraits) ToggleTrait(id);
         }
 
         /// <summary>Deterministic valid draft used only by the opt-in debug auto-login flow.</summary>
@@ -321,7 +443,7 @@ namespace RealmOfAshes.Game
                        () => CycleHairColor(-1), () => CycleHairColor(1));
             GUILayout.Space(8f);
 
-            GUILayout.Label("<b>SPECIAL — распределите 40 очков</b>", RichLabel());
+            GUILayout.Label("<b>ХАРАКТЕРИСТИКИ — распределите 40 очков</b>", RichLabel());
             GUILayout.Label("Свободно: " + PointsLeft);
             foreach (StatDef stat in Stats) DrawStat(stat);
             GUILayout.Space(8f);
@@ -482,7 +604,7 @@ namespace RealmOfAshes.Game
 
         public string ReadinessHint(string name)
         {
-            if (PointsLeft != 0) return "Распределите ещё " + PointsLeft + " очк. SPECIAL.";
+            if (PointsLeft != 0) return "Распределите ещё " + PointsLeft + " очк. характеристик.";
             if (string.IsNullOrWhiteSpace(name) || name.Trim().Length < 2) return "Введите имя минимум из двух символов.";
             if (_taggedSkills.Count == 0) return "Выберите хотя бы один профильный навык.";
             if (_traits.Count == 0) return "Выберите хотя бы один стартовый перк.";

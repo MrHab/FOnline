@@ -353,20 +353,20 @@ vm.runInNewContext(
     + 'this.resolveServerExplicitActorGlbModel = serverModelKeyForExplicitRef;',
   serverIdentitySandbox
 );
-assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ name: 'Радскорпион' }), 'enemyRadscorpion');
-assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ species: 'ash_wolf' }), 'enemyAshWolf');
-assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'enemy_fire_gecko' }), 'enemyFireGecko');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ name: 'Радскорпион' }), 'kromkaRykhlyak');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ species: 'ash_wolf' }), 'kromkaGari');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'enemy_fire_gecko' }), 'kromkaMourner');
 assert.strictEqual(
   serverIdentitySandbox.resolveServerEnemyGlbModel({
     model: '/assets/models/wasteland/npc_ash_wolf.glb?v=7.99.23#runtime'
   }),
-  'enemyAshWolf'
+  'kromkaGari'
 );
 assert.strictEqual(
   serverIdentitySandbox.resolveServerEnemyGlbModel({
     modelKey: 'C:\\realm\\public\\assets\\models\\wasteland\\npc_radscorpion.glb?cache=1'
   }),
-  'enemyRadscorpion'
+  'kromkaRykhlyak'
 );
 assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'animal' }), 'friendlyBrahmin');
 assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'merchant' }), 'caravanMerchant');

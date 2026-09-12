@@ -28,6 +28,7 @@ namespace RealmOfAshes.World
         [JsonProperty("worldSiteInstance")] public bool WorldSiteInstance;
         [JsonProperty("templateLocationId")] public string TemplateLocationId;
         [JsonProperty("noRespawn")] public bool NoRespawn;
+        [JsonProperty("allowGlobalMapExit")] public bool? AllowGlobalMapExit;
         [JsonProperty("enemyCap")] public int EnemyCap;
         [JsonProperty("spawnCount")] public int SpawnCount;
         [JsonProperty("visualProfile")] public JObject VisualProfile;
@@ -45,6 +46,9 @@ namespace RealmOfAshes.World
         [JsonProperty("objects")] public List<LocationObject> Objects = new List<LocationObject>();
         [JsonProperty("containers")] public JArray Containers;
         [JsonProperty("storage")] public JObject Storage;
+
+        [JsonIgnore]
+        public bool CanExitToGlobalMap { get { return AllowGlobalMapExit != false; } }
 
         /// <summary>
         /// map.width/map.depth are authored in world metres (76 for the standard

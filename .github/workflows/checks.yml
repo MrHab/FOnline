@@ -34,5 +34,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate client model variants
+        run: npm run build:models-lite
+
       - name: Run project checks
         run: npm run check

@@ -54,6 +54,9 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, Task<GltfImport>> ModelCache =
             new Dictionary<string, Task<GltfImport>>();
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetModelCache() => RoaModelImportLifetime.Clear(ModelCache);
+
         private static readonly HashSet<string> LibraryItems = new HashSet<string>(new[]
         {
             "ammo9", "ammo556", "energyCell", "napalm", "shotgunShell", "rocketAmmo",
@@ -373,6 +376,11 @@ namespace RealmOfAshes.Game
         private static string ModelPath(string itemId, out string kind)
         {
             kind = string.Empty;
+            if (RoaItemModelCatalog.Contains(itemId) && itemId != "artifactUnknown")
+            {
+                kind = "catalog";
+                return RoaItemModelCatalog.ModelPath(itemId);
+            }
             if (LibraryItems.Contains(itemId))
             {
                 kind = "library";
@@ -385,6 +393,11 @@ namespace RealmOfAshes.Game
             }
             if (EquipmentModels.TryGetValue(itemId ?? string.Empty, out string path))
             {
+                if (RoaEquipmentModelCatalog.TryModelPath(itemId, "male_medium", out string replacement))
+                {
+                    kind = "equipment-catalog";
+                    return replacement;
+                }
                 kind = "equipment";
                 return path;
             }
@@ -440,18 +453,39 @@ namespace RealmOfAshes.Game
             if (kind == "equipment") holder.transform.localRotation = Quaternion.Euler(-90f, 0f, 10f);
             else if (kind == "weapon") holder.transform.localRotation = Quaternion.Euler(0f, 14f, 2.3f);
 
-            if (!TryBounds(holder, out Bounds bounds)) return false;
-            float footprint = Mathf.Max(bounds.size.x, bounds.size.z, bounds.size.y * 0.55f, 0.001f);
-            float target = kind == "weapon" ? 1.02f : (kind == "equipment" ? 0.92f : 0.68f);
-            float scale = Mathf.Min(1.35f, target / footprint);
-            holder.transform.localScale = Vector3.one * scale;
+            bool nativeScale = kind == "catalog" || kind == "equipment-catalog";
+            if (nativeScale)
+            {
+                // Loading-marker scale must not flatten the authored metre-scale item.
+                Vector3 parentScale = holder.transform.parent.lossyScale;
+                holder.transform.localScale = new Vector3(1f / parentScale.x, 1f / parentScale.y, 1f / parentScale.z);
+                if (kind == "equipment-catalog")
+                {
+                    // Rotate below the scale-cancellation transform; rotating above it
+                    // would shear the model under the marker's nonuniform scale.
+                    var children = new List<Transform>();
+                    foreach (Transform child in holder.transform) children.Add(child);
+                    var orientation = new GameObject("GroundEquipmentOrientation").transform;
+                    orientation.SetParent(holder.transform, false);
+                    foreach (Transform child in children) child.SetParent(orientation, false);
+                    orientation.localRotation = Quaternion.Euler(-90f, 0f, 10f);
+                }
+            }
+            else
+            {
+                if (!TryBounds(holder, out Bounds initialBounds)) return false;
+                float footprint = Mathf.Max(initialBounds.size.x, initialBounds.size.z, initialBounds.size.y * 0.55f, 0.001f);
+                float target = kind == "weapon" ? 1.02f : (kind == "equipment" ? 0.92f : 0.68f);
+                float scale = Mathf.Min(1.35f, target / footprint);
+                holder.transform.localScale = Vector3.one * scale;
+            }
 
-            if (!TryBounds(holder, out bounds)) return false;
+            if (!TryBounds(holder, out Bounds bounds)) return false;
             Transform marker = holder.transform.parent;
             Vector3 markerWorld = marker != null ? marker.position : holder.transform.position;
             holder.transform.position += new Vector3(
                 markerWorld.x - bounds.center.x,
-                markerWorld.y + 0.025f - bounds.min.y,
+                markerWorld.y + (nativeScale ? -0.095f : 0.025f) - bounds.min.y,
                 markerWorld.z - bounds.center.z);
 
             foreach (Renderer renderer in holder.GetComponentsInChildren<Renderer>(true))

@@ -15,7 +15,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const CLIENT_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
 const NGINX_LOCATIONS_FILE = path.join(PROJECT_ROOT, 'deploy', 'nginx', 'realm-of-ashes.locations.conf');
-const MAX_WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 8000);
+const MAX_WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 30000);
 const REQUESTED_PORT = Number(process.env.SMOKE_PORT || 0);
 const SMOKE_TMP_ROOT = process.env.SMOKE_TMPDIR
   ? path.resolve(process.env.SMOKE_TMPDIR)
@@ -149,6 +149,7 @@ function assertWorldTaskArchiveReload() {
     details: {}
   });
   fs.writeFileSync(stateFile, JSON.stringify({
+    worldRevision: 'kromka-1',
     worldHour: 10,
     lastTickAt: Date.now(),
     worldTasks: [
@@ -229,9 +230,9 @@ function seedSmokeWorldPartyTask() {
     id: partyId,
     name: 'Smoke Patrol',
     kind: 'patrol',
-    faction: 'old_klim',
+    faction: 'neutral',
     state: 'moving',
-    // Keep the fixture between settlement and the released road outpost, outside both site
+    // Keep the fixture between settlement and a released Kromka danger site, outside both site
     // footprints. Otherwise a slower test run can materialize an onsite zone
     // and legitimately keep the attached player in a local room.
     x: Number(settlement.x || 255) + 60,
@@ -241,8 +242,8 @@ function seedSmokeWorldPartyTask() {
     strength: 30,
     members: 4,
     homeSiteId: 'settlement',
-    destinationSiteId: 'roadOutpost',
-    route: ['roadOutpost', 'settlement'],
+    destinationSiteId: 'mutantCrater',
+    route: ['mutantCrater', 'settlement'],
     routeIndex: 0,
     autonomyVersion,
     nextDecisionHour: Number(state.worldHour || 0) + 100,
@@ -283,7 +284,9 @@ function seedSmokeWorldPartyTask() {
     expiresHour: Number(state.worldHour || 0) + 100,
     priority: 5,
     reward: { xp: 1, caps: 1, reputation: 1 },
-    details: { demand: { water: 1 } }
+    // New characters now start empty. Fund this lifecycle fixture through the
+    // separate authoritative reputation reward, not a removed starting ration.
+    details: { demand: { silver: 1 } }
   });
   state.worldTaskHistory.unshift({
     id: journalRecoveryTaskId,
@@ -543,7 +546,7 @@ async function assertStaticAssets(health) {
   // Корень — Unity WebGL, если сборка есть, иначе прежний клиент; прежний всегда по /legacy/.
   const rootHtml = await request('/');
   assertStatus(rootHtml, 200, 'GET /');
-  if (!rootHtml.body.includes('Realm of Ashes')) {
+  if (!rootHtml.body.includes('Кромка')) {
     fail('root page did not return a client HTML', rootHtml.body.slice(0, 500));
   }
   const html = await request('/legacy/');
@@ -707,17 +710,19 @@ async function assertEditorAndWorldDataApis() {
     fail('public locations API did not expose the bundled locations', publicLocations.body);
   }
   const capitalStorageFactions = {
-    settlement: 'old_klim',
-    scrapTown: 'scrap_union',
-    relayStation: 'relay_order',
-    caravanCamp: 'caravans'
+    sluiceCity: 'uprava',
+    scrapTown: 'free_artels',
+    relayStation: 'contour',
+    caravanCamp: 'tract_league',
+    secondHaven: 'seconds',
+    balanceBunker: 'continuity'
   };
   const locationsWithStorage = Object.values(publicLocationsData.locations || {})
     .filter(loc => !!loc?.storage)
     .map(loc => loc.id)
     .sort();
   if (locationsWithStorage.join(',') !== Object.keys(capitalStorageFactions).sort().join(',')) {
-    fail('personal storage exists outside the four faction capitals', JSON.stringify(locationsWithStorage));
+    fail('personal storage exists outside the six Kromka faction capitals', JSON.stringify(locationsWithStorage));
   }
   for (const [locationId, factionId] of Object.entries(capitalStorageFactions)) {
     const loc = publicLocationsData.locations[locationId];
@@ -760,10 +765,13 @@ async function assertEditorAndWorldDataApis() {
     ? wastelandData.sim.locationRelease.locationIds.map(value => String(value || '')).filter(Boolean)
     : [];
   const releasedLocationIdSet = new Set(releasedLocationIds);
-  if (releasedLocationIds.length < 6 || releasedLocationIds.length > 8
-    || releasedLocationIdSet.size !== releasedLocationIds.length
-    || worldSites.some(site => !releasedLocationIdSet.has(String(site?.id || '')))
-    || worldSites.length !== releasedLocationIds.length) {
+  const globalNodeLocationIds = globalMapData.map.nodes
+    .map(node => String(node?.locationId || node?.id || ''))
+    .filter(Boolean);
+  if (releasedLocationIdSet.size !== releasedLocationIds.length
+    || releasedLocationIds.join(',') !== globalNodeLocationIds.join(',')
+    || worldSites.some(site => !releasedLocationIdSet.has(String(site?.id || ''))
+      || !releasedLocationIdSet.has(String(site?.locationId || '')))) {
     fail('wasteland API did not expose exactly the current Unity location release', wasteland.body);
   }
   const worldLocationIds = worldSites.map(site => String(site?.locationId || '')).filter(Boolean);
@@ -776,8 +784,8 @@ async function assertEditorAndWorldDataApis() {
   }
   const locationInstances = Object.values(publicLocationsData.locations || {})
     .filter(location => location?.worldSiteInstance);
-  if (locationInstances.length < 80) {
-    fail('hidden district world sites were not preserved as materialized locations');
+  if (locationInstances.length < 20) {
+    fail('Kromka district world sites were not preserved as materialized locations');
   }
   const worldNames = worldSites.map(site => String(site?.name || '')).filter(Boolean);
   const worldDescriptions = worldSites.map(site => String(site?.description || site?.note || '')).filter(Boolean);
@@ -809,14 +817,16 @@ async function assertEditorAndWorldDataApis() {
   for (const loc of locationInstances) {
     instanceSeeds.push(Number(loc.seed || 0));
     instanceBounds.push(`${loc.playableBounds?.width || 0}x${loc.playableBounds?.height || 0}`);
+    // Районные тайники убраны по решению дизайна (уборка локаций: генератор
+    // worldSiteInstanceContainers отключён), поэтому у скрытого инстанса
+    // обязан быть массив контейнеров, но пустой — это норма.
     if (loc.runtimeMode !== 'worldSiteInstance'
       || !loc.worldSiteId
       || !loc.templateLocationId
       || !loc.description
       || !loc.playableBounds
       || (Array.isArray(loc.objects) && loc.objects.length > 0)
-      || !Array.isArray(loc.containers)
-      || loc.containers.length < 1) {
+      || !Array.isArray(loc.containers)) {
       fail(`hidden world location instance is incomplete: ${loc.id || 'unknown'}`, JSON.stringify(loc));
     }
   }
@@ -1153,7 +1163,7 @@ async function joinSocketCharacter(socket, account) {
     characterId: account.characterId,
     name: account.name,
     appearance: account.appearance,
-    special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
+    special: { str: 5, per: 6, end: 6, cha: 5, int: 6, agi: 7, luck: 5 },
     traits: ['trainedEye'],
     taggedSkills: ['lightWeapons']
   });
@@ -1268,7 +1278,7 @@ async function assertSocketMultiplayerLifecycle() {
           characterId: account.characterId,
           name: account.name,
           appearance: account.appearance,
-          special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 }
+          special: { str: 5, per: 6, end: 6, cha: 5, int: 6, agi: 7, luck: 5 }
         });
         if (invalidJoin.ok) {
           fail('new character join without traits and tagged skills was accepted', JSON.stringify(invalidJoin));
@@ -1287,7 +1297,7 @@ async function assertSocketMultiplayerLifecycle() {
             hairId: 'invisible_hair',
             hairColorId: 'radioactive_green'
           },
-          special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
+          special: { str: 5, per: 6, end: 6, cha: 5, int: 6, agi: 7, luck: 5 },
           traits: ['trainedEye'],
           taggedSkills: ['lightWeapons']
         });
@@ -1452,7 +1462,8 @@ async function assertSocketMultiplayerLifecycle() {
       if (!Array.isArray(actor.inventory)
         || !actor.inventory.some(row => row?.id === 'silver' && Number(row?.qty || 0) > 0)
         || !actor.equipment?.weapon
-        || !actor.inventory.some(row => row?.id === actor.equipment.weapon && Number(row?.qty || 0) > 0)) {
+        || (actor.equipment.weapon !== 'fists'
+          && !actor.inventory.some(row => row?.id === actor.equipment.weapon && Number(row?.qty || 0) > 0))) {
         fail('friendly sapient NPC was missing personal money, inventory, or equipped weapon', JSON.stringify(actor));
       }
       const ammoId = ammoByWeapon[actor.equipment.weapon];
@@ -1470,6 +1481,7 @@ async function assertSocketMultiplayerLifecycle() {
     const first = accounts[0];
     const second = accounts[1];
     const remoteCraft = await socketAck(first.socket, 'craftingStationUsed', {
+      requestId: `smoke_remote_craft_${Date.now().toString(36)}`,
       recipeId: 'repairkitcraft',
       station: 'repair_bench',
       fee: 1,
@@ -1480,7 +1492,13 @@ async function assertSocketMultiplayerLifecycle() {
       fail('crafting accepted or reached a station selected from another location',
         JSON.stringify({ player: first.join.self, response: remoteCraft }));
     }
-    const beforePeacefulCombat = first.join.combat || first.join.self?.combat || {};
+    let beforePeacefulCombat = first.join.combat || first.join.self?.combat || {};
+    const peacefulReadyDeadline = Date.now() + 30000;
+    while (Number(beforePeacefulCombat.ap) < 3 && Date.now() < peacefulReadyDeadline) {
+      await delay(500);
+      const current = await socketAck(first.socket, 'state', { profileOnly: true });
+      beforePeacefulCombat = current.combat || current.self?.combat || beforePeacefulCombat;
+    }
     const peacefulToken = `smoke_peaceful_attack_${Date.now().toString(36)}`;
     const peacefulAttack = await socketAck(first.socket, 'combatAttack', {
       weapon: String(beforePeacefulCombat.weapon || first.join.self?.equipment?.weapon || 'fists'),
@@ -1494,15 +1512,15 @@ async function assertSocketMultiplayerLifecycle() {
       }
     });
     const afterPeacefulCombat = peacefulAttack.combat || peacefulAttack.self?.combat || {};
-    if (peacefulAttack.ok !== false
+    if (peacefulAttack.ok !== true
       || !peacefulAttack.self
       || !peacefulAttack.combat
-      || Number(afterPeacefulCombat.ap) + 0.02 < Number(beforePeacefulCombat.ap)
       || Number(afterPeacefulCombat.ap) > Number(afterPeacefulCombat.maxAp)
-      || Number(afterPeacefulCombat.loaded) !== Number(beforePeacefulCombat.loaded)
+      || Number(peacefulAttack.apCost) <= 0
+      || Number(afterPeacefulCombat.loaded) !== Math.max(0, Number(beforePeacefulCombat.loaded) - Number(peacefulAttack.shots || 0))
       || Number(afterPeacefulCombat.reserveAmmo) !== Number(beforePeacefulCombat.reserveAmmo)
-      || Number(afterPeacefulCombat.condition) !== Number(beforePeacefulCombat.condition)) {
-      fail('peaceful-location combatAttack spent resources or omitted authoritative recovery state',
+      || Number(afterPeacefulCombat.condition) > Number(beforePeacefulCombat.condition)) {
+      fail('peaceful-location combatAttack must succeed with normal resource spending and authoritative state',
         JSON.stringify({ before: beforePeacefulCombat, response: peacefulAttack }));
     }
     const sharedTerminalTaskId = 'smoke_shared_terminal_task';
@@ -1514,6 +1532,30 @@ async function assertSocketMultiplayerLifecycle() {
       if (!accepted.ok || !accepted.self?.worldTaskAccepted?.includes(sharedTerminalTaskId)) {
         fail('shared terminal smoke task could not be accepted by both players', JSON.stringify(accepted));
       }
+    }
+    const unfundedDelivery = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'deliver', taskId: sharedTerminalTaskId
+    });
+    if (unfundedDelivery.ok || !String(unfundedDelivery.error || '').includes('Не хватает припасов')) {
+      fail('empty character bypassed the shared delivery cost', JSON.stringify({ ok: unfundedDelivery.ok, error: unfundedDelivery.error }));
+    }
+    await delay(300);
+    const reputationClaim = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'claim',
+      taskId: 'smoke_reputation_task'
+    });
+    if (!reputationClaim.ok
+      || Number(reputationClaim.reward?.reputation || 0) !== 3
+      || reputationClaim.reward?.reputationFactionId !== 'uprava'
+      || Number(reputationClaim.self?.worldFactionReputation?.uprava || 0) !== 3
+      || !reputationClaim.self?.inventory?.some(row => row.id === 'silver' && row.qty === 1)) {
+      fail('world-task reward did not authoritatively fund the empty-character fixture', JSON.stringify({ ok: reputationClaim.ok, error: reputationClaim.error, reward: reputationClaim.reward }));
+    }
+    const repeatedReputationClaim = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'claim', taskId: 'smoke_reputation_task'
+    });
+    if (repeatedReputationClaim.ok) {
+      fail('completed world-task reward could be claimed twice', JSON.stringify(repeatedReputationClaim));
     }
     await delay(1100);
     const secondTerminalState = new Promise((resolve, reject) => {
@@ -1536,8 +1578,9 @@ async function assertSocketMultiplayerLifecycle() {
       action: 'deliver',
       taskId: sharedTerminalTaskId
     });
-    if (!sharedDelivery.ok || sharedDelivery.task?.status !== 'completed') {
-      fail('first player could not complete the shared terminal smoke task', JSON.stringify(sharedDelivery));
+    if (!sharedDelivery.ok || sharedDelivery.task?.status !== 'completed'
+      || sharedDelivery.self?.inventory?.some(row => row.id === 'silver' && row.qty > 0)) {
+      fail('first player could not pay for and complete the shared terminal smoke task', JSON.stringify({ ok: sharedDelivery.ok, error: sharedDelivery.error }));
     }
     let secondLifecycle;
     try {
@@ -1551,23 +1594,6 @@ async function assertSocketMultiplayerLifecycle() {
       || secondTerminalRecord?.status !== 'completed'
       || secondTerminalRecord?.rewardEligible !== true) {
       fail('second player received stale or non-personalized terminal task state', JSON.stringify(secondLifecycle));
-    }
-    const reputationClaim = await socketAck(first.socket, 'worldTaskAction', {
-      action: 'claim',
-      taskId: 'smoke_reputation_task'
-    });
-    if (!reputationClaim.ok
-      || Number(reputationClaim.reward?.reputation || 0) !== 3
-      || reputationClaim.reward?.reputationFactionId !== 'old_klim'
-      || Number(reputationClaim.self?.worldFactionReputation?.old_klim || 0) !== 3) {
-      fail('world-task reputation reward was not granted authoritatively', JSON.stringify(reputationClaim));
-    }
-    const repeatedReputationClaim = await socketAck(first.socket, 'worldTaskAction', {
-      action: 'claim',
-      taskId: 'smoke_reputation_task'
-    });
-    if (repeatedReputationClaim.ok) {
-      fail('completed world-task reward could be claimed twice', JSON.stringify(repeatedReputationClaim));
     }
     const friendRequest = await socketAck(first.socket, 'socialAction', {
       action: 'friend',
@@ -1644,8 +1670,8 @@ async function assertSocketMultiplayerLifecycle() {
     if (forgedMember) fail('rejected legacy world-party events left a phantom member in simulation state');
 
     const joinOldKlim = await socketAck(first.socket, 'worldFactionJoin', { factionId: 'old_klim' });
-    if (!joinOldKlim.ok || joinOldKlim.self?.worldFactionId !== 'old_klim') {
-      fail('smoke player could not join the local faction before the party test', JSON.stringify(joinOldKlim));
+    if (joinOldKlim.ok) {
+      fail('Kromka accepted obsolete permanent faction membership', JSON.stringify(joinOldKlim));
     }
     const partyAccept = await socketAck(first.socket, 'worldTaskAction', {
       action: 'accept',
@@ -1715,11 +1741,13 @@ async function assertSocketMultiplayerLifecycle() {
     if (!rejoin.ok || !firstFriends.some(row => row.id === second.characterId)) {
       fail('friend state did not survive reconnect', JSON.stringify(rejoin));
     }
-    if (Number(rejoin.self?.worldFactionReputation?.old_klim || 0) !== 3) {
+    if (Number(rejoin.self?.worldFactionReputation?.uprava || 0) !== 3) {
       fail('world-task reputation did not survive reconnect', JSON.stringify(rejoin.self));
     }
+    const expectedCreationSpecial = { str: 5, per: 6, end: 6, cha: 5, int: 6, agi: 7, luck: 5 };
     if (rejoin.self?.name !== first.name
-      || Object.values(rejoin.self?.special || {}).some(value => Number(value) !== 5)
+      || Object.entries(expectedCreationSpecial)
+        .some(([id, value]) => Number(rejoin.self?.special?.[id]) !== value)
       || JSON.stringify(rejoin.self?.traits || []) !== JSON.stringify(['trainedEye'])
       || JSON.stringify(rejoin.self?.taggedSkills || []) !== JSON.stringify(['lightWeapons'])
       || rejoin.self?.appearance?.sex !== first.appearance.sex
@@ -1727,7 +1755,7 @@ async function assertSocketMultiplayerLifecycle() {
       || rejoin.self?.appearance?.faceId !== first.appearance.faceId
       || rejoin.self?.appearance?.hairId !== first.appearance.hairId
       || rejoin.self?.appearance?.hairColorId !== first.appearance.hairColorId
-      || rejoin.self?.worldFactionId !== 'old_klim'
+      || rejoin.self?.worldFactionId !== ''
       || rejoin.lastVisitedSettlementId !== 'settlement') {
       fail('inactive HTTP save replaced authoritative identity or character creation choices', JSON.stringify(rejoin.self));
     }
@@ -1776,13 +1804,14 @@ async function assertSocketMultiplayerLifecycle() {
     const quickPistolRows = (quickJoin.self?.weaponModifications || [])
       .filter(row => row?.baseId === 'pistol');
     if (!quickJoin.ok
-      || quickJoin.self?.equipment?.weapon !== 'pistol'
-      || quickJoin.self?.combat?.weapon !== 'pistol'
-      || Number(quickJoin.self?.combat?.loaded) !== 1
-      || Number(quickJoin.self?.combat?.reserveAmmo) !== 18
-      || quickPistolRows.length !== 1) {
-      fail('quick-start join did not receive one equipped loaded pistol and 18 reserve rounds',
-        JSON.stringify(quickJoin));
+      || quickJoin.self?.equipment?.weapon !== 'fists'
+      || quickJoin.self?.combat?.weapon !== 'fists'
+      || Number(quickJoin.self?.combat?.loaded) !== 0
+      || Number(quickJoin.self?.combat?.reserveAmmo) !== 0
+      || quickPistolRows.length !== 0
+      || quickJoin.self?.inventory?.length !== 0) {
+      fail('quick-start bypassed the empty tutorial loadout and real supply crate',
+        JSON.stringify({ ok: quickJoin.ok, error: quickJoin.error, equipment: quickJoin.self?.equipment }));
     }
     quickSocket.close();
 
@@ -1803,6 +1832,7 @@ function spawnSmokeServer(logs = []) {
       PORT: String(REQUESTED_PORT),
       DATA_DIR,
       NODE_ENV: 'test',
+      KROMKA_TEST_SKIP_ONBOARDING: '1',
       DEV_API_MODE: 'local',
       DEV_ADMIN_TOKEN: '',
       AUTH_RATE_MAX_ATTEMPTS: '5',

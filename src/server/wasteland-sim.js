@@ -119,9 +119,32 @@ const {
   normalizeTraderProfiles,
   retailMarketKey
 } = require('./faction-economy');
+const {
+  advanceSettlementHour,
+  normalizeSettlementLife,
+  publicSettlementLife
+} = require('./wasteland-settlements');
+const {
+  pruneCargoLedger,
+  registerCargoDeparture,
+  settleCargoArrival,
+  settleCargoLoss
+} = require('./wasteland-logistics');
+const {
+  applyAnomalyShift,
+  artifactOpportunity,
+  publicAnomalyCycle
+} = require('./wasteland-anomaly-cycle');
+const {
+  advanceRefugeeFlows,
+  createRefugeeFlow,
+  normalizeRefugeeState,
+  publicRefugeeFlow,
+  settlementSceneVariant
+} = require('./wasteland-refugees');
 
-const SCHEMA = 'realm.wastelandSim.v1';
-const VERSION = 1;
+const SCHEMA = 'realm.wastelandSim.v2';
+const VERSION = 2;
 const DEFAULT_GAME_DAY_REAL_MS = 60 * 60 * 1000;
 const MAX_EVENT_COUNT = 90;
 const MAX_WORLD_TASK_COUNT = 80;
@@ -150,7 +173,7 @@ const FACTION_ECONOMY_PLAN_INTERVAL_HOURS = 1;
 const RETAIL_MARKET_BOOTSTRAP_VERSION = 2;
 const MAX_PRODUCTION_QUEUE_ROWS = 8;
 const LEGACY_SITE_NAMES = {
-  settlement: 'Old Klim Caravan Yard',
+  settlement: 'Ключи',
   scrapTown: 'Scrap Post',
   relayStation: 'Relay Station',
   scrapFields: 'Scrap Fields',
@@ -161,14 +184,14 @@ const LEGACY_SITE_NAMES = {
   oldDepot: 'Old Military Depot'
 };
 const LEGACY_PARTY_NAMES = {
-  klim_supply_caravan: 'Old Klim Supply Caravan',
-  klim_road_patrol: 'Old Klim Road Patrol',
+  klim_supply_caravan: 'Караван Управы',
+  klim_road_patrol: 'Дозор Управы',
   raider_road_band: 'Road Raider Band',
   mutant_roamers: 'Mutant Roamers'
 };
 const LEGACY_FACTION_NAMES = {
-  old_klim: 'Old Klim Caravan Yard',
-  caravans: 'Free Caravans',
+  old_klim: 'Управа',
+  caravans: 'Лига Тракта',
   raiders: 'Raiders',
   mutants: 'Mutants',
   wild: 'Wasteland Wildlife',
@@ -374,13 +397,13 @@ function defaultFactions() {
   return {
     old_klim: {
       id: 'old_klim',
-      name: 'Караванный двор Старого Клима',
+      name: 'Управа',
       color: '#93d982',
       relations: { raiders: -100, mutants: -80, wild: -55, neutral: 20, caravans: 70, scrap_union: 35, relay_order: 55 }
     },
     caravans: {
       id: 'caravans',
-      name: 'Вольные караваны',
+      name: 'Лига Тракта',
       color: '#efd078',
       relations: { old_klim: 70, raiders: -100, mutants: -80, wild: -45, neutral: 20, scrap_union: 55, relay_order: 55 }
     },
@@ -428,11 +451,15 @@ function defaultSites(globalMap = {}) {
   const scrapTown = mapNode(globalMap, 'scrapTown') || { x: 555, y: 645 };
   const relayStation = mapNode(globalMap, 'relayStation') || { x: 675, y: 315 };
   const caravanCamp = mapNode(globalMap, 'caravanCamp') || { x: 495, y: 495 };
+  const sluiceCity = mapNode(globalMap, 'sluiceCity') || { x: 105, y: 255 };
+  const secondHaven = mapNode(globalMap, 'secondHaven') || { x: 115, y: 105 };
+  const balanceBunker = mapNode(globalMap, 'balanceBunker') || { x: 325, y: 55 };
+  const cascadeRegenerator = mapNode(globalMap, 'cascadeRegenerator') || { x: 225, y: 85 };
   const sites = {
     settlement: {
       id: 'settlement',
       type: 'settlement',
-      name: 'Караванный двор Старого Клима',
+      name: 'Ключи',
       x: settlement.x,
       y: settlement.y,
       owner: 'old_klim',
@@ -512,6 +539,66 @@ function defaultSites(globalMap = {}) {
         { role: 'guard', label: 'наёмная охрана караванов', count: 3 }
       ]
     },
+    sluiceCity: {
+      id: 'sluiceCity',
+      type: 'settlement',
+      name: 'Створ',
+      x: sluiceCity.x,
+      y: sluiceCity.y,
+      owner: 'uprava',
+      pvpMode: 'peaceful',
+      capital: true,
+      capitalFaction: 'uprava',
+      locationId: 'sluiceCity',
+      stockpile: { ...emptyStockpile(), silver: 360, water: 18, food: 12, blue: 18 },
+      security: 64,
+      prosperity: 42
+    },
+    secondHaven: {
+      id: 'secondHaven',
+      type: 'settlement',
+      name: 'Меловой двор',
+      x: secondHaven.x,
+      y: secondHaven.y,
+      owner: 'seconds',
+      pvpMode: 'peaceful',
+      capital: true,
+      capitalFaction: 'seconds',
+      locationId: 'secondHaven',
+      stockpile: { ...emptyStockpile(), silver: 260, water: 12, food: 8, medicine: 10, blue: 4 },
+      security: 48,
+      prosperity: 28
+    },
+    balanceBunker: {
+      id: 'balanceBunker',
+      type: 'settlement',
+      name: 'Баланс',
+      x: balanceBunker.x,
+      y: balanceBunker.y,
+      owner: 'continuity',
+      pvpMode: 'peaceful',
+      capital: true,
+      capitalFaction: 'continuity',
+      locationId: 'balanceBunker',
+      stockpile: { ...emptyStockpile(), silver: 600, medicine: 24, electronics: 30, blue: 30 },
+      security: 78,
+      prosperity: 55
+    },
+    cascadeRegenerator: {
+      id: 'cascadeRegenerator',
+      type: 'complex',
+      name: 'Регенератор Р-12',
+      x: cascadeRegenerator.x,
+      y: cascadeRegenerator.y,
+      owner: 'continuity',
+      pvpMode: 'peaceful',
+      capital: false,
+      capitalFaction: '',
+      locationId: 'cascadeRegenerator',
+      stockpile: { ...emptyStockpile(), silver: 80, electronics: 16, blue: 12 },
+      security: 72,
+      prosperity: 18
+    },
     scrapFields: {
       id: 'scrapFields',
       type: 'resource',
@@ -522,7 +609,7 @@ function defaultSites(globalMap = {}) {
       locationId: 'resourceScrapFields',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Свалочного союза у столицы. Добыча: лом, детали патронов, а между грудами — водосборы и грядки на насыпном грунте. Кормит литейную и патронные караваны.',
+      note: 'Ресурсная точка Вольных артелей у столицы. Добыча: лом, детали патронов, а между грудами — водосборы и грядки на насыпном грунте. Кормит литейную и патронные караваны.',
       output: { scrap: 16, ammoParts: 5, water: 9, food: 6 },
       stockpile: { ...emptyStockpile(), silver: 70, scrap: 30, ammoParts: 8, water: 16, food: 12 },
       danger: 2,
@@ -548,13 +635,13 @@ function defaultSites(globalMap = {}) {
     oldKlimFarm: {
       id: 'oldKlimFarm',
       type: 'resource',
-      name: 'Сухая ферма Старого Клима',
+      name: 'Сухая ферма Управы',
       ...globalMapCellCenter({ x: 315, y: 735 }, globalMap),
       owner: 'old_klim',
       pvpMode: 'peaceful',
       locationId: 'resourceOldKlimFarm',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Старого Клима у столицы. Добыча: еда, вода, медикаменты и древесина с изгородей и сада. Внутри есть огород, травы и бак с водой.',
+      note: 'Ресурсная точка Управы у столицы. Добыча: еда, вода, медикаменты и древесина с изгородей и сада. Внутри есть огород, травы и бак с водой.',
       output: { food: 10, water: 6, medicine: 2, wood: 6 },
       stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medicine: 6, wood: 14 },
       danger: 1,
@@ -562,7 +649,7 @@ function defaultSites(globalMap = {}) {
       workforce: 48,
       workers: [
         { role: 'worker', label: 'фермеры', count: 6 },
-        { role: 'guard', label: 'караул Старого Клима', count: 2 }
+        { role: 'guard', label: 'караул Управы', count: 2 }
       ]
     },
     ironMine: {
@@ -618,12 +705,12 @@ function defaultSites(globalMap = {}) {
     klimQuarry: {
       id: 'klimQuarry',
       type: 'resource',
-      name: 'Каменоломня Старого Клима',
+      name: 'Каменоломня Управы',
       ...globalMapCellCenter({ x: 386, y: 735 }, globalMap),
       owner: 'old_klim',
       pvpMode: 'pvp',
       locationId: 'resourceKlimQuarry',
-      note: 'Южная каменоломня Старого Клима. Камень, руда и вытащенный из породы металл идут на ремонт аванпостов и дорог.',
+      note: 'Южная каменоломня Управы. Камень, руда и вытащенный из породы металл идут на ремонт застав и дорог.',
       // Единственный источник лома у Старого Клима: девяти за цикл не хватало
       // даже патронному заводу, и до станции инструментов не доходило ничего.
       output: { ore: 12, scrap: 15 },
@@ -656,7 +743,7 @@ function defaultSites(globalMap = {}) {
       owner: 'scrap_union',
       pvpMode: 'pvp',
       locationId: 'resourceTireDepot',
-      note: 'Южный склад старых покрышек и дорожного хлама. Свалочный союз собирает здесь резину, лом, топливо и доски от поддонов.',
+      note: 'Южный склад старых покрышек и дорожного хлама. Вольные артели собирают здесь резину, лом, топливо и доски от поддонов.',
       output: { scrap: 10, oil: 5, wood: 5 },
       stockpile: { ...emptyStockpile(), silver: 80, scrap: 22, oil: 8, wood: 12 },
       danger: 2,
@@ -722,14 +809,14 @@ function defaultSites(globalMap = {}) {
     roadOutpost: {
       id: 'roadOutpost',
       type: 'outpost',
-      name: 'Дорожный аванпост Старого Клима',
+      name: 'Застава 17',
       ...globalMapCellCenter({ x: 405, y: 600 }, globalMap),
       owner: 'old_klim',
       pvpMode: 'pvp',
       locationId: 'roadOutpost',
       roadOutpost: true,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Дорожный аванпост Старого Клима. Патрули контролируют путь между ресурсными точками.',
+      note: 'Застава 17 Управы. Дозоры контролируют путь между ресурсными точками.',
       stockpile: { ...emptyStockpile(), silver: 140, water: 6, ammoParts: 4 },
       security: 55,
       production: { ammo9: 18, stim: 2 },
@@ -743,21 +830,21 @@ function defaultSites(globalMap = {}) {
     scrapOutpost: {
       id: 'scrapOutpost',
       type: 'outpost',
-      name: 'Сторожевой пост Свалочного союза',
+      name: 'Артельная сторожевая',
       ...globalMapCellCenter({ x: 525, y: 705 }, globalMap),
       owner: 'scrap_union',
       pvpMode: 'pvp',
       locationId: 'scrapOutpost',
       roadOutpost: true,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Передовой пост Свалочного союза у старой трассы. Охраняет караваны лома, рудник и литейную.',
+      note: 'Передовой пост Вольных артелей у старой трассы. Охраняет караваны лома, рудник и литейную.',
       stockpile: { ...emptyStockpile(), silver: 130, scrap: 12, ammoParts: 8, water: 5 },
       security: 46,
       prosperity: 24,
       production: { ammoParts: 6, repairKit: 1 },
       productionCapabilities: ['ammo_bench', 'tool_bench', 'repair_bench'],
       workers: [
-        { role: 'guard', label: 'ополчение Свалочного союза', count: 5 },
+        { role: 'guard', label: 'ополчение Вольных артелей', count: 5 },
         { role: 'quartermaster', label: 'снабженец', count: 1 },
         { role: 'mechanic', label: 'полевой механик', count: 1 }
       ]
@@ -787,14 +874,14 @@ function defaultSites(globalMap = {}) {
     klimAmmoWorks: {
       id: 'klimAmmoWorks',
       type: 'production',
-      name: 'Патронная мастерская Старого Клима',
+      name: 'Патронный двор «Створ-2»',
       ...globalMapCellCenter({ x: 345, y: 705 }, globalMap),
       owner: 'old_klim',
       pvpMode: 'pvp',
       locationId: 'klimAmmoWorks',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Производственная точка Старого Клима у столицы. Производит: патроны 9мм, патроны .223. Станки: патронный, оружейный, ремонтный.',
+      note: 'Производственная точка Управы у столицы. Производит патроны 9 мм и .223. Станки: патронный, оружейный, ремонтный.',
       stockpile: { ...emptyStockpile(), silver: 180, scrap: 20, ore: 12, ammoParts: 18 },
       security: 48,
       prosperity: 28,
@@ -814,7 +901,7 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'scrapFoundry',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
-      note: 'Производственная точка Свалочного союза у столицы. Производит: оружейные детали, детали патронов. Станки: оружейный, патронный, ремонтный, инструментальный.',
+      note: 'Производственная точка Вольных артелей у столицы. Производит оружейные и патронные детали. Станки: оружейный, патронный, ремонтный, инструментальный.',
       stockpile: { ...emptyStockpile(), silver: 170, scrap: 52, ore: 18, ammoParts: 8 },
       security: 42,
       prosperity: 34,
@@ -889,6 +976,19 @@ function defaultSites(globalMap = {}) {
       ]
     }
   };
+  // Runtime simulation sites share the exact lore-authored global coordinates.
+  // Their stable legacy IDs remain for saves and contracts, but the old 900×900
+  // composition is never used as a spatial fallback when a Kromka node exists.
+  for (const site of Object.values(sites)) {
+    const node = mapNode(globalMap, site.locationId || site.id) || mapNode(globalMap, site.id);
+    if (!node) continue;
+    site.x = Number(node.x || 0);
+    site.y = Number(node.y || 0);
+    if (node.note) {
+      site.note = String(node.note);
+      site.description = String(node.note);
+    }
+  }
   return {
     ...sites,
     ...districtInterestSites(globalMap, 0, sites)
@@ -899,7 +999,7 @@ function defaultParties() {
   return {
     klim_supply_caravan: {
       id: 'klim_supply_caravan',
-      name: 'Снабженческий караван Старого Клима',
+      name: 'Снабженческий караван Управы',
       kind: 'caravan',
       faction: 'old_klim',
       state: 'moving',
@@ -922,7 +1022,7 @@ function defaultParties() {
     },
     klim_water_caravan: {
       id: 'klim_water_caravan',
-      name: 'Водовоз Старого Клима',
+      name: 'Водовоз Управы',
       kind: 'caravan',
       faction: 'old_klim',
       state: 'moving',
@@ -945,7 +1045,7 @@ function defaultParties() {
     },
     klim_heavy_caravan: {
       id: 'klim_heavy_caravan',
-      name: 'Тяжелый караван Старого Клима',
+      name: 'Тяжёлый караван Управы',
       kind: 'caravan',
       faction: 'old_klim',
       state: 'moving',
@@ -1037,7 +1137,7 @@ function defaultParties() {
     },
     klim_road_patrol: {
       id: 'klim_road_patrol',
-      name: 'Патруль Старого Клима',
+      name: 'Дозор Управы',
       kind: 'patrol',
       faction: 'old_klim',
       state: 'moving',
@@ -1267,14 +1367,14 @@ function siteSupportWorkerLabel(role = '', faction = '') {
   const key = String(role || '').toLowerCase();
   if (key === 'guard') {
     if (group === 'caravans') return 'наёмная охрана караванов';
-    if (group === 'old_klim') return 'охрана Старого Клима';
-    if (group === 'scrap_union') return 'ополчение Свалочного союза';
+    if (group === 'old_klim') return 'охрана Управы';
+    if (group === 'scrap_union') return 'ополчение Вольных артелей';
     if (group === 'relay_order') return 'охрана Ретранслятора';
     return 'охрана';
   }
   if (key === 'craftsman') {
     if (group === 'relay_order') return 'техники Ретранслятора';
-    if (group === 'scrap_union') return 'мастера Свалочного союза';
+    if (group === 'scrap_union') return 'мастера Вольных артелей';
     return 'мастера';
   }
   if (key === 'mechanic') {
@@ -1283,13 +1383,13 @@ function siteSupportWorkerLabel(role = '', faction = '') {
   }
   if (key === 'hauler') return 'грузчики снабжения';
   if (key === 'scavenger') {
-    if (group === 'scrap_union') return 'сборщики Свалочного союза';
+    if (group === 'scrap_union') return 'сборщики Вольных артелей';
     if (group === 'relay_order') return 'поисковая группа Ретранслятора';
-    return 'разведчики Старого Клима';
+    return 'разведчики Управы';
   }
   if (group === 'caravans') return 'обозники вольных караванов';
-  if (group === 'old_klim') return 'поселенцы Старого Клима';
-  if (group === 'scrap_union') return 'рабочие Свалочного союза';
+  if (group === 'old_klim') return 'поселенцы Управы';
+  if (group === 'scrap_union') return 'рабочие Вольных артелей';
   if (group === 'relay_order') return 'техники Ретранслятора';
   return 'рабочие';
 }
@@ -1794,6 +1894,7 @@ function defaultState(globalMap = {}) {
   return {
     schema: SCHEMA,
     version: VERSION,
+    worldRevision: String(globalMap?.worldRevision || 'legacy'),
     worldHour: 0,
     lastTickAt: Date.now(),
     updatedAt: Date.now(),
@@ -1805,6 +1906,24 @@ function defaultState(globalMap = {}) {
     worldTaskHistory: [],
     worldZones: [],
     liveRegions: {},
+    cargoLedger: {},
+    refugeeFlows: {
+      version: 1,
+      sequence: 0,
+      active: {},
+      history: []
+    },
+    anomalyCycle: {
+      shiftId: '',
+      phase: 'calm',
+      strength: 1,
+      causeCode: 'shift_wave',
+      affectedRegions: [],
+      affectedLocationIds: [],
+      hotspots: [],
+      lastAppliedShiftId: '',
+      history: []
+    },
     stats: {
       caravansArrived: 0,
       caravansLost: 0,
@@ -1849,11 +1968,14 @@ function isFixedLairWorldTaskRecord(task = {}) {
 function normalizeState(input, globalMap = {}) {
   const base = defaultState(globalMap);
   const src = input && typeof input === 'object' ? input : {};
+  const targetWorldRevision = String(globalMap?.worldRevision || 'legacy');
+  const migratingWorldRevision = String(src.worldRevision || 'legacy') !== targetWorldRevision;
   const state = {
     ...base,
     ...src,
     schema: SCHEMA,
     version: VERSION,
+    worldRevision: targetWorldRevision,
     factions: { ...base.factions, ...(src.factions && typeof src.factions === 'object' ? src.factions : {}) },
     sites: { ...base.sites, ...(src.sites && typeof src.sites === 'object' ? src.sites : {}) },
     parties: { ...base.parties, ...(src.parties && typeof src.parties === 'object' ? src.parties : {}) },
@@ -1866,6 +1988,11 @@ function normalizeState(input, globalMap = {}) {
     worldTaskHistory: Array.isArray(src.worldTaskHistory) ? src.worldTaskHistory : [],
     worldZones: Array.isArray(src.worldZones) ? src.worldZones.slice(0, MAX_WORLD_ZONE_COUNT) : [],
     liveRegions: normalizeLiveRegions(src.liveRegions),
+    cargoLedger: src.cargoLedger && typeof src.cargoLedger === 'object' ? src.cargoLedger : {},
+    refugeeFlows: normalizeRefugeeState(src.refugeeFlows || base.refugeeFlows),
+    anomalyCycle: src.anomalyCycle && typeof src.anomalyCycle === 'object'
+      ? { ...base.anomalyCycle, ...src.anomalyCycle }
+      : base.anomalyCycle,
     stats: { ...base.stats, ...(src.stats && typeof src.stats === 'object' ? src.stats : {}) }
   };
   for (const [id, faction] of Object.entries(state.factions)) {
@@ -1884,6 +2011,10 @@ function normalizeState(input, globalMap = {}) {
   }
   for (const [id, site] of Object.entries(state.sites)) {
     const defaults = base.sites[id] || {};
+    if (migratingWorldRevision && Number.isFinite(Number(defaults.x)) && Number.isFinite(Number(defaults.y))) {
+      site.x = Number(defaults.x);
+      site.y = Number(defaults.y);
+    }
     site.id = safeId(site.id || id, id);
     site.type = String(site.type || 'pointOfInterest').slice(0, 32);
     if (defaults.type === 'production' && site.type === 'outpost') site.type = 'production';
@@ -1945,14 +2076,26 @@ function normalizeState(input, globalMap = {}) {
     }
     site.note = String(site.note || defaults.note || '').slice(0, 240);
     site.description = String(site.description || defaults.description || site.note || defaults.note || '').slice(0, 480);
-    const normalizedPoint = globalMapCellCenter({
-      x: Number.isFinite(Number(site.x)) ? Number(site.x) : 0,
-      y: Number.isFinite(Number(site.y)) ? Number(site.y) : 0
-    }, globalMap);
-    const capitalClearPoint = !isFactionCapitalSite(site) && !isDistrictInterestSite && globalMapPointInCapitalClearZone(globalMap, normalizedPoint, CAPITAL_CLEAR_RADIUS_POINTS, site.id)
+    const authoredNode = mapNode(globalMap, site.locationId || site.id)
+      || mapNode(globalMap, site.id);
+    const normalizedPoint = authoredNode
+      ? { x: Number(authoredNode.x || 0), y: Number(authoredNode.y || 0) }
+      : globalMapCellCenter({
+        x: Number.isFinite(Number(site.x)) ? Number(site.x) : 0,
+        y: Number.isFinite(Number(site.y)) ? Number(site.y) : 0
+      }, globalMap);
+    // Explicit Kromka nodes are the spatial authority. Clearance migration is
+    // only for procedural/legacy sites; moving authored nodes would silently
+    // reconstruct the retired region layout inside the background simulation.
+    const capitalClearPoint = !authoredNode && !isFactionCapitalSite(site)
+      && !isDistrictInterestSite
+      && globalMapPointInCapitalClearZone(globalMap, normalizedPoint,
+        CAPITAL_CLEAR_RADIUS_POINTS, site.id)
       ? nearestCapitalClearLandPoint(globalMap, normalizedPoint, site.id)
       : normalizedPoint;
-    const point = !isFactionCapitalSite(site) && !isRoadOutpostSite(site) && globalMapPointInRoadCorridor(globalMap, capitalClearPoint)
+    const point = !authoredNode && !isFactionCapitalSite(site)
+      && !isRoadOutpostSite(site)
+      && globalMapPointInRoadCorridor(globalMap, capitalClearPoint)
       ? nearestRoadClearLandPoint(globalMap, capitalClearPoint, site.id)
       : capitalClearPoint;
     site.x = point.x;
@@ -2099,6 +2242,15 @@ function normalizeState(input, globalMap = {}) {
       site.landmark = String(site.landmark || defaults.landmark || '').slice(0, 80);
       site.sectorCode = String(site.sectorCode || defaults.sectorCode || '').slice(0, 24);
       site.identityVersion = Math.max(0, Math.floor(Number(site.identityVersion || defaults.identityVersion || 0)));
+    }
+  }
+  if (migratingWorldRevision) {
+    state.events = [];
+    state.worldZones = [];
+    state.worldTasks = [];
+    for (const party of Object.values(state.parties || {})) {
+      const home = state.sites?.[party.homeSiteId] || state.sites?.settlement;
+      if (home) { party.x = Number(home.x || 0); party.y = Number(home.y || 0); }
     }
   }
   ensureUniqueWorldSiteLocationIds(state.sites);
@@ -2308,10 +2460,37 @@ function createWastelandSimulation(options = {}) {
   const itemIds = options.itemIds instanceof Set ? options.itemIds : new Set(options.itemIds || []);
   const economyRecipes = normalizeRecipeCatalog(options.economyRecipes);
   const traderProfiles = normalizeTraderProfiles(options.traderProfiles);
+  const worldSimulationConfig = options.worldSimulationConfig && typeof options.worldSimulationConfig === 'object'
+    ? clone(options.worldSimulationConfig)
+    : readJson(options.worldSimulationFile || path.join(process.cwd(), 'data', 'kromka', 'world-simulation.json'), {});
+  const anomalyLocations = Array.isArray(options.anomalyLocations) ? clone(options.anomalyLocations) : [];
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
+  state.cargoLedger = pruneCargoLedger(state.cargoLedger || {});
+  state.refugeeFlows = normalizeRefugeeState(state.refugeeFlows || {}, worldSimulationConfig);
+  for (const site of Object.values(state.sites || {})) {
+    if (site && String(site.type || '').toLowerCase() === 'settlement') {
+      site.settlementLife = normalizeSettlementLife(site, worldSimulationConfig, state.worldHour);
+    }
+  }
   let dirty = false;
   let lastSaveAt = 0;
   let partyMovementTracks = new Map();
+
+  function trackCargoDepartures() {
+    for (const party of Object.values(state.parties || {})) {
+      if (!party || String(party.kind || '').toLowerCase() !== 'caravan') continue;
+      if (stockpileTotal(party.cargo || {}) <= 0) continue;
+      registerCargoDeparture(
+        state.cargoLedger || (state.cargoLedger = {}),
+        party,
+        party.homeSiteId || party.lastSiteId || '',
+        party.destinationSiteId || '',
+        state.worldHour
+      );
+    }
+  }
+
+  trackCargoDepartures();
 
   function taskLocationIdForSite(site = {}) {
     return safeId(site?.locationId || worldSiteLocationId(site?.id || ''), '');
@@ -2362,6 +2541,7 @@ function createWastelandSimulation(options = {}) {
   function save(force = false) {
     const now = Date.now();
     if (!force && (!dirty || now - lastSaveAt < saveIntervalMs)) return false;
+    state.cargoLedger = pruneCargoLedger(state.cargoLedger || {});
     state.updatedAt = now;
     writeJsonAtomic(stateFile, state);
     dirty = false;
@@ -2382,6 +2562,47 @@ function createWastelandSimulation(options = {}) {
     state.events = state.events.slice(0, MAX_EVENT_COUNT);
     dirty = true;
     return event;
+  }
+
+  function recordAnomalyShift(shift = {}) {
+    const result = applyAnomalyShift(state.anomalyCycle, shift, state.sites, {
+      locations: anomalyLocations,
+      config: worldSimulationConfig.anomalyCycle || {},
+      worldHour: state.worldHour
+    });
+    state.anomalyCycle = result.state;
+    if (result.changed) dirty = true;
+    if (result.applied) {
+      addEvent('anomaly_shift', `Выброс ${result.state.strength}-й силы прошёл через Кромку.`, {
+        shiftId: result.state.shiftId,
+        causeCode: 'shift_wave',
+        affectedRegions: result.state.affectedRegions,
+        affectedLocationIds: result.state.affectedLocationIds,
+        forecast: result.state.forecast,
+        actions: result.state.actions
+      });
+      for (const impact of result.impactedSites) {
+        const site = state.sites?.[impact.siteId];
+        addEvent('site_shift_impact', `${site?.name || impact.siteId}: след выброса.`, {
+          siteId: impact.siteId,
+          locationId: impact.locationId,
+          regionId: impact.regionId,
+          shiftId: result.state.shiftId,
+          causeCode: 'shift_wave',
+          strength: result.state.strength
+        });
+      }
+    }
+    if (result.changed) save(true);
+    return {
+      ...publicAnomalyCycle(state.anomalyCycle),
+      applied: result.applied,
+      impactedSiteIds: result.impactedSites.map(row => row.siteId)
+    };
+  }
+
+  function artifactOpportunityForLocation(locationId = '', shiftId = '') {
+    return artifactOpportunity(state.anomalyCycle, locationId, shiftId);
   }
 
   function realMinutesToWorldHours(minutes = 0) {
@@ -3491,7 +3712,7 @@ function createWastelandSimulation(options = {}) {
   function actorNameForFaction(faction = '', index = 0, role = '') {
     const group = factionGroup(faction);
     if (role === 'merchant') return 'Караванщик';
-    if (group === 'old_klim') return index === 0 ? 'Старший патрульный Старого Клима' : 'Патрульный Старого Клима';
+    if (group === 'old_klim') return index === 0 ? 'Старший дозорный Управы' : 'Дозорный Управы';
     if (group === 'scrap_union') return index === 0 ? 'Старший ополченец Свалочного поста' : 'Ополченец Свалочного поста';
     if (group === 'relay_order') return index === 0 ? 'Старший техник-охранник' : 'Охранник ретранслятора';
     if (group === 'caravans') return index === 0 ? 'Старший охранник каравана' : 'Охранник каравана';
@@ -4809,6 +5030,12 @@ function createWastelandSimulation(options = {}) {
       }
     }
     if (String(party.kind || '').toLowerCase() === 'caravan') {
+      settleCargoLoss(
+        state.cargoLedger || (state.cargoLedger = {}),
+        party,
+        reason || 'caravan_destroyed',
+        state.worldHour
+      );
       settleLiveCaravanWorldOperation(party, false, reason || 'caravan_destroyed', {
         partyId: party.id,
         cargo: compactStockpile(party.cargo || {}),
@@ -7984,6 +8211,22 @@ function createWastelandSimulation(options = {}) {
       : '';
     if (operationArrivalSiteId && operationArrivalSiteId !== safeId(site.id || '', '')) return false;
     const delivered = clone(cargo);
+    if (String(party.kind || '').toLowerCase() === 'caravan') {
+      const settlement = settleCargoArrival(
+        state.cargoLedger || (state.cargoLedger = {}),
+        party,
+        site.id,
+        delivered,
+        state.worldHour
+      );
+      if (settlement.duplicate) {
+        party.cargo = {};
+        dirty = true;
+        return false;
+      }
+      party.lastCargoTransactionId = settlement.transaction?.id || party.cargoTransactionId || '';
+      party.cargoTransactionId = '';
+    }
     addStockpile(site.stockpile, delivered);
     party.cargo = {};
     clearCaravanStaging(party);
@@ -9913,9 +10156,124 @@ function createWastelandSimulation(options = {}) {
     }
   }
 
+  function ensureRefugeeHumanitarianTask(flow = {}) {
+    if (!flow?.id) return null;
+    const targetSiteId = flow.destinationSiteId || flow.originSiteId || '';
+    if (!targetSiteId || !state.sites[targetSiteId]) return null;
+    const members = Math.max(1, Math.floor(Number(flow.members || 1)));
+    const demand = {
+      water: Math.max(3, Math.ceil(members * 0.25)),
+      food: Math.max(2, Math.ceil(members * 0.2)),
+      medicine: Math.max(1, Math.ceil(members * 0.04))
+    };
+    return createWorldTask('deliver_supplies', {
+      key: `refugee_aid:${flow.id}`,
+      title: `Помощь беженцам: ${flow.originSiteName || flow.originSiteId}`,
+      text: flow.destinationSiteId
+        ? `${members} человек идут в ${flow.destinationSiteName || flow.destinationSiteId}. Нужны вода, еда и лекарства к их прибытию.`
+        : `${members} человек застряли у ${flow.originSiteName || flow.originSiteId} без безопасного маршрута.`,
+      siteId: targetSiteId,
+      objective: 'deliver_supplies',
+      durationHours: Math.max(24, Number(worldSimulationConfig.refugees?.humanitarianTaskDurationHours || 72)),
+      priority: flow.status === 'stranded' ? 3 : 2,
+      details: {
+        causeCode: flow.causeCode || 'settlement_crisis',
+        refugeeFlowId: flow.id,
+        originSiteId: flow.originSiteId || '',
+        destinationSiteId: flow.destinationSiteId || '',
+        members,
+        demand,
+        aggregatedGroup: true
+      }
+    });
+  }
+
+  function advanceRefugeeMigration(hours) {
+    const result = advanceRefugeeFlows(
+      state.refugeeFlows || (state.refugeeFlows = normalizeRefugeeState({}, worldSimulationConfig)),
+      state.sites,
+      hours,
+      state.worldHour,
+      { config: worldSimulationConfig, pointKm: mapPointKm(getGlobalMap()) }
+    );
+    for (const arrival of result.arrivals) {
+      const flow = arrival.flow;
+      const destination = arrival.destination;
+      addEvent('refugee_group_arrived', `${flow.name} прибыли в ${destination.name}. Поселение приняло ${flow.members} человек.`, {
+        refugeeFlowId: flow.id,
+        originSiteId: flow.originSiteId,
+        destinationSiteId: destination.id,
+        causeCode: flow.causeCode,
+        members: flow.members,
+        aggregatedGroup: true
+      });
+    }
+    if (result.arrivals.length || result.reroutes.length) dirty = true;
+    return result;
+  }
+
   function consumeSettlementSupplies(hours) {
     for (const site of Object.values(state.sites)) {
       if (!site || !isSettlementServiceSite(site)) continue;
+      if (String(site.type || '').toLowerCase() === 'settlement') {
+        const beforeCondition = String(site.settlementLife?.condition || 'stable');
+        const beforeCause = String(site.settlementLife?.causeCode || 'stable_supplies');
+        const result = advanceSettlementHour(site, worldSimulationConfig, hours, state.worldHour);
+        const life = result.life;
+        if (result.conditionChanged || beforeCause !== life.causeCode) {
+          addEvent('settlement_state_changed', `${site.name}: ${life.reason}`, {
+            siteId: site.id,
+            state: life.condition,
+            previousState: beforeCondition,
+            causeCode: life.causeCode,
+            forecast: life.forecast,
+            actions: life.actions
+          });
+        }
+        if (result.migrated > 0) {
+          const refugeeResult = createRefugeeFlow(
+            state.refugeeFlows || (state.refugeeFlows = normalizeRefugeeState({}, worldSimulationConfig)),
+            site,
+            result.migrated,
+            state.sites,
+            state.worldHour,
+            worldSimulationConfig
+          );
+          if (refugeeResult.flow) ensureRefugeeHumanitarianTask(refugeeResult.flow);
+          addEvent('settlement_migration', `${site.name}: ${result.migrated} жителей покинули поселение после затяжного кризиса.`, {
+            siteId: site.id,
+            causeCode: life.causeCode,
+            migrated: result.migrated,
+            population: life.population,
+            refugeeFlowId: refugeeResult.flow?.id || '',
+            destinationSiteId: refugeeResult.flow?.destinationSiteId || '',
+            aggregatedGroup: true
+          });
+        }
+        const missing = Object.fromEntries(Object.entries(result.consumption.missing || {})
+          .filter(([, qty]) => Number(qty || 0) > 0));
+        if (Object.keys(missing).length
+          && Number(state.worldHour || 0) - Number(site.lastLifeSupportTaskHour || -999) >= 18) {
+          site.lastLifeSupportTaskHour = state.worldHour;
+          createWorldTask('deliver_supplies', {
+            key: `settlement_life:${site.id}:${life.causeCode}`,
+            title: `Аварийная поставка: ${site.name}`,
+            text: `${site.name} запрашивает припасы. Причина: ${life.reason}.`,
+            siteId: site.id,
+            objective: 'deliver_supplies',
+            durationHours: 48,
+            priority: life.condition === 'crisis' ? 3 : 2,
+            details: {
+              causeCode: life.causeCode,
+              forecast: life.forecast,
+              demand: missing,
+              actions: life.actions
+            }
+          });
+        }
+        dirty = true;
+        continue;
+      }
       site.consumptionProgress = Number(site.consumptionProgress || 0) + hours;
       if (site.consumptionProgress < 6) continue;
       const cycles = Math.floor(site.consumptionProgress / 6);
@@ -10134,7 +10492,7 @@ function createWastelandSimulation(options = {}) {
       // «Свалочный союз»), и подстановка её в заголовок читалась криво. Хватает
       // названия самой столицы — оно и так говорит, чей это заказ.
       title: `Закупка: ${capital.name || capital.id}`,
-      text: `${capital.name || capital.id} скупает у вольных людей ${stockpileSummary(demand)}. Принесите на склад и получите крышки — фракция платит за то, чего не добывает сама.`,
+      text: `${capital.name || capital.id} скупает у вольных людей ${stockpileSummary(demand)}. Принесите на склад и получите марки — фракция платит за то, чего не добывает сама.`,
       siteId: capital.id,
       issuerSiteId: capital.id,
       objective: 'faction_procurement',
@@ -11356,8 +11714,13 @@ function createWastelandSimulation(options = {}) {
     const hours = Math.max(0, Number(stepHours || 0));
     if (hours <= 0) return;
     state.worldHour = Number(Number(state.worldHour || 0) + hours);
+    Object.values(state.sites || {}).forEach(site => {
+      if (!site || Number(site.anomalyPressure || 0) <= 0) return;
+      site.anomalyPressure = Number(Math.max(0, Number(site.anomalyPressure || 0) - hours * 2).toFixed(2));
+    });
     maintainDistrictInterestSites(hours);
     reformDestroyedParties();
+    trackCargoDepartures();
     maintainWorldZoneBattles(hours);
     partyMovementTracks = new Map();
     Object.values(state.parties).forEach(party => recordPartyMovementPoint(party, party, 0));
@@ -11387,6 +11750,7 @@ function createWastelandSimulation(options = {}) {
     planFactionProduction(hours);
     restockRetailMarkets();
     createProductionExportCaravans(hours);
+    advanceRefugeeMigration(hours);
     consumeSettlementSupplies(hours);
     createSurplusTradeCaravans(hours);
     createFactionProcurementTasks();
@@ -11395,18 +11759,41 @@ function createWastelandSimulation(options = {}) {
   }
 
   function tick(now = Date.now(), opts = {}) {
+    const tickStartedAt = Date.now();
     const last = Number(state.lastTickAt || now);
     const elapsedMs = Math.max(0, Number(now || Date.now()) - last);
-    const hours = Number.isFinite(Number(opts.hours))
+    const explicitHours = Number.isFinite(Number(opts.hours));
+    const hours = explicitHours
       ? Math.max(0, Number(opts.hours))
       : elapsedMs / gameDayRealMs * 24;
-    state.lastTickAt = now;
     if (hours <= 0.001 && !opts.force) return false;
-    const totalHours = Math.max(0, Number(hours || 0));
+    const requestedHours = Math.max(0, Number(hours || 0));
+    const totalHours = Math.min(requestedHours, WORLD_SIM_MAX_STEP_HOURS * WORLD_SIM_MAX_CATCHUP_STEPS);
+    const deferredHours = Math.max(0, requestedHours - totalHours);
+    state.lastTickAt = explicitHours || deferredHours <= 0
+      ? now
+      : Number(now || Date.now()) - deferredHours / 24 * gameDayRealMs;
     const rawSteps = Math.max(1, Math.ceil(totalHours / WORLD_SIM_MAX_STEP_HOURS));
     const steps = Math.min(WORLD_SIM_MAX_CATCHUP_STEPS, rawSteps);
     const stepHours = totalHours / steps;
     for (let i = 0; i < steps; i += 1) tickWorldSimStep(stepHours);
+    const lifeRows = Object.values(state.sites || {})
+      .map(site => site?.settlementLife)
+      .filter(Boolean);
+    state.stats.worldLife = {
+      settlementCount: lifeRows.length,
+      shortageCount: lifeRows.filter(life => life.condition === 'shortage').length,
+      crisisCount: lifeRows.filter(life => life.condition === 'crisis').length,
+      recoveringCount: lifeRows.filter(life => life.condition === 'recovering').length,
+      activeRefugeeGroups: Object.keys(state.refugeeFlows?.active || {}).length,
+      arrivedRefugeeGroups: Array.isArray(state.refugeeFlows?.history) ? state.refugeeFlows.history.length : 0,
+      activeCargoTransactions: Object.values(state.cargoLedger || {}).filter(row => row?.status === 'in_transit').length,
+      catchupSteps: steps,
+      simulatedHours: Number(totalHours.toFixed(2)),
+      deferredHours: Number(deferredHours.toFixed(2)),
+      tickDurationMs: Math.max(0, Date.now() - tickStartedAt)
+    };
+    dirty = true;
     save(false);
     return true;
   }
@@ -11599,7 +11986,15 @@ function createWastelandSimulation(options = {}) {
     if (disrupted || scarcity >= 62) stateKey = 'blockade';
     else if (scarcity >= 34) stateKey = 'shortage';
     else if (abundance >= 58 && scarcity < 18) stateKey = 'supplied';
-    const priceMultiplier = clamp(1 + scarcity * 0.011 - abundance * 0.0012, 0.94, 2.45);
+    const economyRules = worldSimulationConfig.economy || {};
+    const minPriceMultiplier = clamp(economyRules.minimumPriceMultiplier ?? 0.85, 0.5, 1);
+    const maxPriceMultiplier = clamp(economyRules.crisisPriceMultiplier ?? 1.6, 1, 2);
+    const shortagePriceMultiplier = clamp(economyRules.shortagePriceMultiplier ?? 1.35, 1, maxPriceMultiplier);
+    const lifeCondition = String(site.settlementLife?.condition || '');
+    let rawPriceMultiplier = 1 + scarcity * 0.011 - abundance * 0.0012;
+    if (lifeCondition === 'crisis') rawPriceMultiplier = Math.max(shortagePriceMultiplier, rawPriceMultiplier);
+    const priceMultiplier = clamp(rawPriceMultiplier, minPriceMultiplier,
+      lifeCondition === 'shortage' ? shortagePriceMultiplier : maxPriceMultiplier);
     const quantityMultiplier = clamp(1 - scarcity * 0.008 + abundance * 0.0012, 0.18, 1.05);
     const capsMultiplier = clamp(1 - scarcity * 0.0045 + abundance * 0.0015 + prosperity * 0.0008, 0.42, 1.22);
     const stateLabel = {
@@ -12344,8 +12739,8 @@ function createWastelandSimulation(options = {}) {
         site.prosperity = clamp(Number(site.prosperity || 0) - 2, 0, 100);
       }
       addEvent(playerInvolved ? 'patrol_attacked' : 'patrol_lost', playerInvolved
-        ? 'Патруль Старого Клима попал под атаку.'
-        : 'Патруль Старого Клима потерял людей на дороге.', {
+        ? 'Дозор Управы попал под атаку.'
+        : 'Дозор Управы потерял людей на дороге.', {
         encounterId,
         siteId: site?.id || '',
         x: point ? Number(point.x.toFixed(1)) : undefined,
@@ -12432,7 +12827,7 @@ function createWastelandSimulation(options = {}) {
 
     if ((encounterId.includes('patrol') || encounterId.includes('vs')) && (killedGroups.has('wild') || killedGroups.has('raiders')) && aliveGroups.has('old_klim')) {
       if (oldKlimSite) oldKlimSite.security = clamp(Number(oldKlimSite.security || 0) + 2, 0, 100);
-      addEvent('patrol_success', 'Патруль Старого Клима выжил в дорожной стычке.', {
+      addEvent('patrol_success', 'Дозор Управы выжил в дорожной стычке.', {
         encounterId,
         siteId: oldKlimSite?.id || ''
       });
@@ -12795,6 +13190,7 @@ function createWastelandSimulation(options = {}) {
   function siteVisibleOnPublicGlobalMap(site = {}) {
     if (!site || !siteIsInPublicRelease(site)) return false;
     if (isFactionCapitalSite(site)) return true;
+    if (mapNode(getGlobalMap(), site.locationId || site.id) || mapNode(getGlobalMap(), site.id)) return true;
     return !globalMapPointInCapitalClearZone(getGlobalMap(), site, CAPITAL_CLEAR_RADIUS_POINTS, site.id);
   }
 
@@ -13186,6 +13582,8 @@ function createWastelandSimulation(options = {}) {
       updatedAt: state.updatedAt,
       sampledAt: Math.min(serverNow, Math.max(0, Number(state.lastTickAt || serverNow))),
       serverNow,
+      anomalyCycle: publicAnomalyCycle(state.anomalyCycle),
+      artifactOpportunities: publicAnomalyCycle(state.anomalyCycle).hotspots,
       factions: Object.fromEntries(Object.entries(state.factions || {}).map(([id, row]) => {
         const { grievances, ...visible } = row || {};
         return [id, visible];
@@ -13245,6 +13643,16 @@ function createWastelandSimulation(options = {}) {
           marketAbundance: market.abundance,
           marketPriceMultiplier: market.priceMultiplier,
           marketQuantityMultiplier: market.quantityMultiplier,
+          settlementLife: publicSettlementLife(site, worldSimulationConfig),
+          anomalyPressure: Number(Number(site.anomalyPressure || 0).toFixed(2)),
+          shiftExposureUntilHour: Number(Number(site.shiftExposureUntilHour || 0).toFixed(2)),
+          shiftImpact: site.lastShiftImpact && typeof site.lastShiftImpact === 'object'
+            ? clone(site.lastShiftImpact)
+            : null,
+          artifactOpportunity: artifactOpportunityForLocation(
+            site.templateLocationId || site.locationId || site.id,
+            state.anomalyCycle?.shiftId || ''
+          ),
           liveRegion,
           danger: site.danger || 0,
           security: site.security,
@@ -13284,6 +13692,7 @@ function createWastelandSimulation(options = {}) {
           })),
           productionDemand: site.productionDemand || {},
           retailDemand: site.retailDemand || {},
+          sceneVariant: settlementSceneVariant(site, worldSimulationConfig, state.worldHour),
           retailMarkets: Object.values(site.retailMarkets || {}).map(row => ({
             key: row.key,
             profileId: row.profileId,
@@ -13294,7 +13703,11 @@ function createWastelandSimulation(options = {}) {
           }))
         };
       }),
-      parties: Object.values(state.parties).map(publicParty),
+      refugeeFlows: Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites)),
+      parties: [
+        ...Object.values(state.parties).map(publicParty),
+        ...Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites))
+      ],
       threatZones: publicThreatZones(),
       territories: publicTerritories(),
       worldZones: [],
@@ -13475,6 +13888,10 @@ function createWastelandSimulation(options = {}) {
 
   function reset() {
     state = defaultState(getGlobalMap());
+    Object.values(state.sites || {}).forEach(site => {
+      site.settlementLife = normalizeSettlementLife(site, worldSimulationConfig, state.worldHour);
+    });
+    trackCargoDepartures();
     dirty = true;
     save(true);
     return publicState();
@@ -13498,6 +13915,8 @@ function createWastelandSimulation(options = {}) {
     publicWorldTasks,
     isWorldTaskInPublicRelease: worldTaskIsInPublicRelease,
     recordWorldTaskPlayerTransfer,
+    recordAnomalyShift,
+    artifactOpportunityForLocation,
     syncGlobalMap,
     applyTraderSupply,
     applyNpcTraderTransaction,

@@ -3,6 +3,9 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
+const progressionCatalog = JSON.parse(fs.readFileSync(
+  path.join(root, 'data', 'kromka', 'character-progression.json'), 'utf8'
+));
 
 const REMOVED_PERK_LAYOUT_FUNCTIONS = [
   'perkSubgroupIndex',
@@ -255,12 +258,12 @@ assertIncludesAll('Current perk board renderer', perkBoardBody, [
   'renderPerkDetail('
 ]);
 
-const serverSkills = idsInServerSet(server, 'const SERVER_SKILL_IDS');
-const serverTalents = idsInServerSet(server, 'const SERVER_TALENT_IDS');
-const serverTraits = idsInServerSet(server, 'const SERVER_START_TRAITS');
+const serverSkills = progressionCatalog.skills.items.map(row => row.id);
+const serverTalents = progressionCatalog.perks.items.map(row => row.id);
+const serverTraits = progressionCatalog.startTraits.items.map(row => row.id);
 const clientTalentMax = talentMaxRanks(model);
-const serverTalentMax = serverTalentMaxRanks(server);
-const serverTalentReqs = evalConstBlock(server, 'const SERVER_TALENT_REQUIREMENTS = {', 'SERVER_TALENT_REQUIREMENTS', '};');
+const serverTalentMax = Object.fromEntries(progressionCatalog.perks.items.map(row => [row.id, row.maxRank]));
+const serverTalentReqs = Object.fromEntries(progressionCatalog.perks.items.map(row => [row.id, row.requirements]));
 
 assertNoDuplicates('Client skill', clientSkills);
 assertNoDuplicates('Client talent', clientTalents);
@@ -374,12 +377,17 @@ if (!actionProgressionBody.includes('Number(p.level || 1)') || actionProgression
 }
 
 const sanitizeSpecialBody = functionSlice(server, 'function sanitizeSpecial', '\nfunction ');
-if (!server.includes('const SERVER_SPECIAL_MAX = 10') || !server.includes('const SERVER_SPECIAL_TOTAL = 40') || !sanitizeSpecialBody.includes('SERVER_SPECIAL_TOTAL') || !sanitizeSpecialBody.includes('out[key]--')) {
+if (progressionCatalog.special.max !== 10 || progressionCatalog.special.budget !== 40
+  || !server.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.max')
+  || !server.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.budget')
+  || !sanitizeSpecialBody.includes('SERVER_SPECIAL_TOTAL') || !sanitizeSpecialBody.includes('out[key]--')) {
   fail('Server SPECIAL sanitization must enforce the same base stat max and total budget as character creation');
 }
 const serverStatValueBody = functionSlice(server, 'function serverStatValue', '\nfunction ');
 const serverStatValueWithRanksBody = functionSlice(server, 'function serverStatValueWithTalentRanks', '\nfunction ');
-if (!server.includes('const SERVER_SPECIAL_EFFECTIVE_MAX = 15') || !serverStatValueBody.includes('SERVER_SPECIAL_EFFECTIVE_MAX') || !serverStatValueWithRanksBody.includes('SERVER_SPECIAL_EFFECTIVE_MAX')) {
+if (progressionCatalog.special.effectiveMax !== 15
+  || !server.includes('KROMKA_CHARACTER_PROGRESSION_CATALOG.special.effectiveMax')
+  || !serverStatValueBody.includes('SERVER_SPECIAL_EFFECTIVE_MAX') || !serverStatValueWithRanksBody.includes('SERVER_SPECIAL_EFFECTIVE_MAX')) {
   fail('Server effective SPECIAL must share the client effective stat cap');
 }
 const serverPlayerMaxHpBody = functionSlice(server, 'function serverPlayerMaxHp', '\nfunction ');
@@ -438,8 +446,12 @@ if (!serverTalentLevelBody.includes('serverTalentRankFrom(p.talentRanks || {}, i
 if (!serverTalentRankFromBody.includes('SERVER_TALENT_IDS.has(id)') || !serverTalentRankFromBody.includes('SERVER_TALENT_MAX_RANKS[id]') || !serverTalentRankFromBody.includes('Number.isFinite(raw)')) {
   fail('Server talent rank reader must reject unknown/invalid ranks and respect per-talent max ranks');
 }
-if (!serverEnforceProgressionBody.includes('const perkBudget = serverPerkBudgetFor(p.level)') || !serverEnforceProgressionBody.includes('p.talentRanks = limitTalentRanksByBudget(p.talentRanks || {}, perkBudget, p)') || !serverEnforceProgressionBody.includes('p.skillRanks = limitSkillRanksByBudget')) {
-  fail('Server progression enforcement must clamp talents before skill budgeting and again after skill budgeting');
+if (!serverEnforceProgressionBody.includes('const perkBudget = serverPerkBudgetFor(p.level)')
+  || !serverEnforceProgressionBody.includes('limitExistingTalentRanksByBudget')
+  || !serverEnforceProgressionBody.includes('ensureServerProgressionLedger(p)')
+  || !serverEnforceProgressionBody.includes('limitServerSkillStepsByBudget')
+  || !serverEnforceProgressionBody.includes('serverSyncSkillRanksFromLedger(p)')) {
+  fail('Server progression enforcement must preserve acquired ranks through the versioned skill-step ledger');
 }
 const serverSkillPercentBody = functionSlice(server, 'function serverSkillPercent', '\nfunction ');
 const serverSkillRankFromBody = functionSlice(server, 'function serverSkillRankFrom', '\nfunction ');
@@ -499,18 +511,11 @@ if (!enemyHitServerBody.includes('serverCombatTargetPoint(enemy, data, weapon)')
 if (!enemyHitServerBody.includes('failureContext') || !enemyHitServerBody.includes('enemy: publicEnemy(enemy)')) {
   fail('enemyHit rejections must return authoritative NPC and combat state for client recovery');
 }
-if (!enemyHitServerBody.includes('locationAllowsNpcCombat(loc)')) {
-  fail('enemyHit must reject NPC attacks in peaceful locations before spending combat resources');
-}
-const peacefulNpcBlockIndex = enemyHitServerBody.indexOf('locationAllowsNpcCombat(loc)');
-const enemyTargetLookupIndex = enemyHitServerBody.indexOf('const enemy = room.enemies.get(enemyId)');
-const enemyHitSpendIndex = enemyHitServerBody.indexOf('serverValidateAndSpendAttack');
-const enemyHitAggroIndex = enemyHitServerBody.indexOf('setEncounterFactionHostileToPlayer');
-if (peacefulNpcBlockIndex < 0
-  || (enemyTargetLookupIndex >= 0 && peacefulNpcBlockIndex > enemyTargetLookupIndex)
-  || (enemyHitSpendIndex >= 0 && peacefulNpcBlockIndex > enemyHitSpendIndex)
-  || (enemyHitAggroIndex >= 0 && peacefulNpcBlockIndex > enemyHitAggroIndex)) {
-  fail('enemyHit peaceful-location rejection must run before target lookup, AP/ammo spending, and faction hostility');
+const npcProtectionIndex = enemyHitServerBody.indexOf('serverPlayerCanDamageNpc(p, enemy, room)');
+if (npcProtectionIndex < 0
+  || npcProtectionIndex > enemyHitServerBody.indexOf('serverDamageRoll(p, bulletWeapon')
+  || enemyHitServerBody.includes('setEncounterFactionHostileToPlayer')) {
+  fail('enemyHit must protect friendly NPCs before damage or faction provocation while allowing the shot');
 }
 const serverPvpModeNormalizeBody = functionSlice(server, 'function normalizeLocationPvpMode', '\n\nfunction ');
 if (!serverPvpModeNormalizeBody.includes("typeof input === 'boolean'")
@@ -525,12 +530,12 @@ if (!npcRobServerBody.includes('locationAllowsNpcCombat(loc)') || npcRobServerBo
 
 ['shoot', 'melee'].forEach(eventName => {
   const body = socketEventSlice(server, eventName);
-  const blockIndex = body.indexOf('locationAllowsNpcCombat(roomLocation(room))');
   const emitIndex = body.indexOf(`emit('${eventName === 'shoot' ? 'shot' : 'melee'}'`);
-  if (blockIndex < 0
-    || (emitIndex >= 0 && blockIndex > emitIndex)
+  if (body.includes('locationAllowsNpcCombat')
+    || body.includes('locationIsFactionCapital')
+    || emitIndex < 0
     || body.includes('addRoomNoise')) {
-    fail(`${eventName} visual combat event must be suppressed in peaceful locations and must not mutate authoritative AI noise`);
+    fail(`${eventName} visuals must work in peaceful locations without mutating authoritative AI noise`);
   }
 });
 
@@ -538,17 +543,18 @@ const combatAttackServerBody = socketEventSlice(server, 'combatAttack');
 const combatAttackPeacefulIndex = combatAttackServerBody.indexOf('locationAllowsNpcCombat(loc)');
 const combatAttackSpendIndex = combatAttackServerBody.indexOf('serverValidateAndSpendAttack');
 const combatAttackNoiseIndex = combatAttackServerBody.indexOf('addRoomNoise');
-if (combatAttackPeacefulIndex < 0
+if (combatAttackPeacefulIndex >= 0
+  || combatAttackServerBody.includes('locationIsFactionCapital')
   || combatAttackSpendIndex < 0
-  || combatAttackPeacefulIndex > combatAttackSpendIndex
   || combatAttackNoiseIndex < combatAttackSpendIndex
   || !combatAttackServerBody.includes('if (!spend.reused)')) {
-  fail('combatAttack must reject peaceful use before spending and create AI noise only after a new authoritative spend');
+  fail('combatAttack must allow peaceful use and create AI noise only after a new authoritative spend');
 }
 
 const playerHitServerBody = socketEventSlice(server, 'playerHit');
-if (!playerHitServerBody.includes('locationAllowsPvp(loc)')) {
-  fail('playerHit must reject PvP attacks in peaceful locations before spending combat resources');
+const playerProtectionIndex = playerHitServerBody.indexOf('serverPlayerCanDamagePlayer(attacker, target, room, now)');
+if (playerProtectionIndex < 0 || playerProtectionIndex > playerHitServerBody.indexOf('serverDamageRoll(attacker')) {
+  fail('playerHit must protect allies and peaceful-zone targets before damage while allowing the shot');
 }
 
 const syncNpcTradeStateBody = socketEventSlice(server, 'syncNpcTradeState');

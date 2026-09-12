@@ -52,6 +52,7 @@ trap 'rm -rf "$WORK"' EXIT
 # Модули движка и редактора. Монолитный Managed/UnityEditor.dll НЕ подключаем:
 # он дублирует типы модулей, и каждый MenuItem становится неоднозначным.
 for f in "$UNITY_DATA/Managed/UnityEngine"/UnityEngine*.dll \
+         "$UNITY_DATA/Managed/UnityEngine"/Unity.Scripting.dll \
          "$UNITY_DATA/Managed/UnityEngine"/UnityEditor*.dll; do
   [ -f "$f" ] && echo "-r:$f" >> "$WORK/refs.rsp"
 done
@@ -61,7 +62,10 @@ for f in "$CLIENT"/Library/PackageCache/com.unity.nuget.newtonsoft-json@*/Runtim
 done
 
 for f in "$CLIENT"/Library/ScriptAssemblies/glTFast*.dll \
-         "$CLIENT"/Library/ScriptAssemblies/Unity.RenderPipelines*.dll; do
+         "$CLIENT"/Library/ScriptAssemblies/Unity.RenderPipelines*.dll \
+         "$CLIENT"/Library/ScriptAssemblies/UnityEngine.UI.dll \
+         "$CLIENT"/Library/ScriptAssemblies/Unity.TextMeshPro*.dll \
+         "$CLIENT"/Library/ScriptAssemblies/Unity.InputSystem*.dll; do
   [ -f "$f" ] && echo "-r:$BASE/Library/ScriptAssemblies/$(basename "$f")" >> "$WORK/refs.rsp"
 done
 

@@ -21,12 +21,6 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed class RoaFogOfWar : MonoBehaviour
     {
-        private struct ExactVisionBox
-        {
-            public RoaWorldCollisionBox Box;
-            public RoaAuthoredVision.Kind Kind;
-        }
-
         public RoaLocationLoader Loader;
         private int _mapWidth = 64;
         private int _mapDepth = 64;
@@ -35,7 +29,6 @@ namespace RealmOfAshes.Game
         private readonly HashSet<int> _coverTiles = new HashSet<int>();
         private readonly HashSet<int> _authoredBlockTiles = new HashSet<int>();
         private readonly HashSet<int> _authoredCoverTiles = new HashSet<int>();
-        private readonly List<ExactVisionBox> _exactVisionBoxes = new List<ExactVisionBox>();
         private readonly HashSet<int> _visible = new HashSet<int>();
         private readonly HashSet<int> _explored = new HashSet<int>();
 
@@ -56,7 +49,6 @@ namespace RealmOfAshes.Game
         private int _lastTz = int.MinValue;
         private bool _lastCrouching;
         private int _lastRadius;
-        private Vector3 _observerWorld;
         private int _lastSubTileX = int.MinValue;
         private int _lastSubTileZ = int.MinValue;
         private float _nextSubTileRefreshAt;
@@ -161,7 +153,6 @@ namespace RealmOfAshes.Game
             _coverTiles.Clear();
             _authoredBlockTiles.Clear();
             _authoredCoverTiles.Clear();
-            _exactVisionBoxes.Clear();
             _visible.Clear();
             _explored.Clear();
             _lastTx = int.MinValue;
@@ -187,14 +178,7 @@ namespace RealmOfAshes.Game
 
                 if (kind == RoaAuthoredVision.Kind.Block || kind == RoaAuthoredVision.Kind.Cover)
                 {
-                    var boxes = new List<RoaWorldCollisionBox>();
-                    int exactCount = Loader != null ? Loader.CollectCollisionBoxes(entry.Id, boxes) : 0;
-                    if (exactCount > 0)
-                    {
-                        for (int i = 0; i < boxes.Count; i++)
-                            _exactVisionBoxes.Add(new ExactVisionBox { Box = boxes[i], Kind = kind });
-                    }
-                    else if (kind == RoaAuthoredVision.Kind.Block) MarkFootprint(entry, _authoredBlockTiles);
+                    if (kind == RoaAuthoredVision.Kind.Block) MarkFootprint(entry, _authoredBlockTiles);
                     else MarkFootprint(entry, _authoredCoverTiles);
                 }
             }
@@ -403,7 +387,6 @@ namespace RealmOfAshes.Game
 
             _lastTx = tx;
             _lastTz = tz;
-            _observerWorld = playerWorld;
             _lastSubTileX = subTileX;
             _lastSubTileZ = subTileZ;
             _lastCrouching = crouching;
@@ -611,23 +594,9 @@ namespace RealmOfAshes.Game
                 bool isStart = x == startTx && z == startTz;
                 if (!isStart && Blocks(key, crouching)) return;
 
-                int previousX = x;
-                int previousZ = z;
                 int e2 = err * 2;
                 if (e2 > -dz) { err -= dz; x += sx; }
                 if (e2 < dx) { err += dx; z += sz; }
-
-                if (ExactVisionBlocked(VisibilityWorldPoint(previousX, previousZ, startTx, startTz),
-                    VisibilityWorldPoint(x, z, startTx, startTz), crouching))
-                {
-                    if (InBounds(x, z))
-                    {
-                        int wallKey = Key(x, z);
-                        _visible.Add(wallKey);
-                        _explored.Add(wallKey);
-                    }
-                    return;
-                }
             }
         }
 
@@ -726,10 +695,6 @@ namespace RealmOfAshes.Game
         private bool HasStrictLineOfSightInternal(int startTx, int startTz, int endTx, int endTz,
             bool observerCrouching, Vector3? targetWorld)
         {
-            Vector3 startWorld = VisibilityWorldPoint(startTx, startTz, startTx, startTz);
-            Vector3 endWorld = targetWorld ?? VisibilityWorldPoint(endTx, endTz, startTx, startTz);
-            if (ExactVisionBlocked(startWorld, endWorld, observerCrouching)) return false;
-
             int x = startTx;
             int z = startTz;
 
@@ -768,16 +733,6 @@ namespace RealmOfAshes.Game
         {
             if (startTx == targetTx && startTz == targetTz) return false;
 
-            Vector3 startWorld = VisibilityWorldPoint(startTx, startTz, startTx, startTz);
-            Vector3 endWorld = targetWorld ?? VisibilityWorldPoint(targetTx, targetTz, startTx, startTz);
-            for (int i = 0; i < _exactVisionBoxes.Count; i++)
-            {
-                ExactVisionBox row = _exactVisionBoxes[i];
-                if (row.Kind != RoaAuthoredVision.Kind.Cover) continue;
-                if (TryVisionHit(row.Box, startWorld, endWorld, out _, out float far, out float maxRange)
-                    && maxRange - far <= RoaCoords.Tile * 1.25f) return true;
-            }
-
             int x = startTx;
             int z = startTz;
 
@@ -808,71 +763,6 @@ namespace RealmOfAshes.Game
                 previousKey = Key(x, z);
                 previousIsObserver = false;
             }
-        }
-
-        private Vector3 VisibilityWorldPoint(int tx, int tz, int startTx, int startTz)
-        {
-            Vector3 center = RoaCoords.TileToWorld(tx, tz, _mapWidth, _mapDepth);
-            if (_lastTx != startTx || _lastTz != startTz) return center;
-            Vector3 startCenter = RoaCoords.TileToWorld(startTx, startTz, _mapWidth, _mapDepth);
-            float maxOffset = RoaCoords.Tile * 0.48f;
-            center.x += Mathf.Clamp(_observerWorld.x - startCenter.x, -maxOffset, maxOffset);
-            center.z += Mathf.Clamp(_observerWorld.z - startCenter.z, -maxOffset, maxOffset);
-            return center;
-        }
-
-        private bool ExactVisionBlocked(Vector3 start, Vector3 end, bool observerCrouching)
-        {
-            for (int i = 0; i < _exactVisionBoxes.Count; i++)
-            {
-                ExactVisionBox row = _exactVisionBoxes[i];
-                if (row.Kind == RoaAuthoredVision.Kind.Cover && !observerCrouching) continue;
-                if (TryVisionHit(row.Box, start, end, out _, out _, out _)) return true;
-            }
-            return false;
-        }
-
-        private static bool TryVisionHit(RoaWorldCollisionBox box, Vector3 start, Vector3 end,
-            out float nearHit, out float farHit, out float maxRange)
-        {
-            Vector3 delta = end - start;
-            delta.y = 0f;
-            maxRange = delta.magnitude;
-            nearHit = 0f;
-            farHit = 0f;
-            if (maxRange <= 0.001f) return false;
-
-            Vector3 direction = delta / maxRange;
-            Quaternion inverse = Quaternion.Inverse(Quaternion.Euler(0f, box.RotationY * Mathf.Rad2Deg, 0f));
-            Vector3 localOrigin = inverse * new Vector3(start.x - box.X, 0f, start.z - box.Z);
-            Vector3 localDirection = inverse * direction;
-            float tMin = 0.02f;
-            float tMax = maxRange - 0.02f;
-            if (!ClipAxis(localOrigin.x, localDirection.x, -box.HalfX, box.HalfX, ref tMin, ref tMax)
-                || !ClipAxis(localOrigin.z, localDirection.z, -box.HalfZ, box.HalfZ, ref tMin, ref tMax))
-                return false;
-            if (tMax < 0.02f || tMin >= maxRange - 0.02f) return false;
-            nearHit = tMin;
-            farHit = tMax;
-            return true;
-        }
-
-        private static bool ClipAxis(float origin, float direction, float minimum, float maximum,
-            ref float tMin, ref float tMax)
-        {
-            if (Mathf.Abs(direction) < 0.00001f)
-                return origin >= minimum && origin <= maximum;
-            float near = (minimum - origin) / direction;
-            float far = (maximum - origin) / direction;
-            if (near > far)
-            {
-                float swap = near;
-                near = far;
-                far = swap;
-            }
-            tMin = Mathf.Max(tMin, near);
-            tMax = Mathf.Min(tMax, far);
-            return tMin <= tMax;
         }
 
         /// <summary>

@@ -22,7 +22,8 @@ const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const simSource = fs.readFileSync(path.join(root, 'src', 'server', 'wasteland-sim.js'), 'utf8');
 const unityTerritoryProbeSource = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Editor', 'RoaGlobalMapTerritoryProbe.cs'), 'utf8');
 const released = new Set(RELEASED_LOCATION_IDS);
-const requiredCapitals = ['settlement', 'scrapTown', 'relayStation'];
+const requiredCapitals = ['settlement', 'sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven'];
+const requiredStoryDestinations = ['balanceBunker', 'cascadeRegenerator'];
 
 function collectSiteReferences(value, output = new Set(), depth = 0) {
   if (!value || depth > 8) return output;
@@ -46,11 +47,12 @@ function assertReleasedReferences(label, rows) {
   }
 }
 
-assert.strictEqual(authoredFiles.length, 30, 'authored location catalog must stay intact');
-assert(RELEASED_LOCATION_IDS.length >= 6 && RELEASED_LOCATION_IDS.length <= 8,
-  'Unity release must contain 6-8 locations');
+assert(authoredFiles.length >= 30, 'authored location catalog lost released or migration locations');
+assert(authoredFiles.includes('tutorialCaravanYard.json'),
+  'private story locations must coexist with the public release catalog');
 assert.strictEqual(released.size, RELEASED_LOCATION_IDS.length, 'released location IDs must be unique');
 requiredCapitals.forEach(id => assert(released.has(id), `required faction capital is missing: ${id}`));
+requiredStoryDestinations.forEach(id => assert(released.has(id), `required campaign destination is missing: ${id}`));
 
 for (const id of RELEASED_LOCATION_IDS) {
   const file = path.join(locationsDir, `${id}.json`);
@@ -62,13 +64,13 @@ for (const id of RELEASED_LOCATION_IDS) {
   assert(isReleasedLocationId(id), `release predicate rejected ${id}`);
 }
 
-for (const node of globalMap.nodes || []) {
-  assert(released.has(String(node.locationId || node.id || '')),
-    `authored global-map node is not in the Unity release: ${node.id}`);
-}
-const expectedDynamicUnityMarkers = RELEASED_LOCATION_IDS.length - (globalMap.nodes || []).length;
-assert(unityTerritoryProbeSource.includes(`_map.SiteMarkerCount == ${expectedDynamicUnityMarkers}`),
-  'Unity territory probe still expects the hidden procedural site markers');
+const globalNodeIds = (globalMap.nodes || []).map(node => String(node.locationId || node.id || ''));
+assert.strictEqual(new Set(globalNodeIds).size, globalNodeIds.length,
+  'active global-map destination IDs must be unique');
+assert.deepStrictEqual(RELEASED_LOCATION_IDS, globalNodeIds,
+  'every visible global-map location, and only a visible location, must be released');
+assert(unityTerritoryProbeSource.includes('_map.SiteMarkerCount == 2'),
+  'Unity territory probe lost coverage for the currently streamed public site markers');
 
 const release = publicLocationRelease();
 assert.strictEqual(release.schema, LOCATION_RELEASE_SCHEMA);
@@ -87,10 +89,12 @@ try {
   const snapshot = sim.publicState();
   const publicSiteIds = snapshot.sites.map(site => site.id);
 
-  assert(Object.keys(internal.sites).length > RELEASED_LOCATION_IDS.length,
-    'hidden sites must remain in the background simulation');
-  assert.deepStrictEqual(new Set(publicSiteIds), released,
-    'public wasteland snapshot must expose exactly the released sites');
+  assert(authoredFiles.length > RELEASED_LOCATION_IDS.length,
+    'private and instanced locations must remain outside the global-map release');
+  assert(publicSiteIds.every(id => released.has(id)),
+    'public wasteland snapshot exposed a site outside the release allowlist');
+  requiredCapitals.forEach(id => assert(publicSiteIds.includes(id),
+    `public wasteland snapshot lost required capital ${id}`));
   assert.deepStrictEqual(snapshot.locationRelease, release, 'public snapshot release metadata drifted');
   assert(snapshot.worldActivities.length > 0, 'released world must keep at least one playable activity');
 
@@ -121,5 +125,13 @@ assert(serverSource.includes('!isReleasedLocationId(site.id || \'\') || !isRelea
   'global-map destination resolver is not guarded by the release list');
 assert(serverSource.includes('&& isReleasedLocationId(requestedLocationId)'),
   'direct global-map arrival by hidden location ID is not guarded');
+const destinationResolverStart = serverSource.indexOf('function serverGlobalDestinationAtPoint(');
+const destinationResolverEnd = serverSource.indexOf('\nfunction ', destinationResolverStart + 10);
+const destinationResolver = serverSource.slice(destinationResolverStart, destinationResolverEnd);
+assert(destinationResolverStart >= 0, 'global-map destination resolver is missing');
+assert(!destinationResolver.includes("String(node?.kind || 'settlement').toLowerCase() !== 'settlement'"),
+  'visible non-settlement nodes are still excluded from global-map destinations');
+assert(destinationResolver.includes("kind: 'location'"),
+  'authored global-map nodes are not represented as enterable locations');
 
 console.log(`Location release check passed: ${RELEASED_LOCATION_IDS.length} visible, ${authoredFiles.length - RELEASED_LOCATION_IDS.length} preserved.`);

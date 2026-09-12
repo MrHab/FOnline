@@ -1,0 +1,9 @@
+Low Poly Rocket Launcher by KennyNL
+
+License: Creative Commons CC0 1.0 Universal
+Source: https://opengameart.org/content/low-poly-rocket-launcher
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Downloaded 2026-09-07. Only the authoring blend, its two diffuse textures,
+and the upstream README are stored here; engine-specific samples and the
+complete upstream archive are not vendored.

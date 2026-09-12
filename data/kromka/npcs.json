@@ -1,0 +1,118 @@
+{
+  "schema": "kromka.npcs.v1",
+  "version": 1,
+  "npcs": [
+    {
+      "id": "irena_versta_belova",
+      "questAliases": ["versta"],
+      "displayName": "Ирена «Верста» Белова",
+      "role": "Картограф каравана и первый проводник",
+      "factionId": null,
+      "homeLocationId": "settlement",
+      "personalQuestId": "personal_versta_route_price",
+      "secret": "Продала сведения о грузе, не зная, что это приведёт к нападению."
+    },
+    {
+      "id": "marina_velskaya",
+      "questAliases": ["velskaya"],
+      "displayName": "Марина Вельская",
+      "role": "Комиссар Управы",
+      "factionId": "uprava",
+      "homeLocationId": "sluiceCity",
+      "personalQuestId": "personal_velskaya_signature",
+      "secret": "Верит, что контролируемая жестокость предотвращает большую катастрофу."
+    },
+    {
+      "id": "nika_reznik",
+      "questAliases": ["reznik"],
+      "displayName": "Ника Резник",
+      "role": "Представитель Вольных артелей",
+      "factionId": "free_artels",
+      "homeLocationId": "scrapTown",
+      "personalQuestId": "personal_reznik_election",
+      "secret": "Позволяет богатым артелям управлять голосованием ради сохранения союза."
+    },
+    {
+      "id": "timur_arsenyev",
+      "questAliases": ["arsenyev"],
+      "displayName": "Тимур Арсеньев",
+      "role": "Профессор и глава Контура",
+      "factionId": "contour",
+      "homeLocationId": "relayStation",
+      "personalQuestId": "personal_arsenyev_optimism",
+      "secret": "Скрывает реальный срок до кризиса сини."
+    },
+    {
+      "id": "sofia_sych",
+      "questAliases": ["sych"],
+      "displayName": "Софья Сыч",
+      "role": "Глава Лиги Тракта",
+      "factionId": "tract_league",
+      "homeLocationId": "caravanCamp",
+      "personalQuestId": "personal_sych_war_price",
+      "secret": "Ценит торговый мир, но зарабатывает на продолжении войны."
+    },
+    {
+      "id": "yara_koval",
+      "questAliases": ["koval"],
+      "displayName": "Яра Коваль",
+      "role": "Врач и лидер Вторых",
+      "factionId": "seconds",
+      "homeLocationId": "secondHaven",
+      "dialoguePosition": { "x": 1, "z": -17 },
+      "personalQuestId": "personal_koval_chalk_names",
+      "secret": "Защищает отвергнутых, жертвуя собственными разведчиками."
+    },
+    {
+      "id": "nikolai_severov",
+      "questAliases": ["severov", "unknown_curator"],
+      "displayName": "Николай Северов",
+      "role": "Администратор Комитета преемственности",
+      "factionId": "continuity",
+      "homeLocationId": "balanceBunker",
+      "dialoguePosition": { "x": 1, "z": -17 },
+      "personalQuestId": "personal_severov_future_interview",
+      "secret": "Способен логично обосновать каждую жертву числом спасённых."
+    },
+    {
+      "id": "arkady_aktov",
+      "questAliases": ["aktov"],
+      "displayName": "Аркадий Актов",
+      "role": "Регистратор земли и баз",
+      "factionId": null,
+      "homeLocationId": "settlement",
+      "personalQuestId": "personal_aktov_air_rights",
+      "secret": "Часть признаваемых всеми земельных прав он выдумал сам."
+    },
+    {
+      "id": "rada_menshova",
+      "questAliases": ["menshova"],
+      "displayName": "Доктор Рада Меньшова",
+      "role": "Врач и голос радио «Фон»",
+      "factionId": "contour",
+      "homeLocationId": "settlement",
+      "personalQuestId": "personal_menshova_clear_voice",
+      "secret": "Участвовала в ранних опытах Контура."
+    },
+    {
+      "id": "lev_kartsev",
+      "questAliases": ["kartsev"],
+      "displayName": "Майор Лев Карцев",
+      "role": "Полевой командир Управы",
+      "factionId": "uprava",
+      "homeLocationId": "roadOutpost",
+      "personalQuestId": "personal_kartsev_missing_order",
+      "secret": "Должен выбрать между приказом и защитой мирных жителей."
+    },
+    {
+      "id": "avenir_key",
+      "displayName": "Авенир Ключ",
+      "role": "Механик по генераторам и аномальному инструменту",
+      "factionId": null,
+      "homeLocationId": "settlement",
+      "dialoguePosition": { "x": 8, "z": -8 },
+      "personalQuestId": "resident_avenir_last_generator",
+      "secret": "Не разбирает работающие машины даже тогда, когда их детали могли бы спасти другую установку."
+    }
+  ]
+}

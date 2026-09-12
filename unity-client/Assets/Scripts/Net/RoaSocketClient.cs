@@ -72,6 +72,13 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemySnapshot;
         public event Action<JObject> OnEnemyActivityDelta;
         public event Action<JObject> OnWorldState;
+        public event Action<JObject> OnAnomalyState;
+        public event Action<JObject> OnBoltThrown;
+        public event Action<JObject> OnArtifactState;
+        public event Action<JObject> OnPersonalBaseState;
+        public event Action<JObject> OnKromkaClanState;
+        public event Action<JObject> OnKromkaSiegeState;
+        public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
         /// <summary>Полный снимок серверных контейнеров текущей комнаты.</summary>
@@ -103,6 +110,9 @@ namespace RealmOfAshes.Net
         /// <summary>Адресное предложение торговли, дружбы или вступления в клан.</summary>
         public event Action<JObject> OnSocialActionReceived;
 
+        /// <summary>Серверное состояние безопасной сделки между двумя игроками.</summary>
+        public event Action<JObject> OnPlayerTradeUpdated;
+
         /// <summary>Друзья, заявки и клан изменились в постоянном серверном состоянии.</summary>
         public event Action<JObject> OnSocialStateUpdated;
 
@@ -130,6 +140,8 @@ namespace RealmOfAshes.Net
 
         /// <summary>Авторитетный итог лечения любого игрока в комнате.</summary>
         public event Action<JObject> OnPlayerHealed;
+        public event Action<JObject> OnMedicalConsentRequested;
+        public event Action<JObject> OnMedicalConsentResolved;
 
         /// <summary>Другой игрок умер, сменил комнату или возродился в текущей.</summary>
         public event Action<JObject> OnPlayerRespawned;
@@ -427,6 +439,54 @@ namespace RealmOfAshes.Net
                     OnWorldState?.Invoke(state);
             }));
 
+            _connection.On("anomalyState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                JObject state = payload?["state"] as JObject ?? payload;
+                if (state != null && IsForCurrentRoom(state["roomId"]?.ToString()))
+                    OnAnomalyState?.Invoke(state);
+            }));
+
+            _connection.On("boltThrown", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnBoltThrown?.Invoke(payload);
+            }));
+
+            _connection.On("artifactState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnArtifactState?.Invoke(payload);
+            }));
+
+            _connection.On("personalBaseState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                JObject state = payload?["state"] as JObject ?? payload;
+                if (state != null) OnPersonalBaseState?.Invoke(state);
+            }));
+
+            _connection.On("kromkaClanState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                JObject state = payload?["state"] as JObject ?? payload;
+                if (state != null) OnKromkaClanState?.Invoke(state);
+            }));
+
+            _connection.On("kromkaSiegeState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnKromkaSiegeState?.Invoke(payload);
+            }));
+
+            _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnKromkaOnboardingState?.Invoke(payload);
+            }));
+
             _connection.On("worldActivityFeedChanged", args => _mainThread.Enqueue(() =>
             {
                 var payload = First<JObject>(args);
@@ -481,6 +541,12 @@ namespace RealmOfAshes.Net
                 OnSocialActionReceived?.Invoke(payload);
             }));
 
+            _connection.On("playerTradeUpdated", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPlayerTradeUpdated?.Invoke(payload);
+            }));
+
             _connection.On("socialStateUpdated", args => _mainThread.Enqueue(() =>
             {
                 var payload = First<JObject>(args);
@@ -520,6 +586,20 @@ namespace RealmOfAshes.Net
                 string targetId = payload["targetId"]?.ToString() ?? payload["playerId"]?.ToString();
                 if (string.IsNullOrEmpty(targetId) || targetId == Session?.Id) MergeLocalVitals(payload);
                 OnPlayerHealed?.Invoke(payload);
+            }));
+
+            _connection.On("medicalConsentRequested", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload == null || !IsForCurrentRoom(payload["roomId"]?.ToString())) return;
+                OnMedicalConsentRequested?.Invoke(payload);
+            }));
+
+            _connection.On("medicalConsentResolved", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload == null || !IsForCurrentRoom(payload["roomId"]?.ToString())) return;
+                OnMedicalConsentResolved?.Invoke(payload);
             }));
 
             _connection.On("playerRespawned", args => _mainThread.Enqueue(() =>
@@ -1103,6 +1183,24 @@ namespace RealmOfAshes.Net
         public void SendState(Vector3 unityPosition, float unityYawDeg, Vector3 unityVelocity,
                               bool moving, bool crouching, bool turning)
         {
+            SendStateInternal(unityPosition, unityYawDeg, unityVelocity, moving, crouching, turning, false);
+        }
+
+        /// <summary>
+        /// Reliable final position proposal before an action whose validation
+        /// depends on the player's exact location (for example, leaving a map).
+        /// </summary>
+        public void SendStateImmediately(Vector3 unityPosition, float unityYawDeg,
+                                         Vector3 unityVelocity, bool moving,
+                                         bool crouching, bool turning)
+        {
+            SendStateInternal(unityPosition, unityYawDeg, unityVelocity, moving, crouching, turning, true);
+        }
+
+        private void SendStateInternal(Vector3 unityPosition, float unityYawDeg,
+                                       Vector3 unityVelocity, bool moving,
+                                       bool crouching, bool turning, bool force)
+        {
             // Транспорт мог быть уничтожен раньше контроллера игрока — при выходе
             // из Play Mode порядок OnDestroy не определён. Проверять только Phase
             // недостаточно: она остаётся Joined до следующего кадра.
@@ -1111,7 +1209,7 @@ namespace RealmOfAshes.Net
             // Начало и остановка движения — надёжные переходы, их сервер должен
             // получить сразу, иначе персонаж «залипает» в беге у других игроков.
             bool isTransition = moving != _lastSentMoving || crouching != _lastSentCrouching;
-            if (!isTransition && _stateCooldown > 0f) return;
+            if (!force && !isTransition && _stateCooldown > 0f) return;
 
             _stateCooldown = StateSendIntervalSeconds;
             _lastSentMoving = moving;
@@ -1140,7 +1238,7 @@ namespace RealmOfAshes.Net
         /// Профильное предложение без координат. Сервер сам сверяет бюджет,
         /// требования и невозвратность очков, затем шлёт authoritativePlayerState.
         /// </summary>
-        public void SendProgressionProfile(JObject skillRanks, JObject talentRanks)
+        public void SendProgressionProfile(JObject skillRanks, JObject talentRanks, Action<JObject> onAck = null)
         {
             if (Phase != ConnectionPhase.Joined || _connection == null) return;
 
@@ -1151,7 +1249,11 @@ namespace RealmOfAshes.Net
             };
             if (skillRanks != null) payload["skillRanks"] = skillRanks.DeepClone();
             if (talentRanks != null) payload["talentRanks"] = talentRanks.DeepClone();
-            _connection.EmitAsync("state", payload);
+            EmitWithAck("state", payload, ack =>
+            {
+                ApplyGameplayAck(ack);
+                onAck?.Invoke(ack);
+            });
         }
 
         private void Update()

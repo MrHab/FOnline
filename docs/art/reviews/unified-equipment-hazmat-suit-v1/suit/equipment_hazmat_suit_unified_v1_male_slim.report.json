@@ -1,147 +1,38 @@
 {
-  "actualGlb": {
-    "materials": 6,
-    "meshDefinitions": 3,
-    "nodes": [
-      "head",
-      "neck_01",
-      "index_04_leaf_l",
-      "index_03_l",
-      "index_02_l",
-      "index_01_l",
-      "middle_04_leaf_l",
-      "middle_03_l",
-      "middle_02_l",
-      "middle_01_l",
-      "pinky_04_leaf_l",
-      "pinky_03_l",
-      "pinky_02_l",
-      "pinky_01_l",
-      "ring_04_leaf_l",
-      "ring_03_l",
-      "ring_02_l",
-      "ring_01_l",
-      "thumb_04_leaf_l",
-      "thumb_03_l",
-      "thumb_02_l",
-      "thumb_01_l",
-      "hand_l",
-      "lowerarm_l",
-      "upperarm_l",
-      "clavicle_l",
-      "index_04_leaf_r",
-      "index_03_r",
-      "index_02_r",
-      "index_01_r",
-      "middle_04_leaf_r",
-      "middle_03_r",
-      "middle_02_r",
-      "middle_01_r",
-      "pinky_04_leaf_r",
-      "pinky_03_r",
-      "pinky_02_r",
-      "pinky_01_r",
-      "ring_04_leaf_r",
-      "ring_03_r",
-      "ring_02_r",
-      "ring_01_r",
-      "thumb_04_leaf_r",
-      "thumb_03_r",
-      "thumb_02_r",
-      "thumb_01_r",
-      "hand_r",
-      "lowerarm_r",
-      "upperarm_r",
-      "clavicle_r",
-      "spine_03",
-      "spine_02",
-      "spine_01",
-      "ball_leaf_l",
-      "ball_l",
-      "foot_l",
-      "calf_l",
-      "thigh_l",
-      "ball_leaf_r",
-      "ball_r",
-      "foot_r",
-      "calf_r",
-      "thigh_r",
-      "pelvis",
-      "root",
-      "equipment_hazmat_suit_unified_v1_helmet_optional_hood",
-      "equipment_hazmat_suit_unified_v1_sealed_details",
-      "equipment_hazmat_suit_unified_v1_sealed_shell",
-      "character_root"
-    ],
-    "positionVertices": 16277,
-    "skins": 1,
-    "textures": 6,
-    "triangles": 12296
-  },
-  "assetId": "equipment_hazmat_suit_unified_v1",
-  "bodyId": "male_slim",
-  "file": "equipment_hazmat_suit_unified_v1_male_slim.glb",
-  "fit": {
-    "anatomyProjectionStrength": 0.78,
-    "bodyBounds": {
-      "maximum": [
-        0.70616,
-        0.14997,
-        1.55992
-      ],
-      "minimum": [
-        -0.70616,
-        -0.12804,
-        -0.00951
-      ]
-    },
-    "detailPolygons": 410,
-    "detailVertices": 784,
-    "headBounds": {
-      "maximum": [
-        0.09283,
-        0.11971,
-        1.81008
-      ],
-      "minimum": [
-        -0.09283,
-        -0.11517,
-        1.51691
-      ]
-    },
-    "headRadii": [
-      0.10283,
-      0.12944,
-      0.15859
-    ],
-    "helmetCompatibilityMode": "hide_hood_assembly_when_helmet_equipped",
-    "hoodPolygons": 466,
-    "hoodVertices": 611,
-    "innerSealRequired": false,
-    "rubberMaterialPolygons": 3775,
-    "shellPolygons": 10031,
-    "shellVertices": 5062,
-    "silhouetteProfile": "coverall",
-    "torsoBounds": {
-      "maximum": [
-        0.19315,
-        0.14985,
-        1.53285
-      ],
-      "minimum": [
-        -0.19315,
-        -0.11343,
-        0.89245
-      ]
-    },
-    "visorCenter": [
-      0.0,
-      -0.13517,
-      1.6755
-    ]
-  },
+  "schema": "realm.free-armor-replacement-review.v1",
+  "assetId": "equipment_hazmat_suit_unified_v1_male_slim",
   "itemId": "hazmatSuit",
-  "itemNameRu": "Костюм химзащиты",
+  "slot": "armor",
+  "bodyId": "male_slim",
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "B169B7EEABF822A80E682815E8BC8A085CB9032B4B65D92940B02C515DF49A41",
+  "source": {
+    "creator": "Quaternius",
+    "pack": "Ultimate Modular Men",
+    "page": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+    "license": "CC0-1.0",
+    "downloadedFile": "quaternius_male_spacesuit.gltf",
+    "sha256": "33E0E0FBC6140FFC936A099FD84A274BE406115C4B32AA0A697641710B67392A",
+    "geometryOrigin": "downloaded_refit"
+  },
+  "optimization": {
+    "triangleBudget": 12000,
+    "sourceSelectedTriangles": 5704,
+    "removedFaces": 0,
+    "donorCoverageTriangles": 1840,
+    "fittedSourceTriangles": 5704,
+    "decimated": false,
+    "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+  },
+  "actualGlb": {
+    "triangles": 7544,
+    "meshes": 2,
+    "materials": 6,
+    "skins": 1,
+    "joints": 65,
+    "bytes": 1154968
+  },
   "materials": [
     "hazmat_faded_mustard_canvas",
     "hazmat_aged_black_rubber",
@@ -150,13 +41,21 @@
     "hazmat_dusty_olive_repairs",
     "hazmat_faded_warning_panel"
   ],
-  "provenance": {
-    "directRuntimeUse": false,
-    "donor": null,
-    "license": "Realm of Ashes project asset",
-    "rebuild": "Blender-authored loose coverall silhouette with a sealed helmet-optional hood assembly and B+C hazmat details on the exact current 65-bone player rig"
-  },
-  "reviewOnly": true,
-  "runtimeIntegrationAllowed": false,
-  "sha256": "2C18B2D6A69AAB580E2CC04B4911479A1959AAA7D77D7E0922BFF26C287A3670"
+  "fit": {
+    "targetBoundsMin": [
+      -0.93873,
+      -0.12932,
+      -0.00961
+    ],
+    "targetBoundsMax": [
+      0.93873,
+      0.15147,
+      1.82818
+    ],
+    "sourceFitScale": [
+      1.075,
+      1.15,
+      0.985
+    ]
+  }
 }

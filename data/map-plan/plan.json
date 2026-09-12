@@ -1,15 +1,14 @@
 {
-  "schema": "realm.map-plan.v1",
-  "demoMeterToWorld": 0.012,
-  "objectBudget": 5000,
-  "rendererBudget": 12000,
-  "bakedMaterialBudget": 40,
-  "exclusions": [
-    {
-      "xMin": 660,
-      "xMax": 860,
-      "yMin": 700,
-      "yMax": 860
-    }
-  ]
+  "schema": "kromka.mapPlan.v1",
+  "version": 1,
+  "worldRevision": "kromka-1",
+  "unityScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
+  "extentKm": { "width": 380, "height": 300 },
+  "spatialSource": "unity",
+  "hydrology": { "mainRiver": "Тесьма", "infrastructure": "Каскад" },
+  "objectBudget": 7000,
+  "rendererBudget": 15000,
+  "bakedMaterialBudget": 64,
+  "forbiddenLegacyMotifs": ["west-ocean", "snow-corners", "rectangular-biome-seams"],
+  "requiredLayers": ["Terrain_EDITABLE", "Regions_EDITABLE", "Routes_EDITABLE", "Locations_EDITABLE", "DynamicContent_SERVER_STATE"]
 }

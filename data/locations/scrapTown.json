@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "scrapTown",
-  "name": "Свалочный пост",
+  "name": "Раздолье",
   "seed": 20260811,
   "safe": true,
   "pvpMode": "peaceful",
@@ -25,15 +25,27 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 25
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "respawn": {
     "tx": 19,
-    "tz": 25
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 25
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -161,14 +173,14 @@
       "name": "Грач-Жестянщик",
       "url": "/assets/models/wasteland/trader_npc.glb",
       "position": {
-        "x": -5,
-        "y": 0,
-        "z": 1
+        "x": -5.0,
+        "y": 0.0,
+        "z": 1.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -217,27 +229,413 @@
       },
       "vision": {
         "mode": "none"
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.542,
+        "z": 1.509
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_chem_station",
+      "model": "craftStationChem",
+      "name": "Химический стол",      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "chem_station"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "chem_station"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.753,
+        "z": 1.574
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.703,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.902,
+        "z": 1.673
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 2.629,
+        "z": 1.476
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_station_scrap_union_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "blocks": true
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "scrapTown",
+      "worksiteId": "scrapTown",
+      "stationOwner": "scrap_union",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapTown"
+      },
+      "role": "craftingStation",
+      "footprint": {
+        "x": 3.162,
+        "z": 1.542
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_storage_scrap_union",
+      "model": "storageChest",
+      "name": "Хранилище Вольных артелей",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 11.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "interactive",
+        "storage",
+        "container",
+        "personal-storage",
+        "capital-storage"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 1.34
+      },
+      "vision": {
+        "blocks": true
+      },
+      "interactive": {
+        "kind": "container",
+        "role": "storage",
+        "containerType": "storage",
+        "storageFaction": "scrap_union"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",
-      "url": "/assets/models/wasteland/campfire_rest.glb",
-      "position": {
-        "x": 11,
-        "y": 0,
-        "z": -14
+      "name": "Место отдыха",      "position": {
+        "x": 11.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.35,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "tags": [
@@ -246,16 +644,8 @@
         "campfire"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 2.684,
+        "z": 2.445
       },
       "tx": 24,
       "tz": 12,
@@ -265,29 +655,1607 @@
       "objectModel": "campfireRest",
       "authoredObject": true,
       "vision": {
-        "mode": "none"
+        "blocks": false
       },
-      "role": "campfire"
+      "role": "campfire",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-artel-shops",
+      "model": "modular_workshop",
+      "name": "scrapTown-artel-shops EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-artel-vote-yard",
+      "model": "market_canopy",
+      "name": "scrapTown-artel-vote-yard EDITABLE",
+      "position": {
+        "x": 17.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "canopy",
+        "trade",
+        "shelter"
+      ],
+      "footprint": {
+        "x": 17.5,
+        "z": 12.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-blast-furnace",
+      "model": "blast_furnace",
+      "name": "scrapTown-blast-furnace EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 13.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-01",
+      "model": "wasteland_shack",
+      "name": "scrapTown-dressing-functional-01",
+      "position": {
+        "x": 12.687,
+        "y": 0.0,
+        "z": 2.836
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.351,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.173,
+        "z": 4.855
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-02",
+      "model": "trader_awning",
+      "name": "scrapTown-dressing-functional-02",
+      "position": {
+        "x": 10.713,
+        "y": 0.0,
+        "z": 12.152
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.723,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.51,
+        "z": 3.401
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-03",
+      "model": "job_board",
+      "name": "scrapTown-dressing-functional-03",
+      "position": {
+        "x": 1.826,
+        "y": 0.0,
+        "z": 19.314
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.094,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.763,
+        "z": 0.806
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-04",
+      "model": "garden_patch",
+      "name": "scrapTown-dressing-functional-04",
+      "position": {
+        "x": -6.618,
+        "y": 0.0,
+        "z": 11.19
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.749,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.87,
+        "z": 2.439
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-05",
+      "model": "storage_lean_to",
+      "name": "scrapTown-dressing-functional-05",
+      "position": {
+        "x": -14.868,
+        "y": 0.0,
+        "z": 6.434
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.121,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.559,
+        "z": 3.121
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-06",
+      "model": "barrel_cluster",
+      "name": "scrapTown-dressing-functional-06",
+      "position": {
+        "x": -18.933,
+        "y": 0.0,
+        "z": -4.232
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.492,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.268,
+        "z": 2.871
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-07",
+      "model": "watch_post",
+      "name": "scrapTown-dressing-functional-07",
+      "position": {
+        "x": -8.597,
+        "y": 0.0,
+        "z": -9.751
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.864,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.615,
+        "z": 1.586
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-08",
+      "model": "cot_bed",
+      "name": "scrapTown-dressing-functional-08",
+      "position": {
+        "x": -1.525,
+        "y": 0.0,
+        "z": -16.128
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.236,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.049,
+        "z": 1.314
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-09",
+      "model": "cot_bed",
+      "name": "scrapTown-dressing-functional-09",
+      "position": {
+        "x": 9.875,
+        "y": 0.0,
+        "z": -16.698
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.608,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.939,
+        "z": 1.711
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-functional-10",
+      "model": "cot_bed",
+      "name": "scrapTown-dressing-functional-10",
+      "position": {
+        "x": 11.931,
+        "y": 0.0,
+        "z": -5.163
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.979,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "faction_capital",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.794,
+        "z": 2.176
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-01",
+      "model": "scrap_heap",
+      "name": "scrapTown-dressing-region-01",
+      "position": {
+        "x": -9.612,
+        "y": 0.0,
+        "z": 21.001
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.113,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.843,
+        "z": 3.066
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-02",
+      "model": "ore_outcrop",
+      "name": "scrapTown-dressing-region-02",
+      "position": {
+        "x": -9.686,
+        "y": 0.0,
+        "z": 21.12
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.168,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.646,
+        "z": 1.772
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-03",
+      "model": "rust_barrel_v1",
+      "name": "scrapTown-dressing-region-03",
+      "position": {
+        "x": -9.676,
+        "y": 0.0,
+        "z": 21.124
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.168,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.692,
+        "z": 1.573
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "scrapTown-dressing-region-04",
+      "position": {
+        "x": -10.842,
+        "y": 0.0,
+        "z": 20.555
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.243,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.703,
+        "z": 1.81
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-05",
+      "model": "scrap_heap",
+      "name": "scrapTown-dressing-region-05",
+      "position": {
+        "x": -10.904,
+        "y": 0.0,
+        "z": 20.68
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.242,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.972,
+        "z": 3.077
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-06",
+      "model": "ore_outcrop",
+      "name": "scrapTown-dressing-region-06",
+      "position": {
+        "x": -10.889,
+        "y": 0.0,
+        "z": 20.69
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.294,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.716,
+        "z": 1.757
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-07",
+      "model": "rust_barrel_v1",
+      "name": "scrapTown-dressing-region-07",
+      "position": {
+        "x": -10.936,
+        "y": 0.0,
+        "z": 20.665
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.295,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.677,
+        "z": 1.558
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "scrapTown-dressing-region-08",
+      "position": {
+        "x": -12.127,
+        "y": 0.0,
+        "z": 20.154
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.351,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.765,
+        "z": 1.77
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-09",
+      "model": "scrap_heap",
+      "name": "scrapTown-dressing-region-09",
+      "position": {
+        "x": -12.13,
+        "y": 0.0,
+        "z": 20.153
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.35,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.992,
+        "y": 0.992,
+        "z": 0.992
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.042,
+        "z": 3.048
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-10",
+      "model": "ore_outcrop",
+      "name": "scrapTown-dressing-region-10",
+      "position": {
+        "x": -12.096,
+        "y": 0.0,
+        "z": 20.172
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.426,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.769,
+        "z": 1.721
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-11",
+      "model": "rust_barrel_v1",
+      "name": "scrapTown-dressing-region-11",
+      "position": {
+        "x": -13.231,
+        "y": 0.0,
+        "z": 19.444
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.427,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.642,
+        "z": 1.524
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "scrapTown-dressing-region-12",
+      "position": {
+        "x": -13.325,
+        "y": 0.0,
+        "z": 19.614
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.482,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.824,
+        "z": 1.704
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-13",
+      "model": "scrap_heap",
+      "name": "scrapTown-dressing-region-13",
+      "position": {
+        "x": -13.333,
+        "y": 0.0,
+        "z": 19.607
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.482,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.096,
+        "z": 2.979
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-14",
+      "model": "ore_outcrop",
+      "name": "scrapTown-dressing-region-14",
+      "position": {
+        "x": -14.773,
+        "y": 0.0,
+        "z": 18.545
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.829,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.448,
+        "z": 1.741
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-dressing-region-15",
+      "model": "rust_barrel_v1",
+      "name": "scrapTown-dressing-region-15",
+      "position": {
+        "x": -14.848,
+        "y": 0.0,
+        "z": 18.656
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.829,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.998,
+        "y": 0.998,
+        "z": 0.998
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.723,
+        "z": 1.595
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-gantry-crane",
+      "model": "gantry_crane",
+      "name": "scrapTown-gantry-crane EDITABLE",
+      "position": {
+        "x": 16.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "crane",
+        "industry",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 18.5,
+        "z": 12.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-landmark",
+      "model": "blast-furnace",
+      "name": "Landmark blast-furnace EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "blast-furnace"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "faction_capital",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-region-rail",
+      "model": "railway",
+      "name": "scrapTown-region-rail EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 2.0,
+        "z": 58.182
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-region-slag-0",
+      "model": "terrain_mound",
+      "name": "scrapTown-region-slag-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-region-slag-1",
+      "model": "terrain_mound",
+      "name": "scrapTown-region-slag-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-region-slag-2",
+      "model": "terrain_mound",
+      "name": "scrapTown-region-slag-2 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "scrapTown-region-slag-3",
+      "model": "terrain_mound",
+      "name": "scrapTown-region-slag-3 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -298,16 +2266,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -318,27 +2278,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 10,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -349,16 +2309,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -369,27 +2321,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 12,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -400,16 +2352,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -420,27 +2364,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": -16
+      "name": "Койка НПС",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -16.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -451,16 +2395,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -471,27 +2407,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -502,16 +2438,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -522,27 +2450,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_06",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 10,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -553,16 +2481,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -573,27 +2493,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_07",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 12,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -604,16 +2524,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.121
       },
       "building": {
         "module": false,
@@ -624,27 +2536,27 @@
       },
       "vision": {
         "blocks": false
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown_cot_08",
       "model": "cotBed",
-      "name": "Койка НПС",
-      "url": "/assets/models/wasteland/cot_bed.glb",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": -14
+      "name": "Койка НПС",      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "bed",
@@ -655,16 +2567,8 @@
         "personal-bed"
       ],
       "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
+        "x": 1.943,
+        "z": 1.122
       },
       "building": {
         "module": false,
@@ -675,370 +2579,79 @@
       },
       "vision": {
         "blocks": false
-      }
-    },
-    {
-      "id": "capital_storage_scrap_union",
-      "model": "storageChest",
-      "name": "Хранилище Свалочного союза",
-      "url": "/assets/models/wasteland/storage_chest.glb",
-      "position": {
-        "x": -5,
-        "y": 0,
-        "z": 11
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "storage",
-        "container",
-        "personal-storage",
-        "capital-storage"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "container",
-        "role": "storage",
-        "containerType": "storage",
-        "storageFaction": "scrap_union"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_ammo_bench",
-      "model": "craftStationAmmo",
-      "name": "Патронный станок",
-      "url": "/assets/models/wasteland/craft_station_ammo.glb",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": -8
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "ammo_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "ammo_bench"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_weapon_bench",
-      "model": "craftStationWeapon",
-      "name": "Оружейный верстак",
-      "url": "/assets/models/wasteland/craft_station_weapon.glb",
-      "position": {
-        "x": -10,
-        "y": 0,
-        "z": -8
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "weapon_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "weapon_bench"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_tool_bench",
-      "model": "craftStationTools",
-      "name": "Инструментальный верстак",
-      "url": "/assets/models/wasteland/craft_station_tools.glb",
-      "position": {
-        "x": -6,
-        "y": 0,
-        "z": -8
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "tool_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "tool_bench"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "url": "/assets/models/wasteland/craft_station_repair.glb",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": -4
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_energy_bench",
-      "model": "craftStationEnergy",
-      "name": "Энергетический стенд",
-      "url": "/assets/models/wasteland/craft_station_energy.glb",
-      "position": {
-        "x": -10,
-        "y": 0,
-        "z": -4
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "energy_bench"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "energy_bench"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "scrapTown"
-      }
-    },
-    {
-      "id": "capital_station_scrap_union_chem_station",
-      "model": "craftStationChem",
-      "name": "Химический стол",
-      "url": "/assets/models/wasteland/craft_station_chem.glb",
-      "position": {
-        "x": -6,
-        "y": 0,
-        "z": -4
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "chem_station"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "craftingStations": [
-        "chem_station"
-      ],
-      "stationSiteId": "scrapTown",
-      "worksiteId": "scrapTown",
-      "stationOwner": "scrap_union",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "scrapTown"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "scrapTown"
-      }
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
-  "updatedAt": "2026-07-12T01:43:36.127Z"
+  "updatedAt": "2026-07-12T01:43:36.127Z",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "ore_arc",
+  "kromkaVisualProfile": "razdolye-foundry-town-v1",
+  "ambientProfile": "working-foundry-town",
+  "anomalyDensity": 0.08,
+  "unityScene": "Assets/Scenes/Kromka/Locations/scrapTown.unity",
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "razdolye-gate",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "scrapTown-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "scrap_gratch",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "rotationY": 0.0
+    }
+  ]
 }

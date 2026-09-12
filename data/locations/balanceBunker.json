@@ -1,0 +1,1747 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "balanceBunker",
+  "name": "Бункер «Баланс»",
+  "seed": 2026091202,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "story_complex",
+  "respawnAllowed": false,
+  "enemyCap": 12,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Бункер «Баланс»"
+  },
+  "map": {
+    "width": 72,
+    "depth": 72,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "objects": [
+    {
+      "id": "balance-sink-01",
+      "model": "sink",
+      "name": "Anomaly balance-sink-01",
+      "position": {
+        "x": -5,
+        "y": 0.08,
+        "z": 6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-administrative-shaft",
+      "model": "sealed_tower",
+      "name": "balanceBunker-administrative-shaft EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "contour",
+        "sealed",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 8.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-functional-01",
+      "model": "concrete_wall",
+      "name": "balanceBunker-dressing-functional-01",
+      "position": {
+        "x": 11.763,
+        "y": 0,
+        "z": 5.535
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.131,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.725,
+        "z": 2.475
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-functional-02",
+      "model": "relay_antenna",
+      "name": "balanceBunker-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0,
+        "y": 6.158,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 1.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-functional-03",
+      "model": "rust_barrel_v1",
+      "name": "balanceBunker-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.901,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.555,
+        "z": 1.421
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-functional-04",
+      "model": "roadblock_barricade",
+      "name": "balanceBunker-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.644,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.469,
+        "z": 1.881
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-functional-05",
+      "model": "cargo_stack",
+      "name": "balanceBunker-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.388,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "story_complex",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.455,
+        "z": 1.806
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-01",
+      "model": "dead_tree_b",
+      "name": "balanceBunker-dressing-region-01",
+      "position": {
+        "x": -20.787,
+        "y": 0,
+        "z": -18.536
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.996,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.044,
+        "z": 2.091
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-02",
+      "model": "rust_barrel_v1",
+      "name": "balanceBunker-dressing-region-02",
+      "position": {
+        "x": -20.895,
+        "y": 0,
+        "z": -18.615
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.571,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.765,
+        "z": 1.848
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-03",
+      "model": "oil_pump_jack",
+      "name": "balanceBunker-dressing-region-03",
+      "position": {
+        "x": -20.906,
+        "y": 0,
+        "z": -18.607
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.572,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.169,
+        "z": 3.545
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "balanceBunker-dressing-region-04",
+      "position": {
+        "x": -19.907,
+        "y": 0,
+        "z": -19.674
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.626,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.965,
+        "z": 2.708
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-05",
+      "model": "dead_tree_b",
+      "name": "balanceBunker-dressing-region-05",
+      "position": {
+        "x": -20.044,
+        "y": 0,
+        "z": -19.803
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.627,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.081,
+        "z": 1.879
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-06",
+      "model": "rust_barrel_v1",
+      "name": "balanceBunker-dressing-region-06",
+      "position": {
+        "x": -20.034,
+        "y": 0,
+        "z": -19.811
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.682,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.749,
+        "z": 1.863
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-07",
+      "model": "oil_pump_jack",
+      "name": "balanceBunker-dressing-region-07",
+      "position": {
+        "x": -20.013,
+        "y": 0,
+        "z": -19.833
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.682,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.209,
+        "z": 3.774
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-08",
+      "model": "rubble_rock",
+      "name": "balanceBunker-dressing-region-08",
+      "position": {
+        "x": -17.776,
+        "y": 0,
+        "z": -20.446
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.739,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.998,
+        "z": 2.836
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-09",
+      "model": "dead_tree_b",
+      "name": "balanceBunker-dressing-region-09",
+      "position": {
+        "x": -17.798,
+        "y": 0,
+        "z": -20.428
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.739,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.094,
+        "y": 1.094,
+        "z": 1.094
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.1,
+        "z": 1.973
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-10",
+      "model": "rust_barrel_v1",
+      "name": "balanceBunker-dressing-region-10",
+      "position": {
+        "x": -17.759,
+        "y": 0,
+        "z": -20.463
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.291,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.699,
+        "z": 1.721
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-11",
+      "model": "oil_pump_jack",
+      "name": "balanceBunker-dressing-region-11",
+      "position": {
+        "x": -24.638,
+        "y": 0,
+        "z": -11.276
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.291,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.656,
+        "z": 4.318
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-12",
+      "model": "rubble_rock",
+      "name": "balanceBunker-dressing-region-12",
+      "position": {
+        "x": -24.759,
+        "y": 0,
+        "z": -11.345
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.347,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.63,
+        "z": 2.995
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-13",
+      "model": "dead_tree_b",
+      "name": "balanceBunker-dressing-region-13",
+      "position": {
+        "x": -24.756,
+        "y": 0,
+        "z": -11.357
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.346,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.82,
+        "z": 2.107
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-14",
+      "model": "rust_barrel_v1",
+      "name": "balanceBunker-dressing-region-14",
+      "position": {
+        "x": -24.096,
+        "y": 0,
+        "z": -12.7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.351,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.823,
+        "z": 1.697
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-dressing-region-15",
+      "model": "oil_pump_jack",
+      "name": "balanceBunker-dressing-region-15",
+      "position": {
+        "x": -24.226,
+        "y": 0,
+        "z": -12.754
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.35,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.134,
+        "y": 1.134,
+        "z": 1.134
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "zero_basin",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.106,
+        "z": 4.102
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-landmark",
+      "model": "administrative-shaft",
+      "name": "Landmark administrative-shaft EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "administrative-shaft"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15,
+        "y": 1.4,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.571,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.314,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.341,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.084,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.827,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-region-black-pool-0",
+      "model": "ring_structure",
+      "name": "balanceBunker-region-black-pool-0 EDITABLE",
+      "position": {
+        "x": -23,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-region-black-pool-1",
+      "model": "ring_structure",
+      "name": "balanceBunker-region-black-pool-1 EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-region-black-pool-2",
+      "model": "ring_structure",
+      "name": "balanceBunker-region-black-pool-2 EDITABLE",
+      "position": {
+        "x": 23,
+        "y": 0,
+        "z": 27
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-region-main-pipe",
+      "model": "external_pipe",
+      "name": "balanceBunker-region-main-pipe EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 1.1,
+        "z": -29
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "balanceBunker-service-level",
+      "model": "bunker_corridors",
+      "name": "balanceBunker-service-level EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "bunker",
+        "sealed",
+        "story"
+      ],
+      "footprint": {
+        "x": 1,
+        "z": 1
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "east_shell",
+      "model": "concreteWall",
+      "name": "Восточная оболочка",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "continuity-balance-bunker-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_left",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": -24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "entry_right",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": -24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.077,
+        "z": 1.356
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_gate",
+      "model": "cargoStack",
+      "name": "Герметичная секция",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 22
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 2,
+        "y": 2,
+        "z": 2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "story-gate",
+        "interior"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.947,
+        "z": 2.21
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "relayAntenna",
+      "name": "Бункер «Баланс»",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.2,
+        "y": 2.2,
+        "z": 2.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "landmark",
+        "administrative-shaft",
+        "cold-status-column"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.96,
+        "z": 3.08
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "records",
+      "model": "storageLeanTo",
+      "name": "Архивный терминал",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lore",
+        "quest"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 2.25
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "service",
+      "model": "workshopBench",
+      "name": "Служебный пульт",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.25,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "service",
+        "interaction"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.75,
+        "z": 1.75
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_a",
+      "model": "watchPost",
+      "name": "Пост А",
+      "position": {
+        "x": -18,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_b",
+      "model": "watchPost",
+      "name": "Пост Б",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.584,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "west_shell",
+      "model": "concreteWall",
+      "name": "Западная оболочка",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 3.5,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "district",
+        "continuity-balance-bunker-v1"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 9.45,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-balance-census-core",
+      "model": "workshopBench",
+      "name": "Ядро переписи «Баланса»",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "restore_census_core"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-balance-selection-protocol",
+      "model": "storageLeanTo",
+      "name": "Терминал протокола отбора",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": -18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "read_selection_protocol"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "story-balance-emergency-exit",
+      "model": "utilityPole",
+      "name": "Аварийный шлюз «Баланса»",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": 18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.85,
+        "y": 0.85,
+        "z": 0.85
+      },
+      "collision": "none",
+      "role": "quest",
+      "tags": [
+        "quest-object",
+        "story-objective",
+        "kromka-campaign"
+      ],
+      "footprint": {
+        "x": 0.3,
+        "z": 0.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "interactive": {
+        "kind": "questObject",
+        "questObjective": "escape_balance"
+      },
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "balance-sink-01",
+      "type": "sink",
+      "x": -5,
+      "z": 6,
+      "radius": 3,
+      "placement": "authored"
+    }
+  ],
+  "visualProfile": {
+    "id": "continuity-balance-bunker-v1",
+    "macroRegion": "zero_basin",
+    "ambientProfile": "automated-command-bunker",
+    "fogDensityDay": 0.0025,
+    "exposureDay": 0.9
+  },
+  "lore": "Бункер «Баланс»: automated-command-bunker. administrative-shaft, cold-status-column.",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "zero_basin",
+  "kromkaVisualProfile": "continuity-balance-bunker-v1",
+  "ambientProfile": "automated-command-bunker",
+  "anomalyDensity": 0.22,
+  "unityScene": "Assets/Scenes/Kromka/Locations/balanceBunker.unity",
+  "respawn": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entry": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWasteland": {
+    "tx": 18,
+    "tz": 7,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "migrationArrival": {
+    "tx": 16,
+    "tz": 8,
+    "x": -4,
+    "y": 0.1,
+    "z": -19,
+    "rotationY": 0
+  },
+  "unitySpawns": [
+    {
+      "id": "balance-service-lock",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3,
+      "position": {
+        "x": -4,
+        "y": 0.1,
+        "z": -19
+      },
+      "rotationY": 0
+    },
+    {
+      "id": "balanceBunker-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2,
+      "position": {
+        "x": 0,
+        "y": 0.1,
+        "z": -22
+      },
+      "rotationY": 0
+    }
+  ]
+}

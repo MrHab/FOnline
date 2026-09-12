@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const assert = require('node:assert/strict');
 
 const root = path.resolve(__dirname, '..');
 const publicDir = path.join(root, 'public');
@@ -78,6 +79,10 @@ function shouldCheck(url) {
 }
 
 function publicPathFor(url, sourceFile) {
+  // Generator provenance uses repository paths; runtime entries use URLs.
+  if (/^public\/(?:assets|css|js)\//.test(url)) {
+    return path.resolve(root, url);
+  }
   if (url.startsWith('/')) return path.join(publicDir, url.slice(1).replace(/[\\/]+/g, path.sep));
   if (/^(?:assets|css|js)\//.test(url)) {
     return path.join(publicDir, url.replace(/[\\/]+/g, path.sep));
@@ -115,21 +120,28 @@ function shouldCheckManifestRef(url) {
   return /\.(?:png|webp|jpe?g|gif|fbx|glb|gltf|json|txt)$/i.test(url);
 }
 
-function collectManifestRefs(node, key = '') {
+function collectManifestRefs(node, key = '', sourceProvenance = '') {
   const refs = [];
+  if (['realm.free-equipment-catalog.v2', 'realm.layered-suits.v2'].includes(node?.schema)) {
+    sourceProvenance = node.schema;
+  }
   if (Array.isArray(node)) {
     for (const item of node) {
       if (typeof item === 'string' && manifestListKeys.has(key)) refs.push(cleanUrl(item));
-      else refs.push(...collectManifestRefs(item, key));
+      else refs.push(...collectManifestRefs(item, key, sourceProvenance));
     }
     return refs;
   }
   if (!node || typeof node !== 'object') return refs;
   for (const [childKey, value] of Object.entries(node)) {
+    // Donor filenames are relative to source-assets, not served URLs. Their
+    // existence/hash/license is checked by the corresponding model check.
+    if (sourceProvenance && (childKey === 'source' || childKey === 'sources')) continue;
+    if (sourceProvenance === 'realm.layered-suits.v2' && childKey === 'retainedReference') continue;
     if (typeof value === 'string' && manifestAssetKeys.has(childKey)) {
       refs.push(cleanUrl(value));
     } else {
-      refs.push(...collectManifestRefs(value, childKey));
+      refs.push(...collectManifestRefs(value, childKey, sourceProvenance));
     }
   }
   return refs.filter(shouldCheckManifestRef);
@@ -143,6 +155,26 @@ function manifestFiles() {
         && (basename.includes('manifest') || basename === 'approved-humanoid-assets.json');
     });
 }
+
+// Resolution regressions: never confuse generator inputs with runtime files,
+// and retain traversal checks and ordinary manifest source validation.
+const fixtureManifest = path.join(publicDir, 'assets/models/fixture/manifest.json');
+assert.equal(publicPathFor('public/assets/models/test.glb', fixtureManifest),
+  path.join(publicDir, 'assets/models/test.glb'));
+assert.equal(publicPathFor('test.glb', fixtureManifest),
+  path.join(publicDir, 'assets/models/fixture/test.glb'));
+assert(!publicPathFor('public/assets/../../../outside.glb', fixtureManifest)
+  .startsWith(publicDir + path.sep));
+assert.deepEqual(collectManifestRefs({ schema: 'realm.free-equipment-catalog.v2',
+  files: [{ file: '/assets/result.glb', source: { file: 'donor.glb' },
+    retainedReference: { file: 'public/assets/original.glb' } }] }),
+['/assets/result.glb', 'public/assets/original.glb']);
+assert.deepEqual(collectManifestRefs({ source: { file: 'ordinary.glb' } }), ['ordinary.glb']);
+assert.deepEqual(collectManifestRefs({ schema: 'realm.layered-suits.v2', files: [
+  { file: '/assets/suit.glb', source: { file: 'Build/donor.gltf' },
+    retainedReference: { file: 'docs/review.glb' },
+    bodyReference: { file: 'public/assets/body.glb' } }
+] }), ['/assets/suit.glb', 'public/assets/body.glb']);
 
 const missing = [];
 const referencedAssets = new Set();

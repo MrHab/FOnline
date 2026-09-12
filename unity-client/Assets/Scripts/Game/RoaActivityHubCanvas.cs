@@ -244,7 +244,7 @@ namespace RealmOfAshes.Game
                 : (tracked ? "МЕТКА · " : accepted ? "ПРИНЯТО · " : string.Empty)
                     + CommunityText(task) + " · "
                     + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP · "
-                    + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек";
+                    + (reward?["caps"]?.ToObject<int>() ?? 0) + " марок";
             Place(rewardText.rectTransform, 10f, -135f, -116f, -107f);
 
             string caption = helpRequested && !accepted ? "ПРИЙТИ НА ПОМОЩЬ" : ActionLabel(kind, accepted, siteId, issuerId);

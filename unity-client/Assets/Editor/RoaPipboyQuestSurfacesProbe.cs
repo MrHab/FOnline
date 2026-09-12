@@ -56,6 +56,27 @@ namespace RealmOfAshes.EditorTools
                     ["worldTaskRecords"] = new JArray(
                         acceptedShared, acceptedOffFeed, completedPending)
                 };
+                JObject dialogueQuest = new JObject
+                {
+                    ["id"] = "side_quiet_squeak",
+                    ["title"] = "Тихий писк",
+                    ["summary"] = "Вернуть измерительный блок с повреждённого поста.",
+                    ["status"] = "active",
+                    ["dialogue"] = "Не вскрывайте блок в поле. Продолжим по порядку.",
+                    ["currentObjective"] = "recover_measurement_block",
+                    ["currentObjectiveLabel"] = "Вернуть измерительный блок",
+                    ["currentObjectiveHint"] = "Найдите и используйте объект задания: Периметр К-3.",
+                    ["currentObjectiveInteraction"] = "object",
+                    ["currentObjectiveNpcIds"] = new JArray(),
+                    ["outcomes"] = new JArray()
+                };
+                self["kromkaQuestJournal"] = new JObject
+                {
+                    ["campaign"] = new JArray(),
+                    ["factions"] = new JObject(),
+                    ["mechanic"] = new JArray(dialogueQuest),
+                    ["personal"] = new JArray()
+                };
                 JObject world = new JObject
                 {
                     ["worldHour"] = 10,
@@ -72,6 +93,21 @@ namespace RealmOfAshes.EditorTools
                 SetPrivate(interaction, "_quests", definitions);
                 SetPrivate(interaction, "_self", self);
                 SetPrivate(interaction, "_world", world);
+                SetPrivate(interaction, "_active", new JObject
+                {
+                    ["kromkaQuestIds"] = new JArray("side_quiet_squeak"),
+                    ["kromkaNamedNpcId"] = "rada_menshova"
+                });
+
+                List<RoaInteraction.KromkaQuestOption> kromkaQuests = interaction.NpcKromkaQuests();
+                Require(kromkaQuests.Count == 1
+                        && kromkaQuests[0].Id == "side_quiet_squeak"
+                        && !kromkaQuests[0].CanAdvanceDialogue,
+                    "world-bound Kromka objective incorrectly exposed a dialogue completion shortcut");
+                Require(kromkaQuests[0].Dialogue == dialogueQuest["dialogue"]?.ToString()
+                        && kromkaQuests[0].Description.Contains("Вернуть измерительный блок")
+                        && kromkaQuests[0].Description.Contains("Периметр К-3"),
+                    "Kromka NPC card lost its quest-specific line, current objective or condition hint");
 
                 List<RoaInteraction.StoryQuestCard> activeQuests = interaction.JournalQuests(false);
                 List<RoaInteraction.StoryQuestCard> completedQuests = interaction.JournalQuests(true);

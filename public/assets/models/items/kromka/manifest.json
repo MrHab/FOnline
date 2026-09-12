@@ -1,0 +1,868 @@
+{
+  "schema": "realm.free-item-catalog.v1",
+  "version": "1-e97f4e39",
+  "license": "CC0-1.0 + project-authored adaptations",
+  "generator": "tools/blender/build_free_item_models.py",
+  "files": [
+    {
+      "id": "artifactDetectorMk1",
+      "name": "Детектор МК-1",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactDetectorMk1.glb",
+      "sha256": "cacec7a5ac52d36f5216b398ad1cffe57bc37b4bc69fd3f331fa85aba2e12a32",
+      "bytes": 71488,
+      "triangles": 864,
+      "meshes": 2,
+      "bounds": {
+        "min": [
+          -0.08000000566244125,
+          -0.032499998807907104,
+          -0.10499999672174454
+        ],
+        "max": [
+          0.08000000566244125,
+          0.032499998807907104,
+          0.10499999672174454
+        ]
+      },
+      "sources": [
+        {
+          "id": "radio",
+          "sha256": "2DF48F5B08A00608E6E98A3AD18E1F0049E09BA6C1AF0549DA82E6F347694629",
+          "page": "https://poly.pizza/m/ShNRjTDU3i",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": [
+        "socket_belt_clip",
+        "socket_grip_r"
+      ]
+    },
+    {
+      "id": "artifactDetectorMk2",
+      "name": "Детектор МК-2",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactDetectorMk2.glb",
+      "sha256": "04b3d725df707d9118fe3a97ae05ae21aee5bac2513e6b8cd1394c069687611b",
+      "bytes": 39256,
+      "triangles": 174,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.07999998331069946,
+          -0.03999999910593033,
+          -0.11999999731779099
+        ],
+        "max": [
+          0.08000001311302185,
+          0.03999999910593033,
+          0.11999999731779099
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-machine_wireless",
+          "sha256": "9D49E70D51515BC38628FB0D6E43F4EDA7F9CD5326882FD02E8815E61F2259D7",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": [
+        "socket_belt_clip",
+        "socket_grip_r"
+      ]
+    },
+    {
+      "id": "artifactDetectorMk3",
+      "name": "Детектор МК-3",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactDetectorMk3.glb",
+      "sha256": "0fea4f4b6776a90efe7cee04137fdb57285e98eaf259c3f15a93abb01cb8521f",
+      "bytes": 52616,
+      "triangles": 314,
+      "meshes": 2,
+      "bounds": {
+        "min": [
+          -0.08499999344348907,
+          -0.03750000149011612,
+          -0.13750000298023224
+        ],
+        "max": [
+          0.08499999344348907,
+          0.0625,
+          0.10999999940395355
+        ]
+      },
+      "sources": [
+        {
+          "id": "station-computer-screen",
+          "sha256": "DD2A95A9C46F430E6FD0D2AF6C6A94B4542D0501DDA2700504642CECC33369E3",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        },
+        {
+          "id": "station-container-flat",
+          "sha256": "F76BDEBF96AD858DD8A6BE5CB71694616A63488CBAC3F61D01485DCCDE99FD0C",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": [
+        "socket_belt_clip",
+        "socket_grip_r"
+      ]
+    },
+    {
+      "id": "artifactBelt2",
+      "name": "Пояс-контейнер на 2",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactBelt2.glb",
+      "sha256": "375942b3380e4200f6be137bd7d0013616c7efb4bd8b18c5610d9c63252759f6",
+      "bytes": 74900,
+      "triangles": 616,
+      "meshes": 3,
+      "bounds": {
+        "min": [
+          -0.19633041322231293,
+          -0.12300000339746475,
+          -0.07249999791383743
+        ],
+        "max": [
+          0.19633041322231293,
+          0.12300000339746475,
+          0.032499998807907104
+        ]
+      },
+      "sources": [
+        {
+          "id": "station-container-flat",
+          "sha256": "F76BDEBF96AD858DD8A6BE5CB71694616A63488CBAC3F61D01485DCCDE99FD0C",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials",
+        "authored leather connecting strap"
+      ],
+      "sockets": [
+        "socket_waist"
+      ]
+    },
+    {
+      "id": "artifactBelt3",
+      "name": "Пояс-контейнер на 3",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactBelt3.glb",
+      "sha256": "42a9a9929d2cb496dbc9c5ef3eeb668b428e9b75ce7a3beb6b6d3475379999ba",
+      "bytes": 83880,
+      "triangles": 732,
+      "meshes": 4,
+      "bounds": {
+        "min": [
+          -0.19633041322231293,
+          -0.16950000822544098,
+          -0.07249999791383743
+        ],
+        "max": [
+          0.19633041322231293,
+          0.12300000339746475,
+          0.032499998807907104
+        ]
+      },
+      "sources": [
+        {
+          "id": "station-container-flat",
+          "sha256": "F76BDEBF96AD858DD8A6BE5CB71694616A63488CBAC3F61D01485DCCDE99FD0C",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials",
+        "authored leather connecting strap"
+      ],
+      "sockets": [
+        "socket_waist"
+      ]
+    },
+    {
+      "id": "artifactBelt4",
+      "name": "Пояс-контейнер на 4",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactBelt4.glb",
+      "sha256": "82e1d6c6c0e4e7241d6d45dc7f983a0572062a4831311178929053c26f6bd168",
+      "bytes": 92868,
+      "triangles": 848,
+      "meshes": 5,
+      "bounds": {
+        "min": [
+          -0.19633041322231293,
+          -0.16254624724388123,
+          -0.07249999791383743
+        ],
+        "max": [
+          0.19633041322231293,
+          0.12300000339746475,
+          0.032499998807907104
+        ]
+      },
+      "sources": [
+        {
+          "id": "station-container-flat",
+          "sha256": "F76BDEBF96AD858DD8A6BE5CB71694616A63488CBAC3F61D01485DCCDE99FD0C",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials",
+        "authored leather connecting strap"
+      ],
+      "sockets": [
+        "socket_waist"
+      ]
+    },
+    {
+      "id": "artifactContainer",
+      "name": "Свинцовый контейнер",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactContainer.glb",
+      "sha256": "64b5bb15480d0196f8785e79bedaf89686e58a519305eb1c953b16c36dae22a6",
+      "bytes": 35232,
+      "triangles": 88,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.08999999612569809,
+          -0.08999999612569809,
+          -0.14499999582767487
+        ],
+        "max": [
+          0.08999999612569809,
+          0.08999999612569809,
+          0.14499999582767487
+        ]
+      },
+      "sources": [
+        {
+          "id": "station-container",
+          "sha256": "719B77F62979E9E02047489FCC1E86432BE300AC35ED02FE496A2DFC6A3FCDD6",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "blue",
+      "name": "Кассета сини",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_blue.glb",
+      "sha256": "a3ab2de22e3426d8e50caea13730d93a72229efffa1203f3876a50810e01acb0",
+      "bytes": 33456,
+      "triangles": 62,
+      "meshes": 2,
+      "bounds": {
+        "min": [
+          -0.06499999761581421,
+          -0.050999999046325684,
+          -0.11000000685453415
+        ],
+        "max": [
+          0.06499999761581421,
+          0.032499998807907104,
+          0.11000000685453415
+        ]
+      },
+      "sources": [
+        {
+          "id": "gem-pink",
+          "sha256": "AD216953C74193455A56F0EA40F36B1ED7BD714F21459A59ED74FA0E34EFE312",
+          "page": "https://poly.pizza/m/PJnKvWluqs",
+          "creator": "Quaternius"
+        },
+        {
+          "id": "station-wall-switch",
+          "sha256": "2B297783053AA9B091972F31F5FC3892B7CB7572D017DD37FC22AF9AC2640C20",
+          "page": "https://kenney.nl/assets/space-station-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "medkit",
+      "name": "Аптечка",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_medkit.glb",
+      "sha256": "6e923b4a6bebe73ca5f67e9004c9e003b54cc150fa578f63eb08ca2f412cc5c4",
+      "bytes": 62880,
+      "triangles": 684,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.14999999105930328,
+          -0.05999999865889549,
+          -0.1250000149011612
+        ],
+        "max": [
+          0.14999999105930328,
+          0.05999999865889549,
+          0.1250000149011612
+        ]
+      },
+      "sources": [
+        {
+          "id": "medkit",
+          "sha256": "9C8436DA2DE11C937BE7FB5541DE1CE81FEA45FA5B0D3A769104799D28CCBAF0",
+          "page": "https://poly.pizza/m/ijqVDSeIM5",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": [
+        "socket_grip_r"
+      ]
+    },
+    {
+      "id": "artifactSpring",
+      "name": "Артефакт «Пружина»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactSpring.glb",
+      "sha256": "2cecf75ff17da018bfcd924c5fdb3e9630eb4302a0029acd676a2da50f60c445",
+      "bytes": 43148,
+      "triangles": 512,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.10999999940395355,
+          -0.10999999940395355,
+          -0.16999998688697815
+        ],
+        "max": [
+          0.10999999940395355,
+          0.10999999940395355,
+          0.17000000178813934
+        ]
+      },
+      "sources": [
+        {
+          "id": "spring",
+          "sha256": "5AC89D36B8D748E6B2FE6974D4D8CC19B04682835B38C8B6DD90496E367184E5",
+          "page": "https://poly.pizza/m/vKySckBbyb",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactVein",
+      "name": "Артефакт «Жила»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactVein.glb",
+      "sha256": "8a9f4f019d6921243293f1ca578a2d4433990ce3f2dc520bf554cb625e36a5e3",
+      "bytes": 40492,
+      "triangles": 384,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.19999998807907104,
+          -0.10000000149011612,
+          -0.10999999940395355
+        ],
+        "max": [
+          0.19999998807907104,
+          0.10000000149011612,
+          0.10999999940395355
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-rock_crystalsLargeA",
+          "sha256": "CFE8F339F6BE4A321E5F3822237002B6A70F9C5D03596A7C347ADABD5247FBD9",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactNode",
+      "name": "Артефакт «Узел»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactNode.glb",
+      "sha256": "3fc6bbc716f9bb425d76f58fd37ee210cd7905c3adda511ab8776e6a2bbe734d",
+      "bytes": 21200,
+      "triangles": 200,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.13500000536441803,
+          -0.13500000536441803,
+          -0.10000000149011612
+        ],
+        "max": [
+          0.13500000536441803,
+          0.13500000536441803,
+          0.10000000149011612
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-pipe_cross",
+          "sha256": "9550AF4D18BD747FDDFCA37439C9B46264DD588B68401F3B3CBF9D41A878C33C",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactDrop",
+      "name": "Артефакт «Капля»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactDrop.glb",
+      "sha256": "73a1126510c4e624ee92c06f74da1697befe9f28f0beb53ca04a4ef79e5fcc08",
+      "bytes": 14464,
+      "triangles": 62,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.0949999988079071,
+          -0.08000000566244125,
+          -0.15000000596046448
+        ],
+        "max": [
+          0.0949999988079071,
+          0.08000000566244125,
+          0.15000000596046448
+        ]
+      },
+      "sources": [
+        {
+          "id": "gem-green",
+          "sha256": "6A29E5681BD6525AF84F1016E3E32B18C9008EFBA128DE8131232911504B1515",
+          "page": "https://poly.pizza/m/kbgiCMzdxg",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactBloodkin",
+      "name": "Артефакт «Кровник»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactBloodkin.glb",
+      "sha256": "f606a6da45392d090fb2dbf53a7b27499a00126be20663529bf8faa9d94ceee6",
+      "bytes": 26056,
+      "triangles": 160,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.125,
+          -0.07999999821186066,
+          -0.14000000059604645
+        ],
+        "max": [
+          0.125,
+          0.07999999821186066,
+          0.14000000059604645
+        ]
+      },
+      "sources": [
+        {
+          "id": "heart",
+          "sha256": "A4ACAC986A8D557AA1BD9FFAD4291EC26C7E49F6FAAA716943C22394F42F5793",
+          "page": "https://poly.pizza/m/1yCRUwFnwX",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactShell",
+      "name": "Артефакт «Панцирь»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactShell.glb",
+      "sha256": "46f80146b6241a97c94445c5d3457fd855ebba632f77a18b24f241e039ed7d79",
+      "bytes": 13236,
+      "triangles": 44,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.17500001192092896,
+          -0.14000000059604645,
+          -0.09000000357627869
+        ],
+        "max": [
+          0.17500001192092896,
+          0.14000000059604645,
+          0.09000000357627869
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-meteor_half",
+          "sha256": "EF611F9D1DE4196023686A9977EA32CD15858F626D0D7DBB1240450EDB92C4C2",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactWarmer",
+      "name": "Артефакт «Тепляк»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactWarmer.glb",
+      "sha256": "4e21e33177a6ddb95f984a4990213a3d22ac4052023c6d5c64d6ea043fd5d70f",
+      "bytes": 22288,
+      "triangles": 196,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.125,
+          -0.125,
+          -0.125
+        ],
+        "max": [
+          0.125,
+          0.125,
+          0.125
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-meteor_detailed",
+          "sha256": "F30379ABD7D772A2FDC52EBB72AD2B5FC94768343CB8F6788614820F632C5E63",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactSieve",
+      "name": "Артефакт «Сито»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactSieve.glb",
+      "sha256": "a5a229feb61ac754528edf1e5045bb69832103c7945b503b8b4b65480f85e35a",
+      "bytes": 30248,
+      "triangles": 190,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.12999999523162842,
+          -0.11999999731779099,
+          -0.08000000566244125
+        ],
+        "max": [
+          0.12999999523162842,
+          0.11999999731779099,
+          0.08000000566244125
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-pipe_ringHigh",
+          "sha256": "9091694F93359E720150B85C6F576485BEB888CC43D80B020B391263F5B047F1",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactThunderer",
+      "name": "Артефакт «Громник»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactThunderer.glb",
+      "sha256": "43bbb8ad790ed3ababf0e6725595a4f64763245c7be7546b73cdd85403e902c3",
+      "bytes": 43768,
+      "triangles": 406,
+      "meshes": 2,
+      "bounds": {
+        "min": [
+          -0.14000001549720764,
+          -0.11500000208616257,
+          -0.15000000596046448
+        ],
+        "max": [
+          0.13999997079372406,
+          0.11500000208616257,
+          0.15000000596046448
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-machine_generator",
+          "sha256": "98E8AC6ACEADA3B2483ED1ECEB59BFF7190EE774EDAC799350CCC11AD140F7F3",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactHusher",
+      "name": "Артефакт «Молчун»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactHusher.glb",
+      "sha256": "89e0ed5e3338f9c43bb169f9e023e427a8c03e4913aff1111d9a87e4d3bff40a",
+      "bytes": 20708,
+      "triangles": 172,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.14000000059604645,
+          -0.0899999812245369,
+          -0.10500000417232513
+        ],
+        "max": [
+          0.14000000059604645,
+          0.09000001102685928,
+          0.10500000417232513
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-rock",
+          "sha256": "DBC02AF619E176D10676CEB0E788D0BF8838731BEF0D50972F11C7BF5D1F4922",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactAnchor",
+      "name": "Артефакт «Якорь»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactAnchor.glb",
+      "sha256": "ee5039bd747f4880aab88806e3471ee207f3d106ceba4cb144e5534a91393d26",
+      "bytes": 41280,
+      "triangles": 544,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.125,
+          -0.07999999821186066,
+          -0.15000000596046448
+        ],
+        "max": [
+          0.125,
+          0.07999999821186066,
+          0.15000000596046448
+        ]
+      },
+      "sources": [
+        {
+          "id": "anchor",
+          "sha256": "98504894D03160B86F8B4A34D6E1B9B31BAC173CE424378100F13143FD0223FC",
+          "page": "https://quaternius.com/packs/piratekit.html",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactDew",
+      "name": "Артефакт «Роса»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactDew.glb",
+      "sha256": "00cff8659572e3ab696a0ece8e3d0a762a5663d0de3b786137879201294da3e5",
+      "bytes": 40308,
+      "triangles": 364,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.12999998033046722,
+          -0.10999998450279236,
+          -0.08999999612569809
+        ],
+        "max": [
+          0.1300000250339508,
+          0.11000001430511475,
+          0.08999999612569809
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-rock_crystals",
+          "sha256": "FBE5CE9CF6A036594B0EB4FC475633753BCD05780BF60BD82AA9C63FCBFD4E76",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactMemory",
+      "name": "Артефакт «Память»",
+      "presentationOnly": false,
+      "file": "/assets/models/items/kromka/item_artifactMemory.glb",
+      "sha256": "15a650337e9cfbcd4722f6910e77ef8fcef73fc75eefd741237b3174a6d07668",
+      "bytes": 13668,
+      "triangles": 44,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.10000000149011612,
+          -0.07999999821186066,
+          -0.16499999165534973
+        ],
+        "max": [
+          0.10000000149011612,
+          0.07999999821186066,
+          0.16499999165534973
+        ]
+      },
+      "sources": [
+        {
+          "id": "gem-pink",
+          "sha256": "AD216953C74193455A56F0EA40F36B1ED7BD714F21459A59ED74FA0E34EFE312",
+          "page": "https://poly.pizza/m/PJnKvWluqs",
+          "creator": "Quaternius"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    },
+    {
+      "id": "artifactUnknown",
+      "name": "Нераспознанный артефакт",
+      "presentationOnly": true,
+      "file": "/assets/models/items/kromka/item_artifactUnknown.glb",
+      "sha256": "b4daa7cba4d4042ffa52a1babbdcac3799ed18e997de6a466ed40b880263ad6a",
+      "bytes": 21436,
+      "triangles": 196,
+      "meshes": 1,
+      "bounds": {
+        "min": [
+          -0.13500000536441803,
+          -0.12000000476837158,
+          -0.11999999731779099
+        ],
+        "max": [
+          0.13500000536441803,
+          0.12000000476837158,
+          0.11999999731779099
+        ]
+      },
+      "sources": [
+        {
+          "id": "space-meteor_detailed",
+          "sha256": "F30379ABD7D772A2FDC52EBB72AD2B5FC94768343CB8F6788614820F632C5E63",
+          "page": "https://kenney.nl/assets/space-kit",
+          "creator": "Kenney"
+        }
+      ],
+      "modifications": [
+        "metre-scale fitting",
+        "static rest-pose bake",
+        "worn PBR materials"
+      ],
+      "sockets": []
+    }
+  ]
+}

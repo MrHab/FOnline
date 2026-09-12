@@ -1,0 +1,336 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "clanSiege",
+  "name": "Контур осады",
+  "seed": 2026091299,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "clanSiege",
+  "privateInstance": true,
+  "noGlobalMap": true,
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Контур синхронизации"
+  },
+  "map": {
+    "width": 80,
+    "depth": 80,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 1,
+    "y": 0,
+    "z": -29,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 4
+  },
+  "objects": [
+    {
+      "id": "wall_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 26
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 9,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "siege",
+        "defender-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "wall_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",
+      "position": {
+        "x": -26,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 6
+      },
+      "collision": "none",
+      "tags": [
+        "siege",
+        "defender-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "wall_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",
+      "position": {
+        "x": 26,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 6
+      },
+      "collision": "none",
+      "tags": [
+        "siege",
+        "defender-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "relay_a",
+      "model": "utilityPole",
+      "name": "Внешний передатчик А",
+      "position": {
+        "x": -17,
+        "y": 0,
+        "z": -13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "siege-objective",
+        "relay_a",
+        "attacker-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "relay_b",
+      "model": "utilityPole",
+      "name": "Внешний передатчик Б",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "siege-objective",
+        "relay_b",
+        "attacker-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "relay_c",
+      "model": "utilityPole",
+      "name": "Внешний передатчик В",
+      "position": {
+        "x": 17,
+        "y": 0,
+        "z": -13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "siege-objective",
+        "relay_c",
+        "attacker-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "siege_gate",
+      "model": "cargoStack",
+      "name": "Синхронные ворота",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.4,
+        "y": 1.4,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "siege-objective",
+        "gate",
+        "defender-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "command_core",
+      "model": "relayAntenna",
+      "name": "Командное ядро",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 19
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "collision": "none",
+      "tags": [
+        "siege-objective",
+        "core",
+        "defender-zone"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "attacker_rally",
+      "model": "watchPost",
+      "name": "Сбор атакующих",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -30
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "tags": [
+        "siege",
+        "attacker-zone",
+        "respawn"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    },
+    {
+      "id": "defender_rally",
+      "model": "watchPost",
+      "name": "Сбор защитников",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 31
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "tags": [
+        "siege",
+        "defender-zone",
+        "respawn"
+      ],
+      "vision": {
+        "mode": "block"
+      }
+    }
+  ],
+  "ambient": {
+    "fogColor": "#807461",
+    "fogDensity": 0.012,
+    "lightColor": "#e0bc82",
+    "lightIntensity": 0.75
+  },
+  "lore": "Изолированный контур Каскада открывается только зарегистрированным составам. Командное ядро не интересуется героизмом — только временем окна и двумя совпавшими печатями."
+}

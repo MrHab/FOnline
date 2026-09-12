@@ -1,0 +1,87 @@
+{
+  "schema": "realm.weapon-source-pilot.v1",
+  "selectedAt": "2026-09-07",
+  "license": "CC0-1.0",
+  "selectionPolicy": "one source model per runtime weapon family; no complete upstream archives",
+  "additionalCatalogManifest": "catalog-replacements.json",
+  "catalogStatus": "All firearms now have CC0 donors; pickaxe and handPump use project-authored revision 3 geometry.",
+  "families": [
+    {
+      "family": "sidearm",
+      "weaponId": "pistol",
+      "creator": "Quaternius",
+      "pack": "Ultimate Guns Pack",
+      "page": "https://quaternius.com/packs/ultimategun.html",
+      "sourceFile": "quaternius/ultimate-guns/Pistol_1.fbx",
+      "sourceSha256": "4a1f77b488f23e1758a4e9a5289cf076c876e3455a176dc8e0f4abea613aae1d",
+      "downloadFileId": "1p_BUZNSwSpZPkDORqMowXqpImA_l2uce"
+    },
+    {
+      "family": "long_gun",
+      "weaponId": "assaultRifle",
+      "creator": "Quaternius",
+      "pack": "Zombie Apocalypse Kit",
+      "page": "https://quaternius.com/packs/zombieapocalypse.html",
+      "sourceFile": null,
+      "note": "Previously rebuilt from Rifle.gltf and integration-approved; the approved review hash remains the gate."
+    },
+    {
+      "family": "heavy",
+      "weaponId": "flamethrower",
+      "creator": "Alexandr Mischenko",
+      "pack": "Flamethrower PBR/Unity CC0",
+      "page": "https://opengameart.org/content/flamethrower-pbrunity-cc0",
+      "sourceFile": "opengameart/flamethrower/Flamethrower.fbx",
+      "sourceSha256": "954ad0ea00d83aaff4245a89ad378108f61cbf21d1c5c1fd2532865e43e6cc02"
+    },
+    {
+      "family": "energy_sidearm",
+      "weaponId": "laserPistol",
+      "creator": "Quaternius",
+      "pack": "Sci-Fi Modular Gun Pack",
+      "page": "https://quaternius.com/packs/scifimodularguns.html",
+      "sourceFile": "quaternius/sci-fi-modular/Pistol_1.fbx",
+      "sourceSha256": "900e5eaf56065b2fe9870057f3ac01a74e5eba0e9d2193f05883200387c65617",
+      "downloadFileId": "1OVdJHW9nr-j3HvvfL61_l5S_N2i9L_Tr"
+    },
+    {
+      "family": "energy_long_gun",
+      "weaponId": "plasmaRifle",
+      "creator": "Quaternius",
+      "pack": "Sci-Fi Modular Gun Pack",
+      "page": "https://quaternius.com/packs/scifimodularguns.html",
+      "sourceFile": "quaternius/sci-fi-modular/AR_1.fbx",
+      "sourceSha256": "3d2e58f6d89a9aedf2e25f769ca4c3dfd3981d0fa5ecbf0ebbd37c6c2da196b7",
+      "downloadFileId": "10jG2597q6IwuIwAuA3GjA_M7XDq7ctOv"
+    },
+    {
+      "family": "launcher",
+      "weaponId": "rocketLauncher",
+      "creator": "KennyNL",
+      "pack": "Low Poly Rocket Launcher",
+      "page": "https://opengameart.org/content/low-poly-rocket-launcher",
+      "sourceFile": "opengameart/rocket-launcher/rocket_launcher.blend",
+      "sourceSha256": "763251a23c9a43e0560075d093c91057d331c9c3ca8cbf578a844f9dcdad5563"
+    },
+    {
+      "family": "melee_light",
+      "weaponId": "knife",
+      "creator": "Quaternius",
+      "pack": "Survival Pack",
+      "page": "https://quaternius.com/packs/survival.html",
+      "sourceFile": "quaternius/survival/Knife.fbx",
+      "sourceSha256": "6a2d5250870ebc62aef8dc1c5bd6de88e921d36f976d06f61c2e9f190f7ec030",
+      "downloadFileId": "1DGMROlvbL1sXqbsTvT8RkLd1NugYJ-3o"
+    },
+    {
+      "family": "melee_heavy",
+      "weaponId": "axe",
+      "creator": "Quaternius",
+      "pack": "Survival Pack",
+      "page": "https://quaternius.com/packs/survival.html",
+      "sourceFile": "quaternius/survival/Axe.fbx",
+      "sourceSha256": "41537fbef651a0931b42b1786658ea1ef116dbe4a2315a38d12644251e4c52f4",
+      "downloadFileId": "1AEJEbJad62PJhbIKGzRTAdTbCTsu67dU"
+    }
+  ]
+}

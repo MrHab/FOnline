@@ -152,9 +152,12 @@ async function main() {
     && characterView.includes('FastGaitPhaseOffset = -1f / 6f')
     && characterView.includes('IsCyclicLocomotion'),
   'Unity locomotion transitions no longer preserve contact-aligned gait phase');
-  assert(locationLoader.includes('root.InverseTransformPoint(sourceTransform.TransformPoint(point))')
-    && locationLoader.includes('filter.sharedMesh.bounds'),
-  'Unity fallback colliders are no longer rebuilt in object-local space');
+  assert(locationLoader.includes('SceneManager.LoadSceneAsync(unitySceneName, LoadSceneMode.Additive)')
+    && locationLoader.includes('unityScene.TryGetObject(entry.Id, out GameObject sceneObject)')
+    && locationLoader.includes('_objectRoots[entry.Id] = sceneObject;')
+    && locationLoader.includes('unityScene.ReplaceServerStaticGeometry')
+    && !locationLoader.includes('AddComponent<BoxCollider>'),
+  'Unity no longer preserves authored scene geometry/colliders without legacy fallback duplicates');
 
   global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
   global.self = global.self || global;

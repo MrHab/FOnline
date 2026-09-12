@@ -1,0 +1,36 @@
+{
+  "schema": "kromka.economy.v1",
+  "version": 1,
+  "currency": {
+    "itemId": "silver",
+    "displayName": "Марки Тракта",
+    "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками."
+  },
+  "strategicResource": {
+    "itemId": "blue",
+    "displayName": "Синь",
+    "unit": "кассета",
+    "weightKg": 0.4,
+    "stackLimit": 60,
+    "ordinaryCurrency": false,
+    "description": "Довоенный сорбент Каскада. Очищает воду от радиоактивных частиц, тяжёлых металлов и промышленных токсинов.",
+    "sources": [
+      "остатки в узлах Каскада",
+      "опасные комплексы Нулевой котловины",
+      "регенератор Р-12",
+      "награды глобального конфликта"
+    ],
+    "sinks": [
+      "водоснабжение поселений",
+      "обслуживание личной базы",
+      "укрепление клановых объектов",
+      "сюжетные решения и фракционные операции"
+    ],
+    "rules": {
+      "soldByOrdinaryVendors": false,
+      "randomHumanoidLoot": false,
+      "protectedFromCurrencyConversion": true,
+      "dropsInFullLootPvp": true
+    }
+  }
+}

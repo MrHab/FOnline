@@ -67,6 +67,16 @@ namespace RealmOfAshes.Game
         private void Update()
         {
             if (_canvas == null) Build();
+            if (Bootstrap != null && Bootstrap.Onboarding != null
+                && Bootstrap.Onboarding.HasReceivedState)
+            {
+                // The old generic four-step coach is retained as a manual help
+                // reference, but the story-led nine-step caravan preparation owns
+                // first-run progression and cannot be skipped on a fresh account.
+                _canvas.gameObject.SetActive(false);
+                _hasPlayerPosition = false;
+                return;
+            }
             bool completedBefore = PlayerPrefs.GetInt(PrefsKey, 0) != 0;
             if (_skipped || completedBefore || Bootstrap == null || !Bootstrap.InGame)
             {

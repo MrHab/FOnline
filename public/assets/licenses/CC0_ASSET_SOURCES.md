@@ -2,7 +2,7 @@
 
 This patch adds a local asset pipeline for the wasteland visual pass. The bundled PNG files in `public/assets/textures/cc0/` are lightweight, optimized, procedural stand-ins created for this build. They are prepared to be replaced by full downloaded CC0 packs from the sources below.
 
-The wasteland `.glb` props in `public/assets/models/wasteland/` are original low-poly models generated for this project: barrels, wrecks, dead trees, road signs, concrete ruins, barricades, old asphalt, tire piles, scrap heaps and utility poles. They are inspired only by broad post-apocalyptic isometric art direction and do not contain extracted assets from Fallout or Fallout 2.
+Generated wasteland environment `.glb` props have been retired. The remaining files in `public/assets/models/wasteland/` are actor models; static location presentation is authored in Unity scenes.
 
 Allowed external sources for future imported files:
 

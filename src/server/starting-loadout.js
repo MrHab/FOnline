@@ -1,16 +1,15 @@
 'use strict';
 
-const QUICK_START_SPECIAL = Object.freeze({
-  str: 5,
-  per: 7,
-  end: 6,
-  cha: 5,
-  int: 5,
-  agi: 7,
-  luck: 5
-});
-const QUICK_START_SKILLS = Object.freeze(['lightWeapons', 'wanderer']);
-const QUICK_START_TRAITS = Object.freeze(['trainedEye', 'scavengerStart']);
+const rawCharacterProgression = require('../../data/kromka/character-progression.json');
+const { normalizeCharacterProgressionCatalog } = require('./kromka-character-progression');
+
+const characterProgression = normalizeCharacterProgressionCatalog(rawCharacterProgression);
+const quickStartPreset = characterProgression.quickStarts.find(row => row.id === 'independentMercenary')
+  || characterProgression.quickStarts[0];
+if (!quickStartPreset) throw new Error('Character progression catalog has no quick-start preset.');
+const QUICK_START_SPECIAL = Object.freeze({ ...quickStartPreset.special });
+const QUICK_START_SKILLS = Object.freeze([...quickStartPreset.taggedSkills]);
+const QUICK_START_TRAITS = Object.freeze([...quickStartPreset.traits]);
 
 function exactSet(values = [], expected = []) {
   if (!Array.isArray(values) || values.length !== expected.length) return false;
@@ -37,6 +36,11 @@ function buildStartingLoadout(input = {}, now = Date.now()) {
 
   add('knife', 1);
   add('water', 1);
+  add('food', 1);
+  add('medkit', 1);
+  add('scrap', 2);
+  add('leather', 1);
+  add('boots', 1);
   add('silver', traits.includes('traderStart') ? 18 : 6);
   if (quickStart) {
     add('pistol', 1);
@@ -53,9 +57,9 @@ function buildStartingLoadout(input = {}, now = Date.now()) {
     equipment: {
       weapon: quickStart ? 'pistol' : 'fists',
       offhand: '',
-      armor: '',
+      armor: 'leather',
       helmet: '',
-      boots: '',
+      boots: 'boots',
       backpack: ''
     },
     inventory: [...inventory.entries()].map(([id, qty]) => ({ id, qty })),
@@ -73,10 +77,28 @@ function buildStartingLoadout(input = {}, now = Date.now()) {
   };
 }
 
+function buildTutorialStartingLoadout() {
+  return { inventory: [], itemRuntime: {}, equipment: {
+    weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: ''
+  } };
+}
+
+function buildTutorialSupplies(input = {}) {
+  const loadout = buildStartingLoadout(input);
+  const supplies = new Map(loadout.inventory.map(row => [row.id, row.qty]));
+  // Every build learns the same actions, including custom melee builds.
+  for (const [id, qty] of [['pistol', 1], ['ammo9', 24], ['medkit', 2], ['pickaxe', 1], ['axe', 1]])
+    supplies.set(id, Math.max(qty, supplies.get(id) || 0));
+  supplies.delete('scrap');
+  return [...supplies].map(([id, qty]) => ({ id, qty }));
+}
+
 module.exports = {
   QUICK_START_SPECIAL,
   QUICK_START_SKILLS,
   QUICK_START_TRAITS,
   isQuickStartBuild,
-  buildStartingLoadout
+  buildStartingLoadout,
+  buildTutorialStartingLoadout,
+  buildTutorialSupplies
 };

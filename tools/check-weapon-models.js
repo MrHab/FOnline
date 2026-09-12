@@ -5,6 +5,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const modelDirectory = path.join(root, 'public', 'assets', 'models', 'weapons');
+const liteModelDirectory = path.join(root, 'public', 'assets', 'models-lite', 'weapons');
 const manifestPath = path.join(modelDirectory, 'manifest.json');
 const clientItemsPath = path.join(root, 'public', 'js', 'game', '03_items_inventory_core.js');
 const runtimePath = path.join(root, 'public', 'js', 'game', '04c_weapon_glb_runtime.js');
@@ -83,18 +84,62 @@ assert.deepStrictEqual(manifest.reloadAnimationWeapons, reloadAnimationWeapons);
 assert.strictEqual(manifest.files?.length, expected.size);
 
 const manifestById = new Map(manifest.files.map(row => [row.id, row]));
+const attachmentReport = JSON.parse(fs.readFileSync(path.join(modelDirectory, 'attachment-report.json'), 'utf8'));
+assert.strictEqual(attachmentReport.toleranceMetres, 0.002, 'attachment gap tolerance must remain 2 mm');
+const attachmentsById = new Map(attachmentReport.weapons.map(row => [row.weapon, row]));
+assert.strictEqual(attachmentsById.size, expected.size, 'attachment audit must cover the complete catalog');
+const movingAttachments = {
+  laserPistol: { emitter_ring: 'muzzle' },
+  rifle: { bolt_knob: 'bolt' },
+  machineGun: { ammo_box_lid: 'ammo_box', ammo_box_latch: 'ammo_box' },
+  smg: { magazine_base: 'magazine' },
+  flamethrower: { pressure_gauge: 'fuel_tank', gauge_face: 'pressure_gauge', fuel_valve: 'fuel_tank', pilot: 'muzzle' }
+};
+function checkAttachments(json, id, label) {
+  const parents = new Map();
+  (json.nodes || []).forEach(node => (node.children || []).forEach(index => parents.set(index, node.name)));
+  for (const [child, parent] of Object.entries(movingAttachments[id] || {})) {
+    const index = json.nodes.findIndex(node => node.name === child);
+    assert(index >= 0, `${id}/${label}: attachment missing: ${child}`);
+    assert.strictEqual(parents.get(index), parent, `${id}/${label}: ${child} must follow ${parent}`);
+  }
+}
 assert.deepStrictEqual(
   [...manifestById.keys()].sort(),
   [...expected.keys()].sort(),
   'weapon manifest does not match the complete physical weapon catalog'
 );
+const expectedPilots = new Map([...expected]
+  .filter(([id]) => id !== 'pickaxe' && id !== 'handPump')
+  .map(([id, config]) => [id, config.family]));
+const pilotRows = manifest.files.filter(row => row.pilotFamily);
+assert.strictEqual(pilotRows.length, expectedPilots.size,
+  'every firearm, knife and axe must use a replacement, not just one representative per family');
+for (const [id, family] of expectedPilots) {
+  const row = manifestById.get(id);
+  assert.strictEqual(row?.pilotFamily, family, `${family}: wrong pilot representative`);
+  assert.strictEqual(row?.source?.license, 'CC0-1.0', `${id}: pilot license is not pinned`);
+  assert(/^https:\/\//.test(row?.source?.page || ''), `${id}: pilot source page is missing`);
+  if (row.source.sourceFile) {
+    const sourceFile = path.join(root, 'source-assets', 'weapons', 'pilot', row.source.sourceFile);
+    assert(fs.existsSync(sourceFile), `${id}: selected source file is missing`);
+    assert.strictEqual(sha256(sourceFile), row.source.sha256, `${id}: selected source hash drifted`);
+  } else {
+    assert(row.approvedReviewSha256, `${id}: approved pilot has neither a source file nor a review gate`);
+  }
+}
 
 let totalBytes = 0;
 let totalMeshes = 0;
 let totalAnimationChannels = 0;
+let checkedLiteModels = 0;
 for (const [id, config] of expected) {
   const row = manifestById.get(id);
   assert(row, `${id}: manifest row is missing`);
+  const attachment = attachmentsById.get(id);
+  assert(attachment && attachment.sha256 === row.sha256, `${id}: attachment audit is stale`);
+  assert.deepStrictEqual(attachment.detached, [], `${id}: visible parts float outside the assembly`);
+  assert(attachment.animationPoseChecks >= 16, `${id}: attachment animation sampling is missing`);
   assert.strictEqual(row.family, config.family, `${id}: wrong animation family`);
   assert.strictEqual(row.runtimeScale, config.scale, `${id}: wrong runtime scale`);
   assert(
@@ -145,6 +190,18 @@ for (const [id, config] of expected) {
   if (config.reloadPart) assert(names.has(config.reloadPart), `${id}: physical reload part is missing: ${config.reloadPart}`);
   const rootNode = (json.nodes || []).find(node => node.extras?.realm_weapon_id === id);
   assert(rootNode, `${id}: runtime root metadata is missing`);
+  assert.strictEqual(rootNode.extras.realm_attachment_revision, 1, `${id}: attachment repair is missing`);
+  checkAttachments(json, id, 'original');
+  if (!config.approved) {
+    assert.strictEqual(row.modelRevision, 3, `${id}: old model catalog entry`);
+    assert.strictEqual(rootNode.extras.realm_model_revision, 3, `${id}: old geometry is still shipped`);
+    if (row.source) {
+      assert.strictEqual(rootNode.extras.realm_source_sha256, row.source.sha256,
+        `${id}: source hash must describe the actual runtime mesh`);
+      assert(json.meshes.some(mesh => mesh.name?.includes('_CC0')),
+        `${id}: imported replacement geometry is missing`);
+    }
+  }
   assert.strictEqual(
     rootNode.extras.realm_schema,
     config.approved ? 'realm.weapon-runtime.approved.v1' : 'realm.weapon-runtime.v1'
@@ -154,6 +211,10 @@ for (const [id, config] of expected) {
   assert.strictEqual(rootNode.extras.realm_runtime_scale, config.scale);
   assert.strictEqual(rootNode.extras.realm_interaction_profile, 'physical_grips_reload_v2');
   assert.strictEqual(rootNode.extras.realm_reload_kind, config.reloadKind);
+  if (row.pilotFamily) {
+    assert.strictEqual(rootNode.extras.realm_pilot_family, row.pilotFamily, `${id}: pilot metadata drifted`);
+    assert.strictEqual(rootNode.extras.realm_source_license, 'CC0-1.0', `${id}: root license metadata drifted`);
+  }
   assert(Array.isArray(rootNode.scale) && rootNode.scale.length === 3, `${id}: root scale is missing`);
   rootNode.scale.forEach(value => {
     assert(Math.abs(value - config.scale) < 1e-6, `${id}: exported root scale drifted`);
@@ -188,6 +249,57 @@ for (const [id, config] of expected) {
     assert.strictEqual(rootNode.extras.realm_runtime_integration_allowed, true);
     assert.strictEqual(rootNode.extras.realm_approved_review_sha256, row.approvedReviewSha256);
   }
+
+  // Unity requests /assets/models-lite/* first. Those files are generated and
+  // gitignored, so a local build can otherwise keep showing an older weapon
+  // even after the authoritative GLB was replaced. Missing lite files are OK:
+  // server.js falls back to /assets/models/*. Existing ones must describe the
+  // same pilot revision and interaction contract as the authoritative model.
+  const liteFile = path.join(liteModelDirectory, `weapon_${id}.glb`);
+  if (fs.existsSync(liteFile)) {
+    checkedLiteModels++;
+    const { json: liteJson } = parseGlb(liteFile);
+    const liteRoot = (liteJson.nodes || []).find(node => node.extras?.realm_weapon_id === id);
+    assert(liteRoot, `${id}: models-lite copy is stale (runtime root metadata is missing)`);
+    assert.strictEqual(liteRoot.extras.realm_attachment_revision, 1, `${id}: models-lite attachment repair is stale`);
+    checkAttachments(liteJson, id, 'lite');
+    assert.strictEqual(liteRoot.extras.realm_schema, rootNode.extras.realm_schema,
+      `${id}: models-lite schema is stale`);
+    if (!config.approved) {
+      assert.strictEqual(liteRoot.extras.realm_model_revision, row.modelRevision,
+        `${id}: models-lite geometry revision is stale`);
+    }
+    assert.strictEqual(liteRoot.extras.realm_animation_family, row.family,
+      `${id}: models-lite family is stale`);
+    assert.strictEqual(liteRoot.extras.realm_interaction_profile, manifest.interactionProfile,
+      `${id}: models-lite interaction profile is stale`);
+    assert.strictEqual(liteRoot.extras.realm_reload_kind, row.reloadKind,
+      `${id}: models-lite reload kind is stale`);
+
+    const liteNames = new Set((liteJson.nodes || []).map(node => node.name));
+    expectedGripSockets.forEach(name => assert(liteNames.has(name),
+      `${id}: models-lite interaction socket is missing: ${name}`));
+    assert.deepStrictEqual(
+      (liteJson.animations || []).map(animation => animation.name).sort(),
+      [...expectedAnimations].sort(),
+      `${id}: models-lite clips are stale`
+    );
+
+    if (row.pilotFamily) {
+      assert.strictEqual(liteRoot.extras.realm_pilot_family, row.pilotFamily,
+        `${id}: models-lite still contains the pre-pilot weapon`);
+      assert.strictEqual(liteRoot.extras.realm_source_license, row.source.license,
+        `${id}: models-lite source license is stale`);
+      assert.strictEqual(liteRoot.extras.realm_source_page, row.source.page,
+        `${id}: models-lite source page is stale`);
+      assert.strictEqual(liteRoot.extras.realm_source_sha256 || null, row.source.sha256 || null,
+        `${id}: models-lite source revision is stale`);
+      if (config.approved) {
+        assert.strictEqual(liteRoot.extras.realm_approved_review_sha256, row.approvedReviewSha256,
+          `${id}: models-lite approved revision is stale`);
+      }
+    }
+  }
 }
 assert(totalBytes < 5_000_000, `weapon library exceeds the 5 MB budget: ${totalBytes}`);
 
@@ -216,7 +328,7 @@ for (const [id, config] of expected) {
   'function cancelWeaponGlbForGroup(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.93.0-deterministic-weapons-v1-b13d09c0';",
+  'const WEAPON_MODEL_ASSET_VERSION = ',
   "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"
@@ -269,6 +381,11 @@ const weaponModelDigest = (() => {
   return hash.digest('hex').slice(0, 8);
 })();
 const declaredAssetVersion = runtime.match(/WEAPON_MODEL_ASSET_VERSION\s*=\s*'([^']+)'/)?.[1] || '';
+const unityModelUrl = fs.readFileSync(path.join(root,
+  'unity-client/Assets/Scripts/Game/RoaModelUrl.cs'), 'utf8');
+const unityAssetVersion = unityModelUrl.match(/WeaponCatalogVersion\s*=\s*"([^"]+)"/)?.[1] || '';
+assert.strictEqual(unityAssetVersion, `3-${weaponModelDigest}`,
+  'Unity must request the current content fingerprint, not a fixed catalog version');
 assert(
   declaredAssetVersion.endsWith(`-${weaponModelDigest}`),
   `WEAPON_MODEL_ASSET_VERSION должна оканчиваться отпечатком моделей -${weaponModelDigest}, `
@@ -280,4 +397,5 @@ assert(
 console.log(
   `Weapon models OK: ${expected.size} GLB, ${totalMeshes} meshes, `
   + `${totalAnimationChannels} animation channels, ${totalBytes} bytes`
+  + (checkedLiteModels > 0 ? `; ${checkedLiteModels} models-lite copies aligned` : '')
 );

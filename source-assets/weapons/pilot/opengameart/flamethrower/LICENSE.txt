@@ -1,0 +1,8 @@
+Flamethrower PBR/Unity CC0 by Alexandr Mischenko
+
+License: Creative Commons CC0 1.0 Universal
+Source: https://opengameart.org/content/flamethrower-pbrunity-cc0
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Downloaded 2026-09-07. Only the selected authoring model and its PBR maps are
+stored here; the complete upstream archive is not vendored.

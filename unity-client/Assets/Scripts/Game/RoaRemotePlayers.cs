@@ -248,6 +248,15 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+        public bool TryGetCharacterView(string id, out RoaCharacterView view)
+        {
+            view = null;
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)
+                || remote?.View == null) return false;
+            view = remote.View;
+            return true;
+        }
+
         public bool TryGetNearest(Vector3 origin, float maxDistance, out PublicPlayer player, out float distance)
         {
             player = null;
@@ -635,7 +644,8 @@ namespace RealmOfAshes.Game
                 if (_movementFx != null)
                 {
                     _movementFx.TrackActor(ref remote.StepFx, t.position, remote.PresentationVelocity,
-                        remote.PresentationMoving, presentationVisible, remote.Crouching, observer);
+                        remote.PresentationMoving, presentationVisible, remote.Crouching, observer,
+                        remote.Player != null ? remote.Player.MovementNoiseMultiplier : 1f);
                 }
             }
             UpdateDeathVisuals(Time.unscaledTime);

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace RealmOfAshes.Game
 {
@@ -12,9 +14,9 @@ namespace RealmOfAshes.Game
         public sealed class SkillDef
         {
             public readonly string Id;
-            public readonly string Name;
-            public readonly string Group;
-            public readonly string Description;
+            public string Name;
+            public string Group;
+            public string Description;
 
             public SkillDef(string id, string name, string group, string description = "")
             {
@@ -28,17 +30,17 @@ namespace RealmOfAshes.Game
         public sealed class TalentDef
         {
             public readonly string Id;
-            public readonly string Name;
-            public readonly string Group;
-            public readonly int MaxRank;
-            public readonly int Level;
-            public readonly string Stat;
-            public readonly int StatValue;
-            public readonly string Skill;
-            public readonly int SkillValue;
-            public readonly string Stat2;
-            public readonly int StatValue2;
-            public readonly string Description;
+            public string Name;
+            public string Group;
+            public int MaxRank;
+            public int Level;
+            public string Stat;
+            public int StatValue;
+            public string Skill;
+            public int SkillValue;
+            public string Stat2;
+            public int StatValue2;
+            public string Description;
 
             public TalentDef(string id, string name, string group, int maxRank, int level,
                              string stat = "", int statValue = 0,
@@ -124,14 +126,145 @@ namespace RealmOfAshes.Game
 
             // Сервер обходит SPECIAL-таланты перед остальными: это позволяет
             // в одном пакете поднять SPECIAL и открыть зависящий от него перк.
-            new TalentDef("specialStr", "Сила +1", "SPECIAL", 3, 3),
-            new TalentDef("specialPer", "Восприятие +1", "SPECIAL", 3, 3),
-            new TalentDef("specialEnd", "Выносливость +1", "SPECIAL", 3, 3),
-            new TalentDef("specialCha", "Харизма +1", "SPECIAL", 3, 3),
-            new TalentDef("specialInt", "Интеллект +1", "SPECIAL", 3, 3),
-            new TalentDef("specialAgi", "Ловкость +1", "SPECIAL", 3, 3),
-            new TalentDef("specialLuck", "Удача +1", "SPECIAL", 3, 3)
+            new TalentDef("specialStr", "Мощь +1", "Характеристики", 3, 3),
+            new TalentDef("specialPer", "Наблюдательность +1", "Характеристики", 3, 3),
+            new TalentDef("specialEnd", "Стойкость +1", "Характеристики", 3, 3),
+            new TalentDef("specialCha", "Влияние +1", "Характеристики", 3, 3),
+            new TalentDef("specialInt", "Интеллект +1", "Характеристики", 3, 3),
+            new TalentDef("specialAgi", "Реакция +1", "Характеристики", 3, 3),
+            new TalentDef("specialLuck", "Чутьё +1", "Характеристики", 3, 3)
         };
+
+        public static int CatalogVersion { get; private set; }
+
+        /// <summary>
+        /// Применяет публичный серверный каталог ко всем подписям и требованиям.
+        /// Встроенные строки выше остаются только безопасным офлайн-резервом до
+        /// первого HTTP-ответа; после него создание и ПУТНИК читают одни данные.
+        /// </summary>
+        public static bool ApplyCatalog(JObject catalog, out string error)
+        {
+            error = string.Empty;
+            if (catalog == null)
+            {
+                error = "Пустой каталог развития персонажа.";
+                return false;
+            }
+            JArray skillRows = catalog["skills"]?["items"] as JArray;
+            JArray perkRows = catalog["perks"]?["items"] as JArray;
+            if (skillRows == null || skillRows.Count != Skills.Length
+                || perkRows == null || perkRows.Count != Talents.Length)
+            {
+                error = "Каталог содержит неверное число навыков или перков.";
+                return false;
+            }
+
+            var skillById = new Dictionary<string, JObject>();
+            foreach (JToken token in skillRows)
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id) || skillById.ContainsKey(id))
+                {
+                    error = "В каталоге развития повторяется или отсутствует ID навыка.";
+                    return false;
+                }
+                skillById[id] = row;
+            }
+            var perkById = new Dictionary<string, JObject>();
+            foreach (JToken token in perkRows)
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id) || perkById.ContainsKey(id))
+                {
+                    error = "В каталоге развития повторяется или отсутствует ID перка.";
+                    return false;
+                }
+                perkById[id] = row;
+            }
+            foreach (SkillDef skill in Skills) if (!skillById.ContainsKey(skill.Id))
+            {
+                error = "Каталог не содержит навык " + skill.Id + ".";
+                return false;
+            }
+            foreach (TalentDef talent in Talents) if (!perkById.ContainsKey(talent.Id))
+            {
+                error = "Каталог не содержит перк " + talent.Id + ".";
+                return false;
+            }
+
+            foreach (SkillDef skill in Skills)
+            {
+                JObject row = skillById[skill.Id];
+                skill.Name = Text(row, "name", skill.Name);
+                skill.Group = Text(row, "group", skill.Group);
+                skill.Description = Text(row, "description", skill.Description);
+            }
+            foreach (TalentDef talent in Talents)
+            {
+                JObject row = perkById[talent.Id];
+                JObject requirements = row["requirements"] as JObject ?? new JObject();
+                talent.Name = Text(row, "name", talent.Name);
+                talent.Group = Text(row, "group", talent.Group);
+                talent.Description = Text(row, "description", talent.Description);
+                talent.MaxRank = PositiveInt(row["maxRank"], talent.MaxRank);
+                talent.Level = PositiveInt(requirements["level"], 1);
+                talent.Stat = string.Empty;
+                talent.StatValue = 0;
+                talent.Stat2 = string.Empty;
+                talent.StatValue2 = 0;
+                foreach (string statId in new[] { "str", "per", "end", "cha", "int", "agi", "luck" })
+                {
+                    int value = PositiveInt(requirements[statId], 0);
+                    if (value <= 0) continue;
+                    if (string.IsNullOrEmpty(talent.Stat))
+                    {
+                        talent.Stat = statId;
+                        talent.StatValue = value;
+                    }
+                    else
+                    {
+                        talent.Stat2 = statId;
+                        talent.StatValue2 = value;
+                    }
+                }
+                talent.Skill = string.Empty;
+                talent.SkillValue = 0;
+                JObject skillRequirement = requirements["skill"] as JObject;
+                if (skillRequirement != null)
+                {
+                    foreach (JProperty property in skillRequirement.Properties())
+                    {
+                        talent.Skill = property.Name;
+                        talent.SkillValue = PositiveInt(property.Value, 0);
+                        break;
+                    }
+                }
+            }
+            CatalogVersion = PositiveInt(catalog["version"], CatalogVersion + 1);
+            return true;
+        }
+
+        private static string Text(JObject row, string key, string fallback)
+        {
+            string value = row?[key]?.ToString()?.Trim();
+            return string.IsNullOrEmpty(value) ? fallback : value;
+        }
+
+        private static int PositiveInt(JToken token, int fallback)
+        {
+            if (token == null || token.Type != JTokenType.Integer) return fallback;
+            try
+            {
+                int? value = token.Value<int?>();
+                return value.HasValue && value.Value >= 0 ? value.Value : fallback;
+            }
+            catch (Exception)
+            {
+                return fallback;
+            }
+        }
 
         public static SkillDef FindSkill(string id)
         {
@@ -189,7 +322,7 @@ namespace RealmOfAshes.Game
                 case "engineer": return "+1 результат техкрафта, +3.5 п.п. к терминалам, +7 п.п. к техпроверке; скидка ОД сочетается с «Живчиком».";
                 case "merchant": return "+8% к цене продажи и +5 п.п. к скидке покупки за каждый ранг.";
                 case "diplomat": return "+8 п.п. к проверкам диалога и +8% к наградам квестов за каждый ранг.";
-                case "scrounger": return "+1 очко поиска лута за ранг; повышает крышки, патроны, медикаменты и редкие броски добычи.";
+                case "scrounger": return "+1 очко поиска лута за ранг; повышает марки, патроны, медикаменты и редкие броски добычи.";
                 case "cacheSense": return "+1 очко поиска за ранг; в контейнерах: ремкомплект или антибиотики 18%×ранг, трофей 8%×ранг.";
                 case "weaponSmith": return "Ремонт оружия и инструментов +8/+4, крафт +7 состояния, износ выстрела max(0.25, 0.55−0.12×ранг).";
                 case "recycler": return "Открывает разбор оружия, брони и инструментов; +12 п.п. к успеху и +2 п.п. к доп. ресурсу за ранг.";
@@ -200,13 +333,13 @@ namespace RealmOfAshes.Game
                 case "lucky": return "Шанс перелома или контузии −3.5 п.п. от входящего урона и −4 п.п. от самоповреждения за ранг.";
                 case "secondChance": return "Раз в 90 секунд смертельный удар может оставить 1 ОЗ: 22% шанса за ранг плюс бонус Удачи.";
                 case "ironBones": return "Снижает шанс перелома руки или ноги на 28% за каждый ранг.";
-                case "specialStr": return "+1 к Силе за ранг: выше переносимый вес, ближний урон и ниже штраф оружия с требованием Силы.";
-                case "specialPer": return "+1 к Восприятию за ранг: больше обзор и +2.5 п.п. к шансу попадания оружием.";
-                case "specialEnd": return "+1 к Выносливости за ранг: больше ОЗ, +0.35 п.п. к защите брони и ниже риск травм.";
-                case "specialCha": return "+1 к Харизме за ранг: +4% к продаже, +3.5 п.п. к речи и +2% к наградам квестов.";
+                case "specialStr": return "+1 к Мощи за ранг: выше переносимый вес, ближний урон и ниже штраф оружия с требованием Мощи.";
+                case "specialPer": return "+1 к Наблюдательности за ранг: больше обзор и +2.5 п.п. к шансу попадания оружием.";
+                case "specialEnd": return "+1 к Стойкости за ранг: больше ОЗ, +0.35 п.п. к защите брони и ниже риск травм.";
+                case "specialCha": return "+1 к Влиянию за ранг: +4% к продаже, +3.5 п.п. к речи и +2% к наградам квестов.";
                 case "specialInt": return "+1 к Интеллекту за ранг: терминалы, лечение Доктором, добыча и энергетический урон.";
-                case "specialAgi": return "+1 к Ловкости за ранг: выше скорость, больше ОД и +2.5 п.п. к взлому замков.";
-                case "specialLuck": return "+1 к Удаче за ранг: критический шанс, точность, взлом, добыча и ниже риск травм.";
+                case "specialAgi": return "+1 к Реакции за ранг: выше скорость, больше ОД и +2.5 п.п. к взлому замков.";
+                case "specialLuck": return "+1 к Чутью за ранг: критический шанс, точность, взлом, добыча и ниже риск травм.";
                 default: return string.Empty;
             }
         }

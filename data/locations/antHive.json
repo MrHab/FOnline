@@ -2,7 +2,7 @@
   "schema": "realm.location.v1",
   "version": 1,
   "id": "antHive",
-  "name": "Муравьиный улей",
+  "name": "Колония Пыльников",
   "seed": 20260710,
   "safe": false,
   "pvpMode": "pvpFullDrop",
@@ -26,11 +26,19 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 24
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
   },
   "worldZones": [
     {
@@ -44,82 +52,1532 @@
   "containers": [],
   "objects": [
     {
-      "id": "ant_mound_01",
-      "model": "rubbleRock",
-      "name": "Муравьиный холм",
-      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "id": "antHive-dressing-functional-01",
+      "model": "dead_tree_a",
+      "name": "antHive-dressing-functional-01",
       "position": {
-        "x": -5,
-        "y": 0,
-        "z": -6
+        "x": 11.763,
+        "y": 0.0,
+        "z": 5.535
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 1.131,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.51,
+        "z": 1.7
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-functional-02",
+      "model": "deadwood",
+      "name": "antHive-dressing-functional-02",
+      "position": {
+        "x": -2.03,
+        "y": 0.0,
+        "z": 16.072
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.152,
+        "z": 1.356
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-functional-03",
+      "model": "rubble_rock",
+      "name": "antHive-dressing-functional-03",
+      "position": {
+        "x": -19.056,
+        "y": 0.0,
+        "z": 3.635
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.901,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.821,
+        "z": 2.222
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-functional-04",
+      "model": "car_wreck",
+      "name": "antHive-dressing-functional-04",
+      "position": {
+        "x": -6.263,
+        "y": 0.0,
+        "z": -11.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.644,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.875,
+        "z": 3.99
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-functional-05",
+      "model": "perimeter_debris",
+      "name": "antHive-dressing-functional-05",
+      "position": {
+        "x": 11.09,
+        "y": 0.0,
+        "z": -11.809
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.388,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "mutant_lair",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.617,
+        "z": 1.589
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-01",
+      "model": "scrap_heap",
+      "name": "antHive-dressing-region-01",
+      "position": {
+        "x": 18.175,
+        "y": 0.0,
+        "z": 2.964
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.054,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.286,
+        "z": 2.496
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-02",
+      "model": "ore_outcrop",
+      "name": "antHive-dressing-region-02",
+      "position": {
+        "x": 33.508,
+        "y": 0.0,
+        "z": 5.449
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.15,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.287,
+        "z": 1.655
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-03",
+      "model": "rust_barrel_v1",
+      "name": "antHive-dressing-region-03",
+      "position": {
+        "x": 33.505,
+        "y": 0.0,
+        "z": 5.454
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.15,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.914,
+        "z": 2.088
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "antHive-dressing-region-04",
+      "position": {
+        "x": 33.937,
+        "y": 0.0,
+        "z": -0.701
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.207,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.109,
+        "z": 1.316
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-05",
+      "model": "scrap_heap",
+      "name": "antHive-dressing-region-05",
+      "position": {
+        "x": 18.135,
+        "y": 0.0,
+        "z": -0.366
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.207,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.333,
+        "z": 2.563
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-06",
+      "model": "ore_outcrop",
+      "name": "antHive-dressing-region-06",
+      "position": {
+        "x": 18.134,
+        "y": 0.0,
+        "z": -0.38
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.02,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.33,
+        "z": 1.711
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-07",
+      "model": "rust_barrel_v1",
+      "name": "antHive-dressing-region-07",
+      "position": {
+        "x": 18.132,
+        "y": 0.0,
+        "z": -0.394
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.02,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.889,
+        "z": 2.004
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "antHive-dressing-region-08",
+      "position": {
+        "x": 33.613,
+        "y": 0.0,
+        "z": 1.829
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.094,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.209,
+        "z": 1.525
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-09",
+      "model": "scrap_heap",
+      "name": "antHive-dressing-region-09",
+      "position": {
+        "x": 33.613,
+        "y": 0.0,
+        "z": 1.814
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.095,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.546,
+        "z": 2.882
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-10",
+      "model": "ore_outcrop",
+      "name": "antHive-dressing-region-10",
+      "position": {
+        "x": 33.612,
+        "y": 0.0,
+        "z": 1.799
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.587,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.541,
+        "z": 1.426
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-11",
+      "model": "rust_barrel_v1",
+      "name": "antHive-dressing-region-11",
+      "position": {
+        "x": 33.371,
+        "y": 0.0,
+        "z": -4.447
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.588,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.369,
+        "z": 1.472
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "antHive-dressing-region-12",
+      "position": {
+        "x": 33.506,
+        "y": 0.0,
+        "z": -4.491
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.663,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.577,
+        "z": 1.476
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-13",
+      "model": "scrap_heap",
+      "name": "antHive-dressing-region-13",
+      "position": {
+        "x": 33.506,
+        "y": 0.0,
+        "z": -4.496
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.662,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.678,
+        "z": 2.579
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-14",
+      "model": "ore_outcrop",
+      "name": "antHive-dressing-region-14",
+      "position": {
+        "x": 33.703,
+        "y": 0.0,
+        "z": -2.588
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.385,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.521,
+        "z": 1.504
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-dressing-region-15",
+      "model": "rust_barrel_v1",
+      "name": "antHive-dressing-region-15",
+      "position": {
+        "x": 33.231,
+        "y": 0.0,
+        "z": -2.547
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.384,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.863,
+        "y": 0.863,
+        "z": 0.863
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "ore_arc",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.436,
+        "z": 1.333
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-elder-den",
+      "model": "ring_structure",
+      "name": "antHive-elder-den EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-landmark",
+      "model": "shredded-cables",
+      "name": "Landmark shredded-cables EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "shredded-cables"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-main-nest",
+      "model": "ring_structure",
+      "name": "antHive-main-nest EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "mutant_lair",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-outer-trace-0",
+      "model": "terrain_mound",
+      "name": "antHive-outer-trace-0 EDITABLE",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-outer-trace-1",
+      "model": "terrain_mound",
+      "name": "antHive-outer-trace-1 EDITABLE",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-outer-trace-2",
+      "model": "terrain_mound",
+      "name": "antHive-outer-trace-2 EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-outer-trace-3",
+      "model": "terrain_mound",
+      "name": "antHive-outer-trace-3 EDITABLE",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": -9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-outer-trace-4",
+      "model": "terrain_mound",
+      "name": "antHive-outer-trace-4 EDITABLE",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": -16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-region-rail",
+      "model": "railway",
+      "name": "antHive-region-rail EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 2.0,
+        "z": 58.182
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-region-slag-0",
+      "model": "terrain_mound",
+      "name": "antHive-region-slag-0 EDITABLE",
+      "position": {
+        "x": -27.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-region-slag-1",
+      "model": "terrain_mound",
+      "name": "antHive-region-slag-1 EDITABLE",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-region-slag-2",
+      "model": "terrain_mound",
+      "name": "antHive-region-slag-2 EDITABLE",
+      "position": {
+        "x": 9.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-region-slag-3",
+      "model": "terrain_mound",
+      "name": "antHive-region-slag-3 EDITABLE",
+      "position": {
+        "x": 27.0,
+        "y": 0.0,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "terrain",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "antHive-shredded-cables",
+      "model": "external_pipe",
+      "name": "antHive-shredded-cables EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.5,
+        "z": 1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ant_deadwood_01",
+      "model": "deadwood",
+      "name": "Сухие ветки",      "position": {
+        "x": 2.0,
+        "y": 0.0,
+        "z": 9.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.0,
+        "z": 1.436
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ant_debris_01",
+      "model": "perimeterDebris",
+      "name": "Разбросанные кости",      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.6,
+        "z": 0.92
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ant_mound_01",
+      "model": "rubbleRock",
+      "name": "Муравьиный холм",      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1.4,
         "y": 0.8,
         "z": 1.4
       },
-      "collision": "cover",
+      "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "mode": "cover"
-      }
+        "blocks": true
+      },
+      "role": "scenery",
+      "footprint": {
+        "x": 3.192,
+        "z": 2.424
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "ore_arc",
+  "kromkaVisualProfile": "dustling-cable-colony-v1",
+  "ambientProfile": "scratching-cable-tunnels",
+  "anomalyDensity": 0.18,
+  "unityScene": "Assets/Scenes/Kromka/Locations/antHive.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "antHive-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
     },
     {
-      "id": "ant_debris_01",
-      "model": "perimeterDebris",
-      "name": "Разбросанные кости",
-      "url": "/assets/models/wasteland/perimeter_debris.glb",
+      "id": "colony-service-mouth",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": -4
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
       },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "debris"
-      ]
-    },
-    {
-      "id": "ant_deadwood_01",
-      "model": "deadwood",
-      "name": "Сухие ветки",
-      "url": "/assets/models/wasteland/deadwood.glb",
-      "position": {
-        "x": 2,
-        "y": 0,
-        "z": 9
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "debris"
-      ]
+      "rotationY": 0.0
     }
   ]
 }

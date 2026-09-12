@@ -1,138 +1,61 @@
 {
-  "actualGlb": {
-    "materials": 6,
-    "meshDefinitions": 2,
-    "nodes": [
-      "head",
-      "neck_01",
-      "index_04_leaf_l",
-      "index_03_l",
-      "index_02_l",
-      "index_01_l",
-      "middle_04_leaf_l",
-      "middle_03_l",
-      "middle_02_l",
-      "middle_01_l",
-      "pinky_04_leaf_l",
-      "pinky_03_l",
-      "pinky_02_l",
-      "pinky_01_l",
-      "ring_04_leaf_l",
-      "ring_03_l",
-      "ring_02_l",
-      "ring_01_l",
-      "thumb_04_leaf_l",
-      "thumb_03_l",
-      "thumb_02_l",
-      "thumb_01_l",
-      "hand_l",
-      "lowerarm_l",
-      "upperarm_l",
-      "clavicle_l",
-      "index_04_leaf_r",
-      "index_03_r",
-      "index_02_r",
-      "index_01_r",
-      "middle_04_leaf_r",
-      "middle_03_r",
-      "middle_02_r",
-      "middle_01_r",
-      "pinky_04_leaf_r",
-      "pinky_03_r",
-      "pinky_02_r",
-      "pinky_01_r",
-      "ring_04_leaf_r",
-      "ring_03_r",
-      "ring_02_r",
-      "ring_01_r",
-      "thumb_04_leaf_r",
-      "thumb_03_r",
-      "thumb_02_r",
-      "thumb_01_r",
-      "hand_r",
-      "lowerarm_r",
-      "upperarm_r",
-      "clavicle_r",
-      "spine_03",
-      "spine_02",
-      "spine_01",
-      "ball_leaf_l",
-      "ball_l",
-      "foot_l",
-      "calf_l",
-      "thigh_l",
-      "ball_leaf_r",
-      "ball_r",
-      "foot_r",
-      "calf_r",
-      "thigh_r",
-      "pelvis",
-      "root",
-      "equipment_heavy_armor_unified_v1_male_slim_black_padded_underla",
-      "equipment_heavy_armor_unified_v1_male_slim_layered_heavy_plates",
-      "character_root"
-    ],
-    "positionVertices": 13599,
-    "skins": 1,
-    "textures": 18,
-    "triangles": 9304
-  },
+  "schema": "realm.free-armor-replacement-review.v1",
   "assetId": "equipment_heavy_armor_unified_v1_male_slim",
-  "bodyId": "male_slim",
-  "details": {
-    "abdominalLames": 3,
-    "armGuards": 4,
-    "backY": 0.19985,
-    "fauldPanels": 3,
-    "frontY": -0.16543,
-    "halfWidth": 0.23315,
-    "innerChestPoints": 9,
-    "outerBackPoints": 10,
-    "outerChestPoints": 11,
-    "spineRails": 2,
-    "thighGuards": [
-      {
-        "centerZ": 0.78885,
-        "height": 0.21973,
-        "side": "l"
-      },
-      {
-        "centerZ": 0.78885,
-        "height": 0.21973,
-        "side": "r"
-      }
-    ]
-  },
-  "file": "equipment_heavy_armor_unified_v1_male_slim.glb",
-  "fit": {
-    "frontOpeningThresholdY": -0.00022,
-    "lowerHemZ": 1.09245,
-    "shellPolygons": 4624,
-    "shellVertices": 2392,
-    "sleeveLimitX": 0.65116,
-    "torsoBounds": {
-      "maximum": [
-        0.19315,
-        0.14985,
-        1.53285
-      ],
-      "minimum": [
-        -0.19315,
-        -0.11343,
-        0.89245
-      ]
-    },
-    "upperLimitZ": 1.48785
-  },
   "itemId": "heavyArmor",
-  "provenance": {
-    "directRuntimeUse": false,
-    "donor": null,
-    "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C double cuirass, open limb protection and serviceable rear frame on the exact current 65-bone player rig"
-  },
+  "slot": "armor",
+  "bodyId": "male_slim",
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "CF397C973E67124EA711F57B711B7EE7A1BE5C788ECC7A21FDC10C8463AE953E",
-  "slot": "armor"
+  "sha256": "A558878B71CC0CD4F5C11201E1077D5D9133CC6E7338FA856532DCD2348F32D3",
+  "source": {
+    "creator": "Manaos",
+    "pack": "Soldier",
+    "page": "https://poly.pizza/m/tGGCGep9kS",
+    "license": "CC-BY",
+    "downloadedFile": "poly_pizza_scifi_soldier.glb",
+    "sha256": "0B612C75C5A6E22282219C4C38C035CBB2AC9A8562EAF466A10172288E5F4B6C",
+    "geometryOrigin": "downloaded_refit"
+  },
+  "optimization": {
+    "triangleBudget": 12000,
+    "sourceSelectedTriangles": 6748,
+    "removedFaces": 958,
+    "donorCoverageTriangles": 0,
+    "fittedSourceTriangles": 5790,
+    "decimated": false,
+    "method": "material isolation, regional crop, bounded decimation, nearest-surface 65-bone weight transfer"
+  },
+  "actualGlb": {
+    "triangles": 5790,
+    "meshes": 1,
+    "materials": 6,
+    "skins": 1,
+    "joints": 65,
+    "bytes": 1103068
+  },
+  "materials": [
+    "heavy_armor_black_padded_underlayer",
+    "heavy_armor_worn_gunmetal",
+    "heavy_armor_olive_composite_inserts",
+    "heavy_armor_aged_webbing",
+    "heavy_armor_oxidised_hardware",
+    "heavy_armor_faded_hazard_repair"
+  ],
+  "fit": {
+    "targetBoundsMin": [
+      -0.93873,
+      -0.12932,
+      -0.00961
+    ],
+    "targetBoundsMax": [
+      0.93873,
+      0.15147,
+      1.82818
+    ],
+    "sourceFitScale": [
+      1.1,
+      1.16,
+      0.985
+    ]
+  }
 }

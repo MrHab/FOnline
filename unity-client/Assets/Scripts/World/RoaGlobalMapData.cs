@@ -11,6 +11,8 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("schema")] public string Schema;
         [JsonProperty("version")] public int Version;
+        [JsonProperty("worldRevision")] public string WorldRevision;
+        [JsonProperty("unityScene")] public string UnityScene;
         [JsonProperty("grid")] public GlobalMapGrid Grid = new GlobalMapGrid();
         [JsonProperty("nodes")] public List<GlobalMapNode> Nodes = new List<GlobalMapNode>();
         [JsonProperty("infrastructure")] public List<GlobalMapInfrastructure> Infrastructure = new List<GlobalMapInfrastructure>();
@@ -19,9 +21,9 @@ namespace RealmOfAshes.World
 
     public sealed class GlobalMapGrid
     {
-        [JsonProperty("cols")] public int Cols = 30;
+        [JsonProperty("cols")] public int Cols = 38;
         [JsonProperty("rows")] public int Rows = 30;
-        [JsonProperty("cellPoints")] public float CellPoints = 30f;
+        [JsonProperty("cellPoints")] public float CellPoints = 10f;
         [JsonProperty("cellKm")] public float CellKm = 10f;
     }
 
@@ -42,6 +44,9 @@ namespace RealmOfAshes.World
         [JsonProperty("capital")] public bool Capital;
         [JsonProperty("capitalFaction")] public string CapitalFaction;
         [JsonProperty("note")] public string Note;
+        [JsonProperty("macroRegion")] public string MacroRegion;
+        [JsonProperty("visualProfile")] public string VisualProfile;
+        [JsonProperty("worldRevision")] public string WorldRevision;
 
         public string EffectiveLocationId
         {
@@ -67,6 +72,7 @@ namespace RealmOfAshes.World
         [JsonProperty("chance")] public float Chance;
         [JsonProperty("difficulty")] public int Difficulty;
         [JsonProperty("texture")] public string Texture;
+        [JsonProperty("macroRegion")] public string MacroRegion;
         [JsonProperty("danger")] public int Danger;
         [JsonProperty("encounterChance")] public string EncounterChance;
     }

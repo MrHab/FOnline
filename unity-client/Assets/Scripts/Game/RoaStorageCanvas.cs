@@ -405,13 +405,15 @@ namespace RealmOfAshes.Game
             Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -30f), new Vector2(-40f, -10f));
             Button close = UiButton(root, "×", out Text closeLabel, () => Interaction.LootClose());
             closeLabel.fontSize = 14;
+            // Строка NotoSans 14px выше 16px подписи — с Truncate глиф исчезал целиком.
+            closeLabel.verticalOverflow = VerticalWrapMode.Overflow;
             Place((RectTransform)close.transform, 1f, 1f, 1f, 1f, new Vector2(-34f, -32f), new Vector2(-10f, -10f));
 
             // .trade-hint
             Text hint = Label("Hint", root, 10, TextAnchor.UpperLeft, HintInk);
             Place(hint.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -58f), new Vector2(-12f, -34f));
             hint.horizontalOverflow = HorizontalWrapMode.Wrap;
-            hint.text = "Если предметов много, появится выбор количества. Shift+клик переносит всю стопку сразу. Крышки, надетое и патроны текущего оружия остаются в рюкзаке.";
+            hint.text = "Если предметов много, появится выбор количества. Shift+клик переносит всю стопку сразу. Марки, надетое и патроны текущего оружия остаются в рюкзаке.";
 
             // .storage-layout: две колонки.
             _backpack = BuildColumn(root, "Backpack", "Рюкзак", 0.5f, true);

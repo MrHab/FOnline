@@ -37,8 +37,8 @@ REST API, Socket.IO и статику, включая Unity WebGL-сборку. 
    `clientInstanceId`, `characterId` и `enemyFrameVersion: 1`.
 3. Ack `join` возвращает `characterLeaseId`, комнату, собственное авторитетное
    состояние, список игроков и `worldState`.
-4. `RoaLocationLoader` собирает сцену из авторского JSON локации и GLB
-   (glTFast), `RoaLocalTerrain` строит землю и коллизии по авторитетной
+4. `RoaLocationLoader` связывает авторский JSON с Unity-сценой без старых
+   GLB-коллайдеров окружения, `RoaLocalTerrain` строит землю и коллизии по авторитетной
    `worldState.map`, затем создаётся игрок. Всё происходит под полноэкранной
    загрузкой (`RoaLoadingCanvas`).
 5. Таймаут `join` — 5000 мс; просроченный callback игнорируется, соединение
@@ -141,8 +141,8 @@ fog-визуализацию. Подробности:
   персонажей из `saves.json`.
 - Нечитаемые runtime JSON копируются как `*.corrupt-*` перед использованием
   fallback-структуры.
-- Генерируемые GLB и `model-colliders.json` обновляются только соответствующими
-  инструментами.
+- Оставшиеся actor GLB и их `model-colliders.json` обновляются только
+  соответствующими инструментами; окружение хранит коллайдеры в Unity-сценах.
 
 HTTP-сохранение активного персонажа (`POST /api/characters/:id/save`)
 принимается только с действующей lease активной игровой сессии; авторитетные
@@ -166,6 +166,6 @@ Smoke-проверка запускает изолированный серве�
 персонажей без доступа к production-данным.
 
 Unity-клиент проверяется без редактора компиляционным прогоном
-`unity-client/Tools/compile-check.ps1`, а в редакторе — детерминированными
-пробами меню **Realm of Ashes** и batch-аудитом
-`RealmOfAshes.EditorTools.RoaClientAuditRunner.Run`.
+`unity-client/Tools/compile-check.ps1`, а в редакторе — авторскими пробами меню
+**Кромка**, оставшимися техническими legacy-пробами **Realm of Ashes** и
+batch-аудитом `RealmOfAshes.EditorTools.RoaClientAuditRunner.Run`.

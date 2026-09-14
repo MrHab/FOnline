@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -40,6 +41,12 @@ namespace RealmOfAshes.Game
         private readonly List<GameObject> _rows = new List<GameObject>();
         private float _refreshAt;
         private bool _boardMode;
+        // Сервисы постоянной базы: снимок с сервера запрашивается один раз на
+        // открытый диалог и обновляется после каждого действия.
+        private string _serviceStateKey = string.Empty;
+        private JObject _serviceState;
+        private bool _servicePending;
+        private string _serviceNote = string.Empty;
 
         private void Update()
         {
@@ -191,6 +198,7 @@ namespace RealmOfAshes.Game
                 AddOption("Показать товары", () => Interaction.NpcRequestTrade());
             if (Interaction.NpcCanRob)
                 AddOption("Ограбить караван", () => Interaction.NpcRob());
+            AddServiceOptions();
 
             List<RoaInteraction.QuestOption> quests = Interaction.NpcQuests();
             if (quests.Count > 0)
@@ -287,6 +295,173 @@ namespace RealmOfAshes.Game
 
             AddOption(Interaction.JobBoardRefreshing ? "Обновление…" : "Обновить список",
                 () => Interaction.JobBoardRefresh(), true);
+        }
+
+        // --- Сервисы постоянной базы (медик, регистратор, аукцион, исследователь) ---
+
+        private void AddServiceOptions()
+        {
+            string service = Interaction.NpcService;
+            if (string.IsNullOrEmpty(service) || service == "trade") return;
+            string key = Interaction.NpcId + ":" + service;
+            if (_serviceStateKey != key)
+            {
+                _serviceStateKey = key;
+                _serviceState = null;
+                _serviceNote = string.Empty;
+                RequestServiceState(service);
+            }
+            switch (service)
+            {
+                case "medic": AddMedicOptions(); break;
+                case "registrar": AddRegistrarOptions(); break;
+                case "auction": AddAuctionOptions(); break;
+                case "artifactLab": AddArtifactLabOptions(); break;
+            }
+            if (!string.IsNullOrEmpty(_serviceNote)) AddHeading(_serviceNote);
+        }
+
+        private void RequestServiceState(string service)
+        {
+            if (Interaction.Socket == null) return;
+            _servicePending = true;
+            System.Action<JObject> completed = ack =>
+            {
+                _servicePending = false;
+                if (ack != null && ack["ok"]?.Value<bool>() == true) _serviceState = ack;
+                else _serviceNote = ack?["error"]?.ToString() ?? "Сервис не ответил.";
+                _refreshAt = 0f;
+            };
+            bool sent = service == "medic" ? RoaTerritoryNet.RequestMedicState(Interaction.Socket, completed)
+                : service == "registrar" ? RoaTerritoryNet.RequestMembershipState(Interaction.Socket, completed)
+                : service == "auction" ? RoaAuctionNet.RequestState(Interaction.Socket, completed)
+                : false;
+            if (!sent) _servicePending = false;
+        }
+
+        private void AfterServiceAction(JObject ack)
+        {
+            if (ack != null && ack["ok"]?.Value<bool>() != true) _serviceNote = ack["error"]?.ToString() ?? "Отклонено.";
+            else _serviceNote = string.Empty;
+            _serviceStateKey = string.Empty; // перечитать снимок сервиса после действия
+            _refreshAt = 0f;
+        }
+
+        private void AddMedicOptions()
+        {
+            AddHeading("МЕДИК БАЗЫ");
+            if (_serviceState == null) { AddCard("Осмотр", _servicePending ? "Медик осматривает…" : "Нет данных.", null); return; }
+            int missing = _serviceState["missingHp"]?.Value<int>() ?? 0;
+            int injuries = _serviceState["injuryCount"]?.Value<int>() ?? 0;
+            int healCost = _serviceState["healCost"]?.Value<int>() ?? 0;
+            int cureCost = _serviceState["cureCost"]?.Value<int>() ?? 0;
+            var actions = new List<(string, System.Action)>();
+            if (missing > 0) actions.Add(("Вылечить за " + healCost + " марок", () => RoaTerritoryNet.UseMedic(Interaction.Socket, "heal", AfterServiceAction)));
+            if (injuries > 0) actions.Add(("Снять травмы за " + cureCost + " марок", () => RoaTerritoryNet.UseMedic(Interaction.Socket, "cure", AfterServiceAction)));
+            string body = missing > 0 ? "Не хватает здоровья: " + missing : "Здоровье полное.";
+            body += injuries > 0 ? "\nТравм: " + injuries : "\nТравм нет.";
+            AddCard("Лечение за марки", body, actions);
+        }
+
+        private void AddRegistrarOptions()
+        {
+            AddHeading("РЕГИСТРАТОР ФРАКЦИИ");
+            string baseFaction = Interaction.NpcTerritoryFactionId;
+            JObject membership = _serviceState?["membership"] as JObject;
+            string current = membership?["factionId"]?.ToString() ?? string.Empty;
+            bool locked = membership?["changeLocked"]?.Value<bool>() == true;
+            long changeAllowedAt = membership?["changeAllowedAt"]?.Value<long>() ?? 0;
+            long hoursLeft = System.Math.Max(0, (changeAllowedAt - System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) / 3600000);
+            var actions = new List<(string, System.Action)>();
+            string body;
+            if (_serviceState == null) body = _servicePending ? "Проверяю записи…" : "Нет данных.";
+            else if (string.IsNullOrEmpty(current))
+            {
+                body = "Вы не состоите ни в одной фракции Сердцевины.\nЧленство даёт вход в центральную зону через платформу базы; сменить фракцию можно раз в "
+                    + System.Math.Max(1, (membership?["changeCooldownMs"]?.Value<long>() ?? 259200000) / 3600000) + " ч.";
+                if (!string.IsNullOrEmpty(baseFaction))
+                    actions.Add(("Вступить: " + baseFaction, () => RoaTerritoryNet.JoinFaction(Interaction.Socket, baseFaction, AfterServiceAction)));
+            }
+            else
+            {
+                body = "Ваша фракция: " + current + (locked ? "\nСмена возможна через " + hoursLeft + " ч." : "\nСмена фракции доступна.");
+                if (!locked && !string.IsNullOrEmpty(baseFaction) && baseFaction != current)
+                    actions.Add(("Перейти: " + baseFaction, () => RoaTerritoryNet.JoinFaction(Interaction.Socket, baseFaction, AfterServiceAction)));
+                if (!locked) actions.Add(("Покинуть фракцию", () => RoaTerritoryNet.LeaveFaction(Interaction.Socket, AfterServiceAction)));
+            }
+            AddCard("Членство", body, actions);
+        }
+
+        private void AddAuctionOptions()
+        {
+            AddHeading("АУКЦИОН ФРАКЦИИ");
+            JObject auction = _serviceState?["auction"] as JObject;
+            if (auction == null) { AddCard("Лоты", _servicePending ? "Запрашиваю лоты…" : "Нет данных.", null); return; }
+            JObject shelf = auction["shelf"] as JObject;
+            int shelfSilver = shelf?["silver"]?.Value<int>() ?? 0;
+            int shelfItems = 0;
+            foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) shelfItems += row["qty"]?.Value<int>() ?? 0;
+            var shelfActions = new List<(string, System.Action)>();
+            if (shelfSilver > 0 || shelfItems > 0) shelfActions.Add(("Забрать", () => RoaAuctionNet.Claim(Interaction.Socket, AfterServiceAction)));
+            // Выставляется предмет, выбранный в ПУТНИКе: одна штука по двойной
+            // каталожной цене; сервер снимает предмет и проверяет лимиты.
+            string selectedItem = FindObjectOfType<RoaPipboyCanvas>()?.SelectedItemId ?? string.Empty;
+            string listHint = "\nВыставить: выберите предмет в ПУТНИКе и вернитесь к аукционеру.";
+            if (!string.IsNullOrEmpty(selectedItem) && selectedItem != "silver")
+            {
+                int askPrice = Mathf.Max(1, RoaItemData.BasePrice(selectedItem) * 2);
+                string captured = selectedItem;
+                shelfActions.Add(("Выставить " + RoaItemData.Name(selectedItem) + " ×1 за " + askPrice,
+                    () => RoaAuctionNet.ListItem(Interaction.Socket, captured, 1, askPrice, string.Empty, AfterServiceAction)));
+                listHint = string.Empty;
+            }
+            AddCard("Ваша полка", "Марки: " + shelfSilver + " · предметов: " + shelfItems + "\nСбор аукциона: "
+                + Mathf.RoundToInt((auction["feePct"]?.Value<float>() ?? 0f) * 100f) + "% · срок лота: " + (auction["listingLifetimeHours"]?.Value<int>() ?? 24) + " ч"
+                + listHint, shelfActions);
+            int shown = 0;
+            foreach (JToken token in auction["listings"] as JArray ?? new JArray())
+            {
+                JObject listing = token as JObject;
+                if (listing == null || shown >= 12) continue;
+                shown += 1;
+                string id = listing["id"]?.ToString() ?? string.Empty;
+                bool mine = listing["mine"]?.Value<bool>() == true;
+                string itemId = listing["itemId"]?.ToString() ?? string.Empty;
+                int qty = listing["qty"]?.Value<int>() ?? 0;
+                int price = listing["price"]?.Value<int>() ?? 0;
+                int remaining = listing["remainingSeconds"]?.Value<int>() ?? 0;
+                var actions = new List<(string, System.Action)>();
+                if (mine) actions.Add(("Снять лот", () => RoaAuctionNet.Cancel(Interaction.Socket, id, AfterServiceAction)));
+                else actions.Add(("Купить за " + price, () => RoaAuctionNet.Buy(Interaction.Socket, id, AfterServiceAction)));
+                AddCard(RoaItemData.Name(itemId) + " ×" + qty + " — " + price + " марок",
+                    "Продавец: " + (listing["sellerName"]?.ToString() ?? "—") + " · осталось " + RoaWorldEventsPresentation.Clock(remaining)
+                    + ((listing["artifactCount"]?.Value<int>() ?? 0) > 0 ? "\nАртефакт: свойства раскрываются после стабилизации" : string.Empty), actions);
+            }
+            if (shown == 0) AddCard("Лоты", "Пока никто ничего не выставил.", null);
+        }
+
+        private void AddArtifactLabOptions()
+        {
+            AddHeading("ИССЛЕДОВАТЕЛЬ АРТЕФАКТОВ");
+            RoaInventory inventory = FindObjectOfType<RoaInventory>();
+            if (inventory == null) { AddCard("Стабилизация", "Инвентарь недоступен.", null); return; }
+            int shown = 0;
+            foreach (JObject record in inventory.ArtifactRecords())
+            {
+                if (record == null) continue;
+                bool stable = record["stabilized"]?.Value<bool>() == true && record["hot"]?.Value<bool>() != true;
+                if (stable || shown >= 8) continue;
+                shown += 1;
+                string id = record["id"]?.ToString() ?? string.Empty;
+                string name = record["displayName"]?.ToString() ?? RoaItemData.Name(record["itemId"]?.ToString());
+                var actions = new List<(string, System.Action)>
+                {
+                    ("Стабилизировать", () => inventory.SubmitArtifactAction("stabilize", id, AfterServiceAction))
+                };
+                AddCard(name + " · " + (record["tierShort"]?.ToString() ?? string.Empty) + " " + (record["tierName"]?.ToString() ?? string.Empty),
+                    "Свойства скрыты до стабилизации.\nЦена: " + RoaPipboyCanvas.ArtifactCostLabel(record["stabilizationCost"] as JObject), actions);
+            }
+            if (shown == 0) AddCard("Стабилизация", "Сырых артефактов в рюкзаке нет. Найденные артефакты приносите сюда: свойства раскрываются один раз и навсегда.", null);
         }
 
         // ------------------------------------------------------------------

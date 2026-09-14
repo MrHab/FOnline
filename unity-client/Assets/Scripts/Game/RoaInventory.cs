@@ -552,6 +552,16 @@ namespace RealmOfAshes.Game
             return itemId;
         }
 
+        /// <summary>Все записи артефактов персонажа (серверная проекция без скрытых свойств).</summary>
+        public List<JObject> ArtifactRecords()
+        {
+            var result = new List<JObject>();
+            if (_self?["artifactRecords"] is JArray records)
+                foreach (JToken token in records)
+                    if (token is JObject row) result.Add((JObject)row.DeepClone());
+            return result;
+        }
+
         public List<JObject> ArtifactsFor(string itemId)
         {
             var result = new List<JObject>();

@@ -343,6 +343,11 @@ namespace RealmOfAshes.Game
             if (SiegePresentation == null) SiegePresentation = GetComponent<RoaKromkaSiegePresentation>();
             if (SiegePresentation == null) SiegePresentation = gameObject.AddComponent<RoaKromkaSiegePresentation>();
             SiegePresentation.Configure(this, Socket);
+            // Аванпосты, публичные события, мировой босс и PvE-области — одна
+            // компактная панель HUD, данные только с сервера.
+            var worldEvents = GetComponent<RoaWorldEventsPresentation>();
+            if (worldEvents == null) worldEvents = gameObject.AddComponent<RoaWorldEventsPresentation>();
+            worldEvents.Configure(Socket);
 
             var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
             if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();

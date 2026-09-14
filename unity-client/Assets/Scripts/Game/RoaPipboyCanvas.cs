@@ -76,6 +76,8 @@ namespace RealmOfAshes.Game
         private RectTransform _itemsGrid;
         private Text _itemsStatus;
         private string _selectedItemId = string.Empty;
+        /// <summary>Выбранный в ПУТНИКе предмет — его же выставляет аукционер базы.</summary>
+        public string SelectedItemId { get { return _selectedItemId; } }
         private readonly List<GameObject> _itemCards = new List<GameObject>();
         // Категории и сортировка — как itemCategoryFilters / sortModes в web.
         private RectTransform _categoryTabs;
@@ -1282,10 +1284,130 @@ namespace RealmOfAshes.Game
             var artifacts = Inventory != null ? Inventory.ArtifactsFor(baseId) : new List<JObject>();
             if (artifacts.Count > 0)
             {
+                parts.Add(ArtifactCardSummary(artifacts[0], artifacts.Count));
                 string note = artifacts[0]["implementationNote"]?.ToString();
                 if (!string.IsNullOrEmpty(note)) parts.Add(note);
             }
             return parts.Count > 0 ? string.Join(" · ", parts) : null;
+        }
+
+        /// <summary>
+        /// Карточка артефакта: тир в цвете шкалы экипировки (RoaGearData.TierTint),
+        /// статус, раскрытые свойства или пометка, что они скрыты до стабилизации,
+        /// цена стабилизации и выход разбора. Все данные — из записи сервера.
+        /// </summary>
+        public static string ArtifactCardSummary(JObject record, int count)
+        {
+            if (record == null) return string.Empty;
+            int tier = record["tier"]?.Value<int>() ?? 0;
+            string tierHex = ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier));
+            string tierLabel = tier > 0
+                ? "<color=#" + tierHex + ">" + (record["tierShort"]?.ToString() ?? RoaGearData.TierShortLabel(tier))
+                    + " " + (record["tierName"]?.ToString() ?? string.Empty).Trim() + "</color>"
+                : string.Empty;
+            bool stabilized = record["stabilized"]?.Value<bool>() == true && record["hot"]?.Value<bool>() != true;
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(tierLabel)) parts.Add(tierLabel);
+            parts.Add(stabilized ? "стабильный" : "сырой");
+            if (count > 1) parts.Add("экз. ×" + count);
+            JObject properties = record["properties"] as JObject;
+            if (stabilized && properties != null)
+            {
+                string benefit = record["benefit"]?.ToString();
+                string cost = record["cost"]?.ToString();
+                float mul = properties["benefitMul"]?.Value<float>() ?? 1f;
+                if (!string.IsNullOrEmpty(benefit)) parts.Add(benefit + " (×" + mul.ToString("0.00") + ")");
+                if (!string.IsNullOrEmpty(cost)) parts.Add("цена: " + cost);
+            }
+            else
+            {
+                parts.Add("свойства скрыты до стабилизации");
+                parts.Add("стабилизация: " + ArtifactCostLabel(record["stabilizationCost"] as JObject));
+            }
+            string salvage = ArtifactYieldLabel(record["salvageYields"] as JArray);
+            if (!string.IsNullOrEmpty(salvage)) parts.Add("разбор: " + salvage);
+            return string.Join(" · ", parts);
+        }
+
+        public static string ArtifactCostLabel(JObject cost)
+        {
+            if (cost == null) return "—";
+            var parts = new List<string>();
+            int silver = cost["silver"]?.Value<int>() ?? 0;
+            if (silver > 0) parts.Add(silver + " марок");
+            foreach (JToken token in cost["items"] as JArray ?? new JArray())
+            {
+                string id = token["id"]?.ToString() ?? string.Empty;
+                int qty = token["qty"]?.Value<int>() ?? 0;
+                if (!string.IsNullOrEmpty(id) && qty > 0) parts.Add(RoaItemData.Name(id) + " ×" + qty);
+            }
+            return parts.Count > 0 ? string.Join(" + ", parts) : "бесплатно";
+        }
+
+        public static string ArtifactYieldLabel(JArray yields)
+        {
+            if (yields == null) return string.Empty;
+            var parts = new List<string>();
+            foreach (JToken token in yields)
+            {
+                string id = token["id"]?.ToString() ?? string.Empty;
+                int qty = token["qty"]?.Value<int>() ?? 0;
+                if (!string.IsNullOrEmpty(id) && qty > 0) parts.Add(RoaItemData.Name(id) + " ×" + qty);
+            }
+            return string.Join(", ", parts);
+        }
+
+        /// <summary>Дельта предпросмотра контейнера: только изменившиеся характеристики.</summary>
+        public static string ArtifactPreviewLabel(JObject preview)
+        {
+            JObject delta = preview?["delta"] as JObject;
+            if (delta == null || !delta.HasValues) return "Характеристики не изменятся.";
+            var parts = new List<string>();
+            foreach (JProperty property in delta.Properties())
+            {
+                if (property.Name == "resistances" && property.Value is JObject resistances)
+                {
+                    foreach (JProperty res in resistances.Properties())
+                        parts.Add("сопр. " + res.Name + " " + Signed(res.Value.Value<float>(), true));
+                    continue;
+                }
+                if (property.Value.Type != JTokenType.Float && property.Value.Type != JTokenType.Integer) continue;
+                float value = property.Value.Value<float>();
+                bool pct = property.Name.EndsWith("Pct");
+                parts.Add(ArtifactStatName(property.Name) + " " + Signed(value, pct));
+            }
+            return parts.Count > 0 ? string.Join(", ", parts) : "Характеристики не изменятся.";
+        }
+
+        private static string Signed(float value, bool pct)
+        {
+            string number = pct ? Mathf.RoundToInt(value * 100f).ToString() + "%" : value.ToString("0.#");
+            return (value > 0 ? "+" : string.Empty) + number;
+        }
+
+        private static string ArtifactStatName(string key)
+        {
+            switch (key)
+            {
+                case "speedPct": return "скорость";
+                case "apRegenPct": return "восст. ОД";
+                case "carryKg": return "груз (кг)";
+                case "meleeDamagePct": return "ближний урон";
+                case "maxHpFlat": return "макс. HP";
+                case "medkitEffectPct": return "аптечки";
+                case "waterUsePct": return "расход воды";
+                case "regenHpPerSecond": return "реген HP/с";
+                case "regenDelaySeconds": return "задержка регена (с)";
+                case "maxApPct": return "макс. ОД";
+                case "movementNoisePct": return "шум";
+                case "hearingRangePct": return "слух";
+                case "knockbackResistance": return "устойчивость";
+                case "stimDurationPct": return "стимуляторы";
+                case "detectorTraceDurationPct": return "след детектора";
+                case "lowHealthHeal": return "лечение при низком HP";
+                case "radiationOnTrigger": return "радиация при срабатывании";
+                default: return key;
+            }
         }
 
         /// <summary>Пункты showEquippedItemContextMenu web (03d:265) для слота экипировки.</summary>
@@ -1415,11 +1537,34 @@ namespace RealmOfAshes.Game
                 JObject record = records[i];
                 string id = record["id"]?.ToString();
                 string suffix = records.Count > 1 ? " · №" + (i + 1) : string.Empty;
+                int tier = record["tier"]?.Value<int>() ?? 0;
+                if (tier > 0)
+                    suffix += " · <color=#" + ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier)) + ">"
+                        + (record["tierShort"]?.ToString() ?? RoaGearData.TierShortLabel(tier)) + "</color>";
                 bool stable = record["stabilized"]?.ToObject<bool>() == true && record["hot"]?.ToObject<bool>() != true;
                 string action = !stable ? "stabilize" : Inventory.ArtifactEquipped(id) ? "unequip" : "equip";
-                string label = !stable ? "Стабилизировать" : action == "unequip" ? "Снять с пояса" : "Установить на пояс";
+                string label = !stable
+                    ? "Стабилизировать (" + ArtifactCostLabel(record["stabilizationCost"] as JObject) + ")"
+                    : action == "unequip" ? "Снять с пояса" : "Установить на пояс";
                 options.Add(new RoaItemPopups.Option(label + suffix,
                     () => Submit(Inventory.SubmitArtifactAction(action, id, OnActionAck), "Артефакт…")));
+                if (stable)
+                {
+                    // Предпросмотр дельты характеристик без изменения контейнера.
+                    options.Add(new RoaItemPopups.Option("Предпросмотр" + suffix, () =>
+                        Submit(Inventory.SubmitArtifactAction("preview", id, ack =>
+                        {
+                            OnActionAck(ack);
+                            if (ack?["ok"]?.Value<bool>() == true)
+                                RoaItemPopups.Instance?.ShowItem(baseId, ArtifactPreviewLabel(ack));
+                        }), "Считаю…")));
+                }
+                if (!Inventory.ArtifactEquipped(id))
+                {
+                    string yields = ArtifactYieldLabel(record["salvageYields"] as JArray);
+                    options.Add(new RoaItemPopups.Option("Разобрать" + (string.IsNullOrEmpty(yields) ? string.Empty : " → " + yields) + suffix,
+                        () => Submit(Inventory.SubmitArtifactAction("salvage", id, OnActionAck), "Разбираю…")));
+                }
             }
             if (start > 0) options.Add(new RoaItemPopups.Option("Предыдущие экземпляры",
                 () => RoaItemPopups.Instance?.ShowMenu(BuildArtifactContextPage(baseId, page - 1))));

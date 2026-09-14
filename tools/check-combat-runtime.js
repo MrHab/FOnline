@@ -2130,7 +2130,11 @@ async function main() {
   }
 }
 
-module.exports = { bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR, serverLogs: () => activeServerLogs.join('') };
+module.exports = {
+  bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR,
+  serverLogs: () => activeServerLogs.join(''),
+  baseUrl: () => `http://127.0.0.1:${activePort}`
+};
 
 if (require.main === module) main().catch(error => {
   console.error(`Combat runtime check failed: ${error?.message || String(error)}`);

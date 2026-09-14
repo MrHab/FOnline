@@ -1063,6 +1063,8 @@ namespace RealmOfAshes.Game
                     JObject payload = JObject.Parse(request.downloadHandler.text);
                     JObject sim = payload["sim"] as JObject;
                     if (sim == null) throw new JsonException("В ответе нет поля sim.");
+                    // Публичные события лежат рядом с sim: карта рисует их как зоны входа.
+                    if (payload["publicEvents"] is JArray publicEventRows) sim["publicEvents"] = publicEventRows;
                     ApplyWastelandSnapshot(sim, false);
                 }
                 catch (JsonException error)
@@ -1400,6 +1402,40 @@ namespace RealmOfAshes.Game
                     DrawWorldRing("WorldZone:" + id, target.Point,
                                   Mathf.Clamp(Float(row["radius"], 7f), 2f, 40f),
                                   new Color(0.95f, 0.3f, 0.2f, 0.38f),
+                                  0.13f, 0.16f, DynamicVisualLayer.Threat, false,
+                                  target.Priority);
+                    ThreatMarkerCount++;
+                }
+            }
+
+            // Временные публичные события (логова, базы налётчиков): точка и
+            // worldZoneId для серверного билета входа, таймер и предупреждение.
+            JArray publicEvents = _wasteland["publicEvents"] as JArray;
+            if (publicEvents != null)
+            {
+                foreach (JToken token in publicEvents)
+                {
+                    JObject row = token as JObject;
+                    if (row == null || string.Equals(row["status"]?.ToString(), "expired", StringComparison.OrdinalIgnoreCase)) continue;
+                    string id = row["worldZoneId"]?.ToString() ?? row["id"]?.ToString() ?? string.Empty;
+                    if (string.IsNullOrEmpty(id) || _dynamicTargets.Exists(existing => existing.WorldZoneId == id)) continue;
+                    string kind = row["kind"]?.ToString() ?? "monsterLair";
+                    DynamicTarget target = TargetFrom(row, "zone");
+                    target.WorldZoneId = id;
+                    target.LocationId = row["locationId"]?.ToString() ?? string.Empty;
+                    target.Radius = Mathf.Clamp(Float(row["radius"], 9f), 2f, 40f);
+                    target.CanEnter = !string.IsNullOrEmpty(target.LocationId);
+                    target.Forced = false;
+                    target.Details = (row["displayName"]?.ToString() ?? "Событие") + " · "
+                        + RoaWorldEventsPresentation.Clock(row["remainingSeconds"]?.Value<int>() ?? 0)
+                        + (row["warning"]?.Value<bool>() == true ? " · скоро закроется" : string.Empty)
+                        + " · PvP, вещи сохраняются";
+                    target.Semantic = MarkerSemanticLabel("zone", kind, false);
+                    target.Accent = MarkerSemanticColor("zone", kind, false, "active");
+                    target.Priority = MarkerPresentationPriority("zone", kind, false, "active");
+                    _dynamicTargets.Add(target);
+                    DrawWorldRing("PublicEvent:" + id, target.Point, target.Radius,
+                                  new Color(1f, 0.6f, 0.25f, 0.4f),
                                   0.13f, 0.16f, DynamicVisualLayer.Threat, false,
                                   target.Priority);
                     ThreatMarkerCount++;

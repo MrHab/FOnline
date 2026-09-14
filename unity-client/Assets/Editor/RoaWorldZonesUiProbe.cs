@@ -23,13 +23,13 @@ namespace RealmOfAshes.EditorTools
             Require(RoaHudCanvas.ZoneModeBannerText("pvpFullDrop").Contains("ЭКИПИРОВКА ЦЕЛА") && !RoaHudCanvas.ZoneModeBannerText("pvpFullDrop").Contains("ПОЛН"),
                 "Territory banner must describe partial loss, never full loot");
 
-            var territory = JObject.Parse(@"{'zoneLocationId':'coreZone','outposts':[
-                {'id':'north','displayName':'Северный','ownerLabel':'Управа','eventOpen':false,'eventOpensInSeconds':754,'captureProgress':0,'garrison':{'stateLabel':'прибыл'}},
-                {'id':'east','displayName':'Восточный','ownerLabel':'','eventOpen':true,'eventOpensInSeconds':0,'captureProgress':0.42,'captureFactionLabel':'Артели','garrison':{'stateLabel':'в пути'}}]}");
+            var territory = JObject.Parse(@"{'zoneLocationId':'coreZone','factionNames':{'uprava':'Управа','free_artels':'Артели'},'outposts':[
+                {'id':'north','displayName':'Северный','ownerFactionId':'uprava','eventStatus':'closed','eventOpensInMs':754000,'capture':{'progress':{},'leadingFactionId':'','contested':false},'garrison':{'state':'arrived'}},
+                {'id':'east','displayName':'Восточный','ownerFactionId':'','eventStatus':'open','eventOpensInMs':0,'capture':{'progress':{'free_artels':0.42},'leadingFactionId':'free_artels','contested':true},'garrison':{'state':'enroute'}}]}");
             string outposts = RoaWorldEventsPresentation.DescribeOutposts(territory, "coreZone");
-            Require(outposts.Contains("Северный: Управа") && outposts.Contains("захват через 12:34"), "Locked outpost shows owner and countdown");
-            Require(outposts.Contains("Восточный: нейтральный") && outposts.Contains("ЗАХВАТ ОТКРЫТ") && outposts.Contains("Артели 42%") && outposts.Contains("в пути"),
-                "Open outpost shows capture progress and garrison state");
+            Require(outposts.Contains("Северный: Управа") && outposts.Contains("захват через 12:34") && outposts.Contains("прибыл"), "Locked outpost shows owner, countdown and garrison");
+            Require(outposts.Contains("Восточный: нейтральный") && outposts.Contains("ЗАХВАТ ОТКРЫТ") && outposts.Contains("Артели 42%") && outposts.Contains("ОСПАРИВАЕТСЯ") && outposts.Contains("в пути"),
+                "Open outpost shows capture progress, contest and garrison state");
             Require(RoaWorldEventsPresentation.DescribeOutposts(territory, "settlement") == string.Empty, "Outposts stay hidden outside the core zone");
 
             var publicEvent = JObject.Parse(@"{'roomId':'randomAshGrove#pubev_1','displayName':'Логово Гари','remainingSeconds':1500,'warning':false,'cleared':true,'chestOpen':false,'chestClaimed':false,'chestOpensInSeconds':50}");

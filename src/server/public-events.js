@@ -295,7 +295,7 @@ function publicEventEntryError(event = {}, characterId = '', now = Date.now()) {
   return '';
 }
 
-function publicEvent(event = {}, now = Date.now()) {
+function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES) {
   if (!event) return null;
   const remaining = Math.max(0, Number(event.expiresAt || 0) - Number(now));
   return {
@@ -309,6 +309,8 @@ function publicEvent(event = {}, now = Date.now()) {
     pvpMode: 'pvpEvent',
     x: event.x,
     y: event.y,
+    radius: Number(rules?.zoneRadius || DEFAULT_RULES.zoneRadius),
+    worldZoneId: event.id,
     status: event.status,
     remainingSeconds: Math.round(remaining / 1000),
     warning: event.status === 'warning',

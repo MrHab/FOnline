@@ -62,8 +62,21 @@ namespace RealmOfAshes.Game
             "ammo9", "ammo556", "energyCell", "napalm", "shotgunShell", "rocketAmmo",
             "medkit", "stim", "doctorBag", "antibiotics", "ore", "wood", "scrap", "oil",
             "chemicals", "medicine", "electronics", "ammoParts", "food", "weaponParts",
-            "silver", "trophy", "water", "repairKit"
+            "silver", "trophy", "water", "repairKit",
+            "bioReagent", "circuitModule", "alloyPlate", "spectrumSample", "stabilizerCatalyst"
         });
+
+        // Компоненты артефактов v2 пока используют ветки библиотеки визуально
+        // близких материалов; узел ищется по псевдониму.
+        private static readonly Dictionary<string, string> LibraryAliases =
+            new Dictionary<string, string>
+            {
+                { "bioReagent", "medicine" },
+                { "circuitModule", "electronics" },
+                { "alloyPlate", "scrap" },
+                { "spectrumSample", "chemicals" },
+                { "stabilizerCatalyst", "chemicals" }
+            };
 
         private static readonly HashSet<string> WeaponItems = new HashSet<string>(new[]
         {
@@ -425,7 +438,8 @@ namespace RealmOfAshes.Game
 
         private static GameObject IsolateLibraryItem(GameObject holder, string itemId)
         {
-            Transform wanted = FindDeep(holder.transform, "ground_item_" + itemId);
+            string libraryId = LibraryAliases.TryGetValue(itemId ?? string.Empty, out string alias) ? alias : itemId;
+            Transform wanted = FindDeep(holder.transform, "ground_item_" + libraryId);
             if (wanted == null) return null;
 
             // Библиотека содержит все 24 предмета в одной сцене. Оставляем только

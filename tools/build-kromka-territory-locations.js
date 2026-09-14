@@ -134,6 +134,8 @@ function baseDefinition(faction, index) {
     prop('metro_hall', 'Зал платформы метро', 'concrete_wall.glb', 0, 18, { x: 5, y: 1.4, z: 1 }, ['territory-base', 'metro']),
     prop('metro_car', 'Вагон метро — в Сердцевину', 'cargo_stack.glb', 0, 26, { x: 2.6, y: 1.6, z: 1.2 }, ['territory-base', 'metro', 'metro-car', 'landmark'],
       { fields: { interactive: { kind: 'transition', role: 'metro', to: 'coreZone' } } }),
+    // Казарма: личная койка каждому из 9 NPC базы (5 сервисов + 4 охранника).
+    ...Array.from({ length: 9 }, (_, k) => prop(`bunk_${k + 1}`, 'Койка казармы', 'cot_bed.glb', -26 + k * 2, -22, 1, ['territory-base', 'barracks', 'personal-bed'], { vision: { mode: 'none' } })),
     prop('storage_shed', 'Личное хранилище', 'storage_lean_to.glb', 14, 4, 1.4, ['interactive', 'storage', 'container', 'personal-storage', 'territory-storage'], {
       vision: { mode: 'cover' },
       fields: {
@@ -435,8 +437,8 @@ function centralLevelDefinition(level, index) {
     transitions.push({ id: 'lift_down', type: 'location', label: `Спуск: ${next.displayName}`, to: next.id, entryKey: 'entryFromAbove', ...point(0, 34, width, depth), radius: 3 });
   }
   if (level.role === 'service') {
-    objects.push(prop('store_a', 'Складская стойка', 'storage_lean_to.glb', -14, 6, 1.3, ['central-lab', 'storage']));
-    objects.push(prop('store_b', 'Складская стойка', 'storage_lean_to.glb', 14, 6, 1.3, ['central-lab', 'storage']));
+    objects.push(prop('store_a', 'Складская стойка', 'storage_lean_to.glb', -14, 6, 1.3, ['central-lab', 'stockpile']));
+    objects.push(prop('store_b', 'Складская стойка', 'storage_lean_to.glb', 14, 6, 1.3, ['central-lab', 'stockpile']));
     objects.push(prop('checkpoint', 'Пост охраны', 'watch_post.glb', 0, 12, 1.2, ['central-lab', 'guard-post']));
     ['burned', 'burned', 'fold', 'listener', 'listener'].forEach((kind, k) => enemies.push(mutant(`service_guard_${k + 1}`, kind, -16 + k * 8, 14 + (k % 2) * 6)));
     containers.push(container('service_locker_a', 'Складской шкаф', -18, 4, width, depth, 'basic'));

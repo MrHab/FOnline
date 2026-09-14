@@ -1316,7 +1316,7 @@ namespace RealmOfAshes.Game
                 string benefit = record["benefit"]?.ToString();
                 string cost = record["cost"]?.ToString();
                 float mul = properties["benefitMul"]?.Value<float>() ?? 1f;
-                if (!string.IsNullOrEmpty(benefit)) parts.Add(benefit + " (×" + mul.ToString("0.00") + ")");
+                if (!string.IsNullOrEmpty(benefit)) parts.Add(benefit + " (×" + mul.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ")");
                 if (!string.IsNullOrEmpty(cost)) parts.Add("цена: " + cost);
             }
             else
@@ -1381,7 +1381,7 @@ namespace RealmOfAshes.Game
 
         private static string Signed(float value, bool pct)
         {
-            string number = pct ? Mathf.RoundToInt(value * 100f).ToString() + "%" : value.ToString("0.#");
+            string number = pct ? Mathf.RoundToInt(value * 100f).ToString() + "%" : value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
             return (value > 0 ? "+" : string.Empty) + number;
         }
 

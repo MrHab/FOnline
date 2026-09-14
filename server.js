@@ -984,6 +984,11 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
 const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
 function normalizeLocationPvpMode(input, safeFallback = true) {
+  // Булевы значения и редакторские псевдонимы («safezone», «nopvp», «safe»)
+  // означают мирный режим; false никогда не превращается в PvP.
+  if (typeof input === 'boolean') return input ? 'pvp' : 'peaceful';
+  const raw = String(input ?? '').trim().toLowerCase();
+  if (['safe', 'safezone', 'nopvp', 'no-pvp', 'peace', 'none'].includes(raw)) return 'peaceful';
   return normalizeZoneMode(input, safeFallback);
 }
 
@@ -19853,6 +19858,7 @@ function publicWorldState(room, includeMap = true) {
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
     fullDrop: pvpMode === 'pvpFullDrop',
+    activity: publicWorldActivity(room.worldActivity),
     pveArea: room.pveState
       ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
         aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
@@ -19871,7 +19877,6 @@ function publicWorldState(room, includeMap = true) {
         bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
       }) : null;
     })(),
-    activity: publicWorldActivity(room.worldActivity),
     shift: serverCurrentShiftState(Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
@@ -26424,18 +26429,21 @@ io.on('connection', (socket) => {
     if (!p || p.dead || p.downed || p.onGlobalMap) return fail('Разбор сейчас недоступен.');
     if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Нельзя разбирать артефакты в бою.');
     sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const quoteOnly = String(data.action || '') === 'quote';
+    // Повтор после reconnect отвечает тем же результатом даже после того, как
+    // разобранный артефакт уже исчез из записей.
+    const transaction = quoteOnly ? null : beginCriticalAction(p, 'salvageArtifact', data, ['recordId']);
+    if (transaction && !transaction.ok) return fail(transaction.error);
+    if (transaction && transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
     const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
     if (!record) return fail('Артефакт не найден.');
     if (p.artifactSlots.includes(record.id)) return fail('Сначала снимите артефакт с пояса.');
     const yields = artifactSalvageYields(record, KROMKA_ARTIFACT_CATALOG);
-    if (String(data.action || '') === 'quote') {
+    if (quoteOnly) {
       if (typeof ack === 'function') ack({ ok: true, quote: true, yields, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG) });
-      return;
-    }
-    const transaction = beginCriticalAction(p, 'salvageArtifact', data, ['recordId']);
-    if (!transaction.ok) return fail(transaction.error);
-    if (transaction.replay) {
-      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
       return;
     }
     const carryCheck = serverLimitItemsByCarry(p, data, yields.map(row => ({ id: row.id, qty: row.qty })), { apply: false });

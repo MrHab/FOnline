@@ -89,13 +89,24 @@ namespace RealmOfAshes.Game
             if (_socket == null || _socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
             RoaTerritoryNet.RequestTerritoryState(_socket, ack =>
             {
-                if (ack?["territory"] is JObject territory) ApplyTerritory(territory);
+                if (!(ack?["territory"] is JObject territory)) return;
+                // Имена фракций для подписей приходят с каталогом территории.
+                var names = new JObject();
+                foreach (JToken row in ack["catalog"]?["factions"] as JArray ?? new JArray())
+                {
+                    string id = row["id"]?.ToString();
+                    if (!string.IsNullOrEmpty(id)) names[id] = row["displayName"]?.ToString() ?? id;
+                }
+                territory["factionNames"] = names;
+                ApplyTerritory(territory);
             });
         }
 
         private void ApplyTerritory(JObject payload)
         {
-            _territory = payload?["territory"] as JObject ?? payload;
+            JObject next = payload?["territory"] as JObject ?? payload;
+            if (next != null && next["factionNames"] == null && _territory?["factionNames"] is JObject names) next["factionNames"] = names;
+            _territory = next;
             Refresh();
         }
 
@@ -168,26 +179,48 @@ namespace RealmOfAshes.Game
             if (!string.Equals(locationId, zoneId, StringComparison.Ordinal)) return string.Empty;
             JArray outposts = territory["outposts"] as JArray;
             if (outposts == null || outposts.Count == 0) return string.Empty;
+            JObject factionNames = territory["factionNames"] as JObject;
             var sb = new StringBuilder("АВАНПОСТЫ");
             foreach (JToken token in outposts)
             {
                 JObject row = token as JObject;
                 if (row == null) continue;
                 string name = row["displayName"]?.ToString() ?? row["id"]?.ToString() ?? "Аванпост";
-                string owner = row["ownerLabel"]?.ToString() ?? row["ownerFactionId"]?.ToString();
+                string owner = FactionLabel(factionNames, row["ownerFactionId"]?.ToString());
                 if (string.IsNullOrEmpty(owner)) owner = "нейтральный";
-                bool open = row["eventOpen"]?.Value<bool>() == true;
-                int countdown = row["eventOpensInSeconds"]?.Value<int>() ?? 0;
-                int progress = Mathf.RoundToInt((row["captureProgress"]?.Value<float>() ?? 0f) * 100f);
-                string attacker = row["captureFactionLabel"]?.ToString() ?? row["captureFactionId"]?.ToString() ?? string.Empty;
-                string garrison = row["garrison"]?["stateLabel"]?.ToString() ?? row["garrison"]?["state"]?.ToString() ?? string.Empty;
+                bool open = row["eventStatus"]?.ToString() == "open";
+                int countdown = Mathf.CeilToInt((row["eventOpensInMs"]?.Value<long>() ?? 0L) / 1000f);
+                string leading = row["capture"]?["leadingFactionId"]?.ToString() ?? string.Empty;
+                float progressValue = string.IsNullOrEmpty(leading) ? 0f : (row["capture"]?["progress"]?[leading]?.Value<float>() ?? 0f);
+                int progress = Mathf.RoundToInt(progressValue * 100f);
+                bool contested = row["capture"]?["contested"]?.Value<bool>() == true;
+                string garrison = GarrisonLabel(row["garrison"]?["state"]?.ToString());
                 sb.Append('\n').Append(name).Append(": ").Append(owner);
                 if (open) sb.Append(" · ЗАХВАТ ОТКРЫТ");
                 else if (countdown > 0) sb.Append(" · захват через ").Append(Clock(countdown));
-                if (open && progress > 0) sb.Append(" · ").Append(string.IsNullOrEmpty(attacker) ? string.Empty : attacker + " ").Append(progress).Append('%');
+                if (open && progress > 0) sb.Append(" · ").Append(FactionLabel(factionNames, leading)).Append(' ').Append(progress).Append('%');
+                if (open && contested) sb.Append(" · ОСПАРИВАЕТСЯ");
                 if (!string.IsNullOrEmpty(garrison)) sb.Append(" · гарнизон: ").Append(garrison);
             }
             return sb.ToString();
+        }
+
+        public static string FactionLabel(JObject factionNames, string factionId)
+        {
+            if (string.IsNullOrEmpty(factionId)) return string.Empty;
+            string label = factionNames?[factionId]?.ToString();
+            return string.IsNullOrEmpty(label) ? factionId : label;
+        }
+
+        public static string GarrisonLabel(string state)
+        {
+            switch (state ?? string.Empty)
+            {
+                case "dispatched": return "выдвинулся";
+                case "enroute": return "в пути";
+                case "arrived": return "прибыл";
+                default: return string.Empty;
+            }
         }
 
         public static string DescribePublicEvent(JObject payload, string roomId, int elapsedSeconds)

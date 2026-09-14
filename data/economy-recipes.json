@@ -449,6 +449,51 @@
         "scrap": 5,
         "wood": 1
       }
+    },
+    "bioReagent": {
+      "station": "chem_station",
+      "workHours": 3,
+      "outputQty": 2,
+      "inputs": {
+        "chemicals": 2,
+        "medicine": 1
+      }
+    },
+    "circuitModule": {
+      "station": "energy_bench",
+      "workHours": 3,
+      "outputQty": 2,
+      "inputs": {
+        "electronics": 2,
+        "scrap": 1
+      }
+    },
+    "alloyPlate": {
+      "station": "tool_bench",
+      "workHours": 3,
+      "outputQty": 2,
+      "inputs": {
+        "ore": 3,
+        "scrap": 2
+      }
+    },
+    "spectrumSample": {
+      "station": "chem_station",
+      "workHours": 3,
+      "outputQty": 2,
+      "inputs": {
+        "chemicals": 2,
+        "energyCell": 1
+      }
+    },
+    "stabilizerCatalyst": {
+      "station": "chem_station",
+      "workHours": 4,
+      "outputQty": 1,
+      "inputs": {
+        "chemicals": 3,
+        "electronics": 1
+      }
     }
   }
 }

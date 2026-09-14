@@ -167,8 +167,11 @@ function checkMapGeometry() {
 }
 
 function checkDistrictSites() {
-  const first = districtInterestSites(globalMap, 0, {});
-  const repeated = districtInterestSites(globalMap, 0, {});
+  assert.deepStrictEqual(districtInterestSites(globalMap, 0, {}), {},
+    'Unity-authored Kromka must not create procedural district locations');
+  const legacyMap = { ...globalMap, worldRevision: 'legacy', sitePlacement: 'procedural' };
+  const first = districtInterestSites(legacyMap, 0, {});
+  const repeated = districtInterestSites(legacyMap, 0, {});
   assert.deepStrictEqual(repeated, first, 'district generation is not deterministic');
 
   const sites = Object.values(first);

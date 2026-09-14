@@ -1483,6 +1483,7 @@ function assertServerWorldTransferFaultRecovery() {
       players,
       io: { sockets: { sockets: new Map([[player.id, socket]]) } },
       MAP_SIZE: 1000,
+      roomWorldExtent: () => 1000,
       playerSpawnWorld: () => ({ x: 10, z: 20 }),
       findRoomSafeSpawnWorld: () => ({ x: 11, z: 21 }),
       clamp: (value, min, max) => Math.max(min, Math.min(max, value)),

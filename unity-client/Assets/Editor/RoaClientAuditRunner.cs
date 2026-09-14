@@ -17,6 +17,7 @@ namespace RealmOfAshes.EditorTools
         {
             typeof(RoaCharacterCreatorProbe),
             typeof(RoaMechanicsInventoryProbe),
+            typeof(RoaProgressionProbe),
             typeof(RoaAnomalyVfxProbe),
             typeof(RealmOfAshes.Editor.RoaItemDataProbe),
             typeof(RealmOfAshes.Editor.RoaQuickbarProbe),
@@ -64,7 +65,8 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaPipboyQuestSurfacesProbe),
             typeof(RoaEconomyFeedbackProbe),
             typeof(RoaBarterProbe),
-            typeof(RoaGroundDressingProbe)
+            typeof(RoaGroundDressingProbe),
+            typeof(RoaWorldZonesUiProbe)
             ,typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
         };
 

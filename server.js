@@ -16,10 +16,40 @@ const {
 } = require('./src/server/kromka-combat-contract');
 const {
   deathLootPolicy,
+  persistedDeathState,
   persistedDownedState,
+  restoreDeathState,
   restoreDownedState,
-  resolveDeathLootTransaction
+  resolveDeathLootTransaction,
+  selectBagDropRows
 } = require('./src/server/kromka-death-loot');
+const {
+  ZONE_MODE_SET,
+  ZONE_MODE_LABELS,
+  normalizeZoneMode,
+  zoneModeAllowsPvp,
+  zoneRules
+} = require('./src/server/zone-rules');
+const {
+  joinTerritoryFaction,
+  leaveTerritoryFaction,
+  publicTerritoryMembership,
+  sanitizeTerritoryMembership,
+  territoryFactionRow,
+  territoryLocationAccess,
+  territoryMembershipActive
+} = require('./src/server/territory-membership');
+const {
+  advanceGarrison: advanceTerritoryGarrison,
+  applyCapturePresence: applyOutpostCapturePresence,
+  applyOwnerChange: applyOutpostOwnerChange,
+  markGarrisonDestroyed: markOutpostGarrisonDestroyed,
+  normalizeTerritoryStore,
+  openDueEvents: openDueOutpostEvents,
+  outpostRules,
+  publicTerritoryState,
+  territoryOutpostDefs
+} = require('./src/server/territory-outposts');
 const {
   fieldRecipeCatalogIndexes,
   itemCatalogIndexes,
@@ -105,16 +135,84 @@ const {
   artifactIndexes,
   beltCapacity: serverArtifactBeltCapacity,
   calculateArtifactEffects,
+  previewArtifactEffects,
   sanitizeArtifactLoadout,
   sanitizeArtifactRecords,
   claimedArtifactIdsFromSaves
 } = require('./src/server/artifact-effects');
+const {
+  publicArtifactCatalog,
+  publicArtifactRecord,
+  salvageYields: artifactSalvageYields,
+  stabilizationCost: artifactStabilizationCost,
+  stabilizeRecord: stabilizeArtifactRecord
+} = require('./src/server/artifact-instances');
+const {
+  claimBirth: claimArtifactBirth,
+  currentEmissionId: artifactEmissionId,
+  lastEmissionEndAt: artifactEmissionEndAt,
+  liveBirths: liveArtifactBirths,
+  normalizeBirthStore: normalizeArtifactBirthStore,
+  tickLocationBirths: tickArtifactBirths
+} = require('./src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('./src/server/shift-cycle');
 const {
+  mergeBirthArtifacts,
   pickupArtifact: serverPickupArtifact,
   publicArtifactsForPlayer,
   reconcileArtifactSpawns
 } = require('./src/server/artifact-spawns');
+const {
+  createPveRoomState,
+  initialPacks: pveInitialPacks,
+  normalizePveAreaCatalog,
+  notePveAlive,
+  publicPveRoomState,
+  pveAreaForLocation,
+  pveOwnerKey,
+  pveRoomAllowed,
+  pveRoomId,
+  pveRoomIdle,
+  rollPveEncounter,
+  searchTracks: pveSearchTracks
+} = require('./src/server/pve-areas');
+const {
+  buyListing: auctionBuyListing,
+  cancelListing: auctionCancelListing,
+  commitShelfClaim: auctionCommitShelfClaim,
+  createListing: auctionCreateListing,
+  expireListings: auctionExpireListings,
+  normalizeAuctionRules,
+  normalizeAuctionStore,
+  publicAuction,
+  shelfFor: auctionShelfFor
+} = require('./src/server/faction-auction');
+const {
+  applyPersistedBossState,
+  bossDamageMultiplier,
+  createBossState,
+  normalizeWorldBossRules,
+  noteBossDefeated,
+  noteShieldNodeDestroyed,
+  persistedBossState,
+  publicWorldBoss,
+  tickWorldBoss
+} = require('./src/server/world-boss');
+const {
+  claimPublicEventChest,
+  normalizePublicEventCatalog,
+  normalizePublicEventStore,
+  notePublicEventCleared,
+  publicEvent: publicPublicEvent,
+  publicEventChestOpen,
+  publicEventEntryError,
+  publicEventZone,
+  publicEvents: publicPublicEvents,
+  purgeExpiredPublicEvents,
+  recordPublicEventDeath,
+  spawnDuePublicEvents,
+  tickPublicEvent
+} = require('./src/server/public-events');
 const {
   publicPersonalBase,
   sanitizePersonalBase
@@ -365,7 +463,6 @@ const WASTELAND_PUBLIC_CACHE_MS = Math.max(250, Number(process.env.WASTELAND_PUB
 const ACTIVE_ROOM_AI_TICK_MS = Math.max(50, Number(process.env.ACTIVE_ROOM_AI_TICK_MS || 200));
 const ACTIVE_ROOM_AI_MAX_DT = Math.max(0.05, Number(process.env.ACTIVE_ROOM_AI_MAX_DT || 0.25));
 const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM_HOUSEKEEPING_MS || 1000));
-const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
 // Both ingress collision work and room relay target 20 Hz. Two-token credit is
@@ -564,6 +661,9 @@ const GLOBAL_MAP_FILE = path.join(DATA_DIR, 'global-map.json');
 const KROMKA_SAVE_MIGRATION_FILE = path.join(BUNDLED_DATA_DIR, 'generated', 'kromka', 'save-migration.json');
 const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.json');
 const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
+const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.json');
+const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
+const KROMKA_PUBLIC_EVENTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'public-events.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
@@ -717,22 +817,23 @@ function listLocationFiles() {
   return listLocationFilesIn(LOCATIONS_DIR);
 }
 
-function locationWorldToTilePoint(point = {}) {
+function locationWorldToTilePoint(point = {}, dims = null) {
+  const grid = dims && Number.isFinite(dims.w) && Number.isFinite(dims.h) ? dims : { w: MAP_W, h: MAP_H };
   if (Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz))) {
-    return { tx: clamp(Math.floor(Number(point.tx)), 0, MAP_W - 1), tz: clamp(Math.floor(Number(point.tz)), 0, MAP_H - 1) };
+    return { tx: clamp(Math.floor(Number(point.tx)), 0, grid.w - 1), tz: clamp(Math.floor(Number(point.tz)), 0, grid.h - 1) };
   }
   const src = point.position && typeof point.position === 'object' ? point.position : point;
   const x = Number(src.x);
   const z = Number(src.z);
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   return {
-    tx: clamp(Math.floor(x / TILE + MAP_W / 2), 0, MAP_W - 1),
-    tz: clamp(Math.floor(z / TILE + MAP_H / 2), 0, MAP_H - 1)
+    tx: clamp(Math.floor(x / TILE + grid.w / 2), 0, grid.w - 1),
+    tz: clamp(Math.floor(z / TILE + grid.h / 2), 0, grid.h - 1)
   };
 }
 
-function normalizeLocationPoint(point, fallback = { tx: 19, tz: 19 }) {
-  const tile = locationWorldToTilePoint(point) || fallback;
+function normalizeLocationPoint(point, fallback = { tx: 19, tz: 19 }, dims = null) {
+  const tile = locationWorldToTilePoint(point, dims) || fallback;
   const out = { ...(point && typeof point === 'object' ? point : {}), tx: tile.tx, tz: tile.tz };
   if (point?.position && typeof point.position === 'object') {
     out.x = Number(point.position.x || 0);
@@ -814,9 +915,9 @@ function locationDefinitionObjectIsTrader(row = {}) {
     || !!(entity.traderProfile || entity.tradeProfile);
 }
 
-function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19 }) {
+function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19 }, dims = null) {
   const entity = locationDefinitionObjectEntity(row);
-  const point = normalizeLocationPoint(row, fallback);
+  const point = normalizeLocationPoint(row, fallback, dims);
   return {
     ...point,
     id: String(entity.traderProfile || entity.tradeProfile || row.id || point.id || '').slice(0, 64),
@@ -827,14 +928,20 @@ function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19
   };
 }
 
-const LOCATION_PVP_MODES = new Set(['peaceful', 'pvp', 'pvpFullDrop']);
+const LOCATION_PVP_MODES = ZONE_MODE_SET;
+// Столицы фракций и постоянные базы Сердцевины: обе группы мирные, дают доступ
+// к личному фракционному хранилищу и никогда не захватываются.
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
   sluiceCity: 'uprava',
   scrapTown: 'free_artels',
   relayStation: 'contour',
   caravanCamp: 'tract_league',
   secondHaven: 'seconds',
-  balanceBunker: 'continuity'
+  balanceBunker: 'continuity',
+  coreBaseUprava: 'uprava',
+  coreBaseArtels: 'free_artels',
+  coreBaseContour: 'contour',
+  coreBaseLeague: 'tract_league'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
 const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
@@ -868,23 +975,21 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     x: 0,
     z: 8,
     name: 'Хранилище Комитета'
-  }
+  },
+  coreBaseUprava: { x: 14, z: 4, name: 'Хранилище Управы' },
+  coreBaseArtels: { x: 14, z: 4, name: 'Хранилище Вольных артелей' },
+  coreBaseContour: { x: 14, z: 4, name: 'Хранилище Контура' },
+  coreBaseLeague: { x: 14, z: 4, name: 'Хранилище Лиги Тракта' }
 };
-const LOCATION_PVP_LABELS = {
-  peaceful: 'Мирная',
-  pvp: 'PvP: падают расходники',
-  pvpFullDrop: 'PvP с полным дропом'
-};
+const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
 function normalizeLocationPvpMode(input, safeFallback = true) {
-  if (typeof input === 'boolean') return input ? 'pvp' : (safeFallback ? 'peaceful' : 'pvp');
-  const raw = String(input || '').trim();
-  if (LOCATION_PVP_MODES.has(raw)) return raw;
-  const low = raw.toLowerCase();
-  if (['peace', 'safe', 'safezone', 'no_pvp', 'nopvp', 'noncombat', 'social'].includes(low)) return 'peaceful';
-  if (['pvpfulldrop', 'fullpvp', 'fulldrop', 'full_drop', 'pvp-full-drop', 'pvp_full_drop'].includes(low)) return 'pvpFullDrop';
-  if (['pvp', 'danger', 'dangerous', 'unsafe', 'true', 'combat'].includes(low)) return 'pvp';
-  return safeFallback ? 'peaceful' : 'pvp';
+  // Булевы значения и редакторские псевдонимы («safezone», «nopvp», «safe»)
+  // означают мирный режим; false никогда не превращается в PvP.
+  if (typeof input === 'boolean') return input ? 'pvp' : 'peaceful';
+  const raw = String(input ?? '').trim().toLowerCase();
+  if (['safe', 'safezone', 'nopvp', 'no-pvp', 'peace', 'none'].includes(raw)) return 'peaceful';
+  return normalizeZoneMode(input, safeFallback);
 }
 
 function locationPvpMode(loc = {}) {
@@ -929,7 +1034,7 @@ function locationCapitalStorageObject(loc = {}) {
     }
   };
 }
-function locationAllowsPvp(loc = {}) { return locationPvpMode(loc) !== 'peaceful'; }
+function locationAllowsPvp(loc = {}) { return zoneModeAllowsPvp(locationPvpMode(loc)); }
 function locationAllowsNpcCombat(loc = {}) {
   return !locationIsFactionCapital(loc) && loc.safe !== true;
 }
@@ -1002,7 +1107,8 @@ function normalizeGlobalMapConfig(raw = {}) {
   };
   const maxX = grid.cols * grid.cellPoints;
   const maxY = grid.rows * grid.cellPoints;
-  const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1';
+  const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'
+    || src.sitePlacement === 'unity-authored';
   const centerOnCell = (x, y) => {
     const px = clamp(Number(x || 0), 0, Math.max(0, maxX - 0.001));
     const py = clamp(Number(y || 0), 0, Math.max(0, maxY - 0.001));
@@ -1016,8 +1122,8 @@ function normalizeGlobalMapConfig(raw = {}) {
   const nodes = (Array.isArray(src.nodes) ? src.nodes : []).slice(0, 80).map((node, index) => {
     const point = preserveAuthoredNodePoints
       ? {
-        x: clamp(Math.round(Number(node?.x || 0)), 0, maxX),
-        y: clamp(Math.round(Number(node?.y || 0)), 0, maxY)
+        x: clamp(Number(node?.x || 0), 0, maxX),
+        y: clamp(Number(node?.y || 0), 0, maxY)
       }
       : centerOnCell(node?.x, node?.y);
     return {
@@ -1098,6 +1204,8 @@ function normalizeGlobalMapConfig(raw = {}) {
     version: Math.max(1, Math.round(Number(src.version || 1))),
     worldRevision: String(src.worldRevision || 'legacy').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
     unityScene: String(src.unityScene || '').replace(/[^a-zA-Z0-9_./-]/g, '').slice(0, 180),
+    sitePlacement: src.worldRevision === 'kromka-1' || src.sitePlacement === 'unity-authored'
+      ? 'unity-authored' : 'procedural',
     legacyCoastline: src.legacyCoastline !== false,
     grid,
     nodes,
@@ -1118,15 +1226,19 @@ function normalizeLocationDefinition(raw, fallback = null) {
   loc.seed = Number.isFinite(Number(loc.seed)) ? Number(loc.seed) : Number(base.seed || 1);
   loc.pvpMode = normalizeLocationPvpMode(loc.pvpMode || loc.pvpType || loc.combatMode || loc.pvp, loc.safe !== false);
   loc.safe = loc.pvpMode === 'peaceful';
-  loc.pvp = loc.pvpMode !== 'peaceful';
+  loc.pvp = zoneModeAllowsPvp(loc.pvpMode);
   loc.fullDrop = loc.pvpMode === 'pvpFullDrop';
+  loc.lossPolicy = deathLootPolicy(loc.pvpMode).loss;
+  loc.territoryId = String(loc.territoryId || base.territoryId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
   const explicitSettlement = loc.kind === 'settlement' || loc.city === true || loc.settlement === true || loc.respawnAllowed === true;
   loc.kind = explicitSettlement ? 'settlement' : String(loc.kind || base.kind || 'location').slice(0, 32);
   loc.city = !!explicitSettlement;
   loc.settlement = !!explicitSettlement;
   loc.respawnAllowed = !!explicitSettlement;
-  loc.spawn = normalizeLocationPoint(loc.spawn || base.spawn, base.spawn || { tx: 19, tz: 19 });
-  if (loc.respawn && loc.respawnAllowed) loc.respawn = normalizeLocationPoint(loc.respawn, loc.spawn);
+  delete loc.tileDims;
+  const locDims = locationTileDims(loc);
+  loc.spawn = normalizeLocationPoint(loc.spawn || base.spawn, base.spawn || { tx: 19, tz: 19 }, locDims);
+  if (loc.respawn && loc.respawnAllowed) loc.respawn = normalizeLocationPoint(loc.respawn, loc.spawn, locDims);
   if (!loc.respawnAllowed) delete loc.respawn;
   const capitalStorageObject = locationCapitalStorageObject(loc);
   const inheritedObjects = Array.isArray(loc.objects) ? loc.objects : [];
@@ -1147,7 +1259,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     if (authoredTrader) {
       const entity = locationDefinitionObjectEntity(authoredTrader);
       loc.trader = {
-        ...locationDefinitionPointFromObject(authoredTrader, loc.spawn),
+        ...locationDefinitionPointFromObject(authoredTrader, loc.spawn, locDims),
         id: String(entity.traderProfile || entity.tradeProfile || entity.profile || authoredTrader.id || 'authored_trader').slice(0, 64),
         traderProfile: String(entity.traderProfile || entity.tradeProfile || entity.profile || '').slice(0, 64),
         dialogueProfile: String(entity.dialogueProfile || entity.traderProfile || entity.tradeProfile || entity.profile || loc.id || '').slice(0, 64),
@@ -1161,7 +1273,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     }
     if (authoredStorage) {
       loc.storage = {
-        ...locationDefinitionPointFromObject(authoredStorage, loc.spawn),
+        ...locationDefinitionPointFromObject(authoredStorage, loc.spawn, locDims),
         id: String(authoredStorage.id || 'authored_storage').slice(0, 64),
         storageFaction: locationCapitalFaction(loc),
         name: String(authoredStorage.name || 'Хранилище').slice(0, 80)
@@ -1172,12 +1284,18 @@ function normalizeLocationDefinition(raw, fallback = null) {
   }
   if (!locationIsFactionCapital(loc)) delete loc.storage;
   ['entryFromWorld', 'entryFromNorth', 'entryFromSouth', 'entryFromEast', 'entryFromWest', 'entryFromWasteland', 'entryFromSettlement', 'trader', 'storage'].forEach(key => {
-    if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn);
+    if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn, locDims);
   });
-  if (loc.entry && !loc.entryFromWorld) loc.entryFromWorld = normalizeLocationPoint(loc.entry, loc.spawn);
+  // Авторские точки входа с произвольным ключом (платформы фракций, выходы из
+  // лабораторий) нормализуются в сетке этой локации.
+  for (const key of Object.keys(loc)) {
+    if (!/^entryFrom[A-Za-z0-9_]+$/.test(key) || !loc[key] || typeof loc[key] !== 'object') continue;
+    loc[key] = normalizeLocationPoint(loc[key], loc.spawn, locDims);
+  }
+  if (loc.entry && !loc.entryFromWorld) loc.entryFromWorld = normalizeLocationPoint(loc.entry, loc.spawn, locDims);
   if (Array.isArray(loc.transitions)) {
     loc.transitions = loc.transitions.map((row, index) => {
-      const point = normalizeLocationPoint(row, loc.spawn);
+      const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
       return {
         ...row,
         id: String(row?.id || `transition_${index + 1}`).slice(0, 48),
@@ -1203,7 +1321,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     }
   }
   if (loc.exit) {
-    const exitPoint = normalizeLocationPoint(loc.exit, loc.spawn);
+    const exitPoint = normalizeLocationPoint(loc.exit, loc.spawn, locDims);
     loc.exit = {
       ...loc.exit,
       tx: exitPoint.tx,
@@ -1214,7 +1332,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
   }
   if (Array.isArray(loc.worldZones)) {
     loc.worldZones = loc.worldZones.map((row, index) => {
-      const point = normalizeLocationPoint(row, loc.spawn);
+      const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
       return {
         ...row,
         id: String(row?.id || `world_exit_${index + 1}`).slice(0, 48),
@@ -1940,6 +2058,12 @@ app.get('/api/kromka/items', (_, res) => {
   });
 });
 
+// Каталог артефактов для клиента: виды, тиры с цветами, источники по типам
+// аномалий и цены услуг. Скрытых свойств экземпляров здесь нет по построению.
+app.get('/api/kromka/artifacts', (_, res) => {
+  res.json({ ok: true, catalog: publicArtifactCatalog(KROMKA_ARTIFACT_CATALOG) });
+});
+
 let globalMapResponseCache = null;
 
 function invalidateGlobalMapResponseCache() {
@@ -2007,7 +2131,9 @@ function cachedWastelandPublicResponse(now = Date.now()) {
   const body = Buffer.from(JSON.stringify({
     ok: true,
     sim: WASTELAND_SIM.publicState(),
-    factions: publicKromkaFactionCatalog()
+    factions: publicKromkaFactionCatalog(),
+    territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now)
   }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
@@ -2067,6 +2193,8 @@ app.post('/api/dev/global-map', (req, res) => {
 });
 
 app.post('/api/dev/wasteland/site', (req, res) => {
+  if (GLOBAL_MAP.sitePlacement === 'unity-authored')
+    return res.status(409).json({ ok: false, error: 'Размещение локаций задаётся в Unity. Экспортируйте авторскую глобальную сцену.' });
   const site = req.body && typeof req.body === 'object' ? req.body.site || req.body : null;
   if (!site || typeof site !== 'object') return res.status(400).json({ ok: false, error: 'Нужны данные точки живой пустоши.' });
   const sim = WASTELAND_SIM.upsertSite(site);
@@ -2112,7 +2240,13 @@ function publicKromkaOperationsMetrics(now = Date.now()) {
   return {
     worldRevision: 'kromka-1',
     shift: serverCurrentShiftState(now),
-    artifacts: { active: activeArtifacts, claimed: KROMKA_CLAIMED_ARTIFACT_IDS.size },
+    artifacts: {
+      active: activeArtifacts,
+      claimed: KROMKA_CLAIMED_ARTIFACT_IDS.size,
+      births: Object.values(savesDb.anomalyBirths?.locations || {})
+        .reduce((sum, row) => sum + Object.keys(row?.artifacts || {}).length, 0)
+    },
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now).length,
     personalBases: {
       total: personalBases.length,
       activeRooms: [...rooms.values()].filter(room => room?.locationId === 'personalBase').length,
@@ -3557,6 +3691,14 @@ const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
 });
 const KROMKA_FACTION_CATALOG = readJson(KROMKA_FACTIONS_FILE, { factions: [] });
 const KROMKA_LOCATION_CATALOG = readJson(KROMKA_LOCATIONS_FILE, { locations: [] });
+const KROMKA_TERRITORY_CATALOG = readJson(KROMKA_TERRITORY_FILE, { id: 'core', factions: [], outposts: [], labs: [], rules: {} });
+const KROMKA_TERRITORY_COMBAT_GRACE_MS = Math.max(0, Math.floor(Number(KROMKA_TERRITORY_CATALOG.rules?.combatExitGraceMs) || 10000));
+const KROMKA_TERRITORY_MEDIC_PRICE_PER_HP = 1;
+const KROMKA_TERRITORY_MEDIC_INJURY_PRICE = 40;
+// Постоянные PvE-области: личные встречи, без PvP, вещи сохраняются.
+const KROMKA_PVE_AREA_CATALOG = normalizePveAreaCatalog(readJson(KROMKA_PVE_AREAS_FILE, { rules: {}, areas: [] }));
+// Временные публичные события: логова мутантов и базы налётчиков.
+const KROMKA_PUBLIC_EVENT_CATALOG = normalizePublicEventCatalog(readJson(KROMKA_PUBLIC_EVENTS_FILE, { rules: {}, templates: [] }));
 const KROMKA_NPC_CATALOG = readJson(KROMKA_NPCS_FILE, { npcs: [] });
 const KROMKA_ANOMALY_CATALOG = readJson(KROMKA_ANOMALIES_FILE, { types: [], bolt: {} });
 const KROMKA_ONBOARDING_CATALOG = readJson(KROMKA_ONBOARDING_FILE, {});
@@ -3646,6 +3788,18 @@ function kromkaQuestIdsForNpc(npcId = '') {
 }
 sanitizeClanStore(savesDb.kromkaClans);
 sanitizeSiegeStore(savesDb.kromkaSieges);
+// Runtime-состояние аванпостов Сердцевины живёт в сохранениях сервера, отдельно
+// от авторских определений в data/kromka/territory.json.
+savesDb.kromkaTerritory = normalizeTerritoryStore(savesDb.kromkaTerritory, KROMKA_TERRITORY_CATALOG, Date.now());
+// Рождённые аномалиями артефакты: по одному на поле, переживают перезапуск.
+savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
+// Публичные события переживают перезапуск вместе со своими таймерами.
+savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
+// Мировые боссы: поражение и срок перерождения переживают перезапуск.
+if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object' || Array.isArray(savesDb.worldBosses)) savesDb.worldBosses = {};
+// Фракционные аукционы: лоты и полки продавцов переживают перезапуск.
+savesDb.factionAuctions = normalizeAuctionStore(savesDb.factionAuctions);
+const KROMKA_AUCTION_RULES = normalizeAuctionRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -4317,6 +4471,14 @@ function serverFactionRelation(a = '', b = '') {
 function serverActorHostileToPlayer(actor = null, player = null) {
   if (!actor || !player || actor.dead || player.dead || Number(player.hp || 0) <= 0) return false;
   if (locationIsFactionCapital(player.locationId || player.currentLocationId || '')) return false;
+  // Гарнизон и охрана Сердцевины: враждебны игрокам других фракций территории
+  // и дружественны своим независимо от канонических отношений сторон.
+  const actorTerritoryFaction = String(actor.territoryFactionId || '');
+  if (actorTerritoryFaction) {
+    const playerTerritoryFaction = serverPlayerTerritoryFactionId(player);
+    if (playerTerritoryFaction && playerTerritoryFaction !== actorTerritoryFaction) return true;
+    if (playerTerritoryFaction === actorTerritoryFaction) return false;
+  }
   if (actorIsExplicitlyHostileToPlayer(actor, player)) return true;
   const actorGroup = serverCombatFactionGroup(actor.faction || '');
   if (!actorGroup || actorGroup === 'neutral') return false;
@@ -4364,10 +4526,106 @@ function serverPlayerCanDamageNpc(player, enemy, room) {
   return true;
 }
 
+// Поселение для возрождения/возврата с учётом доступа к базам фракций.
+function serverAccessibleSettlementId(locationId = '', membership = null) {
+  const candidate = normalizeRespawnSettlementId(locationId || 'settlement');
+  if (territoryLocationAccess(LOCATIONS[candidate] || {}, membership, KROMKA_TERRITORY_CATALOG).allowed) return candidate;
+  return normalizeRespawnSettlementId('settlement');
+}
+
+function serverPlayerTerritoryFactionId(player = {}) {
+  return String(player?.territoryFaction?.factionId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+}
+
+function serverRoomTerritoryId(room = null) {
+  return String(roomLocation(room)?.territoryId || '').slice(0, 32);
+}
+
+function serverTerritoryPlatformZoneAt(room = null, x = 0, z = 0) {
+  const loc = roomLocation(room);
+  if (!loc?.territoryId || !Array.isArray(loc.worldZones)) return null;
+  const dims = locationTileDims(loc);
+  for (const zone of loc.worldZones) {
+    if (String(zone?.type || '') !== 'factionPlatform') continue;
+    const center = tileToWorld(Number(zone.tx || 0), Number(zone.tz || 0), dims);
+    if (Math.hypot(Number(x || 0) - center.x, Number(z || 0) - center.z) <= Number(zone.radius || 0)) return zone;
+  }
+  return null;
+}
+
+function serverTerritoryPlayerInCombat(player = {}, now = Date.now(), graceMs = KROMKA_TERRITORY_COMBAT_GRACE_MS) {
+  return now - Number(player?.lastServerDamageAt || 0) < graceMs
+    || now - Number(player?.serverCombat?.lastAttackAt || 0) < graceMs;
+}
+
+// Правила PvP Сердцевины: своя фракция не наносит урон своим, с платформы
+// нельзя атаковать, а игрок на платформе своей фракции защищён после паузы
+// без боя (бой нельзя прервать мгновенно, забежав на платформу).
+function serverTerritoryPvpBlock(attacker = {}, target = {}, room = null, now = Date.now()) {
+  if (!serverRoomTerritoryId(room)) return '';
+  const attackerFaction = serverPlayerTerritoryFactionId(attacker);
+  const targetFaction = serverPlayerTerritoryFactionId(target);
+  if (attackerFaction && attackerFaction === targetFaction) return 'sameFaction';
+  if (serverTerritoryPlatformZoneAt(room, attacker.x, attacker.z)) return 'attackerOnPlatform';
+  const targetPlatform = serverTerritoryPlatformZoneAt(room, target.x, target.z);
+  if (targetPlatform && String(targetPlatform.factionId || '') === targetFaction
+    && !serverTerritoryPlayerInCombat(target, now)) return 'targetProtected';
+  return '';
+}
+
+function serverZoneRulesExtra(loc = null) {
+  if (!loc || typeof loc !== 'object') return {};
+  const territoryId = String(loc.territoryId || '');
+  if (!territoryId) return {};
+  const factionAccess = String(loc.factionAccess || 'territory');
+  return {
+    access: factionAccess === 'territory' ? 'faction' : 'ownFaction',
+    territoryId,
+    factionId: factionAccess === 'territory' ? '' : factionAccess,
+    factionPvp: true,
+    title: String(loc.name || '')
+  };
+}
+
+function serverNearbyServiceActor(player = {}, service = '', range = 5.2) {
+  const room = rooms.get(String(player?.roomId || ''));
+  if (!room || !(room.enemies instanceof Map)) return null;
+  for (const actor of room.enemies.values()) {
+    if (!actor || actor.dead || actor.hostileToPlayer !== false) continue;
+    if (String(actor.service || '') !== String(service || '')) continue;
+    if (Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0)) > range) continue;
+    if (!serverInteractionHasLineOfSight(room, player, actor)) continue;
+    return actor;
+  }
+  return null;
+}
+
+function publicTerritoryCatalog() {
+  const catalog = KROMKA_TERRITORY_CATALOG || {};
+  return {
+    id: String(catalog.id || 'core'),
+    displayName: String(catalog.displayName || 'Сердцевина'),
+    zoneLocationId: String(catalog.zoneLocationId || 'coreZone'),
+    factions: (Array.isArray(catalog.factions) ? catalog.factions : []).map(row => ({
+      id: String(row.id || ''),
+      baseLocationId: String(row.baseLocationId || ''),
+      baseDisplayName: String(row.baseDisplayName || ''),
+      capitalLocationId: String(row.capitalLocationId || ''),
+      platformEntryKey: String(row.platform?.entryKey || '')
+    })),
+    rules: {
+      factionChangeCooldownMs: Number(catalog.rules?.factionChangeCooldownMs || 0),
+      combatExitGraceMs: KROMKA_TERRITORY_COMBAT_GRACE_MS,
+      joinRequiresReputation: Number(catalog.rules?.joinRequiresReputation || 0)
+    }
+  };
+}
+
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
   return locationAllowsPvp(roomLocation(room))
     && !serverPlayersAllied(attacker, target)
-    && !serverPlayerHasProtectedClanRally(target, room, now);
+    && !serverPlayerHasProtectedClanRally(target, room, now)
+    && !serverTerritoryPvpBlock(attacker, target, room, now);
 }
 
 function serverProtectedAttackAck(player, spend, weapon, targetState = {}) {
@@ -4605,10 +4863,11 @@ if (Number(WORLD_PARTY_RECONCILIATION.removed || 0) > 0) {
 
 function normalizedLocationPlayableBounds(loc = {}) {
   const raw = loc.playableBounds && typeof loc.playableBounds === 'object' ? loc.playableBounds : {};
-  const width = clamp(Math.floor(Number(raw.width || loc.localWidthTiles || MAP_W)), 8, MAP_W);
-  const height = clamp(Math.floor(Number(raw.height || loc.localHeightTiles || MAP_H)), 8, MAP_H);
-  const minX = clamp(Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (MAP_W - width) / 2), 0, MAP_W - width);
-  const minZ = clamp(Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (MAP_H - height) / 2), 0, MAP_H - height);
+  const dims = locationTileDims(loc);
+  const width = clamp(Math.floor(Number(raw.width || loc.localWidthTiles || dims.w)), 8, dims.w);
+  const height = clamp(Math.floor(Number(raw.height || loc.localHeightTiles || dims.h)), 8, dims.h);
+  const minX = clamp(Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (dims.w - width) / 2), 0, dims.w - width);
+  const minZ = clamp(Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (dims.h - height) / 2), 0, dims.h - height);
   return {
     minX,
     minZ,
@@ -8897,7 +9156,8 @@ function serverApplyProgressionProposal(player = {}, data = {}, options = {}) {
       const wanted = Math.min(100, raw);
       const delta = wanted - current;
       if (delta <= 0) continue;
-      if (strict && delta % 5 !== 0) {
+      // A final +5% step is capped at 100%; its remaining 1-4% still costs one point.
+      if (strict && wanted < 100 && delta % 5 !== 0) {
         return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)} повышается шагами по 5%.` };
       }
       const wantedSteps = Math.max(0, Math.ceil(delta / 5));
@@ -9093,8 +9353,9 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
       player.z = safeZ;
     }
   }
-  const dx = clamp(proposedX, -MAP_SIZE, MAP_SIZE) - fromX;
-  const dz = clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - fromZ;
+  const worldExtent = playerWorldExtent(player);
+  const dx = clamp(proposedX, -worldExtent, worldExtent) - fromX;
+  const dz = clamp(proposedZ, -worldExtent, worldExtent) - fromZ;
   const distance = Math.hypot(dx, dz);
   const artifactSpeed = 1 + serverArtifactEffects(player).speedPct;
   const maxDistance = PLAYER_SPEED * artifactSpeed * elapsed * 1.35 + 0.22;
@@ -9115,14 +9376,14 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
     else if (moveAllowed(fromX, nextZ)) nextX = fromX;
     else { nextX = fromX; nextZ = fromZ; }
   }
-  player.x = clamp(nextX, -MAP_SIZE, MAP_SIZE);
-  player.z = clamp(nextZ, -MAP_SIZE, MAP_SIZE);
+  player.x = clamp(nextX, -worldExtent, worldExtent);
+  player.z = clamp(nextZ, -worldExtent, worldExtent);
   // Телепорт-коррекцию клиенту шлём только при реальном расхождении: щель в
   // несколько сантиметров от трения о препятствие рассасывается сама, а рывок
   // назад её лишь превращал в дёрганье. 0.6 юнита ловит настоящий десинк.
   const divergence = Math.hypot(
-    clamp(proposedX, -MAP_SIZE, MAP_SIZE) - player.x,
-    clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - player.z
+    clamp(proposedX, -worldExtent, worldExtent) - player.x,
+    clamp(proposedZ, -worldExtent, worldExtent) - player.z
   );
   const moved = Math.hypot(player.x - fromX, player.z - fromZ) > 0.0001;
   return { accepted: moved || divergence <= 0.001 || boundaryCorrected, corrected: boundaryCorrected || divergence > 0.6 };
@@ -9286,6 +9547,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     xpNeeded: Math.max(1, Math.floor(Number(player.xpNeeded || 100))),
     level: Math.max(1, Math.floor(Number(player.level || 1))),
     ...persistedDownedState(player),
+    diedAt: persistedDeathState(player).diedAt,
     injuries: sanitizeInjuries(player.injuries || {}),
     itemConditions: sanitizeServerItemConditions(player.itemConditions || {})
   };
@@ -9304,6 +9566,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []);
   next.worldFactionReputation = profile.worldFactionReputation;
   next.factionContracts = profile.factionContracts;
+  next.territoryFaction = sanitizeTerritoryMembership(player.territoryFaction, KROMKA_TERRITORY_CATALOG);
   next.knownFactionSecrets = player.knownFactionSecrets || previousState.knownFactionSecrets || {};
   next.kromkaQuestState = sanitizeKromkaQuestState(player.kromkaQuestState || previousState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
   sanitizeArtifactLoadout(player, KROMKA_ARTIFACT_CATALOG);
@@ -9314,6 +9577,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.artifactBloodkinHealingUntil = Number(player.artifactBloodkinHealingUntil || 0);
   next.radiation = Math.max(0, Number(player.radiation) || 0);
   next.lastServerDamageAt = Math.max(0, Number(player.lastServerDamageAt) || 0);
+  next.deathLootTransactionId = persistedDeathState(player).deathLootTransactionId;
   next.kromkaOnboarding = sanitizeKromkaOnboarding(
     player.kromkaOnboarding || previousState.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
   );
@@ -9931,7 +10195,7 @@ function serverApplyArtifactImpact(player, room, source, damageType, displacemen
   const stunned = applyArtifactElectricHit(player, damageType, effects, now);
   const bounds = serverClosedLocationMovementBounds(player, room, PLAYER_COLLISION_RADIUS);
   const moved = displaceArtifactPlayer(player, source, displacement, effects, (fromX, fromZ, x, z) =>
-    Math.abs(x) <= MAP_SIZE && Math.abs(z) <= MAP_SIZE
+    Math.abs(x) <= roomWorldExtent(room) && Math.abs(z) <= roomWorldExtent(room)
     && (!bounds || serverPointInsideClosedLocationBounds(x, z, bounds))
     && isRoomTerrainWalkableWorld(room, x, z, PLAYER_COLLISION_RADIUS)
     && roomStaticCollisionMoveAllowed(room, fromX, fromZ, x, z, PLAYER_COLLISION_RADIUS)
@@ -10064,7 +10328,7 @@ function roomBlockingDistanceOnRay(room, fromX, fromZ, dirX, dirZ, maxRange, opt
   const dx = dirX / len;
   const dz = dirZ / len;
   for (let d = step; d <= maxRange; d += step) {
-    const tile = worldToTile(fromX + dx * d, fromZ + dz * d);
+    const tile = worldToTile(fromX + dx * d, fromZ + dz * d, roomTileDims(room));
     if (isRoomBallisticBlockingTile(room, tile.tx, tile.tz, opts)) return Math.max(0.1, d - step * 0.5);
   }
   return maxRange;
@@ -10089,8 +10353,8 @@ function serverLineOfFireClearFrom(room, fromX, fromZ, enemy, opts = {}) {
   const clear = roomBlockingDistanceOnRay(room, fromX, fromZ, dx / len, dz / len, checkDist, { shooterCrouching: !!opts.shooterCrouching });
   if (clear + 0.35 < checkDist) return false;
   if (opts.targetCrouching) {
-    const start = worldToTile(fromX, fromZ);
-    const end = worldToTile(enemyX, enemyZ);
+    const start = worldToTile(fromX, fromZ, roomTileDims(room));
+    const end = worldToTile(enemyX, enemyZ, roomTileDims(room));
     if (isCrouchedTargetHiddenBehindLowCover(room, start.tx, start.tz, end.tx, end.tz)) return false;
   }
   return !roomStaticCollisionBlocksSegment(room, fromX, fromZ, enemyX, enemyZ, 0.045, {
@@ -10705,12 +10969,11 @@ function serverApplyReload(p = {}, data = {}, now = Date.now()) {
   };
 }
 
+// Частичная потеря защищает только валюту и сюжетные предметы по id. Артефакты,
+// детекторы, контейнеры и запасное снаряжение в рюкзаке выпадают; экипировка
+// и установленные в контейнер артефакты защищены по экземплярам ниже.
 const SERVER_PVP_PROTECTED_ITEM_IDS = new Set([
-  'silver',
-  ...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),
-  ...KROMKA_ARTIFACT_CATALOG.detectors.map(row => row.itemId),
-  ...KROMKA_ARTIFACT_CATALOG.belts.map(row => row.itemId),
-  KROMKA_ARTIFACT_CATALOG.hotContainerItemId
+  'silver'
 ].filter(Boolean));
 
 function serverItemProtectedFromPvpDrop(itemId = '') {
@@ -10718,15 +10981,60 @@ function serverItemProtectedFromPvpDrop(itemId = '') {
   return SERVER_PVP_PROTECTED_ITEM_IDS.has(id) || /(?:^|_)(?:quest|story|key)(?:_|$)/i.test(id);
 }
 
+// Где доступна стабилизация: NPC-исследователь/терминал (service artifactLab),
+// станок личной базы или, для старых поселений без сервисных NPC, защищённая
+// локация-поселение.
+function serverArtifactStabilizationPlace(player = {}, loc = null) {
+  const rules = KROMKA_ARTIFACT_CATALOG.stabilization || {};
+  if (rules.personalBaseAllowed !== false && String(player?.locationId || '') === 'personalBase') return { ok: true, kind: 'personalBase' };
+  const serviceId = String(rules.serviceId || 'artifactLab');
+  if (serverNearbyServiceActor(player, serviceId)) return { ok: true, kind: serviceId };
+  if (rules.legacySafeSettlementAllowed !== false && loc?.safe === true && String(loc?.kind || '') !== 'base') return { ok: true, kind: 'settlement' };
+  return { ok: false, error: 'Нужен исследователь артефактов, терминал базы или станок личной базы.' };
+}
+
+function serverArtifactCostShortage(player = {}, cost = {}) {
+  const silver = Math.max(0, Math.floor(Number(cost?.silver || 0)));
+  if (silver > 0 && serverInventoryQty(player.inventory, 'silver') < silver) return `Не хватает марок: нужно ${silver}.`;
+  for (const row of Array.isArray(cost?.items) ? cost.items : []) {
+    if (serverInventoryQty(player.inventory, row.id) < row.qty) {
+      return `Не хватает компонентов: ${KROMKA_ITEM_INDEXES.byId[row.id]?.name || row.id} ×${row.qty}.`;
+    }
+  }
+  return '';
+}
+
+// Смена контейнера артефактов вне боя: после урона должна пройти пауза.
+function serverArtifactLoadoutCombatLocked(player = {}, now = Date.now()) {
+  const lockMs = Math.max(0, Number(KROMKA_ARTIFACT_CATALOG.rules?.loadoutChangeCombatLockMs || 10000));
+  const lastDamage = Math.max(Number(player?.lastServerDamageAt || 0), Number(player?.serverCombat?.lastAttackAt || 0));
+  return lockMs > 0 && lastDamage > 0 && now - lastDamage < lockMs;
+}
+
+function serverInstalledArtifactCounts(target = {}) {
+  sanitizeArtifactLoadout(target, KROMKA_ARTIFACT_CATALOG);
+  const counts = new Map();
+  for (const recordId of target.artifactSlots || []) {
+    const record = (target.artifactRecords || []).find(row => row.id === recordId);
+    if (!record) continue;
+    counts.set(record.itemId, (counts.get(record.itemId) || 0) + 1);
+  }
+  return counts;
+}
+
 function serverDropPvpInventory(room, target, killer, now = Date.now()) {
   if (!room || !target) return [];
   const inventory = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
-  const drops = inventory.filter(entry => !serverItemProtectedFromPvpDrop(entry.id));
-  const protectedRows = inventory.filter(entry => serverItemProtectedFromPvpDrop(entry.id));
+  // Экипировка в рюкзаке не хранится, поэтому здесь остаётся только защита
+  // валюты/сюжетных предметов и установленных в контейнер артефактов.
+  const { drops, kept: protectedRows } = selectBagDropRows(inventory, {
+    installedCounts: serverInstalledArtifactCounts(target),
+    isProtected: serverItemProtectedFromPvpDrop
+  });
   if (!drops.length) return [];
   const runtimeDrops = new Map();
   for (const entry of drops) {
-    if (!SERVER_WEAPONS[entry.id]?.ammoType) continue;
+    if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;
     const validation = serverValidateWeaponRuntimeRemoval(target, entry, { releaseLoadedAmmo: true });
     if (!validation.ok) continue;
     runtimeDrops.set(entry.id, {
@@ -10741,8 +11049,8 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
     if (!entry || !SERVER_ITEM_IDS.has(entry.id) || entry.id === 'fists' || entry.qty <= 0) continue;
     const angle = index * 2.399963229728653 + 0.35;
     const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
     const groundItem = {
       id: makeServerEntityId('pvp_drop'),
@@ -10803,8 +11111,8 @@ function serverDropPvpConsumables(room, target, killer, now = Date.now()) {
     if (!SERVER_ITEM_IDS.has(entry.id)) continue;
     const angle = index * 2.399963229728653 + 0.35;
     const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
     const groundItem = {
       id: makeServerEntityId('pvp_drop'),
@@ -10837,11 +11145,18 @@ function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
   if (!room || !target) return [];
   const mode = locationPvpMode(loc);
   const policy = deathLootPolicy(mode);
-  return resolveDeathLootTransaction(target, mode, now, () => {
+  const outcome = resolveDeathLootTransaction(target, mode, now, () => {
     if (policy.loss === 'inventory') return serverDropPvpInventory(room, target, killer, now);
     if (policy.loss === 'consumables') return serverDropPvpConsumables(room, target, killer, now);
     return [];
-  }).result;
+  });
+  if (!outcome.reused) {
+    // Дроп и инвентарь погибшего фиксируются одной транзакцией сохранения:
+    // повтор смерти, reconnect и перезапуск не дублируют и не теряют предметы.
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(target);
+  }
+  return outcome.result;
 }
 
 function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), options = {}) {
@@ -10858,6 +11173,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   const sourceZ = Number.isFinite(Number(options.sourceZ))
     ? Number(options.sourceZ) : Number(p.z || enemy.z || 0);
   finalizeNpcDeathState(enemy, now);
+  serverNoteWorldBossKill(room, enemy, now);
   enemy.looted = false;
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
@@ -10892,7 +11208,7 @@ function clampPlayerHp(value, maxHp = 100) {
 function playerSpawnWorld(locationId = 'settlement', key = 'spawn') {
   const loc = LOCATIONS[normalizeLocationId(locationId)] || LOCATIONS.settlement;
   const spawn = loc[key] || loc.spawn || LOCATIONS.settlement.spawn;
-  return tileToWorld(spawn.tx, spawn.tz);
+  return tileToWorld(spawn.tx, spawn.tz, locationTileDims(loc));
 }
 
 function locationHasSettlementFlag(loc = {}) {
@@ -10922,8 +11238,9 @@ function roomLocation(room) {
     ...base,
     pvpMode: override,
     safe: override === 'peaceful',
-    pvp: override !== 'peaceful',
-    fullDrop: override === 'pvpFullDrop'
+    pvp: zoneModeAllowsPvp(override),
+    fullDrop: override === 'pvpFullDrop',
+    lossPolicy: deathLootPolicy(override).loss
   };
 }
 
@@ -10971,7 +11288,7 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
   return candidates.find(row => {
-    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0));
+    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
@@ -11004,17 +11321,56 @@ function serverEntryKeyForTransition(locationId = '', data = {}, ticket = null) 
   return raw && loc[raw] && Number.isFinite(Number(loc[raw].tx)) && Number.isFinite(Number(loc[raw].tz)) ? raw : 'spawn';
 }
 
-function tileToWorld(tx, tz) { return { x: (tx - MAP_W / 2 + 0.5) * TILE, z: (tz - MAP_H / 2 + 0.5) * TILE }; }
-function worldToTile(x, z) { return { tx: Math.floor(x / TILE + MAP_W / 2), tz: Math.floor(z / TILE + MAP_H / 2) }; }
-function inBounds(tx, tz) { return tx >= 0 && tz >= 0 && tx < MAP_W && tz < MAP_H; }
+// Сетка тайлов задаётся локацией: без явного `map.width/depth` сцена остаётся
+// 38×38, авторская сцена любого размера объявляет его в метрах. Верхнего
+// предела размера локации нет.
+const DEFAULT_TILE_DIMS = Object.freeze({ w: MAP_W, h: MAP_H });
+
+function locationTileDims(loc = null) {
+  if (!loc || typeof loc !== 'object') return DEFAULT_TILE_DIMS;
+  if (loc.tileDims && Number.isFinite(loc.tileDims.w) && Number.isFinite(loc.tileDims.h)) return loc.tileDims;
+  const map = loc.map && typeof loc.map === 'object' ? loc.map : {};
+  const widthMeters = Number(map.technicalWidth || map.width || 0);
+  const depthMeters = Number(map.technicalDepth || map.depth || 0);
+  const w = widthMeters > 0 ? Math.max(1, Math.round(widthMeters / TILE)) : MAP_W;
+  const h = depthMeters > 0 ? Math.max(1, Math.round(depthMeters / TILE)) : MAP_H;
+  loc.tileDims = Object.freeze({ w, h });
+  return loc.tileDims;
+}
+
+function roomTileDims(room = null) {
+  if (!room) return DEFAULT_TILE_DIMS;
+  if (room.tileDims && Number.isFinite(room.tileDims.w) && Number.isFinite(room.tileDims.h)) return room.tileDims;
+  const dims = locationTileDims(LOCATIONS[normalizeLocationId(room.locationId)] || null);
+  room.tileDims = dims;
+  return dims;
+}
+
+// Предел мировых координат комнаты выводится из её сетки, а не из общей константы.
+function roomWorldExtent(room = null) {
+  const dims = roomTileDims(room);
+  return Math.max(dims.w, dims.h) * TILE / 2 + 2;
+}
+
+function playerWorldExtent(p = null) {
+  return roomWorldExtent(p?.roomId ? rooms.get(String(p.roomId)) : null);
+}
+
+function tileToWorld(tx, tz, dims = DEFAULT_TILE_DIMS) {
+  return { x: (tx - dims.w / 2 + 0.5) * TILE, z: (tz - dims.h / 2 + 0.5) * TILE };
+}
+function worldToTile(x, z, dims = DEFAULT_TILE_DIMS) {
+  return { tx: Math.floor(x / TILE + dims.w / 2), tz: Math.floor(z / TILE + dims.h / 2) };
+}
+function inBounds(tx, tz, dims = DEFAULT_TILE_DIMS) { return tx >= 0 && tz >= 0 && tx < dims.w && tz < dims.h; }
 function solidTileValue(v) { return v === TILE_TYPES.TREE || v === TILE_TYPES.WATER || v === TILE_TYPES.ORE || v === TILE_TYPES.WOOD || v === TILE_TYPES.OIL; }
 function isRoomWalkableTile(room, tx, tz) {
-  if (!inBounds(tx, tz) || !Array.isArray(room.map[tz])) return false;
+  if (!inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room.map[tz])) return false;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   return tx >= bounds.minX && tx <= bounds.maxX && tz >= bounds.minZ && tz <= bounds.maxZ && !solidTileValue(room.map[tz][tx]);
 }
 function isRoomTerrainWalkableTile(room, tx, tz) {
-  if (!inBounds(tx, tz) || !Array.isArray(room?.map?.[tz])) return false;
+  if (!inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room?.map?.[tz])) return false;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   if (tx < bounds.minX || tx > bounds.maxX || tz < bounds.minZ || tz > bounds.maxZ) return false;
   const type = room.map[tz][tx];
@@ -11024,7 +11380,7 @@ function isRoomTerrainWalkableTile(room, tx, tz) {
 }
 function isRoomTerrainWalkableWorld(room, x, z, radius = 0.35) {
   const samples = [[x - radius, z - radius], [x + radius, z - radius], [x - radius, z + radius], [x + radius, z + radius], [x, z]];
-  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz); return isRoomTerrainWalkableTile(room, t.tx, t.tz); });
+  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz, roomTileDims(room)); return isRoomTerrainWalkableTile(room, t.tx, t.tz); });
 }
 function isRoomWalkableWorld(room, x, z, radius = 0.35) {
   return isRoomTerrainWalkableWorld(room, x, z, radius) && !roomStaticCollisionBlocksCircle(room, x, z, radius);
@@ -11045,8 +11401,8 @@ function roomTileHasContainer(room, tx, tz, clearance = 0) {
   const c = Math.max(0, Math.floor(Number(clearance || 0)));
   for (const ctr of room.containers.values()) {
     if (!ctr) continue;
-    const cx = Number.isFinite(Number(ctr.tx)) ? Number(ctr.tx) : worldToTile(ctr.x, ctr.z).tx;
-    const cz = Number.isFinite(Number(ctr.tz)) ? Number(ctr.tz) : worldToTile(ctr.x, ctr.z).tz;
+    const cx = Number.isFinite(Number(ctr.tx)) ? Number(ctr.tx) : worldToTile(ctr.x, ctr.z, roomTileDims(room)).tx;
+    const cz = Number.isFinite(Number(ctr.tz)) ? Number(ctr.tz) : worldToTile(ctr.x, ctr.z, roomTileDims(room)).tz;
     if (Math.abs(cx - tx) <= c && Math.abs(cz - tz) <= c) return true;
   }
   return false;
@@ -11054,7 +11410,7 @@ function roomTileHasContainer(room, tx, tz, clearance = 0) {
 
 function roomTileHasEnemyNear(room, tx, tz, minDistance = 0, ignoreId = '') {
   if (!room || !(room.enemies instanceof Map) || minDistance <= 0) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   for (const enemy of room.enemies.values()) {
     if (!enemy || enemy.dead || (ignoreId && enemy.id === ignoreId)) continue;
     if (Math.hypot(Number(enemy.x || 0) - pos.x, Number(enemy.z || 0) - pos.z) < minDistance) return true;
@@ -11064,7 +11420,7 @@ function roomTileHasEnemyNear(room, tx, tz, minDistance = 0, ignoreId = '') {
 
 function roomTileHasPlayerNear(room, tx, tz, minDistance = 0, ignoreId = '') {
   if (!room || minDistance <= 0) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   for (const p of livePlayersInRoom(room)) {
     if (!p || (ignoreId && p.id === ignoreId)) continue;
     if (Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z) < minDistance) return true;
@@ -11076,7 +11432,7 @@ function isRoomSpawnSafeTile(room, tx, tz, opts = {}) {
   tx = Math.round(Number(tx || 0));
   tz = Math.round(Number(tz || 0));
   if (!isRoomWalkableTile(room, tx, tz)) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   if (!isRoomWalkableWorld(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
   if (roomTileHasResource(room, tx, tz, Number(opts.resourceClearance ?? 0))) return false;
   if (roomTileHasContainer(room, tx, tz, Number(opts.containerClearance ?? 0))) return false;
@@ -11096,7 +11452,7 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
         if (radius > 0 && Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
         const tx = startTx + dx;
         const tz = startTz + dz;
-        if (!inBounds(tx, tz)) continue;
+        if (!inBounds(tx, tz, roomTileDims(room))) continue;
         candidates.push({ tx, tz, d: Math.hypot(dx, dz) });
       }
     }
@@ -11107,9 +11463,9 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
 }
 
 function findRoomSafeSpawnWorld(room, x, z, opts = {}) {
-  const tile = worldToTile(Number(x || 0), Number(z || 0));
+  const tile = worldToTile(Number(x || 0), Number(z || 0), roomTileDims(room));
   const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, opts);
-  return safe ? tileToWorld(safe.tx, safe.tz) : null;
+  return safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : null;
 }
 
 function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, preferredTz, opts = {}) {
@@ -11123,11 +11479,11 @@ function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, prefe
   const key = (tx, tz) => `${tx},${tz}`;
   const queue = [origin];
   const visited = new Set([key(origin.tx, origin.tz)]);
-  const originPoint = tileToWorld(origin.tx, origin.tz);
+  const originPoint = tileToWorld(origin.tx, origin.tz, roomTileDims(room));
   let best = null;
   for (let index = 0; index < queue.length; index++) {
     const tile = queue[index];
-    const point = tileToWorld(tile.tx, tile.tz);
+    const point = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
     const visibleFromOrigin = opts.requireOriginLineOfSight !== true
       || (Math.hypot(point.x - originPoint.x, point.z - originPoint.z) <= Number(opts.maxOriginDistance || 12)
         && roomHasHighLineOfSight(room, originPoint.x, originPoint.z, point.x, point.z));
@@ -11139,8 +11495,8 @@ function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, prefe
       const tx = tile.tx + dx;
       const tz = tile.tz + dz;
       const id = key(tx, tz);
-      if (visited.has(id) || !inBounds(tx, tz)) continue;
-      const point = tileToWorld(tx, tz);
+      if (visited.has(id) || !inBounds(tx, tz, roomTileDims(room))) continue;
+      const point = tileToWorld(tx, tz, roomTileDims(room));
       if (!isRoomWalkableTile(room, tx, tz) || !isRoomWalkableWorld(room, point.x, point.z, Number(opts.radius ?? 0.42))) continue;
       visited.add(id);
       queue.push({ tx, tz });
@@ -11363,7 +11719,7 @@ function activeNoiseInvestigatorsNear(room, x, z, now = Date.now()) {
 }
 
 function roomTileValue(room, tx, tz) {
-  if (!room || !Array.isArray(room.map) || !inBounds(tx, tz) || !Array.isArray(room.map[tz])) return null;
+  if (!room || !Array.isArray(room.map) || !inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room.map[tz])) return null;
   return room.map[tz][tx];
 }
 function isRoomFullVisionBlocker(room, tx, tz) {
@@ -11375,7 +11731,7 @@ function isRoomLowCoverTile(room, tx, tz) {
   const v = roomTileValue(room, tx, tz);
   return v === TILE_TYPES.ROCK || v === TILE_TYPES.ORE || v === TILE_TYPES.WOOD || v === TILE_TYPES.RUIN || v === TILE_TYPES.OIL;
 }
-function lineTilesBetweenRoom(startTx, startTz, endTx, endTz) {
+function lineTilesBetweenRoom(startTx, startTz, endTx, endTz, dims = DEFAULT_TILE_DIMS) {
   const tiles = [];
   let x0 = startTx;
   let z0 = startTz;
@@ -11391,13 +11747,13 @@ function lineTilesBetweenRoom(startTx, startTz, endTx, endTz) {
     const e2 = err * 2;
     if (e2 > -dz) { err -= dz; x0 += sx; }
     if (e2 < dx) { err += dx; z0 += sz; }
-    if (!inBounds(x0, z0)) return tiles;
+    if (!inBounds(x0, z0, dims)) return tiles;
     tiles.push({ tx: x0, tz: z0 });
   }
 }
 function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
   if (sx === tx && sz === tz) return false;
-  const line = lineTilesBetweenRoom(sx, sz, tx, tz);
+  const line = lineTilesBetweenRoom(sx, sz, tx, tz, roomTileDims(room));
   for (let i = 0; i < line.length; i++) {
     const tile = line[i];
     if (tile.tx === tx && tile.tz === tz) return false;
@@ -11409,10 +11765,10 @@ function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
 }
 function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
   if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, { startPadding: 0.3, endPadding: 0.42 })) return false;
-  const start = worldToTile(fromX, fromZ);
-  const end = worldToTile(toX, toZ);
-  if (!inBounds(start.tx, start.tz) || !inBounds(end.tx, end.tz)) return false;
-  const line = lineTilesBetweenRoom(start.tx, start.tz, end.tx, end.tz);
+  const start = worldToTile(fromX, fromZ, roomTileDims(room));
+  const end = worldToTile(toX, toZ, roomTileDims(room));
+  if (!inBounds(start.tx, start.tz, roomTileDims(room)) || !inBounds(end.tx, end.tz, roomTileDims(room))) return false;
+  const line = lineTilesBetweenRoom(start.tx, start.tz, end.tx, end.tz, roomTileDims(room));
   for (const tile of line) {
     if (tile.tx === end.tx && tile.tz === end.tz) return true;
     if (isRoomFullVisionBlocker(room, tile.tx, tile.tz)) return false;
@@ -11444,8 +11800,8 @@ function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   })) return false;
   if (!roomHasHighLineOfSight(room, enemy.x, enemy.z, p.x, p.z)) return false;
   if (p.crouching) {
-    const a = worldToTile(enemy.x, enemy.z);
-    const b = worldToTile(p.x, p.z);
+    const a = worldToTile(enemy.x, enemy.z, roomTileDims(room));
+    const b = worldToTile(p.x, p.z, roomTileDims(room));
     if (isCrouchedTargetHiddenBehindLowCover(room, a.tx, a.tz, b.tx, b.tz)) return false;
   }
   // Очень близко моб всё равно замечает игрока: это убирает странные случаи,
@@ -11574,9 +11930,9 @@ function chooseNoiseInvestigationPoint(room, x, z, enemy) {
     }
     if (best) return best;
   }
-  const t = worldToTile(baseX, baseZ);
+  const t = worldToTile(baseX, baseZ, roomTileDims(room));
   const nearest = findNearestWalkablePathTile(room, t.tx, t.tz, 4);
-  if (nearest) return tileToWorld(nearest.tx, nearest.tz);
+  if (nearest) return tileToWorld(nearest.tx, nearest.tz, roomTileDims(room));
   return { x: baseX, z: baseZ };
 }
 
@@ -11619,10 +11975,10 @@ function buildEnemySearchPoints(room, enemy, x, z, opts = {}) {
       addPoint(px, pz);
       continue;
     }
-    const tile = worldToTile(px, pz);
+    const tile = worldToTile(px, pz, roomTileDims(room));
     const nearest = findNearestWalkablePathTile(room, tile.tx, tile.tz, 3);
     if (nearest) {
-      const point = tileToWorld(nearest.tx, nearest.tz);
+      const point = tileToWorld(nearest.tx, nearest.tz, roomTileDims(room));
       addPoint(point.x, point.z);
     }
   }
@@ -12150,7 +12506,7 @@ function markRoomEmptyIfNeeded(room, reason = 'empty') {
 function enemyPathKey(tx, tz) { return `${tx},${tz}`; }
 function isEnemyPathTileOpen(room, tx, tz, radius = 0.32) {
   if (!isRoomWalkableTile(room, tx, tz)) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   return isRoomWalkableWorld(room, pos.x, pos.z, radius);
 }
 function invalidateEnemyPath(enemy) {
@@ -12709,7 +13065,7 @@ function enemyTacticalGoalIsFresh(enemy, target, now = Date.now()) {
 
 function scoreRangedNpcTacticalTile(room, enemy, target, tx, tz, attackRange, desiredRange, currentDist) {
   if (!isRoomWalkableTile(room, tx, tz)) return null;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.3) || isEnemyBodyBlockedAt(room, enemy, pos.x, pos.z)) return null;
   const targetX = Number(target.x || 0);
   const targetZ = Number(target.z || 0);
@@ -12752,8 +13108,8 @@ function findRangedNpcTacticalGoal(room, enemy, target, weapon = null) {
   const targetX = Number(target.x || 0);
   const targetZ = Number(target.z || 0);
   const currentDist = Math.hypot(targetX - enemyX, targetZ - enemyZ);
-  const targetTile = worldToTile(targetX, targetZ);
-  const midTile = worldToTile((enemyX + targetX) * 0.5, (enemyZ + targetZ) * 0.5);
+  const targetTile = worldToTile(targetX, targetZ, roomTileDims(room));
+  const midTile = worldToTile((enemyX + targetX) * 0.5, (enemyZ + targetZ) * 0.5, roomTileDims(room));
   const maxTiles = Math.max(4, Math.min(10, Math.ceil(attackRange / TILE) + 2));
   const seen = new Set();
   let best = null;
@@ -12791,10 +13147,10 @@ function findRangedNpcTacticalGoal(room, enemy, target, weapon = null) {
   let gx = targetX + (awayX / awayLen) * fallbackDist;
   let gz = targetZ + (awayZ / awayLen) * fallbackDist;
   if (!isRoomWalkableWorld(room, gx, gz, 0.3)) {
-    const rawTile = worldToTile(gx, gz);
+    const rawTile = worldToTile(gx, gz, roomTileDims(room));
     const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
     if (tile) {
-      const pos = tileToWorld(tile.tx, tile.tz);
+      const pos = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
       gx = pos.x;
       gz = pos.z;
     } else {
@@ -12906,10 +13262,10 @@ function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
     let goalX = ex + dirX * 5.2 - dirZ * side * 1.8;
     let goalZ = ez + dirZ * 5.2 + dirX * side * 1.8;
     if (!isRoomWalkableWorld(room, goalX, goalZ, 0.3)) {
-      const rawTile = worldToTile(goalX, goalZ);
+      const rawTile = worldToTile(goalX, goalZ, roomTileDims(room));
       const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
       if (tile) {
-        const point = tileToWorld(tile.tx, tile.tz);
+        const point = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
         goalX = point.x;
         goalZ = point.z;
       }
@@ -13009,8 +13365,8 @@ function moveEnemyTowards(room, enemy, tx, tz, speed, dt, opts = {}) {
   }
 
   const now = Date.now();
-  const startTile = worldToTile(enemy.x, enemy.z);
-  const rawGoalTile = worldToTile(targetX, targetZ);
+  const startTile = worldToTile(enemy.x, enemy.z, roomTileDims(room));
+  const rawGoalTile = worldToTile(targetX, targetZ, roomTileDims(room));
   const goalTile = findNearestWalkablePathTile(room, rawGoalTile.tx, rawGoalTile.tz, 8);
   if (!goalTile) {
     const direct = moveEnemyDirectStep(room, enemy, targetX, targetZ, speed, dt, opts);
@@ -13433,9 +13789,9 @@ function spawnRoomWorldContainers(room, opts = {}) {
   const now = Date.now();
   const restockDay = currentGameDayIndex(now);
   for (const def of defs) {
-    if (!def || !inBounds(def.tx, def.tz)) continue;
+    if (!def || !inBounds(def.tx, def.tz, roomTileDims(room))) continue;
     clearSpawnArea(room, { tx: def.tx, tz: def.tz });
-    const pos = tileToWorld(def.tx, def.tz);
+    const pos = tileToWorld(def.tx, def.tz, roomTileDims(room));
     const defId = String(def.id || `${def.tx}_${def.tz}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_${defId}`.slice(0, 96);
     const lockInfo = securityDifficultyInfo(def.lockDifficultyTier || def.lockDifficulty, def.locked ? 'medium' : 'veryEasy');
@@ -13673,14 +14029,14 @@ function serverCraftingObjectMatchesStation(row = {}, stationId = '') {
   return (SERVER_CRAFT_STATION_TOKENS[key] || []).some(token => text.includes(token));
 }
 
-function serverLocationObjectWorldPoint(row = {}) {
+function serverLocationObjectWorldPoint(row = {}, dims = DEFAULT_TILE_DIMS) {
   const pos = row.position && typeof row.position === 'object' ? row.position : row;
   if (Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.z))) {
     return { x: Number(pos.x), z: Number(pos.z) };
   }
   const tx = Number(pos.tx ?? row.tx);
   const tz = Number(pos.tz ?? row.tz);
-  if (Number.isFinite(tx) && Number.isFinite(tz)) return tileToWorld(tx, tz);
+  if (Number.isFinite(tx) && Number.isFinite(tz)) return tileToWorld(tx, tz, dims);
   return null;
 }
 
@@ -13710,7 +14066,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!stationObject || !serverCraftingObjectMatchesStation(stationObject, requiredStation)) {
     return { ok: false, error: 'missing_station', requiredStation };
   }
-  const stationPoint = serverLocationObjectWorldPoint(stationObject);
+  const stationPoint = serverLocationObjectWorldPoint(stationObject, locationTileDims(loc));
   if (!stationPoint || !Number.isFinite(Number(player?.x)) || !Number.isFinite(Number(player?.z))) {
     return { ok: false, error: 'unknown_station_position' };
   }
@@ -14367,8 +14723,8 @@ function wastelandFactionWarehousePoint(loc = {}, site = {}, index = 0) {
       || '').trim();
     return tags.includes('faction-warehouse') && (!key || rowSiteId === key);
   });
-  if (authored) return normalizeLocationPoint(authored, loc.spawn || { tx: 19, tz: 19 });
-  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  if (authored) return normalizeLocationPoint(authored, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
+  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   return {
     tx: clamp(Math.round(base.tx + 2 + index * 3), 2, MAP_W - 3),
     tz: clamp(Math.round(base.tz + 2 + index * 2), 2, MAP_H - 3)
@@ -14686,7 +15042,7 @@ function roomStaticCollisionBlockersFromTrader(loc = {}) {
   const trader = loc?.trader;
   if (!trader || (locationUsesAuthoredRuntime(loc) && trader.authoredActor)) return [];
   const position = trader.position && typeof trader.position === 'object' ? trader.position : trader;
-  const fallback = tileToWorld(Number(trader.tx || 0), Number(trader.tz || 0));
+  const fallback = tileToWorld(Number(trader.tx || 0), Number(trader.tz || 0), locationTileDims(loc));
   const x = Number.isFinite(Number(position.x)) ? Number(position.x) : fallback.x;
   const z = Number.isFinite(Number(position.z)) ? Number(position.z) : fallback.z;
   const rotationY = Number(trader.rotation?.y ?? trader.rotationY ?? 0) || 0;
@@ -14882,8 +15238,8 @@ function markAuthoredObjectTiles(room, row = {}) {
   const blocksMovement = locationObjectBlocksMovement(row);
   if (!resourceType && !blocksMovement) return;
   const pos = locationObjectPosition(row);
-  const center = worldToTile(pos.x, pos.z);
-  if (resourceType && inBounds(center.tx, center.tz)) {
+  const center = worldToTile(pos.x, pos.z, roomTileDims(room));
+  if (resourceType && inBounds(center.tx, center.tz, roomTileDims(room))) {
     const id = String(row.id || `res_${center.tx}_${center.tz}_${resourceType}`).slice(0, 64);
     room.resources.set(id, {
       id,
@@ -14953,26 +15309,27 @@ function clearRoomResourceTile(room, resource = {}) {
 
 function clearAuthoredResourceObjectTiles(room, row = {}, resourceType = '') {
   const pos = locationObjectPosition(row);
-  const center = worldToTile(pos.x, pos.z);
+  const center = worldToTile(pos.x, pos.z, roomTileDims(room));
   const fp = locationObjectFootprintCells(row);
   const tileType = serverResourceTile(resourceType);
   for (let dz = -Math.floor((fp.sz - 1) / 2); dz <= Math.ceil((fp.sz - 1) / 2); dz++) {
     for (let dx = -Math.floor((fp.sx - 1) / 2); dx <= Math.ceil((fp.sx - 1) / 2); dx++) {
       const tx = center.tx + dx;
       const tz = center.tz + dz;
-      if (inBounds(tx, tz) && room.map[tz][tx] === tileType) room.map[tz][tx] = TILE_TYPES.GRASS;
+      if (inBounds(tx, tz, roomTileDims(room)) && room.map[tz][tx] === tileType) room.map[tz][tx] = TILE_TYPES.GRASS;
     }
   }
 }
 
 function findWastelandSiteResourceTile(room, siteId = '', resourceType = '', sequence = 0) {
   const candidates = [];
-  for (let tz = 3; tz < MAP_H - 3; tz++) {
-    for (let tx = 3; tx < MAP_W - 3; tx++) {
+  const resourceDims = roomTileDims(room);
+  for (let tz = 3; tz < resourceDims.h - 3; tz++) {
+    for (let tx = 3; tx < resourceDims.w - 3; tx++) {
       const tile = room.map?.[tz]?.[tx];
       if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK) continue;
       if (roomTileHasResource(room, tx, tz, 1) || roomTileHasContainer(room, tx, tz, 2)) continue;
-      const pos = tileToWorld(tx, tz);
+      const pos = tileToWorld(tx, tz, roomTileDims(room));
       if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.58)) continue;
       candidates.push({
         tx,
@@ -15298,7 +15655,7 @@ function spawnAuthoredLocationActors(room, loc) {
     const entity = locationDefinitionObjectEntity(row);
     const authoredNpcId = String(entity.npcId || row.id || '').slice(0, 96);
     if (authoredNpcId && preservedQuestNpcIds.has(authoredNpcId)) return;
-    const point = normalizeLocationPoint(row, loc.spawn);
+    const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
     const role = authoredNpcDefaultRole(row);
     const faction = authoredNpcDefaultFaction(row);
     const hostileToPlayer = authoredNpcDefaultHostility(row);
@@ -15328,6 +15685,9 @@ function spawnAuthoredLocationActors(room, loc) {
       lootProfile: String(entity.lootProfile || '').slice(0, 64),
       tradeProfile: String(entity.tradeProfile || '').slice(0, 64),
       traderProfile: String(entity.traderProfile || '').slice(0, 64),
+      creatureTypeId: String(entity.creatureTypeId || '').slice(0, 32),
+      service: String(entity.service || '').slice(0, 32),
+      territoryFactionId: String(entity.territoryFactionId || '').slice(0, 32),
       canDialogue: authoredNpcCanDialogue(row, role),
       name: row.name || entity.name || (role === 'merchant' ? 'Торговец' : role === 'guard' ? 'Охранник' : 'NPC'),
       role,
@@ -15412,12 +15772,13 @@ function ensureKromkaNamedLocationActors(room, loc) {
     if (!actor) {
       const spawn = loc.spawn || loc.entry || { tx: 19, tz: 19 };
       const dialoguePosition = npc.dialoguePosition && typeof npc.dialoguePosition === 'object'
-        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0))
+        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0), roomTileDims(room))
         : null;
+      const namedDims = roomTileDims(room);
       const tx = clamp(dialoguePosition?.tx
-        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, MAP_W - 3);
+        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, namedDims.w - 3);
       const tz = clamp(dialoguePosition?.tz
-        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, MAP_H - 3);
+        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, namedDims.h - 3);
       const reachableTile = findRoomReachableSpawnTile(room, spawn.tx ?? 19, spawn.tz ?? 19, tx, tz, {
         radius: 0.48,
         minEnemyDistance: 0.8,
@@ -15486,12 +15847,12 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
       actor = null;
     }
     if (!actor) {
-      const point = worldToTile(targetX, targetZ);
+      const point = worldToTile(targetX, targetZ, roomTileDims(room));
       actor = spawnServerEnemy(room, {
         force: true,
         allowSafeLocation: true,
-        tx: clamp(point.tx, 2, MAP_W - 3),
-        tz: clamp(point.tz, 2, MAP_H - 3),
+        tx: clamp(point.tx, 2, roomTileDims(room).w - 3),
+        tz: clamp(point.tz, 2, roomTileDims(room).h - 3),
         maxSpawnSearchRadius: 4,
         minEnemyDistance: 0.65,
         minPlayerDistance: 0,
@@ -15548,7 +15909,7 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
     }
   });
   if (loc.id === 'tutorialCaravanYard' && ![...room.enemies.values()].some(actor => actor.trainingTarget)) {
-    const point = worldToTile(-10, 22);
+    const point = worldToTile(-10, 22, roomTileDims(room));
     const dummy = spawnServerEnemy(room, {
       force: true, allowSafeLocation: true, tx: point.tx, tz: point.tz,
       minPlayerDistance: 0, minEnemyDistance: 0, requirePreferredSpawn: true,
@@ -15872,19 +16233,20 @@ function wastelandObjectLooksLikeRest(row = {}) {
 
 function wastelandSafePointNearTile(room, tx, tz, maxRadius = 5) {
   const safeTile = findNearestWalkablePathTile(room, tx, tz, maxRadius);
-  if (safeTile) return tileToWorld(safeTile.tx, safeTile.tz);
-  return tileToWorld(clamp(Math.round(Number(tx || 0)), 0, MAP_W - 1), clamp(Math.round(Number(tz || 0)), 0, MAP_H - 1));
+  if (safeTile) return tileToWorld(safeTile.tx, safeTile.tz, roomTileDims(room));
+  const fallbackDims = roomTileDims(room);
+  return tileToWorld(clamp(Math.round(Number(tx || 0)), 0, fallbackDims.w - 1), clamp(Math.round(Number(tz || 0)), 0, fallbackDims.h - 1), fallbackDims);
 }
 
 function wastelandRowWorkPoint(room, row = {}) {
   const pos = locationObjectPosition(row);
-  const tile = worldToTile(pos.x, pos.z);
+  const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
   return wastelandSafePointNearTile(room, tile.tx, tile.tz, 5);
 }
 
 function wastelandRowAnchorPoint(room, row = {}, enemy = {}, state = 'rest') {
   const pos = locationObjectPosition(row);
-  const tile = worldToTile(pos.x, pos.z);
+  const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
   const point = wastelandSafePointNearTile(room, tile.tx, tile.tz, 6);
   point.lookX = Number(pos.x || point.x || 0);
   point.lookZ = Number(pos.z || point.z || 0);
@@ -15922,10 +16284,10 @@ function wastelandSiteStoragePoint(room, loc = {}, site = {}, enemy = {}) {
   if (containers.length) {
     const index = Math.floor(stableEnemyUnit(`${site.id || loc.id || ''}:${enemy.id || ''}:container`) * containers.length) % containers.length;
     const pos = locationObjectPosition(containers[index]);
-    const tile = worldToTile(pos.x, pos.z);
+    const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
     return wastelandSafePointNearTile(room, tile.tx, tile.tz, 5);
   }
-  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   return wastelandSafePointNearTile(room, base.tx, base.tz, 6);
 }
 
@@ -15942,8 +16304,8 @@ function wastelandSiteHarvestPoint(room, loc = {}, site = {}, enemy = {}) {
     const index = Math.floor(stableEnemyUnit(`${site.id || loc.id || ''}:${enemy.id || ''}:resource`) * choices.length) % choices.length;
     const res = choices[index];
     const point = wastelandSafePointNearTile(room, Number(res.tx || 0), Number(res.tz || 0), 6);
-    point.lookX = tileToWorld(Number(res.tx || 0), Number(res.tz || 0)).x;
-    point.lookZ = tileToWorld(Number(res.tx || 0), Number(res.tz || 0)).z;
+    point.lookX = tileToWorld(Number(res.tx || 0), Number(res.tz || 0), roomTileDims(room)).x;
+    point.lookZ = tileToWorld(Number(res.tx || 0), Number(res.tz || 0), roomTileDims(room)).z;
     return point;
   }
   const rows = wastelandLocationRows(loc).filter(row => !!locationObjectResourceType(row));
@@ -16146,8 +16508,8 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest', options =
   const authoredAnchor = options.objectAnchor === false ? null : npcScheduleObjectAnchor(room, loc, enemy, state);
   if (authoredAnchor) return authoredAnchor;
   const seed = String(enemy.npcProfile?.id || enemy.id || 'npc');
-  const base = normalizeLocationPoint(loc.spawn || loc.entryFromWorld, { tx: 19, tz: 19 });
-  const home = worldToTile(Number(enemy.homeX || enemy.x || 0), Number(enemy.homeZ || enemy.z || 0));
+  const base = normalizeLocationPoint(loc.spawn || loc.entryFromWorld, { tx: 19, tz: 19 }, locationTileDims(loc));
+  const home = worldToTile(Number(enemy.homeX || enemy.x || 0), Number(enemy.homeZ || enemy.z || 0), roomTileDims(room));
   const offsets = [
     [-3, -2], [-1, -3], [2, -2], [4, -1],
     [-4, 1], [-2, 2], [1, 3], [3, 2],
@@ -16167,7 +16529,8 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest', options =
     tx = home.tx + Math.round(offset[0] * 0.65);
     tz = home.tz + Math.round(offset[1] * 0.65);
   }
-  return wastelandSafePointNearTile(room, clamp(tx, 1, MAP_W - 2), clamp(tz, 1, MAP_H - 2), 7);
+  const anchorDims = roomTileDims(room);
+  return wastelandSafePointNearTile(room, clamp(tx, 1, anchorDims.w - 2), clamp(tz, 1, anchorDims.h - 2), 7);
 }
 
 function npcSocialLookTarget(room, enemy) {
@@ -16343,7 +16706,7 @@ function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.no
     enemy.x = target.x;
     enemy.z = target.z;
   } else {
-    const tile = worldToTile(target.x, target.z);
+    const tile = worldToTile(target.x, target.z, roomTileDims(room));
     const safe = wastelandSafePointNearTile(room, tile.tx, tile.tz, 4);
     enemy.x = safe.x;
     enemy.z = safe.z;
@@ -16652,7 +17015,7 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
 }
 
 function wastelandSiteWorkerSpawnPoint(loc = {}, siteIndex = 0, workerIndex = 0) {
-  const base = normalizeLocationPoint(loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  const base = normalizeLocationPoint(loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   const offsets = [
     [-4, -3], [-2, -4], [1, -4], [4, -3],
     [-5, 0], [-3, 2], [0, 3], [3, 2], [5, 0],
@@ -16660,9 +17023,10 @@ function wastelandSiteWorkerSpawnPoint(loc = {}, siteIndex = 0, workerIndex = 0)
   ];
   const offset = offsets[(siteIndex * 4 + workerIndex) % offsets.length] || [0, 0];
   const sideShift = Math.floor((siteIndex * 5 + workerIndex) / offsets.length);
+  const workerDims = locationTileDims(loc);
   return {
-    tx: clamp(base.tx + offset[0] + sideShift, 2, MAP_W - 3),
-    tz: clamp(base.tz + offset[1] + siteIndex * 2, 2, MAP_H - 3)
+    tx: clamp(base.tx + offset[0] + sideShift, 2, workerDims.w - 3),
+    tz: clamp(base.tz + offset[1] + siteIndex * 2, 2, workerDims.h - 3)
   };
 }
 
@@ -16776,10 +17140,11 @@ function buildAuthoredRoomWorld(room, loc) {
   room.staticCollisionKey = '';
   room.staticCollisionObjects = null;
   room.resources.clear();
-  for (let z = 0; z < MAP_H; z++) {
+  const authoredDims = roomTileDims(room);
+  for (let z = 0; z < authoredDims.h; z++) {
     room.map[z] = [];
-    for (let x = 0; x < MAP_W; x++) {
-      room.map[z][x] = (x === 0 || z === 0 || x === MAP_W - 1 || z === MAP_H - 1) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
+    for (let x = 0; x < authoredDims.w; x++) {
+      room.map[z][x] = (x === 0 || z === 0 || x === authoredDims.w - 1 || z === authoredDims.h - 1) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
     }
   }
   loc.objects.forEach(row => markAuthoredObjectTiles(room, row));
@@ -16824,8 +17189,9 @@ function generateRoomWorld(room) {
   const applyWorldExitEdges = () => {
     const bounds = normalizedLocationPlayableBounds(loc);
     const isSizedWorldSite = loc.worldSiteInstance === true || loc.runtimeMode === 'worldSiteInstance';
-    for (let z = 0; z < MAP_H; z++) {
-      for (let x = 0; x < MAP_W; x++) {
+    const edgeDims = roomTileDims(room);
+    for (let z = 0; z < edgeDims.h; z++) {
+      for (let x = 0; x < edgeDims.w; x++) {
         if (isSizedWorldSite && (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ)) {
           room.map[z][x] = TILE_TYPES.DARK;
           continue;
@@ -16838,10 +17204,11 @@ function generateRoomWorld(room) {
     applyWorldExitEdges();
     return;
   }
-  for (let z = 0; z < MAP_H; z++) {
+  const genDims = roomTileDims(room);
+  for (let z = 0; z < genDims.h; z++) {
     room.map[z] = [];
-    for (let x = 0; x < MAP_W; x++) {
-      if (x === 0 || z === 0 || x === MAP_W - 1 || z === MAP_H - 1) {
+    for (let x = 0; x < genDims.w; x++) {
+      if (x === 0 || z === 0 || x === genDims.w - 1 || z === genDims.h - 1) {
         room.map[z][x] = TILE_TYPES.PATH;
         continue;
       }
@@ -16855,18 +17222,18 @@ function generateRoomWorld(room) {
       room.map[z][x] = rng() < darkChance ? TILE_TYPES.DARK : TILE_TYPES.GRASS;
     }
   }
-  const midX = Math.floor(MAP_W / 2), midZ = Math.floor(MAP_H / 2);
+  const midX = Math.floor(genDims.w / 2), midZ = Math.floor(genDims.h / 2);
   if (loc.id === 'settlement') {
-    for (let x = 4; x < MAP_W - 4; x++) room.map[midZ][x] = TILE_TYPES.PATH;
-    for (let z = 3; z < MAP_H - 3; z++) room.map[z][midX] = TILE_TYPES.PATH;
+    for (let x = 4; x < genDims.w - 4; x++) room.map[midZ][x] = TILE_TYPES.PATH;
+    for (let z = 3; z < genDims.h - 3; z++) room.map[z][midX] = TILE_TYPES.PATH;
     for (let z = 15; z <= 24; z++) for (let x = 11; x <= 26; x++) room.map[z][x] = (x >= 14 && x <= 23 && z >= 17 && z <= 22) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
-    [[8,12],[9,12],[10,12],[8,13],[10,13],[27,14],[28,14],[29,14],[27,15],[29,15],[9,27],[10,27],[11,27],[9,28],[11,28],[27,26],[28,26],[29,26],[29,27]].forEach(([x,z]) => { if (inBounds(x,z)) room.map[z][x] = TILE_TYPES.RUIN; });
+    [[8,12],[9,12],[10,12],[8,13],[10,13],[27,14],[28,14],[29,14],[27,15],[29,15],[9,27],[10,27],[11,27],[9,28],[11,28],[27,26],[28,26],[29,26],[29,27]].forEach(([x,z]) => { if (inBounds(x,z, roomTileDims(room))) room.map[z][x] = TILE_TYPES.RUIN; });
     [loc.spawn, loc.entryFromWasteland, loc.trader, loc.storage, loc.exit].forEach(p => clearSpawnArea(room, p));
   } else {
     const markPath = (cx, cz, rx = 1, rz = rx) => {
       for (let z = Math.floor(cz - rz); z <= Math.ceil(cz + rz); z++) {
         for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-          if (!inBounds(x, z)) continue;
+          if (!inBounds(x, z, roomTileDims(room))) continue;
           const nx = (x - cx) / Math.max(0.1, rx);
           const nz = (z - cz) / Math.max(0.1, rz);
           if (nx * nx + nz * nz <= 1.05) room.map[z][x] = TILE_TYPES.PATH;
@@ -16880,9 +17247,9 @@ function generateRoomWorld(room) {
         markPath(x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, radius, radius * 0.72);
       }
     };
-    const block = (type, cells) => cells.forEach(([x,z]) => { if (inBounds(x,z)) room.map[z][x] = type; });
+    const block = (type, cells) => cells.forEach(([x,z]) => { if (inBounds(x,z, roomTileDims(room))) room.map[z][x] = type; });
     const addResource = (tx, tz, type) => {
-      if (!inBounds(tx, tz)) return;
+      if (!inBounds(tx, tz, roomTileDims(room))) return;
       room.map[tz][tx] = serverResourceTile(type);
       const id = `res_${tx}_${tz}_${type}`;
       room.resources.set(id, { id, tx, tz, type, hp: 3, maxHp: 3 });
@@ -16919,7 +17286,7 @@ function generateRoomWorld(room) {
       for (let attempt = 0; attempt < obstacleTarget * 12 && placedObstacles < obstacleTarget; attempt += 1) {
         const tx = Math.floor(left + rng() * Math.max(1, right - left + 1));
         const tz = Math.floor(top + rng() * Math.max(1, bottom - top + 1));
-        if (!inBounds(tx, tz) || room.map[tz][tx] === TILE_TYPES.PATH || Math.hypot(tx - midX, tz - midZ) < 4.5) continue;
+        if (!inBounds(tx, tz, roomTileDims(room)) || room.map[tz][tx] === TILE_TYPES.PATH || Math.hypot(tx - midX, tz - midZ) < 4.5) continue;
         const roll = rng();
         const type = proceduralArchetype === 'randomAshGrove'
           ? (roll < 0.62 ? TILE_TYPES.TREE : roll < 0.82 ? TILE_TYPES.ROCK : TILE_TYPES.RUIN)
@@ -16935,7 +17302,7 @@ function generateRoomWorld(room) {
       for (let attempt = 0; attempt < resourceTarget * 16 && placedResources < resourceTarget; attempt += 1) {
         const tx = Math.floor(left + rng() * Math.max(1, right - left + 1));
         const tz = Math.floor(top + rng() * Math.max(1, bottom - top + 1));
-        if (!inBounds(tx, tz) || ![TILE_TYPES.GRASS, TILE_TYPES.DARK].includes(room.map[tz][tx]) || Math.hypot(tx - midX, tz - midZ) < 5) continue;
+        if (!inBounds(tx, tz, roomTileDims(room)) || ![TILE_TYPES.GRASS, TILE_TYPES.DARK].includes(room.map[tz][tx]) || Math.hypot(tx - midX, tz - midZ) < 5) continue;
         const type = proceduralArchetype === 'randomAshGrove' ? (rng() < 0.82 ? 'wood' : 'ore')
           : proceduralArchetype === 'randomDryBasin' ? (rng() < 0.82 ? 'ore' : 'wood')
             : (rng() < 0.5 ? 'ore' : 'wood');
@@ -16944,8 +17311,8 @@ function generateRoomWorld(room) {
       }
     } else {
       markPath(midX, midZ, 4.2, 3.4);
-      markLine(midX, 3, midX, MAP_H - 4, 1.15);
-      markLine(3, midZ, MAP_W - 4, midZ, 1.15);
+      markLine(midX, 3, midX, genDims.h - 4, 1.15);
+      markLine(3, midZ, genDims.w - 4, midZ, 1.15);
     }
     if (worldSiteInstance) {
       // The unique instance layout above replaces the cloned template layout.
@@ -16974,7 +17341,7 @@ function generateRoomWorld(room) {
       block(TILE_TYPES.RUIN, [[19,10],[26,18]]);
       [[11,16,'ore'],[28,22,'ore'],[21,30,'ore'],[14,27,'wood'],[26,13,'wood']].forEach(([x,z,type]) => addResource(x,z,type));
     } else if (loc.id === 'randomRuinedRoad') {
-      for (let i = 3; i < MAP_W - 3; i++) {
+      for (let i = 3; i < genDims.w - 3; i++) {
         const roadZ = Math.round(8 + i * 0.58 + Math.sin(i * 0.45) * 1.4);
         markPath(i, roadZ, 1.05, 0.85);
       }
@@ -16998,7 +17365,7 @@ function generateRoomWorld(room) {
       if (!p) return;
       for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
         const x = p.tx + dx, z = p.tz + dz;
-        if (inBounds(x, z)) {
+        if (inBounds(x, z, roomTileDims(room))) {
           room.map[z][x] = TILE_TYPES.PATH;
           for (const [id, r] of room.resources.entries()) if (r.tx === x && r.tz === z) room.resources.delete(id);
         }
@@ -17021,7 +17388,7 @@ function clearSpawnArea(room, p) {
   if (!p) return;
   for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
     const x = p.tx + dx, z = p.tz + dz;
-    if (inBounds(x, z)) {
+    if (inBounds(x, z, roomTileDims(room))) {
       const old = room.map[z][x];
       room.map[z][x] = TILE_TYPES.PATH;
       if (old === TILE_TYPES.ORE || old === TILE_TYPES.WOOD || old === TILE_TYPES.OIL) {
@@ -17143,6 +17510,9 @@ function publicEnemy(e, viewer = null) {
     modelKey,
     species: String(e.species || '').slice(0, 32),
     canDialogue: naturalCreature ? false : e.canDialogue !== false,
+    worldBoss: !!e.worldBossId,
+    shieldNode: !!e.shieldNodeOf,
+    shielded: !!e.worldBossId && e.shielded === true,
     // v7.74.68: keep enemy coordinates precise for client-side visual smoothing.
     x: Number(Number(e.x || 0).toFixed(3)),
     z: Number(Number(e.z || 0).toFixed(3)),
@@ -17174,6 +17544,8 @@ function publicEnemy(e, viewer = null) {
     equipmentProfile: String(e.equipmentProfile || '').slice(0, 64),
     lootProfile: String(e.lootProfile || '').slice(0, 64),
     tradeProfile: String(e.tradeProfile || '').slice(0, 64),
+    service: naturalCreature ? '' : String(e.service || '').slice(0, 32),
+    territoryFactionId: String(e.territoryFactionId || '').slice(0, 32),
     special: npcSpecial ? {
       ST: clamp(Math.round(Number(npcSpecial.ST || 0)), 1, 10),
       PE: clamp(Math.round(Number(npcSpecial.PE || 0)), 1, 10),
@@ -17537,9 +17909,17 @@ function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
   return true;
 }
 
+// Публичная проекция runtime-записи предмета: у артефактов скрытые свойства и
+// seed не покидают сервер до стабилизации (земля, торговля, склад).
+function publicWeaponRuntimeRecord(record = null) {
+  if (!record || typeof record !== 'object') return record;
+  if (!record.artifact) return record;
+  return { ...record, artifact: publicArtifactRecord(record.artifact, KROMKA_ARTIFACT_CATALOG) };
+}
+
 function publicGroundItem(g) {
   const itemRuntimeRecords = (Array.isArray(g?.itemRuntimeRecords) ? g.itemRuntimeRecords : [])
-    .map(record => sanitizeServerWeaponRuntimeRecord(record, g?.itemId || ''))
+    .map(record => publicWeaponRuntimeRecord(sanitizeServerWeaponRuntimeRecord(record, g?.itemId || '')))
     .filter(Boolean);
   return {
     id: g.id,
@@ -17557,8 +17937,8 @@ function publicGroundItem(g) {
 function publicResource(r) {
   return {
     id: r?.id || '',
-    tx: clamp(Number(r?.tx || 0), 0, MAP_W - 1),
-    tz: clamp(Number(r?.tz || 0), 0, MAP_H - 1),
+    tx: Math.max(0, Math.floor(Number(r?.tx || 0))),
+    tz: Math.max(0, Math.floor(Number(r?.tz || 0))),
     type: String(r?.type || 'wood').slice(0, 16),
     hp: clamp(Number(r?.hp ?? 0), 0, 999),
     maxHp: clamp(Number(r?.maxHp ?? 3), 1, 999),
@@ -17675,17 +18055,91 @@ function emitGroundItemsSnapshot(room, force = false, targetSocketId = '') {
     items: [...room.groundItems.values()].map(publicGroundItem)
   });
 }
+const SERVER_GROUND_ITEM_TTL_MS = 30 * 60 * 1000;
+
 function cleanupGroundItems(room, now = Date.now()) {
   if (!room || !room.groundItems) return false;
   let changed = false;
-  const ttl = 30 * 60 * 1000;
+  const ttl = SERVER_GROUND_ITEM_TTL_MS;
   for (const [id, g] of [...room.groundItems.entries()]) {
     if (!g || !SERVER_ITEM_IDS.has(g.itemId) || Number(g.qty || 0) <= 0 || now - Number(g.createdAt || now) > ttl) {
       room.groundItems.delete(id);
       changed = true;
     }
   }
+  if (changed) serverSyncRoomGroundDrops(room);
   return changed;
+}
+
+// Предметы на земле переживают перезапуск сервера: выпавший при смерти
+// инвентарь не исчезает и не дублируется, потому что рюкзак погибшего и
+// список предметов комнаты записываются одной транзакцией сохранения.
+function serverGroundDropStore() {
+  if (!savesDb.groundDrops || typeof savesDb.groundDrops !== 'object' || Array.isArray(savesDb.groundDrops)) {
+    savesDb.groundDrops = {};
+  }
+  return savesDb.groundDrops;
+}
+
+function sanitizeServerGroundDropRecord(row = {}, now = Date.now()) {
+  const itemId = serverBaseItemId(row?.itemId || '');
+  const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+  const createdAt = Math.max(0, Math.floor(Number(row?.createdAt || 0)));
+  if (!itemId || !SERVER_ITEM_IDS.has(itemId) || qty <= 0 || !createdAt) return null;
+  if (now - createdAt > SERVER_GROUND_ITEM_TTL_MS) return null;
+  const id = String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  if (!id) return null;
+  return {
+    id,
+    itemId,
+    qty,
+    x: Number(Number(row.x || 0).toFixed(3)),
+    z: Number(Number(row.z || 0).toFixed(3)),
+    droppedBy: String(row.droppedBy || '').slice(0, 80),
+    killerId: String(row.killerId || '').slice(0, 80),
+    pvpDrop: row.pvpDrop === true,
+    itemRuntimeRecords: (Array.isArray(row.itemRuntimeRecords) ? row.itemRuntimeRecords : [])
+      .map(record => sanitizeServerWeaponRuntimeRecord(record, itemId))
+      .filter(Boolean),
+    createdAt
+  };
+}
+
+let serverGroundDropPersistTimer = null;
+function scheduleServerGroundDropPersist() {
+  if (serverGroundDropPersistTimer) return;
+  serverGroundDropPersistTimer = setTimeout(() => {
+    serverGroundDropPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Ground drop persist failed:', err); }
+  }, 1500);
+  if (typeof serverGroundDropPersistTimer.unref === 'function') serverGroundDropPersistTimer.unref();
+}
+
+function serverSyncRoomGroundDrops(room) {
+  if (!room?.id || !(room.groundItems instanceof Map)) return;
+  const store = serverGroundDropStore();
+  const now = Date.now();
+  const rows = [...room.groundItems.values()].map(row => sanitizeServerGroundDropRecord(row, now)).filter(Boolean);
+  if (rows.length) store[room.id] = rows;
+  else delete store[room.id];
+  scheduleServerGroundDropPersist();
+}
+
+function serverRestoreRoomGroundDrops(room) {
+  if (!room?.id || !(room.groundItems instanceof Map)) return 0;
+  const store = serverGroundDropStore();
+  const rows = Array.isArray(store[room.id]) ? store[room.id] : [];
+  if (!rows.length) return 0;
+  const now = Date.now();
+  let restored = 0;
+  for (const raw of rows) {
+    const item = sanitizeServerGroundDropRecord(raw, now);
+    if (!item || room.groundItems.has(item.id)) continue;
+    room.groundItems.set(item.id, item);
+    restored++;
+  }
+  if (restored !== rows.length) serverSyncRoomGroundDrops(room);
+  return restored;
 }
 
 function serverCurrentShiftState(now = Date.now(), player = null) {
@@ -17711,6 +18165,62 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
   };
 }
 
+// Аномальные поля локации для рождения артефактов: авторская runtime-сцена
+// (Unity-экспорт) имеет приоритет, лор-каталог — запасной источник.
+function serverLocationAnomalyFields(locationId = '') {
+  const runtime = LOCATIONS[normalizeLocationId(locationId)];
+  if (Array.isArray(runtime?.anomalyFields) && runtime.anomalyFields.length) return runtime.anomalyFields;
+  const lore = kromkaLocationLore(locationId);
+  return Array.isArray(lore?.anomalyFields) ? lore.anomalyFields : [];
+}
+
+function serverArtifactBirthStore() {
+  if (!savesDb.anomalyBirths || typeof savesDb.anomalyBirths !== 'object') {
+    savesDb.anomalyBirths = normalizeArtifactBirthStore(null);
+  }
+  return savesDb.anomalyBirths;
+}
+
+let serverArtifactBirthPersistTimer = null;
+function scheduleServerArtifactBirthPersist() {
+  if (serverArtifactBirthPersistTimer) return;
+  serverArtifactBirthPersistTimer = setTimeout(() => {
+    serverArtifactBirthPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Artifact birth persist failed:', err); }
+  }, 1500);
+  if (typeof serverArtifactBirthPersistTimer.unref === 'function') serverArtifactBirthPersistTimer.unref();
+}
+
+// Одна проверка в минуту на свободное поле каждой локации с аномалиями.
+// Шанс растёт после активной фазы выброса и затухает за 30 реальных минут.
+function serverTickAnomalyBirths(now = Date.now(), options = {}) {
+  const store = serverArtifactBirthStore();
+  const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
+  const emissionId = artifactEmissionId(KROMKA_SHIFT_CYCLE, now);
+  const touched = new Set();
+  let changed = false;
+  for (const locationId of Object.keys(LOCATIONS)) {
+    const fields = serverLocationAnomalyFields(locationId);
+    if (!fields.length) continue;
+    const result = tickArtifactBirths(store, locationId, fields, KROMKA_ARTIFACT_CATALOG, now, {
+      emissionEndAt, emissionId, random: options.random
+    });
+    if (result.births.length || result.refreshed.length) {
+      changed = true;
+      touched.add(locationId);
+    }
+  }
+  if (changed) {
+    scheduleServerArtifactBirthPersist();
+    for (const room of rooms.values()) {
+      if (!touched.has(String(room?.locationId || ''))) continue;
+      serverEnsureRoomArtifacts(room, now);
+      room.worldStateDirty = true;
+    }
+  }
+  return { changed, locations: [...touched] };
+}
+
 function serverEnsureRoomArtifacts(room, now = Date.now()) {
   if (!room) return null;
   const location = kromkaLocationLore(room.locationId) || { id: room.locationId, macroRegion: 'default', anomalyFields: [] };
@@ -17727,6 +18237,9 @@ function serverEnsureRoomArtifacts(room, now = Date.now()) {
     now,
     { causalArtifactRequired: true, opportunity }
   );
+  // Комнаты одной локации (личные встречи, инстансы) видят одни и те же
+  // рождённые артефакты: их владелец — хранилище, а не комната.
+  if (!room.personalEncounter) mergeBirthArtifacts(room, liveArtifactBirths(serverArtifactBirthStore(), room.locationId));
   for (const artifact of state?.artifacts || []) {
     if (KROMKA_CLAIMED_ARTIFACT_IDS.has(String(artifact?.id || ''))) artifact.pickedUp = true;
   }
@@ -18043,7 +18556,7 @@ function serverKromkaQuestObject(player = {}, objectId = '') {
   const objective = String(interactive.questObjective || row?.questObjective || '')
     .replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
   if (!row || !objective) return { ok: false, error: 'Этот объект не связан с активным заданием.' };
-  const point = serverLocationObjectWorldPoint(row);
+  const point = serverLocationObjectWorldPoint(row, locationTileDims(loc));
   if (!point || Math.hypot(Number(player.x || 0) - point.x, Number(player.z || 0) - point.z) > 4.6) {
     return { ok: false, error: 'Подойдите ближе к объекту задания.' };
   }
@@ -18314,6 +18827,987 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
   event.returnedAt = Number(now); persistSaves(); return true;
 }
 
+// ---------------------------------------------------------------------------
+// Фракционный аукцион: лоты только для членов фракции, предметы и артефакты
+// лежат на сервере, выручка и возвраты — на полке продавца у аукционера.
+// ---------------------------------------------------------------------------
+function serverAuctionStore() {
+  if (!savesDb.factionAuctions || typeof savesDb.factionAuctions !== 'object') savesDb.factionAuctions = normalizeAuctionStore(null);
+  return savesDb.factionAuctions;
+}
+
+function serverTickAuctions(now = Date.now()) {
+  const expired = auctionExpireListings(serverAuctionStore(), now);
+  if (expired.length) scheduleServerPublicEventPersist();
+  return expired.length;
+}
+
+// Полка забирается целиком в пределах переносимого веса и предела стаков.
+function serverClaimAuctionShelf(p, factionId, data = {}, now = Date.now()) {
+  const store = serverAuctionStore();
+  const shelf = auctionShelfFor(store, factionId, p.characterId);
+  if (shelf.silver <= 0 && !shelf.items.length) return { ok: false, error: 'Полка пуста.' };
+  const requested = [];
+  if (shelf.silver > 0) requested.push({ id: 'silver', qty: shelf.silver });
+  for (const row of shelf.items) requested.push({ id: row.itemId, qty: row.qty });
+  const carryCheck = serverLimitItemsByCarry(p, data, requested, { apply: false });
+  const allowed = new Map(carryCheck.items.map(row => [row.id, Math.max(0, Math.floor(Number(row.qty || 0)))]));
+  const claimedSilver = Math.min(shelf.silver, allowed.get('silver') || 0);
+  const claimedItems = [];
+  for (const row of shelf.items) {
+    const remaining = allowed.get(row.itemId) || 0;
+    if (remaining <= 0) continue;
+    const take = Math.min(row.qty, remaining);
+    allowed.set(row.itemId, remaining - take);
+    claimedItems.push({ itemId: row.itemId, qty: take, at: row.at, records: take >= row.qty ? row.records : [] });
+  }
+  if (claimedSilver <= 0 && !claimedItems.length) return { ok: false, error: 'Нет места или грузоподъёмности, чтобы забрать полку.' };
+  if (claimedSilver > 0) serverInventoryAdd(p, 'silver', claimedSilver);
+  for (const row of claimedItems) {
+    serverInventoryAdd(p, row.itemId, row.qty);
+    if (row.records.length) serverRestoreWeaponRuntimeRecords(p, row.records);
+  }
+  auctionCommitShelfClaim(store, factionId, p.characterId, { silver: claimedSilver, items: claimedItems });
+  sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+  return { ok: true, claimedSilver, claimedItems: claimedItems.map(row => ({ itemId: row.itemId, qty: row.qty })), partial: claimedSilver < shelf.silver || claimedItems.length < shelf.items.length };
+}
+
+// ---------------------------------------------------------------------------
+// Мировой босс лаборатории: узлы щита, фаза уязвимости, импульсы с
+// телеграфом, контейнеры награды после поражения, перерождение по времени.
+// ---------------------------------------------------------------------------
+const KROMKA_WORLD_BOSS_RULES = normalizeWorldBossRules(KROMKA_TERRITORY_CATALOG.centralLab?.worldBoss?.rules || {}, {
+  respawnMs: KROMKA_TERRITORY_CATALOG.centralLab?.worldBoss?.respawnMs
+});
+
+function cleanBossId(value = '') {
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+}
+
+function serverWorldBossDefForRoom(room) {
+  const loc = room ? roomLocation(room) : null;
+  const def = loc?.lab?.worldBoss;
+  return def && def.id ? def : null;
+}
+
+function serverWorldBossRules(def = null) {
+  return normalizeWorldBossRules(KROMKA_WORLD_BOSS_RULES, def?.rules || { respawnMs: def?.respawnMs });
+}
+
+function serverWorldBossStore() {
+  if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object') savesDb.worldBosses = {};
+  return savesDb.worldBosses;
+}
+
+function serverPersistWorldBoss(state) {
+  if (!state?.bossId) return;
+  serverWorldBossStore()[state.bossId] = persistedBossState(state);
+  scheduleServerPublicEventPersist();
+}
+
+function serverWorldBossActor(room) {
+  for (const enemy of room?.enemies?.values?.() || []) if (enemy?.worldBossId) return enemy;
+  return null;
+}
+
+function serverSpawnShieldNodeActors(room, state) {
+  let spawned = 0;
+  const rules = serverWorldBossRules(serverWorldBossDefForRoom(room));
+  for (const node of state.nodes) {
+    if (!node.alive) continue;
+    const existing = node.actorId ? room.enemies.get(node.actorId) : null;
+    if (existing && !existing.dead) continue;
+    const tile = worldToTile(node.x, node.z, roomTileDims(room));
+    const actor = spawnServerEnemy(room, {
+      force: true,
+      tx: tile.tx,
+      tz: tile.tz,
+      maxSpawnSearchRadius: 3,
+      minEnemyDistance: 0.5,
+      minPlayerDistance: 0,
+      typeIndex: 0,
+      name: 'Узел щита',
+      role: 'monster',
+      faction: 'mutants',
+      hostileToPlayer: true,
+      stationary: true,
+      visual: 'shieldNode',
+      modelKey: 'utilityPole',
+      canDialogue: false,
+      dropEquipment: false,
+      loot: []
+    });
+    if (!actor) continue;
+    actor.x = node.x;
+    actor.z = node.z;
+    actor.homeX = node.x;
+    actor.homeZ = node.z;
+    actor.hp = rules.shieldNodeHp;
+    actor.maxHp = rules.shieldNodeHp;
+    actor.atk = 0;
+    actor.speed = 0;
+    actor.xp = 40;
+    actor.shieldNodeId = node.id;
+    actor.shieldNodeOf = state.bossId;
+    actor.equipment = { weapon: 'fists' };
+    actor.weapon = 'fists';
+    node.actorId = actor.id;
+    spawned += 1;
+  }
+  if (spawned) room.enemyStructureDirty = true;
+  return spawned;
+}
+
+function serverRemoveShieldNodeActors(room) {
+  for (const [id, enemy] of [...room.enemies.entries()]) if (enemy?.shieldNodeOf) roomEnemyDelete(room, id);
+}
+
+function serverSyncWorldBossActorFlags(room) {
+  const state = room?.worldBossState;
+  const boss = serverWorldBossActor(room);
+  if (boss && state) boss.shielded = state.phase === 'shielded';
+}
+
+// Состояние босса создаётся при первом входе в комнату установки; сам босс
+// — авторский NPC уровня, узлы щита — стационарные акторы по авторским точкам.
+function serverEnsureWorldBossRoom(room, now = Date.now()) {
+  const def = serverWorldBossDefForRoom(room);
+  if (!def) return null;
+  ensureRoomWorld(room);
+  const loc = roomLocation(room);
+  const rules = serverWorldBossRules(def);
+  if (!room.worldBossState) {
+    const nodes = (Array.isArray(loc.objects) ? loc.objects : [])
+      .filter(row => Array.isArray(row?.tags) && row.tags.includes('shield-node'))
+      .map(row => ({ id: row.id, x: Number(row.position?.x || 0), z: Number(row.position?.z || 0) }));
+    room.worldBossState = applyPersistedBossState(createBossState(def, nodes, rules, now), serverWorldBossStore()[cleanBossId(def.id)] || null, now);
+  }
+  const state = room.worldBossState;
+  let boss = serverWorldBossActor(room);
+  if (!boss) {
+    for (const enemy of room.enemies.values()) {
+      if (!enemy || enemy.dead || enemy.worldBossId) continue;
+      const objectId = String(enemy.authoredLocationObjectId || '');
+      const authored = (loc.objects || []).find(row => String(row?.id || '') === objectId);
+      if (authored?.entity?.worldBoss === true || String(authored?.entity?.bossId || '') === String(def.id)) {
+        enemy.worldBossId = state.bossId;
+        enemy.name = def.displayName || enemy.name;
+        const authoredHp = Number(authored?.entity?.hp || 0);
+        const authoredAtk = Number(authored?.entity?.atk || 0);
+        if (authoredHp > 0 && enemy.maxHp !== authoredHp) { enemy.maxHp = authoredHp; enemy.hp = authoredHp; }
+        if (authoredAtk > 0) enemy.atk = authoredAtk;
+        enemy.xp = Math.max(Number(enemy.xp || 0), 600);
+        boss = enemy;
+        break;
+      }
+    }
+  }
+  if (state.phase === 'defeated') {
+    if (boss && !boss.dead) roomEnemyDelete(room, boss.id);
+    serverRemoveShieldNodeActors(room);
+  } else if (serverSpawnShieldNodeActors(room, state)) {
+    refreshRoomWorldState(room, { force: true });
+  }
+  serverSyncWorldBossActorFlags(room);
+  return state;
+}
+
+function serverEmitWorldBossState(room, extra = {}, now = Date.now()) {
+  if (!room?.worldBossState) return null;
+  const boss = serverWorldBossActor(room);
+  const payload = {
+    roomId: room.id,
+    locationId: room.locationId,
+    ...publicWorldBoss(room.worldBossState, serverWorldBossRules(serverWorldBossDefForRoom(room)), now, {
+      bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+    }),
+    ...extra,
+    t: now
+  };
+  io.to(room.id).emit('worldBossState', payload);
+  return payload;
+}
+
+// Урон по боссу проходит только в фазе уязвимости; узлы щита — обычные цели.
+function serverWorldBossDamageAfterShield(room, enemy, damage = 0) {
+  if (!enemy?.worldBossId || !room?.worldBossState) return damage;
+  return Math.max(0, Math.round(Number(damage || 0) * bossDamageMultiplier(room.worldBossState)));
+}
+
+function serverUnlockBossContainers(room, bossId = '') {
+  const loc = roomLocation(room);
+  let changed = 0;
+  for (const container of room.containers?.values?.() || []) {
+    const def = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
+    if (!def || String(def.bossLoot || '') !== String(bossId)) continue;
+    container.locked = false;
+    container.terminalLocked = false;
+    container.loot = rollWorldContainerLootServer(room, def);
+    container.bossLoot = String(bossId);
+    changed += 1;
+  }
+  if (changed) {
+    refreshRoomWorldState(room, { force: true });
+    emitWorldContainersSnapshot(room, true);
+  }
+  return changed;
+}
+
+function serverBossLootError(room, container) {
+  const loc = room ? roomLocation(room) : null;
+  const def = (loc?.containers || []).find(row => String(row?.id || '') === String(container?.defId || ''));
+  const bossId = String(def?.bossLoot || container?.bossLoot || '');
+  if (!bossId) return '';
+  const state = room.worldBossState || serverEnsureWorldBossRoom(room);
+  if (!state || state.phase !== 'defeated') return 'Контейнер установки открывается только после победы над Хранителем.';
+  return '';
+}
+
+// Смерть узла щита или босса — из единой воронки убийств.
+function serverNoteWorldBossKill(room, enemy, now = Date.now()) {
+  const state = room?.worldBossState;
+  if (!state || !enemy) return false;
+  const rules = serverWorldBossRules(serverWorldBossDefForRoom(room));
+  if (enemy.shieldNodeOf === state.bossId && enemy.shieldNodeId) {
+    const result = noteShieldNodeDestroyed(state, enemy.shieldNodeId, rules, now);
+    serverSyncWorldBossActorFlags(room);
+    if (result.changed) serverEmitWorldBossState(room, { nodeDestroyed: enemy.shieldNodeId, vulnerable: result.vulnerable }, now);
+    return result.changed;
+  }
+  if (enemy.worldBossId === state.bossId) {
+    if (!noteBossDefeated(state, rules, now)) return false;
+    serverRemoveShieldNodeActors(room);
+    serverUnlockBossContainers(room, state.bossId);
+    serverPersistWorldBoss(state);
+    serverEmitWorldBossState(room, { defeated: true }, now);
+    return true;
+  }
+  return false;
+}
+
+// Импульс: урон всем живым игрокам в радиусе от босса (как урон выброса).
+function serverApplyWorldBossPulse(room, state, event, now = Date.now()) {
+  const boss = serverWorldBossActor(room);
+  if (!boss || boss.dead) return 0;
+  let hit = 0;
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(boss.x || 0), Number(p.z || 0) - Number(boss.z || 0)) > Number(event.radius || 0)) continue;
+    const mitigation = serverMitigateDamage(Number(event.damage || 0), p, 'anomalous');
+    p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
+    const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'anomalous', 'Импульс Хранителя');
+    p.lastServerDamageAt = now;
+    const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
+    io.to(p.id).emit('playerStatusEffect', {
+      effect: 'worldBossPulse',
+      damage: mitigation.damage,
+      rawDamage: Number(event.damage || 0),
+      absorbed: mitigation.absorbed,
+      hp: Math.round(Number(p.hp || 0)),
+      maxHp: Math.round(Number(p.maxHp || 1)),
+      downed,
+      injuries: sanitizeInjuries(p.injuries || {}),
+      newInjuries,
+      t: now
+    });
+    if (Number(p.hp || 0) <= 0) {
+      p.dead = true;
+      p.diedAt = now;
+      const loc = roomLocation(room);
+      const droppedItems = serverDropPvpLootForMode(room, p, null, loc, now);
+      serverRespawnPlayer(p, room, { pvpMode: locationPvpMode(loc), fullDrop: locationHasFullInventoryDrop(loc), droppedItems, cause: 'worldBossPulse' });
+    }
+    hit += 1;
+  }
+  return hit;
+}
+
+function serverTickWorldBosses(now = Date.now()) {
+  const results = [];
+  for (const room of rooms.values()) {
+    const def = serverWorldBossDefForRoom(room);
+    if (!def || !room.worldReady) continue;
+    const state = serverEnsureWorldBossRoom(room, now);
+    if (!state) continue;
+    const rules = serverWorldBossRules(def);
+    const events = tickWorldBoss(state, rules, now);
+    for (const event of events) {
+      if (event.type === 'respawn') {
+        const loc = roomLocation(room);
+        spawnAuthoredLocationActors(room, loc);
+        serverEnsureWorldBossRoom(room, now);
+        for (const container of room.containers?.values?.() || []) {
+          const cdef = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
+          if (cdef?.bossLoot) { container.locked = !!cdef.locked; container.terminalLocked = !!cdef.terminalLocked; }
+        }
+        serverPersistWorldBoss(state);
+        refreshRoomWorldState(room, { force: true });
+        serverEmitWorldBossState(room, { respawned: true }, now);
+      } else if (event.type === 'shieldRestored') {
+        serverSpawnShieldNodeActors(room, state);
+        serverSyncWorldBossActorFlags(room);
+        refreshRoomWorldState(room, { force: true });
+        serverEmitWorldBossState(room, { shieldRestored: true }, now);
+      } else if (event.type === 'pulseTelegraph') {
+        serverEmitWorldBossState(room, { telegraph: true, pulseInMs: event.inMs }, now);
+      } else if (event.type === 'pulse') {
+        const hit = serverApplyWorldBossPulse(room, state, event, now);
+        serverEmitWorldBossState(room, { pulse: true, hit }, now);
+      }
+      results.push({ roomId: room.id, type: event.type });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Публичные события: временная зона на глобальной карте с общей комнатой,
+// PvP разрешено, вещи сохраняются, спорный сундук после зачистки, задержка
+// возврата после смерти и принудительный выход по истечении.
+// ---------------------------------------------------------------------------
+function serverPublicEventStore() {
+  if (!savesDb.publicEvents || typeof savesDb.publicEvents !== 'object') {
+    savesDb.publicEvents = normalizePublicEventStore(null);
+  }
+  return savesDb.publicEvents;
+}
+
+let serverPublicEventPersistTimer = null;
+function scheduleServerPublicEventPersist() {
+  if (serverPublicEventPersistTimer) return;
+  serverPublicEventPersistTimer = setTimeout(() => {
+    serverPublicEventPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Public event persist failed:', err); }
+  }, 1500);
+  if (typeof serverPublicEventPersistTimer.unref === 'function') serverPublicEventPersistTimer.unref();
+}
+
+function serverPublicEventById(eventId = '') {
+  const id = String(eventId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  return id ? serverPublicEventStore().events[id] || null : null;
+}
+
+function serverPublicEventForZone(zone = null) {
+  if (!zone || zone.details?.publicEvent !== true) return null;
+  return serverPublicEventById(zone.details.eventId || zone.id);
+}
+
+function serverPublicEventForRoom(room = null) {
+  if (!room) return null;
+  for (const event of Object.values(serverPublicEventStore().events)) {
+    if (event.status !== 'expired' && event.roomId === room.id) return event;
+  }
+  return null;
+}
+
+// Точка события: клетка рядом с проходимым узлом карты, не столица и не
+// закрытая локация; выбор детерминирован инжектированным генератором.
+function serverPickPublicEventPoint(random = Math.random) {
+  const nodes = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : []).filter(node => node
+    && Number.isFinite(Number(node.x)) && Number.isFinite(Number(node.y))
+    && node.capital !== true && node.roadAccess !== false
+    && LOCATIONS[normalizeLocationId(node.locationId || node.id || '')]?.noGlobalMapEntry !== true);
+  const cellPoints = Math.max(1, Number(GLOBAL_MAP?.grid?.cellPoints || 10));
+  const cols = Math.max(1, Number(GLOBAL_MAP?.grid?.cols || 38));
+  const rows = Math.max(1, Number(GLOBAL_MAP?.grid?.rows || 30));
+  if (!nodes.length) return { x: cellPoints * 1.5, y: cellPoints * 1.5 };
+  const node = nodes[Math.floor(random() * nodes.length) % nodes.length];
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]];
+  const [dx, dy] = directions[Math.floor(random() * directions.length) % directions.length];
+  const col = clamp(Math.floor(Number(node.x) / cellPoints) + dx, 0, cols - 1);
+  const row = clamp(Math.floor(Number(node.y) / cellPoints) + dy, 0, rows - 1);
+  return { x: Number(((col + 0.5) * cellPoints).toFixed(2)), y: Number(((row + 0.5) * cellPoints).toFixed(2)) };
+}
+
+function serverSyncPublicEventZone(event) {
+  if (!event || typeof WASTELAND_SIM?.upsertWorldZone !== 'function') return;
+  if (event.status === 'expired') {
+    if (typeof WASTELAND_SIM.removeWorldZone === 'function') WASTELAND_SIM.removeWorldZone(event.id);
+    return;
+  }
+  WASTELAND_SIM.upsertWorldZone(publicEventZone(event, KROMKA_PUBLIC_EVENT_CATALOG.rules, WASTELAND_SIM.state()?.worldHour || 0));
+}
+
+function serverPublicEventPayload(event, now = Date.now(), extra = {}) {
+  return { ...publicPublicEvent(event, now), ...extra, t: now };
+}
+
+function serverEmitPublicEventState(event, extra = {}, now = Date.now()) {
+  const room = rooms.get(String(event?.roomId || ''));
+  if (!room) return null;
+  const payload = serverPublicEventPayload(event, now, extra);
+  io.to(room.id).emit('publicEventState', payload);
+  return payload;
+}
+
+function serverPublicEventChestContainer(room, event) {
+  if (!room || !event) return null;
+  if (!(room.containers instanceof Map)) room.containers = new Map();
+  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
+  return room.containers.get(id) || null;
+}
+
+// Спорный сундук появляется в момент зачистки и открывается через 45–60 с.
+function serverSpawnPublicEventChest(room, event, now = Date.now()) {
+  if (!room || !event || serverPublicEventChestContainer(room, event)) return null;
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
+  if (!template) return null;
+  ensureRoomWorld(room);
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const safe = findRoomSafeSpawnTile(room, center.tx, center.tz, { maxRadius: 10, radius: 0.6, minEnemyDistance: 1, minPlayerDistance: 0 }) || center;
+  const pos = tileToWorld(safe.tx, safe.tz, dims);
+  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
+  const lockInfo = securityDifficultyInfo('veryEasy', 'veryEasy');
+  const container = {
+    id,
+    defId: 'event_chest',
+    name: safeName(template.chest.name || 'Тайник события'),
+    tier: 'event',
+    tx: safe.tx,
+    tz: safe.tz,
+    x: pos.x,
+    z: pos.z,
+    locked: false,
+    lockDifficulty: lockInfo.difficulty,
+    lockDifficultyTier: lockInfo.id,
+    lockDifficultyLabel: lockInfo.label,
+    lockRequiredSkill: lockInfo.required,
+    terminalLocked: false,
+    terminalDifficulty: lockInfo.difficulty,
+    terminalDifficultyTier: lockInfo.id,
+    terminalDifficultyLabel: lockInfo.label,
+    terminalRequiredSkill: lockInfo.required,
+    terminalUnlocksLock: false,
+    terminalName: '',
+    lockCooldownUntil: 0,
+    terminalCooldownUntil: 0,
+    factionWarehouseSiteId: '',
+    factionWarehouseOwner: '',
+    factionWarehouseKind: '',
+    publicEventId: event.id,
+    loot: rollWorldContainerLootServer(room, { loot: template.chest.loot }),
+    createdAt: now,
+    restockDay: currentGameDayIndex(now)
+  };
+  room.containers.set(id, container);
+  refreshRoomWorldState(room, { force: true });
+  emitWorldContainersSnapshot(room, true);
+  return container;
+}
+
+// Сундук события до открытия и после чужого захвата недоступен.
+function serverPublicEventChestError(room, container, player, now = Date.now()) {
+  if (!container?.publicEventId) return '';
+  const event = serverPublicEventById(container.publicEventId);
+  if (!event) return 'Событие уже завершилось.';
+  const claim = claimPublicEventChest(event, player?.characterId || '', now);
+  if (!claim.ok) return claim.error;
+  scheduleServerPublicEventPersist();
+  serverEmitPublicEventState(event, { chestClaimedBy: String(player?.name || '') }, now);
+  return '';
+}
+
+function serverPublicEventHostilesAlive(room) {
+  let count = 0;
+  for (const enemy of room?.enemies?.values?.() || []) {
+    if (enemy && !enemy.dead && enemy.hostileToPlayer !== false) count += 1;
+  }
+  return count;
+}
+
+// Смерть внутри события: возврат только через 60–90 с (единая воронка смерти).
+function serverNotePublicEventDeath(room, player, now = Date.now()) {
+  const event = serverPublicEventForRoom(room);
+  if (!event || !player?.characterId) return 0;
+  const until = recordPublicEventDeath(event, player.characterId, KROMKA_PUBLIC_EVENT_CATALOG.rules, now, room?.rng || Math.random);
+  scheduleServerPublicEventPersist();
+  io.to(player.id).emit('publicEventState', serverPublicEventPayload(event, now, { death: true, rejoinInSeconds: Math.ceil((until - now) / 1000) }));
+  return until;
+}
+
+// Истечение: все игроки комнаты выходят на глобальную карту в точку события.
+function serverEvictPublicEventRoom(event, now = Date.now()) {
+  const room = rooms.get(String(event?.roomId || ''));
+  if (!room) return 0;
+  let evicted = 0;
+  for (const p of livePlayersInRoom(room)) {
+    const socket = io.sockets.sockets.get(p.id);
+    if (socket) leaveCurrentRoom(socket, 'publicEventExpired', { leaderId: p.id });
+    p.roomId = '';
+    p.onGlobalMap = true;
+    p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: event.x, y: event.y }) || p.globalWorldPoint || null;
+    p.pendingLocationTransition = null;
+    p.input = { forward: 0, right: 0 };
+    p.vx = 0;
+    p.vz = 0;
+    p.moving = false;
+    persistActivePlayerState(p);
+    io.to(p.id).emit('publicEventState', serverPublicEventPayload(event, now, { expired: true, evicted: true }));
+    emitAuthoritativePlayerState(p, { reason: 'publicEventExpired' });
+    evicted += 1;
+  }
+  for (const [id, container] of [...room.containers.entries()]) if (container?.publicEventId === event.id) room.containers.delete(id);
+  return evicted;
+}
+
+function serverTickPublicEvents(now = Date.now(), options = {}) {
+  const store = serverPublicEventStore();
+  const rules = KROMKA_PUBLIC_EVENT_CATALOG.rules;
+  const random = typeof options.random === 'function' ? options.random : Math.random;
+  let changed = false;
+  const created = spawnDuePublicEvents(store, KROMKA_PUBLIC_EVENT_CATALOG, now, {
+    random, pickPoint: rnd => serverPickPublicEventPoint(rnd)
+  });
+  for (const event of created) {
+    serverSyncPublicEventZone(event);
+    changed = true;
+  }
+  for (const event of Object.values(store.events)) {
+    if (event.status === 'expired') continue;
+    const room = rooms.get(String(event.roomId || ''));
+    if (room && room.encounterSetupDone && !event.cleared && serverPublicEventHostilesAlive(room) === 0) {
+      if (notePublicEventCleared(event, rules, now, room.rng || random)) {
+        serverSpawnPublicEventChest(room, event, now);
+        serverEmitPublicEventState(event, { cleared: true }, now);
+        changed = true;
+      }
+    }
+    if (room && event.cleared && !event.chestAnnounced && publicEventChestOpen(event, now)) {
+      event.chestAnnounced = true;
+      serverEmitPublicEventState(event, { chestOpen: true }, now);
+    }
+    const transition = tickPublicEvent(event, rules, now);
+    if (transition.warned) {
+      serverEmitPublicEventState(event, { warning: true }, now);
+      changed = true;
+    }
+    if (transition.expired) {
+      serverEvictPublicEventRoom(event, now);
+      serverSyncPublicEventZone(event);
+      changed = true;
+    }
+  }
+  if (purgeExpiredPublicEvents(store, now) > 0) changed = true;
+  if (changed) {
+    scheduleServerPublicEventPersist();
+    invalidateWastelandPublicCache();
+  }
+  return { created: created.length, changed };
+}
+
+// Публичные события восстанавливают свои зоны на карте после перезапуска.
+function serverRestorePublicEventZones() {
+  for (const event of Object.values(serverPublicEventStore().events)) serverSyncPublicEventZone(event);
+}
+
+// ---------------------------------------------------------------------------
+// Постоянные PvE-области: личная комната на игрока или группу, встречи по
+// реальному времени, «Искать следы». Владелец проверяется на каждом пути входа.
+// ---------------------------------------------------------------------------
+function serverPveAreaForLocation(locationId = '') {
+  const loc = LOCATIONS[normalizeLocationId(locationId)];
+  if (!loc || loc.pveArea !== true) return null;
+  return pveAreaForLocation(KROMKA_PVE_AREA_CATALOG, loc.id || locationId);
+}
+
+function serverPveOwnerKeyFor(player = {}) {
+  return pveOwnerKey(player?.characterId || player?.userId || player?.id || '');
+}
+
+// Комната PvE-области для игрока: запрошенная (билет группы, сохранённый
+// контекст) — только если игрок её владелец или уже допущен туда сервером;
+// иначе собственная личная комната.
+function serverResolvePveRoomId(player = {}, locationId = '', requestedRoomId = '') {
+  const area = serverPveAreaForLocation(locationId);
+  if (!area) return '';
+  const ownKey = serverPveOwnerKeyFor(player);
+  const requested = sanitizeEncounterRoomId(requestedRoomId || '', locationId);
+  if (requested) {
+    const existing = rooms.get(requested);
+    const members = existing?.pveMembers instanceof Set ? existing.pveMembers : [];
+    if (pveRoomAllowed(requested, locationId, ownKey, members)) return requested;
+  }
+  return pveRoomId(locationId, ownKey);
+}
+
+function serverEnsurePveRoom(room, player = null, now = Date.now()) {
+  if (!room) return null;
+  const area = serverPveAreaForLocation(room.locationId);
+  if (!area) return null;
+  if (!(room.pveMembers instanceof Set)) room.pveMembers = new Set();
+  if (!room.pveState) {
+    room.personalEncounter = true;
+    room.pveState = createPveRoomState(area, KROMKA_PVE_AREA_CATALOG.rules, now, pveOwnerKey(room.id.split('#pve_')[1] || ''));
+  }
+  if (player) room.pveMembers.add(serverPveOwnerKeyFor(player));
+  return room.pveState;
+}
+
+function serverPveAliveCount(room) {
+  let count = 0;
+  for (const enemy of room?.enemies?.values?.() || []) if (enemy && !enemy.dead && enemy.pveAreaId) count += 1;
+  return count;
+}
+
+function serverSpawnPvePack(room, area, pack, now = Date.now()) {
+  const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const spawned = [];
+  for (let i = 0; i < Number(pack?.spawnCount || 0); i += 1) {
+    const opts = {
+      creatureTypeId: pack.creatureTypeId || undefined,
+      typeName: pack.creatureTypeId ? undefined : pack.typeName,
+      faction: pack.creatureTypeId ? 'monsters' : 'raiders',
+      role: pack.creatureTypeId ? 'monster' : 'raider',
+      hostileToPlayer: true
+    };
+    const visualModel = serverEncounterActorVisualModel(opts);
+    const enemy = spawnServerEnemy(room, {
+      ...opts,
+      visual: visualModel.visual,
+      modelKey: visualModel.modelKey,
+      force: true,
+      minPlayerDistance: rules.spawnMinPlayerDistance
+    });
+    if (!enemy) break;
+    enemy.pveAreaId = area.id;
+    enemy.pvePackId = pack.id;
+    enemy.spawnedAt = now;
+    spawned.push(enemy);
+  }
+  if (spawned.length) {
+    room.enemyStructureDirty = true;
+    refreshRoomWorldState(room, { force: true });
+  }
+  return spawned;
+}
+
+function serverEmitPveAreaState(room, targetSocketId = '', now = Date.now()) {
+  const area = room ? serverPveAreaForLocation(room.locationId) : null;
+  if (!area || !room.pveState) return null;
+  const payload = {
+    roomId: room.id,
+    ...publicPveRoomState(room.pveState, area, KROMKA_PVE_AREA_CATALOG.rules, now, {
+      aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
+    }),
+    t: now
+  };
+  io.to(targetSocketId || room.id).emit('pveAreaState', payload);
+  return payload;
+}
+
+function serverPveRoomEntered(room, player, now = Date.now()) {
+  const area = serverPveAreaForLocation(room?.locationId);
+  if (!area) return;
+  const state = serverEnsurePveRoom(room, player, now);
+  ensureRoomWorld(room);
+  for (const pack of pveInitialPacks(state, area, room.rng || Math.random)) serverSpawnPvePack(room, area, pack, now);
+  state.lastAlive = serverPveAliveCount(room);
+}
+
+function serverTickPveRooms(now = Date.now(), options = {}) {
+  const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const results = [];
+  for (const room of rooms.values()) {
+    if (!room?.pveState) continue;
+    const area = serverPveAreaForLocation(room.locationId);
+    if (!area) continue;
+    const occupants = livePlayersInRoom(room);
+    if (!occupants.length) {
+      // Пустая личная комната: после простоя встреча сбрасывается, чтобы
+      // возвращение снова начиналось с новой группы.
+      if (pveRoomIdle(room.pveState, rules, room.emptySince, now)) {
+        for (const [id, enemy] of [...room.enemies.entries()]) if (enemy?.pveAreaId) roomEnemyDelete(room, id);
+        room.pveState = null;
+        room.pveMembers = new Set();
+        results.push({ roomId: room.id, reason: 'reset' });
+      }
+      continue;
+    }
+    const alive = serverPveAliveCount(room);
+    const cleared = notePveAlive(room.pveState, rules, alive, now);
+    const roll = rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });
+    if (roll.spawn) serverSpawnPvePack(room, area, roll.spawn, now);
+    if (cleared || roll.rolled) {
+      room.pveState.lastAlive = serverPveAliveCount(room);
+      serverEmitPveAreaState(room, '', now);
+      results.push({ roomId: room.id, reason: cleared ? 'cleared' : roll.reason });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Аванпосты Сердцевины: присутствие в области контроля, смена владельца по
+// абсолютному времени и NPC-гарнизон, идущий по сцене от платформы фракции.
+// ---------------------------------------------------------------------------
+let serverTerritoryPersistTimer = null;
+function scheduleServerTerritoryPersist() {
+  if (serverTerritoryPersistTimer) return;
+  serverTerritoryPersistTimer = setTimeout(() => {
+    serverTerritoryPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Territory persist failed:', err); }
+  }, 1500);
+  if (typeof serverTerritoryPersistTimer.unref === 'function') serverTerritoryPersistTimer.unref();
+}
+
+function serverTerritoryStore() {
+  if (!savesDb.kromkaTerritory || typeof savesDb.kromkaTerritory !== 'object') {
+    savesDb.kromkaTerritory = normalizeTerritoryStore(null, KROMKA_TERRITORY_CATALOG, Date.now());
+  }
+  return savesDb.kromkaTerritory;
+}
+
+function serverTerritoryZoneRoom() {
+  const zoneId = normalizeLocationId(KROMKA_TERRITORY_CATALOG.zoneLocationId || 'coreZone');
+  const room = rooms.get(zoneId);
+  return room && room.worldReady ? room : null;
+}
+
+function serverTerritoryFactionLabel(factionId = '') {
+  const row = (KROMKA_FACTION_CATALOG.factions || []).find(entry => String(entry?.id || '') === String(factionId || ''));
+  return String(row?.displayName || factionId || 'нейтральные').slice(0, 48);
+}
+
+function serverTerritoryPlatformPoint(factionId = '') {
+  const row = (KROMKA_TERRITORY_CATALOG.factions || []).find(entry => String(entry?.id || '') === String(factionId || ''));
+  return row?.platform ? { x: Number(row.platform.x || 0), z: Number(row.platform.z || 0) } : { x: 0, z: 0 };
+}
+
+function serverGarrisonRouteLength(def = {}, factionId = '') {
+  const from = serverTerritoryPlatformPoint(factionId);
+  return Math.hypot(Number(def.position?.x || 0) - from.x, Number(def.position?.z || 0) - from.z);
+}
+
+// Позиция отряда на прямом маршруте платформа → аванпост по виртуальному
+// прогрессу; при возвращении прогресс уменьшается к платформе.
+function serverGarrisonRoutePoint(def = {}, factionId = '', progress = 0) {
+  const from = serverTerritoryPlatformPoint(factionId);
+  const to = { x: Number(def.position?.x || 0), z: Number(def.position?.z || 0) };
+  const t = Math.min(1, Math.max(0, Number(progress) || 0));
+  return { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
+}
+
+function serverGarrisonPostSlot(def = {}, index = 0, total = 1) {
+  const angle = (index / Math.max(1, total)) * Math.PI * 2 + 0.6;
+  const radius = 3.2;
+  return {
+    x: Number(def.position?.x || 0) + Math.cos(angle) * radius,
+    z: Number(def.position?.z || 0) + Math.sin(angle) * radius
+  };
+}
+
+function serverOutpostPresence(room, def = {}, outpost = {}) {
+  const presence = {};
+  const cx = Number(def.position?.x || 0);
+  const cz = Number(def.position?.z || 0);
+  const radius = Math.max(2, Number(def.captureRadius || 10));
+  const bump = (factionId, key) => {
+    if (!factionId) return;
+    presence[factionId] = presence[factionId] || { players: 0, guards: 0 };
+    presence[factionId][key] += 1;
+  };
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - cx, Number(p.z || 0) - cz) > radius) continue;
+    bump(serverPlayerTerritoryFactionId(p), 'players');
+  }
+  for (const enemy of room.enemies.values()) {
+    if (!enemy || enemy.dead || String(enemy.garrisonOutpostId || '') !== String(def.id || '')) continue;
+    if (String(enemy.garrisonFactionId || '') !== String(outpost.ownerFactionId || '')) continue;
+    if (Math.hypot(Number(enemy.x || 0) - cx, Number(enemy.z || 0) - cz) > radius) continue;
+    bump(String(enemy.garrisonFactionId || ''), 'guards');
+  }
+  return presence;
+}
+
+function serverGarrisonActors(room, outpostId = '') {
+  return [...room.enemies.values()].filter(enemy => enemy && String(enemy.garrisonOutpostId || '') === String(outpostId || ''));
+}
+
+function serverSpawnGarrisonActor(room, def, outpost, index, total, point) {
+  const factionId = String(outpost.garrison.factionId || '');
+  const dims = roomTileDims(room);
+  const tile = worldToTile(point.x, point.z, dims);
+  const actor = spawnServerEnemy(room, {
+    force: true,
+    allowSafeLocation: true,
+    tx: clamp(tile.tx, 1, dims.w - 2),
+    tz: clamp(tile.tz, 1, dims.h - 2),
+    maxSpawnSearchRadius: 3,
+    minEnemyDistance: 0.6,
+    minPlayerDistance: 0,
+    typeIndex: 0,
+    visual: 'raider',
+    modelKey: 'caravanGuard',
+    species: 'guard',
+    tags: ['npc', 'guard', 'garrison', factionId],
+    npcSeed: `garrison:${def.id}:${outpost.garrison.seq}:${index}`,
+    name: index === 0 ? `Квартирмейстер (${serverTerritoryFactionLabel(factionId)})` : `Гарнизон: ${serverTerritoryFactionLabel(factionId)}`,
+    role: 'guard',
+    faction: factionId,
+    hostileToPlayer: false,
+    territoryFactionId: factionId,
+    equipmentProfile: 'guard',
+    statProfile: 'guard',
+    canDialogue: false,
+    stationary: false
+  });
+  if (!actor) return null;
+  actor.garrisonOutpostId = String(def.id || '');
+  actor.garrisonFactionId = factionId;
+  actor.garrisonSeq = Number(outpost.garrison.seq || 0);
+  actor.garrisonIndex = index;
+  actor.garrisonTotal = total;
+  actor.garrisonTargetX = point.x;
+  actor.garrisonTargetZ = point.z;
+  actor.homeX = point.x;
+  actor.homeZ = point.z;
+  return actor;
+}
+
+// Отряд создаётся в комнате один раз на смену владельца; пересоздание комнаты
+// возвращает акторов в текущую точку виртуального маршрута.
+function serverGarrisonSpawnedInRoom(room, def, garrison) {
+  return !!room?.garrisonSpawned?.[`${def.id}:${garrison.seq}`];
+}
+
+function serverMarkGarrisonSpawned(room, def, garrison) {
+  if (!room.garrisonSpawned) room.garrisonSpawned = {};
+  room.garrisonSpawned[`${def.id}:${garrison.seq}`] = true;
+}
+
+// Держит акторов гарнизона в согласии с runtime-записью: создаёт отряд при
+// первой загрузке комнаты в текущей точке маршрута, ведёт его по маршруту,
+// расставляет по постам после прибытия и убирает вернувшийся или устаревший.
+function serverSyncGarrisonActors(room, def, outpost, now, rules) {
+  const garrison = outpost.garrison || {};
+  const active = ['enroute', 'arrived', 'returning'].includes(String(garrison.state || ''));
+  const actors = serverGarrisonActors(room, def.id);
+  let structureChanged = false;
+  for (const actor of actors) {
+    const stale = !active || Number(actor.garrisonSeq || 0) !== Number(garrison.seq || 0)
+      || String(actor.garrisonFactionId || '') !== String(garrison.factionId || '');
+    if (stale) {
+      if (roomEnemyDelete(room, actor.id)) structureChanged = true;
+    }
+  }
+  if (!active) return structureChanged;
+  const total = Math.max(1, Number(rules.garrison.guards || 0) + Number(rules.garrison.quartermaster || 0));
+  const alive = serverGarrisonActors(room, def.id).filter(actor => !actor.dead);
+  const known = serverGarrisonActors(room, def.id);
+  if (known.length === 0 && !serverGarrisonSpawnedInRoom(room, def, garrison)) {
+    const point = serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
+    for (let i = 0; i < total; i++) {
+      const offset = { x: point.x + Math.cos(i * 1.7) * 1.4, z: point.z + Math.sin(i * 1.7) * 1.4 };
+      if (serverSpawnGarrisonActor(room, def, outpost, i, total, offset)) structureChanged = true;
+    }
+    serverMarkGarrisonSpawned(room, def, garrison);
+  } else if (known.length > 0 && alive.length === 0 && serverGarrisonSpawnedInRoom(room, def, garrison)) {
+    // Весь отряд погиб: гарнизона нет до следующей смены владельца.
+    markOutpostGarrisonDestroyed(outpost, now);
+    for (const actor of known) if (roomEnemyDelete(room, actor.id)) structureChanged = true;
+    return structureChanged;
+  }
+  const targetPoint = garrison.state === 'arrived'
+    ? null
+    : serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
+  for (const actor of alive) {
+    const post = garrison.state === 'arrived'
+      ? serverGarrisonPostSlot(def, Number(actor.garrisonIndex || 0), Number(actor.garrisonTotal || total))
+      : { x: targetPoint.x + Math.cos(Number(actor.garrisonIndex || 0) * 1.7) * 1.4, z: targetPoint.z + Math.sin(Number(actor.garrisonIndex || 0) * 1.7) * 1.4 };
+    actor.garrisonTargetX = post.x;
+    actor.garrisonTargetZ = post.z;
+    actor.homeX = post.x;
+    actor.homeZ = post.z;
+  }
+  return structureChanged;
+}
+
+// Гарнизонный актор: без видимого противника идёт к точке маршрута или держит
+// пост; враждебный игрок другой фракции передаётся обычному боевому ИИ.
+function updateTerritoryGarrisonActor(room, enemy, dt, now = Date.now()) {
+  if (!enemy || !enemy.garrisonOutpostId || enemy.dead) return false;
+  const vision = Math.max(6, Number(enemy.visionRange || 10));
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(enemy.x || 0), Number(p.z || 0) - Number(enemy.z || 0)) > vision) continue;
+    if (!serverActorHostileToPlayer(enemy, p)) continue;
+    if (enemyCanSeePlayer(room, enemy, p, now)) return false;
+  }
+  const tx = Number(enemy.garrisonTargetX);
+  const tz = Number(enemy.garrisonTargetZ);
+  if (!Number.isFinite(tx) || !Number.isFinite(tz)) return false;
+  const distance = Math.hypot(tx - Number(enemy.x || 0), tz - Number(enemy.z || 0));
+  enemy.targetId = '';
+  if (distance > 0.9) {
+    enemy.aiState = 'return';
+    moveEnemyTowards(room, enemy, tx, tz, Math.max(1.2, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
+  } else {
+    enemy.aiState = 'idle';
+    enemy.vx = 0;
+    enemy.vz = 0;
+  }
+  return true;
+}
+
+function serverAnnounceOutpostCapture(room, def, outpost, change, now) {
+  const message = `${def.displayName}: аванпост перешёл к фракции «${serverTerritoryFactionLabel(change.factionId)}». Гарнизон выдвинулся с платформы.`;
+  if (room) {
+    io.to(room.id).emit('worldState', { reason: 'outpostCaptured', outpostId: def.id, factionId: change.factionId, message, state: currentRoomWorldState(room) });
+  }
+  io.emit('territoryOutpostState', {
+    ...publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
+    reason: 'ownerChanged',
+    outpostId: def.id,
+    factionId: change.factionId,
+    previousFactionId: change.previousFactionId,
+    message
+  });
+}
+
+function serverTickTerritory(now = Date.now()) {
+  const store = serverTerritoryStore();
+  const catalog = KROMKA_TERRITORY_CATALOG;
+  const rules = outpostRules(catalog);
+  let changed = false;
+  const opened = openDueOutpostEvents(store, catalog, now);
+  if (opened.length) changed = true;
+  const room = serverTerritoryZoneRoom();
+  let structureChanged = false;
+  for (const def of territoryOutpostDefs(catalog)) {
+    const outpost = store.outposts[def.id];
+    if (!outpost) continue;
+    if (room) {
+      const result = applyOutpostCapturePresence(outpost, serverOutpostPresence(room, def, outpost), now, rules);
+      if (result.changed) changed = true;
+      if (result.captured) {
+        const change = applyOutpostOwnerChange(store, def.id, result.captured, now, catalog, {
+          routeLengthMeters: serverGarrisonRouteLength(def, result.captured)
+        });
+        if (change.ok) {
+          changed = true;
+          serverAnnounceOutpostCapture(room, def, outpost, change, now);
+        }
+      }
+    } else {
+      outpost.capture.lastTickMs = now;
+    }
+    if (advanceTerritoryGarrison(outpost, now, rules).changed) changed = true;
+    if (room && serverSyncGarrisonActors(room, def, outpost, now, rules)) structureChanged = true;
+  }
+  if (structureChanged && room) emitEnemySnapshot(room, true);
+  if (changed) {
+    store.updatedAt = now;
+    wastelandPublicCache = null;
+    scheduleServerTerritoryPersist();
+  }
+  if (room && room.sockets.size && (changed || now - Number(room.lastTerritoryStateAt || 0) >= 1000)) {
+    room.lastTerritoryStateAt = now;
+    io.to(room.id).emit('territoryOutpostState', publicTerritoryState(store, catalog, now));
+  }
+}
+
 function serverTickKromkaSieges(now = Date.now()) {
   let dirty = false; let broadcast = false;
   for (const event of Object.values(savesDb.kromkaSieges.events || {})) {
@@ -18365,6 +19859,24 @@ function publicWorldState(room, includeMap = true) {
     } : null,
     fullDrop: pvpMode === 'pvpFullDrop',
     activity: publicWorldActivity(room.worldActivity),
+    pveArea: room.pveState
+      ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
+        aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
+      })
+      : null,
+    publicEvent: (() => {
+      const event = serverPublicEventForRoom(room);
+      return event ? publicPublicEvent(event, Date.now()) : null;
+    })(),
+    worldBoss: (() => {
+      const def = serverWorldBossDefForRoom(room);
+      if (!def) return null;
+      const state = room.worldBossState || serverEnsureWorldBossRoom(room, Date.now());
+      const boss = serverWorldBossActor(room);
+      return state ? publicWorldBoss(state, serverWorldBossRules(def), Date.now(), {
+        bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+      }) : null;
+    })(),
     shift: serverCurrentShiftState(Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
@@ -18428,7 +19940,7 @@ function serverWorldActivityFocusScore(room, tx, tz) {
       hazards += 1;
       continue;
     }
-    const point = tileToWorld(sampleTx, sampleTz);
+    const point = tileToWorld(sampleTx, sampleTz, roomTileDims(room));
     if (!isRoomWalkableWorld(room, point.x, point.z, 0.38)) cover += 1;
   }
   // Four to six pieces of nearby authored geometry produce useful flanks
@@ -18800,11 +20312,11 @@ function recoverServerWorldActivityPoints(room, activity, now = Date.now()) {
       changed += 1;
     }
     if (point.status !== 'pending') continue;
-    const tile = worldToTile(Number(point.x || 0), Number(point.z || 0));
+    const tile = worldToTile(Number(point.x || 0), Number(point.z || 0), roomTileDims(room));
     const exactSafe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 0, radius: 0.42 });
     if (exactSafe) continue;
     const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 8, radius: 0.42 });
-    const position = safe ? tileToWorld(safe.tx, safe.tz) : recoveredPosition();
+    const position = safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : recoveredPosition();
     if (!position) continue;
     point.x = Number(position.x || 0);
     point.z = Number(position.z || 0);
@@ -19448,12 +20960,13 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (serverTryRespawnSiegePlayer(p, oldRoom, cause, Date.now())) return;
   const socket = io.sockets.sockets.get(p.id);
   const now = Date.now();
+  serverNotePublicEventDeath(oldRoom, p, now);
   const failedWorldActivityIds = failServerPlayerActiveWorldActivities(p, 'player_died');
   const detachedWorldTaskIds = [...new Set([
     ...failedWorldActivityIds,
     ...detachServerPlayerFromActiveWorldParties(p)
   ])];
-  const respawnLocationId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement');
+  const respawnLocationId = serverAccessibleSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement', p.territoryFaction);
   const settlement = chooseRoomForLocation(respawnLocationId);
   let pos = playerSpawnWorld(respawnLocationId, 'respawn');
   pos = findRoomSafeSpawnWorld(settlement, pos.x, pos.z, {
@@ -19606,14 +21119,15 @@ function spawnServerEnemy(room, opts = {}) {
       minEnemyDistance: Number(opts.minEnemyDistance ?? 1.25),
       minPlayerDistance: requestedMinPlayerDistance
     });
-    if (safe) chosen = tileToWorld(safe.tx, safe.tz);
+    if (safe) chosen = tileToWorld(safe.tx, safe.tz, roomTileDims(room));
   }
   if (!chosen && preferredSpawnRequested && opts.requirePreferredSpawn === true) return null;
   for (let tries = 0; !chosen && tries < 160; tries++) {
-    const tx = 2 + Math.floor(rng() * (MAP_W - 4));
-    const tz = 2 + Math.floor(rng() * (MAP_H - 4));
+    const spawnDims = roomTileDims(room);
+    const tx = 2 + Math.floor(rng() * Math.max(1, spawnDims.w - 4));
+    const tz = 2 + Math.floor(rng() * Math.max(1, spawnDims.h - 4));
     if (!isRoomSpawnSafeTile(room, tx, tz, { radius: 0.46, minEnemyDistance: 1.15 })) continue;
-    const pos = tileToWorld(tx, tz);
+    const pos = tileToWorld(tx, tz, roomTileDims(room));
     const farEnough = roomPlayers.every(p => Math.hypot(pos.x - p.x, pos.z - p.z) > requestedMinPlayerDistance);
     if (farEnough) { chosen = pos; break; }
   }
@@ -19692,6 +21206,8 @@ function spawnServerEnemy(room, opts = {}) {
     modelKey: resolvedModelKey,
     species: String(opts.species || resolvedVisual || type.lootTier || '').slice(0, 32),
     canDialogue: opts.canDialogue !== false,
+    service: String(opts.service || '').slice(0, 32),
+    territoryFactionId: String(opts.territoryFactionId || '').slice(0, 32),
     x: chosen.x,
     z: chosen.z,
     homeX: chosen.x,
@@ -19990,10 +21506,10 @@ function setupDataDrivenEncounterRoom(room, encounterId = '') {
   return true;
 }
 
-function serverLocationPointWorld(point = null, fallback = null) {
+function serverLocationPointWorld(point = null, fallback = null, dims = DEFAULT_TILE_DIMS) {
   const row = point || fallback;
   if (!row) return { x: 0, z: 0 };
-  if (Number.isFinite(Number(row.tx)) && Number.isFinite(Number(row.tz))) return tileToWorld(Number(row.tx), Number(row.tz));
+  if (Number.isFinite(Number(row.tx)) && Number.isFinite(Number(row.tz))) return tileToWorld(Number(row.tx), Number(row.tz), dims);
   if (row.position && Number.isFinite(Number(row.position.x)) && Number.isFinite(Number(row.position.z))) {
     return { x: Number(row.position.x), z: Number(row.position.z) };
   }
@@ -20014,7 +21530,7 @@ function serverOnsitePartyWorkPoint(loc = {}, zone = {}, actor = {}, index = 0, 
   }
   if (!anchor && reason === 'unload') anchor = loc.storage || loc.trader || null;
   if (!anchor && String(actor.role || '').toLowerCase() === 'merchant') anchor = loc.trader || loc.storage || null;
-  const base = serverLocationPointWorld(anchor, loc.spawn || loc.entryFromWorld);
+  const base = serverLocationPointWorld(anchor, loc.spawn || loc.entryFromWorld, locationTileDims(loc));
   return orientOnsitePartyOffset(base, entryPoint, onsitePartyWorkOffset(index));
 }
 
@@ -20026,10 +21542,10 @@ function serverOnsitePartyRoute(room = null, zone = {}, actor = {}, index = 0) {
     y: Number(zone.details?.arrivalFromY ?? zone.y ?? 0)
   };
   const entryKey = serverGlobalEntryKey(room?.locationId || loc.id || '', target, origin);
-  const entry = serverLocationPointWorld(loc[entryKey] || loc.entryFromWorld, loc.spawn);
+  const entry = serverLocationPointWorld(loc[entryKey] || loc.entryFromWorld, loc.spawn, locationTileDims(loc));
   const globalExit = (Array.isArray(loc.worldZones) ? loc.worldZones : []).find(row => row && String(row.type || 'globalMap') === 'globalMap')
     || (Array.isArray(loc.worldZones) ? loc.worldZones[0] : null);
-  const exit = serverLocationPointWorld(globalExit, loc.entryFromWorld || loc.spawn);
+  const exit = serverLocationPointWorld(globalExit, loc.entryFromWorld || loc.spawn, locationTileDims(loc));
   const work = serverOnsitePartyWorkPoint(loc, zone, actor, index, entry);
   const spread = onsitePartyLaneOffset(index);
   const entryDx = work.x - entry.x;
@@ -20133,7 +21649,7 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       }
       return;
     }
-    const onsiteSpawnTile = onsiteRoute ? worldToTile(onsiteRoute.entry.x, onsiteRoute.entry.z) : null;
+    const onsiteSpawnTile = onsiteRoute ? worldToTile(onsiteRoute.entry.x, onsiteRoute.entry.z, roomTileDims(room)) : null;
     const enemy = spawnEncounterActor(room, onsiteSpawnTile?.tx ?? actor.tx ?? (actor.side === 'defender' ? 16 + index : 23 + index), onsiteSpawnTile?.tz ?? actor.tz ?? 18, {
       typeName: actor.typeName || actor.name,
       name: actor.name,
@@ -20323,7 +21839,7 @@ function syncWorldBattleRoomActors(room, force = false) {
   const actors = [...room.enemies.values()]
     .filter(enemy => enemy && enemy.worldBattleActorId)
     .map(enemy => {
-      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0));
+      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0), roomTileDims(room));
       return {
         actorId: enemy.worldBattleActorId,
         id: enemy.worldBattleActorId,
@@ -20359,7 +21875,7 @@ function worldZoneActorSnapshotsFromRoom(room) {
   return [...room.enemies.values()]
     .filter(enemy => enemy && enemy.worldBattleActorId)
     .map(enemy => {
-      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0));
+      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0), roomTileDims(room));
       return {
         actorId: enemy.worldBattleActorId,
         id: enemy.worldBattleActorId,
@@ -21196,6 +22712,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
+    if (updateTerritoryGarrisonActor(room, enemy, dt, now)) continue;
     if (enemy.stationary && enemy.hostileToPlayer === false && !npcRoutineInvestigationActive(enemy, now)) {
       const hasLiveFoes = npcHasLiveFactionFoes(room, enemy);
       if (!hasLiveFoes) {
@@ -21445,8 +22962,8 @@ function updateServerEnemies(room, dt, opts = {}) {
             target.dead = true;
             target.diedAt = now;
             clearEnemyTarget(enemy);
-            // В зонах полного лута смерть от твари стоит того же, что и от
-            // игрока: весь рюкзак остаётся на месте гибели.
+            // В зонах частичной потери смерть от твари стоит того же, что и от
+            // игрока: содержимое рюкзака остаётся на месте гибели.
             const deathLoc = roomLocation(room);
             const npcFullDrop = locationHasFullInventoryDrop(deathLoc);
             const droppedItems = serverDropPvpLootForMode(room, target, null, deathLoc, now);
@@ -21696,8 +23213,8 @@ function mergeResourceSnapshots(room, resources) {
   if (!Array.isArray(resources)) return;
   for (const r of resources) {
     const id = String(r.id || `res_${Number(r.tx)||0}_${Number(r.tz)||0}_${String(r.type || 'node')}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    const tx = clamp(Number(r.tx || 0), 0, MAP_W - 1);
-    const tz = clamp(Number(r.tz || 0), 0, MAP_H - 1);
+    const tx = Math.max(0, Math.floor(Number(r.tx || 0)));
+    const tz = Math.max(0, Math.floor(Number(r.tz || 0)));
     const type = String(r.type || 'wood').slice(0, 16);
     const hp = clamp(Number(r.hp ?? 0), 0, 999);
     const maxHp = clamp(Number(r.maxHp ?? 3), 1, 999);
@@ -21779,6 +23296,7 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       emptySince: Date.now(),
       createdAt: Date.now()
     });
+    serverRestoreRoomGroundDrops(rooms.get(id));
   }
   const room = rooms.get(id);
   room.worldSiteId = room.worldSiteId || worldSiteIdFromRoomId(id, loc) || authoredWorldSiteId;
@@ -22281,8 +23799,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     p.vx = 0;
     p.vz = 0;
     p.moving = false;
-    p.x = clamp(Number(safePos.x), -MAP_SIZE, MAP_SIZE);
-    p.z = clamp(Number(safePos.z), -MAP_SIZE, MAP_SIZE);
+    p.x = clamp(Number(safePos.x), -roomWorldExtent(room), roomWorldExtent(room));
+    p.z = clamp(Number(safePos.z), -roomWorldExtent(room), roomWorldExtent(room));
     p.angle = Number.isFinite(Number(options.angle)) ? Number(options.angle) : p.angle;
     rememberPlayerSettlement(p, room.locationId);
     if (!persistActivePlayerState(p)) {
@@ -22762,7 +24280,9 @@ function publicAuthoritativePlayerState(p = {}) {
     knownFactionSecrets: p.knownFactionSecrets && typeof p.knownFactionSecrets === 'object'
       ? p.knownFactionSecrets : {},
     kromkaQuestJournal: questJournal,
-    artifactRecords: p.artifactRecords.map(record => ({ ...record,
+    // Свойства экземпляра уходят клиенту только после стабилизации; seed — никогда.
+    artifactRecords: p.artifactRecords.map(record => ({
+      ...publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG),
       implementationNote: String(KROMKA_ARTIFACT_INDEXES.byId[record.typeId]?.implementationNote || '')
     })),
     artifactSlots: p.artifactSlots,
@@ -22776,6 +24296,8 @@ function publicAuthoritativePlayerState(p = {}) {
     worldRevision: 'kromka-1',
     pvpMode: currentPvpMode,
     pvpLabel: LOCATION_PVP_LABELS[currentPvpMode] || currentPvpMode,
+    zoneRules: zoneRules(currentPvpMode, serverZoneRulesExtra(p.onGlobalMap ? null : roomLocation(rooms.get(String(p.roomId || ''))))),
+    territoryFaction: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG),
     lastWorldActivityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
     socialState,
     personalBase: shelterState,
@@ -23432,11 +24954,12 @@ function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER
   const maxTileZ = Math.max(bounds.minZ, bounds.maxZ - inset);
   const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
   const epsilon = 0.001;
+  const boundsDims = roomTileDims(room);
   return {
-    minX: (minTileX - MAP_W / 2) * TILE + safeRadius,
-    maxX: (maxTileX + 1 - MAP_W / 2) * TILE - safeRadius - epsilon,
-    minZ: (minTileZ - MAP_H / 2) * TILE + safeRadius,
-    maxZ: (maxTileZ + 1 - MAP_H / 2) * TILE - safeRadius - epsilon
+    minX: (minTileX - boundsDims.w / 2) * TILE + safeRadius,
+    maxX: (maxTileX + 1 - boundsDims.w / 2) * TILE - safeRadius - epsilon,
+    minZ: (minTileZ - boundsDims.h / 2) * TILE + safeRadius,
+    maxZ: (maxTileZ + 1 - boundsDims.h / 2) * TILE - safeRadius - epsilon
   };
 }
 
@@ -23448,15 +24971,15 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
 
 function serverPlayerAtGlobalMapExit(p = {}) {
   if (!p?.roomId || !serverPlayerAllowsGlobalMapExit(p)) return false;
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   const bounds = normalizedLocationPlayableBounds(loc);
   const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
   if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {
     if (row.to && normalizeLocationId(row.to || '') !== 'wasteland') return false;
-    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0));
+    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(loc));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   });
@@ -23465,7 +24988,7 @@ function serverPlayerAtGlobalMapExit(p = {}) {
 function serverGlobalExitDirection(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const bounds = normalizedLocationPlayableBounds(loc);
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   return globalExitDirectionFromTile(
     { tx: tile.tx - bounds.minX, tz: tile.tz - bounds.minZ },
     bounds.width,
@@ -23682,6 +25205,21 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
   const stayOnWorldMap = resolution.kind === 'point';
   const targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
   if (!stayOnWorldMap && !LOCATIONS[targetLocationId]) return fail('Локация встречи больше недоступна.');
+  if (!stayOnWorldMap) {
+    const targetLoc = LOCATIONS[targetLocationId] || {};
+    if (targetLoc.noGlobalMapEntry === true) {
+      return fail('В Сердцевину нельзя войти с глобальной карты: используйте платформу метро на базе своей фракции.');
+    }
+    for (const id of session.memberIds) {
+      const member = players.get(id);
+      if (!member) continue;
+      const access = territoryLocationAccess(targetLoc, member.territoryFaction, KROMKA_TERRITORY_CATALOG);
+      if (!access.allowed) return fail(`${member.name || 'Участник группы'}: ${access.error}`);
+      const arrivalEvent = resolution.worldZoneId ? serverPublicEventForZone(serverActiveWorldZoneById(resolution.worldZoneId)) : null;
+      const eventError = arrivalEvent ? publicEventEntryError(arrivalEvent, member.characterId, now) : '';
+      if (eventError) return fail(`${member.name || 'Участник группы'}: ${eventError}`);
+    }
+  }
   const payload = {
     leaderId: socket.id,
     leaderName: leader.name || session.leaderName || 'Игрок',
@@ -23695,12 +25233,26 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     partyId: resolution.partyId || '',
     worldPoint: resolution.point,
     pvpMode: resolution.pvpMode || 'pvp',
+    zoneRules: zoneRules(resolution.pvpMode || 'pvp', serverZoneRulesExtra(stayOnWorldMap ? null : LOCATIONS[targetLocationId])),
     stayOnWorldMap,
     party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
   };
 
   session.terminating = true;
   const arrivingMembers = [];
+  // Группа путешествия входит в PvE-область одной личной комнатой лидера:
+  // билет выдаёт сервер, поэтому проверка владельца на входе его пропустит.
+  const pveArrivalRoomId = !stayOnWorldMap && LOCATIONS[targetLocationId]?.pveArea === true
+    ? serverResolvePveRoomId(leader, targetLocationId, '')
+    : '';
+  if (pveArrivalRoomId) {
+    const pveRoom = getOrCreateRoom(pveArrivalRoomId, targetLocationId);
+    serverEnsurePveRoom(pveRoom, leader, now);
+    for (const id of session.memberIds) {
+      const member = players.get(id);
+      if (member) pveRoom.pveMembers.add(serverPveOwnerKeyFor(member));
+    }
+  }
   for (const id of session.memberIds) {
     const member = players.get(id);
     if (!member) continue;
@@ -23714,7 +25266,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     } else {
       stagePendingLocationTransition(member, {
         targetLocationId,
-        roomId: resolution.encounterRoomId || '',
+        roomId: resolution.encounterRoomId || pveArrivalRoomId || '',
         worldZoneId: resolution.worldZoneId || '',
         partyId: resolution.partyId || '',
         siteId: resolution.siteId || '',
@@ -23996,6 +25548,13 @@ io.on('connection', (socket) => {
       baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
       savedState.currentLocationId = locationId;
     }
+    // Reconnect внутри Сердцевины или на базе фракции требует действующего
+    // членства: иначе персонаж возвращается в последнее доступное поселение.
+    if (!territoryLocationAccess(baseLoc, savedState.territoryFaction, KROMKA_TERRITORY_CATALOG).allowed) {
+      locationId = serverAccessibleSettlementId(savedState.lastVisitedSettlementId || 'settlement', savedState.territoryFaction);
+      baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
+      savedState.currentLocationId = locationId;
+    }
     let savedLocationContext = sanitizeServerLocationContext(savedState.serverLocationContext || {}, locationId);
     const temporaryLocation = !!(baseLoc.encounterOnly || baseLoc.randomTemplate);
     const savedTemporaryRoomId = savedLocationContext.locationId === locationId
@@ -24033,10 +25592,17 @@ io.on('connection', (socket) => {
       ? `${locationId}#${privateRoomOwnerId}`.slice(0, 96)
       : '');
     leaveCurrentRoom(socket, 'join', { newLocationId: locationId });
-    const room = savedRoomId
-      ? getOrCreateRoom(savedRoomId, locationId)
-      : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
-        : (privateRoomId ? getOrCreateRoom(privateRoomId, locationId) : chooseRoomForLocation(locationId)));
+    // Reconnect в PvE-области: сохранённая комната принимается только если
+    // персонаж её владелец или был допущен туда сервером.
+    const pveJoinRoomId = baseLoc.pveArea === true
+      ? serverResolvePveRoomId({ characterId, userId: auth.user.id }, locationId, savedRoomId)
+      : '';
+    const room = pveJoinRoomId
+      ? getOrCreateRoom(pveJoinRoomId, locationId)
+      : savedRoomId
+        ? getOrCreateRoom(savedRoomId, locationId)
+        : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
+          : (privateRoomId ? getOrCreateRoom(privateRoomId, locationId) : chooseRoomForLocation(locationId)));
     {
       const loc = roomLocation(room);
       const previousEncounterKey = [
@@ -24119,8 +25685,8 @@ io.on('connection', (socket) => {
       worldFactionId,
       factionId: worldFactionId,
       name: safeName(savedProfile.name || auth.login),
-      x: clamp(Number(savedPlayer.x ?? playerSpawnWorld(locationId, 'spawn').x), -MAP_SIZE, MAP_SIZE),
-      z: clamp(Number(savedPlayer.z ?? playerSpawnWorld(locationId, 'spawn').z), -MAP_SIZE, MAP_SIZE),
+      x: clamp(Number(savedPlayer.x ?? playerSpawnWorld(locationId, 'spawn').x), -roomWorldExtent(room), roomWorldExtent(room)),
+      z: clamp(Number(savedPlayer.z ?? playerSpawnWorld(locationId, 'spawn').z), -roomWorldExtent(room), roomWorldExtent(room)),
       angle: Number(savedPlayer.angle || 0),
       crouching: false,
       maxHp: clamp(Number(savedPlayer.maxHp || 100), 1, 9999),
@@ -24139,6 +25705,7 @@ io.on('connection', (socket) => {
       taggedSkills: sanitizeTaggedSkills(savedProfile.taggedSkills || []),
       hp: clampPlayerHp(savedPlayer.hp ?? savedPlayer.maxHp ?? 100, savedPlayer.maxHp || 100),
       ...savedDownedState,
+      ...restoreDeathState(savedState, savedPlayer),
       equipment: savedEquipment,
       equipmentRuntime: savedEquipmentRuntime,
       equipmentRevision: 0,
@@ -24173,6 +25740,7 @@ io.on('connection', (socket) => {
       factionContracts: sanitizeServerFactionContracts(
         savedState.factionContracts || savedProfile.factionContracts || {}
       ),
+      territoryFaction: sanitizeTerritoryMembership(savedState.territoryFaction, KROMKA_TERRITORY_CATALOG),
       knownFactionSecrets: savedState.knownFactionSecrets && typeof savedState.knownFactionSecrets === 'object'
         ? savedState.knownFactionSecrets : {},
       kromkaQuestState: sanitizeKromkaQuestState(savedState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
@@ -24231,6 +25799,7 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
     players.set(socket.id, p);
+    if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());
     if (resumableSiege) {
       room.siegeEventId = resumableSiege.id;
       const siegeClan = serverSiegeClanForCharacter(characterId);
@@ -24650,6 +26219,119 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
   });
 
+  // Фракционный аукцион на базе Сердцевины: состояние, выставить, купить,
+  // снять, забрать полку. Только член фракции рядом с аукционером; лоты и
+  // покупки идемпотентны по requestId.
+  socket.on('auctionAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const factionId = serverPlayerTerritoryFactionId(p);
+    if (!factionId) return fail('Аукцион доступен только членам фракции Сердцевины.');
+    const room = rooms.get(p.roomId);
+    const loc = room ? roomLocation(room) : null;
+    if (!loc || loc.safe !== true) return fail('Аукцион работает только на защищённой базе.');
+    if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');
+    const now = Date.now();
+    const store = serverAuctionStore();
+    auctionExpireListings(store, now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const auctionState = () => publicAuction(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now);
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
+      return;
+    }
+    if (!['list', 'buy', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
+    const transaction = beginCriticalAction(p, 'auctionAction', data, ['action', 'itemId', 'qty', 'price', 'listingId', 'itemRuntimeId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, auction: auctionState(), self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    let payload = null;
+    if (action === 'list') {
+      const itemId = serverBaseItemId(data.itemId || '');
+      const qty = Math.max(0, Math.floor(Number(data.qty || 0)));
+      const price = Math.max(0, Math.floor(Number(data.price || 0)));
+      if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
+      if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
+      if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
+      const row = { id: itemId, qty, itemRuntimeId: String(data.itemRuntimeId || '').slice(0, 96) };
+      const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
+      if (!validation.ok) return fail(validation.error || 'Предмет недоступен.');
+      const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
+      serverInventoryRemove(p, itemId, qty);
+      serverFinalizeWeaponRuntimeRemoval(p, row, validation);
+      const created = auctionCreateListing(store, {
+        factionId, sellerCharacterId: p.characterId, sellerName: p.name, itemId, qty, price, records
+      }, KROMKA_AUCTION_RULES, now);
+      if (!created.ok) {
+        serverInventoryAdd(p, itemId, qty);
+        serverRestoreWeaponRuntimeRecords(p, records);
+        sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+        return fail(created.error);
+      }
+      sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+      payload = { ok: true, action, listingId: created.listing.id };
+    } else if (action === 'buy') {
+      const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const listing = store.factions?.[factionId]?.listings?.[listingId];
+      if (!listing) return fail('Лот уже снят.');
+      if (serverInventoryQty(p.inventory, 'silver') < listing.price) return fail(`Не хватает марок: нужно ${listing.price}.`);
+      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: listing.itemId, qty: listing.qty }], { apply: false });
+      if (!carryCheck.items.some(entry => entry.id === listing.itemId && entry.qty >= listing.qty)) return fail('Нет места или грузоподъёмности для покупки.');
+      const bought = auctionBuyListing(store, factionId, listingId, p.characterId, KROMKA_AUCTION_RULES, now);
+      if (!bought.ok) return fail(bought.error);
+      serverInventoryRemove(p, 'silver', bought.listing.price);
+      serverInventoryAdd(p, bought.listing.itemId, bought.listing.qty);
+      serverRestoreWeaponRuntimeRecords(p, bought.listing.records || []);
+      sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+      payload = { ok: true, action, listingId, itemId: bought.listing.itemId, qty: bought.listing.qty, price: bought.listing.price, fee: bought.fee };
+    } else if (action === 'cancel') {
+      const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const cancelled = auctionCancelListing(store, factionId, listingId, p.characterId, now);
+      if (!cancelled.ok) return fail(cancelled.error);
+      payload = { ok: true, action, listingId };
+    } else {
+      const claimed = serverClaimAuctionShelf(p, factionId, data, now);
+      if (!claimed.ok) return fail(claimed.error);
+      payload = { ok: true, action, ...claimed };
+    }
+    commitCriticalAction(p, transaction, payload);
+    scheduleServerPublicEventPersist();
+    serverApplyDerivedVitals(p);
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'auction' });
+    if (typeof ack === 'function') ack({ ...payload, auction: auctionState(), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
+  // PvE-область: снимок личной встречи и «Искать следы». Следы можно искать
+  // только живым и только в своей (или групповой) комнате области.
+  socket.on('pveAreaAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.onGlobalMap) return fail('Игрок не в локации.');
+    const room = rooms.get(p.roomId);
+    const area = room ? serverPveAreaForLocation(room.locationId) : null;
+    if (!room || !area) return fail('Это не PvE-область.');
+    const now = Date.now();
+    const state = serverEnsurePveRoom(room, p, now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({ ok: true, ...serverEmitPveAreaState(room, socket.id, now) });
+      return;
+    }
+    if (action !== 'searchTracks') return fail('Неизвестное действие PvE-области.');
+    if (p.dead || p.downed || Number(p.hp || 0) <= 0) return fail('Сейчас нельзя искать следы.');
+    const result = pveSearchTracks(state, area, KROMKA_PVE_AREA_CATALOG.rules, now, { random: room.rng || Math.random, aliveCount: serverPveAliveCount(room) });
+    if (!result.ok) return fail(result.error || 'Следы недоступны.');
+    if (result.spawn) serverSpawnPvePack(room, area, result.spawn, now);
+    state.lastAlive = serverPveAliveCount(room);
+    const payload = serverEmitPveAreaState(room, '', now);
+    if (typeof ack === 'function') ack({ ok: true, reason: result.reason, spawned: result.spawn ? result.spawn.spawnCount : 0, ...payload });
+  });
+
   socket.on('requestArtifactState', (_data = {}, ack) => {
     const p = players.get(socket.id);
     if (!p || !p.roomId) return typeof ack === 'function' && ack({ ok: false, error: 'Игрок не в локации.' });
@@ -24674,6 +26356,14 @@ io.on('connection', (socket) => {
     if (!result.ok) return fail(result.error || 'Артефакт не удалось забрать.');
     KROMKA_CLAIMED_ARTIFACT_IDS.add(String(result.record.id || ''));
     savesDb.claimedArtifactIds = [...KROMKA_CLAIMED_ARTIFACT_IDS];
+    if (result.birth) {
+      // Поле освобождается: следующая минутная проверка может родить новый.
+      claimArtifactBirth(serverArtifactBirthStore(), room.locationId, result.record.id);
+      for (const other of rooms.values()) {
+        if (other !== room && String(other?.locationId || '') === String(room.locationId || '')) serverEnsureRoomArtifacts(other, Date.now());
+      }
+      scheduleServerArtifactBirthPersist();
+    }
     serverInventoryAdd(p, result.record.itemId, 1);
     serverRecordKromkaQuestEvent(p, 'recover_magnetic_core', {
       locationId: p.locationId,
@@ -24686,25 +26376,92 @@ io.on('connection', (socket) => {
     for (const occupant of livePlayersInRoom(room)) emitServerArtifactState(occupant, 'pickedUp');
     const self = publicAuthoritativePlayerState(p);
     emitAuthoritativePlayerState(p, { reason: 'artifactPickup' });
-    if (typeof ack === 'function') ack({ ok: true, record: result.record, self });
+    if (typeof ack === 'function') ack({ ok: true, record: publicArtifactRecord(result.record, KROMKA_ARTIFACT_CATALOG), self });
   });
 
+  // Стабилизация — платная гарантированная услуга исследователя/терминала
+  // (service artifactLab), капитала или станка личной базы. Она единственная
+  // раскрывает свойства экземпляра; requestId делает повтор после reconnect
+  // безопасным (второй платы не будет).
   socket.on('stabilizeArtifact', (data = {}, ack) => {
     const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || p.dead || p.onGlobalMap) return fail('Стабилизация здесь недоступна.');
-    const loc = roomLocation(rooms.get(p.roomId));
-    if (!loc?.safe && p.locationId !== 'personalBase') return fail('Нужен безопасный специалист или станок личной базы.');
+    const room = rooms.get(p.roomId);
+    const loc = roomLocation(room);
+    const place = serverArtifactStabilizationPlace(p, loc);
+    if (!place.ok) return fail(place.error);
     sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
     const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
     if (!record) return fail('Артефакт не найден.');
-    if (record.stabilized && !record.hot) return fail('Артефакт уже стабилизирован.');
-    record.hot = false;
-    record.stabilized = true;
-    record.containerId = '';
+    const cost = artifactStabilizationCost(record, KROMKA_ARTIFACT_CATALOG);
+    if (String(data.action || '') === 'quote') {
+      if (typeof ack === 'function') ack({ ok: true, quote: true, cost, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG), place: place.kind });
+      return;
+    }
+    const transaction = beginCriticalAction(p, 'stabilizeArtifact', data, ['recordId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      // Повтор после reconnect: тот же ответ, без второй оплаты.
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    if (record.stabilized && record.revealed) return fail('Артефакт уже стабилизирован.');
+    const shortage = serverArtifactCostShortage(p, cost);
+    if (shortage) return fail(shortage);
+    if (cost.silver > 0) serverInventoryRemove(p, 'silver', cost.silver);
+    for (const row of cost.items) serverInventoryRemove(p, row.id, row.qty);
+    stabilizeArtifactRecord(record);
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const publicRecord = publicArtifactRecord(p.artifactRecords.find(row => row.id === record.id) || record, KROMKA_ARTIFACT_CATALOG);
+    const payload = { ok: true, cost, place: place.kind, record: publicRecord };
+    commitCriticalAction(p, transaction, payload);
     persistActivePlayerState(p);
     emitAuthoritativePlayerState(p, { reason: 'artifactStabilized' });
-    if (typeof ack === 'function') ack({ ok: true, record, self: publicAuthoritativePlayerState(p) });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
+  // Разбор ненужного артефакта на компоненты: выход ниже цены стабилизации
+  // того же тира. Установленный в контейнер артефакт сначала нужно снять.
+  socket.on('salvageArtifact', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || p.downed || p.onGlobalMap) return fail('Разбор сейчас недоступен.');
+    if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Нельзя разбирать артефакты в бою.');
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const quoteOnly = String(data.action || '') === 'quote';
+    // Повтор после reconnect отвечает тем же результатом даже после того, как
+    // разобранный артефакт уже исчез из записей.
+    const transaction = quoteOnly ? null : beginCriticalAction(p, 'salvageArtifact', data, ['recordId']);
+    if (transaction && !transaction.ok) return fail(transaction.error);
+    if (transaction && transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
+    if (!record) return fail('Артефакт не найден.');
+    if (p.artifactSlots.includes(record.id)) return fail('Сначала снимите артефакт с пояса.');
+    const yields = artifactSalvageYields(record, KROMKA_ARTIFACT_CATALOG);
+    if (quoteOnly) {
+      if (typeof ack === 'function') ack({ ok: true, quote: true, yields, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG) });
+      return;
+    }
+    const carryCheck = serverLimitItemsByCarry(p, data, yields.map(row => ({ id: row.id, qty: row.qty })), { apply: false });
+    if (yields.some(row => !carryCheck.items.some(item => item.id === row.id && item.qty >= row.qty)))
+      return fail('Нет места или грузоподъёмности для компонентов.');
+    const validation = serverValidateWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1, itemRuntimeId: record.id });
+    if (!validation.ok) return fail(validation.error || 'Артефакт недоступен для разбора.');
+    serverInventoryRemove(p, record.itemId, 1);
+    serverFinalizeWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1 }, validation);
+    for (const row of yields) serverInventoryAdd(p, row.id, row.qty);
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const payload = { ok: true, recordId: record.id, itemId: record.itemId, tier: record.tier, yields };
+    commitCriticalAction(p, transaction, payload);
+    serverApplyDerivedVitals(p);
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'artifactSalvaged' });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 
   socket.on('artifactLoadoutAction', (data = {}, ack) => {
@@ -24716,20 +26473,32 @@ io.on('connection', (socket) => {
     if (capacity <= 0) return fail('Сначала наденьте пояс-контейнер.');
     const action = String(data.action || 'equip');
     const recordId = String(data.recordId || '').slice(0, 96);
-    if (action === 'unequip') {
-      p.artifactSlots = p.artifactSlots.filter(id => id !== recordId);
-    } else {
+    const nextSlotsFor = (mode) => {
+      if (mode === 'unequip') return p.artifactSlots.filter(id => id !== recordId);
       const record = p.artifactRecords.find(row => row.id === recordId);
-      if (!record || !record.stabilized || record.hot) return fail('На пояс ставится только стабилизированный артефакт.');
+      if (!record || !record.stabilized || record.hot || record.revealed !== true) return { error: 'На пояс ставится только стабилизированный артефакт.' };
       const equippedRecords = p.artifactRecords.filter(row => p.artifactSlots.includes(row.id));
-      if (equippedRecords.some(row => row.typeId === record.typeId && row.id !== record.id)) return fail('Два одинаковых артефакта не складываются.');
+      if (equippedRecords.some(row => row.typeId === record.typeId && row.id !== record.id)) return { error: 'Два одинаковых артефакта не складываются.' };
       const slotIndex = Math.floor(Number(data.slotIndex ?? p.artifactSlots.length));
-      if (!Number.isFinite(slotIndex) || slotIndex < 0 || slotIndex >= capacity) return fail('На поясе нет свободного места. Сначала снимите артефакт.');
+      if (!Number.isFinite(slotIndex) || slotIndex < 0 || slotIndex >= capacity) return { error: 'На поясе нет свободного места. Сначала снимите артефакт.' };
       const next = p.artifactSlots.filter(id => id !== recordId);
       while (next.length < capacity) next.push('');
       next[slotIndex] = recordId;
-      p.artifactSlots = next.filter(Boolean).slice(0, capacity);
+      return next.filter(Boolean).slice(0, capacity);
+    };
+    if (action === 'preview') {
+      // Предпросмотр «что изменится» не трогает состояние и разрешён в бою.
+      const mode = p.artifactSlots.includes(recordId) ? 'unequip' : 'equip';
+      const next = nextSlotsFor(mode);
+      if (!Array.isArray(next)) return fail(next.error);
+      const preview = previewArtifactEffects(p, KROMKA_ARTIFACT_CATALOG, next);
+      if (typeof ack === 'function') ack({ ok: true, preview: true, mode, recordId, slots: next, delta: preview.delta, after: preview.after });
+      return;
     }
+    if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Контейнер артефактов нельзя менять в бою.');
+    const next = nextSlotsFor(action === 'unequip' ? 'unequip' : 'equip');
+    if (!Array.isArray(next)) return fail(next.error);
+    p.artifactSlots = next;
     sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
     serverApplyDerivedVitals(p);
     sanitizeCarrySnapshot(p);
@@ -26152,6 +27921,141 @@ io.on('connection', (socket) => {
     fail('Постоянного вступления больше нет. Возьмите временный контракт у нужной стороны.');
   });
 
+  // Принадлежность к фракции для Сердцевины: вступление в столице фракции или у
+  // регистратора её базы, выход и смена с настраиваемым кулдауном. Репутация и
+  // временные контракты не затрагиваются.
+  socket.on('territoryFactionAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => {
+      if (typeof ack === 'function') ack({
+        ok: false, error,
+        membership: p ? publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG) : null,
+        self: p ? publicAuthoritativePlayerState(p) : null
+      });
+    };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const now = Date.now();
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({
+        ok: true,
+        membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
+        catalog: publicTerritoryCatalog()
+      });
+      return;
+    }
+    if (action !== 'join' && action !== 'leave') return fail('Неизвестное действие с фракцией.');
+    if (p.onGlobalMap || !p.roomId) return fail('Вступление и выход оформляются на базе или в столице фракции.');
+    const transaction = beginCriticalAction(p, 'territoryFactionAction', data, ['action', 'factionId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    const room = rooms.get(p.roomId);
+    const loc = roomLocation(room);
+    const registrar = serverNearbyServiceActor(p, 'registrar');
+    const capitalFaction = locationCapitalFaction(loc);
+    const factionId = action === 'join'
+      ? String(data.factionId || registrar?.territoryFactionId || capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
+      : '';
+    if (action === 'join') {
+      const registrarFaction = String(registrar?.territoryFactionId || '');
+      const atOwnCapital = !!capitalFaction && capitalFaction === factionId && !String(loc.territoryId || '');
+      const atRegistrar = !!registrar && (!registrarFaction || registrarFaction === factionId);
+      if (!atOwnCapital && !atRegistrar) {
+        return fail('Вступить можно в столице этой фракции или у её регистратора на базе.');
+      }
+    } else if (!registrar && !capitalFaction) {
+      return fail('Выйти из фракции можно у регистратора или в столице фракции.');
+    }
+    const reputation = Number(sanitizeServerWorldFactionReputation(p.worldFactionReputation || {})[factionId] || 0);
+    const result = action === 'join'
+      ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
+      : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
+    if (!result.ok) return fail(result.error);
+    p.territoryFaction = result.membership;
+    const payload = {
+      ok: true,
+      action,
+      factionId: result.membership.factionId,
+      previousFactionId: String(result.previousFactionId || ''),
+      membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now)
+    };
+    commitCriticalAction(p, transaction, payload);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'territoryFaction' });
+    if (typeof ack === 'function') ack({ ...payload, self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('requestTerritoryState', (_data = {}, ack) => {
+    if (typeof ack !== 'function') return;
+    ack({
+      ok: true,
+      territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, Date.now()),
+      catalog: publicTerritoryCatalog()
+    });
+  });
+
+  // Сервисы постоянной базы: медик лечит и снимает травмы за марки. Работает
+  // только рядом с медиком на защищённой базе, поэтому не прерывает бой.
+  socket.on('baseServiceAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const service = String(data.service || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const action = String(data.action || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    if (service !== 'medic') return fail('Неизвестный сервис базы.');
+    const room = rooms.get(p.roomId);
+    if (!room) return fail('Локация не найдена.');
+    const loc = roomLocation(room);
+    if (loc.safe !== true) return fail('Медик работает только на защищённой базе.');
+    const medic = serverNearbyServiceActor(p, 'medic');
+    if (!medic) return fail('Медик базы должен быть рядом.');
+    if (action === 'state') {
+      serverApplyDerivedVitals(p);
+      const missing = Math.max(0, Math.round(Number(p.maxHp || 0) - Number(p.hp || 0)));
+      const injuryCount = Object.keys(sanitizeInjuries(p.injuries || {})).length;
+      if (typeof ack === 'function') ack({
+        ok: true, service, missingHp: missing, injuryCount,
+        healCost: missing > 0 ? Math.max(5, Math.ceil(missing * KROMKA_TERRITORY_MEDIC_PRICE_PER_HP)) : 0,
+        cureCost: injuryCount * KROMKA_TERRITORY_MEDIC_INJURY_PRICE
+      });
+      return;
+    }
+    if (action !== 'heal' && action !== 'cure') return fail('Неизвестное действие медика.');
+    const transaction = beginCriticalAction(p, 'baseServiceAction', data, ['service', 'action']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    serverApplyDerivedVitals(p);
+    let cost = 0;
+    if (action === 'heal') {
+      const missing = Math.max(0, Math.round(Number(p.maxHp || 0) - Number(p.hp || 0)));
+      if (missing <= 0) return fail('Лечение не требуется.');
+      cost = Math.max(5, Math.ceil(missing * KROMKA_TERRITORY_MEDIC_PRICE_PER_HP));
+    } else {
+      const injuryCount = Object.keys(sanitizeInjuries(p.injuries || {})).length;
+      if (injuryCount <= 0) return fail('Травм нет.');
+      cost = injuryCount * KROMKA_TERRITORY_MEDIC_INJURY_PRICE;
+    }
+    if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
+    serverInventoryRemove(p, 'silver', cost);
+    if (action === 'heal') p.hp = Math.max(1, Math.round(Number(p.maxHp || 1)));
+    else p.injuries = {};
+    const payload = {
+      ok: true, service, action, cost,
+      hp: Math.round(Number(p.hp || 0)), maxHp: Math.round(Number(p.maxHp || 0)),
+      injuries: sanitizeInjuries(p.injuries || {})
+    };
+    commitCriticalAction(p, transaction, payload);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'baseService' });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
   socket.on('worldTaskLeaveParty', (_data = {}, ack) => {
     if (typeof ack === 'function') {
       ack({ ok: false, error: 'Выход из группы доступен только через отмену работы пустоши.' });
@@ -26168,7 +28072,7 @@ io.on('connection', (socket) => {
     const loc = roomLocation(room);
     const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
     if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine);
+    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
@@ -26188,7 +28092,7 @@ io.on('connection', (socket) => {
     if (!locationIsFactionCapital(loc) || !storageFaction) {
       return fail('\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0441\u0442\u043e\u043b\u0438\u0446\u0430\u0445 \u0444\u0440\u0430\u043a\u0446\u0438\u0439.');
     }
-    const point = serverLocationObjectWorldPoint(loc.storage || {});
+    const point = serverLocationObjectWorldPoint(loc.storage || {}, locationTileDims(loc));
     if (!point) return fail('В этой локации нет личного хранилища.');
     if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 4.6) {
       return fail('Подойдите ближе к хранилищу.');
@@ -26302,7 +28206,7 @@ io.on('connection', (socket) => {
     const loc = roomLocation(room);
     const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
     if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine);
+    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
@@ -26552,7 +28456,7 @@ io.on('connection', (socket) => {
 
     const impactX = Number(data.impactX);
     const impactZ = Number(data.impactZ);
-    if (!Number.isFinite(impactX) || !Number.isFinite(impactZ) || Math.abs(impactX) > MAP_SIZE || Math.abs(impactZ) > MAP_SIZE) {
+    if (!Number.isFinite(impactX) || !Number.isFinite(impactZ) || Math.abs(impactX) > roomWorldExtent(room) || Math.abs(impactZ) > roomWorldExtent(room)) {
       return fail('Сервер: неверная точка взрыва.', currentCombat());
     }
     const origin = serverCombatOrigin(p, data);
@@ -26591,6 +28495,7 @@ io.on('connection', (socket) => {
       const ambushLevel = serverAmbushLevel(p, enemy, now);
       const raw = Math.max(1, Math.round(baseRaw * falloff * (1 + ambushLevel * 0.14)));
       const dmgInfo = serverMitigateEnemyDamage(raw, enemy, 'explosive');
+      dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, Number(enemy.hp || 0) - dmgInfo.damage);
       if (enemy.hp > 0) {
         aggroEnemyFromHit(room, enemy, p, now);
@@ -26854,6 +28759,7 @@ io.on('connection', (socket) => {
         damageType: type
       });
       raw = dmgInfo.raw;
+      dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
       hits.push({
         handSlot: entry.slot,
@@ -27148,7 +29054,7 @@ io.on('connection', (socket) => {
     const resourceDef = serverResourceDef(resource.type);
     if (!resourceDef || !SERVER_ITEM_IDS.has(resourceDef.itemId)) return fail('Этот ресурс нельзя добыть.');
 
-    const pos = tileToWorld(resource.tx, resource.tz);
+    const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
     const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
     if (!serverInteractionHasLineOfSight(room, p, pos)) return fail('Ресурс находится за препятствием.');
@@ -27459,8 +29365,8 @@ io.on('connection', (socket) => {
       return;
     }
     const a = Number.isFinite(Number(p.angle)) ? Number(p.angle) : 0;
-    let x = clamp(Number(data.x ?? (p.x + Math.sin(a) * 1.15)), -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(data.z ?? (p.z + Math.cos(a) * 1.15)), -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(data.x ?? (p.x + Math.sin(a) * 1.15)), -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(data.z ?? (p.z + Math.cos(a) * 1.15)), -roomWorldExtent(room), roomWorldExtent(room));
     if (Math.hypot(x - p.x, z - p.z) > 3.0 || !isRoomWalkableWorld(room, x, z, 0.25)) {
       x = p.x + Math.sin(a) * 0.95;
       z = p.z + Math.cos(a) * 0.95;
@@ -27479,6 +29385,8 @@ io.on('connection', (socket) => {
     room.groundItems.set(groundItem.id, groundItem);
     serverInventoryRemove(p, itemId, qty);
     serverFinalizeWeaponRuntimeRemoval(p, { id: itemId, qty }, runtimeRemoval);
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(p);
     refreshRoomWorldState(room);
     const pub = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item: pub, apCost: spend.apCost, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -27527,6 +29435,8 @@ io.on('connection', (socket) => {
     room.groundItems.delete(id);
     serverInventoryAdd(p, groundItem.itemId, groundItem.qty);
     serverRestoreWeaponRuntimeRecords(p, groundItem.itemRuntimeRecords || []);
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(p);
     refreshRoomWorldState(room);
     const item = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item, carry: carryCheck.carry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -27817,6 +29727,16 @@ io.on('connection', (socket) => {
       });
       return;
     }
+    const bossLootError = serverBossLootError(room, container);
+    if (bossLootError) {
+      if (typeof ack === 'function') ack({ ok: false, error: bossLootError, container: publicWorldContainer(container) });
+      return;
+    }
+    const eventChestError = serverPublicEventChestError(room, container, p, Date.now());
+    if (eventChestError) {
+      if (typeof ack === 'function') ack({ ok: false, error: eventChestError, container: publicWorldContainer(container) });
+      return;
+    }
     if (serverRefreshTutorialSupplies(p, container)) { /* personal tutorial issue */ }
     else if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
     else if (applyContainerProgressionLoot(room, container, p)) refreshRoomWorldState(room);
@@ -27899,7 +29819,26 @@ io.on('connection', (socket) => {
     const sameLocation = normalizeLocationId(p.locationId || '') === locationId && !!p.roomId;
     const localTransition = serverNearbyTransitionTo(p, locationId);
     const ticketedRuntimeLocation = !!transitionTicket && !!(baseLoc.randomTemplate || baseLoc.encounterOnly);
-    if (!sameLocation && locationId !== 'wasteland' && !isReleasedLocationId(locationId) && !ticketedRuntimeLocation) {
+    if (!sameLocation) {
+      // Сердцевина, базы и лаборатории: членство проверяется на каждом входе,
+      // платформа принимает только свою фракцию, а уехать на базу из боя нельзя.
+      const territoryAccess = territoryLocationAccess(baseLoc, p.territoryFaction, KROMKA_TERRITORY_CATALOG);
+      if (!territoryAccess.allowed) {
+        if (typeof ack === 'function') ack({ ok: false, error: territoryAccess.error || 'Вход закрыт.', zoneRules: zoneRules(locationPvpMode(baseLoc), serverZoneRulesExtra(baseLoc)) });
+        return;
+      }
+      const platformFaction = String(localTransition?.factionAccess || '');
+      if (platformFaction && platformFaction !== serverPlayerTerritoryFactionId(p)) {
+        if (typeof ack === 'function') ack({ ok: false, error: 'Эта платформа метро принадлежит другой фракции.' });
+        return;
+      }
+      const currentLoc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+      if (currentLoc.territoryId && String(baseLoc.territoryRole || '') === 'base' && serverTerritoryPlayerInCombat(p, Date.now())) {
+        if (typeof ack === 'function') ack({ ok: false, error: `Нельзя уехать на базу во время боя. Подождите ${Math.round(KROMKA_TERRITORY_COMBAT_GRACE_MS / 1000)} с без боя.` });
+        return;
+      }
+    }
+    if (!sameLocation && locationId !== 'wasteland' && !isReleasedLocationId(locationId) && !ticketedRuntimeLocation && !localTransition) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Эта локация пока закрыта и не входит в текущий набор мира.' });
       return;
     }
@@ -27944,6 +29883,19 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Эта встреча уже завершилась.' });
       return;
     }
+    // Публичное событие: после гибели вернуться можно только через 60–90 с,
+    // а в истёкшее событие — никогда.
+    const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);
+    if (transitionPublicEvent) {
+      const eventError = publicEventEntryError(transitionPublicEvent, p.characterId, Date.now());
+      if (eventError) {
+        p.pendingLocationTransition = null;
+        if (typeof ack === 'function') ack({ ok: false, error: eventError, publicEvent: publicPublicEvent(transitionPublicEvent, Date.now()) });
+        return;
+      }
+      transitionPublicEvent.visits = Number(transitionPublicEvent.visits || 0) + 1;
+      scheduleServerPublicEventPersist();
+    }
     const effectiveRoomId = transitionTicket?.roomId || '';
     const roomWorldSiteId = String(transitionTicket?.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     const siteRoomId = !sharedRealityLocation && roomWorldSiteId ? roomIdForWorldSite(locationId, roomWorldSiteId) : '';
@@ -27951,9 +29903,17 @@ io.on('connection', (socket) => {
       && effectiveRoomId.startsWith(`${locationId}#`)
       && !sharedRealityLocation;
     leaveCurrentRoom(socket, 'roomChange', { newLocationId: locationId });
-    const room = canUseRequestedRoom
-      ? getOrCreateRoom(effectiveRoomId, locationId)
-      : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+    // PvE-область: личная комната игрока или комната группы из билета;
+    // чужую комнату по подделанному roomId получить нельзя.
+    const pveResolvedRoomId = baseLoc.pveArea === true
+      ? serverResolvePveRoomId(p, locationId, effectiveRoomId || requestedRoomId)
+      : '';
+    const room = pveResolvedRoomId
+      ? getOrCreateRoom(pveResolvedRoomId, locationId)
+      : canUseRequestedRoom
+        ? getOrCreateRoom(effectiveRoomId, locationId)
+        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+    if (pveResolvedRoomId) serverPveRoomEntered(room, p, Date.now());
     const effectiveEncounterId = String(activeTransitionZone?.encounterId || transitionTicket?.encounterId || '').slice(0, 40);
     const hasEncounterPayload = !!effectiveEncounterId;
     const effectiveWorldZoneId = String(activeTransitionZone?.id || transitionTicket?.worldZoneId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
@@ -28124,6 +30084,62 @@ setInterval(() => {
   }
 }, 1000);
 
+// Фракционные аукционы: истёкшие лоты возвращаются на полку продавца.
+setInterval(() => {
+  try {
+    serverTickAuctions(Date.now());
+  } catch (error) {
+    console.error('Auction tick failed:', error);
+  }
+}, 60000);
+
+// Мировой босс: щит, уязвимость, импульсы, перерождение.
+setInterval(() => {
+  try {
+    serverTickWorldBosses(Date.now());
+  } catch (error) {
+    console.error('World boss tick failed:', error);
+  }
+}, 1000);
+
+// Публичные события: появление, предупреждение, спорный сундук, истечение.
+serverRestorePublicEventZones();
+setInterval(() => {
+  try {
+    serverTickPublicEvents(Date.now());
+  } catch (error) {
+    console.error('Public event tick failed:', error);
+  }
+}, 5000);
+
+// Встречи в PvE-областях: плановые проверки и сброс пустых личных комнат.
+setInterval(() => {
+  try {
+    serverTickPveRooms(Date.now());
+  } catch (error) {
+    console.error('PvE area tick failed:', error);
+  }
+}, 5000);
+
+// Рождение артефактов идёт по реальному времени даже в пустых локациях.
+setInterval(() => {
+  try {
+    serverTickAnomalyBirths(Date.now());
+  } catch (error) {
+    console.error('Anomaly artifact birth tick failed:', error);
+  }
+}, 15000);
+
+// Аванпосты Сердцевины считаются по реальному времени независимо от игроков,
+// загрузки сцены и скорости игрового времени.
+setInterval(() => {
+  try {
+    serverTickTerritory(Date.now());
+  } catch (error) {
+    console.error('Territory outpost tick failed:', error);
+  }
+}, Math.max(250, Number(KROMKA_TERRITORY_CATALOG.outpostRules?.captureTickMs) || 1000));
+
 setInterval(() => {
   const startedAt = Date.now();
   try {
@@ -28209,7 +30225,15 @@ setInterval(() => {
       });
       if (Number(p.hp || 0) <= 0) {
         p.dead = true;
-        serverRespawnPlayer(p, shiftRoom, { shiftId: shift.shiftId, fullDrop: false });
+        p.diedAt = now;
+        const shiftLoc = shiftRoom ? roomLocation(shiftRoom) : null;
+        const droppedItems = shiftRoom ? serverDropPvpLootForMode(shiftRoom, p, null, shiftLoc, now) : [];
+        serverRespawnPlayer(p, shiftRoom, {
+          shiftId: shift.shiftId,
+          pvpMode: shiftLoc ? locationPvpMode(shiftLoc) : 'peaceful',
+          fullDrop: !!shiftLoc && locationHasFullInventoryDrop(shiftLoc),
+          droppedItems
+        });
       }
     }
     if (phaseChanged || now - Number(p.lastArtifactStateAt || 0) >= 1000) {
@@ -28241,7 +30265,15 @@ setInterval(() => {
         }
         p.downed = false;
         p.downedUntil = 0;
-        serverRespawnPlayer(p, downedRoom, { bleedOut: true });
+        p.diedAt = playerTickNow;
+        const bleedLoc = downedRoom ? roomLocation(downedRoom) : null;
+        const bleedDrops = downedRoom ? serverDropPvpLootForMode(downedRoom, p, null, bleedLoc, playerTickNow) : [];
+        serverRespawnPlayer(p, downedRoom, {
+          bleedOut: true,
+          pvpMode: bleedLoc ? locationPvpMode(bleedLoc) : 'peaceful',
+          fullDrop: !!bleedLoc && locationHasFullInventoryDrop(bleedLoc),
+          droppedItems: bleedDrops
+        });
       }
       continue;
     }
@@ -28270,8 +30302,9 @@ setInterval(() => {
     if (moving) {
       const speedFactor = (p.input.forward < -0.15 ? 0.58 : 1)
         * (1 + serverArtifactEffects(p).speedPct);
-      const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
-      const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
+      const legacyExtent = playerWorldExtent(p);
+      const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
+      const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
       const room = rooms.get(p.roomId);
       const closedBounds = serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS);
       if (!room || (
@@ -28337,11 +30370,14 @@ setInterval(() => {
       if (killed) {
         p.dead = true;
         p.diedAt = playerTickNow;
+        const anomalyLoc = roomLocation(anomalyRoom);
+        const droppedItems = serverDropPvpLootForMode(anomalyRoom, p, null, anomalyLoc, playerTickNow);
         serverRespawnPlayer(p, anomalyRoom, {
           anomalyId: anomalyHit.anomalyId,
           anomalyName: anomalyHit.anomalyName,
-          pvpMode: locationPvpMode(roomLocation(anomalyRoom)),
-          fullDrop: false
+          pvpMode: locationPvpMode(anomalyLoc),
+          fullDrop: locationHasFullInventoryDrop(anomalyLoc),
+          droppedItems
         });
       }
     }

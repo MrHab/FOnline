@@ -61,7 +61,8 @@ const context = vm.createContext({
   KROMKA_CLAIMED_ARTIFACT_IDS: claimed, KROMKA_SHIFT_CYCLE: { state: () => shift },
   WASTELAND_SIM: { artifactOpportunityForLocation: () => opportunity },
   kromkaLocationLore: () => location, KROMKA_ARTIFACT_CATALOG: catalog,
-  ANOMALY_SYSTEM: { snapshot: () => ({ fields: location.anomalyFields }) }, reconcileArtifactSpawns: spawns.reconcileArtifactSpawns
+  ANOMALY_SYSTEM: { snapshot: () => ({ fields: location.anomalyFields }) }, reconcileArtifactSpawns: spawns.reconcileArtifactSpawns,
+  mergeBirthArtifacts: spawns.mergeBirthArtifacts, liveArtifactBirths: () => [], serverArtifactBirthStore: () => ({ version: 1, locations: {} })
 });
 vm.runInContext(functionSource('serverEnsureRoomArtifacts'), context);
 const restarted = { locationId: location.id };

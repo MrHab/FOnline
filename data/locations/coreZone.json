@@ -1,0 +1,7850 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "coreZone",
+  "name": "Сердцевина",
+  "seed": 2026091510,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "territoryZone",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "noRespawn": true,
+  "allowGlobalMapExit": false,
+  "noGlobalMapEntry": true,
+  "territoryId": "core",
+  "territoryRole": "zone",
+  "factionAccess": "territory",
+  "ground": {
+    "preset": "glassAsh",
+    "label": "Сердцевина"
+  },
+  "map": {
+    "width": 320,
+    "depth": 320,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0.0,
+    "y": 0.1,
+    "z": 132.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0.0,
+    "y": 0.1,
+    "z": 132.0,
+    "rotationY": 0.0
+  },
+  "entryFromUprava": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0,
+    "y": 0.1,
+    "z": 132,
+    "rotationY": -3.1415926535897931
+  },
+  "entryFromArtels": {
+    "tx": 14,
+    "tz": 80,
+    "x": -132,
+    "y": 0.1,
+    "z": 0,
+    "rotationY": 1.5707963267948966
+  },
+  "entryFromContour": {
+    "tx": 146,
+    "tz": 80,
+    "x": 132,
+    "y": 0.1,
+    "z": 0,
+    "rotationY": -1.5707963267948966
+  },
+  "entryFromLeague": {
+    "tx": 80,
+    "tz": 14,
+    "x": 0,
+    "y": 0.1,
+    "z": -132,
+    "rotationY": 0
+  },
+  "entryFromLabSprout": {
+    "tx": 111,
+    "tz": 111,
+    "x": 63,
+    "y": 0.1,
+    "z": 63,
+    "rotationY": -2.3561944901923448
+  },
+  "entryFromLabCircuit": {
+    "tx": 48,
+    "tz": 111,
+    "x": -63,
+    "y": 0.1,
+    "z": 63,
+    "rotationY": 2.3561944901923448
+  },
+  "entryFromLabAlloy": {
+    "tx": 48,
+    "tz": 48,
+    "x": -63,
+    "y": 0.1,
+    "z": -63,
+    "rotationY": 0.78539816339744828
+  },
+  "entryFromLabSpectrum": {
+    "tx": 111,
+    "tz": 48,
+    "x": 63,
+    "y": 0.1,
+    "z": -63,
+    "rotationY": -0.78539816339744828
+  },
+  "entryFromLabCenter": {
+    "tx": 80,
+    "tz": 73,
+    "x": 0,
+    "y": 0.1,
+    "z": -14,
+    "rotationY": 3.1415926535897931
+  },
+  "transitions": [
+    {
+      "id": "metro_uprava",
+      "type": "location",
+      "label": "Платформа метро — Узел Управы",
+      "to": "coreBaseUprava",
+      "entryKey": "entryFromCore",
+      "factionAccess": "uprava",
+      "tx": 80,
+      "tz": 149,
+      "x": 0,
+      "y": 0.1,
+      "z": 138,
+      "rotationY": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "metro_free_artels",
+      "type": "location",
+      "label": "Платформа метро — Артельный узел",
+      "to": "coreBaseArtels",
+      "entryKey": "entryFromCore",
+      "factionAccess": "free_artels",
+      "tx": 11,
+      "tz": 80,
+      "x": -138,
+      "y": 0.1,
+      "z": 0,
+      "rotationY": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "metro_contour",
+      "type": "location",
+      "label": "Платформа метро — Узел Контура",
+      "to": "coreBaseContour",
+      "entryKey": "entryFromCore",
+      "factionAccess": "contour",
+      "tx": 149,
+      "tz": 80,
+      "x": 138,
+      "y": 0.1,
+      "z": 0,
+      "rotationY": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "metro_tract_league",
+      "type": "location",
+      "label": "Платформа метро — Узел Лиги",
+      "to": "coreBaseLeague",
+      "entryKey": "entryFromCore",
+      "factionAccess": "tract_league",
+      "tx": 80,
+      "tz": 11,
+      "x": 0,
+      "y": 0.1,
+      "z": -138,
+      "rotationY": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "enter_coreLabSprout",
+      "type": "location",
+      "label": "Лаборатория «Росток» — вход",
+      "to": "coreLabSprout",
+      "entryKey": "entryFromCore",
+      "tx": 113,
+      "tz": 113,
+      "x": 66,
+      "y": 0.1,
+      "z": 66,
+      "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "enter_coreLabCircuit",
+      "type": "location",
+      "label": "Лаборатория «Цепь» — вход",
+      "to": "coreLabCircuit",
+      "entryKey": "entryFromCore",
+      "tx": 47,
+      "tz": 113,
+      "x": -66,
+      "y": 0.1,
+      "z": 66,
+      "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "enter_coreLabAlloy",
+      "type": "location",
+      "label": "Лаборатория «Сплав» — вход",
+      "to": "coreLabAlloy",
+      "entryKey": "entryFromCore",
+      "tx": 47,
+      "tz": 47,
+      "x": -66,
+      "y": 0.1,
+      "z": -66,
+      "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "enter_coreLabSpectrum",
+      "type": "location",
+      "label": "Лаборатория «Спектр» — вход",
+      "to": "coreLabSpectrum",
+      "entryKey": "entryFromCore",
+      "tx": 113,
+      "tz": 47,
+      "x": 66,
+      "y": 0.1,
+      "z": -66,
+      "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "enter_coreLabCenter",
+      "type": "location",
+      "label": "Объект Ноль — служебный лифт",
+      "to": "coreLabCenterService",
+      "entryKey": "entryFromCore",
+      "tx": 80,
+      "tz": 75,
+      "x": 0,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "radius": 3
+    }
+  ],
+  "worldZones": [
+    {
+      "id": "platform_uprava",
+      "label": "Платформа Управы",
+      "type": "factionPlatform",
+      "factionId": "uprava",
+      "tx": 80,
+      "tz": 149,
+      "radius": 14
+    },
+    {
+      "id": "platform_artels",
+      "label": "Платформа Артелей",
+      "type": "factionPlatform",
+      "factionId": "free_artels",
+      "tx": 11,
+      "tz": 80,
+      "radius": 14
+    },
+    {
+      "id": "platform_contour",
+      "label": "Платформа Контура",
+      "type": "factionPlatform",
+      "factionId": "contour",
+      "tx": 149,
+      "tz": 80,
+      "radius": 14
+    },
+    {
+      "id": "platform_league",
+      "label": "Платформа Лиги",
+      "type": "factionPlatform",
+      "factionId": "tract_league",
+      "tx": 80,
+      "tz": 11,
+      "radius": 14
+    },
+    {
+      "id": "capture_outpostPump",
+      "label": "Область контроля: Насосная «Ключ-9»",
+      "type": "outpostCapture",
+      "outpostId": "outpostPump",
+      "tx": 38,
+      "tz": 98,
+      "radius": 10
+    },
+    {
+      "id": "capture_outpostRelay",
+      "label": "Область контроля: Ретранслятор «Ось»",
+      "type": "outpostCapture",
+      "outpostId": "outpostRelay",
+      "tx": 122,
+      "tz": 98,
+      "radius": 10
+    },
+    {
+      "id": "capture_outpostDepot",
+      "label": "Область контроля: Склад «Полоса»",
+      "type": "outpostCapture",
+      "outpostId": "outpostDepot",
+      "tx": 80,
+      "tz": 38,
+      "radius": 10
+    }
+  ],
+  "containers": [
+    {
+      "id": "outpostPump_cache",
+      "name": "Тайник: Насосная «Ключ-9»",
+      "tier": "rare",
+      "tx": 40,
+      "tz": 96,
+      "x": -80,
+      "y": 0.1,
+      "z": 32,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "outpostRelay_cache",
+      "name": "Тайник: Ретранслятор «Ось»",
+      "tier": "rare",
+      "tx": 124,
+      "tz": 96,
+      "x": 88,
+      "y": 0.1,
+      "z": 32,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "outpostDepot_cache",
+      "name": "Тайник: Склад «Полоса»",
+      "tier": "rare",
+      "tx": 82,
+      "tz": 36,
+      "x": 4,
+      "y": 0.1,
+      "z": -88,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "outskirts_cache_1",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 140,
+      "tz": 100,
+      "x": 120.56106203139956,
+      "y": 0.1,
+      "z": 41.452745613271134,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_2",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 59,
+      "tz": 134,
+      "x": -41.452745613271127,
+      "y": 0.1,
+      "z": 108.56106203139956,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_3",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 25,
+      "tz": 53,
+      "x": -108.56106203139959,
+      "y": 0.1,
+      "z": -53.452745613271063,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_4",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 106,
+      "tz": 19,
+      "x": 53.452745613271162,
+      "y": 0.1,
+      "z": -120.56106203139954,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_5",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 99,
+      "tz": 137,
+      "x": 39.1566450190806,
+      "y": 0.1,
+      "z": 115.01778483633184,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_6",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 22,
+      "tz": 105,
+      "x": -115.01778483633184,
+      "y": 0.1,
+      "z": 51.156645019080607,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_7",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 54,
+      "tz": 28,
+      "x": -51.156645019080564,
+      "y": 0.1,
+      "z": -103.01778483633184,
+      "rotationY": 0
+    },
+    {
+      "id": "outskirts_cache_8",
+      "name": "Тайник окраин",
+      "tier": "basic",
+      "tx": 131,
+      "tz": 60,
+      "x": 103.01778483633184,
+      "y": 0.1,
+      "z": -39.156645019080571,
+      "rotationY": 0
+    },
+    {
+      "id": "middle_cache_1",
+      "name": "Тайник у входа: Лаборатория «Росток»",
+      "tier": "rare",
+      "tx": 122,
+      "tz": 110,
+      "x": 84,
+      "y": 0.1,
+      "z": 60,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "middle_cache_2",
+      "name": "Тайник у входа: Лаборатория «Цепь»",
+      "tier": "rare",
+      "tx": 50,
+      "tz": 110,
+      "x": -60,
+      "y": 0.1,
+      "z": 60,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "middle_cache_3",
+      "name": "Тайник у входа: Лаборатория «Сплав»",
+      "tier": "rare",
+      "tx": 50,
+      "tz": 38,
+      "x": -60,
+      "y": 0.1,
+      "z": -84,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "middle_cache_4",
+      "name": "Тайник у входа: Лаборатория «Спектр»",
+      "tier": "rare",
+      "tx": 122,
+      "tz": 38,
+      "x": 84,
+      "y": 0.1,
+      "z": -84,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "center_cache_a",
+      "name": "Сейф установки",
+      "tier": "rare",
+      "tx": 87,
+      "tz": 87,
+      "x": 14,
+      "y": 0.1,
+      "z": 14,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "hard",
+      "terminalLocked": true,
+      "terminalDifficulty": "hard",
+      "terminalUnlocksLock": true,
+      "terminalName": "Терминал Объекта Ноль"
+    },
+    {
+      "id": "center_cache_b",
+      "name": "Сейф установки",
+      "tier": "rare",
+      "tx": 73,
+      "tz": 73,
+      "x": -14,
+      "y": 0.1,
+      "z": -14,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "hard"
+    }
+  ],
+  "objects": [
+    {
+      "id": "platform_uprava_guard_1",
+      "model": "caravanGuard",
+      "name": "Караульный Управы",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 134.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "uprava"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_guard_2",
+      "model": "caravanGuard",
+      "name": "Караульный Управы",
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 134.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "uprava"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_guard_3",
+      "model": "caravanGuard",
+      "name": "Караульный Управы",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 128.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "uprava"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_guard_4",
+      "model": "caravanGuard",
+      "name": "Караульный Управы",
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 128.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "uprava"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_guard_1",
+      "model": "caravanGuard",
+      "name": "Артельный дозорный",
+      "position": {
+        "x": -134.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_guard_2",
+      "model": "caravanGuard",
+      "name": "Артельный дозорный",
+      "position": {
+        "x": -134.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_guard_3",
+      "model": "caravanGuard",
+      "name": "Артельный дозорный",
+      "position": {
+        "x": -128.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_guard_4",
+      "model": "caravanGuard",
+      "name": "Артельный дозорный",
+      "position": {
+        "x": -128.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_guard_1",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 134.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_guard_2",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 134.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_guard_3",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 128.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_guard_4",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 128.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_guard_1",
+      "model": "caravanGuard",
+      "name": "Конвойный Лиги",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -134.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_guard_2",
+      "model": "caravanGuard",
+      "name": "Конвойный Лиги",
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": -134.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_guard_3",
+      "model": "caravanGuard",
+      "name": "Конвойный Лиги",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -128.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_guard_4",
+      "model": "caravanGuard",
+      "name": "Конвойный Лиги",
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": -128.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_1_1",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 118.257,
+        "y": 0.0,
+        "z": 48.983
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_1_2",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 110.594,
+        "y": 0.0,
+        "z": 50.497
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_1_3",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 113.778,
+        "y": 0.0,
+        "z": 41.504
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.393,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_2_1",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -48.983,
+        "y": 0.0,
+        "z": 118.257
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.963,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_2_2",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -50.497,
+        "y": 0.0,
+        "z": 110.594
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.963,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_2_3",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -41.504,
+        "y": 0.0,
+        "z": 113.778
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.963,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_3_1",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -118.257,
+        "y": 0.0,
+        "z": -48.983
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.534,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_3_2",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -110.594,
+        "y": 0.0,
+        "z": -50.497
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.534,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_3_3",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -113.778,
+        "y": 0.0,
+        "z": -41.504
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.534,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_4_1",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 48.983,
+        "y": 0.0,
+        "z": -118.257
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.105,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_4_2",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 50.497,
+        "y": 0.0,
+        "z": -110.594
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.105,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_4_3",
+      "model": "enemyRaider",
+      "name": "Налётчик окраин",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 41.504,
+        "y": 0.0,
+        "z": -113.778
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.105,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_1_1",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": 46.305,
+        "y": 0.0,
+        "z": 111.789
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_1_2",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": 40.537,
+        "y": 0.0,
+        "z": 110.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_1_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": 42.478,
+        "y": 0.0,
+        "z": 102.551
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_2_1",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": -111.789,
+        "y": 0.0,
+        "z": 46.305
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_2_2",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": -110.931,
+        "y": 0.0,
+        "z": 40.537
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_2_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": -102.551,
+        "y": 0.0,
+        "z": 42.478
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_3_1",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": -46.305,
+        "y": 0.0,
+        "z": -111.789
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_3_2",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": -40.537,
+        "y": 0.0,
+        "z": -110.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_3_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": -42.478,
+        "y": 0.0,
+        "z": -102.551
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_4_1",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": 111.789,
+        "y": 0.0,
+        "z": -46.305
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_4_2",
+      "model": "enemyAshWolf",
+      "name": "Гарь",
+      "position": {
+        "x": 110.931,
+        "y": 0.0,
+        "z": -40.537
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ashwolf"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ashWolf",
+        "creatureTypeId": "gari",
+        "faction": "wild",
+        "enemyType": "ashWolf",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "pack_4_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": 102.551,
+        "y": 0.0,
+        "z": -42.478
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_1_1",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": 80.485,
+        "y": 0.0,
+        "z": 80.485
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_1_2",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": 66.083,
+        "y": 0.0,
+        "z": 84.688
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_1_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": 56.061,
+        "y": 0.0,
+        "z": 70.606
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_1_4",
+      "model": "enemyMutantAnt",
+      "name": "Пыльник",
+      "position": {
+        "x": 67.341,
+        "y": 0.0,
+        "z": 54.613
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "mutantant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "mutantAnt",
+        "creatureTypeId": "dustling",
+        "faction": "wild",
+        "enemyType": "mutantAnt",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_2_1",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": -80.485,
+        "y": 0.0,
+        "z": 80.485
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_2_2",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": -84.688,
+        "y": 0.0,
+        "z": 66.083
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_2_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": -70.606,
+        "y": 0.0,
+        "z": 56.061
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_2_4",
+      "model": "enemyMutantAnt",
+      "name": "Пыльник",
+      "position": {
+        "x": -54.613,
+        "y": 0.0,
+        "z": 67.341
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "mutantant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "mutantAnt",
+        "creatureTypeId": "dustling",
+        "faction": "wild",
+        "enemyType": "mutantAnt",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_3_1",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": -80.485,
+        "y": 0.0,
+        "z": -80.485
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_3_2",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": -66.083,
+        "y": 0.0,
+        "z": -84.688
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_3_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": -56.061,
+        "y": 0.0,
+        "z": -70.606
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_3_4",
+      "model": "enemyMutantAnt",
+      "name": "Пыльник",
+      "position": {
+        "x": -67.341,
+        "y": 0.0,
+        "z": -54.613
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "mutantant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "mutantAnt",
+        "creatureTypeId": "dustling",
+        "faction": "wild",
+        "enemyType": "mutantAnt",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_4_1",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": 80.485,
+        "y": 0.0,
+        "z": -80.485
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_4_2",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": 84.688,
+        "y": 0.0,
+        "z": -66.083
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_4_3",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": 70.606,
+        "y": 0.0,
+        "z": -56.061
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_watch_4_4",
+      "model": "enemyMutantAnt",
+      "name": "Пыльник",
+      "position": {
+        "x": 54.613,
+        "y": 0.0,
+        "z": -67.341
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "mutantant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "mutantAnt",
+        "creatureTypeId": "dustling",
+        "faction": "wild",
+        "enemyType": "mutantAnt",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_fold_1",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": 30.07,
+        "y": 0.0,
+        "z": 10.945
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_burned_1",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": 23.14,
+        "y": 0.0,
+        "z": 27.578
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_fold_2",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": -10.945,
+        "y": 0.0,
+        "z": 30.07
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_burned_2",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": -27.578,
+        "y": 0.0,
+        "z": 23.14
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_fold_3",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": -30.07,
+        "y": 0.0,
+        "z": -10.945
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_burned_3",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": -23.14,
+        "y": 0.0,
+        "z": -27.578
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_fold_4",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": 10.945,
+        "y": 0.0,
+        "z": -30.07
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_burned_4",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": 27.578,
+        "y": 0.0,
+        "z": -23.14
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_antenna",
+      "model": "relayAntenna",
+      "name": "Мачта установки",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-center",
+        "landmark"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.902,
+        "z": 2.52
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_core",
+      "model": "concreteWall",
+      "name": "Объект Ноль: надземный блок",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 4.5,
+        "y": 3.0,
+        "z": 4.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-center",
+        "landmark",
+        "central-lab"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.692,
+        "z": 7.907
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "center_lift",
+      "model": "cargoStack",
+      "name": "Служебный лифт",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.8,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-center",
+        "lab-door"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabCenterService"
+      },
+      "footprint": {
+        "x": 3.094,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-carousel",
+      "model": "carousel",
+      "name": "Anomaly core-center-carousel",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-chime",
+      "model": "chime",
+      "name": "Anomaly core-center-chime",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": -24.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-dew",
+      "model": "dew",
+      "name": "Anomaly core-center-dew",
+      "position": {
+        "x": -24.0,
+        "y": 0.08,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-glass",
+      "model": "glass",
+      "name": "Anomaly core-center-glass",
+      "position": {
+        "x": -16.97,
+        "y": 0.08,
+        "z": 16.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-mute",
+      "model": "mute",
+      "name": "Anomaly core-center-mute",
+      "position": {
+        "x": 16.97,
+        "y": 0.08,
+        "z": -16.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-pull",
+      "model": "pull",
+      "name": "Anomaly core-center-pull",
+      "position": {
+        "x": 24.0,
+        "y": 0.08,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-seam",
+      "model": "seam",
+      "name": "Anomaly core-center-seam",
+      "position": {
+        "x": 16.97,
+        "y": 0.08,
+        "z": 16.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-center-sink",
+      "model": "sink",
+      "name": "Anomaly core-center-sink",
+      "position": {
+        "x": -16.97,
+        "y": 0.08,
+        "z": -16.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-carousel",
+      "model": "carousel",
+      "name": "Anomaly core-middle-carousel",
+      "position": {
+        "x": -32.22,
+        "y": 0.08,
+        "z": 48.23
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-chime",
+      "model": "chime",
+      "name": "Anomaly core-middle-chime",
+      "position": {
+        "x": 32.22,
+        "y": 0.08,
+        "z": -48.23
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-dew",
+      "model": "dew",
+      "name": "Anomaly core-middle-dew",
+      "position": {
+        "x": -48.23,
+        "y": 0.08,
+        "z": -32.22
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-glass",
+      "model": "glass",
+      "name": "Anomaly core-middle-glass",
+      "position": {
+        "x": -56.89,
+        "y": 0.08,
+        "z": 11.32
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-mute",
+      "model": "mute",
+      "name": "Anomaly core-middle-mute",
+      "position": {
+        "x": 56.89,
+        "y": 0.08,
+        "z": -11.32
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-pull",
+      "model": "pull",
+      "name": "Anomaly core-middle-pull",
+      "position": {
+        "x": 48.23,
+        "y": 0.08,
+        "z": 32.22
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-seam",
+      "model": "seam",
+      "name": "Anomaly core-middle-seam",
+      "position": {
+        "x": 11.32,
+        "y": 0.08,
+        "z": 56.89
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-middle-sink",
+      "model": "sink",
+      "name": "Anomaly core-middle-sink",
+      "position": {
+        "x": -11.32,
+        "y": 0.08,
+        "z": -56.89
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-carousel",
+      "model": "carousel",
+      "name": "Anomaly core-outskirts-carousel",
+      "position": {
+        "x": -23.8,
+        "y": 0.08,
+        "z": 119.66
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-chime",
+      "model": "chime",
+      "name": "Anomaly core-outskirts-chime",
+      "position": {
+        "x": 23.8,
+        "y": 0.08,
+        "z": -119.66
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-dew",
+      "model": "dew",
+      "name": "Anomaly core-outskirts-dew",
+      "position": {
+        "x": -119.66,
+        "y": 0.08,
+        "z": -23.8
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-glass",
+      "model": "glass",
+      "name": "Anomaly core-outskirts-glass",
+      "position": {
+        "x": -101.44,
+        "y": 0.08,
+        "z": 67.78
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-mute",
+      "model": "mute",
+      "name": "Anomaly core-outskirts-mute",
+      "position": {
+        "x": 101.44,
+        "y": 0.08,
+        "z": -67.78
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-pull",
+      "model": "pull",
+      "name": "Anomaly core-outskirts-pull",
+      "position": {
+        "x": 119.66,
+        "y": 0.08,
+        "z": 23.8
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-seam",
+      "model": "seam",
+      "name": "Anomaly core-outskirts-seam",
+      "position": {
+        "x": 67.78,
+        "y": 0.08,
+        "z": 101.44
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "core-outskirts-sink",
+      "model": "sink",
+      "name": "Anomaly core-outskirts-sink",
+      "position": {
+        "x": -67.78,
+        "y": 0.08,
+        "z": -101.44
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy_door",
+      "model": "cargoStack",
+      "name": "Гермодверь",
+      "position": {
+        "x": -67.0,
+        "y": 0.0,
+        "z": -67.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-door",
+        "materials"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabAlloy"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy_shell",
+      "model": "concreteWall",
+      "name": "Лаборатория «Сплав»: вход",
+      "position": {
+        "x": -72.0,
+        "y": 0.0,
+        "z": -72.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 2.2,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-entrance",
+        "landmark",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.538,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy_vent",
+      "model": "utilityPole",
+      "name": "Вентиляционная шахта",
+      "position": {
+        "x": -65.0,
+        "y": 0.0,
+        "z": -65.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "vent"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.713,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCircuit_door",
+      "model": "cargoStack",
+      "name": "Гермодверь",
+      "position": {
+        "x": -67.0,
+        "y": 0.0,
+        "z": 67.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-door",
+        "energy"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabCircuit"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCircuit_shell",
+      "model": "concreteWall",
+      "name": "Лаборатория «Цепь»: вход",
+      "position": {
+        "x": -72.0,
+        "y": 0.0,
+        "z": 72.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 2.2,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-entrance",
+        "landmark",
+        "energy"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.538,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCircuit_vent",
+      "model": "utilityPole",
+      "name": "Вентиляционная шахта",
+      "position": {
+        "x": -65.0,
+        "y": 0.0,
+        "z": 79.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "vent"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.713,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum_door",
+      "model": "cargoStack",
+      "name": "Гермодверь",
+      "position": {
+        "x": 67.0,
+        "y": 0.0,
+        "z": -67.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-door",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabSpectrum"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum_shell",
+      "model": "concreteWall",
+      "name": "Лаборатория «Спектр»: вход",
+      "position": {
+        "x": 72.0,
+        "y": 0.0,
+        "z": -72.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 2.2,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-entrance",
+        "landmark",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.538,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum_vent",
+      "model": "utilityPole",
+      "name": "Вентиляционная шахта",
+      "position": {
+        "x": 79.0,
+        "y": 0.0,
+        "z": -65.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "vent"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.713,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout_door",
+      "model": "cargoStack",
+      "name": "Гермодверь",
+      "position": {
+        "x": 67.0,
+        "y": 0.0,
+        "z": 67.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-door",
+        "bio"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabSprout"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout_shell",
+      "model": "concreteWall",
+      "name": "Лаборатория «Росток»: вход",
+      "position": {
+        "x": 72.0,
+        "y": 0.0,
+        "z": 72.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.5,
+        "y": 2.2,
+        "z": 3.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "lab-entrance",
+        "landmark",
+        "bio"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.538,
+        "z": 6.15
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout_vent",
+      "model": "utilityPole",
+      "name": "Вентиляционная шахта",
+      "position": {
+        "x": 79.0,
+        "y": 0.0,
+        "z": 79.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-lab",
+        "vent"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.713,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-black-reservoir",
+      "model": "ring_structure",
+      "name": "coreZone-black-reservoir EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-cascade-feed",
+      "model": "external_pipe",
+      "name": "coreZone-cascade-feed EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-landmark",
+      "model": "central-installation",
+      "name": "Landmark central-installation EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "central-installation"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-regenerator-column",
+      "model": "blast_furnace",
+      "name": "coreZone-regenerator-column EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-field-0",
+      "model": "clean_soil",
+      "name": "coreZone-region-field-0 EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-field-1",
+      "model": "clean_soil",
+      "name": "coreZone-region-field-1 EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-field-2",
+      "model": "clean_soil",
+      "name": "coreZone-region-field-2 EDITABLE",
+      "position": {
+        "x": 7.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-field-3",
+      "model": "clean_soil",
+      "name": "coreZone-region-field-3 EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-irrigation",
+      "model": "irrigation",
+      "name": "coreZone-region-irrigation EDITABLE",
+      "position": {
+        "x": -31.0,
+        "y": -0.03,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "irrigation",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-shelterbelt-0",
+      "model": "shelterbelt_tree",
+      "name": "coreZone-region-shelterbelt-0 EDITABLE",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-shelterbelt-1",
+      "model": "shelterbelt_tree",
+      "name": "coreZone-region-shelterbelt-1 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-shelterbelt-2",
+      "model": "shelterbelt_tree",
+      "name": "coreZone-region-shelterbelt-2 EDITABLE",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-shelterbelt-3",
+      "model": "shelterbelt_tree",
+      "name": "coreZone-region-shelterbelt-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone-region-shelterbelt-4",
+      "model": "shelterbelt_tree",
+      "name": "coreZone-region-shelterbelt-4 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_flag",
+      "model": "utilityPole",
+      "name": "Склад «Полоса»: флагшток",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -84.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.3,
+        "y": 1.3,
+        "z": 1.3
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "outpost-flag",
+        "outpostDepot"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "outpost",
+        "role": "flag",
+        "outpostId": "outpostDepot"
+      },
+      "footprint": {
+        "x": 2.025,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_landmark",
+      "model": "storageLeanTo",
+      "name": "Склад «Полоса»",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -79.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "landmark",
+        "outpostDepot"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.06,
+        "z": 2.345
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_stack",
+      "model": "cargoStack",
+      "name": "Ящики",
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -80.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.321,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_wall_n",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -75.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_wall_s",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -93.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostDepot_wall_w",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": -9.0,
+        "y": 0.0,
+        "z": -84.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 2.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 4.393
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_flag",
+      "model": "utilityPole",
+      "name": "Насосная «Ключ-9»: флагшток",
+      "position": {
+        "x": -84.0,
+        "y": 0.0,
+        "z": 36.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.3,
+        "y": 1.3,
+        "z": 1.3
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "outpost-flag",
+        "outpostPump"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "outpost",
+        "role": "flag",
+        "outpostId": "outpostPump"
+      },
+      "footprint": {
+        "x": 2.025,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_landmark",
+      "model": "waterTank",
+      "name": "Насосная «Ключ-9»",
+      "position": {
+        "x": -78.0,
+        "y": 0.0,
+        "z": 41.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "landmark",
+        "outpostPump"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.593,
+        "z": 1.218
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_stack",
+      "model": "cargoStack",
+      "name": "Ящики",
+      "position": {
+        "x": -89.0,
+        "y": 0.0,
+        "z": 40.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.321,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_wall_n",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": -84.0,
+        "y": 0.0,
+        "z": 45.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_wall_s",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": -84.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostPump_wall_w",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": -93.0,
+        "y": 0.0,
+        "z": 36.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 2.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 4.393
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_flag",
+      "model": "utilityPole",
+      "name": "Ретранслятор «Ось»: флагшток",
+      "position": {
+        "x": 84.0,
+        "y": 0.0,
+        "z": 36.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.3,
+        "y": 1.3,
+        "z": 1.3
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "outpost-flag",
+        "outpostRelay"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "outpost",
+        "role": "flag",
+        "outpostId": "outpostRelay"
+      },
+      "footprint": {
+        "x": 2.025,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_landmark",
+      "model": "relayAntenna",
+      "name": "Ретранслятор «Ось»",
+      "position": {
+        "x": 90.0,
+        "y": 0.0,
+        "z": 41.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.6,
+        "z": 1.6
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "landmark",
+        "outpostRelay"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.58,
+        "z": 2.24
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_stack",
+      "model": "cargoStack",
+      "name": "Ящики",
+      "position": {
+        "x": 79.0,
+        "y": 0.0,
+        "z": 40.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.321,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_wall_n",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": 84.0,
+        "y": 0.0,
+        "z": 45.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_wall_s",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": 84.0,
+        "y": 0.0,
+        "z": 27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.384,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outpostRelay_wall_w",
+      "model": "concreteWall",
+      "name": "Укрытие",
+      "position": {
+        "x": 75.0,
+        "y": 0.0,
+        "z": 36.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 2.5
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outpost",
+        "cover"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 4.393
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_barrier_a",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": -138.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_barrier_b",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": -138.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_car",
+      "model": "cargoStack",
+      "name": "Вагон метро — на базу",
+      "position": {
+        "x": -141.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.4,
+        "y": 1.5,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "metro-car",
+        "free_artels"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "metro",
+        "to": "coreBaseArtels"
+      },
+      "footprint": {
+        "x": 4.642,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_hall",
+      "model": "concreteWall",
+      "name": "Платформа Артелей: навес",
+      "position": {
+        "x": -138.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 5.0,
+        "y": 1.2,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "free_artels"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.757,
+        "z": 0.769
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_artels_post",
+      "model": "watchPost",
+      "name": "Пост платформы",
+      "position": {
+        "x": -126.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post",
+        "free_artels"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_barrier_a",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": 138.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_barrier_b",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": 138.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_car",
+      "model": "cargoStack",
+      "name": "Вагон метро — на базу",
+      "position": {
+        "x": 141.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.4,
+        "y": 1.5,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "metro-car",
+        "contour"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "metro",
+        "to": "coreBaseContour"
+      },
+      "footprint": {
+        "x": 4.642,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_hall",
+      "model": "concreteWall",
+      "name": "Платформа Контура: навес",
+      "position": {
+        "x": 138.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 5.0,
+        "y": 1.2,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "contour"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.757,
+        "z": 0.769
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_contour_post",
+      "model": "watchPost",
+      "name": "Пост платформы",
+      "position": {
+        "x": 126.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post",
+        "contour"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_barrier_a",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_barrier_b",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": -138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_car",
+      "model": "cargoStack",
+      "name": "Вагон метро — на базу",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -141.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.4,
+        "y": 1.5,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "metro-car",
+        "tract_league"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "metro",
+        "to": "coreBaseLeague"
+      },
+      "footprint": {
+        "x": 4.642,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_hall",
+      "model": "concreteWall",
+      "name": "Платформа Лиги: навес",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 5.0,
+        "y": 1.2,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "tract_league"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.769,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_league_post",
+      "model": "watchPost",
+      "name": "Пост платформы",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -126.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post",
+        "tract_league"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_barrier_a",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_barrier_b",
+      "model": "concreteWall",
+      "name": "Ограждение платформы",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "barrier"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.308,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_car",
+      "model": "cargoStack",
+      "name": "Вагон метро — на базу",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 141.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.4,
+        "y": 1.5,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "metro-car",
+        "uprava"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "metro",
+        "to": "coreBaseUprava"
+      },
+      "footprint": {
+        "x": 4.642,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_hall",
+      "model": "concreteWall",
+      "name": "Платформа Управы: навес",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 138.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 5.0,
+        "y": 1.2,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-platform",
+        "uprava"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.769,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "platform_uprava_post",
+      "model": "watchPost",
+      "name": "Пост платформы",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 126.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post",
+        "uprava"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_1_tent",
+      "model": "wastelandShack",
+      "name": "Лагерь налётчиков",
+      "position": {
+        "x": 114.561,
+        "y": 0.0,
+        "z": 47.453
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outskirts",
+        "raider-camp"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.029,
+        "z": 4.587
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_2_tent",
+      "model": "wastelandShack",
+      "name": "Лагерь налётчиков",
+      "position": {
+        "x": -47.453,
+        "y": 0.0,
+        "z": 114.561
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outskirts",
+        "raider-camp"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.029,
+        "z": 4.587
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_3_tent",
+      "model": "wastelandShack",
+      "name": "Лагерь налётчиков",
+      "position": {
+        "x": -114.561,
+        "y": 0.0,
+        "z": -47.453
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outskirts",
+        "raider-camp"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.029,
+        "z": 4.587
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "raider_camp_4_tent",
+      "model": "wastelandShack",
+      "name": "Лагерь налётчиков",
+      "position": {
+        "x": 47.453,
+        "y": 0.0,
+        "z": -114.561
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-outskirts",
+        "raider-camp"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.029,
+        "z": 4.587
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "core-outskirts-pull",
+      "type": "pull",
+      "x": 119.66,
+      "z": 23.8,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-seam",
+      "type": "seam",
+      "x": 67.78,
+      "z": 101.44,
+      "radius": 3.2,
+      "dischargeMs": 3000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-carousel",
+      "type": "carousel",
+      "x": -23.8,
+      "z": 119.66,
+      "radius": 3.2,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-glass",
+      "type": "glass",
+      "x": -101.44,
+      "z": 67.78,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-dew",
+      "type": "dew",
+      "x": -119.66,
+      "z": -23.8,
+      "radius": 3.2,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-sink",
+      "type": "sink",
+      "x": -67.78,
+      "z": -101.44,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-chime",
+      "type": "chime",
+      "x": 23.8,
+      "z": -119.66,
+      "radius": 3.2,
+      "dischargeMs": 6000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-outskirts-mute",
+      "type": "mute",
+      "x": 101.44,
+      "z": -67.78,
+      "radius": 3.2,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "outskirts",
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "core-middle-pull",
+      "type": "pull",
+      "x": 48.23,
+      "z": 32.22,
+      "radius": 3.6,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-seam",
+      "type": "seam",
+      "x": 11.32,
+      "z": 56.89,
+      "radius": 3.6,
+      "dischargeMs": 3000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-carousel",
+      "type": "carousel",
+      "x": -32.22,
+      "z": 48.23,
+      "radius": 3.6,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-glass",
+      "type": "glass",
+      "x": -56.89,
+      "z": 11.32,
+      "radius": 3.6,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-dew",
+      "type": "dew",
+      "x": -48.23,
+      "z": -32.22,
+      "radius": 3.6,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-sink",
+      "type": "sink",
+      "x": -11.32,
+      "z": -56.89,
+      "radius": 3.6,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-chime",
+      "type": "chime",
+      "x": 32.22,
+      "z": -48.23,
+      "radius": 3.6,
+      "dischargeMs": 6000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-middle-mute",
+      "type": "mute",
+      "x": 56.89,
+      "z": -11.32,
+      "radius": 3.6,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "middle",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "core-center-pull",
+      "type": "pull",
+      "x": 24,
+      "z": 0,
+      "radius": 4,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-seam",
+      "type": "seam",
+      "x": 16.97,
+      "z": 16.97,
+      "radius": 4,
+      "dischargeMs": 3000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-carousel",
+      "type": "carousel",
+      "x": 0,
+      "z": 24,
+      "radius": 4,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-glass",
+      "type": "glass",
+      "x": -16.97,
+      "z": 16.97,
+      "radius": 4,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-dew",
+      "type": "dew",
+      "x": -24,
+      "z": 0,
+      "radius": 4,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-sink",
+      "type": "sink",
+      "x": -16.97,
+      "z": -16.97,
+      "radius": 4,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-chime",
+      "type": "chime",
+      "x": 0,
+      "z": -24,
+      "radius": 4,
+      "dischargeMs": 6000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "core-center-mute",
+      "type": "mute",
+      "x": 16.97,
+      "z": -16.97,
+      "radius": 4,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "center",
+      "tierRange": [
+        3,
+        5
+      ]
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-territory-core-v1",
+    "skyDay": "#4d5560",
+    "fogDay": "#5f6670",
+    "hemiSkyDay": "#a5a8a0",
+    "hemiGroundDay": "#2f3336",
+    "fillDay": "#9aa08e",
+    "sunDay": "#d6c797",
+    "rimDay": "#c9b98d"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "middle_vein",
+  "kromkaVisualProfile": "territory-core-v1",
+  "ambientProfile": "contested-central-field",
+  "anomalyDensity": 0.8,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreZone.unity",
+  "unitySpawns": [
+    {
+      "id": "center_burned_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 23.14,
+        "y": 0.0,
+        "z": 27.578
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_burned_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -27.578,
+        "y": 0.0,
+        "z": 23.14
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_burned_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -23.14,
+        "y": 0.0,
+        "z": -27.578
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_burned_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 27.578,
+        "y": 0.0,
+        "z": -23.14
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_fold_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 30.07,
+        "y": 0.0,
+        "z": 10.945
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_fold_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -10.945,
+        "y": 0.0,
+        "z": 30.07
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_fold_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -30.07,
+        "y": 0.0,
+        "z": -10.945
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "center_fold_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 10.945,
+        "y": 0.0,
+        "z": -30.07
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "core-platform-uprava",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreZone-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": 132.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_1_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 80.485,
+        "y": 0.0,
+        "z": 80.485
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_1_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 66.083,
+        "y": 0.0,
+        "z": 84.688
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_1_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 56.061,
+        "y": 0.0,
+        "z": 70.606
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_1_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 67.341,
+        "y": 0.0,
+        "z": 54.613
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_2_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -80.485,
+        "y": 0.0,
+        "z": 80.485
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_2_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -84.688,
+        "y": 0.0,
+        "z": 66.083
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_2_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -70.606,
+        "y": 0.0,
+        "z": 56.061
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_2_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -54.613,
+        "y": 0.0,
+        "z": 67.341
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_3_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -80.485,
+        "y": 0.0,
+        "z": -80.485
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_3_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -66.083,
+        "y": 0.0,
+        "z": -84.688
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_3_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -56.061,
+        "y": 0.0,
+        "z": -70.606
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_3_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -67.341,
+        "y": 0.0,
+        "z": -54.613
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_4_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 80.485,
+        "y": 0.0,
+        "z": -80.485
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_4_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 84.688,
+        "y": 0.0,
+        "z": -66.083
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_4_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 70.606,
+        "y": 0.0,
+        "z": -56.061
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "lab_watch_4_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 54.613,
+        "y": 0.0,
+        "z": -67.341
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_1_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 46.305,
+        "y": 0.0,
+        "z": 111.789
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_1_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 40.537,
+        "y": 0.0,
+        "z": 110.931
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_1_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 42.478,
+        "y": 0.0,
+        "z": 102.551
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_2_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -111.789,
+        "y": 0.0,
+        "z": 46.305
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_2_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -110.931,
+        "y": 0.0,
+        "z": 40.537
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_2_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -102.551,
+        "y": 0.0,
+        "z": 42.478
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_3_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -46.305,
+        "y": 0.0,
+        "z": -111.789
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_3_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -40.537,
+        "y": 0.0,
+        "z": -110.931
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_3_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -42.478,
+        "y": 0.0,
+        "z": -102.551
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_4_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 111.789,
+        "y": 0.0,
+        "z": -46.305
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_4_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 110.931,
+        "y": 0.0,
+        "z": -40.537
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "pack_4_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 102.551,
+        "y": 0.0,
+        "z": -42.478
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "platform_artels_guard_1",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -134.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotationY": 1.571
+    },
+    {
+      "id": "platform_artels_guard_2",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -134.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotationY": 1.571
+    },
+    {
+      "id": "platform_artels_guard_3",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -128.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotationY": 1.571
+    },
+    {
+      "id": "platform_artels_guard_4",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -128.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotationY": 1.571
+    },
+    {
+      "id": "platform_contour_guard_1",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 134.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotationY": 4.712
+    },
+    {
+      "id": "platform_contour_guard_2",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 134.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotationY": 4.712
+    },
+    {
+      "id": "platform_contour_guard_3",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 128.0,
+        "y": 0.0,
+        "z": -5.0
+      },
+      "rotationY": 4.712
+    },
+    {
+      "id": "platform_contour_guard_4",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 128.0,
+        "y": 0.0,
+        "z": 5.0
+      },
+      "rotationY": 4.712
+    },
+    {
+      "id": "platform_league_guard_1",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -134.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "platform_league_guard_2",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": -134.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "platform_league_guard_3",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": -128.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "platform_league_guard_4",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": -128.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "platform_uprava_guard_1",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 134.0
+      },
+      "rotationY": 3.142
+    },
+    {
+      "id": "platform_uprava_guard_2",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 134.0
+      },
+      "rotationY": 3.142
+    },
+    {
+      "id": "platform_uprava_guard_3",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -5.0,
+        "y": 0.0,
+        "z": 128.0
+      },
+      "rotationY": 3.142
+    },
+    {
+      "id": "platform_uprava_guard_4",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 5.0,
+        "y": 0.0,
+        "z": 128.0
+      },
+      "rotationY": 3.142
+    },
+    {
+      "id": "raider_camp_1_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 118.257,
+        "y": 0.0,
+        "z": 48.983
+      },
+      "rotationY": 0.393
+    },
+    {
+      "id": "raider_camp_1_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 110.594,
+        "y": 0.0,
+        "z": 50.497
+      },
+      "rotationY": 0.393
+    },
+    {
+      "id": "raider_camp_1_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 113.778,
+        "y": 0.0,
+        "z": 41.504
+      },
+      "rotationY": 0.393
+    },
+    {
+      "id": "raider_camp_2_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -48.983,
+        "y": 0.0,
+        "z": 118.257
+      },
+      "rotationY": 1.963
+    },
+    {
+      "id": "raider_camp_2_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -50.497,
+        "y": 0.0,
+        "z": 110.594
+      },
+      "rotationY": 1.963
+    },
+    {
+      "id": "raider_camp_2_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -41.504,
+        "y": 0.0,
+        "z": 113.778
+      },
+      "rotationY": 1.963
+    },
+    {
+      "id": "raider_camp_3_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -118.257,
+        "y": 0.0,
+        "z": -48.983
+      },
+      "rotationY": 3.534
+    },
+    {
+      "id": "raider_camp_3_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -110.594,
+        "y": 0.0,
+        "z": -50.497
+      },
+      "rotationY": 3.534
+    },
+    {
+      "id": "raider_camp_3_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -113.778,
+        "y": 0.0,
+        "z": -41.504
+      },
+      "rotationY": 3.534
+    },
+    {
+      "id": "raider_camp_4_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 48.983,
+        "y": 0.0,
+        "z": -118.257
+      },
+      "rotationY": 5.105
+    },
+    {
+      "id": "raider_camp_4_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 50.497,
+        "y": 0.0,
+        "z": -110.594
+      },
+      "rotationY": 5.105
+    },
+    {
+      "id": "raider_camp_4_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 41.504,
+        "y": 0.0,
+        "z": -113.778
+      },
+      "rotationY": 5.105
+    }
+  ],
+  "migrationArrival": {
+    "tx": 78,
+    "tz": 70,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "respawn": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0.0,
+    "y": 0.1,
+    "z": 132.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0.0,
+    "y": 0.1,
+    "z": 132.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 80,
+    "tz": 146,
+    "x": 0.0,
+    "y": 0.1,
+    "z": 132.0,
+    "rotationY": 0.0
+  }
+}

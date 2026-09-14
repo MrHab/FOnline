@@ -552,6 +552,16 @@ namespace RealmOfAshes.Game
             return itemId;
         }
 
+        /// <summary>Все записи артефактов персонажа (серверная проекция без скрытых свойств).</summary>
+        public List<JObject> ArtifactRecords()
+        {
+            var result = new List<JObject>();
+            if (_self?["artifactRecords"] is JArray records)
+                foreach (JToken token in records)
+                    if (token is JObject row) result.Add((JObject)row.DeepClone());
+            return result;
+        }
+
         public List<JObject> ArtifactsFor(string itemId)
         {
             var result = new List<JObject>();
@@ -583,6 +593,7 @@ namespace RealmOfAshes.Game
                 completed?.Invoke(ack);
             };
             if (action == "stabilize") Socket.EmitWithAck("stabilizeArtifact", payload, onAck);
+            else if (action == "salvage") Socket.EmitWithAck("salvageArtifact", payload, onAck);
             else Socket.EmitWithAck("artifactLoadoutAction", payload, onAck);
             return true;
         }

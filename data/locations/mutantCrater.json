@@ -5,7 +5,11 @@
   "name": "Воронка Складней",
   "seed": 20260710,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
+
+  "privateInstance": true,
+
+  "pveArea": true,
   "kind": "lair",
   "randomTemplate": false,
   "noRespawn": true,

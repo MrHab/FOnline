@@ -19,6 +19,7 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   donor.inventory.artifactSpring = 1;
   donor.inventory.artifactDrop = 1;
   donor.inventory.artifactContainer = 1;
+  donor.inventory.chemicals = 2; // стабилизация Т1 стоит 40 марок + 1 химикат
   donor.inventory.artifactBelt2 = 1;
   donor.equipment.artifactBelt = 'artifactBelt2';
   donor.artifactRecords = [{ id: 'audit_spring', typeId: 'spring', itemId: 'artifactSpring', hot: false, stabilized: true, ownerCharacterId: accounts.trade.characterId }];
@@ -97,8 +98,13 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert(hot && hot.hot && !hot.stabilized, 'Storage must preserve hot artifact identity');
   const cannotEquipHot = await h.socketAck(accounts.trade.socket, 'artifactLoadoutAction', { action: 'equip', recordId: 'audit_hot' });
   assert(!cannotEquipHot.ok);
-  const stable = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot' });
-  assert(stable.record.stabilized && !stable.record.hot);
+  const quote = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot', action: 'quote' });
+  assert(quote.quote && quote.cost.silver === 40 && !quote.record.properties, 'Quote shows the price, never the hidden properties');
+  const stable = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot', requestId: 'regression_stabilize' });
+  assert(stable.record.stabilized && !stable.record.hot && stable.record.revealed && stable.record.properties, 'Stabilization reveals the fixed properties');
+  assert.equal(qty(stable.self, 'chemicals'), 1, 'Stabilization consumes the authored components');
+  const replay = await request(accounts.trade, 'stabilizeArtifact', { recordId: 'audit_hot', requestId: 'regression_stabilize' });
+  assert(replay.reused && qty(replay.self, 'chemicals') === 1, 'Replaying the same requestId never charges twice');
   await request(accounts.trade, 'artifactLoadoutAction', { action: 'equip', recordId: 'audit_hot' });
   console.log('PASS base rights and artifact drop/pickup/storage/stabilization/loadout');
 
@@ -144,7 +150,12 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   const persistedRights = await request(accounts.trade, 'requestPersonalBaseState', {});
   assert(persistedRights.state.rights.granted);
   console.log('PASS server restart persistence; /health and Socket.IO exercised in isolated data');
-})().catch(error => { console.error(error.stack); process.exitCode = 1; }).finally(async () => {
+})().catch(error => {
+  console.error(error.stack);
+  const logs = h.serverLogs().trim();
+  if (logs) console.error(logs.slice(-5000));
+  process.exitCode = 1;
+}).finally(async () => {
   for (const account of Object.values(accounts)) h.closeSocket(account);
   await h.stopServer();
   h.cleanupSync();

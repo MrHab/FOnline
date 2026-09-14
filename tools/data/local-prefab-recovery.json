@@ -1,0 +1,2046 @@
+{
+  "version": 1,
+  "note": "Native visual replacements for deleted environment prefabs. Root GUID/fileIDs preserve authored scene overrides. Dimensions are the historical visual envelope, not gameplay colliders. Part sizes and bottom anchors are fractions of that envelope.",
+  "prefabs": [
+    {
+      "key": "scrap_heap",
+      "guid": "28f5e7fa2a6021d4cad5d7b12d63bfc6",
+      "rootGameObjectId": "5626935753536319171",
+      "rootTransformId": "2152898744455472853",
+      "size": {
+        "x": 2.5,
+        "y": 1.004882,
+        "z": 1.84
+      },
+      "center": {
+        "x": 0,
+        "y": 0.459027,
+        "z": 0
+      },
+      "min": {
+        "x": -1.25,
+        "y": -0.043414,
+        "z": -0.92
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MajadroidApocalypticBuildings/Models/wreckage-3-types.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "mesh": "Wreckage 1"
+        }
+      ]
+    },
+    {
+      "key": "car_wreck",
+      "guid": "91ef6ff00da720841b44ac5396fc1e4e",
+      "rootGameObjectId": "1353393025705223795",
+      "rootTransformId": "8935671300338782276",
+      "size": {
+        "x": 4.3,
+        "y": 1.600872,
+        "z": 2.1
+      },
+      "center": {
+        "x": 0,
+        "y": 0.806436,
+        "z": 0
+      },
+      "min": {
+        "x": -2.15,
+        "y": 0.006,
+        "z": -1.05
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MehozavrUaz452/uaz_destroyed.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "rust_barrel_v1",
+      "guid": "15dde87d609f8db488555ecb79527184",
+      "rootGameObjectId": "8671544961417000296",
+      "rootTransformId": "2010931113482454373",
+      "size": {
+        "x": 1.557633,
+        "y": 1.165,
+        "z": 1.688011
+      },
+      "center": {
+        "x": -0.105378,
+        "y": 0.57,
+        "z": 0.122534
+      },
+      "min": {
+        "x": -0.884195,
+        "y": -0.0125,
+        "z": -0.721472
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            0.65,
+            1,
+            0.65
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "deadwood",
+      "guid": "9baaa79c634f4654d94765d56f6b085e",
+      "rootGameObjectId": "8863697926133637650",
+      "rootTransformId": "3262995060828543589",
+      "size": {
+        "x": 2,
+        "y": 0.495109,
+        "z": 1.436032
+      },
+      "center": {
+        "x": 0,
+        "y": 0.259555,
+        "z": -0.042072
+      },
+      "min": {
+        "x": -1,
+        "y": 0.012,
+        "z": -0.760088
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/MEP_TreeStump/Prefabs/MEP_TreeTrunk_01.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "key": "rubble_rock",
+      "guid": "b14c801ea8efcf242814415ca835fb0a",
+      "rootGameObjectId": "1397307400844912419",
+      "rootTransformId": "5638770307260374244",
+      "size": {
+        "x": 2.280248,
+        "y": 1.320375,
+        "z": 1.731373
+      },
+      "center": {
+        "x": 0.040124,
+        "y": 0.67,
+        "z": 0.044325
+      },
+      "min": {
+        "x": -1.1,
+        "y": 0.009812,
+        "z": -0.821361
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ore_outcrop",
+      "guid": "c9be0701644078b4596ba698a73b216c",
+      "rootGameObjectId": "9077499661432099276",
+      "rootTransformId": "214683928884084930",
+      "size": {
+        "x": 1.790957,
+        "y": 0.336375,
+        "z": 1.336869
+      },
+      "center": {
+        "x": 0.080463,
+        "y": 0.180187,
+        "z": 0.055947
+      },
+      "min": {
+        "x": -0.815015,
+        "y": 0.012,
+        "z": -0.612488
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "perimeter_debris",
+      "guid": "fda2b2e8060f1d744bc0f5829b8bbd6c",
+      "rootGameObjectId": "59230676337642522",
+      "rootTransformId": "5743818840572736088",
+      "size": {
+        "x": 1.6,
+        "y": 0.205645,
+        "z": 0.92
+      },
+      "center": {
+        "x": 0,
+        "y": 0.108823,
+        "z": 0
+      },
+      "min": {
+        "x": -0.8,
+        "y": 0.006,
+        "z": -0.46
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MajadroidApocalypticBuildings/Models/wreckage-3-types.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "mesh": "Wreckage 2"
+        }
+      ]
+    },
+    {
+      "key": "dead_tree_a",
+      "guid": "2cb4be01a74613e4fa2898dce8ba01be",
+      "rootGameObjectId": "5297443725183497773",
+      "rootTransformId": "6136257812077419380",
+      "size": {
+        "x": 1.575568,
+        "y": 2.674625,
+        "z": 1.177082
+      },
+      "center": {
+        "x": -0.007784,
+        "y": 1.291908,
+        "z": 0.020465
+      },
+      "min": {
+        "x": -0.795568,
+        "y": -0.045405,
+        "z": -0.568076
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/DeadTrees/DeadTree_01/Prefabs/MEP_DeadTree_01_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dead_tree_b",
+      "guid": "223ecd9ae7793574e98bef8775f486a7",
+      "rootGameObjectId": "1853635615957969157",
+      "rootTransformId": "665679501830151002",
+      "size": {
+        "x": 1.56,
+        "y": 2.623625,
+        "z": 1.177082
+      },
+      "center": {
+        "x": 0,
+        "y": 1.266408,
+        "z": 0.020465
+      },
+      "min": {
+        "x": -0.78,
+        "y": -0.045405,
+        "z": -0.568076
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/DeadTrees/DeadTree_01/Prefabs/MEP_DeadTree_02_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oil_pump_jack",
+      "guid": "ef73a045916b4034bbe8ffd8d203fcc0",
+      "rootGameObjectId": "385656190640750072",
+      "rootTransformId": "3715156511289280087",
+      "size": {
+        "x": 3.259953,
+        "y": 2.16,
+        "z": 2.08
+      },
+      "center": {
+        "x": -0.009977,
+        "y": 1.09,
+        "z": 0
+      },
+      "min": {
+        "x": -1.639953,
+        "y": 0.01,
+        "z": -1.04
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/FactoryKit30/Models/crane.fbx",
+          "size": [
+            0.7,
+            1,
+            0.7
+          ],
+          "bottom": [
+            -0.12,
+            0,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_generator.fbx",
+          "size": [
+            0.3,
+            0.35,
+            0.5
+          ],
+          "bottom": [
+            0.34,
+            0,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Cave/Cave_Parts/Prefabs/MEP_C_Pipe_01_N.prefab",
+          "size": [
+            0.08,
+            0.9,
+            0.08
+          ],
+          "bottom": [
+            0.3,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "storage_lean_to",
+      "guid": "4754e4874b80bb54e96ee93c6a40e8f8",
+      "rootGameObjectId": "5937759859274016784",
+      "rootTransformId": "2444974592321881033",
+      "size": {
+        "x": 3,
+        "y": 1.288233,
+        "z": 1.8
+      },
+      "center": {
+        "x": 0,
+        "y": 0.636137,
+        "z": 0
+      },
+      "min": {
+        "x": -1.5,
+        "y": -0.00798,
+        "z": -0.9
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_03_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "concrete_wall",
+      "guid": "a49f4cbfb5dc5214a9b980b4345de3e0",
+      "rootGameObjectId": "7629125791155781697",
+      "rootTransformId": "1223628239965395513",
+      "size": {
+        "x": 2.7,
+        "y": 1.385878,
+        "z": 1.757099
+      },
+      "center": {
+        "x": 0,
+        "y": 0.691185,
+        "z": -0.031098
+      },
+      "min": {
+        "x": -1.35,
+        "y": -0.001754,
+        "z": -0.909647
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Wall_01_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "cargo_stack",
+      "guid": "43c92db0e53a8e0489d744e981758958",
+      "rootGameObjectId": "4192729490432350027",
+      "rootTransformId": "1838612198019043029",
+      "size": {
+        "x": 1.973468,
+        "y": 0.813143,
+        "z": 1.104903
+      },
+      "center": {
+        "x": 0.123345,
+        "y": 0.464771,
+        "z": -0.033751
+      },
+      "min": {
+        "x": -0.863388,
+        "y": 0.058199,
+        "z": -0.586202
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Chest.prefab",
+          "size": [
+            0.48,
+            0.75,
+            0.9
+          ],
+          "bottom": [
+            -0.25,
+            0,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Chest.prefab",
+          "size": [
+            0.48,
+            1,
+            0.9
+          ],
+          "bottom": [
+            0.25,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "relay_antenna",
+      "guid": "e8066f66ba7922144bce621cdb8ff43b",
+      "rootGameObjectId": "5832172409919202900",
+      "rootTransformId": "6733148593648441306",
+      "size": {
+        "x": 1.8,
+        "y": 3.3,
+        "z": 1.4
+      },
+      "center": {
+        "x": 0,
+        "y": 1.65,
+        "z": 0
+      },
+      "min": {
+        "x": -0.9,
+        "y": 0,
+        "z": -0.7
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/satelliteDish_large.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "watch_post",
+      "guid": "5f3b8e44d2992e54090b66f9b24c81c1",
+      "rootGameObjectId": "1063936782628078594",
+      "rootTransformId": "6738254864983647425",
+      "size": {
+        "x": 1.44,
+        "y": 1.424772,
+        "z": 1.08
+      },
+      "center": {
+        "x": 0,
+        "y": 0.712386,
+        "z": 0
+      },
+      "min": {
+        "x": -0.72,
+        "y": 0,
+        "z": -0.54
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/structure_detailed.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "utility_pole",
+      "guid": "f7ede2f414a4d674eab62559eb4432cc",
+      "rootGameObjectId": "258296747975023854",
+      "rootTransformId": "2654366801944408821",
+      "size": {
+        "x": 2.076802,
+        "y": 2.010176,
+        "z": 1.356037
+      },
+      "center": {
+        "x": -0.009732,
+        "y": 1.017088,
+        "z": -0.298018
+      },
+      "min": {
+        "x": -1.048133,
+        "y": 0.012,
+        "z": -0.976037
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Cave/Cave_Parts/Prefabs/MEP_C_Pipe_01_N.prefab",
+          "size": [
+            0.08,
+            1,
+            0.08
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Cave/Cave_Parts/Prefabs/MEP_C_Pipe_01_N.prefab",
+          "size": [
+            0.75,
+            0.06,
+            0.06
+          ],
+          "bottom": [
+            0,
+            0.88,
+            0
+          ],
+          "fit": "stretch",
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "key": "roadblock_barricade",
+      "guid": "a373d4b2c4266924091c9383b194110d",
+      "rootGameObjectId": "6264479473349796813",
+      "rootTransformId": "5084288005201603046",
+      "size": {
+        "x": 2.3,
+        "y": 0.745528,
+        "z": 1.571971
+      },
+      "center": {
+        "x": 0,
+        "y": 0.37186,
+        "z": -0.076257
+      },
+      "min": {
+        "x": -1.15,
+        "y": -0.000904,
+        "z": -0.862242
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            1,
+            1,
+            0.4
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "workshop_bench",
+      "guid": "53132ed79991fe3408e5849c5384260c",
+      "rootGameObjectId": "455160741789213690",
+      "rootTransformId": "5178939722696032625",
+      "size": {
+        "x": 3,
+        "y": 0.82,
+        "z": 1.4
+      },
+      "center": {
+        "x": 0,
+        "y": 0.415,
+        "z": 0
+      },
+      "min": {
+        "x": -1.5,
+        "y": 0.005,
+        "z": -0.7
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "dry_bush",
+      "guid": "bbf8795ab9de65544ac59e3cef085b92",
+      "rootGameObjectId": "7608851103998862245",
+      "rootTransformId": "3321514416875593089",
+      "size": {
+        "x": 1.514605,
+        "y": 0.798723,
+        "z": 1.405274
+      },
+      "center": {
+        "x": -0.017303,
+        "y": 0.405362,
+        "z": -0.034639
+      },
+      "min": {
+        "x": -0.774605,
+        "y": 0.006,
+        "z": -0.737276
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Bushes/Prefabs/MEP_Bush_03_b_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "highway_sign",
+      "guid": "5f5e048a5c876d44281fa316b583191d",
+      "rootGameObjectId": "7646853272370256106",
+      "rootTransformId": "4347458515265937565",
+      "size": {
+        "x": 1.494474,
+        "y": 1.490106,
+        "z": 1.072837
+      },
+      "center": {
+        "x": 0.027237,
+        "y": 0.750053,
+        "z": 0.036252
+      },
+      "min": {
+        "x": -0.72,
+        "y": 0.005,
+        "z": -0.500166
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MajadroidApocalypticBuildings/Models/billboards-4-types.fbx",
+          "size": [
+            1,
+            1,
+            0.3
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "mesh": "Billboard 1"
+        }
+      ]
+    },
+    {
+      "key": "cot_bed",
+      "guid": "2b90ee1092acbb841a277e46d9937fc9",
+      "rootGameObjectId": "4437429164138132726",
+      "rootTransformId": "6081662731068667854",
+      "size": {
+        "x": 1.942912,
+        "y": 0.55,
+        "z": 1.121391
+      },
+      "center": {
+        "x": -0.051456,
+        "y": 0.26,
+        "z": -0.000696
+      },
+      "min": {
+        "x": -1.022912,
+        "y": -0.015,
+        "z": -0.561391
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/MEP_House_Props_01/Prefabs/MEP_Bed.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_ammo",
+      "guid": "b85c268b01f63284f92524b41a1c4c39",
+      "rootGameObjectId": "8752414143713454946",
+      "rootTransformId": "3722668953956634936",
+      "size": {
+        "x": 2.542,
+        "y": 1.893,
+        "z": 1.5088
+      },
+      "center": {
+        "x": 0,
+        "y": 0.9585,
+        "z": 0
+      },
+      "min": {
+        "x": -1.271,
+        "y": 0.012,
+        "z": -0.7544
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_generator.fbx",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_tools",
+      "guid": "e0d94b43e533c0142afc243ceb9722c4",
+      "rootGameObjectId": "8191908154881972069",
+      "rootTransformId": "4534613024479391832",
+      "size": {
+        "x": 2.6288,
+        "y": 1.958,
+        "z": 1.476
+      },
+      "center": {
+        "x": 0,
+        "y": 0.991,
+        "z": 0
+      },
+      "min": {
+        "x": -1.3144,
+        "y": 0.012,
+        "z": -0.738
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_wirelessCable.fbx",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tire_stack",
+      "guid": "fcb53f857cb27cd4b8ff18dbdcefb280",
+      "rootGameObjectId": "6307159383041580832",
+      "rootTransformId": "3358737611902256472",
+      "size": {
+        "x": 2.080123,
+        "y": 1.211689,
+        "z": 1.696551
+      },
+      "center": {
+        "x": 0.120061,
+        "y": 0.565845,
+        "z": 0.128275
+      },
+      "min": {
+        "x": -0.92,
+        "y": -0.04,
+        "z": -0.72
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/CarKit31/Models/debris-tire.fbx",
+          "size": [
+            0.75,
+            0.45,
+            0.75
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/CarKit31/Models/debris-tire.fbx",
+          "size": [
+            0.75,
+            0.45,
+            0.75
+          ],
+          "bottom": [
+            0,
+            0.45,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_energy",
+      "guid": "01f8c2113526d684e8a275e50d0905e2",
+      "rootGameObjectId": "5508565233876511746",
+      "rootTransformId": "481070555971606104",
+      "size": {
+        "x": 2.7032,
+        "y": 1.919379,
+        "z": 1.5416
+      },
+      "center": {
+        "x": 0,
+        "y": 0.97169,
+        "z": 0
+      },
+      "min": {
+        "x": -1.3516,
+        "y": 0.012,
+        "z": -0.7708
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_generatorLarge.fbx",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "trade_machine",
+      "guid": "de39622ae6cee8a4dafa5eda60aeda68",
+      "rootGameObjectId": "5270568272225734891",
+      "rootTransformId": "9102539636112264292",
+      "size": {
+        "x": 1.70278,
+        "y": 1.75,
+        "z": 1.44526
+      },
+      "center": {
+        "x": -0.03453,
+        "y": 0.875,
+        "z": -0.194446
+      },
+      "min": {
+        "x": -0.88592,
+        "y": 0,
+        "z": -0.917076
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_wireless.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_chem",
+      "guid": "02fb7182c80273949af5e380cd81a187",
+      "rootGameObjectId": "2414787991913208817",
+      "rootTransformId": "3121042144869512525",
+      "size": {
+        "x": 2.7528,
+        "y": 1.858,
+        "z": 1.5744
+      },
+      "center": {
+        "x": 0,
+        "y": 0.941,
+        "z": 0
+      },
+      "min": {
+        "x": -1.3764,
+        "y": 0.012,
+        "z": -0.7872
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "trader_awning",
+      "guid": "9ad7285b3d443ed46b3601f0fe47196e",
+      "rootGameObjectId": "1886665136772598839",
+      "rootTransformId": "8173314264044841989",
+      "size": {
+        "x": 3,
+        "y": 1.506191,
+        "z": 1.8
+      },
+      "center": {
+        "x": 0,
+        "y": 0.753096,
+        "z": 0
+      },
+      "min": {
+        "x": -1.5,
+        "y": 0,
+        "z": -0.9
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/hangar_smallA.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_repair",
+      "guid": "3081c035495a2b34b9356ddffbdf71d4",
+      "rootGameObjectId": "4889350359725746632",
+      "rootTransformId": "3037946672158911216",
+      "size": {
+        "x": 2.9016,
+        "y": 2.212013,
+        "z": 1.6728
+      },
+      "center": {
+        "x": 0,
+        "y": 1.118006,
+        "z": 0
+      },
+      "min": {
+        "x": -1.4508,
+        "y": 0.012,
+        "z": -0.8364
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/machine_wireless.fbx",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "storage_chest",
+      "guid": "fc473ae58cf0f73458a4b0f41528c7fe",
+      "rootGameObjectId": "7680849592470875158",
+      "rootTransformId": "961228344031127464",
+      "size": {
+        "x": 2.5,
+        "y": 0.8365,
+        "z": 1.34
+      },
+      "center": {
+        "x": 0,
+        "y": 0.42425,
+        "z": 0
+      },
+      "min": {
+        "x": -1.25,
+        "y": 0.006,
+        "z": -0.67
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Chest.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "craft_station_weapon",
+      "guid": "63bf38647bb98d449ab0dc6a10a22279",
+      "rootGameObjectId": "630928064927868020",
+      "rootTransformId": "4591393165919828219",
+      "size": {
+        "x": 3.162,
+        "y": 1.948,
+        "z": 1.5416
+      },
+      "center": {
+        "x": 0,
+        "y": 0.986,
+        "z": 0
+      },
+      "min": {
+        "x": -1.581,
+        "y": 0.012,
+        "z": -0.7708
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/Prefabs/Models/weapons/weapon_rifle.prefab",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "scrap_wall_segment",
+      "guid": "b93c268b48a2227448c08733ec7b9ce0",
+      "rootGameObjectId": "1156191630513837058",
+      "rootTransformId": "7812878938087667279",
+      "size": {
+        "x": 7.2,
+        "y": 2.05,
+        "z": 1.1
+      },
+      "center": {
+        "x": 0,
+        "y": 1.02,
+        "z": 0
+      },
+      "min": {
+        "x": -3.6,
+        "y": -0.005,
+        "z": -0.55
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_03_N.prefab",
+          "size": [
+            0.5,
+            1,
+            0.6
+          ],
+          "bottom": [
+            -0.25,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_03_N.prefab",
+          "size": [
+            0.5,
+            1,
+            0.6
+          ],
+          "bottom": [
+            0.25,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "wasteland_shack",
+      "guid": "801db09b744245446a75e9d956e02720",
+      "rootGameObjectId": "8811722804630737876",
+      "rootTransformId": "6739842923082310255",
+      "size": {
+        "x": 4.7,
+        "y": 3.609,
+        "z": 3.822124
+      },
+      "center": {
+        "x": 0,
+        "y": 1.8105,
+        "z": 0.061062
+      },
+      "min": {
+        "x": -2.35,
+        "y": 0.006,
+        "z": -1.85
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_03_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "armory_rack",
+      "guid": "59bc4ef4283fde04d8418a04cef730b7",
+      "rootGameObjectId": "6406294047207040202",
+      "rootTransformId": "7688385024531317973",
+      "size": {
+        "x": 2.2,
+        "y": 0.830446,
+        "z": 1.063674
+      },
+      "center": {
+        "x": 0,
+        "y": 0.421223,
+        "z": 0.081837
+      },
+      "min": {
+        "x": -1.1,
+        "y": 0.006,
+        "z": -0.45
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Table_N.prefab",
+          "size": [
+            1,
+            0.52,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/Prefabs/Models/weapons/weapon_rifle.prefab",
+          "size": [
+            0.52,
+            0.48,
+            0.65
+          ],
+          "bottom": [
+            0.12,
+            0.52,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "scrap_watch_tower",
+      "guid": "a87733e2dfab3a64e966262c1dbd05a2",
+      "rootGameObjectId": "5514363444047898110",
+      "rootTransformId": "4519005338869684150",
+      "size": {
+        "x": 2.7,
+        "y": 2.565877,
+        "z": 2
+      },
+      "center": {
+        "x": 0,
+        "y": 1.277062,
+        "z": 0
+      },
+      "min": {
+        "x": -1.35,
+        "y": -0.005877,
+        "z": -1
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/Kenney/SpaceKit10/Models/structure_detailed.fbx",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "garden_patch",
+      "guid": "60a5dde5e37fd514586b6e9f075deda0",
+      "rootGameObjectId": "5887329733065994493",
+      "rootTransformId": "5617134440355936577",
+      "size": {
+        "x": 2.5,
+        "y": 0.23,
+        "z": 1.3
+      },
+      "center": {
+        "x": 0,
+        "y": 0.115,
+        "z": 0
+      },
+      "min": {
+        "x": -1.25,
+        "y": 0,
+        "z": -0.65
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_Cracked_Mud/Prefabs/Cracked_Mud_01.prefab",
+          "size": [
+            1,
+            0.12,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Grass/MEP_Grass_02/Prefabs/MEP_Grass_02_a_N.prefab",
+          "size": [
+            0.23,
+            0.88,
+            0.8
+          ],
+          "bottom": [
+            -0.3,
+            0.12,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Grass/MEP_Grass_02/Prefabs/MEP_Grass_02_a_N.prefab",
+          "size": [
+            0.23,
+            0.88,
+            0.8
+          ],
+          "bottom": [
+            0,
+            0.12,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Grass/MEP_Grass_02/Prefabs/MEP_Grass_02_a_N.prefab",
+          "size": [
+            0.23,
+            0.88,
+            0.8
+          ],
+          "bottom": [
+            0.3,
+            0.12,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "water_tank",
+      "guid": "03b75d152326b7342805389c874e9f90",
+      "rootGameObjectId": "1447705290824856971",
+      "rootTransformId": "8679991323893855690",
+      "size": {
+        "x": 1.797619,
+        "y": 0.7675,
+        "z": 1.24
+      },
+      "center": {
+        "x": 0.03881,
+        "y": 0.38375,
+        "z": 0
+      },
+      "min": {
+        "x": -0.86,
+        "y": 0,
+        "z": -0.62
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campfire_rest",
+      "guid": "25bca59ab2084d94cb005b63c33aa08a",
+      "rootGameObjectId": "5415190869563851009",
+      "rootTransformId": "8985085832165278838",
+      "size": {
+        "x": 2.2,
+        "y": 0.422039,
+        "z": 1.8
+      },
+      "center": {
+        "x": 0,
+        "y": 0.178981,
+        "z": 0
+      },
+      "min": {
+        "x": -1.1,
+        "y": -0.032039,
+        "z": -0.9
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/MEP_TreeStump/Prefabs/MEP_TreeTrunk_01.prefab",
+          "size": [
+            0.65,
+            0.6,
+            0.65
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/MEP_TreeStump/Prefabs/MEP_TreeTrunk_01.prefab",
+          "size": [
+            0.65,
+            0.6,
+            0.65
+          ],
+          "bottom": [
+            0,
+            0.1,
+            0
+          ],
+          "rotation": [
+            90,
+            0,
+            90
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            0.22,
+            0.65,
+            0.24
+          ],
+          "bottom": [
+            -0.35,
+            0,
+            -0.3
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            0.22,
+            0.65,
+            0.24
+          ],
+          "bottom": [
+            -0.35,
+            0,
+            0.3
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            0.22,
+            0.65,
+            0.24
+          ],
+          "bottom": [
+            0.35,
+            0,
+            -0.3
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_GroundRocks_01/Prefabs/MEP_GroundRock_01_a.prefab",
+          "size": [
+            0.22,
+            0.65,
+            0.24
+          ],
+          "bottom": [
+            0.35,
+            0,
+            0.3
+          ]
+        }
+      ]
+    },
+    {
+      "key": "barrel_cluster",
+      "guid": "ce7597d4ae2841148820b09da9e48067",
+      "rootGameObjectId": "3822310653601932721",
+      "rootTransformId": "6831616227376287415",
+      "size": {
+        "x": 2.5,
+        "y": 1.1883,
+        "z": 2.015
+      },
+      "center": {
+        "x": 0,
+        "y": 0.5814,
+        "z": 0.1475
+      },
+      "min": {
+        "x": -1.25,
+        "y": -0.01275,
+        "z": -0.86
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            0.35,
+            0.95,
+            0.4
+          ],
+          "bottom": [
+            -0.25,
+            0,
+            -0.2
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            0.35,
+            1,
+            0.4
+          ],
+          "bottom": [
+            0.25,
+            0,
+            -0.1
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/MEP_Props/Chest_Barrel/Prefabs/MEP_Barrel.prefab",
+          "size": [
+            0.35,
+            0.9,
+            0.4
+          ],
+          "bottom": [
+            0,
+            0,
+            0.25
+          ]
+        }
+      ]
+    },
+    {
+      "key": "fence_segment",
+      "guid": "ce2a2da1107d319429b5b7956b5a6703",
+      "rootGameObjectId": "6323542138365598067",
+      "rootTransformId": "6586636020296245337",
+      "size": {
+        "x": 2.4,
+        "y": 0.925095,
+        "z": 0.5
+      },
+      "center": {
+        "x": 0,
+        "y": 0.46,
+        "z": 0.12
+      },
+      "min": {
+        "x": -1.2,
+        "y": -0.002548,
+        "z": -0.13
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            1,
+            1,
+            0.35
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "asphalt_slab",
+      "guid": "3b8aa06699ed25e46acf0e900e9a272d",
+      "rootGameObjectId": "3523857093544941097",
+      "rootTransformId": "7398591401706483294",
+      "size": {
+        "x": 2.4,
+        "y": 0.123389,
+        "z": 1.820788
+      },
+      "center": {
+        "x": 0,
+        "y": 0.048306,
+        "z": -0.190394
+      },
+      "min": {
+        "x": -1.2,
+        "y": -0.013389,
+        "z": -1.100788
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Rocks/MEP_StoneGround/Prefabs/MEP_StoneGround.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "fit": "stretch"
+        }
+      ]
+    },
+    {
+      "key": "job_board",
+      "guid": "d17dbd5960a71b043a14b783c5f55f60",
+      "rootGameObjectId": "1695765190992595359",
+      "rootTransformId": "2531633947990237487",
+      "size": {
+        "x": 1.9,
+        "y": 1.69,
+        "z": 0.72
+      },
+      "center": {
+        "x": 0,
+        "y": 0.845,
+        "z": 0.05
+      },
+      "min": {
+        "x": -0.95,
+        "y": 0,
+        "z": -0.31
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MajadroidApocalypticBuildings/Models/billboards-4-types.fbx",
+          "size": [
+            1,
+            1,
+            0.4
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "mesh": "Billboard 4"
+        }
+      ]
+    },
+    {
+      "key": "brahmin_pen",
+      "guid": "056723cb698cc5a4ab1e23c743144d7a",
+      "rootGameObjectId": "7604925974080377240",
+      "rootTransformId": "5185639071254965282",
+      "size": {
+        "x": 3.6,
+        "y": 0.925095,
+        "z": 2.4
+      },
+      "center": {
+        "x": 0,
+        "y": 0.46,
+        "z": 0
+      },
+      "min": {
+        "x": -1.8,
+        "y": -0.002548,
+        "z": -1.2
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            1,
+            1,
+            0.12
+          ],
+          "bottom": [
+            0,
+            0,
+            -0.44
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            1,
+            1,
+            0.12
+          ],
+          "bottom": [
+            0,
+            0,
+            0.44
+          ],
+          "fit": "stretch"
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            0.08,
+            1,
+            0.88
+          ],
+          "bottom": [
+            -0.46,
+            0,
+            0
+          ],
+          "fit": "stretch",
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        {
+          "asset": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+          "size": [
+            0.08,
+            1,
+            0.42
+          ],
+          "bottom": [
+            0.46,
+            0,
+            -0.23
+          ],
+          "fit": "stretch",
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ruined_billboard",
+      "guid": "fb5e726b4674cb644822166b7b877883",
+      "rootGameObjectId": "1021910188801699316",
+      "rootTransformId": "7895173967723437561",
+      "size": {
+        "x": 3.136044,
+        "y": 1.640872,
+        "z": 2.366713
+      },
+      "center": {
+        "x": 0.018022,
+        "y": 0.832436,
+        "z": -0.343429
+      },
+      "min": {
+        "x": -1.55,
+        "y": 0.012,
+        "z": -1.526785
+      },
+      "parts": [
+        {
+          "asset": "Assets/ThirdParty/OpenGameArt/MajadroidApocalypticBuildings/Models/billboards-4-types.fbx",
+          "size": [
+            1,
+            1,
+            0.4
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ],
+          "mesh": "Billboard 3",
+          "rotation": [
+            0,
+            0,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dead_tree_c",
+      "guid": "af16fb36493048442a0d111683866a5e",
+      "rootGameObjectId": "636634327833599335",
+      "rootTransformId": "7990523485411841485",
+      "size": {
+        "x": 1.784408,
+        "y": 2.928396,
+        "z": 1.177082
+      },
+      "center": {
+        "x": 0.112204,
+        "y": 1.418793,
+        "z": 0.020465
+      },
+      "min": {
+        "x": -0.78,
+        "y": -0.045405,
+        "z": -0.568076
+      },
+      "parts": [
+        {
+          "asset": "Assets/MEP/MEP_Environment/Vegetation/MEP_Trees/DeadTrees/DeadTree_01/Prefabs/MEP_DeadTree_03_N.prefab",
+          "size": [
+            1,
+            1,
+            1
+          ],
+          "bottom": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2426 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "coreBaseContour",
+  "name": "Узел Контура",
+  "seed": 2026091502,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "settlement",
+  "respawnAllowed": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "noRespawn": true,
+  "allowGlobalMapExit": true,
+  "territoryId": "core",
+  "territoryRole": "base",
+  "factionAccess": "contour",
+  "territoryBase": {
+    "factionId": "contour",
+    "capitalLocationId": "relayStation",
+    "zoneLocationId": "coreZone"
+  },
+  "ground": {
+    "preset": "industrialDust",
+    "label": "Узел Контура"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromCore": {
+    "tx": 19,
+    "tz": 28,
+    "x": 0,
+    "y": 0.1,
+    "z": 18,
+    "rotationY": 3.14
+  },
+  "transitions": [
+    {
+      "id": "metro_platform",
+      "type": "location",
+      "label": "Платформа метро — Сердцевина",
+      "to": "coreZone",
+      "entryKey": "entryFromContour",
+      "tx": 19,
+      "tz": 31,
+      "x": 0,
+      "y": 0.1,
+      "z": 24,
+      "rotationY": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "gate_out",
+      "type": "globalMap",
+      "label": "Ворота — выход на глобальную карту",
+      "to": "wasteland",
+      "tx": 19,
+      "tz": 2,
+      "x": 0,
+      "y": 0.1,
+      "z": -33,
+      "rotationY": 0,
+      "radius": 3
+    }
+  ],
+  "worldZones": [
+    {
+      "id": "world_exit_gate",
+      "label": "Ворота базы",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "registrar",
+      "model": "wastelandSettler",
+      "name": "Регистратор фракции",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-registrar",
+        "registrar"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "registrar",
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционист",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction",
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик базы",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic",
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "trader",
+      "model": "traderNpc",
+      "name": "Снабженец базы",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-trade",
+        "merchant",
+        "trader"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "trade",
+        "territoryFactionId": "contour",
+        "traderProfile": "coreBaseContour",
+        "tradeProfile": "coreBaseContour",
+        "dialogueProfile": "coreBaseContour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "researcher",
+      "model": "wastelandSettler",
+      "name": "Исследователь аномалий",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-artifactLab",
+        "researcher"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "artifactLab",
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_gate_a",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.14,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_gate_b",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -27.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.14,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_metro_a",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_metro_b",
+      "model": "caravanGuard",
+      "name": "Охрана Контура",
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true,
+        "territoryFactionId": "contour"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_1",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_2",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_3",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_4",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -20.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_5",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_6",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -16.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_7",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_8",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_9",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "command",
+      "model": "wastelandShack",
+      "name": "Штаб: Узел Контура",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.0,
+        "y": 2.0,
+        "z": 2.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "command-core",
+        "landmark"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 6.714,
+        "z": 7.644
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-clinic",
+      "model": "field_clinic",
+      "name": "coreBaseContour-keys-clinic EDITABLE",
+      "position": {
+        "x": 13.0,
+        "y": 0.0,
+        "z": -11.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clinic",
+        "medical",
+        "warm-light"
+      ],
+      "footprint": {
+        "x": 13.5,
+        "z": 15.8
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-life",
+      "model": "community_yard",
+      "name": "coreBaseContour-keys-life EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "garden",
+        "laundry",
+        "kitchen",
+        "lived-in"
+      ],
+      "footprint": {
+        "x": 10.0,
+        "z": 9.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-market",
+      "model": "market_canopy",
+      "name": "coreBaseContour-keys-market EDITABLE",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "canopy",
+        "trade",
+        "shelter"
+      ],
+      "footprint": {
+        "x": 6.5,
+        "z": 4.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-rail-bridge",
+      "model": "rail_bridge",
+      "name": "coreBaseContour-keys-rail-bridge EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "rail",
+        "bridge",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-water-tower",
+      "model": "water_tower",
+      "name": "coreBaseContour-keys-water-tower EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "water",
+        "tower",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-keys-workshops",
+      "model": "modular_workshop",
+      "name": "coreBaseContour-keys-workshops EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-landmark",
+      "model": "metro-gate",
+      "name": "Landmark metro-gate EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "metro-gate"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-field-0",
+      "model": "clean_soil",
+      "name": "coreBaseContour-region-field-0 EDITABLE",
+      "position": {
+        "x": -29.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-field-1",
+      "model": "clean_soil",
+      "name": "coreBaseContour-region-field-1 EDITABLE",
+      "position": {
+        "x": -11.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-field-2",
+      "model": "clean_soil",
+      "name": "coreBaseContour-region-field-2 EDITABLE",
+      "position": {
+        "x": 7.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-field-3",
+      "model": "clean_soil",
+      "name": "coreBaseContour-region-field-3 EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.02,
+        "z": -29.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "clean_soil",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-irrigation",
+      "model": "irrigation",
+      "name": "coreBaseContour-region-irrigation EDITABLE",
+      "position": {
+        "x": -31.0,
+        "y": -0.03,
+        "z": 25.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "irrigation",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-shelterbelt-0",
+      "model": "shelterbelt_tree",
+      "name": "coreBaseContour-region-shelterbelt-0 EDITABLE",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-shelterbelt-1",
+      "model": "shelterbelt_tree",
+      "name": "coreBaseContour-region-shelterbelt-1 EDITABLE",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-shelterbelt-2",
+      "model": "shelterbelt_tree",
+      "name": "coreBaseContour-region-shelterbelt-2 EDITABLE",
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-shelterbelt-3",
+      "model": "shelterbelt_tree",
+      "name": "coreBaseContour-region-shelterbelt-3 EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-region-shelterbelt-4",
+      "model": "shelterbelt_tree",
+      "name": "coreBaseContour-region-shelterbelt-4 EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "shelterbelt",
+        "vegetation"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-settlement-ring",
+      "model": "welded_yard",
+      "name": "coreBaseContour-settlement-ring EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "post-industrial",
+        "editable-perimeter"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "gate_left",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": -30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "gate_right",
+      "model": "utilityPole",
+      "name": "Входной пилон",
+      "position": {
+        "x": 4.0,
+        "y": 0.0,
+        "z": -30.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "entrance"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lab_terminal",
+      "model": "workshopBench",
+      "name": "Терминал стабилизации артефактов",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "interactive",
+        "terminal",
+        "artifact-lab",
+        "territory-service"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "terminal",
+        "role": "artifactLab",
+        "service": "artifactLab",
+        "storageFaction": "contour"
+      },
+      "footprint": {
+        "x": 3.6,
+        "z": 1.68
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "metro_car",
+      "model": "cargoStack",
+      "name": "Вагон метро — в Сердцевину",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.6,
+        "y": 1.6,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "metro",
+        "metro-car",
+        "landmark"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "metro",
+        "to": "coreZone"
+      },
+      "footprint": {
+        "x": 5.028,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "metro_hall",
+      "model": "concreteWall",
+      "name": "Зал платформы метро",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 5.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "metro"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.769,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_e",
+      "model": "concreteWall",
+      "name": "Восточный периметр",
+      "position": {
+        "x": 34.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_n",
+      "model": "concreteWall",
+      "name": "Северный периметр",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 34.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.23,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_s",
+      "model": "concreteWall",
+      "name": "Южный периметр",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -34.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 8.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.23,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "perimeter_w",
+      "model": "concreteWall",
+      "name": "Западный периметр",
+      "position": {
+        "x": -34.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 8.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-base",
+        "perimeter"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 14.057
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "storage_shed",
+      "model": "storageLeanTo",
+      "name": "Личное хранилище",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.4,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "interactive",
+        "storage",
+        "container",
+        "personal-storage",
+        "territory-storage"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "container",
+        "role": "storage",
+        "containerType": "storage",
+        "storageFaction": "contour"
+      },
+      "footprint": {
+        "x": 1.803,
+        "z": 2.052
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_e",
+      "model": "watchPost",
+      "name": "Пост охраны Восток",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": -26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "watch_w",
+      "model": "watchPost",
+      "name": "Пост охраны Запад",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": -26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.188,
+        "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [],
+  "visualProfile": {
+    "id": "kromka-territory-base-contour-v1",
+    "skyDay": "#5b6266",
+    "fogDay": "#6f7576",
+    "hemiSkyDay": "#a5a8a0",
+    "hemiGroundDay": "#3b3f3c",
+    "fillDay": "#9aa08e",
+    "sunDay": "#d6c797",
+    "rimDay": "#c9b98d"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "middle_vein",
+  "kromkaVisualProfile": "territory-base-contour-v1",
+  "ambientProfile": "guarded-metro-yard",
+  "anomalyDensity": 0.0,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseContour.unity",
+  "unitySpawns": [
+    {
+      "id": "auctioneer",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -2.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "core-base-contour-gate",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreBaseContour-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "guard_gate_a",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": -27.0
+      },
+      "rotationY": 3.14
+    },
+    {
+      "id": "guard_gate_b",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -27.0
+      },
+      "rotationY": 3.14
+    },
+    {
+      "id": "guard_metro_a",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "guard_metro_b",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "medic",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": -14.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "registrar",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "researcher",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -10.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "trader",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotationY": 0.0
+    }
+  ],
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -22.0,
+    "rotationY": 0.0
+  }
+}

@@ -1,0 +1,295 @@
+{
+  "schema": "kromka.territory.v1",
+  "version": 1,
+  "id": "core",
+  "displayName": "Сердцевина",
+  "description": "Единая фракционная территория в центре Кромки: одна большая сцена с аванпостами, входами лабораторий и аномальными полями. Вход только через платформу метро своей фракции.",
+  "zoneLocationId": "coreZone",
+  "macroRegion": "middle_vein",
+  "mapPoint": {
+    "x": 190,
+    "z": 150
+  },
+  "zone": {
+    "widthMeters": 320,
+    "depthMeters": 320,
+    "pvpMode": "pvpFullDrop",
+    "enemyCap": 0
+  },
+  "rules": {
+    "factionChangeCooldownMs": 259200000,
+    "combatExitGraceMs": 10000,
+    "joinRequiresReputation": 0,
+    "platformProtectionRadius": 14
+  },
+  "factions": [
+    {
+      "id": "uprava",
+      "baseLocationId": "coreBaseUprava",
+      "baseDisplayName": "Узел Управы",
+      "capitalLocationId": "sluiceCity",
+      "mapPoint": {
+        "x": 190,
+        "z": 182
+      },
+      "platform": {
+        "id": "platform_uprava",
+        "displayName": "Платформа Управы",
+        "x": 0,
+        "z": 138,
+        "entryKey": "entryFromUprava"
+      },
+      "guardName": "Караульный Управы",
+      "traderProfile": "coreBaseUprava"
+    },
+    {
+      "id": "free_artels",
+      "baseLocationId": "coreBaseArtels",
+      "baseDisplayName": "Артельный узел",
+      "capitalLocationId": "scrapTown",
+      "mapPoint": {
+        "x": 158,
+        "z": 150
+      },
+      "platform": {
+        "id": "platform_artels",
+        "displayName": "Платформа Артелей",
+        "x": -138,
+        "z": 0,
+        "entryKey": "entryFromArtels"
+      },
+      "guardName": "Артельный дозорный",
+      "traderProfile": "coreBaseArtels"
+    },
+    {
+      "id": "contour",
+      "baseLocationId": "coreBaseContour",
+      "baseDisplayName": "Узел Контура",
+      "capitalLocationId": "relayStation",
+      "mapPoint": {
+        "x": 222,
+        "z": 150
+      },
+      "platform": {
+        "id": "platform_contour",
+        "displayName": "Платформа Контура",
+        "x": 138,
+        "z": 0,
+        "entryKey": "entryFromContour"
+      },
+      "guardName": "Охрана Контура",
+      "traderProfile": "coreBaseContour"
+    },
+    {
+      "id": "tract_league",
+      "baseLocationId": "coreBaseLeague",
+      "baseDisplayName": "Узел Лиги",
+      "capitalLocationId": "caravanCamp",
+      "mapPoint": {
+        "x": 206,
+        "z": 141
+      },
+      "platform": {
+        "id": "platform_league",
+        "displayName": "Платформа Лиги",
+        "x": 0,
+        "z": -138,
+        "entryKey": "entryFromLeague"
+      },
+      "guardName": "Конвойный Лиги",
+      "traderProfile": "coreBaseLeague"
+    }
+  ],
+  "outpostRules": {
+    "ownerChangeLockMs": 1200000,
+    "captureHoldMs": 180000,
+    "captureDecayRate": 0.5,
+    "contestPausesProgress": true,
+    "captureTickMs": 1000,
+    "garrison": {
+      "guards": 4,
+      "quartermaster": 1,
+      "speedMps": 2.2,
+      "arrivalRadius": 4
+    }
+  },
+  "outposts": [
+    {
+      "id": "outpostPump",
+      "displayName": "Насосная «Ключ-9»",
+      "position": {
+        "x": -84,
+        "z": 36
+      },
+      "captureRadius": 10,
+      "initialOwner": "",
+      "landmark": "waterTank"
+    },
+    {
+      "id": "outpostRelay",
+      "displayName": "Ретранслятор «Ось»",
+      "position": {
+        "x": 84,
+        "z": 36
+      },
+      "captureRadius": 10,
+      "initialOwner": "",
+      "landmark": "relayAntenna"
+    },
+    {
+      "id": "outpostDepot",
+      "displayName": "Склад «Полоса»",
+      "position": {
+        "x": 0,
+        "z": -84
+      },
+      "captureRadius": 10,
+      "initialOwner": "",
+      "landmark": "storageLeanTo"
+    }
+  ],
+  "labs": [
+    {
+      "id": "coreLabSprout",
+      "displayName": "Лаборатория «Росток»",
+      "theme": "bio",
+      "summary": "Вентиляция, заражённые секции, питательные узлы и колония мутантов.",
+      "entrance": {
+        "x": 72,
+        "z": 72
+      },
+      "entryKey": "entryFromLabSprout",
+      "rewardComponents": [
+        "bioReagent",
+        "medicine",
+        "chemicals"
+      ]
+    },
+    {
+      "id": "coreLabCircuit",
+      "displayName": "Лаборатория «Цепь»",
+      "theme": "energy",
+      "summary": "Перераспределение питания, разряды и охранная машина.",
+      "entrance": {
+        "x": -72,
+        "z": 72
+      },
+      "entryKey": "entryFromLabCircuit",
+      "rewardComponents": [
+        "circuitModule",
+        "electronics"
+      ]
+    },
+    {
+      "id": "coreLabAlloy",
+      "displayName": "Лаборатория «Сплав»",
+      "theme": "materials",
+      "summary": "Охлаждение, давление и перегревающиеся бронированные противники.",
+      "entrance": {
+        "x": -72,
+        "z": -72
+      },
+      "entryKey": "entryFromLabAlloy",
+      "rewardComponents": [
+        "alloyPlate",
+        "scrap",
+        "ore"
+      ]
+    },
+    {
+      "id": "coreLabSpectrum",
+      "displayName": "Лаборатория «Спектр»",
+      "theme": "anomalous",
+      "summary": "Последовательности импульсов, проходы через поля и несколько аномальных очагов.",
+      "entrance": {
+        "x": 72,
+        "z": -72
+      },
+      "entryKey": "entryFromLabSpectrum",
+      "rewardComponents": [
+        "spectrumSample",
+        "stabilizerCatalyst"
+      ]
+    }
+  ],
+  "centralLab": {
+    "id": "coreLabCenter",
+    "displayName": "Объект Ноль",
+    "entrance": {
+      "x": 0,
+      "z": 0
+    },
+    "entryKey": "entryFromLabCenter",
+    "levels": [
+      {
+        "id": "coreLabCenterService",
+        "displayName": "Объект Ноль: служебный уровень",
+        "role": "service"
+      },
+      {
+        "id": "coreLabCenterResearch",
+        "displayName": "Объект Ноль: исследовательский уровень",
+        "role": "research"
+      },
+      {
+        "id": "coreLabCenterReactor",
+        "displayName": "Объект Ноль: установка",
+        "role": "reactor"
+      }
+    ],
+    "worldBoss": {
+      "id": "zeroCustodian",
+      "displayName": "Хранитель Нуля",
+      "respawnMs": 5400000
+    }
+  },
+  "belts": [
+    {
+      "id": "outskirts",
+      "displayName": "Окраины",
+      "minRadius": 96,
+      "tierRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "middle",
+      "displayName": "Промежуточные районы",
+      "minRadius": 44,
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "center",
+      "displayName": "Центр",
+      "minRadius": 0,
+      "tierRange": [
+        3,
+        5
+      ]
+    }
+  ],
+  "anomalyRings": [
+    {
+      "belt": "outskirts",
+      "radius": 122,
+      "startAngle": 11.25,
+      "fieldRadius": 3.2
+    },
+    {
+      "belt": "middle",
+      "radius": 58,
+      "startAngle": 33.75,
+      "fieldRadius": 3.6
+    },
+    {
+      "belt": "center",
+      "radius": 24,
+      "startAngle": 0,
+      "fieldRadius": 4
+    }
+  ]
+}

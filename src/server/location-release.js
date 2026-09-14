@@ -4,7 +4,7 @@
 // journal can still gate a location's story purpose, while private, encounter
 // and siege instances remain outside this public-map release list.
 const LOCATION_RELEASE_SCHEMA = 'realm.locationRelease.v1';
-const LOCATION_RELEASE_VERSION = 3;
+const LOCATION_RELEASE_VERSION = 4;
 const RELEASED_LOCATION_IDS = Object.freeze([
   'klimAmmoWorks',
   'resourceKlimQuarry',
@@ -44,7 +44,12 @@ const RELEASED_LOCATION_IDS = Object.freeze([
   'balanceBunker',
   'cascadeRegenerator',
   'clanFortZero',
-  'wasteland'
+  'wasteland',
+  'coreZone',
+  'coreBaseUprava',
+  'coreBaseArtels',
+  'coreBaseContour',
+  'coreBaseLeague'
 ]);
 
 const RELEASED_LOCATION_ID_SET = new Set(RELEASED_LOCATION_IDS);

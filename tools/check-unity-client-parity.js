@@ -227,6 +227,8 @@ assert.deepStrictEqual(
 const unityEmits = uniqueSorted([...unityTransportEmits, ...dynamicUnityEvents]);
 const unityOnlyKromkaEmits = [
   'artifactLoadoutAction',
+  'auctionAction',
+  'baseServiceAction',
   'kromkaClanAction',
   'kromkaOnboardingAction',
   'kromkaQuestAction',
@@ -236,11 +238,15 @@ const unityOnlyKromkaEmits = [
   'personalBaseAction',
   'playerTradeAction',
   'pickupArtifact',
+  'pveAreaAction',
   'requestArtifactState',
   'requestKromkaClanState',
   'requestKromkaSiegeState',
   'requestPersonalBaseState',
+  'requestTerritoryState',
+  'salvageArtifact',
   'stabilizeArtifact',
+  'territoryFactionAction',
   'throwBolt'
 ];
 assert.deepStrictEqual(
@@ -270,7 +276,11 @@ const unityOnlyHandlers = [
   'medicalConsentResolved',
   'personalBaseState',
   'playerTradeUpdated',
-  'worldActivityFeedChanged'
+  'publicEventState',
+  'pveAreaState',
+  'territoryOutpostState',
+  'worldActivityFeedChanged',
+  'worldBossState'
 ];
 assert.deepStrictEqual(
   unityHandlers.filter(name => !unityOnlyHandlers.includes(name)),
@@ -311,12 +321,14 @@ const unityItems = {};
 for (const match of unityItemSource.matchAll(/Add\(result,\s*"([^"]+)",\s*"([^"]*)",\s*(-?\d+(?:\.\d+)?)f?\);/g))
   unityItems[match[1]] = { name: match[2], weight: Number(match[3]) };
 const unityOnlyKromkaItems = [
+  'alloyPlate',
   'artifactAnchor', 'artifactBelt2', 'artifactBelt3', 'artifactBelt4',
   'artifactBloodkin', 'artifactContainer', 'artifactDetectorMk1',
   'artifactDetectorMk2', 'artifactDetectorMk3', 'artifactDew', 'artifactDrop',
   'artifactHusher', 'artifactMemory', 'artifactNode', 'artifactShell',
   'artifactSieve', 'artifactSpring', 'artifactThunderer', 'artifactVein',
-  'artifactWarmer', 'blue'
+  'artifactWarmer', 'bioReagent', 'blue', 'circuitModule', 'spectrumSample',
+  'stabilizerCatalyst'
 ];
 assert.deepStrictEqual(
   Object.keys(unityItems).filter(id => !unityOnlyKromkaItems.includes(id)).sort(),

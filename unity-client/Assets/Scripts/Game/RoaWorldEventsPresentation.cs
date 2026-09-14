@@ -1,0 +1,353 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Newtonsoft.Json.Linq;
+using RealmOfAshes.Net;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealmOfAshes.Game
+{
+    /// <summary>
+    /// Компактная панель мировых событий в HUD: аванпосты Сердцевины (владелец,
+    /// состояние события, отсчёт, прогресс, гарнизон), публичное событие
+    /// (таймер, предупреждение, спорный сундук, возврат после смерти), мировой
+    /// босс (щит, уязвимость, телеграф импульса) и PvE-область («Искать следы»).
+    /// Все значения приходят с сервера; клиент только форматирует и показывает
+    /// то, что относится к текущей комнате.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class RoaWorldEventsPresentation : MonoBehaviour
+    {
+        private static readonly Color Ink = new Color(0.906f, 0.835f, 0.682f, 1f);
+        private static readonly Color Warn = new Color(1f, 0.66f, 0.42f, 1f);
+        private static readonly Color Calm = new Color(0.62f, 0.84f, 0.62f, 1f);
+
+        private RoaSocketClient _socket;
+        private Canvas _canvas;
+        private GameObject _panel;
+        private Text _text;
+        private Button _tracksButton;
+        private Text _tracksLabel;
+        private JObject _territory;
+        private JObject _publicEvent;
+        private JObject _worldBoss;
+        private JObject _pveArea;
+        private float _nextRefreshAt;
+        private double _receivedAt;
+
+        public void Configure(RoaSocketClient socket)
+        {
+            Unsubscribe();
+            _socket = socket;
+            BuildUi();
+            Subscribe();
+            ApplyJoinedWorldState();
+            RequestTerritory();
+        }
+
+        private void OnDestroy() { Unsubscribe(); }
+
+        private void Subscribe()
+        {
+            if (_socket == null) return;
+            _socket.OnTerritoryOutpostState += ApplyTerritory;
+            _socket.OnPublicEventState += ApplyPublicEvent;
+            _socket.OnWorldBossState += ApplyWorldBoss;
+            _socket.OnPveAreaState += ApplyPveArea;
+            _socket.OnJoined += HandleJoined;
+            _socket.OnServerWorldTransfer += HandleTransfer;
+        }
+
+        private void Unsubscribe()
+        {
+            if (_socket == null) return;
+            _socket.OnTerritoryOutpostState -= ApplyTerritory;
+            _socket.OnPublicEventState -= ApplyPublicEvent;
+            _socket.OnWorldBossState -= ApplyWorldBoss;
+            _socket.OnPveAreaState -= ApplyPveArea;
+            _socket.OnJoined -= HandleJoined;
+            _socket.OnServerWorldTransfer -= HandleTransfer;
+        }
+
+        private void HandleJoined(JoinAck _) { ApplyJoinedWorldState(); RequestTerritory(); }
+        private void HandleTransfer(JObject _) { ApplyJoinedWorldState(); }
+
+        /// <summary>Снимок комнаты при входе несёт PvE/событие/босса; сброс при смене локации.</summary>
+        private void ApplyJoinedWorldState()
+        {
+            JObject world = _socket?.Session?.WorldState;
+            _publicEvent = world?["publicEvent"] as JObject;
+            _worldBoss = world?["worldBoss"] as JObject;
+            _pveArea = world?["pveArea"] as JObject;
+            _receivedAt = Time.realtimeSinceStartupAsDouble;
+            Refresh();
+        }
+
+        private void RequestTerritory()
+        {
+            if (_socket == null || _socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
+            RoaTerritoryNet.RequestTerritoryState(_socket, ack =>
+            {
+                if (!(ack?["territory"] is JObject territory)) return;
+                // Имена фракций для подписей приходят с каталогом территории.
+                var names = new JObject();
+                foreach (JToken row in ack["catalog"]?["factions"] as JArray ?? new JArray())
+                {
+                    string id = row["id"]?.ToString();
+                    if (!string.IsNullOrEmpty(id)) names[id] = row["displayName"]?.ToString() ?? id;
+                }
+                territory["factionNames"] = names;
+                ApplyTerritory(territory);
+            });
+        }
+
+        private void ApplyTerritory(JObject payload)
+        {
+            JObject next = payload?["territory"] as JObject ?? payload;
+            if (next != null && next["factionNames"] == null && _territory?["factionNames"] is JObject names) next["factionNames"] = names;
+            _territory = next;
+            Refresh();
+        }
+
+        private void ApplyPublicEvent(JObject payload)
+        {
+            if (payload?["expired"]?.Value<bool>() == true || payload?["evicted"]?.Value<bool>() == true) _publicEvent = null;
+            else _publicEvent = payload;
+            _receivedAt = Time.realtimeSinceStartupAsDouble;
+            Refresh();
+        }
+
+        private void ApplyWorldBoss(JObject payload) { _worldBoss = payload; _receivedAt = Time.realtimeSinceStartupAsDouble; Refresh(); }
+        private void ApplyPveArea(JObject payload) { _pveArea = payload; _receivedAt = Time.realtimeSinceStartupAsDouble; Refresh(); }
+
+        private void Update()
+        {
+            if (Time.unscaledTime < _nextRefreshAt) return;
+            _nextRefreshAt = Time.unscaledTime + 1f;
+            Refresh();
+        }
+
+        private void Refresh()
+        {
+            if (_text == null) return;
+            string locationId = _socket?.Session?.LocationId ?? string.Empty;
+            string roomId = _socket?.Session?.RoomId ?? string.Empty;
+            int elapsed = (int)Math.Max(0, Time.realtimeSinceStartupAsDouble - _receivedAt);
+            var lines = new List<string>();
+            string outposts = DescribeOutposts(_territory, locationId);
+            if (!string.IsNullOrEmpty(outposts)) lines.Add(outposts);
+            string publicEvent = DescribePublicEvent(_publicEvent, roomId, elapsed);
+            if (!string.IsNullOrEmpty(publicEvent)) lines.Add(publicEvent);
+            string worldBoss = DescribeWorldBoss(_worldBoss, roomId, elapsed);
+            if (!string.IsNullOrEmpty(worldBoss)) lines.Add(worldBoss);
+            string pve = DescribePveArea(_pveArea, roomId, elapsed);
+            if (!string.IsNullOrEmpty(pve)) lines.Add(pve);
+            bool visible = lines.Count > 0 && _socket != null && _socket.Phase == RoaSocketClient.ConnectionPhase.Joined
+                && _socket.Session != null && !(_socket.Session.Self?["onGlobalMap"]?.Value<bool>() ?? false);
+            _panel.SetActive(visible);
+            if (!visible) return;
+            _text.text = string.Join("\n", lines);
+            _text.color = (_worldBoss != null && _worldBoss["pulseTelegraph"]?.Value<bool>() == true)
+                || (_publicEvent != null && _publicEvent["warning"]?.Value<bool>() == true) ? Warn : Ink;
+            bool tracks = _pveArea != null && _pveArea["roomId"]?.ToString() == roomId;
+            _tracksButton.gameObject.SetActive(tracks);
+            if (tracks)
+            {
+                int ready = Math.Max(0, (_pveArea["tracksReadyInSeconds"]?.Value<int>() ?? 0) - elapsed);
+                _tracksLabel.text = (_pveArea["tracksLabel"]?.ToString() ?? "Искать следы").ToUpperInvariant()
+                    + (ready > 0 ? " · " + ready + " с" : string.Empty);
+                _tracksButton.interactable = ready <= 0;
+            }
+        }
+
+        private void SearchTracks()
+        {
+            RoaPveAreaNet.SearchTracks(_socket, ack =>
+            {
+                if (ack != null && ack["ok"]?.Value<bool>() == true) ApplyPveArea(ack);
+                else if (_text != null && ack != null) _text.text = ack["error"]?.ToString() ?? _text.text;
+            });
+        }
+
+        // --- Форматирование (чистые функции, проверяются пробой) ---------------------
+
+        public static string DescribeOutposts(JObject territory, string locationId)
+        {
+            if (territory == null || string.IsNullOrEmpty(locationId)) return string.Empty;
+            string zoneId = territory["zoneLocationId"]?.ToString() ?? "coreZone";
+            if (!string.Equals(locationId, zoneId, StringComparison.Ordinal)) return string.Empty;
+            JArray outposts = territory["outposts"] as JArray;
+            if (outposts == null || outposts.Count == 0) return string.Empty;
+            JObject factionNames = territory["factionNames"] as JObject;
+            var sb = new StringBuilder("АВАНПОСТЫ");
+            foreach (JToken token in outposts)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                string name = row["displayName"]?.ToString() ?? row["id"]?.ToString() ?? "Аванпост";
+                string owner = FactionLabel(factionNames, row["ownerFactionId"]?.ToString());
+                if (string.IsNullOrEmpty(owner)) owner = "нейтральный";
+                bool open = row["eventStatus"]?.ToString() == "open";
+                int countdown = Mathf.CeilToInt((row["eventOpensInMs"]?.Value<long>() ?? 0L) / 1000f);
+                string leading = row["capture"]?["leadingFactionId"]?.ToString() ?? string.Empty;
+                float progressValue = string.IsNullOrEmpty(leading) ? 0f : (row["capture"]?["progress"]?[leading]?.Value<float>() ?? 0f);
+                int progress = Mathf.RoundToInt(progressValue * 100f);
+                bool contested = row["capture"]?["contested"]?.Value<bool>() == true;
+                string garrison = GarrisonLabel(row["garrison"]?["state"]?.ToString());
+                sb.Append('\n').Append(name).Append(": ").Append(owner);
+                if (open) sb.Append(" · ЗАХВАТ ОТКРЫТ");
+                else if (countdown > 0) sb.Append(" · захват через ").Append(Clock(countdown));
+                if (open && progress > 0) sb.Append(" · ").Append(FactionLabel(factionNames, leading)).Append(' ').Append(progress).Append('%');
+                if (open && contested) sb.Append(" · ОСПАРИВАЕТСЯ");
+                if (!string.IsNullOrEmpty(garrison)) sb.Append(" · гарнизон: ").Append(garrison);
+            }
+            return sb.ToString();
+        }
+
+        public static string FactionLabel(JObject factionNames, string factionId)
+        {
+            if (string.IsNullOrEmpty(factionId)) return string.Empty;
+            string label = factionNames?[factionId]?.ToString();
+            return string.IsNullOrEmpty(label) ? factionId : label;
+        }
+
+        public static string GarrisonLabel(string state)
+        {
+            switch (state ?? string.Empty)
+            {
+                case "dispatched": return "выдвинулся";
+                case "enroute": return "в пути";
+                case "arrived": return "прибыл";
+                default: return string.Empty;
+            }
+        }
+
+        public static string DescribePublicEvent(JObject payload, string roomId, int elapsedSeconds)
+        {
+            if (payload == null || string.IsNullOrEmpty(roomId) || payload["roomId"]?.ToString() != roomId) return string.Empty;
+            int remaining = Math.Max(0, (payload["remainingSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);
+            string name = payload["displayName"]?.ToString() ?? "Событие";
+            var sb = new StringBuilder(name.ToUpperInvariant()).Append(" · ").Append(Clock(remaining));
+            if (payload["warning"]?.Value<bool>() == true) sb.Append(" · СКОРО ЗАКРОЕТСЯ");
+            if (payload["cleared"]?.Value<bool>() == true)
+            {
+                if (payload["chestClaimed"]?.Value<bool>() == true) sb.Append("\nТайник уже забрали");
+                else if (payload["chestOpen"]?.Value<bool>() == true) sb.Append("\nТАЙНИК ОТКРЫТ — успейте первыми");
+                else sb.Append("\nТайник откроется через ").Append(Math.Max(0, (payload["chestOpensInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с · PvP разрешено");
+            }
+            else sb.Append("\nЗачистите логово, чтобы открыть тайник");
+            int rejoin = payload["rejoinInSeconds"]?.Value<int>() ?? 0;
+            if (rejoin > 0) sb.Append("\nВернуться можно через ").Append(Math.Max(0, rejoin - elapsedSeconds)).Append(" с");
+            return sb.ToString();
+        }
+
+        public static string DescribeWorldBoss(JObject payload, string roomId, int elapsedSeconds)
+        {
+            if (payload == null) return string.Empty;
+            string payloadRoom = payload["roomId"]?.ToString();
+            if (!string.IsNullOrEmpty(payloadRoom) && !string.IsNullOrEmpty(roomId) && payloadRoom != roomId) return string.Empty;
+            string name = payload["displayName"]?.ToString() ?? "Хранитель";
+            string phase = payload["phase"]?.ToString() ?? "shielded";
+            var sb = new StringBuilder(name.ToUpperInvariant()).Append(" · ").Append(payload["phaseLabel"]?.ToString() ?? phase);
+            if (phase == "defeated")
+            {
+                sb.Append("\nВозвращение через ").Append(Clock(Math.Max(0, (payload["respawnInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)));
+                return sb.ToString();
+            }
+            sb.Append("\nУзлы щита: ").Append(payload["nodesAlive"]?.Value<int>() ?? 0).Append('/').Append(payload["nodesTotal"]?.Value<int>() ?? 0);
+            if (phase == "vulnerable") sb.Append(" · уязвим ещё ").Append(Math.Max(0, (payload["vulnerableSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с");
+            int hp = payload["bossHp"]?.Value<int>() ?? 0;
+            int maxHp = payload["bossMaxHp"]?.Value<int>() ?? 0;
+            if (maxHp > 0) sb.Append(" · HP ").Append(hp).Append('/').Append(maxHp);
+            if (payload["pulseTelegraph"]?.Value<bool>() == true) sb.Append("\nИМПУЛЬС! Отойдите на ").Append(payload["pulseRadius"]?.Value<int>() ?? 9).Append(" м");
+            else sb.Append("\nИмпульс через ").Append(Math.Max(0, (payload["pulseInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с");
+            return sb.ToString();
+        }
+
+        public static string DescribePveArea(JObject payload, string roomId, int elapsedSeconds)
+        {
+            if (payload == null || string.IsNullOrEmpty(roomId) || payload["roomId"]?.ToString() != roomId) return string.Empty;
+            string name = payload["displayName"]?.ToString() ?? "PvE-область";
+            var sb = new StringBuilder(name.ToUpperInvariant()).Append(" · личная встреча · PvP отключён");
+            int alive = payload["alive"]?.Value<int>() ?? 0;
+            sb.Append("\nВрагов рядом: ").Append(alive);
+            int calm = Math.Max(0, (payload["calmSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);
+            if (calm > 0) sb.Append(" · затишье ").Append(calm).Append(" с");
+            string last = payload["lastResultLabel"]?.ToString();
+            if (!string.IsNullOrEmpty(last)) sb.Append('\n').Append(last);
+            return sb.ToString();
+        }
+
+        public static string Clock(int seconds)
+        {
+            int value = Math.Max(0, seconds);
+            return (value / 60).ToString("00") + ":" + (value % 60).ToString("00");
+        }
+
+        // --- UI ------------------------------------------------------------------------
+
+        private void BuildUi()
+        {
+            if (_canvas != null) return;
+            _canvas = new GameObject("WorldEventsCanvas", typeof(RectTransform)).AddComponent<Canvas>();
+            _canvas.transform.SetParent(transform, false);
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = 465;
+            var scaler = _canvas.gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280, 720);
+            _canvas.gameObject.AddComponent<GraphicRaycaster>();
+            bool mobile = Application.isMobilePlatform;
+            _panel = new GameObject("WorldEvents", typeof(RectTransform), typeof(Image));
+            _panel.transform.SetParent(_canvas.transform, false);
+            RectTransform rect = (RectTransform)_panel.transform;
+            rect.anchorMin = new Vector2(1, 1);
+            rect.anchorMax = new Vector2(1, 1);
+            rect.pivot = new Vector2(1, 1);
+            rect.anchoredPosition = mobile ? new Vector2(-12, -58) : new Vector2(-16, -84);
+            rect.sizeDelta = mobile ? new Vector2(300, 118) : new Vector2(360, 150);
+            _panel.GetComponent<Image>().color = new Color(0.035f, 0.05f, 0.045f, 0.9f);
+            _text = CreateText("Status", rect, mobile ? 12 : 14, TextAnchor.UpperLeft, Ink);
+            Stretch(_text.rectTransform, 8);
+            _text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _text.verticalOverflow = VerticalWrapMode.Truncate;
+            GameObject button = new GameObject("SearchTracks", typeof(RectTransform), typeof(Image), typeof(Button));
+            button.transform.SetParent(_canvas.transform, false);
+            RectTransform br = (RectTransform)button.transform;
+            br.anchorMin = new Vector2(1, 1);
+            br.anchorMax = new Vector2(1, 1);
+            br.pivot = new Vector2(1, 1);
+            br.anchoredPosition = mobile ? new Vector2(-12, -182) : new Vector2(-16, -240);
+            br.sizeDelta = mobile ? new Vector2(180, 30) : new Vector2(220, 34);
+            button.GetComponent<Image>().color = new Color(0.16f, 0.28f, 0.12f, 0.95f);
+            _tracksButton = button.GetComponent<Button>();
+            _tracksButton.onClick.AddListener(SearchTracks);
+            _tracksLabel = CreateText("Label", br, mobile ? 12 : 14, TextAnchor.MiddleCenter, Calm);
+            Stretch(_tracksLabel.rectTransform, 4);
+            _tracksButton.gameObject.SetActive(false);
+            _panel.SetActive(false);
+        }
+
+        private static Text CreateText(string name, RectTransform parent, int size, TextAnchor anchor, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var text = go.AddComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = size;
+            text.alignment = anchor;
+            text.color = color;
+            text.supportRichText = true;
+            return text;
+        }
+
+        private static void Stretch(RectTransform rect, float pad)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(pad, pad);
+            rect.offsetMax = new Vector2(-pad, -pad);
+        }
+    }
+}

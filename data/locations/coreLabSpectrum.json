@@ -1,0 +1,1399 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "coreLabSpectrum",
+  "name": "Лаборатория «Спектр»",
+  "seed": 2026091523,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "territoryLab",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "noRespawn": true,
+  "allowGlobalMapExit": false,
+  "noGlobalMap": true,
+  "territoryId": "core",
+  "territoryRole": "lab",
+  "factionAccess": "territory",
+  "lab": {
+    "id": "coreLabSpectrum",
+    "theme": "anomalous",
+    "summary": "Последовательности импульсов, проходы через поля и несколько аномальных очагов.",
+    "rewardComponents": [
+      "spectrumSample",
+      "stabilizerCatalyst"
+    ],
+    "innerGateContainerId": "inner_vault"
+  },
+  "ground": {
+    "preset": "concreteFloor",
+    "label": "Лаборатория «Спектр»"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromCore": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0,
+    "y": 0.1,
+    "z": -30,
+    "rotationY": 0
+  },
+  "transitions": [
+    {
+      "id": "exit_to_core",
+      "type": "location",
+      "label": "Выход в Сердцевину",
+      "to": "coreZone",
+      "entryKey": "entryFromLabSpectrum",
+      "tx": 19,
+      "tz": 2,
+      "x": 0,
+      "y": 0.1,
+      "z": -34,
+      "rotationY": 0,
+      "radius": 3
+    }
+  ],
+  "worldZones": [],
+  "containers": [
+    {
+      "id": "outer_vault",
+      "name": "Внешний шкаф",
+      "tier": "rare",
+      "tx": 10,
+      "tz": 18,
+      "x": -18,
+      "y": 0.1,
+      "z": -2,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "inner_vault",
+      "name": "Сейф: Лаборатория «Спектр»",
+      "tier": "rare",
+      "tx": 19,
+      "tz": 33,
+      "x": 0,
+      "y": 0.1,
+      "z": 28,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "hard",
+      "terminalLocked": true,
+      "terminalDifficulty": "medium",
+      "terminalUnlocksLock": true,
+      "terminalName": "Терминал: Лаборатория «Спектр»"
+    },
+    {
+      "id": "inner_cabinet",
+      "name": "Внутренний шкаф",
+      "tier": "rare",
+      "tx": 27,
+      "tz": 31,
+      "x": 16,
+      "y": 0.1,
+      "z": 24,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    }
+  ],
+  "objects": [
+    {
+      "id": "anomalous_guardian_1",
+      "model": "enemyFireGecko",
+      "name": "Плакальщик",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "firegecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "fireGecko",
+        "creatureTypeId": "mourner",
+        "faction": "wild",
+        "enemyType": "fireGecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "anomalous_guardian_2",
+      "model": "enemyFireGecko",
+      "name": "Плакальщик",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "firegecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "fireGecko",
+        "creatureTypeId": "mourner",
+        "faction": "wild",
+        "enemyType": "fireGecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "anomalous_guardian_3",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "anomalous_guardian_4",
+      "model": "enemyGecko",
+      "name": "Слухач",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "gecko"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "gecko",
+        "creatureTypeId": "listener",
+        "faction": "wild",
+        "enemyType": "gecko",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bench_a",
+      "model": "workshopBench",
+      "name": "Лабораторный стол",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "bench"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.6,
+        "z": 1.68
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bench_b",
+      "model": "workshopBench",
+      "name": "Лабораторный стол",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "bench"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.6,
+        "z": 1.68
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-black-reservoir",
+      "model": "ring_structure",
+      "name": "coreLabSpectrum-black-reservoir EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-carousel-2",
+      "model": "carousel",
+      "name": "Anomaly coreLabSpectrum-carousel-2",
+      "position": {
+        "x": 18.0,
+        "y": 0.08,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-cascade-feed",
+      "model": "external_pipe",
+      "name": "coreLabSpectrum-cascade-feed EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-landmark",
+      "model": "sealed-laboratory",
+      "name": "Landmark sealed-laboratory EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "sealed-laboratory"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-mute-4",
+      "model": "mute",
+      "name": "Anomaly coreLabSpectrum-mute-4",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-pull-1",
+      "model": "pull",
+      "name": "Anomaly coreLabSpectrum-pull-1",
+      "position": {
+        "x": -18.0,
+        "y": 0.08,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-regenerator-column",
+      "model": "blast_furnace",
+      "name": "coreLabSpectrum-regenerator-column EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-region-departure-rail",
+      "model": "railway",
+      "name": "coreLabSpectrum-region-departure-rail EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.03,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 61.818,
+        "z": 2.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-region-yard-fence",
+      "model": "wall",
+      "name": "coreLabSpectrum-region-yard-fence EDITABLE",
+      "position": {
+        "x": -34.0,
+        "y": 1.2,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-sink-3",
+      "model": "sink",
+      "name": "Anomaly coreLabSpectrum-sink-3",
+      "position": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "anomaly",
+      "tags": [
+        "visible-hazard",
+        "bolt-discharge"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_gate",
+      "model": "cargoStack",
+      "name": "Герметичная секция",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.0,
+        "y": 1.8,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "inner-gate",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 5.802,
+        "z": 0.557
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_wall_e",
+      "model": "concreteWall",
+      "name": "Внутренняя переборка",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 4.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.615,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_wall_w",
+      "model": "concreteWall",
+      "name": "Внутренняя переборка",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 4.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.615,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "cargoStack",
+      "name": "Лаборатория «Спектр»",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "landmark",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.481,
+        "z": 1.002
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "node_a",
+      "model": "utilityPole",
+      "name": "Импульсный излучатель",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "mechanic-node",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "labNode",
+        "role": "mechanic",
+        "labId": "coreLabSpectrum",
+        "nodeId": "node_a",
+        "theme": "anomalous"
+      },
+      "footprint": {
+        "x": 1.869,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "node_b",
+      "model": "utilityPole",
+      "name": "Импульсный излучатель",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "mechanic-node",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "labNode",
+        "role": "mechanic",
+        "labId": "coreLabSpectrum",
+        "nodeId": "node_b",
+        "theme": "anomalous"
+      },
+      "footprint": {
+        "x": 1.869,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_e",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 9.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 15.814
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_n",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 32.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 12.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.845,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_w",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 9.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "anomalous"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 15.814
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "coreLabSpectrum-pull-1",
+      "type": "pull",
+      "x": -18,
+      "z": 18,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "coreLabSpectrum-carousel-2",
+      "type": "carousel",
+      "x": 18,
+      "z": 18,
+      "radius": 3.2,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "coreLabSpectrum-sink-3",
+      "type": "sink",
+      "x": 0,
+      "z": 26,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "coreLabSpectrum-mute-4",
+      "type": "mute",
+      "x": 0,
+      "z": 12,
+      "radius": 3.2,
+      "dischargeMs": 5000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-territory-lab-anomalous-v1",
+    "skyDay": "#3f4650",
+    "fogDay": "#4d545c",
+    "hemiSkyDay": "#a5a8a0",
+    "hemiGroundDay": "#26292c",
+    "fillDay": "#9aa08e",
+    "sunDay": "#d6c797",
+    "rimDay": "#c9b98d"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "off_map",
+  "kromkaVisualProfile": "territory-lab-anomalous-v1",
+  "ambientProfile": "sealed-anomalous-laboratory",
+  "anomalyDensity": 0.6,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity",
+  "unitySpawns": [
+    {
+      "id": "anomalous_guardian_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "anomalous_guardian_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "anomalous_guardian_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "anomalous_guardian_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreLabSpectrum-airlock",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreLabSpectrum-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -30.0
+      },
+      "rotationY": 0.0
+    }
+  ],
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  }
+}

@@ -297,7 +297,6 @@ namespace RealmOfAshes.Game
         public const float StrategicKeyboardPanMaximumSpeed = 32f;
         private const int LocationEntryAutomaticAttempts = 4;
         private const float LocationEntryRetryBaseSeconds = 1.25f;
-        private const string FullLootWarningAcceptedKey = "roa.fullLootWarningAccepted.v1";
         private const string AuthoredSceneName = Kromka.KromkaLocationSceneCatalog.GlobalMapSceneName;
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorProperty = Shader.PropertyToID("_Color");
@@ -345,6 +344,7 @@ namespace RealmOfAshes.Game
         public bool ArrivalPending { get { return _arrivalPending; } }
         public bool LocationEntryPending { get { return _locationEntryPending; } }
         public bool FullLootConfirmationPending { get { return _fullLootConfirmationPending; } }
+        public JObject PendingZoneRules { get { return _pendingZoneRules; } }
         public bool ContactDecisionPending { get { return _contactDecisionPending; } }
         public bool HasPendingContact { get { return _pendingContact != null; } }
         public string PendingContactName { get { return _pendingContact?.Name ?? "Событие пустоши"; } }
@@ -718,6 +718,8 @@ namespace RealmOfAshes.Game
         private bool _locationEntryPending;
         private JObject _pendingArrival;
         private JObject _fullLootArrival;
+        private JObject _pendingZoneRules;
+        private string _acknowledgedZoneMode = string.Empty;
         private bool _fullLootConfirmationPending;
         private string _pendingArrivalKey = string.Empty;
         private int _locationEntryAttempts;
@@ -1003,6 +1005,7 @@ namespace RealmOfAshes.Game
             _pendingArrival = null;
             _pendingArrivalKey = string.Empty;
             _fullLootArrival = null;
+            _pendingZoneRules = null;
             _fullLootConfirmationPending = false;
             _locationEntryAttempts = 0;
             _locationEntryRetryAt = 0f;
@@ -1060,6 +1063,8 @@ namespace RealmOfAshes.Game
                     JObject payload = JObject.Parse(request.downloadHandler.text);
                     JObject sim = payload["sim"] as JObject;
                     if (sim == null) throw new JsonException("В ответе нет поля sim.");
+                    // Публичные события лежат рядом с sim: карта рисует их как зоны входа.
+                    if (payload["publicEvents"] is JArray publicEventRows) sim["publicEvents"] = publicEventRows;
                     ApplyWastelandSnapshot(sim, false);
                 }
                 catch (JsonException error)
@@ -1397,6 +1402,40 @@ namespace RealmOfAshes.Game
                     DrawWorldRing("WorldZone:" + id, target.Point,
                                   Mathf.Clamp(Float(row["radius"], 7f), 2f, 40f),
                                   new Color(0.95f, 0.3f, 0.2f, 0.38f),
+                                  0.13f, 0.16f, DynamicVisualLayer.Threat, false,
+                                  target.Priority);
+                    ThreatMarkerCount++;
+                }
+            }
+
+            // Временные публичные события (логова, базы налётчиков): точка и
+            // worldZoneId для серверного билета входа, таймер и предупреждение.
+            JArray publicEvents = _wasteland["publicEvents"] as JArray;
+            if (publicEvents != null)
+            {
+                foreach (JToken token in publicEvents)
+                {
+                    JObject row = token as JObject;
+                    if (row == null || string.Equals(row["status"]?.ToString(), "expired", StringComparison.OrdinalIgnoreCase)) continue;
+                    string id = row["worldZoneId"]?.ToString() ?? row["id"]?.ToString() ?? string.Empty;
+                    if (string.IsNullOrEmpty(id) || _dynamicTargets.Exists(existing => existing.WorldZoneId == id)) continue;
+                    string kind = row["kind"]?.ToString() ?? "monsterLair";
+                    DynamicTarget target = TargetFrom(row, "zone");
+                    target.WorldZoneId = id;
+                    target.LocationId = row["locationId"]?.ToString() ?? string.Empty;
+                    target.Radius = Mathf.Clamp(Float(row["radius"], 9f), 2f, 40f);
+                    target.CanEnter = !string.IsNullOrEmpty(target.LocationId);
+                    target.Forced = false;
+                    target.Details = (row["displayName"]?.ToString() ?? "Событие") + " · "
+                        + RoaWorldEventsPresentation.Clock(row["remainingSeconds"]?.Value<int>() ?? 0)
+                        + (row["warning"]?.Value<bool>() == true ? " · скоро закроется" : string.Empty)
+                        + " · PvP, вещи сохраняются";
+                    target.Semantic = MarkerSemanticLabel("zone", kind, false);
+                    target.Accent = MarkerSemanticColor("zone", kind, false, "active");
+                    target.Priority = MarkerPresentationPriority("zone", kind, false, "active");
+                    _dynamicTargets.Add(target);
+                    DrawWorldRing("PublicEvent:" + id, target.Point, target.Radius,
+                                  new Color(1f, 0.6f, 0.25f, 0.4f),
                                   0.13f, 0.16f, DynamicVisualLayer.Threat, false,
                                   target.Priority);
                     ThreatMarkerCount++;
@@ -4010,16 +4049,18 @@ namespace RealmOfAshes.Game
             }
 
             string arrivalPvpMode = arrival["pvpMode"]?.ToString() ?? string.Empty;
-            if (string.Equals(arrivalPvpMode, "pvpFullDrop", StringComparison.OrdinalIgnoreCase)
-                && PlayerPrefs.GetInt(FullLootWarningAcceptedKey, 0) != 1)
+            JObject arrivalZoneRules = arrival["zoneRules"] as JObject;
+            if (ZoneRulesRequireConfirmation(arrivalPvpMode, arrivalZoneRules)
+                && !string.Equals(_acknowledgedZoneMode, arrivalPvpMode, StringComparison.OrdinalIgnoreCase))
             {
                 _pendingEntry = true;
                 _pendingArrival = (JObject)arrival.DeepClone();
                 _pendingArrival["targetLocationId"] = locationId;
                 _pendingArrivalKey = PendingArrivalKey(_pendingArrival);
                 _fullLootArrival = (JObject)_pendingArrival.DeepClone();
+                _pendingZoneRules = arrivalZoneRules != null ? (JObject)arrivalZoneRules.DeepClone() : null;
                 _fullLootConfirmationPending = true;
-                StatusText = "Нужно подтвердить вход в зону полного лута.";
+                StatusText = "Прочитайте правила зоны перед входом.";
                 return;
             }
 
@@ -4103,10 +4144,10 @@ namespace RealmOfAshes.Game
         {
             if (!_fullLootConfirmationPending || _fullLootArrival == null) return;
             JObject arrival = (JObject)_fullLootArrival.DeepClone();
+            _acknowledgedZoneMode = arrival["pvpMode"]?.ToString() ?? string.Empty;
             _fullLootConfirmationPending = false;
             _fullLootArrival = null;
-            PlayerPrefs.SetInt(FullLootWarningAcceptedKey, 1);
-            PlayerPrefs.Save();
+            _pendingZoneRules = null;
             _locationEntryAttempts = 0;
             _locationEntryRetryAt = 0f;
             RequestLocationEntry(arrival);
@@ -4117,8 +4158,23 @@ namespace RealmOfAshes.Game
             if (!_fullLootConfirmationPending) return;
             _fullLootConfirmationPending = false;
             _fullLootArrival = null;
+            _pendingZoneRules = null;
             _locationEntryPending = false;
             StatusText = "Вход отменён. Вы остались на глобальной карте.";
+        }
+
+        /// <summary>
+        /// Правила зоны показываются перед входом, когда сервер требует
+        /// подтверждения (частичная потеря, публичное событие) и режим отличается
+        /// от последнего подтверждённого в этой сессии.
+        /// </summary>
+        public static bool ZoneRulesRequireConfirmation(string mode, JObject zoneRules)
+        {
+            JToken explicitFlag = zoneRules?["confirmBeforeEntry"];
+            if (explicitFlag != null && explicitFlag.Type == JTokenType.Boolean) return explicitFlag.ToObject<bool>();
+            string value = (mode ?? string.Empty).Trim();
+            return string.Equals(value, "pvpFullDrop", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "pvpEvent", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ResumePendingLocationEntry()
@@ -5447,9 +5503,11 @@ namespace RealmOfAshes.Game
         private static string PvpLabel(string mode)
         {
             string value = (mode ?? string.Empty).ToLowerInvariant();
-            if (value == "peaceful" || value == "pve") return "мирная зона";
+            if (value == "peaceful") return "мирная зона";
+            if (value == "pve") return "PvE: без PvP, вещи сохраняются";
             if (value == "pvp") return "PvP: падают расходники";
-            if (value == "pvpfulldrop") return "PvP: полный дроп";
+            if (value == "pvpevent") return "PvP: вещи сохраняются";
+            if (value == "pvpfulldrop") return "PvP: инвентарь выпадает, экипировка сохраняется";
             return mode;
         }
 

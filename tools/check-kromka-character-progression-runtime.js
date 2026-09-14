@@ -8,12 +8,55 @@ const http = require('http');
 const net = require('net');
 const os = require('os');
 const path = require('path');
+const vm = require('vm');
 const { io } = require('socket.io-client');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-progression-'));
 let server = null;
 let port = 0;
+
+function checkXpThresholds() {
+  const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/character-progression.json'), 'utf8'));
+  const context = vm.createContext({
+    SERVER_SKILL_POINTS_PER_LEVEL: catalog.skills.pointsPerLevel,
+    SERVER_PERK_LEVEL_INTERVAL: catalog.perks.levelInterval,
+    // These cases isolate XP thresholds and earned budgets; real allocation,
+    // derived stats and persistence are exercised over Socket.IO below.
+    enforceServerProgressionBudget: () => {}, serverApplyDerivedVitals: () => {},
+    serverSpentSkillPoints: p => p.spentSkills || 0,
+    serverSpentPerkPoints: p => p.spentPerks || 0
+  });
+  for (const name of ['serverSkillBudgetFor', 'serverPerkBudgetFor', 'serverUpdateFreeProgressionPoints', 'serverGrantXp']) {
+    const start = source.indexOf(`function ${name}(`);
+    assert(start >= 0, name);
+    vm.runInContext(source.slice(start, source.indexOf('\n}', start) + 2), context);
+  }
+  const player = { level: 1, xp: 99, xpNeeded: 100, traits: [], spentSkills: 0, spentPerks: 0 };
+  assert.equal(context.serverGrantXp(player, 1).levels, 1);
+  assert.equal(player.level, 2);
+  assert.equal(player.xp, 0);
+  assert.equal(player.xpNeeded, 145);
+  assert.equal(player.skillPoints, 5);
+  assert.equal(player.perkPoints, 0);
+  assert.equal(context.serverGrantXp(player, 145 + 210 + 7).levels, 2);
+  assert.equal(player.level, 4);
+  assert.equal(player.xp, 7);
+  assert.equal(player.xpNeeded, 304);
+  assert.equal(player.skillPoints, 15);
+  assert.equal(player.perkPoints, 1);
+  const before = JSON.stringify(player);
+  for (const gain of [0, -10]) assert.equal(context.serverGrantXp(player, gain).gained, 0);
+  assert.equal(JSON.stringify(player), before);
+  const capped = { level: 199, xp: 0, xpNeeded: 100, traits: ['educatedStart'], spentSkills: 12, spentPerks: 3 };
+  assert.equal(context.serverGrantXp(capped, 1000).levels, 1);
+  assert.equal(capped.level, 200);
+  assert.equal(capped.xp, 900);
+  assert.equal(capped.skillPoints, 988);
+  assert.equal(capped.perkPoints, 63);
+  console.log('XP thresholds OK: exact level-up, multiple levels, remainder, skill/perk awards, spent points and level cap.');
+}
 
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -126,6 +169,7 @@ async function joinExisting(auth, clientInstanceId) {
 }
 
 async function run() {
+  checkXpThresholds();
   await startServer();
   const catalogResponse = await request('/api/kromka/character-progression');
   assert.equal(catalogResponse.status, 200);
@@ -218,18 +262,59 @@ async function run() {
   assert.equal(rejected.ok, false, 'rank above catalog maximum must be rejected');
   assert.match(rejected.error || '', /максимальный ранг 3/);
   assert.equal(rejected.self.perkPoints, 1);
+
+  const invalidStep = await ack(socket, 'state', {
+    profileOnly: true, skillRanks: { lightWeapons: 53 }, talentRanks: { specialStr: 2 }
+  });
+  assert.equal(invalidStep.ok, false, 'partial skill step below the cap must be rejected atomically');
+  assert.equal(invalidStep.self.skillRanks.lightWeapons, 51);
+  assert.equal(invalidStep.self.talentRanks.specialStr, 1);
+  assert.equal(invalidStep.self.skillPoints, 23);
+  assert.equal(invalidStep.self.perkPoints, 1);
+
+  const nearCap = await ack(socket, 'state', {
+    profileOnly: true, skillRanks: { lightWeapons: 96 }
+  });
+  assert.equal(nearCap.ok, true, nearCap.error);
+  assert.equal(nearCap.self.skillPoints, 14);
+  const capped = await ack(socket, 'state', {
+    profileOnly: true, skillRanks: { lightWeapons: 100 }
+  });
+  assert.equal(capped.ok, true, capped.error || 'the last skill point must reach the 100% cap');
+  assert.equal(capped.self.skillRanks.lightWeapons, 100);
+  assert.equal(capped.self.skillPoints, 13, '96% -> 100% must spend exactly one skill point');
+  const capReplay = await ack(socket, 'state', {
+    profileOnly: true, skillRanks: { lightWeapons: 100 }
+  });
+  assert.equal(capReplay.ok, true);
+  assert.equal(capReplay.changed, false);
+  assert.equal(capReplay.self.skillPoints, 13, 'replayed final step must not spend twice');
+
+  const endurance = await ack(socket, 'state', {
+    profileOnly: true, talentRanks: { specialEnd: 1 }
+  });
+  assert.equal(endurance.ok, true, endurance.error);
+  assert.equal(endurance.self.maxHp, capReplay.self.maxHp + 9, 'Endurance perk must immediately increase maximum HP');
+  assert.equal(endurance.self.perkPoints, 0);
+  const noPoints = await ack(socket, 'state', {
+    profileOnly: true, talentRanks: { specialEnd: 2 }
+  });
+  assert.equal(noPoints.ok, false, 'perk allocation without points must be rejected');
+  assert.equal(noPoints.self.talentRanks.specialEnd, 1);
   socket.close();
   await delay(500);
   await stopServer();
 
   await startServer();
   joined = await joinExisting(auth, 'progression_restart_client');
-  assert.equal(joined.result.self.skillRanks.lightWeapons, 51);
+  assert.equal(joined.result.self.skillRanks.lightWeapons, 100);
   assert.equal(joined.result.self.talentRanks.specialStr, 1);
-  assert.equal(joined.result.self.skillPoints, 23);
-  assert.equal(joined.result.self.perkPoints, 1);
+  assert.equal(joined.result.self.skillPoints, 13);
+  assert.equal(joined.result.self.perkPoints, 0);
+  assert.equal(joined.result.self.talentRanks.specialEnd, 1);
+  assert.equal(joined.result.self.maxHp, endurance.self.maxHp);
   joined.socket.close();
-  console.log('Kromka progression runtime OK: budget rejection, alias start, migration, replay and restart persistence.');
+  console.log('Kromka progression runtime OK: budget rejection, alias start, migration, atomic proposals, skill cap, replay and restart persistence.');
 }
 
 run().catch(error => {

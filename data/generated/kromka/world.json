@@ -395,13 +395,14 @@
   "nodes": [
     {
       "id": "klimAmmoWorks",
-      "x": 145,
-      "y": 274,
+      "x": 143,
+      "y": 258,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "klimAmmoWorks",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -409,8 +410,7 @@
       "note": "Патронный двор «Створ-2». numbered-workshop, loading-tower.",
       "macroRegion": "northern_sluices",
       "visualProfile": "sluice-munitions-yard-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceKlimQuarry",
@@ -421,6 +421,7 @@
       "locationId": "resourceKlimQuarry",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -428,18 +429,18 @@
       "note": "Карьер Девятый. bucket-excavator, aggregate-silos.",
       "macroRegion": "northern_sluices",
       "visualProfile": "ninth-dam-quarry-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "sluiceCity",
-      "x": 190,
+      "x": 186,
       "y": 262,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "sluiceCity",
       "capital": true,
       "capitalFaction": "uprava",
+      "roadAccess": true,
       "danger": 2,
       "model": "relayAntenna",
       "modelScale": 1.25,
@@ -447,18 +448,18 @@
       "note": "Створ. command-dam, vertical-warning-light.",
       "macroRegion": "northern_sluices",
       "visualProfile": "uprava-command-dam-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanHydroNode2",
-      "x": 235,
-      "y": 271,
+      "x": 232,
+      "y": 263,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanHydroNode2",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -466,8 +467,7 @@
       "note": "ГЭС-2. turbine-hall, spillway-bridge.",
       "macroRegion": "northern_sluices",
       "visualProfile": "clan-hydro-node-two-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "settlement",
@@ -478,6 +478,7 @@
       "locationId": "settlement",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -485,18 +486,18 @@
       "note": "Ключи. water-tower, rail-bridge.",
       "macroRegion": "middle_vein",
       "visualProfile": "keys-river-junction-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost",
-      "x": 166,
-      "y": 224,
+      "x": 188,
+      "y": 217,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "roadOutpost",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
@@ -504,18 +505,18 @@
       "note": "Застава 17. bridge-gate, searchlight-mast.",
       "macroRegion": "middle_vein",
       "visualProfile": "uprava-river-checkpoint-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceDryWaterPump",
-      "x": 226,
-      "y": 229,
+      "x": 211,
+      "y": 231,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceDryWaterPump",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 1,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -523,18 +524,18 @@
       "note": "Водозабор «Сухой». intake-tower, empty-channel.",
       "macroRegion": "middle_vein",
       "visualProfile": "dry-cascade-intake-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceOldKlimFarm",
-      "x": 151,
-      "y": 190,
+      "x": 166,
+      "y": 188,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceOldKlimFarm",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -542,18 +543,18 @@
       "note": "Ферма «Дальний ряд». irrigation-wheel, long-greenhouse.",
       "macroRegion": "middle_vein",
       "visualProfile": "clean-soil-strip-farm-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFilterT6",
-      "x": 235,
-      "y": 184,
+      "x": 213,
+      "y": 182,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFilterT6",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
@@ -561,8 +562,7 @@
       "note": "Фильтровальная Т-6. filter-tanks, control-tower.",
       "macroRegion": "middle_vein",
       "visualProfile": "clan-filter-t6-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown",
@@ -573,6 +573,7 @@
       "locationId": "scrapTown",
       "capital": true,
       "capitalFaction": "free_artels",
+      "roadAccess": true,
       "danger": 2,
       "model": "relayAntenna",
       "modelScale": 1.25,
@@ -580,18 +581,18 @@
       "note": "Раздолье. blast-furnace, gantry-crane.",
       "macroRegion": "ore_arc",
       "visualProfile": "razdolye-foundry-town-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapOutpost",
-      "x": 116,
-      "y": 206,
+      "x": 133,
+      "y": 205,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "scrapOutpost",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -599,8 +600,7 @@
       "note": "Сторожевая артель. signal-gantry, painted-gate.",
       "macroRegion": "ore_arc",
       "visualProfile": "artel-rail-watch-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry",
@@ -611,6 +611,7 @@
       "locationId": "scrapFoundry",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -618,8 +619,7 @@
       "note": "Литейная Раздолья. furnace-stack, slag-channel.",
       "macroRegion": "ore_arc",
       "visualProfile": "razdolye-foundry-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceIronMine",
@@ -630,6 +630,7 @@
       "locationId": "resourceIronMine",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -637,18 +638,18 @@
       "note": "Шахта «Три смены». headframe, ore-bunker.",
       "macroRegion": "ore_arc",
       "visualProfile": "three-shifts-mine-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceScrapFields",
-      "x": 95,
-      "y": 237,
+      "x": 118,
+      "y": 196,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceScrapFields",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -656,8 +657,7 @@
       "note": "Сортировочные поля. magnet-crane, sorted-metal-ridges.",
       "macroRegion": "ore_arc",
       "visualProfile": "sorted-scrap-fields-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "antHive",
@@ -668,6 +668,7 @@
       "locationId": "antHive",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "brahminPen",
       "modelScale": 1,
@@ -675,8 +676,7 @@
       "note": "Колония Пыльников. shredded-cables, vent-mound.",
       "macroRegion": "ore_arc",
       "visualProfile": "dustling-cable-colony-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanOreExchange",
@@ -687,6 +687,7 @@
       "locationId": "clanOreExchange",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -694,8 +695,7 @@
       "note": "Рудный перевал. ore-conveyor, transfer-tower.",
       "macroRegion": "ore_arc",
       "visualProfile": "clan-ore-transfer-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFactoryCycle",
@@ -706,6 +706,7 @@
       "locationId": "clanFactoryCycle",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 2,
       "model": "watchPost",
       "modelScale": 1,
@@ -713,8 +714,7 @@
       "note": "Цех обратного цикла. reaction-towers, pipe-bridge.",
       "macroRegion": "ore_arc",
       "visualProfile": "clan-reagent-cycle-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "caravanCamp",
@@ -725,6 +725,7 @@
       "locationId": "caravanCamp",
       "capital": true,
       "capitalFaction": "tract_league",
+      "roadAccess": true,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -732,18 +733,18 @@
       "note": "Перекрёсток. route-pylon, cargo-crane.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "crossroads-caravan-yard-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "oldDepot",
-      "x": 170,
-      "y": 161,
+      "x": 147,
+      "y": 166,
       "kind": "complex",
       "locationCount": 1,
       "locationId": "oldDepot",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "relayAntenna",
       "modelScale": 1,
@@ -751,18 +752,18 @@
       "note": "Арсенал №6. armored-rail-door, collapsed-watchtower.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "buried-military-depot-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceTireDepot",
       "x": 82,
-      "y": 144,
+      "y": 151,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceTireDepot",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -770,18 +771,18 @@
       "note": "Полимерный склад. collapsed-canopy, rubber-bales.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "polymer-road-depot-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanDepotBypass",
-      "x": 210,
-      "y": 145,
+      "x": 255,
+      "y": 143,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanDepotBypass",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "watchPost",
       "modelScale": 1,
@@ -789,8 +790,7 @@
       "note": "Депо Обводное. roundhouse, cargo-turntable.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "clan-bypass-depot-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceSiliconRidge",
@@ -801,6 +801,7 @@
       "locationId": "resourceSiliconRidge",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 3,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -808,8 +809,7 @@
       "note": "Керамический уступ. white-cut-face, kiln-shell.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "ceramic-chalk-escarpment-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "geckoCanyon",
@@ -820,6 +820,7 @@
       "locationId": "geckoCanyon",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 3,
       "model": "brahminPen",
       "modelScale": 1,
@@ -827,8 +828,7 @@
       "note": "Овраг Слухачей. echo-pillars, chalk-caves.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "listener-karst-ravine-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "secondHaven",
@@ -839,6 +839,7 @@
       "locationId": "secondHaven",
       "capital": true,
       "capitalFaction": "seconds",
+      "roadAccess": true,
       "danger": 3,
       "model": "relayAntenna",
       "modelScale": 1.25,
@@ -846,8 +847,7 @@
       "note": "Меловой двор. quarry-houses, filter-canopy.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "seconds-chalk-quarry-town-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanChalkSluice",
@@ -858,6 +858,7 @@
       "locationId": "clanChalkSluice",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 3,
       "model": "watchPost",
       "modelScale": 1,
@@ -865,18 +866,18 @@
       "note": "Меловой шлюз. karst-gate, cloth-filter-racks.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "clan-chalk-sluice-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayStation",
-      "x": 300,
+      "x": 284,
       "y": 181,
       "kind": "settlement",
       "locationCount": 1,
       "locationId": "relayStation",
       "capital": true,
       "capitalFaction": "contour",
+      "roadAccess": true,
       "danger": 4,
       "model": "relayAntenna",
       "modelScale": 1.25,
@@ -884,18 +885,18 @@
       "note": "Контур-3. dish-array, sealed-tower.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-three-sealed-dispatch-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayOutpost",
-      "x": 272,
-      "y": 205,
+      "x": 270,
+      "y": 200,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "relayOutpost",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 4,
       "model": "watchPost",
       "modelScale": 1,
@@ -903,8 +904,7 @@
       "note": "Периметр К-3. decon-frame, warning-beacon.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-sealed-checkpoint-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayWorkshop",
@@ -915,6 +915,7 @@
       "locationId": "relayWorkshop",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 4,
       "model": "watchPost",
       "modelScale": 1,
@@ -922,8 +923,7 @@
       "note": "Опытная мастерская К-3. cable-spire, amber-airlock.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-experimental-workshop-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "solarArray",
@@ -934,6 +934,7 @@
       "locationId": "solarArray",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 4,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -941,8 +942,7 @@
       "note": "Солнечное поле №4. tilted-panel-field, lightning-mast.",
       "macroRegion": "glasslands",
       "visualProfile": "glasslands-solar-array-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "mutantCrater",
@@ -953,6 +953,7 @@
       "locationId": "mutantCrater",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 4,
       "model": "brahminPen",
       "modelScale": 1,
@@ -960,8 +961,7 @@
       "note": "Воронка Складней. medical-ring, folded-concrete.",
       "macroRegion": "glasslands",
       "visualProfile": "fold-mutant-medical-crater-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "vectorLab",
@@ -972,6 +972,7 @@
       "locationId": "vectorLab",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 4,
       "model": "relayAntenna",
       "modelScale": 1,
@@ -979,8 +980,7 @@
       "note": "Объект «Вектор». impossible-lattice, buried-field-rings.",
       "macroRegion": "glasslands",
       "visualProfile": "vector-deep-research-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanRelayEast",
@@ -991,6 +991,7 @@
       "locationId": "clanRelayEast",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 4,
       "model": "watchPost",
       "modelScale": 1,
@@ -998,18 +999,18 @@
       "note": "Ретранслятор В-9. split-dish, storm-vanes.",
       "macroRegion": "glasslands",
       "visualProfile": "clan-relay-v9-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceChemSpring",
-      "x": 168,
-      "y": 76,
+      "x": 158,
+      "y": 82,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceChemSpring",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 5,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -1017,18 +1018,18 @@
       "note": "Сток 4-Б. drain-stack, black-settling-pool.",
       "macroRegion": "zero_basin",
       "visualProfile": "toxic-drain-four-b-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceOilPump",
       "x": 147,
-      "y": 45,
+      "y": 56,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceOilPump",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 5,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -1036,8 +1037,7 @@
       "note": "Топливная рампа. loading-rack, leaning-tanks.",
       "macroRegion": "zero_basin",
       "visualProfile": "lower-bypass-fuel-rack-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "radscorpionNest",
@@ -1048,6 +1048,7 @@
       "locationId": "radscorpionNest",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 5,
       "model": "brahminPen",
       "modelScale": 1,
@@ -1055,8 +1056,7 @@
       "note": "Гнездовье Рыхляков. broken-settling-wall, burrow-ridge.",
       "macroRegion": "zero_basin",
       "visualProfile": "burrower-settling-pit-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "balanceBunker",
@@ -1067,6 +1067,7 @@
       "locationId": "balanceBunker",
       "capital": true,
       "capitalFaction": "continuity",
+      "roadAccess": true,
       "danger": 5,
       "model": "relayAntenna",
       "modelScale": 1,
@@ -1074,8 +1075,7 @@
       "note": "Бункер «Баланс». administrative-shaft, cold-status-column.",
       "macroRegion": "zero_basin",
       "visualProfile": "continuity-balance-bunker-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "cascadeRegenerator",
@@ -1086,6 +1086,7 @@
       "locationId": "cascadeRegenerator",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 5,
       "model": "relayAntenna",
       "modelScale": 1,
@@ -1093,18 +1094,18 @@
       "note": "Регенератор Р-12. regenerator-column, black-water-rings.",
       "macroRegion": "zero_basin",
       "visualProfile": "cascade-regenerator-r12-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFortZero",
-      "x": 220,
-      "y": 22,
+      "x": 232,
+      "y": 32,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFortZero",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 5,
       "model": "watchPost",
       "modelScale": 1,
@@ -1112,8 +1113,7 @@
       "note": "Форт 14. armored-gate, command-bastion.",
       "macroRegion": "zero_basin",
       "visualProfile": "clan-fort-fourteen-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "wasteland",
@@ -1124,6 +1124,7 @@
       "locationId": "wasteland",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 5,
       "model": "watchPost",
       "modelScale": 1,
@@ -1131,8 +1132,102 @@
       "note": "Глухой обвод. defense-tower, subsurface-fire.",
       "macroRegion": "silent_ring",
       "visualProfile": "silent-ring-expedition-v1",
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone",
+      "x": 190,
+      "y": 150,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "coreZone",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Сердцевина. central-installation, metro-platforms.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-core-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseUprava",
+      "x": 190,
+      "y": 182,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseUprava",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Управы. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-uprava-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseArtels",
+      "x": 158,
+      "y": 150,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseArtels",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Артельный узел. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-free_artels-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseContour",
+      "x": 222,
+      "y": 150,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseContour",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Контура. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-contour-v1",
       "worldRevision": "kromka-1",
       "roadAccess": false
+    },
+    {
+      "id": "coreBaseLeague",
+      "x": 206,
+      "y": 141,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseLeague",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Лиги. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-tract_league-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
     }
   ],
   "routes": [
@@ -1156,20 +1251,32 @@
           222
         ],
         [
+          188,
+          210
+        ],
+        [
+          188,
+          190
+        ],
+        [
+          189,
+          170
+        ],
+        [
+          193,
+          145
+        ],
+        [
           195,
-          205
+          120
         ],
         [
-          211,
-          160
+          195,
+          92
         ],
         [
-          207,
-          116
-        ],
-        [
-          205,
-          65
+          196,
+          72
         ]
       ]
     },
@@ -1226,28 +1333,56 @@
           246
         ],
         [
-          74,
+          72,
+          222
+        ],
+        [
+          78,
+          220
+        ],
+        [
+          82,
+          216
+        ],
+        [
+          100,
           214
         ],
         [
-          120,
-          201
+          102,
+          212
         ],
         [
-          195,
-          205
+          152,
+          200
         ],
         [
-          254,
-          196
+          174,
+          200
         ],
         [
-          300,
-          180
+          185,
+          215
         ],
         [
-          364,
-          158
+          199,
+          217
+        ],
+        [
+          211,
+          219
+        ],
+        [
+          221,
+          213
+        ],
+        [
+          229,
+          215
+        ],
+        [
+          275,
+          185
         ]
       ]
     },
@@ -1304,20 +1439,102 @@
           126
         ],
         [
-          205,
-          91
+          184,
+          116
         ],
         [
-          205,
-          65
+          193,
+          114
+        ],
+        [
+          214,
+          114
         ],
         [
           245,
-          50
+          102
+        ],
+        [
+          282,
+          82
         ],
         [
           304,
           54
+        ]
+      ]
+    },
+    {
+      "id": "fuel_ramp_access",
+      "displayName": "Подъезд к Топливной рампе",
+      "kind": "road",
+      "widthKm": 0.8,
+      "travelFactor": 0.8,
+      "points": [
+        [
+          184,
+          116
+        ],
+        [
+          174,
+          105
+        ],
+        [
+          163,
+          95
+        ],
+        [
+          161,
+          80
+        ],
+        [
+          165,
+          66
+        ],
+        [
+          161,
+          57
+        ],
+        [
+          147,
+          56
+        ]
+      ]
+    },
+    {
+      "id": "zero_admin_access",
+      "displayName": "Подъезд к Балансу и Форту 14",
+      "kind": "road",
+      "widthKm": 0.8,
+      "travelFactor": 0.8,
+      "points": [
+        [
+          304,
+          54
+        ],
+        [
+          291,
+          48
+        ],
+        [
+          274,
+          46
+        ],
+        [
+          260,
+          48
+        ],
+        [
+          247,
+          49
+        ],
+        [
+          245,
+          37
+        ],
+        [
+          232,
+          32
         ]
       ]
     }
@@ -1349,5 +1566,5 @@
       "spawnId": "keys-arrival"
     }
   ],
-  "contentHash": "5fa8e2a612c24fcfa6ef5b9d573bff6980e83c5917b8d8d3617abd343a2c99eb"
+  "contentHash": "172a431104f8d02238878ed6944fc83c49a144686a68be0e7a4532388514cfe7"
 }

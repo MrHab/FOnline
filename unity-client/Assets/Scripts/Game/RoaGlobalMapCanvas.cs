@@ -113,6 +113,8 @@ namespace RealmOfAshes.Game
         private Text _hoverTitle;
         private Text _hoverMeta;
         private GameObject _fullLootModal;
+        private Text _zoneRulesTitle;
+        private Text _zoneRulesText;
         private RectTransform _workList;
         private readonly List<GameObject> _workRows = new List<GameObject>();
         private string _workSignature;
@@ -550,16 +552,15 @@ namespace RealmOfAshes.Game
 
             Text warningTitle = Label("Title", warning, 18, TextAnchor.MiddleCenter,
                 new Color(1f, 0.68f, 0.42f, 1f), FontStyle.Bold);
-            warningTitle.text = "ПОЛНЫЙ ЛУТ";
+            warningTitle.text = "ПРАВИЛА ЗОНЫ";
+            _zoneRulesTitle = warningTitle;
             Place(warningTitle.rectTransform, 0f, 1f, 1f, 1f,
                 new Vector2(18f, -54f), new Vector2(-18f, -14f));
             Text warningText = Label("Description", warning, 12, TextAnchor.UpperCenter,
                 Mono);
-            warningText.text = "При смерти содержимое рюкзака и заряженные магазины\n"
-                + "останутся на земле. Валюта, сюжетные предметы, артефакты,\n"
-                + "личная база и клановое хранилище защищены.\n\n"
-                + "Это предупреждение показывается один раз.";
+            warningText.text = ZoneRulesDescription(null);
             warningText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _zoneRulesText = warningText;
             Place(warningText.rectTransform, 0f, 0f, 1f, 1f,
                 new Vector2(22f, 66f), new Vector2(-22f, -62f));
             Button cancel = UiButton(warning, "ОСТАТЬСЯ НА КАРТЕ", out _,
@@ -581,7 +582,46 @@ namespace RealmOfAshes.Game
             if (_fullLootModal == null) return;
             bool visible = Map != null && Map.FullLootConfirmationPending;
             if (_fullLootModal.activeSelf != visible) _fullLootModal.SetActive(visible);
-            if (visible) _fullLootModal.transform.SetAsLastSibling();
+            if (!visible) return;
+            JObject rules = Map.PendingZoneRules;
+            if (_zoneRulesTitle != null) _zoneRulesTitle.text = ZoneRulesTitle(rules);
+            if (_zoneRulesText != null) _zoneRulesText.text = ZoneRulesDescription(rules);
+            _fullLootModal.transform.SetAsLastSibling();
+        }
+
+        public static string ZoneRulesTitle(JObject rules)
+        {
+            string title = rules?["title"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(title)) return "ПРАВИЛА ЗОНЫ · " + title.ToUpperInvariant();
+            return "ПРАВИЛА ЗОНЫ";
+        }
+
+        /// <summary>
+        /// Текст правил зоны до входа. Сервер присылает `zoneRules` вместе с
+        /// прибытием; без него показывается правило частичной потери.
+        /// </summary>
+        public static string ZoneRulesDescription(JObject rules)
+        {
+            string label = rules?["label"]?.ToString();
+            string pvp = rules?["pvpLabel"]?.ToString();
+            string loss = rules?["lossLabel"]?.ToString();
+            string access = rules?["accessLabel"]?.ToString();
+            if (string.IsNullOrWhiteSpace(loss))
+            {
+                label = "PvP: инвентарь выпадает, экипировка сохраняется";
+                pvp = "PvP разрешено.";
+                loss = "При смерти содержимое инвентаря останется на месте гибели: "
+                    + "запасное снаряжение, материалы, артефакты в инвентаре и заряженные магазины "
+                    + "запасного оружия. Экипировка, экипированный рюкзак, экипированный контейнер "
+                    + "и установленные в него артефакты, валюта и сюжетные предметы сохраняются.";
+            }
+            var builder = new System.Text.StringBuilder();
+            if (!string.IsNullOrWhiteSpace(label)) builder.Append(label).Append('\n');
+            if (!string.IsNullOrWhiteSpace(pvp)) builder.Append(pvp).Append(' ');
+            builder.Append(loss);
+            if (!string.IsNullOrWhiteSpace(access) && access != "Вход открыт всем.")
+                builder.Append('\n').Append(access);
+            return builder.ToString().Trim();
         }
 
         private void ToggleDetails()

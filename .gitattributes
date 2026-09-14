@@ -12,6 +12,28 @@
 *.yaml text eol=lf
 .nvmrc text eol=lf
 
+# Unity writes its text-serialized assets with LF. Keep them LF on checkout too:
+# with core.autocrlf=true a CRLF checkout that Unity rewrites shows up as
+# 140+ phantom "modified" prefabs (index size mismatch, empty diff).
+# text=auto keeps binary .asset files (TerrainData, LightingData) untouched.
+*.unity text=auto eol=lf
+*.prefab text=auto eol=lf
+*.asset text=auto eol=lf
+*.mat text=auto eol=lf
+*.meta text=auto eol=lf
+*.anim text=auto eol=lf
+*.controller text=auto eol=lf
+*.overrideController text=auto eol=lf
+*.physicMaterial text=auto eol=lf
+*.playable text=auto eol=lf
+*.shader text=auto eol=lf
+*.shadergraph text=auto eol=lf
+*.shadersubgraph text=auto eol=lf
+*.cginc text=auto eol=lf
+*.hlsl text=auto eol=lf
+*.uss text=auto eol=lf
+*.uxml text=auto eol=lf
+
 # Reviewed manifests/reports are SHA-256 evidence. Preserve the approved bytes
 # across Windows/Linux checkouts; normalizing newlines invalidates their seals.
 source-assets/** -text

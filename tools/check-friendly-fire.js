@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { canonicalKromkaFactionId } = require('../src/server/kromka-faction-contracts');
+const { ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp } = require('../src/server/zone-rules');
 const source = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
@@ -38,7 +39,7 @@ function fixture(mode = 'pvp') {
     players, rooms: new Map([[room.id, room]]),
     socket: { id: p.id, on: (event, callback) => { handlers[event] = callback; }, to: () => relay },
     io: { to: () => relay },
-    LOCATION_PVP_MODES: new Set(['peaceful', 'pvp', 'pvpFullDrop']),
+    LOCATION_PVP_MODES: ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp,
     SERVER_FACTION_CAPITAL_LOCATION_IDS: new Set(['settlement', 'scrapTown', 'relayStation', 'caravanCamp']),
     SERVER_FACTION_ALLIES: new Set(['uprava|tract_league', 'tract_league|uprava']),
     SERVER_ALWAYS_HOSTILE_FACTION_GROUPS: new Set(['raiders', 'wild']),
@@ -49,6 +50,8 @@ function fixture(mode = 'pvp') {
     serverWorldPartyAttachmentForPlayer: player => player.attachment || null,
     playerMatchesWorldPartyMember: (player, member) => player.characterId === member.characterId,
     roomLocation: current => current.loc,
+    serverTerritoryPvpBlock: () => '', serverPlayerTerritoryFactionId: player => player?.territoryFaction?.factionId || '',
+    serverWorldBossDamageAfterShield: (room, enemy, damage) => damage,
     serverNpcIsKromkaOnboardingProtected: npc => !!npc?.storyProtected,
     serverPlayerHasProtectedClanRally: player => !!player.rallyProtected,
     ensureRoomWorld: () => {}, syncServerActionProgressionPlayer: () => {},
@@ -74,7 +77,7 @@ function fixture(mode = 'pvp') {
     serverLineOfFireClearFrom: () => true,
     serverValidateMultiTargetHit: () => ({ ok: true, dirX: 1, dirZ: 0 }),
     serverPlayerNoiseRadius: (_, radius) => radius, addRoomNoise: () => { noise++; },
-    ENEMY_HEARING_SHOT_RANGE: 30, ENEMY_HEARING_HARVEST_RANGE: 10, MAP_SIZE: 200,
+    ENEMY_HEARING_SHOT_RANGE: 30, ENEMY_HEARING_HARVEST_RANGE: 10, MAP_SIZE: 200, roomWorldExtent: () => 200,
     serverIsShotgunWeapon: () => false, serverAmbushLevel: () => 0,
     serverDamageRoll: () => 10, serverStatValue: () => 5, serverHitChance: () => 1,
     serverExplosiveRadius: () => 3,

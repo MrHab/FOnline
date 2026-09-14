@@ -1,0 +1,144 @@
+#!/usr/bin/env node
+'use strict';
+
+// Временные публичные события: шаблоны, появление по расписанию, время
+// жизни с предупреждением, спорный сундук через 45–60 с после зачистки,
+// задержка возврата 60–90 с после смерти, зона симуляции и серверные крючки.
+// Всё под управляемым временем — без ожидания.
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const events = require('../src/server/public-events');
+const { zoneModeAllowsPvp, zoneModeLossPolicy } = require('../src/server/zone-rules');
+const { deathLootPolicy } = require('../src/server/kromka-death-loot');
+const catalog = events.normalizePublicEventCatalog(JSON.parse(read('data/kromka/public-events.json')));
+const encounters = JSON.parse(read('data/encounters.json')).encounters;
+const items = new Set(JSON.parse(read('data/kromka/items.json')).items.map(row => row.id));
+
+// --- данные -------------------------------------------------------------------
+assert(catalog.templates.length >= 4, 'At least four event templates.');
+assert.deepEqual(catalog.rules, {
+  maxActive: 3, spawnIntervalMs: 900000, initialSpawnDelayMs: 60000, minLifetimeMs: 1800000, maxLifetimeMs: 2700000,
+  expiryWarningMs: 300000, chestOpenDelayMs: [45000, 60000], deathRejoinDelayMs: [60000, 90000], zoneRadius: 9
+});
+assert(catalog.templates.some(row => row.kind === 'raiderBase') && catalog.templates.some(row => row.kind === 'monsterLair'));
+for (const template of catalog.templates) {
+  const location = JSON.parse(read(`data/locations/${template.locationId}.json`));
+  assert(location.randomTemplate === true, `${template.id}: events use temporary template locations.`);
+  assert(encounters[template.encounterId], `${template.id}: unknown encounter ${template.encounterId}.`);
+  assert(encounters[template.encounterId].actors.some(actor => actor.hostileToPlayer), `${template.id}: the encounter must have hostiles to clear.`);
+  assert(template.chest.loot.length >= 3, `${template.id}: the chest needs loot.`);
+  for (const row of template.chest.loot) assert(items.has(row.id), `${template.id}: unknown loot item ${row.id}.`);
+}
+
+// --- режим зоны: PvP разрешено, вещи сохраняются --------------------------------
+assert.equal(zoneModeAllowsPvp('pvpEvent'), true);
+assert.equal(zoneModeLossPolicy('pvpEvent'), 'none');
+assert.deepEqual(deathLootPolicy('pvpEvent'), { mode: 'pvpEvent', loss: 'none' });
+
+// --- появление по расписанию ------------------------------------------------------
+const rules = catalog.rules;
+const store = events.normalizePublicEventStore({});
+const t0 = 10000000;
+const pickPoint = () => ({ x: 125, y: 95 });
+assert.deepEqual(events.spawnDuePublicEvents(store, catalog, t0, { random: () => 0, pickPoint }), [], 'No event before the initial delay.');
+const first = events.spawnDuePublicEvents(store, catalog, t0 + rules.initialSpawnDelayMs, { random: () => 0, pickPoint });
+assert.equal(first.length, 1, 'The first event appears after the initial delay.');
+assert.equal(first[0].status, 'active');
+assert.equal(first[0].pvpMode, 'pvpEvent');
+assert.equal(first[0].roomId, `${first[0].locationId}#${first[0].id}`, 'One shared room per event.');
+assert.equal(first[0].expiresAt - first[0].createdAt, rules.minLifetimeMs, 'Random zero picks the shortest lifetime.');
+assert.equal(first[0].warningAt, first[0].expiresAt - rules.expiryWarningMs);
+assert.deepEqual(events.spawnDuePublicEvents(store, catalog, t0 + rules.initialSpawnDelayMs + 1000, { random: () => 0, pickPoint }), [], 'Events respect the spawn interval.');
+const second = events.spawnDuePublicEvents(store, catalog, t0 + rules.initialSpawnDelayMs + rules.spawnIntervalMs, { random: () => 0, pickPoint });
+assert.equal(second.length, 1);
+assert.notEqual(second[0].templateId, first[0].templateId, 'Active templates are not duplicated while another choice exists.');
+const third = events.spawnDuePublicEvents(store, catalog, t0 + rules.initialSpawnDelayMs + rules.spawnIntervalMs * 2, { random: () => 0, pickPoint });
+assert.equal(third.length, 1);
+assert.equal(events.activeEvents(store).length, 3);
+assert.deepEqual(events.spawnDuePublicEvents(store, catalog, t0 + rules.initialSpawnDelayMs + rules.spawnIntervalMs * 3, { random: () => 0, pickPoint }), [], 'maxActive caps concurrent events.');
+const longest = events.createPublicEvent(catalog.templates[0], { now: t0, random: () => 0.9999999, rules, point: { x: 1, y: 2 }, id: 'long' });
+assert.equal(longest.expiresAt - longest.createdAt, rules.maxLifetimeMs, 'Random one picks the longest lifetime.');
+
+// --- жизненный цикл --------------------------------------------------------------
+const event = first[0];
+assert.deepEqual(events.tickPublicEvent(event, rules, event.warningAt - 1), { warned: false, expired: false });
+assert.deepEqual(events.tickPublicEvent(event, rules, event.warningAt), { warned: true, expired: false });
+assert.equal(event.status, 'warning');
+assert.deepEqual(events.tickPublicEvent(event, rules, event.warningAt + 1), { warned: false, expired: false }, 'Warning fires once.');
+assert.equal(events.publicEvent(event, event.warningAt).remainingSeconds, rules.expiryWarningMs / 1000);
+assert.deepEqual(events.tickPublicEvent(event, rules, event.expiresAt), { warned: false, expired: true });
+assert.equal(event.status, 'expired');
+assert.equal(events.publicEventEntryError(event, 'anyone', event.expiresAt + 1), 'Событие уже завершилось.');
+assert.equal(events.publicEvents(store, event.expiresAt + 1).length, 2, 'Expired events leave the public list.');
+assert.equal(events.purgeExpiredPublicEvents(store, event.expiresAt + 1000), 0, 'Expired events linger briefly for late clients.');
+assert.equal(events.purgeExpiredPublicEvents(store, event.expiresAt + 600000), 1);
+assert.equal(events.activeEvents(store).length, 2);
+
+// --- спорный сундук ----------------------------------------------------------------
+const lair = second[0];
+const clearAt = lair.createdAt + 120000;
+assert.equal(events.claimPublicEventChest(lair, 'char-a', clearAt).error, 'Сначала зачистите логово.');
+assert(events.notePublicEventCleared(lair, rules, clearAt, () => 0), 'Clearing arms the chest once.');
+assert(!events.notePublicEventCleared(lair, rules, clearAt + 1, () => 0));
+assert.equal(lair.chest.opensAt, clearAt + rules.chestOpenDelayMs[0], 'Random zero opens after 45 s.');
+const armedLate = events.createPublicEvent(catalog.templates[1], { now: t0, random: () => 0.9999999, rules, point: { x: 1, y: 2 }, id: 'late' });
+events.notePublicEventCleared(armedLate, rules, t0, () => 0.9999999);
+assert.equal(armedLate.chest.opensAt, t0 + rules.chestOpenDelayMs[1], 'Random one opens after 60 s.');
+assert(!events.publicEventChestOpen(lair, clearAt + 44999));
+const early = events.claimPublicEventChest(lair, 'char-a', clearAt + 10000);
+assert(!early.ok && early.opensInMs === 35000, 'The chest stays contested until it opens.');
+assert(events.publicEventChestOpen(lair, clearAt + 45000));
+assert(events.claimPublicEventChest(lair, 'char-a', clearAt + 45000).ok, 'The first to loot after opening takes it.');
+assert.equal(events.claimPublicEventChest(lair, 'char-b', clearAt + 45001).error, 'Тайник уже забрали.');
+assert.equal(events.publicEvent(lair, clearAt + 45001).chestClaimed, true);
+
+// --- задержка возврата после смерти --------------------------------------------------
+const until = events.recordPublicEventDeath(lair, 'char-b', rules, clearAt, () => 0);
+assert.equal(until, clearAt + rules.deathRejoinDelayMs[0]);
+assert.equal(events.recordPublicEventDeath(lair, 'char-c', rules, clearAt, () => 0.9999999), clearAt + rules.deathRejoinDelayMs[1]);
+assert.equal(events.publicEventRejoinBlockedMs(lair, 'char-b', clearAt + 1000), 59000);
+assert(events.publicEventEntryError(lair, 'char-b', clearAt + 1000).includes('59 с'));
+assert.equal(events.publicEventEntryError(lair, 'char-b', clearAt + 60000), '', 'The block lifts after the delay.');
+assert.equal(events.publicEventEntryError(lair, 'char-a', clearAt + 1000), '', 'Living players are never blocked.');
+
+// --- сохранение и зона симуляции ----------------------------------------------------------
+const restored = events.normalizePublicEventStore(JSON.parse(JSON.stringify(store)));
+assert.deepEqual(restored, store, 'The store survives a JSON round trip.');
+const zone = events.publicEventZone(lair, rules, 40);
+assert.equal(zone.id, lair.id);
+assert.equal(zone.roomId, lair.roomId);
+assert.equal(zone.pvpMode, 'pvpEvent');
+assert.equal(zone.details.publicEvent, true);
+assert.equal(zone.details.eventId, lair.id);
+assert.equal(zone.status, 'active');
+assert.equal(events.publicEventZone({ ...lair, status: 'expired' }, rules, 40).status, 'expired');
+const simSource = read('src/server/wasteland-sim.js');
+for (const needle of ['function upsertWorldZone(input = {})', 'function removeWorldZone(id = \'\')', '    upsertWorldZone,', '    removeWorldZone,'])
+  assert(simSource.includes(needle), `wasteland-sim.js is missing ${needle}`);
+const projected = events.publicEvent(lair, clearAt + 45001);
+assert(!('deaths' in projected) && !('chest' in projected), 'Internal timers do not leak to clients.');
+
+// --- серверные крючки -------------------------------------------------------------
+const server = read('server.js');
+for (const needle of [
+  'savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents)',
+  'serverTickPublicEvents(Date.now())',
+  'serverRestorePublicEventZones();',
+  'const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);',
+  'const eventError = arrivalEvent ? publicEventEntryError(arrivalEvent, member.characterId, now) : \'\';',
+  'serverNotePublicEventDeath(oldRoom, p, now);',
+  'const eventChestError = serverPublicEventChestError(room, container, p, Date.now());',
+  'publicEvents: publicPublicEvents(serverPublicEventStore(), now)',
+  "emit('publicEventState', payload)",
+  'function serverEvictPublicEventRoom(event, now = Date.now())',
+  'WASTELAND_SIM.upsertWorldZone(publicEventZone(event, KROMKA_PUBLIC_EVENT_CATALOG.rules'
+]) assert(server.includes(needle), `server.js is missing the public event contract: ${needle}`);
+const socketClient = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
+assert(socketClient.includes('_connection.On("publicEventState"') && socketClient.includes('OnPublicEventState?.Invoke(payload)'), 'Unity must route publicEventState.');
+
+console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

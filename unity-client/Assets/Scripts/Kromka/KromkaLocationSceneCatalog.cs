@@ -25,7 +25,11 @@ namespace Kromka
                 "sluiceCity", "secondHaven", "balanceBunker", "cascadeRegenerator",
                 "vectorLab", "personalBase", "clanHydroNode2", "clanFilterT6",
                 "clanOreExchange", "clanFactoryCycle", "clanDepotBypass",
-                "clanChalkSluice", "clanRelayEast", "clanFortZero"
+                "clanChalkSluice", "clanRelayEast", "clanFortZero",
+                "coreZone", "coreBaseUprava", "coreBaseArtels", "coreBaseContour",
+                "coreBaseLeague", "coreLabSprout", "coreLabCircuit", "coreLabAlloy",
+                "coreLabSpectrum", "coreLabCenterService", "coreLabCenterResearch",
+                "coreLabCenterReactor"
             },
             StringComparer.Ordinal);
 
@@ -36,7 +40,15 @@ namespace Kromka
 
         public static string SceneName(string locationId)
         {
-            return Contains(locationId) ? locationId : null;
+            if (!Contains(locationId)) return null;
+            // LoadSceneAsync ignores case: "wasteland" collided with the Wasteland bootstrap.
+            return locationId == "wasteland" ? "KromkaGloomDetour" : locationId;
+        }
+
+        public static string ScenePath(string locationId)
+        {
+            string name = SceneName(locationId);
+            return name == null ? null : "Assets/Scenes/Kromka/Locations/" + name + ".unity";
         }
 
         public static int Count => LocationIds.Count;

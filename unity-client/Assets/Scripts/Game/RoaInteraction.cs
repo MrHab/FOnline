@@ -354,6 +354,10 @@ namespace RealmOfAshes.Game
         }
 
         public bool NpcHasTradeOption { get { return _active != null && NpcHasTrade(_active); } }
+        /// <summary>Сервис NPC постоянной базы: medic, registrar, auction, artifactLab, trade.</summary>
+        public string NpcService { get { return _active?["service"]?.ToString() ?? string.Empty; } }
+        public string NpcTerritoryFactionId { get { return _active?["territoryFactionId"]?.ToString() ?? string.Empty; } }
+        public string NpcId { get { return _active?["id"]?.ToString() ?? string.Empty; } }
         public bool NpcCanRob { get { return _active != null && CanRobEncounterActor(_active); } }
 
         public sealed class DialogueChoice

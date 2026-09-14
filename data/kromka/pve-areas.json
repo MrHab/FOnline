@@ -1,0 +1,72 @@
+{
+  "schema": "kromka.pve-areas.v1",
+  "version": 1,
+  "note": "Постоянные PvE-области: персональные встречи для игрока или его группы, PvP запрещено, вещи при смерти сохраняются. Время в мс реального времени.",
+  "rules": {
+    "rollIntervalMs": 90000,
+    "calmAfterClearMs": 45000,
+    "rollChance": 0.35,
+    "tracksCooldownMs": 30000,
+    "tracksChance": 0.8,
+    "maxAlive": 8,
+    "spawnMinPlayerDistance": 14,
+    "roomIdleResetMs": 600000
+  },
+  "areas": [
+    {
+      "id": "antHive",
+      "locationId": "antHive",
+      "displayName": "Колония Пыльников",
+      "tracksLabel": "Искать следы",
+      "initialPacks": 1,
+      "packs": [
+        { "id": "dustling_swarm", "creatureTypeId": "dustling", "count": [2, 4], "weight": 6, "label": "рой пыльников" },
+        { "id": "rykhlyak_pair", "creatureTypeId": "rykhlyak", "count": [1, 2], "weight": 3, "label": "пара рыхляков" }
+      ]
+    },
+    {
+      "id": "geckoCanyon",
+      "locationId": "geckoCanyon",
+      "displayName": "Каньон Гари",
+      "tracksLabel": "Искать следы",
+      "initialPacks": 1,
+      "packs": [
+        { "id": "gari_pack", "creatureTypeId": "gari", "count": [2, 4], "weight": 6, "label": "стая гари" },
+        { "id": "listener_pair", "creatureTypeId": "listener", "count": [1, 2], "weight": 2, "label": "пара слухачей" }
+      ]
+    },
+    {
+      "id": "mutantCrater",
+      "locationId": "mutantCrater",
+      "displayName": "Кратер Складней",
+      "tracksLabel": "Искать следы",
+      "initialPacks": 1,
+      "packs": [
+        { "id": "fold_group", "creatureTypeId": "fold", "count": [1, 3], "weight": 5, "label": "группа складней" },
+        { "id": "mourner_pair", "creatureTypeId": "mourner", "count": [1, 2], "weight": 3, "label": "плакальщики" }
+      ]
+    },
+    {
+      "id": "radscorpionNest",
+      "locationId": "radscorpionNest",
+      "displayName": "Гнездо Рыхляков",
+      "tracksLabel": "Искать следы",
+      "initialPacks": 1,
+      "packs": [
+        { "id": "rykhlyak_nest", "creatureTypeId": "rykhlyak", "count": [2, 4], "weight": 6, "label": "выводок рыхляков" },
+        { "id": "dustling_scouts", "creatureTypeId": "dustling", "count": [1, 3], "weight": 3, "label": "пыльники-разведчики" }
+      ]
+    },
+    {
+      "id": "oldDepot",
+      "locationId": "oldDepot",
+      "displayName": "Старое депо",
+      "tracksLabel": "Искать следы",
+      "initialPacks": 1,
+      "packs": [
+        { "id": "burned_squatters", "creatureTypeId": "burned", "count": [2, 4], "weight": 5, "label": "выжженные" },
+        { "id": "raider_scavengers", "typeName": "Налётчик", "count": [1, 3], "weight": 4, "label": "налётчики-мародёры" }
+      ]
+    }
+  ]
+}

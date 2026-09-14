@@ -28,8 +28,22 @@ const {
 
 const ROOT = path.resolve(__dirname, '..');
 const TILE = 2;
-const MAP_W = 38;
-const MAP_H = 38;
+// Сетка тайлов задаётся локацией (server.js locationTileDims): без явного
+// map.width/depth остаётся 38×38, авторская сцена любого размера объявляет
+// его в метрах. Значения переустанавливаются для каждой локации.
+const DEFAULT_MAP_W = 38;
+const DEFAULT_MAP_H = 38;
+let MAP_W = DEFAULT_MAP_W;
+let MAP_H = DEFAULT_MAP_H;
+function locationTileDims(loc = {}) {
+  const map = loc.map && typeof loc.map === 'object' ? loc.map : {};
+  const widthMeters = Number(map.technicalWidth || map.width || 0);
+  const depthMeters = Number(map.technicalDepth || map.depth || 0);
+  return {
+    w: widthMeters > 0 ? Math.max(1, Math.round(widthMeters / TILE)) : DEFAULT_MAP_W,
+    h: depthMeters > 0 ? Math.max(1, Math.round(depthMeters / TILE)) : DEFAULT_MAP_H
+  };
+}
 const EXIT_BAND_TILES = 2;
 const PLAYER_RADIUS = 0.35;
 
@@ -183,6 +197,9 @@ let checked = 0;
 for (const file of files.sort()) {
   const loc = JSON.parse(fs.readFileSync(path.join(locationsDir, file), 'utf8'));
   const objects = Array.isArray(loc.objects) ? loc.objects : [];
+  const dims = locationTileDims(loc);
+  MAP_W = dims.w;
+  MAP_H = dims.h;
 
   const blockers = [];
   for (const row of objects) {
@@ -270,6 +287,13 @@ for (const file of files.sort()) {
   }
 
   const reachableSides = Object.entries(sides).filter(([, ok]) => ok).map(([name]) => name);
+  // Сердцевина и лаборатории намеренно без выхода на глобальную карту:
+  // спавн проверен выше, а выход идёт через платформу метро или лифт.
+  if (loc.allowGlobalMapExit === false) {
+    checked++;
+    console.log(`  ${loc.id}: выход на глобальную карту закрыт авторски, проверен только спавн (${dims.w}×${dims.h})`);
+    continue;
+  }
   if (!reachableSides.length) {
     failures.push(`${loc.id}: полоса выхода недостижима от спавна (${spawnTx},${spawnTz}), блокираторов ${blockers.length}`);
     continue;

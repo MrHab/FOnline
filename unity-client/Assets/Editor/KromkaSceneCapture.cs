@@ -13,7 +13,6 @@ namespace Kromka.EditorTools
     public static class KromkaSceneCapture
     {
         private const string GlobalScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
-        private const string LocationRoot = "Assets/Scenes/Kromka/Locations/";
 
         private static readonly string[] ReviewLocations =
         {
@@ -46,7 +45,7 @@ namespace Kromka.EditorTools
                 for (int i = 0; i < ReviewLocations.Length; i++)
                 {
                     string id = ReviewLocations[i];
-                    Scene location = EditorSceneManager.OpenScene(LocationRoot + id + ".unity",
+                    Scene location = EditorSceneManager.OpenScene(KromkaLocationSceneCatalog.ScenePath(id),
                         OpenSceneMode.Single);
                     Capture(location, Path.Combine(output,
                         (i + 1).ToString("00") + "-" + id + ".png"), 38f, 50f);

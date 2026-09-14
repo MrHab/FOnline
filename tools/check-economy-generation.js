@@ -573,8 +573,12 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
       || (nativeStation ? (row.unityAuthored !== true || row.url || row.file) : actualFile !== expected.file)) {
       errors.push(`location ${loc.id || file}: crafting station ${row.id || 'unknown'} has the wrong dedicated model for ${ids[0]} (${relPath})`);
     }
-    if (nativeStation) {
-      const sceneFile = path.join(ROOT, 'unity-client', 'Assets', 'Scenes', 'Kromka', 'Locations', `${loc.id}.unity`);
+    if (nativeStation && !loc.unityScene) {
+      // Scene file names no longer equal location ids (wasteland -> KromkaGloomDetour):
+      // a native station needs the explicit unityScene binding, never a derived path.
+      errors.push(`location ${loc.id}: native crafting station ${row.id} has no unityScene binding`);
+    } else if (nativeStation) {
+      const sceneFile = path.join(ROOT, 'unity-client', loc.unityScene);
       const scene = fs.existsSync(sceneFile) ? fs.readFileSync(sceneFile, 'utf8') : '';
       if (!scene.includes(`_stableObjectId: ${row.id}\n`) && !scene.includes(`_stableObjectId: ${row.id}\r\n`)) {
         errors.push(`location ${loc.id}: native crafting station ${row.id} has no authored scene anchor`);
@@ -582,8 +586,18 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
     }
   });
   const capitalStorageFaction = capitalStorageFactions[loc.id] || '';
-  if (!capitalStorageFaction && warehouseRows.length) {
+  // Базы фракций Сердцевины — не столицы: одно личное хранилище для своей
+  // фракции без обязательного набора станков.
+  const baseStorageFaction = String(loc.territoryRole || '') === 'base' ? String(loc.factionAccess || '') : '';
+  if (!capitalStorageFaction && !baseStorageFaction && warehouseRows.length) {
     errors.push(`location ${loc.id || file}: storage is only allowed in faction capitals (${relPath})`);
+  }
+  if (baseStorageFaction) {
+    if (warehouseRows.length !== 1) {
+      errors.push(`faction base ${loc.id}: expected exactly one storage, found ${warehouseRows.length} (${relPath})`);
+    } else if (String(warehouseRows[0].interactive?.storageFaction || '') !== baseStorageFaction) {
+      errors.push(`faction base ${loc.id}: storage faction mismatch (${relPath})`);
+    }
   }
   if (capitalStorageFaction) {
     if (warehouseRows.length !== 1) {
@@ -601,7 +615,10 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
   if (sleepProblem) {
     errors.push(`location ${loc.id || file}: invalid modular sleep building in ${relPath}: ${sleepProblem}`);
   }
-  const authoredNpcCount = locationAuthoredNpcRows(loc).length;
+  // Сердцевина и лаборатории — боевые объекты: гарнизоны стоят на постах,
+  // а мутанты не спят по расписанию, поэтому личные кровати им не нужны.
+  const postedGarrison = ['territoryZone', 'territoryLab'].includes(String(loc.kind || ''));
+  const authoredNpcCount = postedGarrison ? 0 : locationAuthoredNpcRows(loc).length;
   const workerNpcCount = Math.min(workerSleepersByLocation.get(loc.id) || 0, loc.safe ? 14 : 10);
   const expectedSleepers = authoredNpcCount + workerNpcCount;
   const beds = locationSleepRows(loc).length;

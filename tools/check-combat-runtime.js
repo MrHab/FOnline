@@ -455,15 +455,20 @@ function seedCombatFixtures(accounts) {
     path.join(PROJECT_ROOT, 'data', 'locations', 'oldDepot.json'),
     'utf8'
   ));
+  // Старое депо стало PvE-областью с личными комнатами; арена проверки
+  // остаётся общей PvP-локацией, чтобы стрелки попадали в одну комнату.
   const arenaLocation = {
     ...sourceLocation,
     id: COMBAT_LOCATION_ID,
     name: 'Combat runtime arena',
+    pvpMode: 'pvp',
     objects: (Array.isArray(sourceLocation.objects) ? sourceLocation.objects : [])
       .filter(row => !authoredLocationObjectIsNpc(row))
   };
   delete arenaLocation.worldSiteId;
   delete arenaLocation.siteId;
+  delete arenaLocation.privateInstance;
+  delete arenaLocation.pveArea;
   const locationsDir = path.join(DATA_DIR, 'locations');
   fs.mkdirSync(locationsDir, { recursive: true });
   fs.writeFileSync(
@@ -2125,7 +2130,11 @@ async function main() {
   }
 }
 
-module.exports = { bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR };
+module.exports = {
+  bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR,
+  serverLogs: () => activeServerLogs.join(''),
+  baseUrl: () => `http://127.0.0.1:${activePort}`
+};
 
 if (require.main === module) main().catch(error => {
   console.error(`Combat runtime check failed: ${error?.message || String(error)}`);

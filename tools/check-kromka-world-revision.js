@@ -25,7 +25,7 @@ assert(map.grid.cols === 38 && map.grid.rows === 30 && map.grid.cellPoints === 1
   'Kromka must use the new 380×300 layout, not the legacy 900×900 grid');
 assert(map.legacyCoastline === false,
   'Kromka must not inherit the retired western-ocean collision mask');
-assert(map.nodes.length === seed.locations.length && map.nodes.length === 39,
+assert(map.nodes.length === seed.locations.length && map.nodes.length === 44,
   'all physical Kromka locations must be present on the strategic map');
 assert(map.infrastructure.length === seed.routes.length && map.infrastructure.length >= 5,
   'Tesma/Cascade/road/rail infrastructure is incomplete');
@@ -140,7 +140,7 @@ for (const node of map.nodes) {
     `${node.id} Unity anchor is outside Locations_EDITABLE`);
   assert(sceneLocation.binding?.stableLocationId === node.locationId,
     `${node.id} Unity location binding does not match its server entry id`);
-  assert(sceneLocation.binding.scenePath === `Assets/Scenes/Kromka/Locations/${node.locationId}.unity`,
+  assert(sceneLocation.binding.scenePath === catalog.locations.find(row => row.id === node.locationId)?.unityScene,
     `${node.id} Unity location binding points to the wrong local scene`);
   const expectedWorldX = (node.x - mapWidth * 0.5) * mapWorldScale;
   const expectedWorldZ = (mapHeight * 0.5 - node.y) * mapWorldScale;

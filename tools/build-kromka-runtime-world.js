@@ -11,6 +11,28 @@ const factions = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'f
 
 if (catalog.worldRevision !== seed.worldRevision) throw new Error('Kromka world revision mismatch');
 
+// Refresh only the derived snapshot after an explicit Unity scene export. Never
+// regenerate authored terrain, nodes or road-access flags in this mode.
+if (process.argv.includes('--sync-authored')) {
+  const map = JSON.parse(fs.readFileSync(path.join(root, 'data', 'global-map.json'), 'utf8'));
+  const file = path.join(root, 'data', 'generated', 'kromka', 'world.json');
+  const generated = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (map.sitePlacement !== 'unity-authored' || map.nodes.length !== seed.locations.length)
+    throw new Error('Expected an exported authored Unity world');
+  for (const point of seed.locations) {
+    const node = map.nodes.find(row => row.id === point.id);
+    if (!node || node.x !== point.x || node.y !== point.z) throw new Error(`Unity export mismatch: ${point.id}`);
+  }
+  generated.nodes = map.nodes;
+  generated.routes = seed.routes;
+  generated.regions = seed.regions;
+  generated.contentHash = crypto.createHash('sha256')
+    .update(JSON.stringify({ nodes: generated.nodes, routes: seed.routes, migration: seed.migration })).digest('hex');
+  fs.writeFileSync(file, JSON.stringify(generated, null, 2) + '\n');
+  console.log(`Synced derived world: ${map.nodes.length} authored nodes, ${seed.routes.length} routes; map untouched`);
+  process.exit(0);
+}
+
 const byId = new Map(catalog.locations.map(row => [row.id, row]));
 const factionByCapital = new Map(factions.factions.map(row => [row.capitalLocationId, row.id]));
 const regionById = new Map(seed.regions.map(row => [row.id, row]));
@@ -153,8 +175,9 @@ for (let cy = 0; cy < seed.grid.rows; cy += 1) {
 
 const globalMap = {
   schema: 'realm.globalMap.v1',
-  version: 2,
+  version: 3,
   worldRevision: seed.worldRevision,
+  sitePlacement: 'unity-authored',
   legacyCoastline: false,
   unityScene: catalog.unityGlobalMapScene,
   grid: seed.grid,

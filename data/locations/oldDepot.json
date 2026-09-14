@@ -5,7 +5,11 @@
   "name": "Арсенал №6",
   "seed": 20260710,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
+
+  "privateInstance": true,
+
+  "pveArea": true,
   "kind": "pointOfInterest",
   "randomTemplate": false,
   "noRespawn": true,

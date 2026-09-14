@@ -1,0 +1,91 @@
+{
+  "schema": "kromka.public-events.v1",
+  "version": 1,
+  "note": "Временные публичные события пустоши: логова мутантов и базы налётчиков. Общая комната для всех, PvP разрешено, вещи при смерти сохраняются. Время в мс реального времени.",
+  "rules": {
+    "maxActive": 3,
+    "spawnIntervalMs": 900000,
+    "initialSpawnDelayMs": 60000,
+    "minLifetimeMs": 1800000,
+    "maxLifetimeMs": 2700000,
+    "expiryWarningMs": 300000,
+    "chestOpenDelayMs": [45000, 60000],
+    "deathRejoinDelayMs": [60000, 90000],
+    "zoneRadius": 9
+  },
+  "templates": [
+    {
+      "id": "raider_base",
+      "kind": "raiderBase",
+      "displayName": "База налётчиков",
+      "text": "Налётчики укрепились на разбитом тракте. Кто первым доберётся до их схрона — тот и заберёт добычу.",
+      "locationId": "randomRuinedRoad",
+      "encounterId": "raider_ambush",
+      "weight": 5,
+      "chest": {
+        "name": "Схрон налётчиков",
+        "loot": [
+          { "id": "silver", "qty": 120 },
+          { "id": "ammo9", "qty": 40 },
+          { "id": "weaponParts", "qty": 3 },
+          { "id": "medicine", "qty": 2 },
+          { "id": "stabilizerCatalyst", "qty": 1 }
+        ]
+      }
+    },
+    {
+      "id": "mutant_lair",
+      "kind": "monsterLair",
+      "displayName": "Логово Складней",
+      "text": "В полосе №8 завёлся тканевый выводок. Логово временное: через час мутанты уйдут.",
+      "locationId": "randomAshGrove",
+      "encounterId": "super_mutant_lair",
+      "weight": 4,
+      "chest": {
+        "name": "Гнездовой тайник",
+        "loot": [
+          { "id": "silver", "qty": 90 },
+          { "id": "chemicals", "qty": 4 },
+          { "id": "bioReagent", "qty": 2 },
+          { "id": "medicine", "qty": 2 }
+        ]
+      }
+    },
+    {
+      "id": "gari_den",
+      "kind": "monsterLair",
+      "displayName": "Логово Гари",
+      "text": "Стая гари засела в меловой чаше. Добыча достаётся тому, кто удержит чашу до вскрытия тайника.",
+      "locationId": "randomDryBasin",
+      "encounterId": "gari_pack",
+      "weight": 4,
+      "chest": {
+        "name": "Тайник в чаше",
+        "loot": [
+          { "id": "silver", "qty": 80 },
+          { "id": "electronics", "qty": 3 },
+          { "id": "spectrumSample", "qty": 2 },
+          { "id": "ammo556", "qty": 30 }
+        ]
+      }
+    },
+    {
+      "id": "scorpion_pit",
+      "kind": "monsterLair",
+      "displayName": "Яма Рыхляков",
+      "text": "Рыхляки роют под полосой №8. Пока яма открыта, сюда сходятся все, кому нужны пластины сплава.",
+      "locationId": "randomAshGrove",
+      "encounterId": "radscorpion_nest",
+      "weight": 3,
+      "chest": {
+        "name": "Гнездо с пластинами",
+        "loot": [
+          { "id": "silver", "qty": 70 },
+          { "id": "alloyPlate", "qty": 2 },
+          { "id": "scrap", "qty": 8 },
+          { "id": "medicine", "qty": 1 }
+        ]
+      }
+    }
+  ]
+}

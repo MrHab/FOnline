@@ -113,8 +113,8 @@
         {
           "id": "contour-mute-01",
           "type": "mute",
-          "x": 14.0,
-          "z": 8.0,
+          "x": 14,
+          "z": 8,
           "radius": 2.8,
           "dischargeMs": 5000,
           "training": false,
@@ -244,8 +244,8 @@
         {
           "id": "solar-chime-01",
           "type": "chime",
-          "x": 4.0,
-          "z": 10.0,
+          "x": 4,
+          "z": 10,
           "radius": 2.6,
           "dischargeMs": 6000,
           "training": false,
@@ -254,8 +254,8 @@
         {
           "id": "solar-seam-01",
           "type": "seam",
-          "x": -8.0,
-          "z": 12.0,
+          "x": -8,
+          "z": 12,
           "radius": 2.2,
           "dischargeMs": 3000,
           "training": false,
@@ -504,8 +504,8 @@
         {
           "id": "fold-carousel-01",
           "type": "carousel",
-          "x": 6.0,
-          "z": 3.0,
+          "x": 6,
+          "z": 3,
           "radius": 3.4,
           "dischargeMs": 5000,
           "training": false,
@@ -550,8 +550,8 @@
         {
           "id": "chalk-pull-01",
           "type": "pull",
-          "x": 2.0,
-          "z": -4.0,
+          "x": 2,
+          "z": -4,
           "radius": 3.1,
           "dischargeMs": 4000,
           "training": false,
@@ -579,8 +579,8 @@
         {
           "id": "twelve-seam-01",
           "type": "seam",
-          "x": 0.0,
-          "z": 3.0,
+          "x": 0,
+          "z": 3,
           "radius": 2.3,
           "dischargeMs": 3000,
           "permanentDischarge": true,
@@ -624,7 +624,7 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "expedition-return-point",
       "legacyStable": true,
-      "unityScene": "Assets/Scenes/Kromka/Locations/wasteland.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity"
     },
     {
       "id": "tutorialCaravanYard",
@@ -642,8 +642,8 @@
         {
           "id": "training-chime-01",
           "type": "chime",
-          "x": 8.0,
-          "z": 0.0,
+          "x": 8,
+          "z": 0,
           "radius": 2.4,
           "dischargeMs": 6000,
           "training": true,
@@ -705,9 +705,9 @@
         {
           "id": "balance-sink-01",
           "type": "sink",
-          "x": -5.0,
-          "z": 6.0,
-          "radius": 3.0,
+          "x": -5,
+          "z": 6,
+          "radius": 3,
           "dischargeMs": 4000,
           "training": false,
           "placement": "unity-authored"
@@ -734,8 +734,8 @@
         {
           "id": "r12-dew-01",
           "type": "dew",
-          "x": 3.0,
-          "z": 8.0,
+          "x": 3,
+          "z": 8,
           "radius": 3.2,
           "dischargeMs": 5000,
           "training": false,
@@ -763,8 +763,8 @@
         {
           "id": "vector-glass-01",
           "type": "glass",
-          "x": 0.0,
-          "z": 12.0,
+          "x": 0,
+          "z": 12,
           "radius": 3.6,
           "dischargeMs": 4000,
           "training": false,
@@ -928,6 +928,673 @@
       "migrationSpawnId": "fort-fourteen-neutral-yard",
       "legacyStable": false,
       "unityScene": "Assets/Scenes/Kromka/Locations/clanFortZero.unity"
+    },
+    {
+      "id": "coreZone",
+      "displayName": "Сердцевина",
+      "locationType": "story_complex",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-core-v1",
+      "anomalyDensity": 0.8,
+      "landmarkTags": [
+        "central-installation",
+        "metro-platforms"
+      ],
+      "ambientProfile": "contested-central-field",
+      "territory": {
+        "id": "core",
+        "role": "zone"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-platform-uprava",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreZone.unity",
+      "anomalyFields": [
+        {
+          "id": "core-center-carousel",
+          "type": "carousel",
+          "x": 0.0,
+          "z": 24.0,
+          "radius": 4.0,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-chime",
+          "type": "chime",
+          "x": 0.0,
+          "z": -24.0,
+          "radius": 4.0,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-dew",
+          "type": "dew",
+          "x": -24.0,
+          "z": 0.0,
+          "radius": 4.0,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-glass",
+          "type": "glass",
+          "x": -16.97,
+          "z": 16.97,
+          "radius": 4.0,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-mute",
+          "type": "mute",
+          "x": 16.97,
+          "z": -16.97,
+          "radius": 4.0,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-pull",
+          "type": "pull",
+          "x": 24.0,
+          "z": 0.0,
+          "radius": 4.0,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-seam",
+          "type": "seam",
+          "x": 16.97,
+          "z": 16.97,
+          "radius": 4.0,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-sink",
+          "type": "sink",
+          "x": -16.97,
+          "z": -16.97,
+          "radius": 4.0,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-carousel",
+          "type": "carousel",
+          "x": -32.22,
+          "z": 48.23,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-chime",
+          "type": "chime",
+          "x": 32.22,
+          "z": -48.23,
+          "radius": 3.6,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-dew",
+          "type": "dew",
+          "x": -48.23,
+          "z": -32.22,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-glass",
+          "type": "glass",
+          "x": -56.89,
+          "z": 11.32,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-mute",
+          "type": "mute",
+          "x": 56.89,
+          "z": -11.32,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-pull",
+          "type": "pull",
+          "x": 48.23,
+          "z": 32.22,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-seam",
+          "type": "seam",
+          "x": 11.32,
+          "z": 56.89,
+          "radius": 3.6,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-sink",
+          "type": "sink",
+          "x": -11.32,
+          "z": -56.89,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-carousel",
+          "type": "carousel",
+          "x": -23.8,
+          "z": 119.66,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-chime",
+          "type": "chime",
+          "x": 23.8,
+          "z": -119.66,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-dew",
+          "type": "dew",
+          "x": -119.66,
+          "z": -23.8,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-glass",
+          "type": "glass",
+          "x": -101.44,
+          "z": 67.78,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-mute",
+          "type": "mute",
+          "x": 101.44,
+          "z": -67.78,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-pull",
+          "type": "pull",
+          "x": 119.66,
+          "z": 23.8,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-seam",
+          "type": "seam",
+          "x": 67.78,
+          "z": 101.44,
+          "radius": 3.2,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-sink",
+          "type": "sink",
+          "x": -67.78,
+          "z": -101.44,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreBaseUprava",
+      "displayName": "Узел Управы",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-uprava-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "uprava"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-uprava-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseUprava.unity"
+    },
+    {
+      "id": "coreBaseArtels",
+      "displayName": "Артельный узел",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-free_artels-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "free_artels"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-free_artels-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseArtels.unity"
+    },
+    {
+      "id": "coreBaseContour",
+      "displayName": "Узел Контура",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-contour-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "contour"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-contour-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseContour.unity"
+    },
+    {
+      "id": "coreBaseLeague",
+      "displayName": "Узел Лиги",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-tract_league-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "tract_league"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-tract_league-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseLeague.unity"
+    },
+    {
+      "id": "coreLabSprout",
+      "displayName": "Лаборатория «Росток»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-bio-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "bio"
+      ],
+      "ambientProfile": "sealed-bio-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "bio"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabSprout-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSprout.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabSprout-dew-1",
+          "type": "dew",
+          "x": -20.0,
+          "z": 20.0,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSprout-dew-2",
+          "type": "dew",
+          "x": 20.0,
+          "z": 22.0,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreLabCircuit",
+      "displayName": "Лаборатория «Цепь»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-energy-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "energy"
+      ],
+      "ambientProfile": "sealed-energy-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "energy"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCircuit-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCircuit.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCircuit-chime-1",
+          "type": "chime",
+          "x": -20.0,
+          "z": 20.0,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCircuit-chime-2",
+          "type": "chime",
+          "x": 20.0,
+          "z": 22.0,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCircuit-seam-3",
+          "type": "seam",
+          "x": 0.0,
+          "z": 26.0,
+          "radius": 3.2,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreLabAlloy",
+      "displayName": "Лаборатория «Сплав»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-materials-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "materials"
+      ],
+      "ambientProfile": "sealed-materials-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "materials"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabAlloy-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabAlloy.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabAlloy-glass-1",
+          "type": "glass",
+          "x": -20.0,
+          "z": 20.0,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabAlloy-glass-2",
+          "type": "glass",
+          "x": 20.0,
+          "z": 22.0,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreLabSpectrum",
+      "displayName": "Лаборатория «Спектр»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-anomalous-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "anomalous"
+      ],
+      "ambientProfile": "sealed-anomalous-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "anomalous"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabSpectrum-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabSpectrum-carousel-2",
+          "type": "carousel",
+          "x": 18.0,
+          "z": 18.0,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-mute-4",
+          "type": "mute",
+          "x": 0.0,
+          "z": 12.0,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-pull-1",
+          "type": "pull",
+          "x": -18.0,
+          "z": 18.0,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-sink-3",
+          "type": "sink",
+          "x": 0.0,
+          "z": 26.0,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreLabCenterService",
+      "displayName": "Объект Ноль: служебный уровень",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "service"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "service"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterService-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterService.unity"
+    },
+    {
+      "id": "coreLabCenterResearch",
+      "displayName": "Объект Ноль: исследовательский уровень",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "research"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "research"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterResearch-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterResearch.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCenterResearch-seam-1",
+          "type": "seam",
+          "x": -12.0,
+          "z": 20.0,
+          "radius": 3.0,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCenterResearch-sink-1",
+          "type": "sink",
+          "x": 12.0,
+          "z": 20.0,
+          "radius": 3.0,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
+    },
+    {
+      "id": "coreLabCenterReactor",
+      "displayName": "Объект Ноль: установка",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "reactor"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "reactor"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterReactor-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCenterReactor-chime-1",
+          "type": "chime",
+          "x": 14.0,
+          "z": 8.0,
+          "radius": 3.4,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCenterReactor-glass-1",
+          "type": "glass",
+          "x": -14.0,
+          "z": 8.0,
+          "radius": 3.4,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     }
   ]
 }

@@ -99,7 +99,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Kromka/Locations/randomEncounter.unity
     guid: 28c4657de329d9445a81913e51c88a11
   - enabled: 1
-    path: Assets/Scenes/Kromka/Locations/wasteland.unity
+    path: Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity
     guid: f26ecd2301bfc064ebd67ef106f168a6
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/tutorialCaravanYard.unity
@@ -146,4 +146,40 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/clanFortZero.unity
     guid: 92acf8c28b0fec14da89f03f952d0376
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreZone.unity
+    guid: c6c03fdee04817b4280eb2263f11a5d9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreBaseUprava.unity
+    guid: 8b62d1584409dc348acce46bd8616d43
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreBaseArtels.unity
+    guid: 18bc31a68df35304ebae5e01cf49c4cd
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreBaseContour.unity
+    guid: 804ba890c10a5054da88ed9dd465848b
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreBaseLeague.unity
+    guid: fbb31957edbac4a40acad4e199fa3777
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabSprout.unity
+    guid: 48d70cf5e7653954aac86550a2858220
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabCircuit.unity
+    guid: 25159242af84df64cafe428877cd05e2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabAlloy.unity
+    guid: c7864ed2539edb8488d1d6815d62e84d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity
+    guid: 7ac84efddc96b1f4cbb1522326732c9e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabCenterService.unity
+    guid: adf7608e8df7a1445b52d1ad813dfe38
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabCenterResearch.unity
+    guid: dcb61e9889a1987488475a7f04833929
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity
+    guid: b8822a93e5832ab4b8fe86ac13670443
   m_configObjects: {}

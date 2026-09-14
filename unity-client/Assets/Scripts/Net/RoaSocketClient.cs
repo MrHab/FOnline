@@ -78,6 +78,10 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnPersonalBaseState;
         public event Action<JObject> OnKromkaClanState;
         public event Action<JObject> OnKromkaSiegeState;
+        public event Action<JObject> OnTerritoryOutpostState;
+        public event Action<JObject> OnPveAreaState;
+        public event Action<JObject> OnPublicEventState;
+        public event Action<JObject> OnWorldBossState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -479,6 +483,38 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnKromkaSiegeState?.Invoke(payload);
+            }));
+
+            // Аванпосты Сердцевины: владелец, состояние события, отсчёт,
+            // прогресс захвата и гарнизон одинаковы для всех игроков.
+            _connection.On("territoryOutpostState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnTerritoryOutpostState?.Invoke(payload);
+            }));
+
+            // PvE-области: состояние личной встречи (затишье, следы, группы)
+            // приходит всей комнате после каждой серверной проверки.
+            _connection.On("pveAreaState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPveAreaState?.Invoke(payload);
+            }));
+
+            // Публичные события пустоши: предупреждение об истечении, зачистка,
+            // отсчёт спорного сундука и принудительный выход после окончания.
+            _connection.On("publicEventState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPublicEventState?.Invoke(payload);
+            }));
+
+            // Мировой босс: фаза щита/уязвимости, телеграф импульса, поражение
+            // и перерождение — одинаково для всех в комнате установки.
+            _connection.On("worldBossState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnWorldBossState?.Invoke(payload);
             }));
 
             _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>

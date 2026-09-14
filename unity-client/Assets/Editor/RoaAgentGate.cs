@@ -18,8 +18,10 @@ namespace RealmOfAshes.EditorTools
     /// Library/roa-agent-response.json. Работает без фокуса окна.
     ///
     /// Команды намеренно ограничены безопасными операциями чтения и меню
-    /// проекта: шлюз не открывает и не сохраняет сцены, не трогает несохранённые
-    /// правки художника.
+    /// проекта: шлюз не сохраняет сцены и не трогает несохранённые правки
+    /// художника. Единственное исключение — revertOpenScene: откат активной сцены
+    /// к состоянию на диске, который выполняется только с явным полем
+    /// "confirm": true, то есть после согласия человека.
     /// </summary>
     [InitializeOnLoad]
     public static class RoaAgentGate
@@ -107,6 +109,43 @@ namespace RealmOfAshes.EditorTools
                         "Assets/Scenes/GlobalMapAuthored.unity",
                         UnityEditor.SceneManagement.OpenSceneMode.Single);
                     Respond(true, "Сцена GlobalMapAuthored открыта.");
+                    return;
+                }
+
+                case "revertOpenScene":
+                {
+                    // Откат активной сцены к состоянию на диске без сохранения.
+                    // Выполняется только с явным "confirm": true — после согласия
+                    // человека; остальные загруженные сцены закрываются той же командой.
+                    if (EditorApplication.isPlaying)
+                    {
+                        Respond(false, "Редактор в Play-режиме — выйдите из Play и повторите команду.");
+                        return;
+                    }
+                    if (request["confirm"]?.Value<bool>() != true)
+                    {
+                        Respond(false, "Откат сцены требует поля \"confirm\": true — подтверждение человека.");
+                        return;
+                    }
+                    Scene active = SceneManager.GetActiveScene();
+                    string activePath = active.IsValid() ? active.path : string.Empty;
+                    if (string.IsNullOrEmpty(activePath))
+                    {
+                        Respond(false, "Активная сцена не сохранена на диск — откатывать нечего.");
+                        return;
+                    }
+                    int dirtyScenes = 0;
+                    for (int i = 0; i < SceneManager.sceneCount; i++)
+                        if (SceneManager.GetSceneAt(i).isDirty) dirtyScenes++;
+                    if (dirtyScenes == 0)
+                    {
+                        Respond(true, "Сцена " + active.name + " и так без несохранённых правок.");
+                        return;
+                    }
+                    string activeName = active.name; // после OpenScene старый дескриптор сцены пуст
+                    UnityEditor.SceneManagement.EditorSceneManager.OpenScene(activePath,
+                        UnityEditor.SceneManagement.OpenSceneMode.Single);
+                    Respond(true, "Сцена " + activeName + " перечитана с диска; несохранённых сцен отброшено: " + dirtyScenes + ".");
                     return;
                 }
 

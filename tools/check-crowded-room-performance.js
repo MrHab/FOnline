@@ -623,6 +623,7 @@ function assertMovementIngressBudgetAndMetrics() {
   const proposalSource = extractFunction(serverSource, 'serverApplyMovementProposal');
   const context = vm.createContext({
     MAP_SIZE: 140,
+    playerWorldExtent: () => 140,
     PLAYER_SPEED: 7,
     PLAYER_COLLISION_RADIUS: 0.48,
     PLAYER_STATE_TOKEN_INTERVAL_MS: 50,

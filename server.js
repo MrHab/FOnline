@@ -375,7 +375,6 @@ const WASTELAND_PUBLIC_CACHE_MS = Math.max(250, Number(process.env.WASTELAND_PUB
 const ACTIVE_ROOM_AI_TICK_MS = Math.max(50, Number(process.env.ACTIVE_ROOM_AI_TICK_MS || 200));
 const ACTIVE_ROOM_AI_MAX_DT = Math.max(0.05, Number(process.env.ACTIVE_ROOM_AI_MAX_DT || 0.25));
 const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM_HOUSEKEEPING_MS || 1000));
-const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
 // Both ingress collision work and room relay target 20 Hz. Two-token credit is
@@ -727,22 +726,23 @@ function listLocationFiles() {
   return listLocationFilesIn(LOCATIONS_DIR);
 }
 
-function locationWorldToTilePoint(point = {}) {
+function locationWorldToTilePoint(point = {}, dims = null) {
+  const grid = dims && Number.isFinite(dims.w) && Number.isFinite(dims.h) ? dims : { w: MAP_W, h: MAP_H };
   if (Number.isFinite(Number(point.tx)) && Number.isFinite(Number(point.tz))) {
-    return { tx: clamp(Math.floor(Number(point.tx)), 0, MAP_W - 1), tz: clamp(Math.floor(Number(point.tz)), 0, MAP_H - 1) };
+    return { tx: clamp(Math.floor(Number(point.tx)), 0, grid.w - 1), tz: clamp(Math.floor(Number(point.tz)), 0, grid.h - 1) };
   }
   const src = point.position && typeof point.position === 'object' ? point.position : point;
   const x = Number(src.x);
   const z = Number(src.z);
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   return {
-    tx: clamp(Math.floor(x / TILE + MAP_W / 2), 0, MAP_W - 1),
-    tz: clamp(Math.floor(z / TILE + MAP_H / 2), 0, MAP_H - 1)
+    tx: clamp(Math.floor(x / TILE + grid.w / 2), 0, grid.w - 1),
+    tz: clamp(Math.floor(z / TILE + grid.h / 2), 0, grid.h - 1)
   };
 }
 
-function normalizeLocationPoint(point, fallback = { tx: 19, tz: 19 }) {
-  const tile = locationWorldToTilePoint(point) || fallback;
+function normalizeLocationPoint(point, fallback = { tx: 19, tz: 19 }, dims = null) {
+  const tile = locationWorldToTilePoint(point, dims) || fallback;
   const out = { ...(point && typeof point === 'object' ? point : {}), tx: tile.tx, tz: tile.tz };
   if (point?.position && typeof point.position === 'object') {
     out.x = Number(point.position.x || 0);
@@ -824,9 +824,9 @@ function locationDefinitionObjectIsTrader(row = {}) {
     || !!(entity.traderProfile || entity.tradeProfile);
 }
 
-function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19 }) {
+function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19 }, dims = null) {
   const entity = locationDefinitionObjectEntity(row);
-  const point = normalizeLocationPoint(row, fallback);
+  const point = normalizeLocationPoint(row, fallback, dims);
   return {
     ...point,
     id: String(entity.traderProfile || entity.tradeProfile || row.id || point.id || '').slice(0, 64),
@@ -1129,8 +1129,10 @@ function normalizeLocationDefinition(raw, fallback = null) {
   loc.city = !!explicitSettlement;
   loc.settlement = !!explicitSettlement;
   loc.respawnAllowed = !!explicitSettlement;
-  loc.spawn = normalizeLocationPoint(loc.spawn || base.spawn, base.spawn || { tx: 19, tz: 19 });
-  if (loc.respawn && loc.respawnAllowed) loc.respawn = normalizeLocationPoint(loc.respawn, loc.spawn);
+  delete loc.tileDims;
+  const locDims = locationTileDims(loc);
+  loc.spawn = normalizeLocationPoint(loc.spawn || base.spawn, base.spawn || { tx: 19, tz: 19 }, locDims);
+  if (loc.respawn && loc.respawnAllowed) loc.respawn = normalizeLocationPoint(loc.respawn, loc.spawn, locDims);
   if (!loc.respawnAllowed) delete loc.respawn;
   const capitalStorageObject = locationCapitalStorageObject(loc);
   const inheritedObjects = Array.isArray(loc.objects) ? loc.objects : [];
@@ -1151,7 +1153,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     if (authoredTrader) {
       const entity = locationDefinitionObjectEntity(authoredTrader);
       loc.trader = {
-        ...locationDefinitionPointFromObject(authoredTrader, loc.spawn),
+        ...locationDefinitionPointFromObject(authoredTrader, loc.spawn, locDims),
         id: String(entity.traderProfile || entity.tradeProfile || entity.profile || authoredTrader.id || 'authored_trader').slice(0, 64),
         traderProfile: String(entity.traderProfile || entity.tradeProfile || entity.profile || '').slice(0, 64),
         dialogueProfile: String(entity.dialogueProfile || entity.traderProfile || entity.tradeProfile || entity.profile || loc.id || '').slice(0, 64),
@@ -1165,7 +1167,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     }
     if (authoredStorage) {
       loc.storage = {
-        ...locationDefinitionPointFromObject(authoredStorage, loc.spawn),
+        ...locationDefinitionPointFromObject(authoredStorage, loc.spawn, locDims),
         id: String(authoredStorage.id || 'authored_storage').slice(0, 64),
         storageFaction: locationCapitalFaction(loc),
         name: String(authoredStorage.name || 'Хранилище').slice(0, 80)
@@ -1176,12 +1178,12 @@ function normalizeLocationDefinition(raw, fallback = null) {
   }
   if (!locationIsFactionCapital(loc)) delete loc.storage;
   ['entryFromWorld', 'entryFromNorth', 'entryFromSouth', 'entryFromEast', 'entryFromWest', 'entryFromWasteland', 'entryFromSettlement', 'trader', 'storage'].forEach(key => {
-    if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn);
+    if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn, locDims);
   });
-  if (loc.entry && !loc.entryFromWorld) loc.entryFromWorld = normalizeLocationPoint(loc.entry, loc.spawn);
+  if (loc.entry && !loc.entryFromWorld) loc.entryFromWorld = normalizeLocationPoint(loc.entry, loc.spawn, locDims);
   if (Array.isArray(loc.transitions)) {
     loc.transitions = loc.transitions.map((row, index) => {
-      const point = normalizeLocationPoint(row, loc.spawn);
+      const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
       return {
         ...row,
         id: String(row?.id || `transition_${index + 1}`).slice(0, 48),
@@ -1207,7 +1209,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
     }
   }
   if (loc.exit) {
-    const exitPoint = normalizeLocationPoint(loc.exit, loc.spawn);
+    const exitPoint = normalizeLocationPoint(loc.exit, loc.spawn, locDims);
     loc.exit = {
       ...loc.exit,
       tx: exitPoint.tx,
@@ -1218,7 +1220,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
   }
   if (Array.isArray(loc.worldZones)) {
     loc.worldZones = loc.worldZones.map((row, index) => {
-      const point = normalizeLocationPoint(row, loc.spawn);
+      const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
       return {
         ...row,
         id: String(row?.id || `world_exit_${index + 1}`).slice(0, 48),
@@ -4611,10 +4613,11 @@ if (Number(WORLD_PARTY_RECONCILIATION.removed || 0) > 0) {
 
 function normalizedLocationPlayableBounds(loc = {}) {
   const raw = loc.playableBounds && typeof loc.playableBounds === 'object' ? loc.playableBounds : {};
-  const width = clamp(Math.floor(Number(raw.width || loc.localWidthTiles || MAP_W)), 8, MAP_W);
-  const height = clamp(Math.floor(Number(raw.height || loc.localHeightTiles || MAP_H)), 8, MAP_H);
-  const minX = clamp(Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (MAP_W - width) / 2), 0, MAP_W - width);
-  const minZ = clamp(Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (MAP_H - height) / 2), 0, MAP_H - height);
+  const dims = locationTileDims(loc);
+  const width = clamp(Math.floor(Number(raw.width || loc.localWidthTiles || dims.w)), 8, dims.w);
+  const height = clamp(Math.floor(Number(raw.height || loc.localHeightTiles || dims.h)), 8, dims.h);
+  const minX = clamp(Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (dims.w - width) / 2), 0, dims.w - width);
+  const minZ = clamp(Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (dims.h - height) / 2), 0, dims.h - height);
   return {
     minX,
     minZ,
@@ -9100,8 +9103,9 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
       player.z = safeZ;
     }
   }
-  const dx = clamp(proposedX, -MAP_SIZE, MAP_SIZE) - fromX;
-  const dz = clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - fromZ;
+  const worldExtent = playerWorldExtent(player);
+  const dx = clamp(proposedX, -worldExtent, worldExtent) - fromX;
+  const dz = clamp(proposedZ, -worldExtent, worldExtent) - fromZ;
   const distance = Math.hypot(dx, dz);
   const artifactSpeed = 1 + serverArtifactEffects(player).speedPct;
   const maxDistance = PLAYER_SPEED * artifactSpeed * elapsed * 1.35 + 0.22;
@@ -9122,14 +9126,14 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
     else if (moveAllowed(fromX, nextZ)) nextX = fromX;
     else { nextX = fromX; nextZ = fromZ; }
   }
-  player.x = clamp(nextX, -MAP_SIZE, MAP_SIZE);
-  player.z = clamp(nextZ, -MAP_SIZE, MAP_SIZE);
+  player.x = clamp(nextX, -worldExtent, worldExtent);
+  player.z = clamp(nextZ, -worldExtent, worldExtent);
   // Телепорт-коррекцию клиенту шлём только при реальном расхождении: щель в
   // несколько сантиметров от трения о препятствие рассасывается сама, а рывок
   // назад её лишь превращал в дёрганье. 0.6 юнита ловит настоящий десинк.
   const divergence = Math.hypot(
-    clamp(proposedX, -MAP_SIZE, MAP_SIZE) - player.x,
-    clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - player.z
+    clamp(proposedX, -worldExtent, worldExtent) - player.x,
+    clamp(proposedZ, -worldExtent, worldExtent) - player.z
   );
   const moved = Math.hypot(player.x - fromX, player.z - fromZ) > 0.0001;
   return { accepted: moved || divergence <= 0.001 || boundaryCorrected, corrected: boundaryCorrected || divergence > 0.6 };
@@ -9940,7 +9944,7 @@ function serverApplyArtifactImpact(player, room, source, damageType, displacemen
   const stunned = applyArtifactElectricHit(player, damageType, effects, now);
   const bounds = serverClosedLocationMovementBounds(player, room, PLAYER_COLLISION_RADIUS);
   const moved = displaceArtifactPlayer(player, source, displacement, effects, (fromX, fromZ, x, z) =>
-    Math.abs(x) <= MAP_SIZE && Math.abs(z) <= MAP_SIZE
+    Math.abs(x) <= roomWorldExtent(room) && Math.abs(z) <= roomWorldExtent(room)
     && (!bounds || serverPointInsideClosedLocationBounds(x, z, bounds))
     && isRoomTerrainWalkableWorld(room, x, z, PLAYER_COLLISION_RADIUS)
     && roomStaticCollisionMoveAllowed(room, fromX, fromZ, x, z, PLAYER_COLLISION_RADIUS)
@@ -10073,7 +10077,7 @@ function roomBlockingDistanceOnRay(room, fromX, fromZ, dirX, dirZ, maxRange, opt
   const dx = dirX / len;
   const dz = dirZ / len;
   for (let d = step; d <= maxRange; d += step) {
-    const tile = worldToTile(fromX + dx * d, fromZ + dz * d);
+    const tile = worldToTile(fromX + dx * d, fromZ + dz * d, roomTileDims(room));
     if (isRoomBallisticBlockingTile(room, tile.tx, tile.tz, opts)) return Math.max(0.1, d - step * 0.5);
   }
   return maxRange;
@@ -10098,8 +10102,8 @@ function serverLineOfFireClearFrom(room, fromX, fromZ, enemy, opts = {}) {
   const clear = roomBlockingDistanceOnRay(room, fromX, fromZ, dx / len, dz / len, checkDist, { shooterCrouching: !!opts.shooterCrouching });
   if (clear + 0.35 < checkDist) return false;
   if (opts.targetCrouching) {
-    const start = worldToTile(fromX, fromZ);
-    const end = worldToTile(enemyX, enemyZ);
+    const start = worldToTile(fromX, fromZ, roomTileDims(room));
+    const end = worldToTile(enemyX, enemyZ, roomTileDims(room));
     if (isCrouchedTargetHiddenBehindLowCover(room, start.tx, start.tz, end.tx, end.tz)) return false;
   }
   return !roomStaticCollisionBlocksSegment(room, fromX, fromZ, enemyX, enemyZ, 0.045, {
@@ -10764,8 +10768,8 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
     if (!entry || !SERVER_ITEM_IDS.has(entry.id) || entry.id === 'fists' || entry.qty <= 0) continue;
     const angle = index * 2.399963229728653 + 0.35;
     const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
     const groundItem = {
       id: makeServerEntityId('pvp_drop'),
@@ -10826,8 +10830,8 @@ function serverDropPvpConsumables(room, target, killer, now = Date.now()) {
     if (!SERVER_ITEM_IDS.has(entry.id)) continue;
     const angle = index * 2.399963229728653 + 0.35;
     const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
     const groundItem = {
       id: makeServerEntityId('pvp_drop'),
@@ -10922,7 +10926,7 @@ function clampPlayerHp(value, maxHp = 100) {
 function playerSpawnWorld(locationId = 'settlement', key = 'spawn') {
   const loc = LOCATIONS[normalizeLocationId(locationId)] || LOCATIONS.settlement;
   const spawn = loc[key] || loc.spawn || LOCATIONS.settlement.spawn;
-  return tileToWorld(spawn.tx, spawn.tz);
+  return tileToWorld(spawn.tx, spawn.tz, locationTileDims(loc));
 }
 
 function locationHasSettlementFlag(loc = {}) {
@@ -11002,7 +11006,7 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
   return candidates.find(row => {
-    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0));
+    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
@@ -11035,17 +11039,56 @@ function serverEntryKeyForTransition(locationId = '', data = {}, ticket = null) 
   return raw && loc[raw] && Number.isFinite(Number(loc[raw].tx)) && Number.isFinite(Number(loc[raw].tz)) ? raw : 'spawn';
 }
 
-function tileToWorld(tx, tz) { return { x: (tx - MAP_W / 2 + 0.5) * TILE, z: (tz - MAP_H / 2 + 0.5) * TILE }; }
-function worldToTile(x, z) { return { tx: Math.floor(x / TILE + MAP_W / 2), tz: Math.floor(z / TILE + MAP_H / 2) }; }
-function inBounds(tx, tz) { return tx >= 0 && tz >= 0 && tx < MAP_W && tz < MAP_H; }
+// Сетка тайлов задаётся локацией: без явного `map.width/depth` сцена остаётся
+// 38×38, авторская сцена любого размера объявляет его в метрах. Верхнего
+// предела размера локации нет.
+const DEFAULT_TILE_DIMS = Object.freeze({ w: MAP_W, h: MAP_H });
+
+function locationTileDims(loc = null) {
+  if (!loc || typeof loc !== 'object') return DEFAULT_TILE_DIMS;
+  if (loc.tileDims && Number.isFinite(loc.tileDims.w) && Number.isFinite(loc.tileDims.h)) return loc.tileDims;
+  const map = loc.map && typeof loc.map === 'object' ? loc.map : {};
+  const widthMeters = Number(map.technicalWidth || map.width || 0);
+  const depthMeters = Number(map.technicalDepth || map.depth || 0);
+  const w = widthMeters > 0 ? Math.max(1, Math.round(widthMeters / TILE)) : MAP_W;
+  const h = depthMeters > 0 ? Math.max(1, Math.round(depthMeters / TILE)) : MAP_H;
+  loc.tileDims = Object.freeze({ w, h });
+  return loc.tileDims;
+}
+
+function roomTileDims(room = null) {
+  if (!room) return DEFAULT_TILE_DIMS;
+  if (room.tileDims && Number.isFinite(room.tileDims.w) && Number.isFinite(room.tileDims.h)) return room.tileDims;
+  const dims = locationTileDims(LOCATIONS[normalizeLocationId(room.locationId)] || null);
+  room.tileDims = dims;
+  return dims;
+}
+
+// Предел мировых координат комнаты выводится из её сетки, а не из общей константы.
+function roomWorldExtent(room = null) {
+  const dims = roomTileDims(room);
+  return Math.max(dims.w, dims.h) * TILE / 2 + 2;
+}
+
+function playerWorldExtent(p = null) {
+  return roomWorldExtent(p?.roomId ? rooms.get(String(p.roomId)) : null);
+}
+
+function tileToWorld(tx, tz, dims = DEFAULT_TILE_DIMS) {
+  return { x: (tx - dims.w / 2 + 0.5) * TILE, z: (tz - dims.h / 2 + 0.5) * TILE };
+}
+function worldToTile(x, z, dims = DEFAULT_TILE_DIMS) {
+  return { tx: Math.floor(x / TILE + dims.w / 2), tz: Math.floor(z / TILE + dims.h / 2) };
+}
+function inBounds(tx, tz, dims = DEFAULT_TILE_DIMS) { return tx >= 0 && tz >= 0 && tx < dims.w && tz < dims.h; }
 function solidTileValue(v) { return v === TILE_TYPES.TREE || v === TILE_TYPES.WATER || v === TILE_TYPES.ORE || v === TILE_TYPES.WOOD || v === TILE_TYPES.OIL; }
 function isRoomWalkableTile(room, tx, tz) {
-  if (!inBounds(tx, tz) || !Array.isArray(room.map[tz])) return false;
+  if (!inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room.map[tz])) return false;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   return tx >= bounds.minX && tx <= bounds.maxX && tz >= bounds.minZ && tz <= bounds.maxZ && !solidTileValue(room.map[tz][tx]);
 }
 function isRoomTerrainWalkableTile(room, tx, tz) {
-  if (!inBounds(tx, tz) || !Array.isArray(room?.map?.[tz])) return false;
+  if (!inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room?.map?.[tz])) return false;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   if (tx < bounds.minX || tx > bounds.maxX || tz < bounds.minZ || tz > bounds.maxZ) return false;
   const type = room.map[tz][tx];
@@ -11055,7 +11098,7 @@ function isRoomTerrainWalkableTile(room, tx, tz) {
 }
 function isRoomTerrainWalkableWorld(room, x, z, radius = 0.35) {
   const samples = [[x - radius, z - radius], [x + radius, z - radius], [x - radius, z + radius], [x + radius, z + radius], [x, z]];
-  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz); return isRoomTerrainWalkableTile(room, t.tx, t.tz); });
+  return samples.every(([sx, sz]) => { const t = worldToTile(sx, sz, roomTileDims(room)); return isRoomTerrainWalkableTile(room, t.tx, t.tz); });
 }
 function isRoomWalkableWorld(room, x, z, radius = 0.35) {
   return isRoomTerrainWalkableWorld(room, x, z, radius) && !roomStaticCollisionBlocksCircle(room, x, z, radius);
@@ -11076,8 +11119,8 @@ function roomTileHasContainer(room, tx, tz, clearance = 0) {
   const c = Math.max(0, Math.floor(Number(clearance || 0)));
   for (const ctr of room.containers.values()) {
     if (!ctr) continue;
-    const cx = Number.isFinite(Number(ctr.tx)) ? Number(ctr.tx) : worldToTile(ctr.x, ctr.z).tx;
-    const cz = Number.isFinite(Number(ctr.tz)) ? Number(ctr.tz) : worldToTile(ctr.x, ctr.z).tz;
+    const cx = Number.isFinite(Number(ctr.tx)) ? Number(ctr.tx) : worldToTile(ctr.x, ctr.z, roomTileDims(room)).tx;
+    const cz = Number.isFinite(Number(ctr.tz)) ? Number(ctr.tz) : worldToTile(ctr.x, ctr.z, roomTileDims(room)).tz;
     if (Math.abs(cx - tx) <= c && Math.abs(cz - tz) <= c) return true;
   }
   return false;
@@ -11085,7 +11128,7 @@ function roomTileHasContainer(room, tx, tz, clearance = 0) {
 
 function roomTileHasEnemyNear(room, tx, tz, minDistance = 0, ignoreId = '') {
   if (!room || !(room.enemies instanceof Map) || minDistance <= 0) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   for (const enemy of room.enemies.values()) {
     if (!enemy || enemy.dead || (ignoreId && enemy.id === ignoreId)) continue;
     if (Math.hypot(Number(enemy.x || 0) - pos.x, Number(enemy.z || 0) - pos.z) < minDistance) return true;
@@ -11095,7 +11138,7 @@ function roomTileHasEnemyNear(room, tx, tz, minDistance = 0, ignoreId = '') {
 
 function roomTileHasPlayerNear(room, tx, tz, minDistance = 0, ignoreId = '') {
   if (!room || minDistance <= 0) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   for (const p of livePlayersInRoom(room)) {
     if (!p || (ignoreId && p.id === ignoreId)) continue;
     if (Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z) < minDistance) return true;
@@ -11107,7 +11150,7 @@ function isRoomSpawnSafeTile(room, tx, tz, opts = {}) {
   tx = Math.round(Number(tx || 0));
   tz = Math.round(Number(tz || 0));
   if (!isRoomWalkableTile(room, tx, tz)) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   if (!isRoomWalkableWorld(room, pos.x, pos.z, Number(opts.radius ?? 0.42))) return false;
   if (roomTileHasResource(room, tx, tz, Number(opts.resourceClearance ?? 0))) return false;
   if (roomTileHasContainer(room, tx, tz, Number(opts.containerClearance ?? 0))) return false;
@@ -11127,7 +11170,7 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
         if (radius > 0 && Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
         const tx = startTx + dx;
         const tz = startTz + dz;
-        if (!inBounds(tx, tz)) continue;
+        if (!inBounds(tx, tz, roomTileDims(room))) continue;
         candidates.push({ tx, tz, d: Math.hypot(dx, dz) });
       }
     }
@@ -11138,9 +11181,9 @@ function findRoomSafeSpawnTile(room, preferredTx, preferredTz, opts = {}) {
 }
 
 function findRoomSafeSpawnWorld(room, x, z, opts = {}) {
-  const tile = worldToTile(Number(x || 0), Number(z || 0));
+  const tile = worldToTile(Number(x || 0), Number(z || 0), roomTileDims(room));
   const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, opts);
-  return safe ? tileToWorld(safe.tx, safe.tz) : null;
+  return safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : null;
 }
 
 function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, preferredTz, opts = {}) {
@@ -11154,11 +11197,11 @@ function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, prefe
   const key = (tx, tz) => `${tx},${tz}`;
   const queue = [origin];
   const visited = new Set([key(origin.tx, origin.tz)]);
-  const originPoint = tileToWorld(origin.tx, origin.tz);
+  const originPoint = tileToWorld(origin.tx, origin.tz, roomTileDims(room));
   let best = null;
   for (let index = 0; index < queue.length; index++) {
     const tile = queue[index];
-    const point = tileToWorld(tile.tx, tile.tz);
+    const point = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
     const visibleFromOrigin = opts.requireOriginLineOfSight !== true
       || (Math.hypot(point.x - originPoint.x, point.z - originPoint.z) <= Number(opts.maxOriginDistance || 12)
         && roomHasHighLineOfSight(room, originPoint.x, originPoint.z, point.x, point.z));
@@ -11170,8 +11213,8 @@ function findRoomReachableSpawnTile(room, originTx, originTz, preferredTx, prefe
       const tx = tile.tx + dx;
       const tz = tile.tz + dz;
       const id = key(tx, tz);
-      if (visited.has(id) || !inBounds(tx, tz)) continue;
-      const point = tileToWorld(tx, tz);
+      if (visited.has(id) || !inBounds(tx, tz, roomTileDims(room))) continue;
+      const point = tileToWorld(tx, tz, roomTileDims(room));
       if (!isRoomWalkableTile(room, tx, tz) || !isRoomWalkableWorld(room, point.x, point.z, Number(opts.radius ?? 0.42))) continue;
       visited.add(id);
       queue.push({ tx, tz });
@@ -11394,7 +11437,7 @@ function activeNoiseInvestigatorsNear(room, x, z, now = Date.now()) {
 }
 
 function roomTileValue(room, tx, tz) {
-  if (!room || !Array.isArray(room.map) || !inBounds(tx, tz) || !Array.isArray(room.map[tz])) return null;
+  if (!room || !Array.isArray(room.map) || !inBounds(tx, tz, roomTileDims(room)) || !Array.isArray(room.map[tz])) return null;
   return room.map[tz][tx];
 }
 function isRoomFullVisionBlocker(room, tx, tz) {
@@ -11406,7 +11449,7 @@ function isRoomLowCoverTile(room, tx, tz) {
   const v = roomTileValue(room, tx, tz);
   return v === TILE_TYPES.ROCK || v === TILE_TYPES.ORE || v === TILE_TYPES.WOOD || v === TILE_TYPES.RUIN || v === TILE_TYPES.OIL;
 }
-function lineTilesBetweenRoom(startTx, startTz, endTx, endTz) {
+function lineTilesBetweenRoom(startTx, startTz, endTx, endTz, dims = DEFAULT_TILE_DIMS) {
   const tiles = [];
   let x0 = startTx;
   let z0 = startTz;
@@ -11422,13 +11465,13 @@ function lineTilesBetweenRoom(startTx, startTz, endTx, endTz) {
     const e2 = err * 2;
     if (e2 > -dz) { err -= dz; x0 += sx; }
     if (e2 < dx) { err += dx; z0 += sz; }
-    if (!inBounds(x0, z0)) return tiles;
+    if (!inBounds(x0, z0, dims)) return tiles;
     tiles.push({ tx: x0, tz: z0 });
   }
 }
 function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
   if (sx === tx && sz === tz) return false;
-  const line = lineTilesBetweenRoom(sx, sz, tx, tz);
+  const line = lineTilesBetweenRoom(sx, sz, tx, tz, roomTileDims(room));
   for (let i = 0; i < line.length; i++) {
     const tile = line[i];
     if (tile.tx === tx && tile.tz === tz) return false;
@@ -11440,10 +11483,10 @@ function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
 }
 function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
   if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, { startPadding: 0.3, endPadding: 0.42 })) return false;
-  const start = worldToTile(fromX, fromZ);
-  const end = worldToTile(toX, toZ);
-  if (!inBounds(start.tx, start.tz) || !inBounds(end.tx, end.tz)) return false;
-  const line = lineTilesBetweenRoom(start.tx, start.tz, end.tx, end.tz);
+  const start = worldToTile(fromX, fromZ, roomTileDims(room));
+  const end = worldToTile(toX, toZ, roomTileDims(room));
+  if (!inBounds(start.tx, start.tz, roomTileDims(room)) || !inBounds(end.tx, end.tz, roomTileDims(room))) return false;
+  const line = lineTilesBetweenRoom(start.tx, start.tz, end.tx, end.tz, roomTileDims(room));
   for (const tile of line) {
     if (tile.tx === end.tx && tile.tz === end.tz) return true;
     if (isRoomFullVisionBlocker(room, tile.tx, tile.tz)) return false;
@@ -11475,8 +11518,8 @@ function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   })) return false;
   if (!roomHasHighLineOfSight(room, enemy.x, enemy.z, p.x, p.z)) return false;
   if (p.crouching) {
-    const a = worldToTile(enemy.x, enemy.z);
-    const b = worldToTile(p.x, p.z);
+    const a = worldToTile(enemy.x, enemy.z, roomTileDims(room));
+    const b = worldToTile(p.x, p.z, roomTileDims(room));
     if (isCrouchedTargetHiddenBehindLowCover(room, a.tx, a.tz, b.tx, b.tz)) return false;
   }
   // Очень близко моб всё равно замечает игрока: это убирает странные случаи,
@@ -11605,9 +11648,9 @@ function chooseNoiseInvestigationPoint(room, x, z, enemy) {
     }
     if (best) return best;
   }
-  const t = worldToTile(baseX, baseZ);
+  const t = worldToTile(baseX, baseZ, roomTileDims(room));
   const nearest = findNearestWalkablePathTile(room, t.tx, t.tz, 4);
-  if (nearest) return tileToWorld(nearest.tx, nearest.tz);
+  if (nearest) return tileToWorld(nearest.tx, nearest.tz, roomTileDims(room));
   return { x: baseX, z: baseZ };
 }
 
@@ -11650,10 +11693,10 @@ function buildEnemySearchPoints(room, enemy, x, z, opts = {}) {
       addPoint(px, pz);
       continue;
     }
-    const tile = worldToTile(px, pz);
+    const tile = worldToTile(px, pz, roomTileDims(room));
     const nearest = findNearestWalkablePathTile(room, tile.tx, tile.tz, 3);
     if (nearest) {
-      const point = tileToWorld(nearest.tx, nearest.tz);
+      const point = tileToWorld(nearest.tx, nearest.tz, roomTileDims(room));
       addPoint(point.x, point.z);
     }
   }
@@ -12181,7 +12224,7 @@ function markRoomEmptyIfNeeded(room, reason = 'empty') {
 function enemyPathKey(tx, tz) { return `${tx},${tz}`; }
 function isEnemyPathTileOpen(room, tx, tz, radius = 0.32) {
   if (!isRoomWalkableTile(room, tx, tz)) return false;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   return isRoomWalkableWorld(room, pos.x, pos.z, radius);
 }
 function invalidateEnemyPath(enemy) {
@@ -12740,7 +12783,7 @@ function enemyTacticalGoalIsFresh(enemy, target, now = Date.now()) {
 
 function scoreRangedNpcTacticalTile(room, enemy, target, tx, tz, attackRange, desiredRange, currentDist) {
   if (!isRoomWalkableTile(room, tx, tz)) return null;
-  const pos = tileToWorld(tx, tz);
+  const pos = tileToWorld(tx, tz, roomTileDims(room));
   if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.3) || isEnemyBodyBlockedAt(room, enemy, pos.x, pos.z)) return null;
   const targetX = Number(target.x || 0);
   const targetZ = Number(target.z || 0);
@@ -12783,8 +12826,8 @@ function findRangedNpcTacticalGoal(room, enemy, target, weapon = null) {
   const targetX = Number(target.x || 0);
   const targetZ = Number(target.z || 0);
   const currentDist = Math.hypot(targetX - enemyX, targetZ - enemyZ);
-  const targetTile = worldToTile(targetX, targetZ);
-  const midTile = worldToTile((enemyX + targetX) * 0.5, (enemyZ + targetZ) * 0.5);
+  const targetTile = worldToTile(targetX, targetZ, roomTileDims(room));
+  const midTile = worldToTile((enemyX + targetX) * 0.5, (enemyZ + targetZ) * 0.5, roomTileDims(room));
   const maxTiles = Math.max(4, Math.min(10, Math.ceil(attackRange / TILE) + 2));
   const seen = new Set();
   let best = null;
@@ -12822,10 +12865,10 @@ function findRangedNpcTacticalGoal(room, enemy, target, weapon = null) {
   let gx = targetX + (awayX / awayLen) * fallbackDist;
   let gz = targetZ + (awayZ / awayLen) * fallbackDist;
   if (!isRoomWalkableWorld(room, gx, gz, 0.3)) {
-    const rawTile = worldToTile(gx, gz);
+    const rawTile = worldToTile(gx, gz, roomTileDims(room));
     const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
     if (tile) {
-      const pos = tileToWorld(tile.tx, tile.tz);
+      const pos = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
       gx = pos.x;
       gz = pos.z;
     } else {
@@ -12937,10 +12980,10 @@ function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
     let goalX = ex + dirX * 5.2 - dirZ * side * 1.8;
     let goalZ = ez + dirZ * 5.2 + dirX * side * 1.8;
     if (!isRoomWalkableWorld(room, goalX, goalZ, 0.3)) {
-      const rawTile = worldToTile(goalX, goalZ);
+      const rawTile = worldToTile(goalX, goalZ, roomTileDims(room));
       const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
       if (tile) {
-        const point = tileToWorld(tile.tx, tile.tz);
+        const point = tileToWorld(tile.tx, tile.tz, roomTileDims(room));
         goalX = point.x;
         goalZ = point.z;
       }
@@ -13040,8 +13083,8 @@ function moveEnemyTowards(room, enemy, tx, tz, speed, dt, opts = {}) {
   }
 
   const now = Date.now();
-  const startTile = worldToTile(enemy.x, enemy.z);
-  const rawGoalTile = worldToTile(targetX, targetZ);
+  const startTile = worldToTile(enemy.x, enemy.z, roomTileDims(room));
+  const rawGoalTile = worldToTile(targetX, targetZ, roomTileDims(room));
   const goalTile = findNearestWalkablePathTile(room, rawGoalTile.tx, rawGoalTile.tz, 8);
   if (!goalTile) {
     const direct = moveEnemyDirectStep(room, enemy, targetX, targetZ, speed, dt, opts);
@@ -13464,9 +13507,9 @@ function spawnRoomWorldContainers(room, opts = {}) {
   const now = Date.now();
   const restockDay = currentGameDayIndex(now);
   for (const def of defs) {
-    if (!def || !inBounds(def.tx, def.tz)) continue;
+    if (!def || !inBounds(def.tx, def.tz, roomTileDims(room))) continue;
     clearSpawnArea(room, { tx: def.tx, tz: def.tz });
-    const pos = tileToWorld(def.tx, def.tz);
+    const pos = tileToWorld(def.tx, def.tz, roomTileDims(room));
     const defId = String(def.id || `${def.tx}_${def.tz}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_${defId}`.slice(0, 96);
     const lockInfo = securityDifficultyInfo(def.lockDifficultyTier || def.lockDifficulty, def.locked ? 'medium' : 'veryEasy');
@@ -13704,14 +13747,14 @@ function serverCraftingObjectMatchesStation(row = {}, stationId = '') {
   return (SERVER_CRAFT_STATION_TOKENS[key] || []).some(token => text.includes(token));
 }
 
-function serverLocationObjectWorldPoint(row = {}) {
+function serverLocationObjectWorldPoint(row = {}, dims = DEFAULT_TILE_DIMS) {
   const pos = row.position && typeof row.position === 'object' ? row.position : row;
   if (Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.z))) {
     return { x: Number(pos.x), z: Number(pos.z) };
   }
   const tx = Number(pos.tx ?? row.tx);
   const tz = Number(pos.tz ?? row.tz);
-  if (Number.isFinite(tx) && Number.isFinite(tz)) return tileToWorld(tx, tz);
+  if (Number.isFinite(tx) && Number.isFinite(tz)) return tileToWorld(tx, tz, dims);
   return null;
 }
 
@@ -13741,7 +13784,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!stationObject || !serverCraftingObjectMatchesStation(stationObject, requiredStation)) {
     return { ok: false, error: 'missing_station', requiredStation };
   }
-  const stationPoint = serverLocationObjectWorldPoint(stationObject);
+  const stationPoint = serverLocationObjectWorldPoint(stationObject, locationTileDims(loc));
   if (!stationPoint || !Number.isFinite(Number(player?.x)) || !Number.isFinite(Number(player?.z))) {
     return { ok: false, error: 'unknown_station_position' };
   }
@@ -14398,8 +14441,8 @@ function wastelandFactionWarehousePoint(loc = {}, site = {}, index = 0) {
       || '').trim();
     return tags.includes('faction-warehouse') && (!key || rowSiteId === key);
   });
-  if (authored) return normalizeLocationPoint(authored, loc.spawn || { tx: 19, tz: 19 });
-  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  if (authored) return normalizeLocationPoint(authored, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
+  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   return {
     tx: clamp(Math.round(base.tx + 2 + index * 3), 2, MAP_W - 3),
     tz: clamp(Math.round(base.tz + 2 + index * 2), 2, MAP_H - 3)
@@ -14717,7 +14760,7 @@ function roomStaticCollisionBlockersFromTrader(loc = {}) {
   const trader = loc?.trader;
   if (!trader || (locationUsesAuthoredRuntime(loc) && trader.authoredActor)) return [];
   const position = trader.position && typeof trader.position === 'object' ? trader.position : trader;
-  const fallback = tileToWorld(Number(trader.tx || 0), Number(trader.tz || 0));
+  const fallback = tileToWorld(Number(trader.tx || 0), Number(trader.tz || 0), locationTileDims(loc));
   const x = Number.isFinite(Number(position.x)) ? Number(position.x) : fallback.x;
   const z = Number.isFinite(Number(position.z)) ? Number(position.z) : fallback.z;
   const rotationY = Number(trader.rotation?.y ?? trader.rotationY ?? 0) || 0;
@@ -14913,8 +14956,8 @@ function markAuthoredObjectTiles(room, row = {}) {
   const blocksMovement = locationObjectBlocksMovement(row);
   if (!resourceType && !blocksMovement) return;
   const pos = locationObjectPosition(row);
-  const center = worldToTile(pos.x, pos.z);
-  if (resourceType && inBounds(center.tx, center.tz)) {
+  const center = worldToTile(pos.x, pos.z, roomTileDims(room));
+  if (resourceType && inBounds(center.tx, center.tz, roomTileDims(room))) {
     const id = String(row.id || `res_${center.tx}_${center.tz}_${resourceType}`).slice(0, 64);
     room.resources.set(id, {
       id,
@@ -14984,26 +15027,27 @@ function clearRoomResourceTile(room, resource = {}) {
 
 function clearAuthoredResourceObjectTiles(room, row = {}, resourceType = '') {
   const pos = locationObjectPosition(row);
-  const center = worldToTile(pos.x, pos.z);
+  const center = worldToTile(pos.x, pos.z, roomTileDims(room));
   const fp = locationObjectFootprintCells(row);
   const tileType = serverResourceTile(resourceType);
   for (let dz = -Math.floor((fp.sz - 1) / 2); dz <= Math.ceil((fp.sz - 1) / 2); dz++) {
     for (let dx = -Math.floor((fp.sx - 1) / 2); dx <= Math.ceil((fp.sx - 1) / 2); dx++) {
       const tx = center.tx + dx;
       const tz = center.tz + dz;
-      if (inBounds(tx, tz) && room.map[tz][tx] === tileType) room.map[tz][tx] = TILE_TYPES.GRASS;
+      if (inBounds(tx, tz, roomTileDims(room)) && room.map[tz][tx] === tileType) room.map[tz][tx] = TILE_TYPES.GRASS;
     }
   }
 }
 
 function findWastelandSiteResourceTile(room, siteId = '', resourceType = '', sequence = 0) {
   const candidates = [];
-  for (let tz = 3; tz < MAP_H - 3; tz++) {
-    for (let tx = 3; tx < MAP_W - 3; tx++) {
+  const resourceDims = roomTileDims(room);
+  for (let tz = 3; tz < resourceDims.h - 3; tz++) {
+    for (let tx = 3; tx < resourceDims.w - 3; tx++) {
       const tile = room.map?.[tz]?.[tx];
       if (tile !== TILE_TYPES.GRASS && tile !== TILE_TYPES.DARK) continue;
       if (roomTileHasResource(room, tx, tz, 1) || roomTileHasContainer(room, tx, tz, 2)) continue;
-      const pos = tileToWorld(tx, tz);
+      const pos = tileToWorld(tx, tz, roomTileDims(room));
       if (!isRoomWalkableWorld(room, pos.x, pos.z, 0.58)) continue;
       candidates.push({
         tx,
@@ -15329,7 +15373,7 @@ function spawnAuthoredLocationActors(room, loc) {
     const entity = locationDefinitionObjectEntity(row);
     const authoredNpcId = String(entity.npcId || row.id || '').slice(0, 96);
     if (authoredNpcId && preservedQuestNpcIds.has(authoredNpcId)) return;
-    const point = normalizeLocationPoint(row, loc.spawn);
+    const point = normalizeLocationPoint(row, loc.spawn, locationTileDims(loc));
     const role = authoredNpcDefaultRole(row);
     const faction = authoredNpcDefaultFaction(row);
     const hostileToPlayer = authoredNpcDefaultHostility(row);
@@ -15443,12 +15487,13 @@ function ensureKromkaNamedLocationActors(room, loc) {
     if (!actor) {
       const spawn = loc.spawn || loc.entry || { tx: 19, tz: 19 };
       const dialoguePosition = npc.dialoguePosition && typeof npc.dialoguePosition === 'object'
-        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0))
+        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0), roomTileDims(room))
         : null;
+      const namedDims = roomTileDims(room);
       const tx = clamp(dialoguePosition?.tx
-        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, MAP_W - 3);
+        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, namedDims.w - 3);
       const tz = clamp(dialoguePosition?.tz
-        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, MAP_H - 3);
+        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, namedDims.h - 3);
       const reachableTile = findRoomReachableSpawnTile(room, spawn.tx ?? 19, spawn.tz ?? 19, tx, tz, {
         radius: 0.48,
         minEnemyDistance: 0.8,
@@ -15517,12 +15562,12 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
       actor = null;
     }
     if (!actor) {
-      const point = worldToTile(targetX, targetZ);
+      const point = worldToTile(targetX, targetZ, roomTileDims(room));
       actor = spawnServerEnemy(room, {
         force: true,
         allowSafeLocation: true,
-        tx: clamp(point.tx, 2, MAP_W - 3),
-        tz: clamp(point.tz, 2, MAP_H - 3),
+        tx: clamp(point.tx, 2, roomTileDims(room).w - 3),
+        tz: clamp(point.tz, 2, roomTileDims(room).h - 3),
         maxSpawnSearchRadius: 4,
         minEnemyDistance: 0.65,
         minPlayerDistance: 0,
@@ -15579,7 +15624,7 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
     }
   });
   if (loc.id === 'tutorialCaravanYard' && ![...room.enemies.values()].some(actor => actor.trainingTarget)) {
-    const point = worldToTile(-10, 22);
+    const point = worldToTile(-10, 22, roomTileDims(room));
     const dummy = spawnServerEnemy(room, {
       force: true, allowSafeLocation: true, tx: point.tx, tz: point.tz,
       minPlayerDistance: 0, minEnemyDistance: 0, requirePreferredSpawn: true,
@@ -15903,19 +15948,20 @@ function wastelandObjectLooksLikeRest(row = {}) {
 
 function wastelandSafePointNearTile(room, tx, tz, maxRadius = 5) {
   const safeTile = findNearestWalkablePathTile(room, tx, tz, maxRadius);
-  if (safeTile) return tileToWorld(safeTile.tx, safeTile.tz);
-  return tileToWorld(clamp(Math.round(Number(tx || 0)), 0, MAP_W - 1), clamp(Math.round(Number(tz || 0)), 0, MAP_H - 1));
+  if (safeTile) return tileToWorld(safeTile.tx, safeTile.tz, roomTileDims(room));
+  const fallbackDims = roomTileDims(room);
+  return tileToWorld(clamp(Math.round(Number(tx || 0)), 0, fallbackDims.w - 1), clamp(Math.round(Number(tz || 0)), 0, fallbackDims.h - 1), fallbackDims);
 }
 
 function wastelandRowWorkPoint(room, row = {}) {
   const pos = locationObjectPosition(row);
-  const tile = worldToTile(pos.x, pos.z);
+  const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
   return wastelandSafePointNearTile(room, tile.tx, tile.tz, 5);
 }
 
 function wastelandRowAnchorPoint(room, row = {}, enemy = {}, state = 'rest') {
   const pos = locationObjectPosition(row);
-  const tile = worldToTile(pos.x, pos.z);
+  const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
   const point = wastelandSafePointNearTile(room, tile.tx, tile.tz, 6);
   point.lookX = Number(pos.x || point.x || 0);
   point.lookZ = Number(pos.z || point.z || 0);
@@ -15953,10 +15999,10 @@ function wastelandSiteStoragePoint(room, loc = {}, site = {}, enemy = {}) {
   if (containers.length) {
     const index = Math.floor(stableEnemyUnit(`${site.id || loc.id || ''}:${enemy.id || ''}:container`) * containers.length) % containers.length;
     const pos = locationObjectPosition(containers[index]);
-    const tile = worldToTile(pos.x, pos.z);
+    const tile = worldToTile(pos.x, pos.z, roomTileDims(room));
     return wastelandSafePointNearTile(room, tile.tx, tile.tz, 5);
   }
-  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  const base = normalizeLocationPoint(loc.storage || loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   return wastelandSafePointNearTile(room, base.tx, base.tz, 6);
 }
 
@@ -15973,8 +16019,8 @@ function wastelandSiteHarvestPoint(room, loc = {}, site = {}, enemy = {}) {
     const index = Math.floor(stableEnemyUnit(`${site.id || loc.id || ''}:${enemy.id || ''}:resource`) * choices.length) % choices.length;
     const res = choices[index];
     const point = wastelandSafePointNearTile(room, Number(res.tx || 0), Number(res.tz || 0), 6);
-    point.lookX = tileToWorld(Number(res.tx || 0), Number(res.tz || 0)).x;
-    point.lookZ = tileToWorld(Number(res.tx || 0), Number(res.tz || 0)).z;
+    point.lookX = tileToWorld(Number(res.tx || 0), Number(res.tz || 0), roomTileDims(room)).x;
+    point.lookZ = tileToWorld(Number(res.tx || 0), Number(res.tz || 0), roomTileDims(room)).z;
     return point;
   }
   const rows = wastelandLocationRows(loc).filter(row => !!locationObjectResourceType(row));
@@ -16177,8 +16223,8 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest', options =
   const authoredAnchor = options.objectAnchor === false ? null : npcScheduleObjectAnchor(room, loc, enemy, state);
   if (authoredAnchor) return authoredAnchor;
   const seed = String(enemy.npcProfile?.id || enemy.id || 'npc');
-  const base = normalizeLocationPoint(loc.spawn || loc.entryFromWorld, { tx: 19, tz: 19 });
-  const home = worldToTile(Number(enemy.homeX || enemy.x || 0), Number(enemy.homeZ || enemy.z || 0));
+  const base = normalizeLocationPoint(loc.spawn || loc.entryFromWorld, { tx: 19, tz: 19 }, locationTileDims(loc));
+  const home = worldToTile(Number(enemy.homeX || enemy.x || 0), Number(enemy.homeZ || enemy.z || 0), roomTileDims(room));
   const offsets = [
     [-3, -2], [-1, -3], [2, -2], [4, -1],
     [-4, 1], [-2, 2], [1, 3], [3, 2],
@@ -16198,7 +16244,8 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest', options =
     tx = home.tx + Math.round(offset[0] * 0.65);
     tz = home.tz + Math.round(offset[1] * 0.65);
   }
-  return wastelandSafePointNearTile(room, clamp(tx, 1, MAP_W - 2), clamp(tz, 1, MAP_H - 2), 7);
+  const anchorDims = roomTileDims(room);
+  return wastelandSafePointNearTile(room, clamp(tx, 1, anchorDims.w - 2), clamp(tz, 1, anchorDims.h - 2), 7);
 }
 
 function npcSocialLookTarget(room, enemy) {
@@ -16374,7 +16421,7 @@ function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.no
     enemy.x = target.x;
     enemy.z = target.z;
   } else {
-    const tile = worldToTile(target.x, target.z);
+    const tile = worldToTile(target.x, target.z, roomTileDims(room));
     const safe = wastelandSafePointNearTile(room, tile.tx, tile.tz, 4);
     enemy.x = safe.x;
     enemy.z = safe.z;
@@ -16683,7 +16730,7 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
 }
 
 function wastelandSiteWorkerSpawnPoint(loc = {}, siteIndex = 0, workerIndex = 0) {
-  const base = normalizeLocationPoint(loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 });
+  const base = normalizeLocationPoint(loc.entryFromWorld || loc.spawn, loc.spawn || { tx: 19, tz: 19 }, locationTileDims(loc));
   const offsets = [
     [-4, -3], [-2, -4], [1, -4], [4, -3],
     [-5, 0], [-3, 2], [0, 3], [3, 2], [5, 0],
@@ -16691,9 +16738,10 @@ function wastelandSiteWorkerSpawnPoint(loc = {}, siteIndex = 0, workerIndex = 0)
   ];
   const offset = offsets[(siteIndex * 4 + workerIndex) % offsets.length] || [0, 0];
   const sideShift = Math.floor((siteIndex * 5 + workerIndex) / offsets.length);
+  const workerDims = locationTileDims(loc);
   return {
-    tx: clamp(base.tx + offset[0] + sideShift, 2, MAP_W - 3),
-    tz: clamp(base.tz + offset[1] + siteIndex * 2, 2, MAP_H - 3)
+    tx: clamp(base.tx + offset[0] + sideShift, 2, workerDims.w - 3),
+    tz: clamp(base.tz + offset[1] + siteIndex * 2, 2, workerDims.h - 3)
   };
 }
 
@@ -16807,10 +16855,11 @@ function buildAuthoredRoomWorld(room, loc) {
   room.staticCollisionKey = '';
   room.staticCollisionObjects = null;
   room.resources.clear();
-  for (let z = 0; z < MAP_H; z++) {
+  const authoredDims = roomTileDims(room);
+  for (let z = 0; z < authoredDims.h; z++) {
     room.map[z] = [];
-    for (let x = 0; x < MAP_W; x++) {
-      room.map[z][x] = (x === 0 || z === 0 || x === MAP_W - 1 || z === MAP_H - 1) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
+    for (let x = 0; x < authoredDims.w; x++) {
+      room.map[z][x] = (x === 0 || z === 0 || x === authoredDims.w - 1 || z === authoredDims.h - 1) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
     }
   }
   loc.objects.forEach(row => markAuthoredObjectTiles(room, row));
@@ -16855,8 +16904,9 @@ function generateRoomWorld(room) {
   const applyWorldExitEdges = () => {
     const bounds = normalizedLocationPlayableBounds(loc);
     const isSizedWorldSite = loc.worldSiteInstance === true || loc.runtimeMode === 'worldSiteInstance';
-    for (let z = 0; z < MAP_H; z++) {
-      for (let x = 0; x < MAP_W; x++) {
+    const edgeDims = roomTileDims(room);
+    for (let z = 0; z < edgeDims.h; z++) {
+      for (let x = 0; x < edgeDims.w; x++) {
         if (isSizedWorldSite && (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ)) {
           room.map[z][x] = TILE_TYPES.DARK;
           continue;
@@ -16869,10 +16919,11 @@ function generateRoomWorld(room) {
     applyWorldExitEdges();
     return;
   }
-  for (let z = 0; z < MAP_H; z++) {
+  const genDims = roomTileDims(room);
+  for (let z = 0; z < genDims.h; z++) {
     room.map[z] = [];
-    for (let x = 0; x < MAP_W; x++) {
-      if (x === 0 || z === 0 || x === MAP_W - 1 || z === MAP_H - 1) {
+    for (let x = 0; x < genDims.w; x++) {
+      if (x === 0 || z === 0 || x === genDims.w - 1 || z === genDims.h - 1) {
         room.map[z][x] = TILE_TYPES.PATH;
         continue;
       }
@@ -16886,18 +16937,18 @@ function generateRoomWorld(room) {
       room.map[z][x] = rng() < darkChance ? TILE_TYPES.DARK : TILE_TYPES.GRASS;
     }
   }
-  const midX = Math.floor(MAP_W / 2), midZ = Math.floor(MAP_H / 2);
+  const midX = Math.floor(genDims.w / 2), midZ = Math.floor(genDims.h / 2);
   if (loc.id === 'settlement') {
-    for (let x = 4; x < MAP_W - 4; x++) room.map[midZ][x] = TILE_TYPES.PATH;
-    for (let z = 3; z < MAP_H - 3; z++) room.map[z][midX] = TILE_TYPES.PATH;
+    for (let x = 4; x < genDims.w - 4; x++) room.map[midZ][x] = TILE_TYPES.PATH;
+    for (let z = 3; z < genDims.h - 3; z++) room.map[z][midX] = TILE_TYPES.PATH;
     for (let z = 15; z <= 24; z++) for (let x = 11; x <= 26; x++) room.map[z][x] = (x >= 14 && x <= 23 && z >= 17 && z <= 22) ? TILE_TYPES.PATH : TILE_TYPES.GRASS;
-    [[8,12],[9,12],[10,12],[8,13],[10,13],[27,14],[28,14],[29,14],[27,15],[29,15],[9,27],[10,27],[11,27],[9,28],[11,28],[27,26],[28,26],[29,26],[29,27]].forEach(([x,z]) => { if (inBounds(x,z)) room.map[z][x] = TILE_TYPES.RUIN; });
+    [[8,12],[9,12],[10,12],[8,13],[10,13],[27,14],[28,14],[29,14],[27,15],[29,15],[9,27],[10,27],[11,27],[9,28],[11,28],[27,26],[28,26],[29,26],[29,27]].forEach(([x,z]) => { if (inBounds(x,z, roomTileDims(room))) room.map[z][x] = TILE_TYPES.RUIN; });
     [loc.spawn, loc.entryFromWasteland, loc.trader, loc.storage, loc.exit].forEach(p => clearSpawnArea(room, p));
   } else {
     const markPath = (cx, cz, rx = 1, rz = rx) => {
       for (let z = Math.floor(cz - rz); z <= Math.ceil(cz + rz); z++) {
         for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-          if (!inBounds(x, z)) continue;
+          if (!inBounds(x, z, roomTileDims(room))) continue;
           const nx = (x - cx) / Math.max(0.1, rx);
           const nz = (z - cz) / Math.max(0.1, rz);
           if (nx * nx + nz * nz <= 1.05) room.map[z][x] = TILE_TYPES.PATH;
@@ -16911,9 +16962,9 @@ function generateRoomWorld(room) {
         markPath(x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, radius, radius * 0.72);
       }
     };
-    const block = (type, cells) => cells.forEach(([x,z]) => { if (inBounds(x,z)) room.map[z][x] = type; });
+    const block = (type, cells) => cells.forEach(([x,z]) => { if (inBounds(x,z, roomTileDims(room))) room.map[z][x] = type; });
     const addResource = (tx, tz, type) => {
-      if (!inBounds(tx, tz)) return;
+      if (!inBounds(tx, tz, roomTileDims(room))) return;
       room.map[tz][tx] = serverResourceTile(type);
       const id = `res_${tx}_${tz}_${type}`;
       room.resources.set(id, { id, tx, tz, type, hp: 3, maxHp: 3 });
@@ -16950,7 +17001,7 @@ function generateRoomWorld(room) {
       for (let attempt = 0; attempt < obstacleTarget * 12 && placedObstacles < obstacleTarget; attempt += 1) {
         const tx = Math.floor(left + rng() * Math.max(1, right - left + 1));
         const tz = Math.floor(top + rng() * Math.max(1, bottom - top + 1));
-        if (!inBounds(tx, tz) || room.map[tz][tx] === TILE_TYPES.PATH || Math.hypot(tx - midX, tz - midZ) < 4.5) continue;
+        if (!inBounds(tx, tz, roomTileDims(room)) || room.map[tz][tx] === TILE_TYPES.PATH || Math.hypot(tx - midX, tz - midZ) < 4.5) continue;
         const roll = rng();
         const type = proceduralArchetype === 'randomAshGrove'
           ? (roll < 0.62 ? TILE_TYPES.TREE : roll < 0.82 ? TILE_TYPES.ROCK : TILE_TYPES.RUIN)
@@ -16966,7 +17017,7 @@ function generateRoomWorld(room) {
       for (let attempt = 0; attempt < resourceTarget * 16 && placedResources < resourceTarget; attempt += 1) {
         const tx = Math.floor(left + rng() * Math.max(1, right - left + 1));
         const tz = Math.floor(top + rng() * Math.max(1, bottom - top + 1));
-        if (!inBounds(tx, tz) || ![TILE_TYPES.GRASS, TILE_TYPES.DARK].includes(room.map[tz][tx]) || Math.hypot(tx - midX, tz - midZ) < 5) continue;
+        if (!inBounds(tx, tz, roomTileDims(room)) || ![TILE_TYPES.GRASS, TILE_TYPES.DARK].includes(room.map[tz][tx]) || Math.hypot(tx - midX, tz - midZ) < 5) continue;
         const type = proceduralArchetype === 'randomAshGrove' ? (rng() < 0.82 ? 'wood' : 'ore')
           : proceduralArchetype === 'randomDryBasin' ? (rng() < 0.82 ? 'ore' : 'wood')
             : (rng() < 0.5 ? 'ore' : 'wood');
@@ -16975,8 +17026,8 @@ function generateRoomWorld(room) {
       }
     } else {
       markPath(midX, midZ, 4.2, 3.4);
-      markLine(midX, 3, midX, MAP_H - 4, 1.15);
-      markLine(3, midZ, MAP_W - 4, midZ, 1.15);
+      markLine(midX, 3, midX, genDims.h - 4, 1.15);
+      markLine(3, midZ, genDims.w - 4, midZ, 1.15);
     }
     if (worldSiteInstance) {
       // The unique instance layout above replaces the cloned template layout.
@@ -17005,7 +17056,7 @@ function generateRoomWorld(room) {
       block(TILE_TYPES.RUIN, [[19,10],[26,18]]);
       [[11,16,'ore'],[28,22,'ore'],[21,30,'ore'],[14,27,'wood'],[26,13,'wood']].forEach(([x,z,type]) => addResource(x,z,type));
     } else if (loc.id === 'randomRuinedRoad') {
-      for (let i = 3; i < MAP_W - 3; i++) {
+      for (let i = 3; i < genDims.w - 3; i++) {
         const roadZ = Math.round(8 + i * 0.58 + Math.sin(i * 0.45) * 1.4);
         markPath(i, roadZ, 1.05, 0.85);
       }
@@ -17029,7 +17080,7 @@ function generateRoomWorld(room) {
       if (!p) return;
       for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
         const x = p.tx + dx, z = p.tz + dz;
-        if (inBounds(x, z)) {
+        if (inBounds(x, z, roomTileDims(room))) {
           room.map[z][x] = TILE_TYPES.PATH;
           for (const [id, r] of room.resources.entries()) if (r.tx === x && r.tz === z) room.resources.delete(id);
         }
@@ -17052,7 +17103,7 @@ function clearSpawnArea(room, p) {
   if (!p) return;
   for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
     const x = p.tx + dx, z = p.tz + dz;
-    if (inBounds(x, z)) {
+    if (inBounds(x, z, roomTileDims(room))) {
       const old = room.map[z][x];
       room.map[z][x] = TILE_TYPES.PATH;
       if (old === TILE_TYPES.ORE || old === TILE_TYPES.WOOD || old === TILE_TYPES.OIL) {
@@ -17588,8 +17639,8 @@ function publicGroundItem(g) {
 function publicResource(r) {
   return {
     id: r?.id || '',
-    tx: clamp(Number(r?.tx || 0), 0, MAP_W - 1),
-    tz: clamp(Number(r?.tz || 0), 0, MAP_H - 1),
+    tx: Math.max(0, Math.floor(Number(r?.tx || 0))),
+    tz: Math.max(0, Math.floor(Number(r?.tz || 0))),
     type: String(r?.type || 'wood').slice(0, 16),
     hp: clamp(Number(r?.hp ?? 0), 0, 999),
     maxHp: clamp(Number(r?.maxHp ?? 3), 1, 999),
@@ -18148,7 +18199,7 @@ function serverKromkaQuestObject(player = {}, objectId = '') {
   const objective = String(interactive.questObjective || row?.questObjective || '')
     .replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
   if (!row || !objective) return { ok: false, error: 'Этот объект не связан с активным заданием.' };
-  const point = serverLocationObjectWorldPoint(row);
+  const point = serverLocationObjectWorldPoint(row, locationTileDims(loc));
   if (!point || Math.hypot(Number(player.x || 0) - point.x, Number(player.z || 0) - point.z) > 4.6) {
     return { ok: false, error: 'Подойдите ближе к объекту задания.' };
   }
@@ -18533,7 +18584,7 @@ function serverWorldActivityFocusScore(room, tx, tz) {
       hazards += 1;
       continue;
     }
-    const point = tileToWorld(sampleTx, sampleTz);
+    const point = tileToWorld(sampleTx, sampleTz, roomTileDims(room));
     if (!isRoomWalkableWorld(room, point.x, point.z, 0.38)) cover += 1;
   }
   // Four to six pieces of nearby authored geometry produce useful flanks
@@ -18905,11 +18956,11 @@ function recoverServerWorldActivityPoints(room, activity, now = Date.now()) {
       changed += 1;
     }
     if (point.status !== 'pending') continue;
-    const tile = worldToTile(Number(point.x || 0), Number(point.z || 0));
+    const tile = worldToTile(Number(point.x || 0), Number(point.z || 0), roomTileDims(room));
     const exactSafe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 0, radius: 0.42 });
     if (exactSafe) continue;
     const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 8, radius: 0.42 });
-    const position = safe ? tileToWorld(safe.tx, safe.tz) : recoveredPosition();
+    const position = safe ? tileToWorld(safe.tx, safe.tz, roomTileDims(room)) : recoveredPosition();
     if (!position) continue;
     point.x = Number(position.x || 0);
     point.z = Number(position.z || 0);
@@ -19711,14 +19762,15 @@ function spawnServerEnemy(room, opts = {}) {
       minEnemyDistance: Number(opts.minEnemyDistance ?? 1.25),
       minPlayerDistance: requestedMinPlayerDistance
     });
-    if (safe) chosen = tileToWorld(safe.tx, safe.tz);
+    if (safe) chosen = tileToWorld(safe.tx, safe.tz, roomTileDims(room));
   }
   if (!chosen && preferredSpawnRequested && opts.requirePreferredSpawn === true) return null;
   for (let tries = 0; !chosen && tries < 160; tries++) {
-    const tx = 2 + Math.floor(rng() * (MAP_W - 4));
-    const tz = 2 + Math.floor(rng() * (MAP_H - 4));
+    const spawnDims = roomTileDims(room);
+    const tx = 2 + Math.floor(rng() * Math.max(1, spawnDims.w - 4));
+    const tz = 2 + Math.floor(rng() * Math.max(1, spawnDims.h - 4));
     if (!isRoomSpawnSafeTile(room, tx, tz, { radius: 0.46, minEnemyDistance: 1.15 })) continue;
-    const pos = tileToWorld(tx, tz);
+    const pos = tileToWorld(tx, tz, roomTileDims(room));
     const farEnough = roomPlayers.every(p => Math.hypot(pos.x - p.x, pos.z - p.z) > requestedMinPlayerDistance);
     if (farEnough) { chosen = pos; break; }
   }
@@ -20095,10 +20147,10 @@ function setupDataDrivenEncounterRoom(room, encounterId = '') {
   return true;
 }
 
-function serverLocationPointWorld(point = null, fallback = null) {
+function serverLocationPointWorld(point = null, fallback = null, dims = DEFAULT_TILE_DIMS) {
   const row = point || fallback;
   if (!row) return { x: 0, z: 0 };
-  if (Number.isFinite(Number(row.tx)) && Number.isFinite(Number(row.tz))) return tileToWorld(Number(row.tx), Number(row.tz));
+  if (Number.isFinite(Number(row.tx)) && Number.isFinite(Number(row.tz))) return tileToWorld(Number(row.tx), Number(row.tz), dims);
   if (row.position && Number.isFinite(Number(row.position.x)) && Number.isFinite(Number(row.position.z))) {
     return { x: Number(row.position.x), z: Number(row.position.z) };
   }
@@ -20119,7 +20171,7 @@ function serverOnsitePartyWorkPoint(loc = {}, zone = {}, actor = {}, index = 0, 
   }
   if (!anchor && reason === 'unload') anchor = loc.storage || loc.trader || null;
   if (!anchor && String(actor.role || '').toLowerCase() === 'merchant') anchor = loc.trader || loc.storage || null;
-  const base = serverLocationPointWorld(anchor, loc.spawn || loc.entryFromWorld);
+  const base = serverLocationPointWorld(anchor, loc.spawn || loc.entryFromWorld, locationTileDims(loc));
   return orientOnsitePartyOffset(base, entryPoint, onsitePartyWorkOffset(index));
 }
 
@@ -20131,10 +20183,10 @@ function serverOnsitePartyRoute(room = null, zone = {}, actor = {}, index = 0) {
     y: Number(zone.details?.arrivalFromY ?? zone.y ?? 0)
   };
   const entryKey = serverGlobalEntryKey(room?.locationId || loc.id || '', target, origin);
-  const entry = serverLocationPointWorld(loc[entryKey] || loc.entryFromWorld, loc.spawn);
+  const entry = serverLocationPointWorld(loc[entryKey] || loc.entryFromWorld, loc.spawn, locationTileDims(loc));
   const globalExit = (Array.isArray(loc.worldZones) ? loc.worldZones : []).find(row => row && String(row.type || 'globalMap') === 'globalMap')
     || (Array.isArray(loc.worldZones) ? loc.worldZones[0] : null);
-  const exit = serverLocationPointWorld(globalExit, loc.entryFromWorld || loc.spawn);
+  const exit = serverLocationPointWorld(globalExit, loc.entryFromWorld || loc.spawn, locationTileDims(loc));
   const work = serverOnsitePartyWorkPoint(loc, zone, actor, index, entry);
   const spread = onsitePartyLaneOffset(index);
   const entryDx = work.x - entry.x;
@@ -20238,7 +20290,7 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       }
       return;
     }
-    const onsiteSpawnTile = onsiteRoute ? worldToTile(onsiteRoute.entry.x, onsiteRoute.entry.z) : null;
+    const onsiteSpawnTile = onsiteRoute ? worldToTile(onsiteRoute.entry.x, onsiteRoute.entry.z, roomTileDims(room)) : null;
     const enemy = spawnEncounterActor(room, onsiteSpawnTile?.tx ?? actor.tx ?? (actor.side === 'defender' ? 16 + index : 23 + index), onsiteSpawnTile?.tz ?? actor.tz ?? 18, {
       typeName: actor.typeName || actor.name,
       name: actor.name,
@@ -20428,7 +20480,7 @@ function syncWorldBattleRoomActors(room, force = false) {
   const actors = [...room.enemies.values()]
     .filter(enemy => enemy && enemy.worldBattleActorId)
     .map(enemy => {
-      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0));
+      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0), roomTileDims(room));
       return {
         actorId: enemy.worldBattleActorId,
         id: enemy.worldBattleActorId,
@@ -20464,7 +20516,7 @@ function worldZoneActorSnapshotsFromRoom(room) {
   return [...room.enemies.values()]
     .filter(enemy => enemy && enemy.worldBattleActorId)
     .map(enemy => {
-      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0));
+      const tile = worldToTile(Number(enemy.x || 0), Number(enemy.z || 0), roomTileDims(room));
       return {
         actorId: enemy.worldBattleActorId,
         id: enemy.worldBattleActorId,
@@ -21801,8 +21853,8 @@ function mergeResourceSnapshots(room, resources) {
   if (!Array.isArray(resources)) return;
   for (const r of resources) {
     const id = String(r.id || `res_${Number(r.tx)||0}_${Number(r.tz)||0}_${String(r.type || 'node')}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    const tx = clamp(Number(r.tx || 0), 0, MAP_W - 1);
-    const tz = clamp(Number(r.tz || 0), 0, MAP_H - 1);
+    const tx = Math.max(0, Math.floor(Number(r.tx || 0)));
+    const tz = Math.max(0, Math.floor(Number(r.tz || 0)));
     const type = String(r.type || 'wood').slice(0, 16);
     const hp = clamp(Number(r.hp ?? 0), 0, 999);
     const maxHp = clamp(Number(r.maxHp ?? 3), 1, 999);
@@ -22387,8 +22439,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     p.vx = 0;
     p.vz = 0;
     p.moving = false;
-    p.x = clamp(Number(safePos.x), -MAP_SIZE, MAP_SIZE);
-    p.z = clamp(Number(safePos.z), -MAP_SIZE, MAP_SIZE);
+    p.x = clamp(Number(safePos.x), -roomWorldExtent(room), roomWorldExtent(room));
+    p.z = clamp(Number(safePos.z), -roomWorldExtent(room), roomWorldExtent(room));
     p.angle = Number.isFinite(Number(options.angle)) ? Number(options.angle) : p.angle;
     rememberPlayerSettlement(p, room.locationId);
     if (!persistActivePlayerState(p)) {
@@ -23539,11 +23591,12 @@ function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER
   const maxTileZ = Math.max(bounds.minZ, bounds.maxZ - inset);
   const safeRadius = clamp(Number(radius || 0), 0, TILE * 0.45);
   const epsilon = 0.001;
+  const boundsDims = roomTileDims(room);
   return {
-    minX: (minTileX - MAP_W / 2) * TILE + safeRadius,
-    maxX: (maxTileX + 1 - MAP_W / 2) * TILE - safeRadius - epsilon,
-    minZ: (minTileZ - MAP_H / 2) * TILE + safeRadius,
-    maxZ: (maxTileZ + 1 - MAP_H / 2) * TILE - safeRadius - epsilon
+    minX: (minTileX - boundsDims.w / 2) * TILE + safeRadius,
+    maxX: (maxTileX + 1 - boundsDims.w / 2) * TILE - safeRadius - epsilon,
+    minZ: (minTileZ - boundsDims.h / 2) * TILE + safeRadius,
+    maxZ: (maxTileZ + 1 - boundsDims.h / 2) * TILE - safeRadius - epsilon
   };
 }
 
@@ -23555,15 +23608,15 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
 
 function serverPlayerAtGlobalMapExit(p = {}) {
   if (!p?.roomId || !serverPlayerAllowsGlobalMapExit(p)) return false;
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   const bounds = normalizedLocationPlayableBounds(loc);
   const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
   if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {
     if (row.to && normalizeLocationId(row.to || '') !== 'wasteland') return false;
-    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0));
+    const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(loc));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   });
@@ -23572,7 +23625,7 @@ function serverPlayerAtGlobalMapExit(p = {}) {
 function serverGlobalExitDirection(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const bounds = normalizedLocationPlayableBounds(loc);
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   return globalExitDirectionFromTile(
     { tx: tile.tx - bounds.minX, tz: tile.tz - bounds.minZ },
     bounds.width,
@@ -24227,8 +24280,8 @@ io.on('connection', (socket) => {
       worldFactionId,
       factionId: worldFactionId,
       name: safeName(savedProfile.name || auth.login),
-      x: clamp(Number(savedPlayer.x ?? playerSpawnWorld(locationId, 'spawn').x), -MAP_SIZE, MAP_SIZE),
-      z: clamp(Number(savedPlayer.z ?? playerSpawnWorld(locationId, 'spawn').z), -MAP_SIZE, MAP_SIZE),
+      x: clamp(Number(savedPlayer.x ?? playerSpawnWorld(locationId, 'spawn').x), -roomWorldExtent(room), roomWorldExtent(room)),
+      z: clamp(Number(savedPlayer.z ?? playerSpawnWorld(locationId, 'spawn').z), -roomWorldExtent(room), roomWorldExtent(room)),
       angle: Number(savedPlayer.angle || 0),
       crouching: false,
       maxHp: clamp(Number(savedPlayer.maxHp || 100), 1, 9999),
@@ -26277,7 +26330,7 @@ io.on('connection', (socket) => {
     const loc = roomLocation(room);
     const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
     if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine);
+    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
@@ -26297,7 +26350,7 @@ io.on('connection', (socket) => {
     if (!locationIsFactionCapital(loc) || !storageFaction) {
       return fail('\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0441\u0442\u043e\u043b\u0438\u0446\u0430\u0445 \u0444\u0440\u0430\u043a\u0446\u0438\u0439.');
     }
-    const point = serverLocationObjectWorldPoint(loc.storage || {});
+    const point = serverLocationObjectWorldPoint(loc.storage || {}, locationTileDims(loc));
     if (!point) return fail('В этой локации нет личного хранилища.');
     if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 4.6) {
       return fail('Подойдите ближе к хранилищу.');
@@ -26411,7 +26464,7 @@ io.on('connection', (socket) => {
     const loc = roomLocation(room);
     const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
     if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine);
+    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
     if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
       return fail('Подойдите ближе к торговому автомату.');
     }
@@ -26661,7 +26714,7 @@ io.on('connection', (socket) => {
 
     const impactX = Number(data.impactX);
     const impactZ = Number(data.impactZ);
-    if (!Number.isFinite(impactX) || !Number.isFinite(impactZ) || Math.abs(impactX) > MAP_SIZE || Math.abs(impactZ) > MAP_SIZE) {
+    if (!Number.isFinite(impactX) || !Number.isFinite(impactZ) || Math.abs(impactX) > roomWorldExtent(room) || Math.abs(impactZ) > roomWorldExtent(room)) {
       return fail('Сервер: неверная точка взрыва.', currentCombat());
     }
     const origin = serverCombatOrigin(p, data);
@@ -27257,7 +27310,7 @@ io.on('connection', (socket) => {
     const resourceDef = serverResourceDef(resource.type);
     if (!resourceDef || !SERVER_ITEM_IDS.has(resourceDef.itemId)) return fail('Этот ресурс нельзя добыть.');
 
-    const pos = tileToWorld(resource.tx, resource.tz);
+    const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
     const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
     if (!serverInteractionHasLineOfSight(room, p, pos)) return fail('Ресурс находится за препятствием.');
@@ -27568,8 +27621,8 @@ io.on('connection', (socket) => {
       return;
     }
     const a = Number.isFinite(Number(p.angle)) ? Number(p.angle) : 0;
-    let x = clamp(Number(data.x ?? (p.x + Math.sin(a) * 1.15)), -MAP_SIZE, MAP_SIZE);
-    let z = clamp(Number(data.z ?? (p.z + Math.cos(a) * 1.15)), -MAP_SIZE, MAP_SIZE);
+    let x = clamp(Number(data.x ?? (p.x + Math.sin(a) * 1.15)), -roomWorldExtent(room), roomWorldExtent(room));
+    let z = clamp(Number(data.z ?? (p.z + Math.cos(a) * 1.15)), -roomWorldExtent(room), roomWorldExtent(room));
     if (Math.hypot(x - p.x, z - p.z) > 3.0 || !isRoomWalkableWorld(room, x, z, 0.25)) {
       x = p.x + Math.sin(a) * 0.95;
       z = p.z + Math.cos(a) * 0.95;
@@ -28399,8 +28452,9 @@ setInterval(() => {
     if (moving) {
       const speedFactor = (p.input.forward < -0.15 ? 0.58 : 1)
         * (1 + serverArtifactEffects(p).speedPct);
-      const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
-      const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -MAP_SIZE, MAP_SIZE);
+      const legacyExtent = playerWorldExtent(p);
+      const nextX = clamp(p.x + dx * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
+      const nextZ = clamp(p.z + dz * PLAYER_SPEED * speedFactor * DT, -legacyExtent, legacyExtent);
       const room = rooms.get(p.roomId);
       const closedBounds = serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS);
       if (!room || (

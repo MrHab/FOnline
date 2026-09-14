@@ -75,7 +75,7 @@ function fixture(mode = 'pvp') {
     serverLineOfFireClearFrom: () => true,
     serverValidateMultiTargetHit: () => ({ ok: true, dirX: 1, dirZ: 0 }),
     serverPlayerNoiseRadius: (_, radius) => radius, addRoomNoise: () => { noise++; },
-    ENEMY_HEARING_SHOT_RANGE: 30, ENEMY_HEARING_HARVEST_RANGE: 10, MAP_SIZE: 200,
+    ENEMY_HEARING_SHOT_RANGE: 30, ENEMY_HEARING_HARVEST_RANGE: 10, MAP_SIZE: 200, roomWorldExtent: () => 200,
     serverIsShotgunWeapon: () => false, serverAmbushLevel: () => 0,
     serverDamageRoll: () => 10, serverStatValue: () => 5, serverHitChance: () => 1,
     serverExplosiveRadius: () => 3,

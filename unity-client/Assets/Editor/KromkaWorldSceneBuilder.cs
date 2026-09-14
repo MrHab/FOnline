@@ -264,7 +264,7 @@ namespace Kromka.EditorTools
             return null;
         }
 
-        private static int BuildLocations(JObject catalog, bool overwriteExisting)
+        internal static int BuildLocations(JObject catalog, bool overwriteExisting)
         {
             int built = 0;
             foreach (JObject location in (JArray)catalog["locations"])
@@ -292,8 +292,15 @@ namespace Kromka.EditorTools
 
                 string regionId = Text(location, "macroRegion");
                 Color regionColor = RegionColor(regionId);
+                // Размер сцены берётся из авторского определения: большие сцены
+                // (Сердцевина) объявляют map.width/depth в метрах.
+                JObject sizedDefinition = ReadProjectJson("data/locations/" + id + ".json");
+                float mapWidth = sizedDefinition?["map"]?["width"]?.Value<float>() ?? 76f;
+                float mapDepth = sizedDefinition?["map"]?["depth"]?.Value<float>() ?? 76f;
+                if (sizedDefinition?["spawn"] is JObject authoredSpawn)
+                    arrival.localPosition = PointFromTile(authoredSpawn, sizedDefinition, arrival.localPosition) + Vector3.up * 0.1f;
                 GameObject ground = Primitive("Ground_EDITABLE", PrimitiveType.Cube, staticContent,
-                    new Vector3(0f, -0.3f, 0f), new Vector3(76f, 0.5f, 76f),
+                    new Vector3(0f, -0.3f, 0f), new Vector3(mapWidth, 0.5f, mapDepth),
                     MaterialFor("Kromka_Local_" + regionId, regionColor));
                 ground.AddComponent<KromkaPlacedObjectAuthoring>().Configure(
                     id + "-ground", "ground", "terrain", new[] { regionId }, false, false, false);
@@ -560,7 +567,7 @@ namespace Kromka.EditorTools
             }
         }
 
-        private static void BuildMapLandmark(Transform parent, JObject location)
+        internal static void BuildMapLandmark(Transform parent, JObject location)
         {
             string regionId = Text(location, "macroRegion");
             string type = Text(location, "locationType");
@@ -784,7 +791,7 @@ namespace Kromka.EditorTools
             // low angles and extended beyond the irregular shoreline.
         }
 
-        private static void ConfigureBuildSettings(JObject catalog)
+        internal static void ConfigureBuildSettings(JObject catalog)
         {
             var paths = new List<string> { "Assets/Scenes/Wasteland.unity", GlobalScenePath };
             // Build Settings must follow the catalog alias (wasteland -> KromkaGloomDetour),
@@ -897,14 +904,14 @@ namespace Kromka.EditorTools
             return material;
         }
 
-        private static Transform Child(Transform parent, string name)
+        internal static Transform Child(Transform parent, string name)
         {
             GameObject child = new GameObject(name);
             child.transform.SetParent(parent, false);
             return child.transform;
         }
 
-        private static Vector3 PointToWorld(float x, float z, float height)
+        internal static Vector3 PointToWorld(float x, float z, float height)
         {
             return new Vector3((x - MapCenter.x) * MapScale,
                 KromkaGlobalMapReliefAuthoring.HeightAtMap(x, z) + height,
@@ -956,14 +963,14 @@ namespace Kromka.EditorTools
             return material;
         }
 
-        private static JObject ReadProjectJson(string relativePath)
+        internal static JObject ReadProjectJson(string relativePath)
         {
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
             return JObject.Parse(File.ReadAllText(Path.Combine(projectRoot,
                 relativePath.Replace('/', Path.DirectorySeparatorChar))));
         }
 
-        private static bool SceneAssetExists(string assetPath)
+        internal static bool SceneAssetExists(string assetPath)
         {
             return AssetDatabase.LoadAssetAtPath<SceneAsset>(assetPath) != null;
         }
@@ -978,7 +985,7 @@ namespace Kromka.EditorTools
                     + "подписи генератора kromka-1: " + assetPath);
         }
 
-        private static void RefuseDirtyOpenScenes()
+        internal static void RefuseDirtyOpenScenes()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -1010,7 +1017,7 @@ namespace Kromka.EditorTools
             }
         }
 
-        private static int DangerFor(JObject seed, string regionId)
+        internal static int DangerFor(JObject seed, string regionId)
         {
             JObject row = ((JArray)seed["regions"]).OfType<JObject>()
                 .FirstOrDefault(candidate => Text(candidate, "id") == regionId);
@@ -1054,7 +1061,7 @@ namespace Kromka.EditorTools
         private static Vector2 Pair(JArray row) => row == null || row.Count < 2
             ? Vector2.zero : new Vector2(row[0].Value<float>(), row[1].Value<float>());
 
-        private static KromkaMacroRegion ParseRegion(string value)
+        internal static KromkaMacroRegion ParseRegion(string value)
         {
             switch (value)
             {

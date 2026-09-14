@@ -113,8 +113,8 @@
         {
           "id": "contour-mute-01",
           "type": "mute",
-          "x": 14.0,
-          "z": 8.0,
+          "x": 14,
+          "z": 8,
           "radius": 2.8,
           "dischargeMs": 5000,
           "training": false,
@@ -244,8 +244,8 @@
         {
           "id": "solar-chime-01",
           "type": "chime",
-          "x": 4.0,
-          "z": 10.0,
+          "x": 4,
+          "z": 10,
           "radius": 2.6,
           "dischargeMs": 6000,
           "training": false,
@@ -254,8 +254,8 @@
         {
           "id": "solar-seam-01",
           "type": "seam",
-          "x": -8.0,
-          "z": 12.0,
+          "x": -8,
+          "z": 12,
           "radius": 2.2,
           "dischargeMs": 3000,
           "training": false,
@@ -504,8 +504,8 @@
         {
           "id": "fold-carousel-01",
           "type": "carousel",
-          "x": 6.0,
-          "z": 3.0,
+          "x": 6,
+          "z": 3,
           "radius": 3.4,
           "dischargeMs": 5000,
           "training": false,
@@ -550,8 +550,8 @@
         {
           "id": "chalk-pull-01",
           "type": "pull",
-          "x": 2.0,
-          "z": -4.0,
+          "x": 2,
+          "z": -4,
           "radius": 3.1,
           "dischargeMs": 4000,
           "training": false,
@@ -579,8 +579,8 @@
         {
           "id": "twelve-seam-01",
           "type": "seam",
-          "x": 0.0,
-          "z": 3.0,
+          "x": 0,
+          "z": 3,
           "radius": 2.3,
           "dischargeMs": 3000,
           "permanentDischarge": true,
@@ -642,8 +642,8 @@
         {
           "id": "training-chime-01",
           "type": "chime",
-          "x": 8.0,
-          "z": 0.0,
+          "x": 8,
+          "z": 0,
           "radius": 2.4,
           "dischargeMs": 6000,
           "training": true,
@@ -705,9 +705,9 @@
         {
           "id": "balance-sink-01",
           "type": "sink",
-          "x": -5.0,
-          "z": 6.0,
-          "radius": 3.0,
+          "x": -5,
+          "z": 6,
+          "radius": 3,
           "dischargeMs": 4000,
           "training": false,
           "placement": "unity-authored"
@@ -734,8 +734,8 @@
         {
           "id": "r12-dew-01",
           "type": "dew",
-          "x": 3.0,
-          "z": 8.0,
+          "x": 3,
+          "z": 8,
           "radius": 3.2,
           "dischargeMs": 5000,
           "training": false,
@@ -763,8 +763,8 @@
         {
           "id": "vector-glass-01",
           "type": "glass",
-          "x": 0.0,
-          "z": 12.0,
+          "x": 0,
+          "z": 12,
           "radius": 3.6,
           "dischargeMs": 4000,
           "training": false,
@@ -928,6 +928,269 @@
       "migrationSpawnId": "fort-fourteen-neutral-yard",
       "legacyStable": false,
       "unityScene": "Assets/Scenes/Kromka/Locations/clanFortZero.unity"
+    },
+    {
+      "id": "coreZone",
+      "displayName": "Сердцевина",
+      "locationType": "story_complex",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-core-v1",
+      "anomalyDensity": 0.8,
+      "landmarkTags": [
+        "central-installation",
+        "metro-platforms"
+      ],
+      "ambientProfile": "contested-central-field",
+      "territory": {
+        "id": "core",
+        "role": "zone"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-platform-uprava",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreZone.unity"
+    },
+    {
+      "id": "coreBaseUprava",
+      "displayName": "Узел Управы",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-uprava-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "uprava"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-uprava-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseUprava.unity"
+    },
+    {
+      "id": "coreBaseArtels",
+      "displayName": "Артельный узел",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-free_artels-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "free_artels"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-free_artels-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseArtels.unity"
+    },
+    {
+      "id": "coreBaseContour",
+      "displayName": "Узел Контура",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-contour-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "contour"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-contour-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseContour.unity"
+    },
+    {
+      "id": "coreBaseLeague",
+      "displayName": "Узел Лиги",
+      "locationType": "settlement",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-tract_league-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "metro-gate",
+        "faction-yard"
+      ],
+      "ambientProfile": "guarded-metro-yard",
+      "territory": {
+        "id": "core",
+        "role": "base",
+        "factionId": "tract_league"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "core-base-tract_league-gate",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseLeague.unity"
+    },
+    {
+      "id": "coreLabSprout",
+      "displayName": "Лаборатория «Росток»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-bio-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "bio"
+      ],
+      "ambientProfile": "sealed-bio-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "bio"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabSprout-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSprout.unity"
+    },
+    {
+      "id": "coreLabCircuit",
+      "displayName": "Лаборатория «Цепь»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-energy-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "energy"
+      ],
+      "ambientProfile": "sealed-energy-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "energy"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCircuit-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCircuit.unity"
+    },
+    {
+      "id": "coreLabAlloy",
+      "displayName": "Лаборатория «Сплав»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-materials-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "materials"
+      ],
+      "ambientProfile": "sealed-materials-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "materials"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabAlloy-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabAlloy.unity"
+    },
+    {
+      "id": "coreLabSpectrum",
+      "displayName": "Лаборатория «Спектр»",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-lab-anomalous-v1",
+      "anomalyDensity": 0.6,
+      "landmarkTags": [
+        "sealed-laboratory",
+        "anomalous"
+      ],
+      "ambientProfile": "sealed-anomalous-laboratory",
+      "territory": {
+        "id": "core",
+        "role": "lab",
+        "theme": "anomalous"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabSpectrum-airlock",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity"
+    },
+    {
+      "id": "coreLabCenterService",
+      "displayName": "Объект Ноль: служебный уровень",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "service"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "service"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterService-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterService.unity"
+    },
+    {
+      "id": "coreLabCenterResearch",
+      "displayName": "Объект Ноль: исследовательский уровень",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "research"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "research"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterResearch-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterResearch.unity"
+    },
+    {
+      "id": "coreLabCenterReactor",
+      "displayName": "Объект Ноль: установка",
+      "locationType": "story_complex",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-center-v1",
+      "anomalyDensity": 0.7,
+      "landmarkTags": [
+        "buried-installation",
+        "reactor"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "centralLab",
+        "level": "reactor"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreLabCenterReactor-lift",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity"
     }
   ]
 }

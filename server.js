@@ -31,6 +31,26 @@ const {
   zoneRules
 } = require('./src/server/zone-rules');
 const {
+  joinTerritoryFaction,
+  leaveTerritoryFaction,
+  publicTerritoryMembership,
+  sanitizeTerritoryMembership,
+  territoryFactionRow,
+  territoryLocationAccess,
+  territoryMembershipActive
+} = require('./src/server/territory-membership');
+const {
+  advanceGarrison: advanceTerritoryGarrison,
+  applyCapturePresence: applyOutpostCapturePresence,
+  applyOwnerChange: applyOutpostOwnerChange,
+  markGarrisonDestroyed: markOutpostGarrisonDestroyed,
+  normalizeTerritoryStore,
+  openDueEvents: openDueOutpostEvents,
+  outpostRules,
+  publicTerritoryState,
+  territoryOutpostDefs
+} = require('./src/server/territory-outposts');
+const {
   fieldRecipeCatalogIndexes,
   itemCatalogIndexes,
   normalizeFieldRecipeCatalog,
@@ -573,6 +593,7 @@ const GLOBAL_MAP_FILE = path.join(DATA_DIR, 'global-map.json');
 const KROMKA_SAVE_MIGRATION_FILE = path.join(BUNDLED_DATA_DIR, 'generated', 'kromka', 'save-migration.json');
 const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.json');
 const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
+const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
@@ -838,13 +859,19 @@ function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19
 }
 
 const LOCATION_PVP_MODES = ZONE_MODE_SET;
+// Столицы фракций и постоянные базы Сердцевины: обе группы мирные, дают доступ
+// к личному фракционному хранилищу и никогда не захватываются.
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
   sluiceCity: 'uprava',
   scrapTown: 'free_artels',
   relayStation: 'contour',
   caravanCamp: 'tract_league',
   secondHaven: 'seconds',
-  balanceBunker: 'continuity'
+  balanceBunker: 'continuity',
+  coreBaseUprava: 'uprava',
+  coreBaseArtels: 'free_artels',
+  coreBaseContour: 'contour',
+  coreBaseLeague: 'tract_league'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
 const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
@@ -878,7 +905,11 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     x: 0,
     z: 8,
     name: 'Хранилище Комитета'
-  }
+  },
+  coreBaseUprava: { x: 14, z: 4, name: 'Хранилище Управы' },
+  coreBaseArtels: { x: 14, z: 4, name: 'Хранилище Вольных артелей' },
+  coreBaseContour: { x: 14, z: 4, name: 'Хранилище Контура' },
+  coreBaseLeague: { x: 14, z: 4, name: 'Хранилище Лиги Тракта' }
 };
 const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
@@ -1180,6 +1211,12 @@ function normalizeLocationDefinition(raw, fallback = null) {
   ['entryFromWorld', 'entryFromNorth', 'entryFromSouth', 'entryFromEast', 'entryFromWest', 'entryFromWasteland', 'entryFromSettlement', 'trader', 'storage'].forEach(key => {
     if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn, locDims);
   });
+  // Авторские точки входа с произвольным ключом (платформы фракций, выходы из
+  // лабораторий) нормализуются в сетке этой локации.
+  for (const key of Object.keys(loc)) {
+    if (!/^entryFrom[A-Za-z0-9_]+$/.test(key) || !loc[key] || typeof loc[key] !== 'object') continue;
+    loc[key] = normalizeLocationPoint(loc[key], loc.spawn, locDims);
+  }
   if (loc.entry && !loc.entryFromWorld) loc.entryFromWorld = normalizeLocationPoint(loc.entry, loc.spawn, locDims);
   if (Array.isArray(loc.transitions)) {
     loc.transitions = loc.transitions.map((row, index) => {
@@ -2013,7 +2050,8 @@ function cachedWastelandPublicResponse(now = Date.now()) {
   const body = Buffer.from(JSON.stringify({
     ok: true,
     sim: WASTELAND_SIM.publicState(),
-    factions: publicKromkaFactionCatalog()
+    factions: publicKromkaFactionCatalog(),
+    territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now)
   }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
@@ -3565,6 +3603,10 @@ const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
 });
 const KROMKA_FACTION_CATALOG = readJson(KROMKA_FACTIONS_FILE, { factions: [] });
 const KROMKA_LOCATION_CATALOG = readJson(KROMKA_LOCATIONS_FILE, { locations: [] });
+const KROMKA_TERRITORY_CATALOG = readJson(KROMKA_TERRITORY_FILE, { id: 'core', factions: [], outposts: [], labs: [], rules: {} });
+const KROMKA_TERRITORY_COMBAT_GRACE_MS = Math.max(0, Math.floor(Number(KROMKA_TERRITORY_CATALOG.rules?.combatExitGraceMs) || 10000));
+const KROMKA_TERRITORY_MEDIC_PRICE_PER_HP = 1;
+const KROMKA_TERRITORY_MEDIC_INJURY_PRICE = 40;
 const KROMKA_NPC_CATALOG = readJson(KROMKA_NPCS_FILE, { npcs: [] });
 const KROMKA_ANOMALY_CATALOG = readJson(KROMKA_ANOMALIES_FILE, { types: [], bolt: {} });
 const KROMKA_ONBOARDING_CATALOG = readJson(KROMKA_ONBOARDING_FILE, {});
@@ -3654,6 +3696,9 @@ function kromkaQuestIdsForNpc(npcId = '') {
 }
 sanitizeClanStore(savesDb.kromkaClans);
 sanitizeSiegeStore(savesDb.kromkaSieges);
+// Runtime-состояние аванпостов Сердцевины живёт в сохранениях сервера, отдельно
+// от авторских определений в data/kromka/territory.json.
+savesDb.kromkaTerritory = normalizeTerritoryStore(savesDb.kromkaTerritory, KROMKA_TERRITORY_CATALOG, Date.now());
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -4325,6 +4370,14 @@ function serverFactionRelation(a = '', b = '') {
 function serverActorHostileToPlayer(actor = null, player = null) {
   if (!actor || !player || actor.dead || player.dead || Number(player.hp || 0) <= 0) return false;
   if (locationIsFactionCapital(player.locationId || player.currentLocationId || '')) return false;
+  // Гарнизон и охрана Сердцевины: враждебны игрокам других фракций территории
+  // и дружественны своим независимо от канонических отношений сторон.
+  const actorTerritoryFaction = String(actor.territoryFactionId || '');
+  if (actorTerritoryFaction) {
+    const playerTerritoryFaction = serverPlayerTerritoryFactionId(player);
+    if (playerTerritoryFaction && playerTerritoryFaction !== actorTerritoryFaction) return true;
+    if (playerTerritoryFaction === actorTerritoryFaction) return false;
+  }
   if (actorIsExplicitlyHostileToPlayer(actor, player)) return true;
   const actorGroup = serverCombatFactionGroup(actor.faction || '');
   if (!actorGroup || actorGroup === 'neutral') return false;
@@ -4372,10 +4425,106 @@ function serverPlayerCanDamageNpc(player, enemy, room) {
   return true;
 }
 
+// Поселение для возрождения/возврата с учётом доступа к базам фракций.
+function serverAccessibleSettlementId(locationId = '', membership = null) {
+  const candidate = normalizeRespawnSettlementId(locationId || 'settlement');
+  if (territoryLocationAccess(LOCATIONS[candidate] || {}, membership, KROMKA_TERRITORY_CATALOG).allowed) return candidate;
+  return normalizeRespawnSettlementId('settlement');
+}
+
+function serverPlayerTerritoryFactionId(player = {}) {
+  return String(player?.territoryFaction?.factionId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+}
+
+function serverRoomTerritoryId(room = null) {
+  return String(roomLocation(room)?.territoryId || '').slice(0, 32);
+}
+
+function serverTerritoryPlatformZoneAt(room = null, x = 0, z = 0) {
+  const loc = roomLocation(room);
+  if (!loc?.territoryId || !Array.isArray(loc.worldZones)) return null;
+  const dims = locationTileDims(loc);
+  for (const zone of loc.worldZones) {
+    if (String(zone?.type || '') !== 'factionPlatform') continue;
+    const center = tileToWorld(Number(zone.tx || 0), Number(zone.tz || 0), dims);
+    if (Math.hypot(Number(x || 0) - center.x, Number(z || 0) - center.z) <= Number(zone.radius || 0)) return zone;
+  }
+  return null;
+}
+
+function serverTerritoryPlayerInCombat(player = {}, now = Date.now(), graceMs = KROMKA_TERRITORY_COMBAT_GRACE_MS) {
+  return now - Number(player?.lastServerDamageAt || 0) < graceMs
+    || now - Number(player?.serverCombat?.lastAttackAt || 0) < graceMs;
+}
+
+// Правила PvP Сердцевины: своя фракция не наносит урон своим, с платформы
+// нельзя атаковать, а игрок на платформе своей фракции защищён после паузы
+// без боя (бой нельзя прервать мгновенно, забежав на платформу).
+function serverTerritoryPvpBlock(attacker = {}, target = {}, room = null, now = Date.now()) {
+  if (!serverRoomTerritoryId(room)) return '';
+  const attackerFaction = serverPlayerTerritoryFactionId(attacker);
+  const targetFaction = serverPlayerTerritoryFactionId(target);
+  if (attackerFaction && attackerFaction === targetFaction) return 'sameFaction';
+  if (serverTerritoryPlatformZoneAt(room, attacker.x, attacker.z)) return 'attackerOnPlatform';
+  const targetPlatform = serverTerritoryPlatformZoneAt(room, target.x, target.z);
+  if (targetPlatform && String(targetPlatform.factionId || '') === targetFaction
+    && !serverTerritoryPlayerInCombat(target, now)) return 'targetProtected';
+  return '';
+}
+
+function serverZoneRulesExtra(loc = null) {
+  if (!loc || typeof loc !== 'object') return {};
+  const territoryId = String(loc.territoryId || '');
+  if (!territoryId) return {};
+  const factionAccess = String(loc.factionAccess || 'territory');
+  return {
+    access: factionAccess === 'territory' ? 'faction' : 'ownFaction',
+    territoryId,
+    factionId: factionAccess === 'territory' ? '' : factionAccess,
+    factionPvp: true,
+    title: String(loc.name || '')
+  };
+}
+
+function serverNearbyServiceActor(player = {}, service = '', range = 5.2) {
+  const room = rooms.get(String(player?.roomId || ''));
+  if (!room || !(room.enemies instanceof Map)) return null;
+  for (const actor of room.enemies.values()) {
+    if (!actor || actor.dead || actor.hostileToPlayer !== false) continue;
+    if (String(actor.service || '') !== String(service || '')) continue;
+    if (Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0)) > range) continue;
+    if (!serverInteractionHasLineOfSight(room, player, actor)) continue;
+    return actor;
+  }
+  return null;
+}
+
+function publicTerritoryCatalog() {
+  const catalog = KROMKA_TERRITORY_CATALOG || {};
+  return {
+    id: String(catalog.id || 'core'),
+    displayName: String(catalog.displayName || 'Сердцевина'),
+    zoneLocationId: String(catalog.zoneLocationId || 'coreZone'),
+    factions: (Array.isArray(catalog.factions) ? catalog.factions : []).map(row => ({
+      id: String(row.id || ''),
+      baseLocationId: String(row.baseLocationId || ''),
+      baseDisplayName: String(row.baseDisplayName || ''),
+      capitalLocationId: String(row.capitalLocationId || ''),
+      platformEntryKey: String(row.platform?.entryKey || '')
+    })),
+    rules: {
+      factionChangeCooldownMs: Number(catalog.rules?.factionChangeCooldownMs || 0),
+      combatExitGraceMs: KROMKA_TERRITORY_COMBAT_GRACE_MS,
+      joinRequiresReputation: Number(catalog.rules?.joinRequiresReputation || 0)
+    }
+  };
+}
+
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
   return locationAllowsPvp(roomLocation(room))
     && !serverPlayersAllied(attacker, target)
-    && !serverPlayerHasProtectedClanRally(target, room, now);
+    && !serverPlayerHasProtectedClanRally(target, room, now)
+    && !serverTerritoryPvpBlock(attacker, target, room, now);
 }
 
 function serverProtectedAttackAck(player, spend, weapon, targetState = {}) {
@@ -9316,6 +9465,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []);
   next.worldFactionReputation = profile.worldFactionReputation;
   next.factionContracts = profile.factionContracts;
+  next.territoryFaction = sanitizeTerritoryMembership(player.territoryFaction, KROMKA_TERRITORY_CATALOG);
   next.knownFactionSecrets = player.knownFactionSecrets || previousState.knownFactionSecrets || {};
   next.kromkaQuestState = sanitizeKromkaQuestState(player.kromkaQuestState || previousState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG);
   sanitizeArtifactLoadout(player, KROMKA_ARTIFACT_CATALOG);
@@ -15403,6 +15553,9 @@ function spawnAuthoredLocationActors(room, loc) {
       lootProfile: String(entity.lootProfile || '').slice(0, 64),
       tradeProfile: String(entity.tradeProfile || '').slice(0, 64),
       traderProfile: String(entity.traderProfile || '').slice(0, 64),
+      creatureTypeId: String(entity.creatureTypeId || '').slice(0, 32),
+      service: String(entity.service || '').slice(0, 32),
+      territoryFactionId: String(entity.territoryFactionId || '').slice(0, 32),
       canDialogue: authoredNpcCanDialogue(row, role),
       name: row.name || entity.name || (role === 'merchant' ? 'Торговец' : role === 'guard' ? 'Охранник' : 'NPC'),
       role,
@@ -17256,6 +17409,8 @@ function publicEnemy(e, viewer = null) {
     equipmentProfile: String(e.equipmentProfile || '').slice(0, 64),
     lootProfile: String(e.lootProfile || '').slice(0, 64),
     tradeProfile: String(e.tradeProfile || '').slice(0, 64),
+    service: naturalCreature ? '' : String(e.service || '').slice(0, 32),
+    territoryFactionId: String(e.territoryFactionId || '').slice(0, 32),
     special: npcSpecial ? {
       ST: clamp(Math.round(Number(npcSpecial.ST || 0)), 1, 10),
       PE: clamp(Math.round(Number(npcSpecial.PE || 0)), 1, 10),
@@ -18470,6 +18625,277 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
   event.returnedAt = Number(now); persistSaves(); return true;
 }
 
+// ---------------------------------------------------------------------------
+// Аванпосты Сердцевины: присутствие в области контроля, смена владельца по
+// абсолютному времени и NPC-гарнизон, идущий по сцене от платформы фракции.
+// ---------------------------------------------------------------------------
+let serverTerritoryPersistTimer = null;
+function scheduleServerTerritoryPersist() {
+  if (serverTerritoryPersistTimer) return;
+  serverTerritoryPersistTimer = setTimeout(() => {
+    serverTerritoryPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Territory persist failed:', err); }
+  }, 1500);
+  if (typeof serverTerritoryPersistTimer.unref === 'function') serverTerritoryPersistTimer.unref();
+}
+
+function serverTerritoryStore() {
+  if (!savesDb.kromkaTerritory || typeof savesDb.kromkaTerritory !== 'object') {
+    savesDb.kromkaTerritory = normalizeTerritoryStore(null, KROMKA_TERRITORY_CATALOG, Date.now());
+  }
+  return savesDb.kromkaTerritory;
+}
+
+function serverTerritoryZoneRoom() {
+  const zoneId = normalizeLocationId(KROMKA_TERRITORY_CATALOG.zoneLocationId || 'coreZone');
+  const room = rooms.get(zoneId);
+  return room && room.worldReady ? room : null;
+}
+
+function serverTerritoryFactionLabel(factionId = '') {
+  const row = (KROMKA_FACTION_CATALOG.factions || []).find(entry => String(entry?.id || '') === String(factionId || ''));
+  return String(row?.displayName || factionId || 'нейтральные').slice(0, 48);
+}
+
+function serverTerritoryPlatformPoint(factionId = '') {
+  const row = (KROMKA_TERRITORY_CATALOG.factions || []).find(entry => String(entry?.id || '') === String(factionId || ''));
+  return row?.platform ? { x: Number(row.platform.x || 0), z: Number(row.platform.z || 0) } : { x: 0, z: 0 };
+}
+
+function serverGarrisonRouteLength(def = {}, factionId = '') {
+  const from = serverTerritoryPlatformPoint(factionId);
+  return Math.hypot(Number(def.position?.x || 0) - from.x, Number(def.position?.z || 0) - from.z);
+}
+
+// Позиция отряда на прямом маршруте платформа → аванпост по виртуальному
+// прогрессу; при возвращении прогресс уменьшается к платформе.
+function serverGarrisonRoutePoint(def = {}, factionId = '', progress = 0) {
+  const from = serverTerritoryPlatformPoint(factionId);
+  const to = { x: Number(def.position?.x || 0), z: Number(def.position?.z || 0) };
+  const t = Math.min(1, Math.max(0, Number(progress) || 0));
+  return { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
+}
+
+function serverGarrisonPostSlot(def = {}, index = 0, total = 1) {
+  const angle = (index / Math.max(1, total)) * Math.PI * 2 + 0.6;
+  const radius = 3.2;
+  return {
+    x: Number(def.position?.x || 0) + Math.cos(angle) * radius,
+    z: Number(def.position?.z || 0) + Math.sin(angle) * radius
+  };
+}
+
+function serverOutpostPresence(room, def = {}, outpost = {}) {
+  const presence = {};
+  const cx = Number(def.position?.x || 0);
+  const cz = Number(def.position?.z || 0);
+  const radius = Math.max(2, Number(def.captureRadius || 10));
+  const bump = (factionId, key) => {
+    if (!factionId) return;
+    presence[factionId] = presence[factionId] || { players: 0, guards: 0 };
+    presence[factionId][key] += 1;
+  };
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - cx, Number(p.z || 0) - cz) > radius) continue;
+    bump(serverPlayerTerritoryFactionId(p), 'players');
+  }
+  for (const enemy of room.enemies.values()) {
+    if (!enemy || enemy.dead || String(enemy.garrisonOutpostId || '') !== String(def.id || '')) continue;
+    if (String(enemy.garrisonFactionId || '') !== String(outpost.ownerFactionId || '')) continue;
+    if (Math.hypot(Number(enemy.x || 0) - cx, Number(enemy.z || 0) - cz) > radius) continue;
+    bump(String(enemy.garrisonFactionId || ''), 'guards');
+  }
+  return presence;
+}
+
+function serverGarrisonActors(room, outpostId = '') {
+  return [...room.enemies.values()].filter(enemy => enemy && String(enemy.garrisonOutpostId || '') === String(outpostId || ''));
+}
+
+function serverSpawnGarrisonActor(room, def, outpost, index, total, point) {
+  const factionId = String(outpost.garrison.factionId || '');
+  const dims = roomTileDims(room);
+  const tile = worldToTile(point.x, point.z, dims);
+  const actor = spawnServerEnemy(room, {
+    force: true,
+    allowSafeLocation: true,
+    tx: clamp(tile.tx, 1, dims.w - 2),
+    tz: clamp(tile.tz, 1, dims.h - 2),
+    maxSpawnSearchRadius: 3,
+    minEnemyDistance: 0.6,
+    minPlayerDistance: 0,
+    typeIndex: 0,
+    visual: 'raider',
+    modelKey: 'caravanGuard',
+    species: 'guard',
+    tags: ['npc', 'guard', 'garrison', factionId],
+    npcSeed: `garrison:${def.id}:${outpost.garrison.seq}:${index}`,
+    name: index === 0 ? `Квартирмейстер (${serverTerritoryFactionLabel(factionId)})` : `Гарнизон: ${serverTerritoryFactionLabel(factionId)}`,
+    role: 'guard',
+    faction: factionId,
+    hostileToPlayer: false,
+    territoryFactionId: factionId,
+    equipmentProfile: 'guard',
+    statProfile: 'guard',
+    canDialogue: false,
+    stationary: false
+  });
+  if (!actor) return null;
+  actor.garrisonOutpostId = String(def.id || '');
+  actor.garrisonFactionId = factionId;
+  actor.garrisonSeq = Number(outpost.garrison.seq || 0);
+  actor.garrisonIndex = index;
+  actor.garrisonTotal = total;
+  actor.garrisonTargetX = point.x;
+  actor.garrisonTargetZ = point.z;
+  actor.homeX = point.x;
+  actor.homeZ = point.z;
+  return actor;
+}
+
+// Отряд создаётся в комнате один раз на смену владельца; пересоздание комнаты
+// возвращает акторов в текущую точку виртуального маршрута.
+function serverGarrisonSpawnedInRoom(room, def, garrison) {
+  return !!room?.garrisonSpawned?.[`${def.id}:${garrison.seq}`];
+}
+
+function serverMarkGarrisonSpawned(room, def, garrison) {
+  if (!room.garrisonSpawned) room.garrisonSpawned = {};
+  room.garrisonSpawned[`${def.id}:${garrison.seq}`] = true;
+}
+
+// Держит акторов гарнизона в согласии с runtime-записью: создаёт отряд при
+// первой загрузке комнаты в текущей точке маршрута, ведёт его по маршруту,
+// расставляет по постам после прибытия и убирает вернувшийся или устаревший.
+function serverSyncGarrisonActors(room, def, outpost, now, rules) {
+  const garrison = outpost.garrison || {};
+  const active = ['enroute', 'arrived', 'returning'].includes(String(garrison.state || ''));
+  const actors = serverGarrisonActors(room, def.id);
+  let structureChanged = false;
+  for (const actor of actors) {
+    const stale = !active || Number(actor.garrisonSeq || 0) !== Number(garrison.seq || 0)
+      || String(actor.garrisonFactionId || '') !== String(garrison.factionId || '');
+    if (stale) {
+      if (roomEnemyDelete(room, actor.id)) structureChanged = true;
+    }
+  }
+  if (!active) return structureChanged;
+  const total = Math.max(1, Number(rules.garrison.guards || 0) + Number(rules.garrison.quartermaster || 0));
+  const alive = serverGarrisonActors(room, def.id).filter(actor => !actor.dead);
+  const known = serverGarrisonActors(room, def.id);
+  if (known.length === 0 && !serverGarrisonSpawnedInRoom(room, def, garrison)) {
+    const point = serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
+    for (let i = 0; i < total; i++) {
+      const offset = { x: point.x + Math.cos(i * 1.7) * 1.4, z: point.z + Math.sin(i * 1.7) * 1.4 };
+      if (serverSpawnGarrisonActor(room, def, outpost, i, total, offset)) structureChanged = true;
+    }
+    serverMarkGarrisonSpawned(room, def, garrison);
+  } else if (known.length > 0 && alive.length === 0 && serverGarrisonSpawnedInRoom(room, def, garrison)) {
+    // Весь отряд погиб: гарнизона нет до следующей смены владельца.
+    markOutpostGarrisonDestroyed(outpost, now);
+    for (const actor of known) if (roomEnemyDelete(room, actor.id)) structureChanged = true;
+    return structureChanged;
+  }
+  const targetPoint = garrison.state === 'arrived'
+    ? null
+    : serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
+  for (const actor of alive) {
+    const post = garrison.state === 'arrived'
+      ? serverGarrisonPostSlot(def, Number(actor.garrisonIndex || 0), Number(actor.garrisonTotal || total))
+      : { x: targetPoint.x + Math.cos(Number(actor.garrisonIndex || 0) * 1.7) * 1.4, z: targetPoint.z + Math.sin(Number(actor.garrisonIndex || 0) * 1.7) * 1.4 };
+    actor.garrisonTargetX = post.x;
+    actor.garrisonTargetZ = post.z;
+    actor.homeX = post.x;
+    actor.homeZ = post.z;
+  }
+  return structureChanged;
+}
+
+// Гарнизонный актор: без видимого противника идёт к точке маршрута или держит
+// пост; враждебный игрок другой фракции передаётся обычному боевому ИИ.
+function updateTerritoryGarrisonActor(room, enemy, dt, now = Date.now()) {
+  if (!enemy || !enemy.garrisonOutpostId || enemy.dead) return false;
+  const vision = Math.max(6, Number(enemy.visionRange || 10));
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(enemy.x || 0), Number(p.z || 0) - Number(enemy.z || 0)) > vision) continue;
+    if (!serverActorHostileToPlayer(enemy, p)) continue;
+    if (enemyCanSeePlayer(room, enemy, p, now)) return false;
+  }
+  const tx = Number(enemy.garrisonTargetX);
+  const tz = Number(enemy.garrisonTargetZ);
+  if (!Number.isFinite(tx) || !Number.isFinite(tz)) return false;
+  const distance = Math.hypot(tx - Number(enemy.x || 0), tz - Number(enemy.z || 0));
+  enemy.targetId = '';
+  if (distance > 0.9) {
+    enemy.aiState = 'return';
+    moveEnemyTowards(room, enemy, tx, tz, Math.max(1.2, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
+  } else {
+    enemy.aiState = 'idle';
+    enemy.vx = 0;
+    enemy.vz = 0;
+  }
+  return true;
+}
+
+function serverAnnounceOutpostCapture(room, def, outpost, change, now) {
+  const message = `${def.displayName}: аванпост перешёл к фракции «${serverTerritoryFactionLabel(change.factionId)}». Гарнизон выдвинулся с платформы.`;
+  if (room) {
+    io.to(room.id).emit('worldState', { reason: 'outpostCaptured', outpostId: def.id, factionId: change.factionId, message, state: currentRoomWorldState(room) });
+  }
+  io.emit('territoryOutpostState', {
+    ...publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
+    reason: 'ownerChanged',
+    outpostId: def.id,
+    factionId: change.factionId,
+    previousFactionId: change.previousFactionId,
+    message
+  });
+}
+
+function serverTickTerritory(now = Date.now()) {
+  const store = serverTerritoryStore();
+  const catalog = KROMKA_TERRITORY_CATALOG;
+  const rules = outpostRules(catalog);
+  let changed = false;
+  const opened = openDueOutpostEvents(store, catalog, now);
+  if (opened.length) changed = true;
+  const room = serverTerritoryZoneRoom();
+  let structureChanged = false;
+  for (const def of territoryOutpostDefs(catalog)) {
+    const outpost = store.outposts[def.id];
+    if (!outpost) continue;
+    if (room) {
+      const result = applyOutpostCapturePresence(outpost, serverOutpostPresence(room, def, outpost), now, rules);
+      if (result.changed) changed = true;
+      if (result.captured) {
+        const change = applyOutpostOwnerChange(store, def.id, result.captured, now, catalog, {
+          routeLengthMeters: serverGarrisonRouteLength(def, result.captured)
+        });
+        if (change.ok) {
+          changed = true;
+          serverAnnounceOutpostCapture(room, def, outpost, change, now);
+        }
+      }
+    } else {
+      outpost.capture.lastTickMs = now;
+    }
+    if (advanceTerritoryGarrison(outpost, now, rules).changed) changed = true;
+    if (room && serverSyncGarrisonActors(room, def, outpost, now, rules)) structureChanged = true;
+  }
+  if (structureChanged && room) emitEnemySnapshot(room, true);
+  if (changed) {
+    store.updatedAt = now;
+    wastelandPublicCache = null;
+    scheduleServerTerritoryPersist();
+  }
+  if (room && room.sockets.size && (changed || now - Number(room.lastTerritoryStateAt || 0) >= 1000)) {
+    room.lastTerritoryStateAt = now;
+    io.to(room.id).emit('territoryOutpostState', publicTerritoryState(store, catalog, now));
+  }
+}
+
 function serverTickKromkaSieges(now = Date.now()) {
   let dirty = false; let broadcast = false;
   for (const event of Object.values(savesDb.kromkaSieges.events || {})) {
@@ -19609,7 +20035,7 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
     ...failedWorldActivityIds,
     ...detachServerPlayerFromActiveWorldParties(p)
   ])];
-  const respawnLocationId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement');
+  const respawnLocationId = serverAccessibleSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement', p.territoryFaction);
   const settlement = chooseRoomForLocation(respawnLocationId);
   let pos = playerSpawnWorld(respawnLocationId, 'respawn');
   pos = findRoomSafeSpawnWorld(settlement, pos.x, pos.z, {
@@ -19849,6 +20275,8 @@ function spawnServerEnemy(room, opts = {}) {
     modelKey: resolvedModelKey,
     species: String(opts.species || resolvedVisual || type.lootTier || '').slice(0, 32),
     canDialogue: opts.canDialogue !== false,
+    service: String(opts.service || '').slice(0, 32),
+    territoryFactionId: String(opts.territoryFactionId || '').slice(0, 32),
     x: chosen.x,
     z: chosen.z,
     homeX: chosen.x,
@@ -21353,6 +21781,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
+    if (updateTerritoryGarrisonActor(room, enemy, dt, now)) continue;
     if (enemy.stationary && enemy.hostileToPlayer === false && !npcRoutineInvestigationActive(enemy, now)) {
       const hasLiveFoes = npcHasLiveFactionFoes(room, enemy);
       if (!hasLiveFoes) {
@@ -22934,7 +23363,8 @@ function publicAuthoritativePlayerState(p = {}) {
     worldRevision: 'kromka-1',
     pvpMode: currentPvpMode,
     pvpLabel: LOCATION_PVP_LABELS[currentPvpMode] || currentPvpMode,
-    zoneRules: zoneRules(currentPvpMode),
+    zoneRules: zoneRules(currentPvpMode, serverZoneRulesExtra(p.onGlobalMap ? null : roomLocation(rooms.get(String(p.roomId || ''))))),
+    territoryFaction: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG),
     lastWorldActivityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
     socialState,
     personalBase: shelterState,
@@ -23842,6 +24272,18 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
   const stayOnWorldMap = resolution.kind === 'point';
   const targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
   if (!stayOnWorldMap && !LOCATIONS[targetLocationId]) return fail('Локация встречи больше недоступна.');
+  if (!stayOnWorldMap) {
+    const targetLoc = LOCATIONS[targetLocationId] || {};
+    if (targetLoc.noGlobalMapEntry === true) {
+      return fail('В Сердцевину нельзя войти с глобальной карты: используйте платформу метро на базе своей фракции.');
+    }
+    for (const id of session.memberIds) {
+      const member = players.get(id);
+      if (!member) continue;
+      const access = territoryLocationAccess(targetLoc, member.territoryFaction, KROMKA_TERRITORY_CATALOG);
+      if (!access.allowed) return fail(`${member.name || 'Участник группы'}: ${access.error}`);
+    }
+  }
   const payload = {
     leaderId: socket.id,
     leaderName: leader.name || session.leaderName || 'Игрок',
@@ -23855,7 +24297,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     partyId: resolution.partyId || '',
     worldPoint: resolution.point,
     pvpMode: resolution.pvpMode || 'pvp',
-    zoneRules: zoneRules(resolution.pvpMode || 'pvp'),
+    zoneRules: zoneRules(resolution.pvpMode || 'pvp', serverZoneRulesExtra(stayOnWorldMap ? null : LOCATIONS[targetLocationId])),
     stayOnWorldMap,
     party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
   };
@@ -24157,6 +24599,13 @@ io.on('connection', (socket) => {
       baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
       savedState.currentLocationId = locationId;
     }
+    // Reconnect внутри Сердцевины или на базе фракции требует действующего
+    // членства: иначе персонаж возвращается в последнее доступное поселение.
+    if (!territoryLocationAccess(baseLoc, savedState.territoryFaction, KROMKA_TERRITORY_CATALOG).allowed) {
+      locationId = serverAccessibleSettlementId(savedState.lastVisitedSettlementId || 'settlement', savedState.territoryFaction);
+      baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
+      savedState.currentLocationId = locationId;
+    }
     let savedLocationContext = sanitizeServerLocationContext(savedState.serverLocationContext || {}, locationId);
     const temporaryLocation = !!(baseLoc.encounterOnly || baseLoc.randomTemplate);
     const savedTemporaryRoomId = savedLocationContext.locationId === locationId
@@ -24335,6 +24784,7 @@ io.on('connection', (socket) => {
       factionContracts: sanitizeServerFactionContracts(
         savedState.factionContracts || savedProfile.factionContracts || {}
       ),
+      territoryFaction: sanitizeTerritoryMembership(savedState.territoryFaction, KROMKA_TERRITORY_CATALOG),
       knownFactionSecrets: savedState.knownFactionSecrets && typeof savedState.knownFactionSecrets === 'object'
         ? savedState.knownFactionSecrets : {},
       kromkaQuestState: sanitizeKromkaQuestState(savedState.kromkaQuestState || {}, KROMKA_QUEST_CATALOG),
@@ -26314,6 +26764,141 @@ io.on('connection', (socket) => {
     fail('Постоянного вступления больше нет. Возьмите временный контракт у нужной стороны.');
   });
 
+  // Принадлежность к фракции для Сердцевины: вступление в столице фракции или у
+  // регистратора её базы, выход и смена с настраиваемым кулдауном. Репутация и
+  // временные контракты не затрагиваются.
+  socket.on('territoryFactionAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => {
+      if (typeof ack === 'function') ack({
+        ok: false, error,
+        membership: p ? publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG) : null,
+        self: p ? publicAuthoritativePlayerState(p) : null
+      });
+    };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const now = Date.now();
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({
+        ok: true,
+        membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
+        catalog: publicTerritoryCatalog()
+      });
+      return;
+    }
+    if (action !== 'join' && action !== 'leave') return fail('Неизвестное действие с фракцией.');
+    if (p.onGlobalMap || !p.roomId) return fail('Вступление и выход оформляются на базе или в столице фракции.');
+    const transaction = beginCriticalAction(p, 'territoryFactionAction', data, ['action', 'factionId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    const room = rooms.get(p.roomId);
+    const loc = roomLocation(room);
+    const registrar = serverNearbyServiceActor(p, 'registrar');
+    const capitalFaction = locationCapitalFaction(loc);
+    const factionId = action === 'join'
+      ? String(data.factionId || registrar?.territoryFactionId || capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
+      : '';
+    if (action === 'join') {
+      const registrarFaction = String(registrar?.territoryFactionId || '');
+      const atOwnCapital = !!capitalFaction && capitalFaction === factionId && !String(loc.territoryId || '');
+      const atRegistrar = !!registrar && (!registrarFaction || registrarFaction === factionId);
+      if (!atOwnCapital && !atRegistrar) {
+        return fail('Вступить можно в столице этой фракции или у её регистратора на базе.');
+      }
+    } else if (!registrar && !capitalFaction) {
+      return fail('Выйти из фракции можно у регистратора или в столице фракции.');
+    }
+    const reputation = Number(sanitizeServerWorldFactionReputation(p.worldFactionReputation || {})[factionId] || 0);
+    const result = action === 'join'
+      ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
+      : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
+    if (!result.ok) return fail(result.error);
+    p.territoryFaction = result.membership;
+    const payload = {
+      ok: true,
+      action,
+      factionId: result.membership.factionId,
+      previousFactionId: String(result.previousFactionId || ''),
+      membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now)
+    };
+    commitCriticalAction(p, transaction, payload);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'territoryFaction' });
+    if (typeof ack === 'function') ack({ ...payload, self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('requestTerritoryState', (_data = {}, ack) => {
+    if (typeof ack !== 'function') return;
+    ack({
+      ok: true,
+      territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, Date.now()),
+      catalog: publicTerritoryCatalog()
+    });
+  });
+
+  // Сервисы постоянной базы: медик лечит и снимает травмы за марки. Работает
+  // только рядом с медиком на защищённой базе, поэтому не прерывает бой.
+  socket.on('baseServiceAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const service = String(data.service || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const action = String(data.action || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    if (service !== 'medic') return fail('Неизвестный сервис базы.');
+    const room = rooms.get(p.roomId);
+    if (!room) return fail('Локация не найдена.');
+    const loc = roomLocation(room);
+    if (loc.safe !== true) return fail('Медик работает только на защищённой базе.');
+    const medic = serverNearbyServiceActor(p, 'medic');
+    if (!medic) return fail('Медик базы должен быть рядом.');
+    if (action === 'state') {
+      serverApplyDerivedVitals(p);
+      const missing = Math.max(0, Math.round(Number(p.maxHp || 0) - Number(p.hp || 0)));
+      const injuryCount = Object.keys(sanitizeInjuries(p.injuries || {})).length;
+      if (typeof ack === 'function') ack({
+        ok: true, service, missingHp: missing, injuryCount,
+        healCost: missing > 0 ? Math.max(5, Math.ceil(missing * KROMKA_TERRITORY_MEDIC_PRICE_PER_HP)) : 0,
+        cureCost: injuryCount * KROMKA_TERRITORY_MEDIC_INJURY_PRICE
+      });
+      return;
+    }
+    if (action !== 'heal' && action !== 'cure') return fail('Неизвестное действие медика.');
+    const transaction = beginCriticalAction(p, 'baseServiceAction', data, ['service', 'action']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    serverApplyDerivedVitals(p);
+    let cost = 0;
+    if (action === 'heal') {
+      const missing = Math.max(0, Math.round(Number(p.maxHp || 0) - Number(p.hp || 0)));
+      if (missing <= 0) return fail('Лечение не требуется.');
+      cost = Math.max(5, Math.ceil(missing * KROMKA_TERRITORY_MEDIC_PRICE_PER_HP));
+    } else {
+      const injuryCount = Object.keys(sanitizeInjuries(p.injuries || {})).length;
+      if (injuryCount <= 0) return fail('Травм нет.');
+      cost = injuryCount * KROMKA_TERRITORY_MEDIC_INJURY_PRICE;
+    }
+    if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
+    serverInventoryRemove(p, 'silver', cost);
+    if (action === 'heal') p.hp = Math.max(1, Math.round(Number(p.maxHp || 1)));
+    else p.injuries = {};
+    const payload = {
+      ok: true, service, action, cost,
+      hp: Math.round(Number(p.hp || 0)), maxHp: Math.round(Number(p.maxHp || 0)),
+      injuries: sanitizeInjuries(p.injuries || {})
+    };
+    commitCriticalAction(p, transaction, payload);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'baseService' });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
   socket.on('worldTaskLeaveParty', (_data = {}, ack) => {
     if (typeof ack === 'function') {
       ack({ ok: false, error: 'Выход из группы доступен только через отмену работы пустоши.' });
@@ -28065,7 +28650,26 @@ io.on('connection', (socket) => {
     const sameLocation = normalizeLocationId(p.locationId || '') === locationId && !!p.roomId;
     const localTransition = serverNearbyTransitionTo(p, locationId);
     const ticketedRuntimeLocation = !!transitionTicket && !!(baseLoc.randomTemplate || baseLoc.encounterOnly);
-    if (!sameLocation && locationId !== 'wasteland' && !isReleasedLocationId(locationId) && !ticketedRuntimeLocation) {
+    if (!sameLocation) {
+      // Сердцевина, базы и лаборатории: членство проверяется на каждом входе,
+      // платформа принимает только свою фракцию, а уехать на базу из боя нельзя.
+      const territoryAccess = territoryLocationAccess(baseLoc, p.territoryFaction, KROMKA_TERRITORY_CATALOG);
+      if (!territoryAccess.allowed) {
+        if (typeof ack === 'function') ack({ ok: false, error: territoryAccess.error || 'Вход закрыт.', zoneRules: zoneRules(locationPvpMode(baseLoc), serverZoneRulesExtra(baseLoc)) });
+        return;
+      }
+      const platformFaction = String(localTransition?.factionAccess || '');
+      if (platformFaction && platformFaction !== serverPlayerTerritoryFactionId(p)) {
+        if (typeof ack === 'function') ack({ ok: false, error: 'Эта платформа метро принадлежит другой фракции.' });
+        return;
+      }
+      const currentLoc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+      if (currentLoc.territoryId && String(baseLoc.territoryRole || '') === 'base' && serverTerritoryPlayerInCombat(p, Date.now())) {
+        if (typeof ack === 'function') ack({ ok: false, error: `Нельзя уехать на базу во время боя. Подождите ${Math.round(KROMKA_TERRITORY_COMBAT_GRACE_MS / 1000)} с без боя.` });
+        return;
+      }
+    }
+    if (!sameLocation && locationId !== 'wasteland' && !isReleasedLocationId(locationId) && !ticketedRuntimeLocation && !localTransition) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Эта локация пока закрыта и не входит в текущий набор мира.' });
       return;
     }
@@ -28289,6 +28893,16 @@ setInterval(() => {
     console.error('Kromka siege scheduler tick failed:', error);
   }
 }, 1000);
+
+// Аванпосты Сердцевины считаются по реальному времени независимо от игроков,
+// загрузки сцены и скорости игрового времени.
+setInterval(() => {
+  try {
+    serverTickTerritory(Date.now());
+  } catch (error) {
+    console.error('Territory outpost tick failed:', error);
+  }
+}, Math.max(250, Number(KROMKA_TERRITORY_CATALOG.outpostRules?.captureTickMs) || 1000));
 
 setInterval(() => {
   const startedAt = Date.now();

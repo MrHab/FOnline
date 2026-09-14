@@ -104,8 +104,8 @@ function includes(source, tokens, label) {
 }
 
 assert(catalog.worldRevision === 'kromka-1', 'location catalog must be kromka-1');
-assert(Array.isArray(catalog.locations) && catalog.locations.length === 45,
-  'Unity authoring must cover all 45 Kromka locations');
+assert(Array.isArray(catalog.locations) && catalog.locations.length >= 45,
+  'Unity authoring must cover all Kromka locations (45 base + Сердцевина)');
 
 const typeHandlers = new Map([
   ['tutorial', 'BuildTutorial'],

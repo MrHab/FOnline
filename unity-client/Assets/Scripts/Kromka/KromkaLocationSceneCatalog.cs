@@ -25,7 +25,11 @@ namespace Kromka
                 "sluiceCity", "secondHaven", "balanceBunker", "cascadeRegenerator",
                 "vectorLab", "personalBase", "clanHydroNode2", "clanFilterT6",
                 "clanOreExchange", "clanFactoryCycle", "clanDepotBypass",
-                "clanChalkSluice", "clanRelayEast", "clanFortZero"
+                "clanChalkSluice", "clanRelayEast", "clanFortZero",
+                "coreZone", "coreBaseUprava", "coreBaseArtels", "coreBaseContour",
+                "coreBaseLeague", "coreLabSprout", "coreLabCircuit", "coreLabAlloy",
+                "coreLabSpectrum", "coreLabCenterService", "coreLabCenterResearch",
+                "coreLabCenterReactor"
             },
             StringComparer.Ordinal);
 

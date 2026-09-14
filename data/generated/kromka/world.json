@@ -410,8 +410,7 @@
       "note": "Патронный двор «Створ-2». numbered-workshop, loading-tower.",
       "macroRegion": "northern_sluices",
       "visualProfile": "sluice-munitions-yard-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/klimAmmoWorks.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceKlimQuarry",
@@ -430,8 +429,7 @@
       "note": "Карьер Девятый. bucket-excavator, aggregate-silos.",
       "macroRegion": "northern_sluices",
       "visualProfile": "ninth-dam-quarry-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceKlimQuarry.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "sluiceCity",
@@ -450,8 +448,7 @@
       "note": "Створ. command-dam, vertical-warning-light.",
       "macroRegion": "northern_sluices",
       "visualProfile": "uprava-command-dam-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/sluiceCity.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanHydroNode2",
@@ -470,8 +467,7 @@
       "note": "ГЭС-2. turbine-hall, spillway-bridge.",
       "macroRegion": "northern_sluices",
       "visualProfile": "clan-hydro-node-two-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanHydroNode2.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "settlement",
@@ -490,8 +486,7 @@
       "note": "Ключи. water-tower, rail-bridge.",
       "macroRegion": "middle_vein",
       "visualProfile": "keys-river-junction-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/settlement.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "roadOutpost",
@@ -510,8 +505,7 @@
       "note": "Застава 17. bridge-gate, searchlight-mast.",
       "macroRegion": "middle_vein",
       "visualProfile": "uprava-river-checkpoint-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/roadOutpost.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceDryWaterPump",
@@ -530,8 +524,7 @@
       "note": "Водозабор «Сухой». intake-tower, empty-channel.",
       "macroRegion": "middle_vein",
       "visualProfile": "dry-cascade-intake-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceDryWaterPump.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceOldKlimFarm",
@@ -550,8 +543,7 @@
       "note": "Ферма «Дальний ряд». irrigation-wheel, long-greenhouse.",
       "macroRegion": "middle_vein",
       "visualProfile": "clean-soil-strip-farm-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceOldKlimFarm.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFilterT6",
@@ -570,8 +562,7 @@
       "note": "Фильтровальная Т-6. filter-tanks, control-tower.",
       "macroRegion": "middle_vein",
       "visualProfile": "clan-filter-t6-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanFilterT6.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapTown",
@@ -590,8 +581,7 @@
       "note": "Раздолье. blast-furnace, gantry-crane.",
       "macroRegion": "ore_arc",
       "visualProfile": "razdolye-foundry-town-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/scrapTown.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapOutpost",
@@ -610,8 +600,7 @@
       "note": "Сторожевая артель. signal-gantry, painted-gate.",
       "macroRegion": "ore_arc",
       "visualProfile": "artel-rail-watch-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/scrapOutpost.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "scrapFoundry",
@@ -630,8 +619,7 @@
       "note": "Литейная Раздолья. furnace-stack, slag-channel.",
       "macroRegion": "ore_arc",
       "visualProfile": "razdolye-foundry-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/scrapFoundry.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceIronMine",
@@ -650,8 +638,7 @@
       "note": "Шахта «Три смены». headframe, ore-bunker.",
       "macroRegion": "ore_arc",
       "visualProfile": "three-shifts-mine-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceIronMine.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceScrapFields",
@@ -670,8 +657,7 @@
       "note": "Сортировочные поля. magnet-crane, sorted-metal-ridges.",
       "macroRegion": "ore_arc",
       "visualProfile": "sorted-scrap-fields-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceScrapFields.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "antHive",
@@ -690,8 +676,7 @@
       "note": "Колония Пыльников. shredded-cables, vent-mound.",
       "macroRegion": "ore_arc",
       "visualProfile": "dustling-cable-colony-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/antHive.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanOreExchange",
@@ -710,8 +695,7 @@
       "note": "Рудный перевал. ore-conveyor, transfer-tower.",
       "macroRegion": "ore_arc",
       "visualProfile": "clan-ore-transfer-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanOreExchange.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFactoryCycle",
@@ -730,8 +714,7 @@
       "note": "Цех обратного цикла. reaction-towers, pipe-bridge.",
       "macroRegion": "ore_arc",
       "visualProfile": "clan-reagent-cycle-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanFactoryCycle.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "caravanCamp",
@@ -750,8 +733,7 @@
       "note": "Перекрёсток. route-pylon, cargo-crane.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "crossroads-caravan-yard-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/caravanCamp.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "oldDepot",
@@ -770,8 +752,7 @@
       "note": "Арсенал №6. armored-rail-door, collapsed-watchtower.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "buried-military-depot-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/oldDepot.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceTireDepot",
@@ -790,8 +771,7 @@
       "note": "Полимерный склад. collapsed-canopy, rubber-bales.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "polymer-road-depot-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceTireDepot.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanDepotBypass",
@@ -810,8 +790,7 @@
       "note": "Депо Обводное. roundhouse, cargo-turntable.",
       "macroRegion": "tract_isthmus",
       "visualProfile": "clan-bypass-depot-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanDepotBypass.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceSiliconRidge",
@@ -830,8 +809,7 @@
       "note": "Керамический уступ. white-cut-face, kiln-shell.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "ceramic-chalk-escarpment-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceSiliconRidge.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "geckoCanyon",
@@ -850,8 +828,7 @@
       "note": "Овраг Слухачей. echo-pillars, chalk-caves.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "listener-karst-ravine-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/geckoCanyon.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "secondHaven",
@@ -870,8 +847,7 @@
       "note": "Меловой двор. quarry-houses, filter-canopy.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "seconds-chalk-quarry-town-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/secondHaven.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanChalkSluice",
@@ -890,8 +866,7 @@
       "note": "Меловой шлюз. karst-gate, cloth-filter-racks.",
       "macroRegion": "chalk_lowland",
       "visualProfile": "clan-chalk-sluice-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanChalkSluice.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayStation",
@@ -910,8 +885,7 @@
       "note": "Контур-3. dish-array, sealed-tower.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-three-sealed-dispatch-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/relayStation.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayOutpost",
@@ -930,8 +904,7 @@
       "note": "Периметр К-3. decon-frame, warning-beacon.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-sealed-checkpoint-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/relayOutpost.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "relayWorkshop",
@@ -950,8 +923,7 @@
       "note": "Опытная мастерская К-3. cable-spire, amber-airlock.",
       "macroRegion": "glasslands",
       "visualProfile": "contour-experimental-workshop-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/relayWorkshop.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "solarArray",
@@ -970,8 +942,7 @@
       "note": "Солнечное поле №4. tilted-panel-field, lightning-mast.",
       "macroRegion": "glasslands",
       "visualProfile": "glasslands-solar-array-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/solarArray.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "mutantCrater",
@@ -990,8 +961,7 @@
       "note": "Воронка Складней. medical-ring, folded-concrete.",
       "macroRegion": "glasslands",
       "visualProfile": "fold-mutant-medical-crater-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/mutantCrater.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "vectorLab",
@@ -1010,8 +980,7 @@
       "note": "Объект «Вектор». impossible-lattice, buried-field-rings.",
       "macroRegion": "glasslands",
       "visualProfile": "vector-deep-research-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/vectorLab.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanRelayEast",
@@ -1030,8 +999,7 @@
       "note": "Ретранслятор В-9. split-dish, storm-vanes.",
       "macroRegion": "glasslands",
       "visualProfile": "clan-relay-v9-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanRelayEast.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceChemSpring",
@@ -1050,8 +1018,7 @@
       "note": "Сток 4-Б. drain-stack, black-settling-pool.",
       "macroRegion": "zero_basin",
       "visualProfile": "toxic-drain-four-b-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceChemSpring.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "resourceOilPump",
@@ -1070,8 +1037,7 @@
       "note": "Топливная рампа. loading-rack, leaning-tanks.",
       "macroRegion": "zero_basin",
       "visualProfile": "lower-bypass-fuel-rack-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/resourceOilPump.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "radscorpionNest",
@@ -1090,8 +1056,7 @@
       "note": "Гнездовье Рыхляков. broken-settling-wall, burrow-ridge.",
       "macroRegion": "zero_basin",
       "visualProfile": "burrower-settling-pit-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/radscorpionNest.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "balanceBunker",
@@ -1110,8 +1075,7 @@
       "note": "Бункер «Баланс». administrative-shaft, cold-status-column.",
       "macroRegion": "zero_basin",
       "visualProfile": "continuity-balance-bunker-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/balanceBunker.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "cascadeRegenerator",
@@ -1130,8 +1094,7 @@
       "note": "Регенератор Р-12. regenerator-column, black-water-rings.",
       "macroRegion": "zero_basin",
       "visualProfile": "cascade-regenerator-r12-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/cascadeRegenerator.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "clanFortZero",
@@ -1150,8 +1113,7 @@
       "note": "Форт 14. armored-gate, command-bastion.",
       "macroRegion": "zero_basin",
       "visualProfile": "clan-fort-fourteen-v1",
-      "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/clanFortZero.unity"
+      "worldRevision": "kromka-1"
     },
     {
       "id": "wasteland",
@@ -1170,8 +1132,102 @@
       "note": "Глухой обвод. defense-tower, subsurface-fire.",
       "macroRegion": "silent_ring",
       "visualProfile": "silent-ring-expedition-v1",
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreZone",
+      "x": 190,
+      "y": 150,
+      "kind": "complex",
+      "locationCount": 1,
+      "locationId": "coreZone",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "relayAntenna",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Сердцевина. central-installation, metro-platforms.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-core-v1",
       "worldRevision": "kromka-1",
-      "unityScene": "Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity"
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseUprava",
+      "x": 190,
+      "y": 182,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseUprava",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Управы. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-uprava-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseArtels",
+      "x": 158,
+      "y": 150,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseArtels",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Артельный узел. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-free_artels-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
+    },
+    {
+      "id": "coreBaseContour",
+      "x": 222,
+      "y": 150,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseContour",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Контура. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-contour-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": false
+    },
+    {
+      "id": "coreBaseLeague",
+      "x": 206,
+      "y": 141,
+      "kind": "settlement",
+      "locationCount": 1,
+      "locationId": "coreBaseLeague",
+      "capital": false,
+      "capitalFaction": "",
+      "danger": 1,
+      "model": "wastelandShack",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Узел Лиги. metro-gate, faction-yard.",
+      "macroRegion": "middle_vein",
+      "visualProfile": "territory-base-tract_league-v1",
+      "worldRevision": "kromka-1",
+      "roadAccess": true
     }
   ],
   "routes": [
@@ -1510,5 +1566,5 @@
       "spawnId": "keys-arrival"
     }
   ],
-  "contentHash": "767a0c4be94d99d32ad647c13fd29159a07a283253f3accf892078c89bcfd198"
+  "contentHash": "172a431104f8d02238878ed6944fc83c49a144686a68be0e7a4532388514cfe7"
 }

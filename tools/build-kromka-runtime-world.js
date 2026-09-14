@@ -175,7 +175,7 @@ for (let cy = 0; cy < seed.grid.rows; cy += 1) {
 
 const globalMap = {
   schema: 'realm.globalMap.v1',
-  version: 2,
+  version: 3,
   worldRevision: seed.worldRevision,
   sitePlacement: 'unity-authored',
   legacyCoastline: false,

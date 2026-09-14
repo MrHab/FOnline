@@ -146,7 +146,7 @@ assert(server.includes('...savedDownedState'));
 assert(server.includes('...restoreDeathState(savedState, savedPlayer)'));
 assert(server.includes('persistActivePlayerState(player);'));
 assert(server.includes('persistActivePlayerState(target);'));
-assert(server.includes('zoneRules: zoneRules(currentPvpMode)'));
+assert(server.includes('zoneRules: zoneRules(currentPvpMode'));
 assert(!/полн(ый|ого|ым) (лут|дроп)/i.test(server), 'the server must not describe the partial-loss mode as full loot');
 
 const hud = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');

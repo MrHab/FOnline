@@ -15,7 +15,7 @@ const locations = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/locati
 assert.equal(map.sitePlacement, 'unity-authored');
 assert(usesAuthoredWorldSites({ worldRevision: 'kromka-1' }), 'Old Kromka files must not revive generation');
 assert(usesAuthoredWorldSites({ worldRevision: 'kromka-1', sitePlacement: 'procedural' }));
-assert.equal(map.nodes.length, 39, 'Existing lore nodes must be preserved');
+assert(map.nodes.length >= 39, 'Existing lore nodes must be preserved');
 assert.equal(new Set(map.nodes.map(node => node.id)).size, map.nodes.length);
 // Exercise the actual server normalizer, not just direct simulation inputs.
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');

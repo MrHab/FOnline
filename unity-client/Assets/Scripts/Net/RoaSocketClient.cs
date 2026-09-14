@@ -78,6 +78,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnPersonalBaseState;
         public event Action<JObject> OnKromkaClanState;
         public event Action<JObject> OnKromkaSiegeState;
+        public event Action<JObject> OnTerritoryOutpostState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -479,6 +480,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnKromkaSiegeState?.Invoke(payload);
+            }));
+
+            // Аванпосты Сердцевины: владелец, состояние события, отсчёт,
+            // прогресс захвата и гарнизон одинаковы для всех игроков.
+            _connection.On("territoryOutpostState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnTerritoryOutpostState?.Invoke(payload);
             }));
 
             _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>

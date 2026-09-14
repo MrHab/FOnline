@@ -227,6 +227,7 @@ assert.deepStrictEqual(
 const unityEmits = uniqueSorted([...unityTransportEmits, ...dynamicUnityEvents]);
 const unityOnlyKromkaEmits = [
   'artifactLoadoutAction',
+  'baseServiceAction',
   'kromkaClanAction',
   'kromkaOnboardingAction',
   'kromkaQuestAction',
@@ -240,7 +241,9 @@ const unityOnlyKromkaEmits = [
   'requestKromkaClanState',
   'requestKromkaSiegeState',
   'requestPersonalBaseState',
+  'requestTerritoryState',
   'stabilizeArtifact',
+  'territoryFactionAction',
   'throwBolt'
 ];
 assert.deepStrictEqual(
@@ -270,6 +273,7 @@ const unityOnlyHandlers = [
   'medicalConsentResolved',
   'personalBaseState',
   'playerTradeUpdated',
+  'territoryOutpostState',
   'worldActivityFeedChanged'
 ];
 assert.deepStrictEqual(

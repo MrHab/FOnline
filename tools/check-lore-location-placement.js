@@ -26,9 +26,9 @@ function distance(p, points) {
   }));
 }
 const route = id => { const r = seed.routes.find(r => r.id === id); assert(r, `Missing route ${id}`); return r.points; };
-assert.equal(nodes.size, 39);
+assert(nodes.size >= 39, "existing lore nodes must be preserved");
 assert.deepEqual(review.locations.map(r => r.id).sort(), [...nodes.keys()].sort());
-assert.equal(new Set(review.locations.map(r => r.id)).size, 39);
+assert(new Set(review.locations.map(r => r.id)).size >= 39, "reviewed placements must stay unique");
 for (const node of map.nodes) {
   const definition = lore.locations.find(l => l.id === node.id);
   assert(definition, `${node.id}: missing lore`);

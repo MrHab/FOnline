@@ -1,0 +1,1281 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "coreLabAlloy",
+  "name": "Лаборатория «Сплав»",
+  "seed": 2026091522,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "territoryLab",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "noRespawn": true,
+  "allowGlobalMapExit": false,
+  "noGlobalMap": true,
+  "territoryId": "core",
+  "territoryRole": "lab",
+  "factionAccess": "territory",
+  "lab": {
+    "id": "coreLabAlloy",
+    "theme": "materials",
+    "summary": "Охлаждение, давление и перегревающиеся бронированные противники.",
+    "rewardComponents": [
+      "alloyPlate",
+      "scrap",
+      "ore"
+    ],
+    "innerGateContainerId": "inner_vault"
+  },
+  "ground": {
+    "preset": "concreteFloor",
+    "label": "Лаборатория «Сплав»"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.2,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.2,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromCore": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0,
+    "y": 0.1,
+    "z": -30,
+    "rotationY": 0
+  },
+  "transitions": [
+    {
+      "id": "exit_to_core",
+      "type": "location",
+      "label": "Выход в Сердцевину",
+      "to": "coreZone",
+      "entryKey": "entryFromLabAlloy",
+      "tx": 19,
+      "tz": 2,
+      "x": 0,
+      "y": 0.1,
+      "z": -34,
+      "rotationY": 0,
+      "radius": 3
+    }
+  ],
+  "worldZones": [],
+  "containers": [
+    {
+      "id": "outer_vault",
+      "name": "Внешний шкаф",
+      "tier": "rare",
+      "tx": 10,
+      "tz": 18,
+      "x": -18,
+      "y": 0.1,
+      "z": -2,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "inner_vault",
+      "name": "Сейф: Лаборатория «Сплав»",
+      "tier": "rare",
+      "tx": 19,
+      "tz": 33,
+      "x": 0,
+      "y": 0.1,
+      "z": 28,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "hard",
+      "terminalLocked": true,
+      "terminalDifficulty": "medium",
+      "terminalUnlocksLock": true,
+      "terminalName": "Терминал: Лаборатория «Сплав»"
+    },
+    {
+      "id": "inner_cabinet",
+      "name": "Внутренний шкаф",
+      "tier": "rare",
+      "tx": 27,
+      "tz": 31,
+      "x": 16,
+      "y": 0.1,
+      "z": 24,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    }
+  ],
+  "objects": [
+    {
+      "id": "materials_guardian_1",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "materials_guardian_2",
+      "model": "enemySuperMutant",
+      "name": "Складень",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "supermutant"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "superMutant",
+        "creatureTypeId": "fold",
+        "faction": "mutants",
+        "enemyType": "superMutant",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "materials_guardian_3",
+      "model": "enemyGhoul",
+      "name": "Выжженный",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "ghoul"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "ghoul",
+        "creatureTypeId": "burned",
+        "faction": "mutants",
+        "enemyType": "ghoul",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "materials_guardian_4",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "materials_guardian_5",
+      "model": "enemyRadscorpion",
+      "name": "Рыхляк",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "monster",
+        "radscorpion"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "monster",
+        "species": "radScorpion",
+        "creatureTypeId": "rykhlyak",
+        "faction": "wild",
+        "enemyType": "radScorpion",
+        "hostileToPlayer": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bench_a",
+      "model": "workshopBench",
+      "name": "Лабораторный стол",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "bench"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bench_b",
+      "model": "workshopBench",
+      "name": "Лабораторный стол",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": -8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "bench"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-black-reservoir",
+      "model": "ring_structure",
+      "name": "coreLabAlloy-black-reservoir EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "ring",
+        "readable-from-above"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-cascade-feed",
+      "model": "external_pipe",
+      "name": "coreLabAlloy-cascade-feed EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 1.571
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "pipe",
+        "cascade"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-landmark",
+      "model": "sealed-laboratory",
+      "name": "Landmark sealed-laboratory EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "sealed-laboratory"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 15.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": 14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": 8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -12.135,
+        "y": 1.4,
+        "z": -8.817
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": 4.635,
+        "y": 1.4,
+        "z": -14.266
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "story_complex",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-regenerator-column",
+      "model": "blast_furnace",
+      "name": "coreLabAlloy-regenerator-column EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "industry",
+        "furnace",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-region-departure-rail",
+      "model": "railway",
+      "name": "coreLabAlloy-region-departure-rail EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.03,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 61.818,
+        "z": 2.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabAlloy-region-yard-fence",
+      "model": "wall",
+      "name": "coreLabAlloy-region-yard-fence EDITABLE",
+      "position": {
+        "x": -34.0,
+        "y": 1.2,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_gate",
+      "model": "cargoStack",
+      "name": "Герметичная секция",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 3.0,
+        "y": 1.8,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "inner-gate",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_wall_e",
+      "model": "concreteWall",
+      "name": "Внутренняя переборка",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 4.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "inner_wall_w",
+      "model": "concreteWall",
+      "name": "Внутренняя переборка",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 4.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "landmark",
+      "model": "cargoStack",
+      "name": "Лаборатория «Сплав»",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 26.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.8,
+        "y": 1.8,
+        "z": 1.8
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "landmark",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "node_a",
+      "model": "utilityPole",
+      "name": "Клапан давления",
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "mechanic-node",
+        "materials"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "labNode",
+        "role": "mechanic",
+        "labId": "coreLabAlloy",
+        "nodeId": "node_a",
+        "theme": "materials"
+      },
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "node_b",
+      "model": "utilityPole",
+      "name": "Клапан давления",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "mechanic-node",
+        "materials"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "labNode",
+        "role": "mechanic",
+        "labId": "coreLabAlloy",
+        "nodeId": "node_b",
+        "theme": "materials"
+      },
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_e",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": 24.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 9.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_n",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 32.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 12.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "outer_shell_w",
+      "model": "concreteWall",
+      "name": "Внешний корпус",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 9.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "lab",
+        "materials"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [
+    {
+      "id": "coreLabAlloy-glass-1",
+      "type": "glass",
+      "x": -20,
+      "z": 20,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "coreLabAlloy-glass-2",
+      "type": "glass",
+      "x": 20,
+      "z": 22,
+      "radius": 3.2,
+      "dischargeMs": 4000,
+      "training": false,
+      "placement": "unity-authored",
+      "belt": "lab",
+      "tierRange": [
+        2,
+        4
+      ]
+    }
+  ],
+  "visualProfile": {
+    "id": "kromka-territory-lab-materials-v1",
+    "skyDay": "#3f4650",
+    "fogDay": "#4d545c",
+    "hemiSkyDay": "#a5a8a0",
+    "hemiGroundDay": "#26292c",
+    "fillDay": "#9aa08e",
+    "sunDay": "#d6c797",
+    "rimDay": "#c9b98d"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "off_map",
+  "kromkaVisualProfile": "territory-lab-materials-v1",
+  "ambientProfile": "sealed-materials-laboratory",
+  "anomalyDensity": 0.6,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreLabAlloy.unity",
+  "respawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.2,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.2,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.2,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "unitySpawns": [
+    {
+      "id": "coreLabAlloy-airlock",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreLabAlloy-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": -30.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "materials_guardian_1",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -10.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "materials_guardian_2",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "materials_guardian_3",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "materials_guardian_4",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "materials_guardian_5",
+      "kind": "Enemy",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotationY": 0.0
+    }
+  ]
+}

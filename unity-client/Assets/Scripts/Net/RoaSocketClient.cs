@@ -81,6 +81,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnTerritoryOutpostState;
         public event Action<JObject> OnPveAreaState;
         public event Action<JObject> OnPublicEventState;
+        public event Action<JObject> OnWorldBossState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -506,6 +507,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnPublicEventState?.Invoke(payload);
+            }));
+
+            // Мировой босс: фаза щита/уязвимости, телеграф импульса, поражение
+            // и перерождение — одинаково для всех в комнате установки.
+            _connection.On("worldBossState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnWorldBossState?.Invoke(payload);
             }));
 
             _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>

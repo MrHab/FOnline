@@ -51,6 +51,7 @@ function fixture(mode = 'pvp') {
     playerMatchesWorldPartyMember: (player, member) => player.characterId === member.characterId,
     roomLocation: current => current.loc,
     serverTerritoryPvpBlock: () => '', serverPlayerTerritoryFactionId: player => player?.territoryFaction?.factionId || '',
+    serverWorldBossDamageAfterShield: (room, enemy, damage) => damage,
     serverNpcIsKromkaOnboardingProtected: npc => !!npc?.storyProtected,
     serverPlayerHasProtectedClanRally: player => !!player.rallyProtected,
     ensureRoomWorld: () => {}, syncServerActionProgressionPlayer: () => {},

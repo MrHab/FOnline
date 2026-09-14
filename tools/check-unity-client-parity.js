@@ -278,7 +278,8 @@ const unityOnlyHandlers = [
   'publicEventState',
   'pveAreaState',
   'territoryOutpostState',
-  'worldActivityFeedChanged'
+  'worldActivityFeedChanged',
+  'worldBossState'
 ];
 assert.deepStrictEqual(
   unityHandlers.filter(name => !unityOnlyHandlers.includes(name)),

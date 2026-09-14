@@ -177,6 +177,17 @@ const {
   searchTracks: pveSearchTracks
 } = require('./src/server/pve-areas');
 const {
+  applyPersistedBossState,
+  bossDamageMultiplier,
+  createBossState,
+  normalizeWorldBossRules,
+  noteBossDefeated,
+  noteShieldNodeDestroyed,
+  persistedBossState,
+  publicWorldBoss,
+  tickWorldBoss
+} = require('./src/server/world-boss');
+const {
   claimPublicEventChest,
   normalizePublicEventCatalog,
   normalizePublicEventStore,
@@ -3768,6 +3779,8 @@ savesDb.kromkaTerritory = normalizeTerritoryStore(savesDb.kromkaTerritory, KROMK
 savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
 // Публичные события переживают перезапуск вместе со своими таймерами.
 savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
+// Мировые боссы: поражение и срок перерождения переживают перезапуск.
+if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object' || Array.isArray(savesDb.worldBosses)) savesDb.worldBosses = {};
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -11141,6 +11154,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   const sourceZ = Number.isFinite(Number(options.sourceZ))
     ? Number(options.sourceZ) : Number(p.z || enemy.z || 0);
   finalizeNpcDeathState(enemy, now);
+  serverNoteWorldBossKill(room, enemy, now);
   enemy.looted = false;
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
@@ -17477,6 +17491,9 @@ function publicEnemy(e, viewer = null) {
     modelKey,
     species: String(e.species || '').slice(0, 32),
     canDialogue: naturalCreature ? false : e.canDialogue !== false,
+    worldBoss: !!e.worldBossId,
+    shieldNode: !!e.shieldNodeOf,
+    shielded: !!e.worldBossId && e.shielded === true,
     // v7.74.68: keep enemy coordinates precise for client-side visual smoothing.
     x: Number(Number(e.x || 0).toFixed(3)),
     z: Number(Number(e.z || 0).toFixed(3)),
@@ -18792,6 +18809,294 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 }
 
 // ---------------------------------------------------------------------------
+// Мировой босс лаборатории: узлы щита, фаза уязвимости, импульсы с
+// телеграфом, контейнеры награды после поражения, перерождение по времени.
+// ---------------------------------------------------------------------------
+const KROMKA_WORLD_BOSS_RULES = normalizeWorldBossRules(KROMKA_TERRITORY_CATALOG.centralLab?.worldBoss?.rules || {}, {
+  respawnMs: KROMKA_TERRITORY_CATALOG.centralLab?.worldBoss?.respawnMs
+});
+
+function cleanBossId(value = '') {
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+}
+
+function serverWorldBossDefForRoom(room) {
+  const loc = room ? roomLocation(room) : null;
+  const def = loc?.lab?.worldBoss;
+  return def && def.id ? def : null;
+}
+
+function serverWorldBossRules(def = null) {
+  return normalizeWorldBossRules(KROMKA_WORLD_BOSS_RULES, def?.rules || { respawnMs: def?.respawnMs });
+}
+
+function serverWorldBossStore() {
+  if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object') savesDb.worldBosses = {};
+  return savesDb.worldBosses;
+}
+
+function serverPersistWorldBoss(state) {
+  if (!state?.bossId) return;
+  serverWorldBossStore()[state.bossId] = persistedBossState(state);
+  scheduleServerPublicEventPersist();
+}
+
+function serverWorldBossActor(room) {
+  for (const enemy of room?.enemies?.values?.() || []) if (enemy?.worldBossId) return enemy;
+  return null;
+}
+
+function serverSpawnShieldNodeActors(room, state) {
+  let spawned = 0;
+  const rules = serverWorldBossRules(serverWorldBossDefForRoom(room));
+  for (const node of state.nodes) {
+    if (!node.alive) continue;
+    const existing = node.actorId ? room.enemies.get(node.actorId) : null;
+    if (existing && !existing.dead) continue;
+    const tile = worldToTile(node.x, node.z, roomTileDims(room));
+    const actor = spawnServerEnemy(room, {
+      force: true,
+      tx: tile.tx,
+      tz: tile.tz,
+      maxSpawnSearchRadius: 3,
+      minEnemyDistance: 0.5,
+      minPlayerDistance: 0,
+      typeIndex: 0,
+      name: 'Узел щита',
+      role: 'monster',
+      faction: 'mutants',
+      hostileToPlayer: true,
+      stationary: true,
+      visual: 'shieldNode',
+      modelKey: 'utilityPole',
+      canDialogue: false,
+      dropEquipment: false,
+      loot: []
+    });
+    if (!actor) continue;
+    actor.x = node.x;
+    actor.z = node.z;
+    actor.homeX = node.x;
+    actor.homeZ = node.z;
+    actor.hp = rules.shieldNodeHp;
+    actor.maxHp = rules.shieldNodeHp;
+    actor.atk = 0;
+    actor.speed = 0;
+    actor.xp = 40;
+    actor.shieldNodeId = node.id;
+    actor.shieldNodeOf = state.bossId;
+    actor.equipment = { weapon: 'fists' };
+    actor.weapon = 'fists';
+    node.actorId = actor.id;
+    spawned += 1;
+  }
+  if (spawned) room.enemyStructureDirty = true;
+  return spawned;
+}
+
+function serverRemoveShieldNodeActors(room) {
+  for (const [id, enemy] of [...room.enemies.entries()]) if (enemy?.shieldNodeOf) roomEnemyDelete(room, id);
+}
+
+function serverSyncWorldBossActorFlags(room) {
+  const state = room?.worldBossState;
+  const boss = serverWorldBossActor(room);
+  if (boss && state) boss.shielded = state.phase === 'shielded';
+}
+
+// Состояние босса создаётся при первом входе в комнату установки; сам босс
+// — авторский NPC уровня, узлы щита — стационарные акторы по авторским точкам.
+function serverEnsureWorldBossRoom(room, now = Date.now()) {
+  const def = serverWorldBossDefForRoom(room);
+  if (!def) return null;
+  ensureRoomWorld(room);
+  const loc = roomLocation(room);
+  const rules = serverWorldBossRules(def);
+  if (!room.worldBossState) {
+    const nodes = (Array.isArray(loc.objects) ? loc.objects : [])
+      .filter(row => Array.isArray(row?.tags) && row.tags.includes('shield-node'))
+      .map(row => ({ id: row.id, x: Number(row.position?.x || 0), z: Number(row.position?.z || 0) }));
+    room.worldBossState = applyPersistedBossState(createBossState(def, nodes, rules, now), serverWorldBossStore()[cleanBossId(def.id)] || null, now);
+  }
+  const state = room.worldBossState;
+  let boss = serverWorldBossActor(room);
+  if (!boss) {
+    for (const enemy of room.enemies.values()) {
+      if (!enemy || enemy.dead || enemy.worldBossId) continue;
+      const objectId = String(enemy.authoredLocationObjectId || '');
+      const authored = (loc.objects || []).find(row => String(row?.id || '') === objectId);
+      if (authored?.entity?.worldBoss === true || String(authored?.entity?.bossId || '') === String(def.id)) {
+        enemy.worldBossId = state.bossId;
+        enemy.name = def.displayName || enemy.name;
+        const authoredHp = Number(authored?.entity?.hp || 0);
+        const authoredAtk = Number(authored?.entity?.atk || 0);
+        if (authoredHp > 0 && enemy.maxHp !== authoredHp) { enemy.maxHp = authoredHp; enemy.hp = authoredHp; }
+        if (authoredAtk > 0) enemy.atk = authoredAtk;
+        enemy.xp = Math.max(Number(enemy.xp || 0), 600);
+        boss = enemy;
+        break;
+      }
+    }
+  }
+  if (state.phase === 'defeated') {
+    if (boss && !boss.dead) roomEnemyDelete(room, boss.id);
+    serverRemoveShieldNodeActors(room);
+  } else if (serverSpawnShieldNodeActors(room, state)) {
+    refreshRoomWorldState(room, { force: true });
+  }
+  serverSyncWorldBossActorFlags(room);
+  return state;
+}
+
+function serverEmitWorldBossState(room, extra = {}, now = Date.now()) {
+  if (!room?.worldBossState) return null;
+  const boss = serverWorldBossActor(room);
+  const payload = {
+    roomId: room.id,
+    locationId: room.locationId,
+    ...publicWorldBoss(room.worldBossState, serverWorldBossRules(serverWorldBossDefForRoom(room)), now, {
+      bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+    }),
+    ...extra,
+    t: now
+  };
+  io.to(room.id).emit('worldBossState', payload);
+  return payload;
+}
+
+// Урон по боссу проходит только в фазе уязвимости; узлы щита — обычные цели.
+function serverWorldBossDamageAfterShield(room, enemy, damage = 0) {
+  if (!enemy?.worldBossId || !room?.worldBossState) return damage;
+  return Math.max(0, Math.round(Number(damage || 0) * bossDamageMultiplier(room.worldBossState)));
+}
+
+function serverUnlockBossContainers(room, bossId = '') {
+  const loc = roomLocation(room);
+  let changed = 0;
+  for (const container of room.containers?.values?.() || []) {
+    const def = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
+    if (!def || String(def.bossLoot || '') !== String(bossId)) continue;
+    container.locked = false;
+    container.terminalLocked = false;
+    container.loot = rollWorldContainerLootServer(room, def);
+    container.bossLoot = String(bossId);
+    changed += 1;
+  }
+  if (changed) {
+    refreshRoomWorldState(room, { force: true });
+    emitWorldContainersSnapshot(room, true);
+  }
+  return changed;
+}
+
+function serverBossLootError(room, container) {
+  const loc = room ? roomLocation(room) : null;
+  const def = (loc?.containers || []).find(row => String(row?.id || '') === String(container?.defId || ''));
+  const bossId = String(def?.bossLoot || container?.bossLoot || '');
+  if (!bossId) return '';
+  const state = room.worldBossState || serverEnsureWorldBossRoom(room);
+  if (!state || state.phase !== 'defeated') return 'Контейнер установки открывается только после победы над Хранителем.';
+  return '';
+}
+
+// Смерть узла щита или босса — из единой воронки убийств.
+function serverNoteWorldBossKill(room, enemy, now = Date.now()) {
+  const state = room?.worldBossState;
+  if (!state || !enemy) return false;
+  const rules = serverWorldBossRules(serverWorldBossDefForRoom(room));
+  if (enemy.shieldNodeOf === state.bossId && enemy.shieldNodeId) {
+    const result = noteShieldNodeDestroyed(state, enemy.shieldNodeId, rules, now);
+    serverSyncWorldBossActorFlags(room);
+    if (result.changed) serverEmitWorldBossState(room, { nodeDestroyed: enemy.shieldNodeId, vulnerable: result.vulnerable }, now);
+    return result.changed;
+  }
+  if (enemy.worldBossId === state.bossId) {
+    if (!noteBossDefeated(state, rules, now)) return false;
+    serverRemoveShieldNodeActors(room);
+    serverUnlockBossContainers(room, state.bossId);
+    serverPersistWorldBoss(state);
+    serverEmitWorldBossState(room, { defeated: true }, now);
+    return true;
+  }
+  return false;
+}
+
+// Импульс: урон всем живым игрокам в радиусе от босса (как урон выброса).
+function serverApplyWorldBossPulse(room, state, event, now = Date.now()) {
+  const boss = serverWorldBossActor(room);
+  if (!boss || boss.dead) return 0;
+  let hit = 0;
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(boss.x || 0), Number(p.z || 0) - Number(boss.z || 0)) > Number(event.radius || 0)) continue;
+    const mitigation = serverMitigateDamage(Number(event.damage || 0), p, 'anomalous');
+    p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
+    const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'anomalous', 'Импульс Хранителя');
+    p.lastServerDamageAt = now;
+    const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
+    io.to(p.id).emit('playerStatusEffect', {
+      effect: 'worldBossPulse',
+      damage: mitigation.damage,
+      rawDamage: Number(event.damage || 0),
+      absorbed: mitigation.absorbed,
+      hp: Math.round(Number(p.hp || 0)),
+      maxHp: Math.round(Number(p.maxHp || 1)),
+      downed,
+      injuries: sanitizeInjuries(p.injuries || {}),
+      newInjuries,
+      t: now
+    });
+    if (Number(p.hp || 0) <= 0) {
+      p.dead = true;
+      p.diedAt = now;
+      const loc = roomLocation(room);
+      const droppedItems = serverDropPvpLootForMode(room, p, null, loc, now);
+      serverRespawnPlayer(p, room, { pvpMode: locationPvpMode(loc), fullDrop: locationHasFullInventoryDrop(loc), droppedItems, cause: 'worldBossPulse' });
+    }
+    hit += 1;
+  }
+  return hit;
+}
+
+function serverTickWorldBosses(now = Date.now()) {
+  const results = [];
+  for (const room of rooms.values()) {
+    const def = serverWorldBossDefForRoom(room);
+    if (!def || !room.worldReady) continue;
+    const state = serverEnsureWorldBossRoom(room, now);
+    if (!state) continue;
+    const rules = serverWorldBossRules(def);
+    const events = tickWorldBoss(state, rules, now);
+    for (const event of events) {
+      if (event.type === 'respawn') {
+        const loc = roomLocation(room);
+        spawnAuthoredLocationActors(room, loc);
+        serverEnsureWorldBossRoom(room, now);
+        for (const container of room.containers?.values?.() || []) {
+          const cdef = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
+          if (cdef?.bossLoot) { container.locked = !!cdef.locked; container.terminalLocked = !!cdef.terminalLocked; }
+        }
+        serverPersistWorldBoss(state);
+        refreshRoomWorldState(room, { force: true });
+        serverEmitWorldBossState(room, { respawned: true }, now);
+      } else if (event.type === 'shieldRestored') {
+        serverSpawnShieldNodeActors(room, state);
+        serverSyncWorldBossActorFlags(room);
+        refreshRoomWorldState(room, { force: true });
+        serverEmitWorldBossState(room, { shieldRestored: true }, now);
+      } else if (event.type === 'pulseTelegraph') {
+        serverEmitWorldBossState(room, { telegraph: true, pulseInMs: event.inMs }, now);
+      } else if (event.type === 'pulse') {
+        const hit = serverApplyWorldBossPulse(room, state, event, now);
+        serverEmitWorldBossState(room, { pulse: true, hit }, now);
+      }
+      results.push({ roomId: room.id, type: event.type });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Публичные события: временная зона на глобальной карте с общей комнатой,
 // PvP разрешено, вещи сохраняются, спорный сундук после зачистки, задержка
 // возврата после смерти и принудительный выход по истечении.
@@ -19497,6 +19802,15 @@ function publicWorldState(room, includeMap = true) {
     publicEvent: (() => {
       const event = serverPublicEventForRoom(room);
       return event ? publicPublicEvent(event, Date.now()) : null;
+    })(),
+    worldBoss: (() => {
+      const def = serverWorldBossDefForRoom(room);
+      if (!def) return null;
+      const state = room.worldBossState || serverEnsureWorldBossRoom(room, Date.now());
+      const boss = serverWorldBossActor(room);
+      return state ? publicWorldBoss(state, serverWorldBossRules(def), Date.now(), {
+        bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+      }) : null;
     })(),
     activity: publicWorldActivity(room.worldActivity),
     shift: serverCurrentShiftState(Date.now()),
@@ -28027,6 +28341,7 @@ io.on('connection', (socket) => {
       const ambushLevel = serverAmbushLevel(p, enemy, now);
       const raw = Math.max(1, Math.round(baseRaw * falloff * (1 + ambushLevel * 0.14)));
       const dmgInfo = serverMitigateEnemyDamage(raw, enemy, 'explosive');
+      dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, Number(enemy.hp || 0) - dmgInfo.damage);
       if (enemy.hp > 0) {
         aggroEnemyFromHit(room, enemy, p, now);
@@ -28290,6 +28605,7 @@ io.on('connection', (socket) => {
         damageType: type
       });
       raw = dmgInfo.raw;
+      dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
       hits.push({
         handSlot: entry.slot,
@@ -29257,6 +29573,11 @@ io.on('connection', (socket) => {
       });
       return;
     }
+    const bossLootError = serverBossLootError(room, container);
+    if (bossLootError) {
+      if (typeof ack === 'function') ack({ ok: false, error: bossLootError, container: publicWorldContainer(container) });
+      return;
+    }
     const eventChestError = serverPublicEventChestError(room, container, p, Date.now());
     if (eventChestError) {
       if (typeof ack === 'function') ack({ ok: false, error: eventChestError, container: publicWorldContainer(container) });
@@ -29606,6 +29927,15 @@ setInterval(() => {
     serverTickKromkaSieges(Date.now());
   } catch (error) {
     console.error('Kromka siege scheduler tick failed:', error);
+  }
+}, 1000);
+
+// Мировой босс: щит, уязвимость, импульсы, перерождение.
+setInterval(() => {
+  try {
+    serverTickWorldBosses(Date.now());
+  } catch (error) {
+    console.error('World boss tick failed:', error);
   }
 }, 1000);
 

@@ -237,6 +237,7 @@ const unityOnlyKromkaEmits = [
   'personalBaseAction',
   'playerTradeAction',
   'pickupArtifact',
+  'pveAreaAction',
   'requestArtifactState',
   'requestKromkaClanState',
   'requestKromkaSiegeState',
@@ -274,6 +275,7 @@ const unityOnlyHandlers = [
   'medicalConsentResolved',
   'personalBaseState',
   'playerTradeUpdated',
+  'pveAreaState',
   'territoryOutpostState',
   'worldActivityFeedChanged'
 ];

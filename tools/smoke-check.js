@@ -709,20 +709,26 @@ async function assertEditorAndWorldDataApis() {
     || Object.keys(publicLocationsData.locations || {}).length < 20) {
     fail('public locations API did not expose the bundled locations', publicLocations.body);
   }
+  // Личное хранилище есть в шести столицах и на четырёх базах фракций
+  // Сердцевины (вход только для членов фракции).
   const capitalStorageFactions = {
     sluiceCity: 'uprava',
     scrapTown: 'free_artels',
     relayStation: 'contour',
     caravanCamp: 'tract_league',
     secondHaven: 'seconds',
-    balanceBunker: 'continuity'
+    balanceBunker: 'continuity',
+    coreBaseUprava: 'uprava',
+    coreBaseArtels: 'free_artels',
+    coreBaseContour: 'contour',
+    coreBaseLeague: 'tract_league'
   };
   const locationsWithStorage = Object.values(publicLocationsData.locations || {})
     .filter(loc => !!loc?.storage)
     .map(loc => loc.id)
     .sort();
   if (locationsWithStorage.join(',') !== Object.keys(capitalStorageFactions).sort().join(',')) {
-    fail('personal storage exists outside the six Kromka faction capitals', JSON.stringify(locationsWithStorage));
+    fail('personal storage exists outside the six Kromka faction capitals and four core faction bases', JSON.stringify(locationsWithStorage));
   }
   for (const [locationId, factionId] of Object.entries(capitalStorageFactions)) {
     const loc = publicLocationsData.locations[locationId];

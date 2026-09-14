@@ -163,6 +163,20 @@ const {
   reconcileArtifactSpawns
 } = require('./src/server/artifact-spawns');
 const {
+  createPveRoomState,
+  initialPacks: pveInitialPacks,
+  normalizePveAreaCatalog,
+  notePveAlive,
+  publicPveRoomState,
+  pveAreaForLocation,
+  pveOwnerKey,
+  pveRoomAllowed,
+  pveRoomId,
+  pveRoomIdle,
+  rollPveEncounter,
+  searchTracks: pveSearchTracks
+} = require('./src/server/pve-areas');
+const {
   publicPersonalBase,
   sanitizePersonalBase
 } = require('./src/server/personal-bases');
@@ -611,6 +625,7 @@ const KROMKA_SAVE_MIGRATION_FILE = path.join(BUNDLED_DATA_DIR, 'generated', 'kro
 const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.json');
 const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
 const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.json');
+const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
@@ -3635,6 +3650,8 @@ const KROMKA_TERRITORY_CATALOG = readJson(KROMKA_TERRITORY_FILE, { id: 'core', f
 const KROMKA_TERRITORY_COMBAT_GRACE_MS = Math.max(0, Math.floor(Number(KROMKA_TERRITORY_CATALOG.rules?.combatExitGraceMs) || 10000));
 const KROMKA_TERRITORY_MEDIC_PRICE_PER_HP = 1;
 const KROMKA_TERRITORY_MEDIC_INJURY_PRICE = 40;
+// Постоянные PvE-области: личные встречи, без PvP, вещи сохраняются.
+const KROMKA_PVE_AREA_CATALOG = normalizePveAreaCatalog(readJson(KROMKA_PVE_AREAS_FILE, { rules: {}, areas: [] }));
 const KROMKA_NPC_CATALOG = readJson(KROMKA_NPCS_FILE, { npcs: [] });
 const KROMKA_ANOMALY_CATALOG = readJson(KROMKA_ANOMALIES_FILE, { types: [], bolt: {} });
 const KROMKA_ONBOARDING_CATALOG = readJson(KROMKA_ONBOARDING_FILE, {});
@@ -18753,6 +18770,142 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 }
 
 // ---------------------------------------------------------------------------
+// Постоянные PvE-области: личная комната на игрока или группу, встречи по
+// реальному времени, «Искать следы». Владелец проверяется на каждом пути входа.
+// ---------------------------------------------------------------------------
+function serverPveAreaForLocation(locationId = '') {
+  const loc = LOCATIONS[normalizeLocationId(locationId)];
+  if (!loc || loc.pveArea !== true) return null;
+  return pveAreaForLocation(KROMKA_PVE_AREA_CATALOG, loc.id || locationId);
+}
+
+function serverPveOwnerKeyFor(player = {}) {
+  return pveOwnerKey(player?.characterId || player?.userId || player?.id || '');
+}
+
+// Комната PvE-области для игрока: запрошенная (билет группы, сохранённый
+// контекст) — только если игрок её владелец или уже допущен туда сервером;
+// иначе собственная личная комната.
+function serverResolvePveRoomId(player = {}, locationId = '', requestedRoomId = '') {
+  const area = serverPveAreaForLocation(locationId);
+  if (!area) return '';
+  const ownKey = serverPveOwnerKeyFor(player);
+  const requested = sanitizeEncounterRoomId(requestedRoomId || '', locationId);
+  if (requested) {
+    const existing = rooms.get(requested);
+    const members = existing?.pveMembers instanceof Set ? existing.pveMembers : [];
+    if (pveRoomAllowed(requested, locationId, ownKey, members)) return requested;
+  }
+  return pveRoomId(locationId, ownKey);
+}
+
+function serverEnsurePveRoom(room, player = null, now = Date.now()) {
+  if (!room) return null;
+  const area = serverPveAreaForLocation(room.locationId);
+  if (!area) return null;
+  if (!(room.pveMembers instanceof Set)) room.pveMembers = new Set();
+  if (!room.pveState) {
+    room.personalEncounter = true;
+    room.pveState = createPveRoomState(area, KROMKA_PVE_AREA_CATALOG.rules, now, pveOwnerKey(room.id.split('#pve_')[1] || ''));
+  }
+  if (player) room.pveMembers.add(serverPveOwnerKeyFor(player));
+  return room.pveState;
+}
+
+function serverPveAliveCount(room) {
+  let count = 0;
+  for (const enemy of room?.enemies?.values?.() || []) if (enemy && !enemy.dead && enemy.pveAreaId) count += 1;
+  return count;
+}
+
+function serverSpawnPvePack(room, area, pack, now = Date.now()) {
+  const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const spawned = [];
+  for (let i = 0; i < Number(pack?.spawnCount || 0); i += 1) {
+    const opts = {
+      creatureTypeId: pack.creatureTypeId || undefined,
+      typeName: pack.creatureTypeId ? undefined : pack.typeName,
+      faction: pack.creatureTypeId ? 'monsters' : 'raiders',
+      role: pack.creatureTypeId ? 'monster' : 'raider',
+      hostileToPlayer: true
+    };
+    const visualModel = serverEncounterActorVisualModel(opts);
+    const enemy = spawnServerEnemy(room, {
+      ...opts,
+      visual: visualModel.visual,
+      modelKey: visualModel.modelKey,
+      force: true,
+      minPlayerDistance: rules.spawnMinPlayerDistance
+    });
+    if (!enemy) break;
+    enemy.pveAreaId = area.id;
+    enemy.pvePackId = pack.id;
+    enemy.spawnedAt = now;
+    spawned.push(enemy);
+  }
+  if (spawned.length) {
+    room.enemyStructureDirty = true;
+    refreshRoomWorldState(room, { force: true });
+  }
+  return spawned;
+}
+
+function serverEmitPveAreaState(room, targetSocketId = '', now = Date.now()) {
+  const area = room ? serverPveAreaForLocation(room.locationId) : null;
+  if (!area || !room.pveState) return null;
+  const payload = {
+    roomId: room.id,
+    ...publicPveRoomState(room.pveState, area, KROMKA_PVE_AREA_CATALOG.rules, now, {
+      aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
+    }),
+    t: now
+  };
+  io.to(targetSocketId || room.id).emit('pveAreaState', payload);
+  return payload;
+}
+
+function serverPveRoomEntered(room, player, now = Date.now()) {
+  const area = serverPveAreaForLocation(room?.locationId);
+  if (!area) return;
+  const state = serverEnsurePveRoom(room, player, now);
+  ensureRoomWorld(room);
+  for (const pack of pveInitialPacks(state, area, room.rng || Math.random)) serverSpawnPvePack(room, area, pack, now);
+  state.lastAlive = serverPveAliveCount(room);
+}
+
+function serverTickPveRooms(now = Date.now(), options = {}) {
+  const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const results = [];
+  for (const room of rooms.values()) {
+    if (!room?.pveState) continue;
+    const area = serverPveAreaForLocation(room.locationId);
+    if (!area) continue;
+    const occupants = livePlayersInRoom(room);
+    if (!occupants.length) {
+      // Пустая личная комната: после простоя встреча сбрасывается, чтобы
+      // возвращение снова начиналось с новой группы.
+      if (pveRoomIdle(room.pveState, rules, room.emptySince, now)) {
+        for (const [id, enemy] of [...room.enemies.entries()]) if (enemy?.pveAreaId) roomEnemyDelete(room, id);
+        room.pveState = null;
+        room.pveMembers = new Set();
+        results.push({ roomId: room.id, reason: 'reset' });
+      }
+      continue;
+    }
+    const alive = serverPveAliveCount(room);
+    const cleared = notePveAlive(room.pveState, rules, alive, now);
+    const roll = rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });
+    if (roll.spawn) serverSpawnPvePack(room, area, roll.spawn, now);
+    if (cleared || roll.rolled) {
+      room.pveState.lastAlive = serverPveAliveCount(room);
+      serverEmitPveAreaState(room, '', now);
+      results.push({ roomId: room.id, reason: cleared ? 'cleared' : roll.reason });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Аванпосты Сердцевины: присутствие в области контроля, смена владельца по
 // абсолютному времени и NPC-гарнизон, идущий по сцене от платформы фракции.
 // ---------------------------------------------------------------------------
@@ -19073,6 +19226,11 @@ function publicWorldState(room, includeMap = true) {
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
     fullDrop: pvpMode === 'pvpFullDrop',
+    pveArea: room.pveState
+      ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
+        aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
+      })
+      : null,
     activity: publicWorldActivity(room.worldActivity),
     shift: serverCurrentShiftState(Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
@@ -24433,6 +24591,19 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
 
   session.terminating = true;
   const arrivingMembers = [];
+  // Группа путешествия входит в PvE-область одной личной комнатой лидера:
+  // билет выдаёт сервер, поэтому проверка владельца на входе его пропустит.
+  const pveArrivalRoomId = !stayOnWorldMap && LOCATIONS[targetLocationId]?.pveArea === true
+    ? serverResolvePveRoomId(leader, targetLocationId, '')
+    : '';
+  if (pveArrivalRoomId) {
+    const pveRoom = getOrCreateRoom(pveArrivalRoomId, targetLocationId);
+    serverEnsurePveRoom(pveRoom, leader, now);
+    for (const id of session.memberIds) {
+      const member = players.get(id);
+      if (member) pveRoom.pveMembers.add(serverPveOwnerKeyFor(member));
+    }
+  }
   for (const id of session.memberIds) {
     const member = players.get(id);
     if (!member) continue;
@@ -24446,7 +24617,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     } else {
       stagePendingLocationTransition(member, {
         targetLocationId,
-        roomId: resolution.encounterRoomId || '',
+        roomId: resolution.encounterRoomId || pveArrivalRoomId || '',
         worldZoneId: resolution.worldZoneId || '',
         partyId: resolution.partyId || '',
         siteId: resolution.siteId || '',
@@ -24772,10 +24943,17 @@ io.on('connection', (socket) => {
       ? `${locationId}#${privateRoomOwnerId}`.slice(0, 96)
       : '');
     leaveCurrentRoom(socket, 'join', { newLocationId: locationId });
-    const room = savedRoomId
-      ? getOrCreateRoom(savedRoomId, locationId)
-      : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
-        : (privateRoomId ? getOrCreateRoom(privateRoomId, locationId) : chooseRoomForLocation(locationId)));
+    // Reconnect в PvE-области: сохранённая комната принимается только если
+    // персонаж её владелец или был допущен туда сервером.
+    const pveJoinRoomId = baseLoc.pveArea === true
+      ? serverResolvePveRoomId({ characterId, userId: auth.user.id }, locationId, savedRoomId)
+      : '';
+    const room = pveJoinRoomId
+      ? getOrCreateRoom(pveJoinRoomId, locationId)
+      : savedRoomId
+        ? getOrCreateRoom(savedRoomId, locationId)
+        : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
+          : (privateRoomId ? getOrCreateRoom(privateRoomId, locationId) : chooseRoomForLocation(locationId)));
     {
       const loc = roomLocation(room);
       const previousEncounterKey = [
@@ -24972,6 +25150,7 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
     players.set(socket.id, p);
+    if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());
     if (resumableSiege) {
       room.siegeEventId = resumableSiege.id;
       const siegeClan = serverSiegeClanForCharacter(characterId);
@@ -25389,6 +25568,32 @@ io.on('connection', (socket) => {
     });
     persistActivePlayerState(p);
     if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
+  });
+
+  // PvE-область: снимок личной встречи и «Искать следы». Следы можно искать
+  // только живым и только в своей (или групповой) комнате области.
+  socket.on('pveAreaAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.onGlobalMap) return fail('Игрок не в локации.');
+    const room = rooms.get(p.roomId);
+    const area = room ? serverPveAreaForLocation(room.locationId) : null;
+    if (!room || !area) return fail('Это не PvE-область.');
+    const now = Date.now();
+    const state = serverEnsurePveRoom(room, p, now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({ ok: true, ...serverEmitPveAreaState(room, socket.id, now) });
+      return;
+    }
+    if (action !== 'searchTracks') return fail('Неизвестное действие PvE-области.');
+    if (p.dead || p.downed || Number(p.hp || 0) <= 0) return fail('Сейчас нельзя искать следы.');
+    const result = pveSearchTracks(state, area, KROMKA_PVE_AREA_CATALOG.rules, now, { random: room.rng || Math.random, aliveCount: serverPveAliveCount(room) });
+    if (!result.ok) return fail(result.error || 'Следы недоступны.');
+    if (result.spawn) serverSpawnPvePack(room, area, result.spawn, now);
+    state.lastAlive = serverPveAliveCount(room);
+    const payload = serverEmitPveAreaState(room, '', now);
+    if (typeof ack === 'function') ack({ ok: true, reason: result.reason, spawned: result.spawn ? result.spawn.spawnCount : 0, ...payload });
   });
 
   socket.on('requestArtifactState', (_data = {}, ack) => {
@@ -28934,9 +29139,17 @@ io.on('connection', (socket) => {
       && effectiveRoomId.startsWith(`${locationId}#`)
       && !sharedRealityLocation;
     leaveCurrentRoom(socket, 'roomChange', { newLocationId: locationId });
-    const room = canUseRequestedRoom
-      ? getOrCreateRoom(effectiveRoomId, locationId)
-      : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+    // PvE-область: личная комната игрока или комната группы из билета;
+    // чужую комнату по подделанному roomId получить нельзя.
+    const pveResolvedRoomId = baseLoc.pveArea === true
+      ? serverResolvePveRoomId(p, locationId, effectiveRoomId || requestedRoomId)
+      : '';
+    const room = pveResolvedRoomId
+      ? getOrCreateRoom(pveResolvedRoomId, locationId)
+      : canUseRequestedRoom
+        ? getOrCreateRoom(effectiveRoomId, locationId)
+        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+    if (pveResolvedRoomId) serverPveRoomEntered(room, p, Date.now());
     const effectiveEncounterId = String(activeTransitionZone?.encounterId || transitionTicket?.encounterId || '').slice(0, 40);
     const hasEncounterPayload = !!effectiveEncounterId;
     const effectiveWorldZoneId = String(activeTransitionZone?.id || transitionTicket?.worldZoneId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
@@ -29106,6 +29319,15 @@ setInterval(() => {
     console.error('Kromka siege scheduler tick failed:', error);
   }
 }, 1000);
+
+// Встречи в PvE-областях: плановые проверки и сброс пустых личных комнат.
+setInterval(() => {
+  try {
+    serverTickPveRooms(Date.now());
+  } catch (error) {
+    console.error('PvE area tick failed:', error);
+  }
+}, 5000);
 
 // Рождение артефактов идёт по реальному времени даже в пустых локациях.
 setInterval(() => {

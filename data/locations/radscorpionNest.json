@@ -5,7 +5,11 @@
   "name": "Гнездовье Рыхляков",
   "seed": 20260710,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pve",
+
+  "privateInstance": true,
+
+  "pveArea": true,
   "kind": "location",
   "randomTemplate": false,
   "noRespawn": true,

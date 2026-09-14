@@ -2125,7 +2125,7 @@ async function main() {
   }
 }
 
-module.exports = { bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR };
+module.exports = { bootstrapCharacters, startServer, stopServer, connectAndJoin, closeSocket, socketAck, cleanupSync, DATA_DIR, serverLogs: () => activeServerLogs.join('') };
 
 if (require.main === module) main().catch(error => {
   console.error(`Combat runtime check failed: ${error?.message || String(error)}`);

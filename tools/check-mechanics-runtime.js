@@ -150,7 +150,12 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   const persistedRights = await request(accounts.trade, 'requestPersonalBaseState', {});
   assert(persistedRights.state.rights.granted);
   console.log('PASS server restart persistence; /health and Socket.IO exercised in isolated data');
-})().catch(error => { console.error(error.stack); process.exitCode = 1; }).finally(async () => {
+})().catch(error => {
+  console.error(error.stack);
+  const logs = h.serverLogs().trim();
+  if (logs) console.error(logs.slice(-5000));
+  process.exitCode = 1;
+}).finally(async () => {
   for (const account of Object.values(accounts)) h.closeSocket(account);
   await h.stopServer();
   h.cleanupSync();

@@ -79,6 +79,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnKromkaClanState;
         public event Action<JObject> OnKromkaSiegeState;
         public event Action<JObject> OnTerritoryOutpostState;
+        public event Action<JObject> OnPveAreaState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -488,6 +489,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnTerritoryOutpostState?.Invoke(payload);
+            }));
+
+            // PvE-области: состояние личной встречи (затишье, следы, группы)
+            // приходит всей комнате после каждой серверной проверки.
+            _connection.On("pveAreaState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPveAreaState?.Invoke(payload);
             }));
 
             _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>

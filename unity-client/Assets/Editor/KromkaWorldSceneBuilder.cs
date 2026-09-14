@@ -787,8 +787,11 @@ namespace Kromka.EditorTools
         private static void ConfigureBuildSettings(JObject catalog)
         {
             var paths = new List<string> { "Assets/Scenes/Wasteland.unity", GlobalScenePath };
+            // Build Settings must follow the catalog alias (wasteland -> KromkaGloomDetour),
+            // never the raw location id: LoadSceneAsync ignores case and the raw name
+            // collides with the Wasteland bootstrap scene.
             paths.AddRange(((JArray)catalog["locations"]).OfType<JObject>()
-                .Select(row => LocationSceneRoot + "/" + Text(row, "id") + ".unity"));
+                .Select(row => KromkaLocationSceneCatalog.ScenePath(Text(row, "id"))));
             EditorBuildSettings.scenes = paths.Select(path => new EditorBuildSettingsScene(path, true)).ToArray();
         }
 

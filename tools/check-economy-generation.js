@@ -573,8 +573,12 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
       || (nativeStation ? (row.unityAuthored !== true || row.url || row.file) : actualFile !== expected.file)) {
       errors.push(`location ${loc.id || file}: crafting station ${row.id || 'unknown'} has the wrong dedicated model for ${ids[0]} (${relPath})`);
     }
-    if (nativeStation) {
-      const sceneFile = path.join(ROOT, 'unity-client', loc.unityScene || `Assets/Scenes/Kromka/Locations/${loc.id}.unity`);
+    if (nativeStation && !loc.unityScene) {
+      // Scene file names no longer equal location ids (wasteland -> KromkaGloomDetour):
+      // a native station needs the explicit unityScene binding, never a derived path.
+      errors.push(`location ${loc.id}: native crafting station ${row.id} has no unityScene binding`);
+    } else if (nativeStation) {
+      const sceneFile = path.join(ROOT, 'unity-client', loc.unityScene);
       const scene = fs.existsSync(sceneFile) ? fs.readFileSync(sceneFile, 'utf8') : '';
       if (!scene.includes(`_stableObjectId: ${row.id}\n`) && !scene.includes(`_stableObjectId: ${row.id}\r\n`)) {
         errors.push(`location ${loc.id}: native crafting station ${row.id} has no authored scene anchor`);

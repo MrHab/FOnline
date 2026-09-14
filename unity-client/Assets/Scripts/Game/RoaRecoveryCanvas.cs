@@ -89,8 +89,11 @@ namespace RealmOfAshes.Game
 
             if (_pendingPayload != null && Bootstrap != null && Bootstrap.InGame)
             {
-                Show(_pendingPayload);
+                // Consume the payload before rendering: if Show throws on an
+                // unexpected shape, the error must not repeat every frame.
+                JObject payload = _pendingPayload;
                 _pendingPayload = null;
+                Show(payload);
             }
 
             bool screenReady = Bootstrap == null || (Bootstrap.InGame && !Bootstrap.FrontendVisible);
@@ -108,7 +111,7 @@ namespace RealmOfAshes.Game
             _title.text = "ВЫ ВЕРНУЛИСЬ · " + locationName.ToUpperInvariant();
             _cause.text = CauseText(payload);
             _state.text = StateText(payload);
-            _state.color = payload?["cause"]?["fullDrop"]?.ToObject<bool>() == true ? Danger : Safe;
+            _state.color = (payload?["cause"] as JObject)?["fullDrop"]?.ToObject<bool>() == true ? Danger : Safe;
             _next.text = NextText(payload);
             _visibleUntil = Time.unscaledTime + 18f;
             _root.SetActive(true);
@@ -156,7 +159,8 @@ namespace RealmOfAshes.Game
         public static string NextText(JObject payload)
         {
             int failed = payload?["failedWorldActivityIds"] is JArray failedRows ? failedRows.Count : 0;
-            string reason = payload?["activityResult"]?["reason"]?.ToString() ?? string.Empty;
+            // activityResult may arrive as null/string; indexing a JValue throws.
+            string reason = (payload?["activityResult"] as JObject)?["reason"]?.ToString() ?? string.Empty;
             if (failed > 0 || reason == "player_died")
                 return "Личная вылазка провалена. Выйдите на живую карту и выберите новое событие.";
             int detached = payload?["detachedWorldTaskIds"] is JArray detachedRows ? detachedRows.Count : 0;

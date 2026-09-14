@@ -170,6 +170,12 @@ for (const location of catalog.locations) {
 }
 includes(read('unity-client/Assets/Scripts/Kromka/KromkaLocationSceneCatalog.cs'),
   ['locationId == "wasteland" ? "KromkaGloomDetour" : locationId'], 'wasteland scene alias');
+// The editor world builder rewrites Build Settings; it must resolve scene paths
+// through the same catalog alias, or a rebuild would re-list Locations/wasteland.unity.
+includes(builder, ['KromkaLocationSceneCatalog.ScenePath(Text(row, "id"))'],
+  'build settings follow the scene catalog alias');
+assert(!builder.includes('Text(row, "id") + ".unity"'),
+  'world builder must not derive Build Settings scene paths from raw location ids');
 
 const gloomDetour = seed.locations.find(row => row.id === 'wasteland');
 assert(gloomDetour && gloomDetour.x === 78 && gloomDetour.z === 65,

@@ -36,7 +36,15 @@ namespace Kromka
 
         public static string SceneName(string locationId)
         {
-            return Contains(locationId) ? locationId : null;
+            if (!Contains(locationId)) return null;
+            // LoadSceneAsync ignores case: "wasteland" collided with the Wasteland bootstrap.
+            return locationId == "wasteland" ? "KromkaGloomDetour" : locationId;
+        }
+
+        public static string ScenePath(string locationId)
+        {
+            string name = SceneName(locationId);
+            return name == null ? null : "Assets/Scenes/Kromka/Locations/" + name + ".unity";
         }
 
         public static int Count => LocationIds.Count;

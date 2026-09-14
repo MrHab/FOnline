@@ -258,12 +258,12 @@ namespace RealmOfAshes.Game
             planRow.anchoredPosition = new Vector2(-7f, 7f);
             planRow.sizeDelta = new Vector2(134f, 36f);
             string id = skill.Id;
-            Button minus = SmallButton(planRow, "-", 3f, 30f, plannedSteps > 0, () => { _skillPlan[id] = Mathf.Max(0, plannedSteps - 1); _refreshAt = 0f; });
+            Button minus = SmallButton(planRow, "-", 3f, 30f, !_planApplying && plannedSteps > 0, () => { _skillPlan[id] = Mathf.Max(0, plannedSteps - 1); _refreshAt = 0f; });
             minus.name = "SkillMinus:" + id;
             Text count = Label("Count", planRow, 11, TextAnchor.MiddleCenter, new Color(ScreenInk.r, ScreenInk.g, ScreenInk.b, 0.76f));
             count.text = (plannedSteps * 5).ToString();
             Place_(count.rectTransform, 0f, 0f, 0f, 1f, new Vector2(38f, 3f), new Vector2(68f, -3f));
-            Button plus = SmallButton(planRow, "+5%", 73f, 56f, !locked && free > 0 && shown < 100, () => { _skillPlan[id] = plannedSteps + 1; _refreshAt = 0f; });
+            Button plus = SmallButton(planRow, "+5%", 73f, 56f, !_planApplying && !locked && free > 0 && shown < 100, () => { _skillPlan[id] = plannedSteps + 1; _refreshAt = 0f; });
             plus.name = "SkillPlus:" + id;
 
         }
@@ -292,26 +292,39 @@ namespace RealmOfAshes.Game
         /// <summary>Применить план: сервер принимает по одному шагу +5%, поэтому шаги идут последовательно.</summary>
         private IEnumerator ApplySkillPlan()
         {
-            if (_planApplying || Pipboy == null) yield break;
+            if (_planApplying || Pipboy == null || Pipboy.ProgressionPending) yield break;
             _planApplying = true;
-            var steps = new List<KeyValuePair<string, int>>(_skillPlan);
-            foreach (KeyValuePair<string, int> step in steps)
+            try
             {
-                for (int i = 0; i < step.Value; i++)
+                var steps = new List<KeyValuePair<string, int>>(_skillPlan);
+                foreach (KeyValuePair<string, int> step in steps)
                 {
-                    JObject self = Socket != null && Socket.Session != null ? Socket.Session.Self : null;
-                    int current = RoaPipboy.SkillPercent(self, step.Key);
-                    Pipboy.SubmitSkillUp(step.Key, current);
-                    float until = Time.unscaledTime + 6f;
-                    yield return null;
-                    while (Pipboy.ProgressionPending && Time.unscaledTime < until) yield return null;
-                    _skillPlan[step.Key] = Mathf.Max(0, _skillPlan[step.Key] - 1);
-                    _refreshAt = 0f;
+                    for (int i = 0; i < step.Value; i++)
+                    {
+                        JObject self = Socket != null && Socket.Session != null ? Socket.Session.Self : null;
+                        int current = RoaPipboy.SkillPercent(self, step.Key);
+                        if (current >= 100) { _skillPlan.Remove(step.Key); break; }
+                        int wanted = Mathf.Min(100, current + 5);
+                        Pipboy.SubmitSkillUp(step.Key, current);
+                        float until = Time.unscaledTime + 6f;
+                        yield return null;
+                        while (Pipboy.ProgressionPending && Time.unscaledTime < until) yield return null;
+                        self = Socket != null && Socket.Session != null ? Socket.Session.Self : null;
+                        // Only confirmed increases consume a planned step. A rejection
+                        // or timeout leaves the remaining plan available for retry.
+                        if (Pipboy.ProgressionPending || RoaPipboy.SkillPercent(self, step.Key) < wanted)
+                            yield break;
+                        _skillPlan[step.Key] = Mathf.Max(0, _skillPlan[step.Key] - 1);
+                        _refreshAt = 0f;
+                    }
                 }
+                _skillPlan.Clear();
             }
-            _skillPlan.Clear();
-            _planApplying = false;
-            _refreshAt = 0f;
+            finally
+            {
+                _planApplying = false;
+                _refreshAt = 0f;
+            }
         }
 
         // ==================================================================

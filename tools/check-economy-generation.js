@@ -574,7 +574,7 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
       errors.push(`location ${loc.id || file}: crafting station ${row.id || 'unknown'} has the wrong dedicated model for ${ids[0]} (${relPath})`);
     }
     if (nativeStation) {
-      const sceneFile = path.join(ROOT, 'unity-client', 'Assets', 'Scenes', 'Kromka', 'Locations', `${loc.id}.unity`);
+      const sceneFile = path.join(ROOT, 'unity-client', loc.unityScene || `Assets/Scenes/Kromka/Locations/${loc.id}.unity`);
       const scene = fs.existsSync(sceneFile) ? fs.readFileSync(sceneFile, 'utf8') : '';
       if (!scene.includes(`_stableObjectId: ${row.id}\n`) && !scene.includes(`_stableObjectId: ${row.id}\r\n`)) {
         errors.push(`location ${loc.id}: native crafting station ${row.id} has no authored scene anchor`);

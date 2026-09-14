@@ -17,7 +17,6 @@ namespace Kromka.EditorTools
     public static class KromkaWorldSceneProbe
     {
         private const string GlobalScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
-        private const string LocationRoot = "Assets/Scenes/Kromka/Locations/";
 
         [MenuItem("Кромка/Проверки/Авторские сцены")]
         public static void Run()
@@ -92,7 +91,7 @@ namespace Kromka.EditorTools
         {
             string id = row["id"]?.Value<string>() ?? string.Empty;
             string type = row["locationType"]?.Value<string>() ?? string.Empty;
-            string path = LocationRoot + id + ".unity";
+            string path = KromkaLocationSceneCatalog.ScenePath(id);
             Require(AssetDatabase.LoadAssetAtPath<SceneAsset>(path) != null, "не создана сцена " + id);
             Require(buildPaths.Contains(path), "сцена " + id + " не добавлена в Build Settings");
 

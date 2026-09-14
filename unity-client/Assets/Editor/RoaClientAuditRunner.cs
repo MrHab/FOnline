@@ -17,6 +17,7 @@ namespace RealmOfAshes.EditorTools
         {
             typeof(RoaCharacterCreatorProbe),
             typeof(RoaMechanicsInventoryProbe),
+            typeof(RoaProgressionProbe),
             typeof(RoaAnomalyVfxProbe),
             typeof(RealmOfAshes.Editor.RoaItemDataProbe),
             typeof(RealmOfAshes.Editor.RoaQuickbarProbe),

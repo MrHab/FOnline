@@ -133,7 +133,7 @@ namespace Kromka.EditorTools
             foreach (JObject location in (JArray)catalog["locations"])
             {
                 string id = Text(location, "id");
-                RequireGeneratedScene(LocationSceneRoot + "/" + id + ".unity",
+                RequireGeneratedScene(KromkaLocationSceneCatalog.ScenePath(id),
                     "m_Name: KromkaLocation_" + id);
             }
             BuildAllInternal(true);
@@ -270,7 +270,7 @@ namespace Kromka.EditorTools
             foreach (JObject location in (JArray)catalog["locations"])
             {
                 string id = Text(location, "id");
-                string scenePath = LocationSceneRoot + "/" + id + ".unity";
+                string scenePath = KromkaLocationSceneCatalog.ScenePath(id);
                 if (!overwriteExisting && SceneAssetExists(scenePath)) continue;
                 Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 GameObject root = new GameObject("KromkaLocation_" + id);

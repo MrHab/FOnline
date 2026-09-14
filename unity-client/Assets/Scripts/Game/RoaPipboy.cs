@@ -1284,8 +1284,9 @@ namespace RealmOfAshes.Game
         private void RequestSkill(string id, int current)
         {
             JObject ranks = (_self["skillRanks"] as JObject)?.DeepClone() as JObject ?? new JObject();
-            ranks[id] = Mathf.Min(100, current + 5);
-            BeginProgressionRequest(id, current + 5);
+            int wanted = Mathf.Min(100, current + 5);
+            ranks[id] = wanted;
+            BeginProgressionRequest(id, wanted);
             Socket.SendProgressionProfile(ranks, null, HandleProgressionAck);
         }
 

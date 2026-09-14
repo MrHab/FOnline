@@ -36,7 +36,7 @@ namespace Kromka.EditorTools
             foreach (JObject row in locations.OfType<JObject>())
             {
                 string id = Text(row, "id");
-                string path = "Assets/Scenes/Kromka/Locations/" + id + ".unity";
+                string path = KromkaLocationSceneCatalog.ScenePath(id);
                 if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
                     throw new FileNotFoundException("Не найдена Unity-сцена локации " + id, path);
                 Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
@@ -172,6 +172,8 @@ namespace Kromka.EditorTools
 
         public static void ExportGlobalScene(Scene scene)
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Экспортировать размещение нужно из Edit Mode, не из игровой копии сцены.");
             KromkaWorldAuthoring authoring = FindComponent<KromkaWorldAuthoring>(scene);
             string error = authoring == null ? "нет KromkaWorldAuthoring" : null;
             if (authoring == null || !authoring.Validate(out error))
@@ -180,6 +182,7 @@ namespace Kromka.EditorTools
             string mapPath = ProjectPath("data/global-map.json");
             string seedPath = ProjectPath("data/kromka/world-layout.seed.json");
             JObject map = ReadJson(mapPath);
+            ValidateAuthoredWorldSites(scene, map);
             JObject seed = ReadJson(seedPath);
             JArray nodes = map["nodes"] as JArray ?? new JArray();
             JArray seedLocations = seed["locations"] as JArray ?? new JArray();
@@ -213,7 +216,15 @@ namespace Kromka.EditorTools
             {
                 JObject row = routes.OfType<JObject>().FirstOrDefault(candidate =>
                     Text(candidate, "id") == route.RouteId);
-                if (row == null) continue;
+                if (row == null)
+                {
+                    row = new JObject { ["id"] = route.RouteId, ["displayName"] = route.DisplayName,
+                        ["kind"] = route.RouteKind == KromkaRouteKind.Railway ? "railway"
+                            : route.RouteKind == KromkaRouteKind.CascadeCanal ? "cascade_canal"
+                            : route.RouteKind == KromkaRouteKind.ServiceTunnel ? "service_tunnel" : "road",
+                        ["widthKm"] = route.WidthKm, ["travelFactor"] = route.TravelFactor };
+                    routes.Add(row);
+                }
                 row["points"] = new JArray(route.ControlPoints.Where(point => point != null)
                     .Select(point =>
                     {
@@ -223,6 +234,25 @@ namespace Kromka.EditorTools
             }
 
             RecomputeRoadAccess(nodes, routes, seed["grid"] as JObject);
+            seed["routes"] = routes;
+            // The server must use the same authored paths as the visible scene.
+            JArray infrastructure = map["infrastructure"] as JArray ?? new JArray();
+            foreach (JObject route in routes.OfType<JObject>())
+            {
+                JObject edge = infrastructure.OfType<JObject>().FirstOrDefault(r => Text(r, "id") == Text(route, "id"));
+                if (edge == null)
+                {
+                    string kind = Text(route, "kind");
+                    edge = new JObject { ["id"] = Text(route, "id"), ["name"] = Text(route, "displayName"),
+                        ["type"] = kind == "cascade_canal" ? "pipeline" : kind,
+                        ["model"] = kind == "railway" ? "rail" : kind == "cascade_canal" ? "cascade_canal" : "broken_asphalt",
+                        ["walkable"] = kind != "cascade_canal", ["travelFactor"] = route["travelFactor"]?.DeepClone(),
+                        ["width"] = route["widthKm"]?.DeepClone(), ["allowCrossingsWith"] = new JArray() };
+                    infrastructure.Add(edge);
+                }
+                edge["points"] = new JArray(((JArray)route["points"]).Select(p => new JObject { ["x"] = p[0].DeepClone(), ["y"] = p[1].DeepClone() }));
+            }
+            map["infrastructure"] = infrastructure;
 
             JArray regions = seed["regions"] as JArray ?? new JArray();
             foreach (KromkaRegionAuthoring region in authoring
@@ -240,9 +270,38 @@ namespace Kromka.EditorTools
             }
 
             map["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
+            map["sitePlacement"] = "unity-authored";
             seed["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
             WriteJson(mapPath, map);
             WriteJson(seedPath, seed);
+        }
+
+        public static void ValidateAuthoredWorldSites(Scene scene, JObject map)
+        {
+            KromkaWorldAuthoring world = FindComponent<KromkaWorldAuthoring>(scene);
+            if (world == null) throw new InvalidOperationException("Нет авторской глобальной карты Unity.");
+            var markers = world.GetComponentsInChildren<KromkaWorldLocationAuthoring>(true);
+            var duplicate = markers.GroupBy(marker => marker.StableLocationId, StringComparer.Ordinal)
+                .FirstOrDefault(group => string.IsNullOrWhiteSpace(group.Key) || group.Count() != 1);
+            if (duplicate != null) throw new InvalidOperationException("Пустой или повторяющийся ID Unity-локации: " + duplicate.Key);
+            JObject catalog = ReadJson(ProjectPath("data/kromka/locations.json"));
+            var lore = ((JArray)catalog["locations"]).OfType<JObject>()
+                .ToDictionary(row => Text(row, "id"), StringComparer.Ordinal);
+            foreach (JObject node in (map["nodes"] as JArray ?? new JArray()).OfType<JObject>())
+            {
+                string id = Text(node, "locationId");
+                if (string.IsNullOrWhiteSpace(id)) id = Text(node, "id");
+                var marker = markers.SingleOrDefault(candidate => candidate.StableLocationId == id);
+                if (marker == null || !lore.TryGetValue(id, out JObject definition))
+                    throw new InvalidOperationException("Узел без Unity-размещения или лора: " + id);
+                if (marker.LocationScenePath != Text(definition, "unityScene")
+                    || AssetDatabase.LoadAssetAtPath<SceneAsset>(marker.LocationScenePath) == null)
+                    throw new InvalidOperationException("Не совпадает авторская сцена локации: " + id);
+                Vector2 point = WorldToMap(marker.transform.position);
+                if (float.IsNaN(point.x) || float.IsNaN(point.y) || point.x < 0 || point.y < 0
+                    || point.x > world.WorldWidthKm || point.y > world.WorldHeightKm)
+                    throw new InvalidOperationException("Локация вне границ авторской карты: " + id);
+            }
         }
 
         private static void RecomputeRoadAccess(JArray nodes, JArray routes, JObject grid)

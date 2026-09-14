@@ -19,6 +19,10 @@ const {
 const ROOT = path.resolve(__dirname, '..');
 const stateFile = path.join(os.tmpdir(), `realm-world-location-check-${process.pid}-${Date.now()}.json`);
 const globalMap = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/global-map.json'), 'utf8'));
+// This suite exercises legacy procedural-instance compatibility. Authored Kromka
+// placement and saved-state retirement are covered by check-authored-world-sites.
+globalMap.worldRevision = 'legacy';
+globalMap.sitePlacement = 'procedural';
 const authoredLocationIds = new Set(fs.readdirSync(path.join(ROOT, 'data/locations'))
   .filter(name => name.endsWith('.json'))
   .map(name => path.basename(name, '.json')));

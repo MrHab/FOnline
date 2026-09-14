@@ -9,6 +9,7 @@ const {
 const { ROAD_SITE_LAYOUT_VERSION } = require('../src/server/wasteland-district-sites');
 const { worldSiteLocationId } = require('../src/server/wasteland-site-instances');
 const { isRetiredEnvironmentModel } = require('../src/server/retired-environment-models');
+const { usesAuthoredWorldSites } = require('../src/server/authored-world-sites');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');
@@ -1238,6 +1239,12 @@ if (!globalMap) {
   const rawInfrastructure = Array.isArray(globalMap.infrastructure) ? globalMap.infrastructure : [];
   const infrastructureRows = normalizeGlobalInfrastructure(rawInfrastructure, globalMap);
   const roads = infrastructureRows.filter(row => row.type === 'road');
+  // Unity locations are strategic entrance pins with a 2 km selection radius,
+  // not generated district footprints requiring a 20-point exclusion zone.
+  // Keep real road-overlap checks and the original buffer for legacy worlds.
+  const siteRoadClearance = usesAuthoredWorldSites(globalMap)
+    ? 2 * Number(globalMap.grid?.cellPoints || 10) / Number(globalMap.grid?.cellKm || 10)
+    : ROAD_LOCATION_CLEARANCE_POINTS;
   const pipelines = infrastructureRows.filter(row => row.type === 'pipeline');
   if (infrastructureRows.length !== rawInfrastructure.length) {
     errors.push(`${rel}: ${rawInfrastructure.length - infrastructureRows.length} infrastructure route(s) are invalid or have fewer than two points`);
@@ -1325,7 +1332,7 @@ if (!globalMap) {
     }
     if (finiteNumber(node?.x) && finiteNumber(node?.y)) {
       const nearest = nearestGlobalMapRoad(node, roads);
-      const requiredDistance = ROAD_LOCATION_CLEARANCE_POINTS + Number(nearest?.road?.width || 0) * 0.5;
+      const requiredDistance = siteRoadClearance + Number(nearest?.road?.width || 0) * 0.5;
       if (nearest && nearest.distance <= requiredDistance && node?.roadAccess !== true) {
         errors.push(`${rel}: node "${node.id || index}" overlaps road "${nearest.road.id}" (${nearest.distance.toFixed(1)} <= ${requiredDistance.toFixed(1)})`);
       }
@@ -1367,7 +1374,7 @@ if (!globalMap) {
       }
       continue;
     }
-    const requiredDistance = ROAD_LOCATION_CLEARANCE_POINTS + Number(nearest.road.width || 0) * 0.5;
+    const requiredDistance = siteRoadClearance + Number(nearest.road.width || 0) * 0.5;
     if (nearest.distance <= requiredDistance) {
       const migratesOnLoad = site?.districtInterest === true
         && Number(site.roadLayoutVersion || 0) < ROAD_SITE_LAYOUT_VERSION;

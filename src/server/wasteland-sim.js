@@ -1,5 +1,8 @@
 'use strict';
 
+const { usesAuthoredWorldSites, authoredNodeForSite, authoredSiteName, isPlacedWorldSite,
+  archiveUnplacedWorldSites } = require('./authored-world-sites');
+
 const path = require('path');
 const {
   infrastructureSegmentIsLand,
@@ -990,7 +993,8 @@ function defaultSites(globalMap = {}) {
     }
   }
   return {
-    ...sites,
+    ...Object.fromEntries(Object.entries(sites).filter(([, site]) =>
+      !usesAuthoredWorldSites(globalMap) || isPlacedWorldSite(globalMap, site))),
     ...districtInterestSites(globalMap, 0, sites)
   };
 }
@@ -1995,6 +1999,7 @@ function normalizeState(input, globalMap = {}) {
       : base.anomalyCycle,
     stats: { ...base.stats, ...(src.stats && typeof src.stats === 'object' ? src.stats : {}) }
   };
+  archiveUnplacedWorldSites(state, globalMap);
   for (const [id, faction] of Object.entries(state.factions)) {
     const defaults = base.factions[id] || {};
     const currentName = String(faction?.name || '').trim();
@@ -3402,6 +3407,10 @@ function createWastelandSimulation(options = {}) {
   }
 
   function maintainDistrictInterestSites(hours = 0) {
+    if (usesAuthoredWorldSites(getGlobalMap())) {
+      if (archiveUnplacedWorldSites(state, getGlobalMap())) dirty = true;
+      return;
+    }
     void hours;
     const worldHour = Number(state.worldHour || 0);
     const siteCount = Object.keys(state.sites || {}).length;
@@ -11799,6 +11808,22 @@ function createWastelandSimulation(options = {}) {
   }
 
   function syncGlobalMap(globalMap = getGlobalMap()) {
+    if (usesAuthoredWorldSites(globalMap)) {
+      archiveUnplacedWorldSites(state, globalMap);
+      for (const site of Object.values(state.sites)) {
+        const node = authoredNodeForSite(globalMap, site);
+        if (!node) continue;
+        // Keep exact Unity coordinates, including zero and fractional positions.
+        site.x = Number(node.x);
+        site.y = Number(node.y);
+        site.name = authoredSiteName(globalMap, site);
+        if (node.note) site.note = String(node.note).slice(0, 240);
+      }
+      invalidateDistrictInterestCache();
+      dirty = true;
+      save(false);
+      return;
+    }
     const nodes = Array.isArray(globalMap.nodes) ? globalMap.nodes : [];
     nodes.forEach(node => {
       const id = safeId(node?.id || '');
@@ -13807,6 +13832,8 @@ function createWastelandSimulation(options = {}) {
     const id = safeId(input.id || input.name || 'world_site', 'world_site');
     const prev = state.sites[id] || {};
     const globalMap = getGlobalMap();
+    if (usesAuthoredWorldSites(globalMap))
+      throw new Error('World sites are authored in Unity; export the global scene instead of placing runtime sites.');
     const point = globalMapCellCenter({ x: input.x ?? prev.x ?? 0, y: input.y ?? prev.y ?? 0 }, globalMap);
     const requestedLocationId = safeId(input.locationId || prev.templateLocationId || prev.locationId || '', '');
     const duplicateLocationSite = requestedLocationId

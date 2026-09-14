@@ -148,11 +148,28 @@ for (const region of catalog.regions) {
 }
 
 for (const location of catalog.locations) {
-  assert(typeof location.unityScene === 'string' && location.unityScene.endsWith(`/${location.id}.unity`),
+  const sceneName = location.id === 'wasteland' ? 'KromkaGloomDetour' : location.id;
+  assert(location.unityScene === `Assets/Scenes/Kromka/Locations/${sceneName}.unity`,
     `location ${location.id} does not own an editable Unity scene path`);
   assert(Array.isArray(location.landmarkTags) && location.landmarkTags.length > 0,
     `location ${location.id} lacks a top-readable landmark`);
 }
+
+// Unity loads names case-insensitively; protect the bootstrap/local-scene boundary.
+const buildSettings = read('unity-client/ProjectSettings/EditorBuildSettings.asset');
+const buildScenes = [...buildSettings.matchAll(/enabled: 1\r?\n\s+path: (.+)/g)].map(match => match[1].trim());
+const sceneNames = new Set();
+for (const scenePath of buildScenes) {
+  const name = path.basename(scenePath, '.unity').toLowerCase();
+  assert(!sceneNames.has(name), `case-insensitive scene-name collision: ${scenePath}`);
+  sceneNames.add(name);
+}
+for (const location of catalog.locations) {
+  assert(buildScenes.includes(location.unityScene), `${location.id}: scene missing from Build Settings`);
+  assert(fs.existsSync(path.join(root, 'unity-client', location.unityScene)), `${location.id}: scene asset missing`);
+}
+includes(read('unity-client/Assets/Scripts/Kromka/KromkaLocationSceneCatalog.cs'),
+  ['locationId == "wasteland" ? "KromkaGloomDetour" : locationId'], 'wasteland scene alias');
 
 const gloomDetour = seed.locations.find(row => row.id === 'wasteland');
 assert(gloomDetour && gloomDetour.x === 78 && gloomDetour.z === 65,
@@ -2863,11 +2880,11 @@ includes(globalCapture, [
 
 const positions = new Map(seed.locations.map(row => [row.id, row]));
 for (const [id, x, z] of [
-  ['sluiceCity', 190, 262],
+  ['sluiceCity', 186, 262],
   ['settlement', 195, 205],
   ['scrapTown', 76, 210],
   ['caravanCamp', 125, 155],
-  ['relayStation', 300, 181],
+  ['relayStation', 284, 181],
   ['secondHaven', 297, 110],
   ['cascadeRegenerator', 205, 65]
 ]) {

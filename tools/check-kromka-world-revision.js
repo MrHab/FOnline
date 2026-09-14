@@ -140,7 +140,7 @@ for (const node of map.nodes) {
     `${node.id} Unity anchor is outside Locations_EDITABLE`);
   assert(sceneLocation.binding?.stableLocationId === node.locationId,
     `${node.id} Unity location binding does not match its server entry id`);
-  assert(sceneLocation.binding.scenePath === `Assets/Scenes/Kromka/Locations/${node.locationId}.unity`,
+  assert(sceneLocation.binding.scenePath === catalog.locations.find(row => row.id === node.locationId)?.unityScene,
     `${node.id} Unity location binding points to the wrong local scene`);
   const expectedWorldX = (node.x - mapWidth * 0.5) * mapWorldScale;
   const expectedWorldZ = (mapHeight * 0.5 - node.y) * mapWorldScale;

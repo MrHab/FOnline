@@ -784,8 +784,16 @@ async function assertEditorAndWorldDataApis() {
   }
   const locationInstances = Object.values(publicLocationsData.locations || {})
     .filter(location => location?.worldSiteInstance);
-  if (locationInstances.length < 20) {
-    fail('Kromka district world sites were not preserved as materialized locations');
+  if (globalMapData.map.sitePlacement !== 'unity-authored'
+    || !worldSites.length || locationInstances.length !== 0
+    || worldSites.some(site => site.districtInterest || String(site.id || '').startsWith('district_interest_'))) {
+    fail('Kromka must expose authored Unity sites without procedural district instances');
+  }
+  for (const site of worldSites) {
+    const node = globalMapData.map.nodes.find(row => row.id === site.id || row.locationId === site.locationId);
+    if (!node || Number(site.x) !== Number(node.x) || Number(site.y) !== Number(node.y)) {
+      fail(`world site moved away from its authored Unity marker: ${site.id}`, JSON.stringify({ site, node }));
+    }
   }
   const worldNames = worldSites.map(site => String(site?.name || '')).filter(Boolean);
   const worldDescriptions = worldSites.map(site => String(site?.description || site?.note || '')).filter(Boolean);

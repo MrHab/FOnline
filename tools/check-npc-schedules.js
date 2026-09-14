@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const vm = require('vm');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
+const { isPlacedWorldSite } = require('../src/server/authored-world-sites');
 const {
   createLegacyRoutine,
   normalizeAuthoredRoutine,
@@ -12,8 +13,8 @@ const {
 const { buildActivitySlotCatalog } = require('../src/server/npc-smart-objects');
 
 const ROOT = path.resolve(__dirname, '..');
-// The lore-first Kromka map is intentionally smaller than the retired region
-// while still keeping enough populated sites for schedule coverage.
+// Exercise the actual authored population AND a separate legacy fixture. The
+// schedule-coverage floor must not demand procedural locations in the real map.
 const MIN_GENERATED_SITES = 50;
 const MIN_FRIENDLY_WORKER_GROUPS = 80;
 const MIN_FRIENDLY_SIMULATED_NPCS = 200;
@@ -111,6 +112,17 @@ try {
       getGlobalMap: () => globalMap
     });
     sim = simulation.state();
+    for (const site of Object.values(sim.sites)) {
+      if (!isPlacedWorldSite(globalMap, site)) errors.push(`${site.id}: NPC site has no authored Unity placement`);
+    }
+    const legacyMap = { ...globalMap, worldRevision: 'legacy', sitePlacement: 'procedural' };
+    const legacy = createWastelandSimulation({
+      stateFile: path.join(scheduleFixtureDir, 'legacy-sim.json'), getGlobalMap: () => legacyMap
+    });
+    sim = { sites: {
+      ...Object.fromEntries(Object.entries(sim.sites).map(([id, site]) => [`authored:${id}`, site])),
+      ...Object.fromEntries(Object.entries(legacy.state().sites).map(([id, site]) => [`legacy:${id}`, site]))
+    } };
   }
 } catch (error) {
   errors.push(`deterministic schedule fixture: ${error?.message || String(error)}`);
@@ -485,7 +497,7 @@ if (errors.length) {
   errors.forEach(error => console.error(`- ${error}`));
   process.exitCode = 1;
 } else {
-  console.log(`NPC schedules OK: ${friendlyWorkerKinds} worker groups, ${friendlyWorkerTotal} simulated NPCs across ${simulatedSiteCount} generated sites, ${authoredNpcRows} authored NPC rows.`);
+  console.log(`NPC schedules OK: ${friendlyWorkerKinds} worker groups, ${friendlyWorkerTotal} simulated NPCs across ${simulatedSiteCount} authored/legacy fixture sites, ${authoredNpcRows} authored NPC rows.`);
 }
 if (warnings.length) {
   console.log('Warnings:');

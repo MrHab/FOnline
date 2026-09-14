@@ -1002,7 +1002,8 @@ function normalizeGlobalMapConfig(raw = {}) {
   };
   const maxX = grid.cols * grid.cellPoints;
   const maxY = grid.rows * grid.cellPoints;
-  const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1';
+  const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'
+    || src.sitePlacement === 'unity-authored';
   const centerOnCell = (x, y) => {
     const px = clamp(Number(x || 0), 0, Math.max(0, maxX - 0.001));
     const py = clamp(Number(y || 0), 0, Math.max(0, maxY - 0.001));
@@ -1016,8 +1017,8 @@ function normalizeGlobalMapConfig(raw = {}) {
   const nodes = (Array.isArray(src.nodes) ? src.nodes : []).slice(0, 80).map((node, index) => {
     const point = preserveAuthoredNodePoints
       ? {
-        x: clamp(Math.round(Number(node?.x || 0)), 0, maxX),
-        y: clamp(Math.round(Number(node?.y || 0)), 0, maxY)
+        x: clamp(Number(node?.x || 0), 0, maxX),
+        y: clamp(Number(node?.y || 0), 0, maxY)
       }
       : centerOnCell(node?.x, node?.y);
     return {
@@ -1098,6 +1099,8 @@ function normalizeGlobalMapConfig(raw = {}) {
     version: Math.max(1, Math.round(Number(src.version || 1))),
     worldRevision: String(src.worldRevision || 'legacy').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
     unityScene: String(src.unityScene || '').replace(/[^a-zA-Z0-9_./-]/g, '').slice(0, 180),
+    sitePlacement: src.worldRevision === 'kromka-1' || src.sitePlacement === 'unity-authored'
+      ? 'unity-authored' : 'procedural',
     legacyCoastline: src.legacyCoastline !== false,
     grid,
     nodes,
@@ -2067,6 +2070,8 @@ app.post('/api/dev/global-map', (req, res) => {
 });
 
 app.post('/api/dev/wasteland/site', (req, res) => {
+  if (GLOBAL_MAP.sitePlacement === 'unity-authored')
+    return res.status(409).json({ ok: false, error: 'Размещение локаций задаётся в Unity. Экспортируйте авторскую глобальную сцену.' });
   const site = req.body && typeof req.body === 'object' ? req.body.site || req.body : null;
   if (!site || typeof site !== 'object') return res.status(400).json({ ok: false, error: 'Нужны данные точки живой пустоши.' });
   const sim = WASTELAND_SIM.upsertSite(site);
@@ -8897,7 +8902,8 @@ function serverApplyProgressionProposal(player = {}, data = {}, options = {}) {
       const wanted = Math.min(100, raw);
       const delta = wanted - current;
       if (delta <= 0) continue;
-      if (strict && delta % 5 !== 0) {
+      // A final +5% step is capped at 100%; its remaining 1-4% still costs one point.
+      if (strict && wanted < 100 && delta % 5 !== 0) {
         return { ok: false, changed: false, error: `${serverProgressionDisplayName(id)} повышается шагами по 5%.` };
       }
       const wantedSteps = Math.max(0, Math.ceil(delta / 5));

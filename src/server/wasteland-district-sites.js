@@ -1,5 +1,7 @@
 'use strict';
 
+const { usesAuthoredWorldSites } = require('./authored-world-sites');
+
 const {
   normalizeGlobalInfrastructure,
   pointToInfrastructureDistance
@@ -549,6 +551,7 @@ function districtInterestIdentity(variant = {}, sx = 0, sy = 0, sectorCols = 1, 
 }
 
 function districtInterestSites(globalMap = {}, worldHour = 0, reservedSites = {}) {
+  if (usesAuthoredWorldSites(globalMap)) return {};
   const grid = globalMap.grid || {};
   const cols = Math.max(1, Math.round(Number(grid.cols || 30)));
   const rows = Math.max(1, Math.round(Number(grid.rows || 30)));

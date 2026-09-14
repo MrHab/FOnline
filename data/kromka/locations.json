@@ -624,7 +624,7 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "expedition-return-point",
       "legacyStable": true,
-      "unityScene": "Assets/Scenes/Kromka/Locations/wasteland.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity"
     },
     {
       "id": "tutorialCaravanYard",

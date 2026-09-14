@@ -3,6 +3,7 @@
   "version": 2,
   "worldRevision": "kromka-1",
   "unityScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
+  "sitePlacement": "unity-authored",
   "legacyCoastline": false,
   "grid": {
     "cols": 38,
@@ -13,8 +14,8 @@
   "nodes": [
     {
       "id": "klimAmmoWorks",
-      "x": 145,
-      "y": 274,
+      "x": 143,
+      "y": 258,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "klimAmmoWorks",
@@ -51,7 +52,7 @@
     },
     {
       "id": "sluiceCity",
-      "x": 190,
+      "x": 186,
       "y": 262,
       "kind": "settlement",
       "locationCount": 1,
@@ -70,8 +71,8 @@
     },
     {
       "id": "clanHydroNode2",
-      "x": 235,
-      "y": 271,
+      "x": 232,
+      "y": 263,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanHydroNode2",
@@ -108,8 +109,8 @@
     },
     {
       "id": "roadOutpost",
-      "x": 166,
-      "y": 224,
+      "x": 188,
+      "y": 217,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "roadOutpost",
@@ -127,8 +128,8 @@
     },
     {
       "id": "resourceDryWaterPump",
-      "x": 226,
-      "y": 229,
+      "x": 211,
+      "y": 231,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceDryWaterPump",
@@ -146,8 +147,8 @@
     },
     {
       "id": "resourceOldKlimFarm",
-      "x": 151,
-      "y": 190,
+      "x": 166,
+      "y": 188,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceOldKlimFarm",
@@ -165,8 +166,8 @@
     },
     {
       "id": "clanFilterT6",
-      "x": 235,
-      "y": 184,
+      "x": 213,
+      "y": 182,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFilterT6",
@@ -203,8 +204,8 @@
     },
     {
       "id": "scrapOutpost",
-      "x": 116,
-      "y": 206,
+      "x": 133,
+      "y": 205,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "scrapOutpost",
@@ -260,8 +261,8 @@
     },
     {
       "id": "resourceScrapFields",
-      "x": 95,
-      "y": 237,
+      "x": 118,
+      "y": 196,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceScrapFields",
@@ -286,7 +287,7 @@
       "locationId": "antHive",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": true,
+      "roadAccess": false,
       "danger": 2,
       "model": "brahminPen",
       "modelScale": 1,
@@ -355,8 +356,8 @@
     },
     {
       "id": "oldDepot",
-      "x": 170,
-      "y": 161,
+      "x": 147,
+      "y": 166,
       "kind": "complex",
       "locationCount": 1,
       "locationId": "oldDepot",
@@ -375,7 +376,7 @@
     {
       "id": "resourceTireDepot",
       "x": 82,
-      "y": 144,
+      "y": 151,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceTireDepot",
@@ -393,8 +394,8 @@
     },
     {
       "id": "clanDepotBypass",
-      "x": 210,
-      "y": 145,
+      "x": 255,
+      "y": 143,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanDepotBypass",
@@ -438,7 +439,7 @@
       "locationId": "geckoCanyon",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": true,
+      "roadAccess": false,
       "danger": 3,
       "model": "brahminPen",
       "modelScale": 1,
@@ -476,7 +477,7 @@
       "locationId": "clanChalkSluice",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": false,
+      "roadAccess": true,
       "danger": 3,
       "model": "watchPost",
       "modelScale": 1,
@@ -488,7 +489,7 @@
     },
     {
       "id": "relayStation",
-      "x": 300,
+      "x": 284,
       "y": 181,
       "kind": "settlement",
       "locationCount": 1,
@@ -507,8 +508,8 @@
     },
     {
       "id": "relayOutpost",
-      "x": 272,
-      "y": 205,
+      "x": 270,
+      "y": 200,
       "kind": "outpost",
       "locationCount": 1,
       "locationId": "relayOutpost",
@@ -552,7 +553,7 @@
       "locationId": "solarArray",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": true,
+      "roadAccess": false,
       "danger": 4,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -621,14 +622,14 @@
     },
     {
       "id": "resourceChemSpring",
-      "x": 168,
-      "y": 76,
+      "x": 158,
+      "y": 82,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceChemSpring",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": false,
+      "roadAccess": true,
       "danger": 5,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -641,13 +642,13 @@
     {
       "id": "resourceOilPump",
       "x": 147,
-      "y": 45,
+      "y": 56,
       "kind": "resource",
       "locationCount": 1,
       "locationId": "resourceOilPump",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": false,
+      "roadAccess": true,
       "danger": 5,
       "model": "storageLeanTo",
       "modelScale": 1,
@@ -666,7 +667,7 @@
       "locationId": "radscorpionNest",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": true,
+      "roadAccess": false,
       "danger": 5,
       "model": "brahminPen",
       "modelScale": 1,
@@ -716,14 +717,14 @@
     },
     {
       "id": "clanFortZero",
-      "x": 220,
-      "y": 22,
+      "x": 232,
+      "y": 32,
       "kind": "clan_base",
       "locationCount": 1,
       "locationId": "clanFortZero",
       "capital": false,
       "capitalFaction": "",
-      "roadAccess": false,
+      "roadAccess": true,
       "danger": 5,
       "model": "watchPost",
       "modelScale": 1,
@@ -777,20 +778,32 @@
           "y": 222
         },
         {
+          "x": 188,
+          "y": 210
+        },
+        {
+          "x": 188,
+          "y": 190
+        },
+        {
+          "x": 189,
+          "y": 170
+        },
+        {
+          "x": 193,
+          "y": 145
+        },
+        {
           "x": 195,
-          "y": 205
+          "y": 120
         },
         {
-          "x": 211,
-          "y": 160
+          "x": 195,
+          "y": 92
         },
         {
-          "x": 207,
-          "y": 116
-        },
-        {
-          "x": 205,
-          "y": 65
+          "x": 196,
+          "y": 72
         }
       ]
     },
@@ -858,28 +871,56 @@
           "y": 246
         },
         {
-          "x": 74,
+          "x": 72,
+          "y": 222
+        },
+        {
+          "x": 78,
+          "y": 220
+        },
+        {
+          "x": 82,
+          "y": 216
+        },
+        {
+          "x": 100,
           "y": 214
         },
         {
-          "x": 120,
-          "y": 201
+          "x": 102,
+          "y": 212
         },
         {
-          "x": 195,
-          "y": 205
+          "x": 152,
+          "y": 200
         },
         {
-          "x": 254,
-          "y": 196
+          "x": 174,
+          "y": 200
         },
         {
-          "x": 300,
-          "y": 180
+          "x": 185,
+          "y": 215
         },
         {
-          "x": 364,
-          "y": 158
+          "x": 199,
+          "y": 217
+        },
+        {
+          "x": 211,
+          "y": 219
+        },
+        {
+          "x": 221,
+          "y": 213
+        },
+        {
+          "x": 229,
+          "y": 215
+        },
+        {
+          "x": 275,
+          "y": 185
         }
       ]
     },
@@ -942,20 +983,108 @@
           "y": 126
         },
         {
-          "x": 205,
-          "y": 91
+          "x": 184,
+          "y": 116
         },
         {
-          "x": 205,
-          "y": 65
+          "x": 193,
+          "y": 114
+        },
+        {
+          "x": 214,
+          "y": 114
         },
         {
           "x": 245,
-          "y": 50
+          "y": 102
+        },
+        {
+          "x": 282,
+          "y": 82
         },
         {
           "x": 304,
           "y": 54
+        }
+      ]
+    },
+    {
+      "id": "fuel_ramp_access",
+      "name": "Подъезд к Топливной рампе",
+      "type": "road",
+      "model": "broken_asphalt",
+      "walkable": true,
+      "travelFactor": 0.8,
+      "width": 2,
+      "allowCrossingsWith": [],
+      "points": [
+        {
+          "x": 184,
+          "y": 116
+        },
+        {
+          "x": 174,
+          "y": 105
+        },
+        {
+          "x": 163,
+          "y": 95
+        },
+        {
+          "x": 161,
+          "y": 80
+        },
+        {
+          "x": 165,
+          "y": 66
+        },
+        {
+          "x": 161,
+          "y": 57
+        },
+        {
+          "x": 147,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "id": "zero_admin_access",
+      "name": "Подъезд к Балансу и Форту 14",
+      "type": "road",
+      "model": "broken_asphalt",
+      "walkable": true,
+      "travelFactor": 0.8,
+      "width": 2,
+      "allowCrossingsWith": [],
+      "points": [
+        {
+          "x": 304,
+          "y": 54
+        },
+        {
+          "x": 291,
+          "y": 48
+        },
+        {
+          "x": 274,
+          "y": 46
+        },
+        {
+          "x": 260,
+          "y": 48
+        },
+        {
+          "x": 247,
+          "y": 49
+        },
+        {
+          "x": 245,
+          "y": 37
+        },
+        {
+          "x": 232,
+          "y": 32
         }
       ]
     }

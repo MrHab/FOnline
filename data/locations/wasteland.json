@@ -1450,7 +1450,7 @@
   "kromkaVisualProfile": "silent-ring-expedition-v1",
   "ambientProfile": "dead-border-storm",
   "anomalyDensity": 0.55,
-  "unityScene": "Assets/Scenes/Kromka/Locations/wasteland.unity",
+  "unityScene": "Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity",
   "respawn": {
     "tx": 19,
     "tz": 8,

@@ -16,10 +16,20 @@ const {
 } = require('./src/server/kromka-combat-contract');
 const {
   deathLootPolicy,
+  persistedDeathState,
   persistedDownedState,
+  restoreDeathState,
   restoreDownedState,
-  resolveDeathLootTransaction
+  resolveDeathLootTransaction,
+  selectBagDropRows
 } = require('./src/server/kromka-death-loot');
+const {
+  ZONE_MODE_SET,
+  ZONE_MODE_LABELS,
+  normalizeZoneMode,
+  zoneModeAllowsPvp,
+  zoneRules
+} = require('./src/server/zone-rules');
 const {
   fieldRecipeCatalogIndexes,
   itemCatalogIndexes,
@@ -827,7 +837,7 @@ function locationDefinitionPointFromObject(row = {}, fallback = { tx: 19, tz: 19
   };
 }
 
-const LOCATION_PVP_MODES = new Set(['peaceful', 'pvp', 'pvpFullDrop']);
+const LOCATION_PVP_MODES = ZONE_MODE_SET;
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
   sluiceCity: 'uprava',
   scrapTown: 'free_artels',
@@ -870,21 +880,10 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     name: 'Хранилище Комитета'
   }
 };
-const LOCATION_PVP_LABELS = {
-  peaceful: 'Мирная',
-  pvp: 'PvP: падают расходники',
-  pvpFullDrop: 'PvP с полным дропом'
-};
+const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
 function normalizeLocationPvpMode(input, safeFallback = true) {
-  if (typeof input === 'boolean') return input ? 'pvp' : (safeFallback ? 'peaceful' : 'pvp');
-  const raw = String(input || '').trim();
-  if (LOCATION_PVP_MODES.has(raw)) return raw;
-  const low = raw.toLowerCase();
-  if (['peace', 'safe', 'safezone', 'no_pvp', 'nopvp', 'noncombat', 'social'].includes(low)) return 'peaceful';
-  if (['pvpfulldrop', 'fullpvp', 'fulldrop', 'full_drop', 'pvp-full-drop', 'pvp_full_drop'].includes(low)) return 'pvpFullDrop';
-  if (['pvp', 'danger', 'dangerous', 'unsafe', 'true', 'combat'].includes(low)) return 'pvp';
-  return safeFallback ? 'peaceful' : 'pvp';
+  return normalizeZoneMode(input, safeFallback);
 }
 
 function locationPvpMode(loc = {}) {
@@ -929,7 +928,7 @@ function locationCapitalStorageObject(loc = {}) {
     }
   };
 }
-function locationAllowsPvp(loc = {}) { return locationPvpMode(loc) !== 'peaceful'; }
+function locationAllowsPvp(loc = {}) { return zoneModeAllowsPvp(locationPvpMode(loc)); }
 function locationAllowsNpcCombat(loc = {}) {
   return !locationIsFactionCapital(loc) && loc.safe !== true;
 }
@@ -1121,8 +1120,10 @@ function normalizeLocationDefinition(raw, fallback = null) {
   loc.seed = Number.isFinite(Number(loc.seed)) ? Number(loc.seed) : Number(base.seed || 1);
   loc.pvpMode = normalizeLocationPvpMode(loc.pvpMode || loc.pvpType || loc.combatMode || loc.pvp, loc.safe !== false);
   loc.safe = loc.pvpMode === 'peaceful';
-  loc.pvp = loc.pvpMode !== 'peaceful';
+  loc.pvp = zoneModeAllowsPvp(loc.pvpMode);
   loc.fullDrop = loc.pvpMode === 'pvpFullDrop';
+  loc.lossPolicy = deathLootPolicy(loc.pvpMode).loss;
+  loc.territoryId = String(loc.territoryId || base.territoryId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
   const explicitSettlement = loc.kind === 'settlement' || loc.city === true || loc.settlement === true || loc.respawnAllowed === true;
   loc.kind = explicitSettlement ? 'settlement' : String(loc.kind || base.kind || 'location').slice(0, 32);
   loc.city = !!explicitSettlement;
@@ -9292,6 +9293,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     xpNeeded: Math.max(1, Math.floor(Number(player.xpNeeded || 100))),
     level: Math.max(1, Math.floor(Number(player.level || 1))),
     ...persistedDownedState(player),
+    diedAt: persistedDeathState(player).diedAt,
     injuries: sanitizeInjuries(player.injuries || {}),
     itemConditions: sanitizeServerItemConditions(player.itemConditions || {})
   };
@@ -9320,6 +9322,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.artifactBloodkinHealingUntil = Number(player.artifactBloodkinHealingUntil || 0);
   next.radiation = Math.max(0, Number(player.radiation) || 0);
   next.lastServerDamageAt = Math.max(0, Number(player.lastServerDamageAt) || 0);
+  next.deathLootTransactionId = persistedDeathState(player).deathLootTransactionId;
   next.kromkaOnboarding = sanitizeKromkaOnboarding(
     player.kromkaOnboarding || previousState.kromkaOnboarding || {}, KROMKA_ONBOARDING_CATALOG
   );
@@ -10711,12 +10714,11 @@ function serverApplyReload(p = {}, data = {}, now = Date.now()) {
   };
 }
 
+// Частичная потеря защищает только валюту и сюжетные предметы по id. Артефакты,
+// детекторы, контейнеры и запасное снаряжение в рюкзаке выпадают; экипировка
+// и установленные в контейнер артефакты защищены по экземплярам ниже.
 const SERVER_PVP_PROTECTED_ITEM_IDS = new Set([
-  'silver',
-  ...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),
-  ...KROMKA_ARTIFACT_CATALOG.detectors.map(row => row.itemId),
-  ...KROMKA_ARTIFACT_CATALOG.belts.map(row => row.itemId),
-  KROMKA_ARTIFACT_CATALOG.hotContainerItemId
+  'silver'
 ].filter(Boolean));
 
 function serverItemProtectedFromPvpDrop(itemId = '') {
@@ -10724,15 +10726,30 @@ function serverItemProtectedFromPvpDrop(itemId = '') {
   return SERVER_PVP_PROTECTED_ITEM_IDS.has(id) || /(?:^|_)(?:quest|story|key)(?:_|$)/i.test(id);
 }
 
+function serverInstalledArtifactCounts(target = {}) {
+  sanitizeArtifactLoadout(target, KROMKA_ARTIFACT_CATALOG);
+  const counts = new Map();
+  for (const recordId of target.artifactSlots || []) {
+    const record = (target.artifactRecords || []).find(row => row.id === recordId);
+    if (!record) continue;
+    counts.set(record.itemId, (counts.get(record.itemId) || 0) + 1);
+  }
+  return counts;
+}
+
 function serverDropPvpInventory(room, target, killer, now = Date.now()) {
   if (!room || !target) return [];
   const inventory = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
-  const drops = inventory.filter(entry => !serverItemProtectedFromPvpDrop(entry.id));
-  const protectedRows = inventory.filter(entry => serverItemProtectedFromPvpDrop(entry.id));
+  // Экипировка в рюкзаке не хранится, поэтому здесь остаётся только защита
+  // валюты/сюжетных предметов и установленных в контейнер артефактов.
+  const { drops, kept: protectedRows } = selectBagDropRows(inventory, {
+    installedCounts: serverInstalledArtifactCounts(target),
+    isProtected: serverItemProtectedFromPvpDrop
+  });
   if (!drops.length) return [];
   const runtimeDrops = new Map();
   for (const entry of drops) {
-    if (!SERVER_WEAPONS[entry.id]?.ammoType) continue;
+    if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;
     const validation = serverValidateWeaponRuntimeRemoval(target, entry, { releaseLoadedAmmo: true });
     if (!validation.ok) continue;
     runtimeDrops.set(entry.id, {
@@ -10843,11 +10860,18 @@ function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
   if (!room || !target) return [];
   const mode = locationPvpMode(loc);
   const policy = deathLootPolicy(mode);
-  return resolveDeathLootTransaction(target, mode, now, () => {
+  const outcome = resolveDeathLootTransaction(target, mode, now, () => {
     if (policy.loss === 'inventory') return serverDropPvpInventory(room, target, killer, now);
     if (policy.loss === 'consumables') return serverDropPvpConsumables(room, target, killer, now);
     return [];
-  }).result;
+  });
+  if (!outcome.reused) {
+    // Дроп и инвентарь погибшего фиксируются одной транзакцией сохранения:
+    // повтор смерти, reconnect и перезапуск не дублируют и не теряют предметы.
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(target);
+  }
+  return outcome.result;
 }
 
 function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), options = {}) {
@@ -10928,8 +10952,9 @@ function roomLocation(room) {
     ...base,
     pvpMode: override,
     safe: override === 'peaceful',
-    pvp: override !== 'peaceful',
-    fullDrop: override === 'pvpFullDrop'
+    pvp: zoneModeAllowsPvp(override),
+    fullDrop: override === 'pvpFullDrop',
+    lossPolicy: deathLootPolicy(override).loss
   };
 }
 
@@ -17681,17 +17706,91 @@ function emitGroundItemsSnapshot(room, force = false, targetSocketId = '') {
     items: [...room.groundItems.values()].map(publicGroundItem)
   });
 }
+const SERVER_GROUND_ITEM_TTL_MS = 30 * 60 * 1000;
+
 function cleanupGroundItems(room, now = Date.now()) {
   if (!room || !room.groundItems) return false;
   let changed = false;
-  const ttl = 30 * 60 * 1000;
+  const ttl = SERVER_GROUND_ITEM_TTL_MS;
   for (const [id, g] of [...room.groundItems.entries()]) {
     if (!g || !SERVER_ITEM_IDS.has(g.itemId) || Number(g.qty || 0) <= 0 || now - Number(g.createdAt || now) > ttl) {
       room.groundItems.delete(id);
       changed = true;
     }
   }
+  if (changed) serverSyncRoomGroundDrops(room);
   return changed;
+}
+
+// Предметы на земле переживают перезапуск сервера: выпавший при смерти
+// инвентарь не исчезает и не дублируется, потому что рюкзак погибшего и
+// список предметов комнаты записываются одной транзакцией сохранения.
+function serverGroundDropStore() {
+  if (!savesDb.groundDrops || typeof savesDb.groundDrops !== 'object' || Array.isArray(savesDb.groundDrops)) {
+    savesDb.groundDrops = {};
+  }
+  return savesDb.groundDrops;
+}
+
+function sanitizeServerGroundDropRecord(row = {}, now = Date.now()) {
+  const itemId = serverBaseItemId(row?.itemId || '');
+  const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+  const createdAt = Math.max(0, Math.floor(Number(row?.createdAt || 0)));
+  if (!itemId || !SERVER_ITEM_IDS.has(itemId) || qty <= 0 || !createdAt) return null;
+  if (now - createdAt > SERVER_GROUND_ITEM_TTL_MS) return null;
+  const id = String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  if (!id) return null;
+  return {
+    id,
+    itemId,
+    qty,
+    x: Number(Number(row.x || 0).toFixed(3)),
+    z: Number(Number(row.z || 0).toFixed(3)),
+    droppedBy: String(row.droppedBy || '').slice(0, 80),
+    killerId: String(row.killerId || '').slice(0, 80),
+    pvpDrop: row.pvpDrop === true,
+    itemRuntimeRecords: (Array.isArray(row.itemRuntimeRecords) ? row.itemRuntimeRecords : [])
+      .map(record => sanitizeServerWeaponRuntimeRecord(record, itemId))
+      .filter(Boolean),
+    createdAt
+  };
+}
+
+let serverGroundDropPersistTimer = null;
+function scheduleServerGroundDropPersist() {
+  if (serverGroundDropPersistTimer) return;
+  serverGroundDropPersistTimer = setTimeout(() => {
+    serverGroundDropPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Ground drop persist failed:', err); }
+  }, 1500);
+  if (typeof serverGroundDropPersistTimer.unref === 'function') serverGroundDropPersistTimer.unref();
+}
+
+function serverSyncRoomGroundDrops(room) {
+  if (!room?.id || !(room.groundItems instanceof Map)) return;
+  const store = serverGroundDropStore();
+  const now = Date.now();
+  const rows = [...room.groundItems.values()].map(row => sanitizeServerGroundDropRecord(row, now)).filter(Boolean);
+  if (rows.length) store[room.id] = rows;
+  else delete store[room.id];
+  scheduleServerGroundDropPersist();
+}
+
+function serverRestoreRoomGroundDrops(room) {
+  if (!room?.id || !(room.groundItems instanceof Map)) return 0;
+  const store = serverGroundDropStore();
+  const rows = Array.isArray(store[room.id]) ? store[room.id] : [];
+  if (!rows.length) return 0;
+  const now = Date.now();
+  let restored = 0;
+  for (const raw of rows) {
+    const item = sanitizeServerGroundDropRecord(raw, now);
+    if (!item || room.groundItems.has(item.id)) continue;
+    room.groundItems.set(item.id, item);
+    restored++;
+  }
+  if (restored !== rows.length) serverSyncRoomGroundDrops(room);
+  return restored;
 }
 
 function serverCurrentShiftState(now = Date.now(), player = null) {
@@ -21451,8 +21550,8 @@ function updateServerEnemies(room, dt, opts = {}) {
             target.dead = true;
             target.diedAt = now;
             clearEnemyTarget(enemy);
-            // В зонах полного лута смерть от твари стоит того же, что и от
-            // игрока: весь рюкзак остаётся на месте гибели.
+            // В зонах частичной потери смерть от твари стоит того же, что и от
+            // игрока: содержимое рюкзака остаётся на месте гибели.
             const deathLoc = roomLocation(room);
             const npcFullDrop = locationHasFullInventoryDrop(deathLoc);
             const droppedItems = serverDropPvpLootForMode(room, target, null, deathLoc, now);
@@ -21785,6 +21884,7 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       emptySince: Date.now(),
       createdAt: Date.now()
     });
+    serverRestoreRoomGroundDrops(rooms.get(id));
   }
   const room = rooms.get(id);
   room.worldSiteId = room.worldSiteId || worldSiteIdFromRoomId(id, loc) || authoredWorldSiteId;
@@ -22782,6 +22882,7 @@ function publicAuthoritativePlayerState(p = {}) {
     worldRevision: 'kromka-1',
     pvpMode: currentPvpMode,
     pvpLabel: LOCATION_PVP_LABELS[currentPvpMode] || currentPvpMode,
+    zoneRules: zoneRules(currentPvpMode),
     lastWorldActivityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
     socialState,
     personalBase: shelterState,
@@ -23701,6 +23802,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     partyId: resolution.partyId || '',
     worldPoint: resolution.point,
     pvpMode: resolution.pvpMode || 'pvp',
+    zoneRules: zoneRules(resolution.pvpMode || 'pvp'),
     stayOnWorldMap,
     party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
   };
@@ -24145,6 +24247,7 @@ io.on('connection', (socket) => {
       taggedSkills: sanitizeTaggedSkills(savedProfile.taggedSkills || []),
       hp: clampPlayerHp(savedPlayer.hp ?? savedPlayer.maxHp ?? 100, savedPlayer.maxHp || 100),
       ...savedDownedState,
+      ...restoreDeathState(savedState, savedPlayer),
       equipment: savedEquipment,
       equipmentRuntime: savedEquipmentRuntime,
       equipmentRevision: 0,
@@ -27485,6 +27588,8 @@ io.on('connection', (socket) => {
     room.groundItems.set(groundItem.id, groundItem);
     serverInventoryRemove(p, itemId, qty);
     serverFinalizeWeaponRuntimeRemoval(p, { id: itemId, qty }, runtimeRemoval);
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(p);
     refreshRoomWorldState(room);
     const pub = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item: pub, apCost: spend.apCost, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -27533,6 +27638,8 @@ io.on('connection', (socket) => {
     room.groundItems.delete(id);
     serverInventoryAdd(p, groundItem.itemId, groundItem.qty);
     serverRestoreWeaponRuntimeRecords(p, groundItem.itemRuntimeRecords || []);
+    serverSyncRoomGroundDrops(room);
+    persistActivePlayerState(p);
     refreshRoomWorldState(room);
     const item = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item, carry: carryCheck.carry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -28215,7 +28322,15 @@ setInterval(() => {
       });
       if (Number(p.hp || 0) <= 0) {
         p.dead = true;
-        serverRespawnPlayer(p, shiftRoom, { shiftId: shift.shiftId, fullDrop: false });
+        p.diedAt = now;
+        const shiftLoc = shiftRoom ? roomLocation(shiftRoom) : null;
+        const droppedItems = shiftRoom ? serverDropPvpLootForMode(shiftRoom, p, null, shiftLoc, now) : [];
+        serverRespawnPlayer(p, shiftRoom, {
+          shiftId: shift.shiftId,
+          pvpMode: shiftLoc ? locationPvpMode(shiftLoc) : 'peaceful',
+          fullDrop: !!shiftLoc && locationHasFullInventoryDrop(shiftLoc),
+          droppedItems
+        });
       }
     }
     if (phaseChanged || now - Number(p.lastArtifactStateAt || 0) >= 1000) {
@@ -28247,7 +28362,15 @@ setInterval(() => {
         }
         p.downed = false;
         p.downedUntil = 0;
-        serverRespawnPlayer(p, downedRoom, { bleedOut: true });
+        p.diedAt = playerTickNow;
+        const bleedLoc = downedRoom ? roomLocation(downedRoom) : null;
+        const bleedDrops = downedRoom ? serverDropPvpLootForMode(downedRoom, p, null, bleedLoc, playerTickNow) : [];
+        serverRespawnPlayer(p, downedRoom, {
+          bleedOut: true,
+          pvpMode: bleedLoc ? locationPvpMode(bleedLoc) : 'peaceful',
+          fullDrop: !!bleedLoc && locationHasFullInventoryDrop(bleedLoc),
+          droppedItems: bleedDrops
+        });
       }
       continue;
     }
@@ -28343,11 +28466,14 @@ setInterval(() => {
       if (killed) {
         p.dead = true;
         p.diedAt = playerTickNow;
+        const anomalyLoc = roomLocation(anomalyRoom);
+        const droppedItems = serverDropPvpLootForMode(anomalyRoom, p, null, anomalyLoc, playerTickNow);
         serverRespawnPlayer(p, anomalyRoom, {
           anomalyId: anomalyHit.anomalyId,
           anomalyName: anomalyHit.anomalyName,
-          pvpMode: locationPvpMode(roomLocation(anomalyRoom)),
-          fullDrop: false
+          pvpMode: locationPvpMode(anomalyLoc),
+          fullDrop: locationHasFullInventoryDrop(anomalyLoc),
+          droppedItems
         });
       }
     }

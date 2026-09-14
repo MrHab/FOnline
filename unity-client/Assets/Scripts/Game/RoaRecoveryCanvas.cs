@@ -138,11 +138,19 @@ namespace RealmOfAshes.Game
             {
                 int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
                 string loss = dropped > 0
-                    ? "Содержимое рюкзака осталось на месте гибели: " + dropped + " поз."
-                    : "Рюкзак был пуст — терять было нечего.";
+                    ? "Инвентарь остался на месте гибели: " + dropped + " поз. Экипировка сохранена."
+                    : "Инвентарь был пуст. Экипировка сохранена.";
                 return "Здоровье восстановлено до " + percent + "%. " + loss;
             }
-            return "Здоровье восстановлено до " + percent + "%. Рюкзак и экипировка сохранены.";
+            if (cause["consumableDrop"]?.ToObject<bool>() == true)
+            {
+                int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
+                string loss = dropped > 0
+                    ? "Часть расходников осталась на месте гибели: " + dropped + " поз. Экипировка сохранена."
+                    : "Расходников не было. Экипировка сохранена.";
+                return "Здоровье восстановлено до " + percent + "%. " + loss;
+            }
+            return "Здоровье восстановлено до " + percent + "%. Инвентарь и экипировка сохранены.";
         }
 
         public static string NextText(JObject payload)

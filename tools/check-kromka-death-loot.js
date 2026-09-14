@@ -5,27 +5,76 @@ const fs = require('fs');
 const path = require('path');
 const {
   deathLootPolicy,
+  persistedDeathState,
   persistedDownedState,
+  restoreDeathState,
   restoreDownedState,
-  resolveDeathLootTransaction
+  resolveDeathLootTransaction,
+  selectBagDropRows
 } = require('../src/server/kromka-death-loot');
+const { sanitizeArtifactLoadout } = require('../src/server/artifact-effects');
 
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const readJson = relative => JSON.parse(read(relative));
 
 assert.deepStrictEqual(deathLootPolicy('peaceful'), { mode: 'peaceful', loss: 'none' });
+assert.deepStrictEqual(deathLootPolicy('pve'), { mode: 'pve', loss: 'none' });
+assert.deepStrictEqual(deathLootPolicy('pvpEvent'), { mode: 'pvpEvent', loss: 'none' });
 assert.deepStrictEqual(deathLootPolicy('pvp'), { mode: 'pvp', loss: 'consumables', fraction: 0.5 });
 assert.deepStrictEqual(deathLootPolicy('pvpFullDrop'), {
-  mode: 'pvpFullDrop', loss: 'inventory', loadedMagazines: true
+  mode: 'pvpFullDrop', loss: 'inventory', loadedMagazines: true, keepEquipment: true, keepInstalledArtifacts: true
 });
+assert.deepStrictEqual(deathLootPolicy('unknown'), { mode: 'peaceful', loss: 'none' });
+
+// Частичная потеря: экипировка и установленные артефакты защищены по
+// экземплярам, всё содержимое рюкзака (в том числе такой же артефакт в
+// инвентаре, запасные контейнеры и детекторы) выпадает; валюта защищена по id.
+const catalog = readJson('data/artifacts.json');
+const target = {
+  characterId: 'char-a',
+  equipment: { artifactBelt: 'artifactBelt2', detector: 'artifactDetectorMk1' },
+  inventory: [
+    { id: 'artifactSpring', qty: 2 },
+    { id: 'artifactVein', qty: 1 },
+    { id: 'artifactBelt2', qty: 1 },
+    { id: 'artifactDetectorMk1', qty: 1 },
+    { id: 'medkit', qty: 3 },
+    { id: 'silver', qty: 40 },
+    { id: 'quest_relay_key', qty: 1 }
+  ],
+  artifactRecords: [
+    { id: 'rec-spring-installed', itemId: 'artifactSpring', typeId: 'spring', hot: false, stabilized: true },
+    { id: 'rec-spring-spare', itemId: 'artifactSpring', typeId: 'spring', hot: false, stabilized: true },
+    { id: 'rec-vein-spare', itemId: 'artifactVein', typeId: 'vein', hot: false, stabilized: true }
+  ],
+  artifactSlots: ['rec-spring-installed']
+};
+sanitizeArtifactLoadout(target, catalog);
+const installedCounts = new Map();
+for (const recordId of target.artifactSlots) {
+  const record = target.artifactRecords.find(row => row.id === recordId);
+  installedCounts.set(record.itemId, (installedCounts.get(record.itemId) || 0) + 1);
+}
+const bag = selectBagDropRows(target.inventory, {
+  installedCounts,
+  isProtected: id => id === 'silver' || /(?:^|_)(?:quest|story|key)(?:_|$)/i.test(id)
+});
+assert.deepStrictEqual(bag.drops.map(row => [row.id, row.qty]), [
+  ['artifactSpring', 1], ['artifactVein', 1], ['artifactBelt2', 1], ['artifactDetectorMk1', 1], ['medkit', 3]
+], 'the spare artifact of the installed kind, spare container, detector and consumables drop');
+assert.deepStrictEqual(bag.kept.map(row => [row.id, row.qty]), [
+  ['artifactSpring', 1], ['silver', 40], ['quest_relay_key', 1]
+], 'only the installed artifact instance, currency and story items stay');
+assert.deepStrictEqual(selectBagDropRows([{ id: 'ammo9', qty: 0 }, { id: '', qty: 3 }]).drops, []);
 
 let mutations = 0;
-const target = { id: 'socket-a', characterId: 'char-a', diedAt: 1700000000000 };
-const first = resolveDeathLootTransaction(target, 'pvpFullDrop', target.diedAt, () => {
+const victim = { id: 'socket-a', characterId: 'char-a', diedAt: 1700000000000 };
+const first = resolveDeathLootTransaction(victim, 'pvpFullDrop', victim.diedAt, () => {
   mutations++;
   return [{ id: 'drop-1', itemId: 'pistol', itemRuntimeRecords: [{ loadedAmmo: 7 }] }];
 });
-const replay = resolveDeathLootTransaction(target, 'pvpFullDrop', target.diedAt, () => {
+const replay = resolveDeathLootTransaction(victim, 'pvpFullDrop', victim.diedAt, () => {
   mutations++;
   return [{ id: 'duplicate' }];
 });
@@ -34,8 +83,24 @@ assert.strictEqual(first.reused, false);
 assert.strictEqual(replay.reused, true);
 assert.deepStrictEqual(replay.result, first.result);
 
-target.diedAt++;
-const nextLife = resolveDeathLootTransaction(target, 'pvpFullDrop', target.diedAt, () => {
+// Reconnect после смерти: идентификатор транзакции восстанавливается из
+// сохранения, повтор того же события не создаёт предметы.
+const persistedDeath = persistedDeathState(victim);
+assert.deepStrictEqual(persistedDeath, {
+  diedAt: 1700000000000,
+  deathLootTransactionId: 'char-a:1700000000000:pvpFullDrop'
+});
+const reconnected = { id: 'socket-b', characterId: 'char-a', ...restoreDeathState(persistedDeath, persistedDeath) };
+const afterReconnect = resolveDeathLootTransaction(reconnected, 'pvpFullDrop', reconnected.diedAt, () => {
+  mutations++;
+  return [{ id: 'duplicate-after-reconnect' }];
+});
+assert.strictEqual(afterReconnect.reused, true, 'a restored transaction id must block a second drop');
+assert.strictEqual(mutations, 1);
+assert.deepStrictEqual(restoreDeathState({}, {}), { diedAt: 0, lastDeathLootTransaction: null });
+
+victim.diedAt++;
+const nextLife = resolveDeathLootTransaction(victim, 'pvpFullDrop', victim.diedAt, () => {
   mutations++;
   return [];
 });
@@ -54,30 +119,53 @@ assert.deepStrictEqual(restoreDownedState({ downed: false, downedUntil: 999 }), 
 const server = read('server.js');
 assert(server.includes('const SERVER_PVP_PROTECTED_ITEM_IDS = new Set(['));
 assert(server.includes("id !== 'silver'"));
+assert(!server.includes('...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),\n  ...KROMKA_ARTIFACT_CATALOG.detectors'),
+  'artifacts must no longer be protected from the partial-loss drop by item id');
+assert(server.includes('selectBagDropRows(inventory, {'));
+assert(server.includes('installedCounts: serverInstalledArtifactCounts(target)'));
+assert(server.includes("if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;"));
 assert(server.includes('itemRuntimeRecords: runtimeDrops.get(entry.id)?.records || []'));
 assert(server.includes('resolveDeathLootTransaction(target, mode, now'));
 assert(server.includes("policy.loss === 'inventory'"));
 assert(server.includes("policy.loss === 'consumables'"));
+assert(server.includes('serverSyncRoomGroundDrops(room);\n    persistActivePlayerState(target);'));
+assert(server.includes('serverRestoreRoomGroundDrops(rooms.get(id));'));
+assert(server.includes('serverDropPvpLootForMode(shiftRoom, p, null, shiftLoc, now)'), 'emission death must use the zone loss policy');
+assert(server.includes('serverDropPvpLootForMode(anomalyRoom, p, null, anomalyLoc, playerTickNow)'), 'anomaly death must use the zone loss policy');
+assert(server.includes('serverDropPvpLootForMode(downedRoom, p, null, bleedLoc, playerTickNow)'), 'bleed-out must use the zone loss policy');
 assert(server.includes('serverTryDownWorldActivityPlayer(p, shiftRoom, now)'));
 assert(server.includes('serverTryDownWorldActivityPlayer(p, anomalyRoom, playerTickNow)'));
 assert(server.includes('WORLD_ACTIVITY_REVIVE_DISTANCE = 3.5'));
 assert(server.includes('* 0.3'));
 assert(server.includes('* 0.55'));
 assert(server.includes('...persistedDownedState(player)'));
+assert(server.includes('diedAt: persistedDeathState(player).diedAt'));
+assert(server.includes('next.deathLootTransactionId = persistedDeathState(player).deathLootTransactionId;'));
 assert(server.includes('const savedDownedState = restoreDownedState(savedPlayer)'));
 assert(server.includes('...savedDownedState'));
+assert(server.includes('...restoreDeathState(savedState, savedPlayer)'));
 assert(server.includes('persistActivePlayerState(player);'));
 assert(server.includes('persistActivePlayerState(target);'));
+assert(server.includes('zoneRules: zoneRules(currentPvpMode)'));
+assert(!/полн(ый|ого|ым) (лут|дроп)/i.test(server), 'the server must not describe the partial-loss mode as full loot');
 
 const hud = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
 assert(hud.includes('МИРНЫЙ · PvP ОТКЛЮЧЁН'));
-assert(hud.includes('ПОЛНЫЙ ЛУТ · ПОТЕРЯ ИНВЕНТАРЯ'));
+assert(hud.includes('ЭКИПИРОВКА ЦЕЛА'));
+assert(hud.includes('ВЕЩИ СОХРАНЯЮТСЯ'));
+assert(!hud.includes('ПОЛНЫЙ ЛУТ'));
 const map = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const canvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
-assert(map.includes('roa.fullLootWarningAccepted.v1'));
+const recovery = read('unity-client/Assets/Scripts/Game/RoaRecoveryCanvas.cs');
 assert(map.includes('ConfirmFullLootEntry'));
 assert(map.includes('CancelFullLootEntry'));
+assert(map.includes('zoneRules'));
+assert(map.includes('инвентарь выпадает, экипировка сохраняется'));
 assert(canvas.includes('ВОЙТИ И ПРИНЯТЬ РИСК'));
-assert(canvas.includes('заряженные магазины'));
+assert(canvas.includes('ПРАВИЛА ЗОНЫ'));
+assert(recovery.includes('Экипировка сохранена'));
+for (const [file, source] of [['RoaHudCanvas', hud], ['RoaGlobalMap', map], ['RoaGlobalMapCanvas', canvas], ['RoaRecoveryCanvas', recovery]]) {
+  assert(!/полн(ый|ого|ым) (лут|дроп)|ПОЛНЫЙ ЛУТ/i.test(source), `${file} must not call the partial-loss mode full loot`);
+}
 
-console.log('Kromka death/loot contract: OK (3 PvP modes, atomic death loot, downed/revive/respawn, first-entry warning).');
+console.log('Kromka death/loot contract: OK (5 zone modes, partial-loss drop by instance, atomic and reconnect-safe death loot, persisted ground drops, zone rules before entry).');

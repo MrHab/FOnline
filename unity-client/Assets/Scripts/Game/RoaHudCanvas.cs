@@ -965,13 +965,29 @@ namespace RealmOfAshes.Game
         {
             RectTransform panel = PanelRect("PvpStatus", _safeRoot, new Vector2(0.5f, 1f),
                                             new Vector2(0.5f, 1f), new Vector2(0f, -78f),
-                                            new Vector2(360f, 32f));
+                                            new Vector2(440f, 32f));
             _pvpPanel = panel.gameObject;
             panel.GetComponent<Image>().color = new Color(0.22f, 0.035f, 0.025f, 0.92f);
             panel.GetComponent<Outline>().effectColor = new Color(1f, 0.32f, 0.18f, 0.9f);
-            _pvpText = Label("Mode", panel, new Vector2(8f, -4f), new Vector2(344f, 24f), 11,
+            _pvpText = Label("Mode", panel, new Vector2(8f, -4f), new Vector2(424f, 24f), 11,
                              TextAnchor.MiddleCenter, new Color(1f, 0.76f, 0.48f, 1f), FontStyle.Bold);
             _pvpPanel.SetActive(false);
+        }
+
+        /// <summary>
+        /// Текст баннера режима зоны. Режим `pvpFullDrop` — частичная потеря:
+        /// инвентарь выпадает, экипировка сохраняется.
+        /// </summary>
+        public static string ZoneModeBannerText(string mode)
+        {
+            switch ((mode ?? string.Empty).Trim())
+            {
+                case "pvpFullDrop": return "PvP · ТЕРЯЕТСЯ ИНВЕНТАРЬ · ЭКИПИРОВКА ЦЕЛА";
+                case "pvpEvent": return "PvP · ВЕЩИ СОХРАНЯЮТСЯ";
+                case "pvp": return "PvP · ПАДАЕТ ЧАСТЬ РАСХОДНИКОВ";
+                case "pve": return "PvE · PvP ОТКЛЮЧЁН · ВЕЩИ СОХРАНЯЮТСЯ";
+                default: return "МИРНЫЙ · PvP ОТКЛЮЧЁН";
+            }
         }
 
         private void RefreshPvpStatus(bool worldHud)
@@ -980,27 +996,33 @@ namespace RealmOfAshes.Game
             bool visible = worldHud;
             _pvpPanel.SetActive(visible);
             if (!visible) return;
-            bool fullDrop = mode == "pvpFullDrop";
+            bool inventoryLoss = mode == "pvpFullDrop";
             bool limitedDrop = mode == "pvp";
+            bool pvpNoLoss = mode == "pvpEvent";
+            bool pveOnly = mode == "pve";
             Image background = _pvpPanel.GetComponent<Image>();
             Outline outline = _pvpPanel.GetComponent<Outline>();
-            if (fullDrop)
+            _pvpText.text = ZoneModeBannerText(mode);
+            if (inventoryLoss)
             {
-                _pvpText.text = "ПОЛНЫЙ ЛУТ · ПОТЕРЯ ИНВЕНТАРЯ";
                 _pvpText.color = new Color(1f, 0.66f, 0.42f, 1f);
                 background.color = new Color(0.22f, 0.035f, 0.025f, 0.92f);
                 outline.effectColor = new Color(1f, 0.24f, 0.12f, 0.95f);
             }
-            else if (limitedDrop)
+            else if (limitedDrop || pvpNoLoss)
             {
-                _pvpText.text = "PvP · ПАДАЕТ ЧАСТЬ РАСХОДНИКОВ";
                 _pvpText.color = new Color(1f, 0.79f, 0.48f, 1f);
                 background.color = new Color(0.17f, 0.09f, 0.025f, 0.92f);
                 outline.effectColor = new Color(0.96f, 0.60f, 0.18f, 0.88f);
             }
+            else if (pveOnly)
+            {
+                _pvpText.color = new Color(0.78f, 0.90f, 0.62f, 1f);
+                background.color = new Color(0.07f, 0.12f, 0.04f, 0.88f);
+                outline.effectColor = new Color(0.55f, 0.78f, 0.30f, 0.80f);
+            }
             else
             {
-                _pvpText.text = "МИРНЫЙ · PvP ОТКЛЮЧЁН";
                 _pvpText.color = new Color(0.62f, 0.94f, 0.66f, 1f);
                 background.color = new Color(0.025f, 0.14f, 0.075f, 0.88f);
                 outline.effectColor = new Color(0.28f, 0.78f, 0.42f, 0.80f);

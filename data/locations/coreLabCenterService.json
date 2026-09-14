@@ -38,18 +38,18 @@
   "spawn": {
     "tx": 19,
     "tz": 4,
-    "x": 0,
+    "x": 0.0,
     "y": 0.1,
-    "z": -30,
-    "rotationY": 0
+    "z": -30.0,
+    "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 4,
-    "x": 0,
+    "x": 0.0,
     "y": 0.1,
-    "z": -30,
-    "rotationY": 0
+    "z": -30.0,
+    "rotationY": 0.0
   },
   "entryFromCore": {
     "tx": 19,
@@ -73,7 +73,7 @@
     "x": 0,
     "y": 0.1,
     "z": 30,
-    "rotationY": 3.141592653589793
+    "rotationY": 3.1415926535897931
   },
   "transitions": [
     {
@@ -134,192 +134,18 @@
   ],
   "objects": [
     {
-      "id": "shell_w",
-      "model": "concreteWall",
-      "name": "Бетонная стена",
-      "position": {
-        "x": -26,
-        "y": 0,
-        "z": 0
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1.4,
-        "z": 10
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "service"
-      ],
-      "role": "scenery"
-    },
-    {
-      "id": "shell_e",
-      "model": "concreteWall",
-      "name": "Бетонная стена",
-      "position": {
-        "x": 26,
-        "y": 0,
-        "z": 0
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1.4,
-        "z": 10
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "service"
-      ],
-      "role": "scenery"
-    },
-    {
-      "id": "shell_n",
-      "model": "concreteWall",
-      "name": "Бетонная стена",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 32
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 13,
-        "y": 1.4,
-        "z": 1
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "service"
-      ],
-      "role": "scenery"
-    },
-    {
-      "id": "store_a",
-      "model": "storageLeanTo",
-      "name": "Складская стойка",
-      "position": {
-        "x": -14,
-        "y": 0,
-        "z": 6
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.3,
-        "y": 1.3,
-        "z": 1.3
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "stockpile"
-      ],
-      "role": "scenery"
-    },
-    {
-      "id": "store_b",
-      "model": "storageLeanTo",
-      "name": "Складская стойка",
-      "position": {
-        "x": 14,
-        "y": 0,
-        "z": 6
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.3,
-        "y": 1.3,
-        "z": 1.3
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "stockpile"
-      ],
-      "role": "scenery"
-    },
-    {
-      "id": "checkpoint",
-      "model": "watchPost",
-      "name": "Пост охраны",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 12
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1.2,
-        "y": 1.2,
-        "z": 1.2
-      },
-      "collision": "none",
-      "vision": {
-        "mode": "block"
-      },
-      "tags": [
-        "central-lab",
-        "guard-post"
-      ],
-      "role": "scenery"
-    },
-    {
       "id": "service_guard_1",
       "model": "enemyGhoul",
       "name": "Выжженный",
       "position": {
-        "x": -16,
-        "y": 0,
-        "z": 14
+        "x": -16.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -342,21 +168,23 @@
         "faction": "mutants",
         "enemyType": "ghoul",
         "hostileToPlayer": true
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "service_guard_2",
       "model": "enemyGhoul",
       "name": "Выжженный",
       "position": {
-        "x": -8,
-        "y": 0,
-        "z": 20
+        "x": -8.0,
+        "y": 0.0,
+        "z": 20.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -379,21 +207,23 @@
         "faction": "mutants",
         "enemyType": "ghoul",
         "hostileToPlayer": true
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "service_guard_3",
       "model": "enemySuperMutant",
       "name": "Складень",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 14
+        "x": 0.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -416,21 +246,23 @@
         "faction": "mutants",
         "enemyType": "superMutant",
         "hostileToPlayer": true
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "service_guard_4",
       "model": "enemyGecko",
       "name": "Слухач",
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": 20
+        "x": 8.0,
+        "y": 0.0,
+        "z": 20.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -453,21 +285,23 @@
         "faction": "wild",
         "enemyType": "gecko",
         "hostileToPlayer": true
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "service_guard_5",
       "model": "enemyGecko",
       "name": "Слухач",
       "position": {
-        "x": 16,
-        "y": 0,
-        "z": 14
+        "x": 16.0,
+        "y": 0.0,
+        "z": 14.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
         "x": 1,
@@ -490,26 +324,63 @@
         "faction": "wild",
         "enemyType": "gecko",
         "hostileToPlayer": true
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "checkpoint",
+      "model": "watchPost",
+      "name": "Пост охраны",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "guard-post"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.296,
+        "z": 1.296
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "coreLabCenterService-black-reservoir",
       "model": "ring_structure",
       "name": "coreLabCenterService-black-reservoir EDITABLE",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": -12
+        "x": 0.0,
+        "y": 0.0,
+        "z": -12.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
       "role": "structure",
@@ -518,8 +389,8 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -532,19 +403,19 @@
       "model": "external_pipe",
       "name": "coreLabCenterService-cascade-feed EDITABLE",
       "position": {
-        "x": 0,
-        "y": 2,
-        "z": 0
+        "x": 0.0,
+        "y": 2.0,
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 1.571,
         "z": 1.571
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
       "role": "structure",
@@ -553,8 +424,8 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -567,19 +438,19 @@
       "model": "buried-installation",
       "name": "Landmark buried-installation EDITABLE",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
       "role": "landmark",
@@ -587,8 +458,8 @@
         "buried-installation"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -601,14 +472,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15,
+        "x": 15.0,
         "y": 1.4,
-        "z": 0
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 1.571,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
         "x": 2.5,
@@ -622,8 +493,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -641,14 +512,14 @@
         "z": 14.266
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 0.314,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 7,
+        "x": 7.0,
         "y": 2.8,
-        "z": 5
+        "z": 5.0
       },
       "collision": "solid",
       "role": "structure",
@@ -657,8 +528,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -676,14 +547,14 @@
         "z": 8.817
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 5.341,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 7,
+        "x": 7.0,
         "y": 2.8,
-        "z": 5
+        "z": 5.0
       },
       "collision": "solid",
       "role": "structure",
@@ -692,8 +563,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -711,14 +582,14 @@
         "z": -8.817
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 4.084,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 7,
+        "x": 7.0,
         "y": 2.8,
-        "z": 5
+        "z": 5.0
       },
       "collision": "solid",
       "role": "structure",
@@ -727,8 +598,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -746,9 +617,9 @@
         "z": -14.266
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 2.827,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
         "x": 2.5,
@@ -762,8 +633,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -776,19 +647,19 @@
       "model": "blast_furnace",
       "name": "coreLabCenterService-regenerator-column EDITABLE",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 12
+        "x": 0.0,
+        "y": 0.0,
+        "z": 12.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
       "role": "landmark",
@@ -798,8 +669,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
@@ -812,19 +683,19 @@
       "model": "railway",
       "name": "coreLabCenterService-region-departure-rail EDITABLE",
       "position": {
-        "x": 25,
+        "x": 25.0,
         "y": 0.03,
-        "z": 0
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
+        "x": 0.0,
         "y": 1.571,
-        "z": 0
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "none",
       "role": "ground_accent",
@@ -834,7 +705,7 @@
       ],
       "footprint": {
         "x": 61.818,
-        "z": 2
+        "z": 2.0
       },
       "vision": {
         "blocks": false
@@ -847,19 +718,19 @@
       "model": "wall",
       "name": "coreLabCenterService-region-yard-fence EDITABLE",
       "position": {
-        "x": -34,
+        "x": -34.0,
         "y": 1.2,
-        "z": 0
+        "z": 0.0
       },
       "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
       "role": "cover",
@@ -868,11 +739,186 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 1.0,
+        "z": 1.0
       },
       "vision": {
         "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "shell_e",
+      "model": "concreteWall",
+      "name": "Бетонная стена",
+      "position": {
+        "x": 26.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 10.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "service"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 17.571
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "shell_n",
+      "model": "concreteWall",
+      "name": "Бетонная стена",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 32.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 13.0,
+        "y": 1.4,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "service"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.999,
+        "z": 1.757
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "shell_w",
+      "model": "concreteWall",
+      "name": "Бетонная стена",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.4,
+        "z": 10.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "service"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.2,
+        "z": 17.571
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "store_a",
+      "model": "storageLeanTo",
+      "name": "Складская стойка",
+      "position": {
+        "x": -14.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.3,
+        "y": 1.3,
+        "z": 1.3
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "stockpile"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.674,
+        "z": 1.906
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "store_b",
+      "model": "storageLeanTo",
+      "name": "Складская стойка",
+      "position": {
+        "x": 14.0,
+        "y": 0.0,
+        "z": 6.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.3,
+        "y": 1.3,
+        "z": 1.3
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "stockpile"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.674,
+        "z": 1.906
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -891,7 +937,7 @@
   },
   "worldRevision": "kromka-1",
   "runtimeMode": "unity-authored",
-  "macroRegion": "middle_vein",
+  "macroRegion": "off_map",
   "kromkaVisualProfile": "territory-center-v1",
   "ambientProfile": "buried-installation",
   "anomalyDensity": 0.7,
@@ -901,25 +947,25 @@
       "id": "coreLabCenterService-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2,
+      "radius": 2.0,
       "position": {
-        "x": 0,
-        "y": 0.2,
-        "z": -30
+        "x": 0.0,
+        "y": 0.1,
+        "z": -30.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "coreLabCenterService-lift",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3,
+      "radius": 3.0,
       "position": {
-        "x": -4,
+        "x": -4.0,
         "y": 0.1,
-        "z": -19
+        "z": -19.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "service_guard_1",
@@ -927,11 +973,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -16,
-        "y": 0,
-        "z": 14
+        "x": -16.0,
+        "y": 0.0,
+        "z": 14.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "service_guard_2",
@@ -939,11 +985,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -8,
-        "y": 0,
-        "z": 20
+        "x": -8.0,
+        "y": 0.0,
+        "z": 20.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "service_guard_3",
@@ -951,11 +997,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 14
+        "x": 0.0,
+        "y": 0.0,
+        "z": 14.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "service_guard_4",
@@ -963,11 +1009,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 8,
-        "y": 0,
-        "z": 20
+        "x": 8.0,
+        "y": 0.0,
+        "z": 20.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     },
     {
       "id": "service_guard_5",
@@ -975,19 +1021,43 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 16,
-        "y": 0,
-        "z": 14
+        "x": 16.0,
+        "y": 0.0,
+        "z": 14.0
       },
-      "rotationY": 0
+      "rotationY": 0.0
     }
   ],
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4,
+    "x": -4.0,
     "y": 0.1,
-    "z": -19,
-    "rotationY": 0
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 4,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -30.0,
+    "rotationY": 0.0
   }
 }

@@ -26,12 +26,21 @@ function modelKey(file) {
   return path.basename(file, '.glb').replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
+// Видимость записывается в формате экспортёра Unity ({ blocks }): режим
+// «block»/«cover» закрывает обзор, «none» — нет. Ключ `model` (camelCase от
+// имени файла) билдер сцен сопоставляет с восстановленным префабом
+// Assets/Prefabs/Kromka/RecoveredEnvironment/<snake_case>.prefab.
+function visionField(vision) {
+  const mode = String(vision?.mode || (typeof vision?.blocks === 'boolean' ? (vision.blocks ? 'block' : 'none') : 'block'));
+  return { blocks: mode !== 'none' };
+}
+
 function prop(id, name, file, x, z, scale = 1, tags = [], extra = {}) {
   const s = typeof scale === 'number' ? { x: scale, y: scale, z: scale } : scale;
   return {
     id, model: modelKey(file), name,
     position: { x, y: 0, z }, rotation: { x: 0, y: extra.rotationY || 0, z: 0 },
-    scale: s, collision: extra.collision || 'none', vision: extra.vision || { mode: 'block' },
+    scale: s, collision: extra.collision || 'none', vision: visionField(extra.vision),
     tags, role: extra.role || 'scenery', ...(extra.fields || {})
   };
 }

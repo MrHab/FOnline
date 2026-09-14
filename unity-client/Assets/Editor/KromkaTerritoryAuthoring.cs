@@ -75,6 +75,124 @@ namespace Kromka.EditorTools
         }
 
         /// <summary>
+        /// Адресная пересборка сцен Сердцевины из data/locations/&lt;id&gt;.json с
+        /// перезаписью существующих сцен: либо только четыре базы фракций, либо
+        /// вся территория (зона, базы, лаборатории). Каждая сцена после сборки
+        /// экспортируется обратно в data самим BuildLocations; остальные сцены и
+        /// Build Settings не трогаются.
+        /// </summary>
+        [MenuItem("Кромка/Авторинг/Сердцевина: пересобрать базы фракций и экспортировать")]
+        [MenuItem("Realm of Ashes/Авторинг/Сердцевина: пересобрать базы фракций и экспортировать")]
+        public static void RebuildFactionBaseScenes()
+        {
+            RunMenu(() => RunTerritoryScenes(false));
+        }
+
+        [MenuItem("Кромка/Авторинг/Сердцевина: пересобрать все сцены территории и экспортировать")]
+        [MenuItem("Realm of Ashes/Авторинг/Сердцевина: пересобрать все сцены территории и экспортировать")]
+        public static void RebuildTerritoryScenes()
+        {
+            RunMenu(() => RunTerritoryScenes(true));
+        }
+
+        /// <summary>
+        /// Пакетный запуск: Unity.exe -batchmode -executeMethod
+        /// Kromka.EditorTools.KromkaTerritoryAuthoring.RunFactionBasesBatch -quit
+        /// (или RunTerritoryScenesBatch для всей территории).
+        /// </summary>
+        public static void RunFactionBasesBatch() { RunBatchStep(() => RunTerritoryScenes(false)); }
+        public static void RunTerritoryScenesBatch() { RunBatchStep(() => RunTerritoryScenes(true)); }
+
+        private static void RunMenu(Func<string> step)
+        {
+            try
+            {
+                Debug.Log("[KROMKA] " + step());
+            }
+            catch (Exception error)
+            {
+                // ExecuteMenuItem возвращает true даже при исключении, поэтому явная
+                // строка отказа нужна тем, кто читает Logs/Editor.log через RoaAgentGate.
+                Debug.LogError("[KROMKA] FAIL: пересборка сцен Сердцевины: " + error.Message);
+                throw;
+            }
+        }
+
+        private static void RunBatchStep(Func<string> step)
+        {
+            try
+            {
+                Debug.Log("[KROMKA] " + step());
+                if (Application.isBatchMode) EditorApplication.Exit(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("[KROMKA] FAIL: пересборка сцен Сердцевины: " + error);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                throw;
+            }
+        }
+
+        public static string RunFactionBases() { return RunTerritoryScenes(false); }
+
+        public static string RunTerritoryScenes(bool wholeTerritory)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Пересборка сцен Сердцевины выполняется только в Edit Mode.");
+            KromkaWorldSceneBuilder.RefuseDirtyOpenScenes();
+            JObject territory = KromkaWorldSceneBuilder.ReadProjectJson("data/kromka/territory.json");
+            JObject catalog = KromkaWorldSceneBuilder.ReadProjectJson("data/kromka/locations.json");
+            var ids = new System.Collections.Generic.List<string>();
+            if (wholeTerritory) ids.Add(Text(territory, "zoneLocationId"));
+            foreach (JObject faction in (territory["factions"] as JArray ?? new JArray()).OfType<JObject>())
+                ids.Add(Text(faction, "baseLocationId"));
+            if (wholeTerritory)
+            {
+                foreach (JObject lab in (territory["labs"] as JArray ?? new JArray()).OfType<JObject>())
+                    ids.Add(Text(lab, "id"));
+                foreach (JObject level in (territory["centralLab"]?["levels"] as JArray ?? new JArray()).OfType<JObject>())
+                    ids.Add(Text(level, "id"));
+            }
+            ids = ids.Where(id => !string.IsNullOrEmpty(id)).Distinct(StringComparer.Ordinal).ToList();
+            if (ids.Count == 0) throw new InvalidOperationException("В data/kromka/territory.json нет локаций Сердцевины.");
+            var rows = ((JArray)catalog["locations"]).OfType<JObject>()
+                .Where(row => ids.Contains(Text(row, "id")))
+                .ToList();
+            var missing = ids.Where(id => rows.All(row => Text(row, "id") != id)).ToList();
+            if (missing.Count > 0)
+                throw new InvalidOperationException("В data/kromka/locations.json нет локаций: " + string.Join(", ", missing));
+            foreach (string id in ids)
+            {
+                if (string.IsNullOrEmpty(KromkaLocationSceneCatalog.ScenePath(id)))
+                    throw new InvalidOperationException("Локация не входит в KromkaLocationSceneCatalog: " + id);
+                string definitionPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, "../..", "data", "locations", id + ".json"));
+                if (!System.IO.File.Exists(definitionPath))
+                    throw new InvalidOperationException("Нет авторского определения data/locations/" + id + ".json");
+            }
+
+            Scene original = SceneManager.GetActiveScene();
+            string originalPath = original.IsValid() ? original.path : string.Empty;
+            // Отфильтрованный каталог идёт только в BuildLocations; ConfigureBuildSettings
+            // не вызывается, чтобы не заменить список сцен несколькими записями.
+            var filtered = new JObject { ["locations"] = new JArray(rows) };
+            int built;
+            try
+            {
+                built = KromkaWorldSceneBuilder.BuildLocations(filtered, true);
+            }
+            finally
+            {
+                AssetDatabase.SaveAssets();
+                if (!string.IsNullOrWhiteSpace(originalPath)
+                    && AssetDatabase.LoadAssetAtPath<SceneAsset>(originalPath) != null)
+                    EditorSceneManager.OpenScene(originalPath, OpenSceneMode.Single);
+                AssetDatabase.Refresh();
+            }
+            return "Сердцевина: пересобрано и экспортировано сцен " + built + " (" + string.Join(", ", ids) + ").";
+        }
+
+        /// <summary>
         /// Пакетный запуск: Unity.exe -batchmode -executeMethod
         /// Kromka.EditorTools.KromkaTerritoryAuthoring.RunBatch -quit.
         /// </summary>

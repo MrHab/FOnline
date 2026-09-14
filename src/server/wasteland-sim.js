@@ -3283,6 +3283,29 @@ function createWastelandSimulation(options = {}) {
     return zone;
   }
 
+  // Внешние зоны (публичные события сервера): вставка/замена по id и
+  // удаление. Нормализация та же, что и у собственных зон симуляции.
+  function upsertWorldZone(input = {}) {
+    const zone = normalizeWorldZone(input, state.worldHour, getGlobalMap());
+    if (!zone) return null;
+    if (!Array.isArray(state.worldZones)) state.worldZones = [];
+    const index = state.worldZones.findIndex(row => row && row.id === zone.id);
+    if (index >= 0) state.worldZones[index] = zone;
+    else state.worldZones.push(zone);
+    dirty = true;
+    return zone;
+  }
+
+  function removeWorldZone(id = '') {
+    const key = safeId(id, '');
+    if (!key || !Array.isArray(state.worldZones)) return false;
+    const before = state.worldZones.length;
+    state.worldZones = state.worldZones.filter(row => !row || row.id !== key);
+    if (state.worldZones.length === before) return false;
+    dirty = true;
+    return true;
+  }
+
   function isDeprecatedPartyMeetingZone(zone = {}) {
     if (!zone || typeof zone !== 'object') return false;
     const id = String(zone.id || '');
@@ -13961,6 +13984,8 @@ function createWastelandSimulation(options = {}) {
     partyEncounterSnapshot,
     caravanGrievanceHours,
     worldZoneById,
+    upsertWorldZone,
+    removeWorldZone,
     activeBattleZoneForRoom,
     claimClearedSite,
     completeWorldTaskDelivery,

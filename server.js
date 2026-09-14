@@ -177,6 +177,21 @@ const {
   searchTracks: pveSearchTracks
 } = require('./src/server/pve-areas');
 const {
+  claimPublicEventChest,
+  normalizePublicEventCatalog,
+  normalizePublicEventStore,
+  notePublicEventCleared,
+  publicEvent: publicPublicEvent,
+  publicEventChestOpen,
+  publicEventEntryError,
+  publicEventZone,
+  publicEvents: publicPublicEvents,
+  purgeExpiredPublicEvents,
+  recordPublicEventDeath,
+  spawnDuePublicEvents,
+  tickPublicEvent
+} = require('./src/server/public-events');
+const {
   publicPersonalBase,
   sanitizePersonalBase
 } = require('./src/server/personal-bases');
@@ -626,6 +641,7 @@ const KROMKA_FACTIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'factions.jso
 const KROMKA_LOCATIONS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'locations.json');
 const KROMKA_TERRITORY_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'territory.json');
 const KROMKA_PVE_AREAS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'pve-areas.json');
+const KROMKA_PUBLIC_EVENTS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'public-events.json');
 const KROMKA_NPCS_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'npcs.json');
 const KROMKA_ANOMALIES_FILE = path.join(BUNDLED_DATA_DIR, 'anomalies.json');
 const KROMKA_ONBOARDING_FILE = path.join(BUNDLED_DATA_DIR, 'kromka', 'onboarding.json');
@@ -2089,7 +2105,8 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     ok: true,
     sim: WASTELAND_SIM.publicState(),
     factions: publicKromkaFactionCatalog(),
-    territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now)
+    territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now)
   }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
@@ -2202,6 +2219,7 @@ function publicKromkaOperationsMetrics(now = Date.now()) {
       births: Object.values(savesDb.anomalyBirths?.locations || {})
         .reduce((sum, row) => sum + Object.keys(row?.artifacts || {}).length, 0)
     },
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now).length,
     personalBases: {
       total: personalBases.length,
       activeRooms: [...rooms.values()].filter(room => room?.locationId === 'personalBase').length,
@@ -3652,6 +3670,8 @@ const KROMKA_TERRITORY_MEDIC_PRICE_PER_HP = 1;
 const KROMKA_TERRITORY_MEDIC_INJURY_PRICE = 40;
 // Постоянные PvE-области: личные встречи, без PvP, вещи сохраняются.
 const KROMKA_PVE_AREA_CATALOG = normalizePveAreaCatalog(readJson(KROMKA_PVE_AREAS_FILE, { rules: {}, areas: [] }));
+// Временные публичные события: логова мутантов и базы налётчиков.
+const KROMKA_PUBLIC_EVENT_CATALOG = normalizePublicEventCatalog(readJson(KROMKA_PUBLIC_EVENTS_FILE, { rules: {}, templates: [] }));
 const KROMKA_NPC_CATALOG = readJson(KROMKA_NPCS_FILE, { npcs: [] });
 const KROMKA_ANOMALY_CATALOG = readJson(KROMKA_ANOMALIES_FILE, { types: [], bolt: {} });
 const KROMKA_ONBOARDING_CATALOG = readJson(KROMKA_ONBOARDING_FILE, {});
@@ -3746,6 +3766,8 @@ sanitizeSiegeStore(savesDb.kromkaSieges);
 savesDb.kromkaTerritory = normalizeTerritoryStore(savesDb.kromkaTerritory, KROMKA_TERRITORY_CATALOG, Date.now());
 // Рождённые аномалиями артефакты: по одному на поле, переживают перезапуск.
 savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
+// Публичные события переживают перезапуск вместе со своими таймерами.
+savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -18770,6 +18792,247 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 }
 
 // ---------------------------------------------------------------------------
+// Публичные события: временная зона на глобальной карте с общей комнатой,
+// PvP разрешено, вещи сохраняются, спорный сундук после зачистки, задержка
+// возврата после смерти и принудительный выход по истечении.
+// ---------------------------------------------------------------------------
+function serverPublicEventStore() {
+  if (!savesDb.publicEvents || typeof savesDb.publicEvents !== 'object') {
+    savesDb.publicEvents = normalizePublicEventStore(null);
+  }
+  return savesDb.publicEvents;
+}
+
+let serverPublicEventPersistTimer = null;
+function scheduleServerPublicEventPersist() {
+  if (serverPublicEventPersistTimer) return;
+  serverPublicEventPersistTimer = setTimeout(() => {
+    serverPublicEventPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Public event persist failed:', err); }
+  }, 1500);
+  if (typeof serverPublicEventPersistTimer.unref === 'function') serverPublicEventPersistTimer.unref();
+}
+
+function serverPublicEventById(eventId = '') {
+  const id = String(eventId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  return id ? serverPublicEventStore().events[id] || null : null;
+}
+
+function serverPublicEventForZone(zone = null) {
+  if (!zone || zone.details?.publicEvent !== true) return null;
+  return serverPublicEventById(zone.details.eventId || zone.id);
+}
+
+function serverPublicEventForRoom(room = null) {
+  if (!room) return null;
+  for (const event of Object.values(serverPublicEventStore().events)) {
+    if (event.status !== 'expired' && event.roomId === room.id) return event;
+  }
+  return null;
+}
+
+// Точка события: клетка рядом с проходимым узлом карты, не столица и не
+// закрытая локация; выбор детерминирован инжектированным генератором.
+function serverPickPublicEventPoint(random = Math.random) {
+  const nodes = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : []).filter(node => node
+    && Number.isFinite(Number(node.x)) && Number.isFinite(Number(node.y))
+    && node.capital !== true && node.roadAccess !== false
+    && LOCATIONS[normalizeLocationId(node.locationId || node.id || '')]?.noGlobalMapEntry !== true);
+  const cellPoints = Math.max(1, Number(GLOBAL_MAP?.grid?.cellPoints || 10));
+  const cols = Math.max(1, Number(GLOBAL_MAP?.grid?.cols || 38));
+  const rows = Math.max(1, Number(GLOBAL_MAP?.grid?.rows || 30));
+  if (!nodes.length) return { x: cellPoints * 1.5, y: cellPoints * 1.5 };
+  const node = nodes[Math.floor(random() * nodes.length) % nodes.length];
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]];
+  const [dx, dy] = directions[Math.floor(random() * directions.length) % directions.length];
+  const col = clamp(Math.floor(Number(node.x) / cellPoints) + dx, 0, cols - 1);
+  const row = clamp(Math.floor(Number(node.y) / cellPoints) + dy, 0, rows - 1);
+  return { x: Number(((col + 0.5) * cellPoints).toFixed(2)), y: Number(((row + 0.5) * cellPoints).toFixed(2)) };
+}
+
+function serverSyncPublicEventZone(event) {
+  if (!event || typeof WASTELAND_SIM?.upsertWorldZone !== 'function') return;
+  if (event.status === 'expired') {
+    if (typeof WASTELAND_SIM.removeWorldZone === 'function') WASTELAND_SIM.removeWorldZone(event.id);
+    return;
+  }
+  WASTELAND_SIM.upsertWorldZone(publicEventZone(event, KROMKA_PUBLIC_EVENT_CATALOG.rules, WASTELAND_SIM.state()?.worldHour || 0));
+}
+
+function serverPublicEventPayload(event, now = Date.now(), extra = {}) {
+  return { ...publicPublicEvent(event, now), ...extra, t: now };
+}
+
+function serverEmitPublicEventState(event, extra = {}, now = Date.now()) {
+  const room = rooms.get(String(event?.roomId || ''));
+  if (!room) return null;
+  const payload = serverPublicEventPayload(event, now, extra);
+  io.to(room.id).emit('publicEventState', payload);
+  return payload;
+}
+
+function serverPublicEventChestContainer(room, event) {
+  if (!room || !event) return null;
+  if (!(room.containers instanceof Map)) room.containers = new Map();
+  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
+  return room.containers.get(id) || null;
+}
+
+// Спорный сундук появляется в момент зачистки и открывается через 45–60 с.
+function serverSpawnPublicEventChest(room, event, now = Date.now()) {
+  if (!room || !event || serverPublicEventChestContainer(room, event)) return null;
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
+  if (!template) return null;
+  ensureRoomWorld(room);
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const safe = findRoomSafeSpawnTile(room, center.tx, center.tz, { maxRadius: 10, radius: 0.6, minEnemyDistance: 1, minPlayerDistance: 0 }) || center;
+  const pos = tileToWorld(safe.tx, safe.tz, dims);
+  const id = `ctr_${room.id.replace(/[^a-zA-Z0-9_-]/g, '_')}_event_chest`.slice(0, 96);
+  const lockInfo = securityDifficultyInfo('veryEasy', 'veryEasy');
+  const container = {
+    id,
+    defId: 'event_chest',
+    name: safeName(template.chest.name || 'Тайник события'),
+    tier: 'event',
+    tx: safe.tx,
+    tz: safe.tz,
+    x: pos.x,
+    z: pos.z,
+    locked: false,
+    lockDifficulty: lockInfo.difficulty,
+    lockDifficultyTier: lockInfo.id,
+    lockDifficultyLabel: lockInfo.label,
+    lockRequiredSkill: lockInfo.required,
+    terminalLocked: false,
+    terminalDifficulty: lockInfo.difficulty,
+    terminalDifficultyTier: lockInfo.id,
+    terminalDifficultyLabel: lockInfo.label,
+    terminalRequiredSkill: lockInfo.required,
+    terminalUnlocksLock: false,
+    terminalName: '',
+    lockCooldownUntil: 0,
+    terminalCooldownUntil: 0,
+    factionWarehouseSiteId: '',
+    factionWarehouseOwner: '',
+    factionWarehouseKind: '',
+    publicEventId: event.id,
+    loot: rollWorldContainerLootServer(room, { loot: template.chest.loot }),
+    createdAt: now,
+    restockDay: currentGameDayIndex(now)
+  };
+  room.containers.set(id, container);
+  refreshRoomWorldState(room, { force: true });
+  emitWorldContainersSnapshot(room, true);
+  return container;
+}
+
+// Сундук события до открытия и после чужого захвата недоступен.
+function serverPublicEventChestError(room, container, player, now = Date.now()) {
+  if (!container?.publicEventId) return '';
+  const event = serverPublicEventById(container.publicEventId);
+  if (!event) return 'Событие уже завершилось.';
+  const claim = claimPublicEventChest(event, player?.characterId || '', now);
+  if (!claim.ok) return claim.error;
+  scheduleServerPublicEventPersist();
+  serverEmitPublicEventState(event, { chestClaimedBy: String(player?.name || '') }, now);
+  return '';
+}
+
+function serverPublicEventHostilesAlive(room) {
+  let count = 0;
+  for (const enemy of room?.enemies?.values?.() || []) {
+    if (enemy && !enemy.dead && enemy.hostileToPlayer !== false) count += 1;
+  }
+  return count;
+}
+
+// Смерть внутри события: возврат только через 60–90 с (единая воронка смерти).
+function serverNotePublicEventDeath(room, player, now = Date.now()) {
+  const event = serverPublicEventForRoom(room);
+  if (!event || !player?.characterId) return 0;
+  const until = recordPublicEventDeath(event, player.characterId, KROMKA_PUBLIC_EVENT_CATALOG.rules, now, room?.rng || Math.random);
+  scheduleServerPublicEventPersist();
+  io.to(player.id).emit('publicEventState', serverPublicEventPayload(event, now, { death: true, rejoinInSeconds: Math.ceil((until - now) / 1000) }));
+  return until;
+}
+
+// Истечение: все игроки комнаты выходят на глобальную карту в точку события.
+function serverEvictPublicEventRoom(event, now = Date.now()) {
+  const room = rooms.get(String(event?.roomId || ''));
+  if (!room) return 0;
+  let evicted = 0;
+  for (const p of livePlayersInRoom(room)) {
+    const socket = io.sockets.sockets.get(p.id);
+    if (socket) leaveCurrentRoom(socket, 'publicEventExpired', { leaderId: p.id });
+    p.roomId = '';
+    p.onGlobalMap = true;
+    p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: event.x, y: event.y }) || p.globalWorldPoint || null;
+    p.pendingLocationTransition = null;
+    p.input = { forward: 0, right: 0 };
+    p.vx = 0;
+    p.vz = 0;
+    p.moving = false;
+    persistActivePlayerState(p);
+    io.to(p.id).emit('publicEventState', serverPublicEventPayload(event, now, { expired: true, evicted: true }));
+    emitAuthoritativePlayerState(p, { reason: 'publicEventExpired' });
+    evicted += 1;
+  }
+  for (const [id, container] of [...room.containers.entries()]) if (container?.publicEventId === event.id) room.containers.delete(id);
+  return evicted;
+}
+
+function serverTickPublicEvents(now = Date.now(), options = {}) {
+  const store = serverPublicEventStore();
+  const rules = KROMKA_PUBLIC_EVENT_CATALOG.rules;
+  const random = typeof options.random === 'function' ? options.random : Math.random;
+  let changed = false;
+  const created = spawnDuePublicEvents(store, KROMKA_PUBLIC_EVENT_CATALOG, now, {
+    random, pickPoint: rnd => serverPickPublicEventPoint(rnd)
+  });
+  for (const event of created) {
+    serverSyncPublicEventZone(event);
+    changed = true;
+  }
+  for (const event of Object.values(store.events)) {
+    if (event.status === 'expired') continue;
+    const room = rooms.get(String(event.roomId || ''));
+    if (room && room.encounterSetupDone && !event.cleared && serverPublicEventHostilesAlive(room) === 0) {
+      if (notePublicEventCleared(event, rules, now, room.rng || random)) {
+        serverSpawnPublicEventChest(room, event, now);
+        serverEmitPublicEventState(event, { cleared: true }, now);
+        changed = true;
+      }
+    }
+    if (room && event.cleared && !event.chestAnnounced && publicEventChestOpen(event, now)) {
+      event.chestAnnounced = true;
+      serverEmitPublicEventState(event, { chestOpen: true }, now);
+    }
+    const transition = tickPublicEvent(event, rules, now);
+    if (transition.warned) {
+      serverEmitPublicEventState(event, { warning: true }, now);
+      changed = true;
+    }
+    if (transition.expired) {
+      serverEvictPublicEventRoom(event, now);
+      serverSyncPublicEventZone(event);
+      changed = true;
+    }
+  }
+  if (purgeExpiredPublicEvents(store, now) > 0) changed = true;
+  if (changed) {
+    scheduleServerPublicEventPersist();
+    invalidateWastelandPublicCache();
+  }
+  return { created: created.length, changed };
+}
+
+// Публичные события восстанавливают свои зоны на карте после перезапуска.
+function serverRestorePublicEventZones() {
+  for (const event of Object.values(serverPublicEventStore().events)) serverSyncPublicEventZone(event);
+}
+
+// ---------------------------------------------------------------------------
 // Постоянные PvE-области: личная комната на игрока или группу, встречи по
 // реальному времени, «Искать следы». Владелец проверяется на каждом пути входа.
 // ---------------------------------------------------------------------------
@@ -19231,6 +19494,10 @@ function publicWorldState(room, includeMap = true) {
         aliveCount: serverPveAliveCount(room), members: room.pveMembers?.size || 0
       })
       : null,
+    publicEvent: (() => {
+      const event = serverPublicEventForRoom(room);
+      return event ? publicPublicEvent(event, Date.now()) : null;
+    })(),
     activity: publicWorldActivity(room.worldActivity),
     shift: serverCurrentShiftState(Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
@@ -20315,6 +20582,7 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (serverTryRespawnSiegePlayer(p, oldRoom, cause, Date.now())) return;
   const socket = io.sockets.sockets.get(p.id);
   const now = Date.now();
+  serverNotePublicEventDeath(oldRoom, p, now);
   const failedWorldActivityIds = failServerPlayerActiveWorldActivities(p, 'player_died');
   const detachedWorldTaskIds = [...new Set([
     ...failedWorldActivityIds,
@@ -24569,6 +24837,9 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
       if (!member) continue;
       const access = territoryLocationAccess(targetLoc, member.territoryFaction, KROMKA_TERRITORY_CATALOG);
       if (!access.allowed) return fail(`${member.name || 'Участник группы'}: ${access.error}`);
+      const arrivalEvent = resolution.worldZoneId ? serverPublicEventForZone(serverActiveWorldZoneById(resolution.worldZoneId)) : null;
+      const eventError = arrivalEvent ? publicEventEntryError(arrivalEvent, member.characterId, now) : '';
+      if (eventError) return fail(`${member.name || 'Участник группы'}: ${eventError}`);
     }
   }
   const payload = {
@@ -28986,6 +29257,11 @@ io.on('connection', (socket) => {
       });
       return;
     }
+    const eventChestError = serverPublicEventChestError(room, container, p, Date.now());
+    if (eventChestError) {
+      if (typeof ack === 'function') ack({ ok: false, error: eventChestError, container: publicWorldContainer(container) });
+      return;
+    }
     if (serverRefreshTutorialSupplies(p, container)) { /* personal tutorial issue */ }
     else if (container.factionWarehouseSiteId) syncWastelandFactionWarehouseContainer(container);
     else if (applyContainerProgressionLoot(room, container, p)) refreshRoomWorldState(room);
@@ -29131,6 +29407,19 @@ io.on('connection', (socket) => {
       p.pendingLocationTransition = null;
       if (typeof ack === 'function') ack({ ok: false, error: 'Эта встреча уже завершилась.' });
       return;
+    }
+    // Публичное событие: после гибели вернуться можно только через 60–90 с,
+    // а в истёкшее событие — никогда.
+    const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);
+    if (transitionPublicEvent) {
+      const eventError = publicEventEntryError(transitionPublicEvent, p.characterId, Date.now());
+      if (eventError) {
+        p.pendingLocationTransition = null;
+        if (typeof ack === 'function') ack({ ok: false, error: eventError, publicEvent: publicPublicEvent(transitionPublicEvent, Date.now()) });
+        return;
+      }
+      transitionPublicEvent.visits = Number(transitionPublicEvent.visits || 0) + 1;
+      scheduleServerPublicEventPersist();
     }
     const effectiveRoomId = transitionTicket?.roomId || '';
     const roomWorldSiteId = String(transitionTicket?.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
@@ -29319,6 +29608,16 @@ setInterval(() => {
     console.error('Kromka siege scheduler tick failed:', error);
   }
 }, 1000);
+
+// Публичные события: появление, предупреждение, спорный сундук, истечение.
+serverRestorePublicEventZones();
+setInterval(() => {
+  try {
+    serverTickPublicEvents(Date.now());
+  } catch (error) {
+    console.error('Public event tick failed:', error);
+  }
+}, 5000);
 
 // Встречи в PvE-областях: плановые проверки и сброс пустых личных комнат.
 setInterval(() => {

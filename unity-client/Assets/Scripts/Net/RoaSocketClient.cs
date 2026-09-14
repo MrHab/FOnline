@@ -80,6 +80,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnKromkaSiegeState;
         public event Action<JObject> OnTerritoryOutpostState;
         public event Action<JObject> OnPveAreaState;
+        public event Action<JObject> OnPublicEventState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -497,6 +498,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnPveAreaState?.Invoke(payload);
+            }));
+
+            // Публичные события пустоши: предупреждение об истечении, зачистка,
+            // отсчёт спорного сундука и принудительный выход после окончания.
+            _connection.On("publicEventState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnPublicEventState?.Invoke(payload);
             }));
 
             _connection.On("kromkaOnboardingState", args => _mainThread.Enqueue(() =>

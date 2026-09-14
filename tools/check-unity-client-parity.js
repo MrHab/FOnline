@@ -275,6 +275,7 @@ const unityOnlyHandlers = [
   'medicalConsentResolved',
   'personalBaseState',
   'playerTradeUpdated',
+  'publicEventState',
   'pveAreaState',
   'territoryOutpostState',
   'worldActivityFeedChanged'

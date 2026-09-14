@@ -177,6 +177,17 @@ const {
   searchTracks: pveSearchTracks
 } = require('./src/server/pve-areas');
 const {
+  buyListing: auctionBuyListing,
+  cancelListing: auctionCancelListing,
+  commitShelfClaim: auctionCommitShelfClaim,
+  createListing: auctionCreateListing,
+  expireListings: auctionExpireListings,
+  normalizeAuctionRules,
+  normalizeAuctionStore,
+  publicAuction,
+  shelfFor: auctionShelfFor
+} = require('./src/server/faction-auction');
+const {
   applyPersistedBossState,
   bossDamageMultiplier,
   createBossState,
@@ -3781,6 +3792,9 @@ savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
 savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
 // Мировые боссы: поражение и срок перерождения переживают перезапуск.
 if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object' || Array.isArray(savesDb.worldBosses)) savesDb.worldBosses = {};
+// Фракционные аукционы: лоты и полки продавцов переживают перезапуск.
+savesDb.factionAuctions = normalizeAuctionStore(savesDb.factionAuctions);
+const KROMKA_AUCTION_RULES = normalizeAuctionRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -18809,6 +18823,51 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 }
 
 // ---------------------------------------------------------------------------
+// Фракционный аукцион: лоты только для членов фракции, предметы и артефакты
+// лежат на сервере, выручка и возвраты — на полке продавца у аукционера.
+// ---------------------------------------------------------------------------
+function serverAuctionStore() {
+  if (!savesDb.factionAuctions || typeof savesDb.factionAuctions !== 'object') savesDb.factionAuctions = normalizeAuctionStore(null);
+  return savesDb.factionAuctions;
+}
+
+function serverTickAuctions(now = Date.now()) {
+  const expired = auctionExpireListings(serverAuctionStore(), now);
+  if (expired.length) scheduleServerPublicEventPersist();
+  return expired.length;
+}
+
+// Полка забирается целиком в пределах переносимого веса и предела стаков.
+function serverClaimAuctionShelf(p, factionId, data = {}, now = Date.now()) {
+  const store = serverAuctionStore();
+  const shelf = auctionShelfFor(store, factionId, p.characterId);
+  if (shelf.silver <= 0 && !shelf.items.length) return { ok: false, error: 'Полка пуста.' };
+  const requested = [];
+  if (shelf.silver > 0) requested.push({ id: 'silver', qty: shelf.silver });
+  for (const row of shelf.items) requested.push({ id: row.itemId, qty: row.qty });
+  const carryCheck = serverLimitItemsByCarry(p, data, requested, { apply: false });
+  const allowed = new Map(carryCheck.items.map(row => [row.id, Math.max(0, Math.floor(Number(row.qty || 0)))]));
+  const claimedSilver = Math.min(shelf.silver, allowed.get('silver') || 0);
+  const claimedItems = [];
+  for (const row of shelf.items) {
+    const remaining = allowed.get(row.itemId) || 0;
+    if (remaining <= 0) continue;
+    const take = Math.min(row.qty, remaining);
+    allowed.set(row.itemId, remaining - take);
+    claimedItems.push({ itemId: row.itemId, qty: take, at: row.at, records: take >= row.qty ? row.records : [] });
+  }
+  if (claimedSilver <= 0 && !claimedItems.length) return { ok: false, error: 'Нет места или грузоподъёмности, чтобы забрать полку.' };
+  if (claimedSilver > 0) serverInventoryAdd(p, 'silver', claimedSilver);
+  for (const row of claimedItems) {
+    serverInventoryAdd(p, row.itemId, row.qty);
+    if (row.records.length) serverRestoreWeaponRuntimeRecords(p, row.records);
+  }
+  auctionCommitShelfClaim(store, factionId, p.characterId, { silver: claimedSilver, items: claimedItems });
+  sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+  return { ok: true, claimedSilver, claimedItems: claimedItems.map(row => ({ itemId: row.itemId, qty: row.qty })), partial: claimedSilver < shelf.silver || claimedItems.length < shelf.items.length };
+}
+
+// ---------------------------------------------------------------------------
 // Мировой босс лаборатории: узлы щита, фаза уязвимости, импульсы с
 // телеграфом, контейнеры награды после поражения, перерождение по времени.
 // ---------------------------------------------------------------------------
@@ -26155,6 +26214,93 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
   });
 
+  // Фракционный аукцион на базе Сердцевины: состояние, выставить, купить,
+  // снять, забрать полку. Только член фракции рядом с аукционером; лоты и
+  // покупки идемпотентны по requestId.
+  socket.on('auctionAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const factionId = serverPlayerTerritoryFactionId(p);
+    if (!factionId) return fail('Аукцион доступен только членам фракции Сердцевины.');
+    const room = rooms.get(p.roomId);
+    const loc = room ? roomLocation(room) : null;
+    if (!loc || loc.safe !== true) return fail('Аукцион работает только на защищённой базе.');
+    if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');
+    const now = Date.now();
+    const store = serverAuctionStore();
+    auctionExpireListings(store, now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const auctionState = () => publicAuction(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now);
+    if (action === 'state') {
+      if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
+      return;
+    }
+    if (!['list', 'buy', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
+    const transaction = beginCriticalAction(p, 'auctionAction', data, ['action', 'itemId', 'qty', 'price', 'listingId', 'itemRuntimeId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, auction: auctionState(), self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    let payload = null;
+    if (action === 'list') {
+      const itemId = serverBaseItemId(data.itemId || '');
+      const qty = Math.max(0, Math.floor(Number(data.qty || 0)));
+      const price = Math.max(0, Math.floor(Number(data.price || 0)));
+      if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
+      if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
+      if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
+      const row = { id: itemId, qty, itemRuntimeId: String(data.itemRuntimeId || '').slice(0, 96) };
+      const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
+      if (!validation.ok) return fail(validation.error || 'Предмет недоступен.');
+      const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
+      serverInventoryRemove(p, itemId, qty);
+      serverFinalizeWeaponRuntimeRemoval(p, row, validation);
+      const created = auctionCreateListing(store, {
+        factionId, sellerCharacterId: p.characterId, sellerName: p.name, itemId, qty, price, records
+      }, KROMKA_AUCTION_RULES, now);
+      if (!created.ok) {
+        serverInventoryAdd(p, itemId, qty);
+        serverRestoreWeaponRuntimeRecords(p, records);
+        sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+        return fail(created.error);
+      }
+      sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+      payload = { ok: true, action, listingId: created.listing.id };
+    } else if (action === 'buy') {
+      const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const listing = store.factions?.[factionId]?.listings?.[listingId];
+      if (!listing) return fail('Лот уже снят.');
+      if (serverInventoryQty(p.inventory, 'silver') < listing.price) return fail(`Не хватает марок: нужно ${listing.price}.`);
+      const carryCheck = serverLimitItemsByCarry(p, data, [{ id: listing.itemId, qty: listing.qty }], { apply: false });
+      if (!carryCheck.items.some(entry => entry.id === listing.itemId && entry.qty >= listing.qty)) return fail('Нет места или грузоподъёмности для покупки.');
+      const bought = auctionBuyListing(store, factionId, listingId, p.characterId, KROMKA_AUCTION_RULES, now);
+      if (!bought.ok) return fail(bought.error);
+      serverInventoryRemove(p, 'silver', bought.listing.price);
+      serverInventoryAdd(p, bought.listing.itemId, bought.listing.qty);
+      serverRestoreWeaponRuntimeRecords(p, bought.listing.records || []);
+      sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+      payload = { ok: true, action, listingId, itemId: bought.listing.itemId, qty: bought.listing.qty, price: bought.listing.price, fee: bought.fee };
+    } else if (action === 'cancel') {
+      const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const cancelled = auctionCancelListing(store, factionId, listingId, p.characterId, now);
+      if (!cancelled.ok) return fail(cancelled.error);
+      payload = { ok: true, action, listingId };
+    } else {
+      const claimed = serverClaimAuctionShelf(p, factionId, data, now);
+      if (!claimed.ok) return fail(claimed.error);
+      payload = { ok: true, action, ...claimed };
+    }
+    commitCriticalAction(p, transaction, payload);
+    scheduleServerPublicEventPersist();
+    serverApplyDerivedVitals(p);
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'auction' });
+    if (typeof ack === 'function') ack({ ...payload, auction: auctionState(), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
   // PvE-область: снимок личной встречи и «Искать следы». Следы можно искать
   // только живым и только в своей (или групповой) комнате области.
   socket.on('pveAreaAction', (data = {}, ack) => {
@@ -29929,6 +30075,15 @@ setInterval(() => {
     console.error('Kromka siege scheduler tick failed:', error);
   }
 }, 1000);
+
+// Фракционные аукционы: истёкшие лоты возвращаются на полку продавца.
+setInterval(() => {
+  try {
+    serverTickAuctions(Date.now());
+  } catch (error) {
+    console.error('Auction tick failed:', error);
+  }
+}, 60000);
 
 // Мировой босс: щит, уязвимость, импульсы, перерождение.
 setInterval(() => {

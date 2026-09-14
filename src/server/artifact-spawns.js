@@ -1,6 +1,7 @@
 'use strict';
 
 const { artifactIndexes, calculateArtifactEffects } = require('./artifact-effects');
+const { RECORD_VERSION, baseTierOfType, rollTier, tierRow } = require('./artifact-instances');
 const { RULES } = require('./artifact-runtime');
 const { hash32 } = require('./shift-cycle');
 
@@ -14,6 +15,11 @@ function weightedPick(weights = {}, seed = '') {
     if (cursor <= 0) return id;
   }
   return rows[rows.length - 1][0];
+}
+
+function fieldTierRange(field = {}) {
+  const range = Array.isArray(field?.tierRange) && field.tierRange.length >= 2 ? field.tierRange : null;
+  return range ? [Number(range[0]), Number(range[1])] : null;
 }
 
 function reconcileArtifactSpawns(room = {}, location = {}, shift = {}, catalog = {}, anomalyFields = [], now = Date.now(), options = {}) {
@@ -31,7 +37,7 @@ function reconcileArtifactSpawns(room = {}, location = {}, shift = {}, catalog =
       || String(opportunity.locationId || '') !== String(location.id || room.locationId || ''))) {
     state.shiftId = String(shift.shiftId || '');
     state.causeCode = 'shift_wave';
-    state.artifacts = [];
+    state.artifacts = (state.artifacts || []).filter(row => row?.birth === true);
     return state;
   }
   if (state.shiftId === shift.shiftId) return state;
@@ -51,10 +57,17 @@ function reconcileArtifactSpawns(room = {}, location = {}, shift = {}, catalog =
     if (!type) continue;
     const angle = (hash32(`${shift.shiftId}:${field.id}:angle`) % 628) / 100;
     const radius = Math.max(0.35, Math.min(Number(field.radius || 1.5) * 0.62, 2.2));
+    const id = `artifact:${shift.shiftId}:${String(location.id || room.locationId || 'room')}:${index}`;
+    const strengthBonus = Math.max(0, Math.floor(Number(shift.strength || 1)) - 1);
+    const range = fieldTierRange(field) || [baseTierOfType(type), Math.min(5, baseTierOfType(type) + strengthBonus)];
     artifacts.push({
-      id: `artifact:${shift.shiftId}:${String(location.id || room.locationId || 'room')}:${index}`,
+      id,
       typeId,
       itemId: type.itemId,
+      tier: rollTier(type, range, id, catalog),
+      seed: id,
+      sourceAnomalyType: String(field.type || ''),
+      sourceFieldId: String(field.id || ''),
       x: Number((Number(field.x || 0) + Math.cos(angle) * radius).toFixed(3)),
       z: Number((Number(field.z || 0) + Math.sin(angle) * radius).toFixed(3)),
       hot: true,
@@ -68,8 +81,45 @@ function reconcileArtifactSpawns(room = {}, location = {}, shift = {}, catalog =
   state.shiftId = String(shift.shiftId || '');
   state.causeCode = opportunity?.causeCode || 'shift_wave';
   state.regionId = opportunity?.regionId || String(location.macroRegion || location.regionId || '');
-  state.artifacts = artifacts;
+  state.artifacts = [...(state.artifacts || []).filter(row => row?.birth === true), ...artifacts];
   return state;
+}
+
+// Рождённые аномалиями артефакты (см. anomaly-artifact-births) добавляются к
+// состоянию комнаты поверх волновых; исчезнувшие из хранилища — убираются.
+function mergeBirthArtifacts(room = {}, births = []) {
+  if (!room.kromkaArtifactState || typeof room.kromkaArtifactState !== 'object') {
+    room.kromkaArtifactState = { shiftId: '', artifacts: [] };
+  }
+  const state = room.kromkaArtifactState;
+  const live = new Map((Array.isArray(births) ? births : []).map(row => [String(row.id), row]));
+  const kept = (state.artifacts || []).filter(row => row?.birth !== true || live.has(String(row.id)));
+  const present = new Set(kept.map(row => String(row.id)));
+  let changed = kept.length !== (state.artifacts || []).length;
+  for (const row of live.values()) {
+    if (present.has(String(row.id))) continue;
+    kept.push({
+      id: String(row.id),
+      typeId: String(row.typeId),
+      itemId: String(row.itemId),
+      tier: Math.max(1, Math.min(5, Math.floor(Number(row.tier || 1)))),
+      seed: String(row.seed || row.id),
+      sourceAnomalyType: String(row.sourceAnomalyType || ''),
+      sourceFieldId: String(row.fieldId || ''),
+      x: Number(row.x || 0),
+      z: Number(row.z || 0),
+      hot: true,
+      stabilized: false,
+      pickedUp: false,
+      birth: true,
+      ownerCharacterId: '',
+      spawnedAt: Number(row.bornAt || 0),
+      spawnedByShiftId: String(row.emissionId || '')
+    });
+    changed = true;
+  }
+  state.artifacts = kept;
+  return changed;
 }
 
 function detectorProfile(player = {}, catalog = {}) {
@@ -95,18 +145,25 @@ function publicArtifactsForPlayer(room = {}, player = {}, catalog = {}, now = Da
     const traced = Number.isFinite(memory.traces[artifact.id]) && now < memory.traces[artifact.id] + duration;
     if (distance > Number(detector.signalRange || 0) && !traced) continue;
     const type = indexes.byId[artifact.typeId];
+    const visible = revealed || traced;
+    const tierVisible = visible && detector.tierHint === true;
+    const tier = tierVisible ? tierRow(catalog, artifact.tier || baseTierOfType(type || {})) : null;
     out.push({
       id: artifact.id,
       hot: artifact.hot === true,
-      revealed: revealed || traced,
+      birth: artifact.birth === true,
+      revealed: visible,
       trace: !revealed && traced,
       traceSeconds: traced ? Math.max(0, (memory.traces[artifact.id] + duration - now) / 1000) : 0,
       signal: Math.max(0, Math.min(1, 1 - distance / Number(detector.signalRange || 1))),
       distanceBand: distance <= 3 ? 'near' : distance <= 7 ? 'close' : 'far',
-      x: revealed || traced ? artifact.x : null,
-      z: revealed || traced ? artifact.z : null,
-      typeId: (revealed || traced) && detector.identifiesBeforePickup ? artifact.typeId : '',
-      displayName: (revealed || traced) && detector.identifiesBeforePickup ? String(type?.displayName || '') : ''
+      x: visible ? artifact.x : null,
+      z: visible ? artifact.z : null,
+      typeId: visible && detector.identifiesBeforePickup ? artifact.typeId : '',
+      displayName: visible && detector.identifiesBeforePickup ? String(type?.displayName || '') : '',
+      tier: tier ? tier.tier : 0,
+      tierColor: tier ? tier.color : '',
+      sourceAnomalyType: visible ? String(artifact.sourceAnomalyType || '') : ''
     });
   }
   const liveIds = new Set((room.kromkaArtifactState?.artifacts || []).filter(row => !row.pickedUp).map(row => row.id));
@@ -125,13 +182,15 @@ function publicArtifactsForPlayer(room = {}, player = {}, catalog = {}, now = Da
     }
     const distance = Math.hypot(memory.echo.x - Number(player.x || 0), memory.echo.z - Number(player.z || 0));
     if (distance > Number(detector.revealRange) && distance < Number(detector.signalRange))
-      out.push({ id: `echo:${epoch}`, hot: false, revealed: false,
+      out.push({ id: `echo:${epoch}`, hot: false, birth: false, revealed: false,
         signal: 1 - distance / Number(detector.signalRange), distanceBand: distance <= 7 ? 'close' : 'far',
-        x: null, z: null, typeId: '', displayName: '' });
+        x: null, z: null, typeId: '', displayName: '', tier: 0, tierColor: '', sourceAnomalyType: '' });
   } else delete memory.echo;
   return out;
 }
 
+// Подбор: найденный артефакт ложится в обычный инвентарь как «сырой»
+// экземпляр (контейнер не нужен). Свойства раскроет только стабилизация.
 function pickupArtifact(room = {}, player = {}, artifactId = '', catalog = {}, now = Date.now()) {
   const detector = detectorProfile(player, catalog);
   if (!detector) return { ok: false, error: 'Нужен активный детектор артефактов.' };
@@ -139,29 +198,37 @@ function pickupArtifact(room = {}, player = {}, artifactId = '', catalog = {}, n
   if (!artifact || artifact.pickedUp) return { ok: false, error: 'Артефакт уже исчез из пятна.' };
   const distance = Math.hypot(Number(artifact.x || 0) - Number(player.x || 0), Number(artifact.z || 0) - Number(player.z || 0));
   if (distance > Number(detector.revealRange || 0) + 0.35) return { ok: false, error: 'Подойдите ближе: сигнал ещё не собрался в предмет.' };
-  const containerItemId = String(catalog.hotContainerItemId || 'artifactContainer');
-  const containerCount = (player.inventory || []).filter(row => row.id === containerItemId).reduce((sum, row) => sum + Number(row.qty || 0), 0);
-  const occupied = (player.artifactRecords || []).filter(row => row.hot && !row.stabilized).length;
-  if (occupied >= containerCount) return { ok: false, error: 'Нужен свободный защитный контейнер.' };
+  const indexes = artifactIndexes(catalog);
+  const type = indexes.byId[String(artifact.typeId || '')];
+  if (!type) return { ok: false, error: 'Неизвестный вид артефакта.' };
+  const tier = Math.max(1, Math.min(5, Math.floor(Number(artifact.tier || baseTierOfType(type)))));
   const record = {
     id: artifact.id,
     typeId: artifact.typeId,
     itemId: artifact.itemId,
     hot: true,
     stabilized: false,
-    containerId: `${containerItemId}:${occupied + 1}`,
+    revealed: false,
+    tier,
+    seed: String(artifact.seed || artifact.id),
+    sourceAnomalyType: String(artifact.sourceAnomalyType || ''),
+    sourceFieldId: String(artifact.sourceFieldId || ''),
+    containerId: '',
     ownerCharacterId: String(player.characterId || ''),
-    spawnedByShiftId: artifact.spawnedByShiftId,
-    acquiredAt: Number(now)
+    spawnedByShiftId: String(artifact.spawnedByShiftId || ''),
+    spawnedAtMs: Math.max(0, Math.floor(Number(artifact.spawnedAt || 0))),
+    acquiredAt: Number(now),
+    recordVersion: RECORD_VERSION
   };
   artifact.pickedUp = true;
   artifact.ownerCharacterId = record.ownerCharacterId;
   player.artifactRecords = [...(player.artifactRecords || []), record];
-  return { ok: true, record };
+  return { ok: true, record, birth: artifact.birth === true };
 }
 
 module.exports = {
   detectorProfile,
+  mergeBirthArtifacts,
   pickupArtifact,
   publicArtifactsForPlayer,
   reconcileArtifactSpawns,

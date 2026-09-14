@@ -1,41 +1,16 @@
 'use strict';
 
 const { randomUUID } = require('node:crypto');
+const {
+  RECORD_VERSION,
+  artifactIndexes,
+  baseTierOfType,
+  instanceProperties,
+  sanitizeArtifactRecords
+} = require('./artifact-instances');
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value || 0)));
-}
-
-function artifactIndexes(catalog = {}) {
-  return {
-    byId: Object.fromEntries((catalog.types || []).map(row => [String(row.id), row])),
-    byItem: Object.fromEntries((catalog.types || []).map(row => [String(row.itemId), row])),
-    detectors: Object.fromEntries((catalog.detectors || []).map(row => [String(row.itemId), row])),
-    belts: Object.fromEntries((catalog.belts || []).map(row => [String(row.itemId), row]))
-  };
-}
-
-function sanitizeArtifactRecords(input = [], catalog = {}) {
-  const indexes = artifactIndexes(catalog);
-  const seen = new Set();
-  return (Array.isArray(input) ? input : []).map((row, index) => {
-    const type = indexes.byId[String(row?.typeId || '')] || indexes.byItem[String(row?.itemId || '')];
-    if (!type) return null;
-    const id = String(row?.id || `artifact_record_${index}`).replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
-    if (!id || seen.has(id)) return null;
-    seen.add(id);
-    return {
-      id,
-      typeId: type.id,
-      itemId: type.itemId,
-      hot: row?.hot === true && row?.stabilized !== true,
-      stabilized: row?.stabilized === true,
-      containerId: String(row?.containerId || '').slice(0, 96),
-      ownerCharacterId: String(row?.ownerCharacterId || '').slice(0, 96),
-      spawnedByShiftId: String(row?.spawnedByShiftId || '').slice(0, 96),
-      acquiredAt: Math.max(0, Number(row?.acquiredAt || 0))
-    };
-  }).filter(Boolean);
 }
 
 function beltCapacity(player = {}, catalog = {}) {
@@ -44,30 +19,41 @@ function beltCapacity(player = {}, catalog = {}) {
   return Math.max(0, Math.floor(Number(indexes.belts[beltId]?.slots || 0)));
 }
 
-function equippedArtifactTypes(player = {}, catalog = {}) {
+// Установленные экземпляры: только стабилизированные (раскрытые) записи,
+// по одному на вид — два одинаковых артефакта не складываются.
+function equippedArtifactInstances(player = {}, catalog = {}, slotsOverride = null) {
   const indexes = artifactIndexes(catalog);
   const records = ownedArtifactRecords(player, catalog);
   const recordsById = Object.fromEntries(records.map(row => [row.id, row]));
-  const slots = (Array.isArray(player.artifactSlots) ? player.artifactSlots : []).slice(0, beltCapacity(player, catalog));
+  const source = Array.isArray(slotsOverride) ? slotsOverride : (Array.isArray(player.artifactSlots) ? player.artifactSlots : []);
+  const slots = source.slice(0, beltCapacity(player, catalog));
   const seenTypes = new Set();
-  const types = [];
+  const out = [];
   for (const recordId of slots) {
     const record = recordsById[String(recordId || '')];
-    if (!record || !record.stabilized || record.hot || seenTypes.has(record.typeId)) continue;
+    if (!record || !record.stabilized || record.hot || record.revealed !== true || seenTypes.has(record.typeId)) continue;
     const type = indexes.byId[record.typeId];
     if (!type) continue;
+    const properties = instanceProperties(record, catalog);
+    if (!properties) continue;
     seenTypes.add(record.typeId);
-    types.push(type);
+    out.push({ record, type, properties });
   }
-  return types;
+  return out;
 }
 
-function diminishingSum(values = []) {
-  return values.reduce((sum, value, index) => sum + Number(value || 0) * (index === 0 ? 1 : 0.5), 0);
+function equippedArtifactTypes(player = {}, catalog = {}) {
+  return equippedArtifactInstances(player, catalog).map(row => row.type);
 }
 
-function calculateArtifactEffects(player = {}, catalog = {}) {
-  const types = equippedArtifactTypes(player, catalog);
+// Одинаковые эффекты разных артефактов: сильнейший полностью, остальные по 50%.
+function diminishingSum(values = [], secondaryMultiplier = 0.5) {
+  const sorted = values.map(Number).filter(Number.isFinite).sort((a, b) => Math.abs(b) - Math.abs(a));
+  return sorted.reduce((sum, value, index) => sum + value * (index === 0 ? 1 : secondaryMultiplier), 0);
+}
+
+function calculateArtifactEffects(player = {}, catalog = {}, slotsOverride = null) {
+  const instances = equippedArtifactInstances(player, catalog, slotsOverride);
   const buckets = {};
   const resistances = {};
   const flags = {};
@@ -76,8 +62,8 @@ function calculateArtifactEffects(player = {}, catalog = {}) {
     if (!buckets[key]) buckets[key] = [];
     buckets[key].push(Number(value));
   };
-  for (const type of types) {
-    const effects = type.effects || {};
+  for (const instance of instances) {
+    const effects = instance.properties.effects || {};
     for (const [key, value] of Object.entries(effects)) {
       if (key === 'resistances') {
         for (const [damageType, amount] of Object.entries(value || {})) {
@@ -89,13 +75,16 @@ function calculateArtifactEffects(player = {}, catalog = {}) {
     }
   }
   const rules = catalog.rules || {};
-  const get = key => diminishingSum(buckets[key] || []);
+  const secondary = clamp(Number(rules.secondarySimilarEffectMultiplier ?? 0.5), 0, 1);
+  const get = key => diminishingSum(buckets[key] || [], secondary);
   const resolvedResistances = {};
   for (const [damageType, values] of Object.entries(resistances)) {
-    resolvedResistances[damageType] = clamp(diminishingSum(values), -0.5, Number(rules.maxResistancePct || 0.6));
+    resolvedResistances[damageType] = clamp(diminishingSum(values, secondary), -0.5, Number(rules.maxResistancePct || 0.6));
   }
   return {
-    artifactTypeIds: types.map(row => row.id),
+    artifactTypeIds: instances.map(row => row.type.id),
+    artifactRecordIds: instances.map(row => row.record.id),
+    artifactTiers: instances.map(row => row.properties.tier),
     speedPct: clamp(get('speedPct'), -0.45, Number(rules.maxSpeedBonusPct || 0.18)),
     apRegenPct: clamp(get('apRegenPct'), -0.8, 1),
     carryKg: clamp(get('carryKg'), -30, Number(rules.maxCarryBonusKg || 30)),
@@ -121,6 +110,26 @@ function calculateArtifactEffects(player = {}, catalog = {}) {
   };
 }
 
+// Разница эффектов между текущим поясом и гипотетическим набором слотов —
+// предпросмотр «что изменится», если установить/снять артефакт.
+function previewArtifactEffects(player = {}, catalog = {}, nextSlots = []) {
+  const before = calculateArtifactEffects(player, catalog);
+  const after = calculateArtifactEffects(player, catalog, nextSlots);
+  const delta = {};
+  for (const key of Object.keys(after)) {
+    if (typeof after[key] === 'number' && Number(after[key]) !== Number(before[key] || 0)) {
+      delta[key] = Number((Number(after[key]) - Number(before[key] || 0)).toFixed(4));
+    }
+  }
+  const resistances = {};
+  for (const key of new Set([...Object.keys(before.resistances || {}), ...Object.keys(after.resistances || {})])) {
+    const diff = Number(after.resistances?.[key] || 0) - Number(before.resistances?.[key] || 0);
+    if (diff !== 0) resistances[key] = Number(diff.toFixed(4));
+  }
+  if (Object.keys(resistances).length) delta.resistances = resistances;
+  return { before, after, delta };
+}
+
 function sanitizeArtifactLoadout(player = {}, catalog = {}) {
   const indexes = artifactIndexes(catalog);
   if (!player.equipment || typeof player.equipment !== 'object') player.equipment = {};
@@ -136,8 +145,10 @@ function sanitizeArtifactLoadout(player = {}, catalog = {}) {
       - player.artifactRecords.filter(record => record.itemId === row.id).length));
     for (let i = 0; i < missing; i++) player.artifactRecords.push({
       id: `artifact_record_${randomUUID()}`, itemId: row.id, typeId: type.id,
-      hot: false, stabilized: false, containerId: '', ownerCharacterId: String(player.characterId || ''),
-      spawnedByShiftId: '', acquiredAt: Date.now()
+      hot: true, stabilized: false, revealed: false, tier: baseTierOfType(type), seed: '',
+      sourceAnomalyType: '', sourceFieldId: '', containerId: '',
+      ownerCharacterId: String(player.characterId || ''), spawnedByShiftId: '', spawnedAtMs: 0,
+      acquiredAt: Date.now(), recordVersion: RECORD_VERSION
     });
   }
   const recordIds = new Set(player.artifactRecords.map(row => row.id));
@@ -178,7 +189,9 @@ module.exports = {
   artifactIndexes,
   beltCapacity,
   calculateArtifactEffects,
+  equippedArtifactInstances,
   equippedArtifactTypes,
+  previewArtifactEffects,
   sanitizeArtifactLoadout,
   sanitizeArtifactRecords
 };

@@ -948,7 +948,249 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "core-platform-uprava",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreZone.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreZone.unity",
+      "anomalyFields": [
+        {
+          "id": "core-outskirts-pull",
+          "type": "pull",
+          "x": 119.66,
+          "z": 23.8,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-seam",
+          "type": "seam",
+          "x": 67.78,
+          "z": 101.44,
+          "radius": 3.2,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-carousel",
+          "type": "carousel",
+          "x": -23.8,
+          "z": 119.66,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-glass",
+          "type": "glass",
+          "x": -101.44,
+          "z": 67.78,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-dew",
+          "type": "dew",
+          "x": -119.66,
+          "z": -23.8,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-sink",
+          "type": "sink",
+          "x": -67.78,
+          "z": -101.44,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-chime",
+          "type": "chime",
+          "x": 23.8,
+          "z": -119.66,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-outskirts-mute",
+          "type": "mute",
+          "x": 101.44,
+          "z": -67.78,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-pull",
+          "type": "pull",
+          "x": 48.23,
+          "z": 32.22,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-seam",
+          "type": "seam",
+          "x": 11.32,
+          "z": 56.89,
+          "radius": 3.6,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-carousel",
+          "type": "carousel",
+          "x": -32.22,
+          "z": 48.23,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-glass",
+          "type": "glass",
+          "x": -56.89,
+          "z": 11.32,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-dew",
+          "type": "dew",
+          "x": -48.23,
+          "z": -32.22,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-sink",
+          "type": "sink",
+          "x": -11.32,
+          "z": -56.89,
+          "radius": 3.6,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-chime",
+          "type": "chime",
+          "x": 32.22,
+          "z": -48.23,
+          "radius": 3.6,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-middle-mute",
+          "type": "mute",
+          "x": 56.89,
+          "z": -11.32,
+          "radius": 3.6,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-pull",
+          "type": "pull",
+          "x": 24,
+          "z": 0,
+          "radius": 4,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-seam",
+          "type": "seam",
+          "x": 16.97,
+          "z": 16.97,
+          "radius": 4,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-carousel",
+          "type": "carousel",
+          "x": 0,
+          "z": 24,
+          "radius": 4,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-glass",
+          "type": "glass",
+          "x": -16.97,
+          "z": 16.97,
+          "radius": 4,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-dew",
+          "type": "dew",
+          "x": -24,
+          "z": 0,
+          "radius": 4,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-sink",
+          "type": "sink",
+          "x": -16.97,
+          "z": -16.97,
+          "radius": 4,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-chime",
+          "type": "chime",
+          "x": 0,
+          "z": -24,
+          "radius": 4,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "core-center-mute",
+          "type": "mute",
+          "x": 16.97,
+          "z": -16.97,
+          "radius": 4,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreBaseUprava",
@@ -1058,7 +1300,29 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabSprout-airlock",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSprout.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSprout.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabSprout-dew-1",
+          "type": "dew",
+          "x": -20,
+          "z": 20,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSprout-dew-2",
+          "type": "dew",
+          "x": 20,
+          "z": 22,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreLabCircuit",
@@ -1080,7 +1344,39 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabCircuit-airlock",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCircuit.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCircuit.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCircuit-chime-1",
+          "type": "chime",
+          "x": -20,
+          "z": 20,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCircuit-chime-2",
+          "type": "chime",
+          "x": 20,
+          "z": 22,
+          "radius": 3.2,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCircuit-seam-3",
+          "type": "seam",
+          "x": 0,
+          "z": 26,
+          "radius": 3.2,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreLabAlloy",
@@ -1102,7 +1398,29 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabAlloy-airlock",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabAlloy.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabAlloy.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabAlloy-glass-1",
+          "type": "glass",
+          "x": -20,
+          "z": 20,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabAlloy-glass-2",
+          "type": "glass",
+          "x": 20,
+          "z": 22,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreLabSpectrum",
@@ -1124,7 +1442,49 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabSpectrum-airlock",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabSpectrum.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabSpectrum-pull-1",
+          "type": "pull",
+          "x": -18,
+          "z": 18,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-carousel-2",
+          "type": "carousel",
+          "x": 18,
+          "z": 18,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-sink-3",
+          "type": "sink",
+          "x": 0,
+          "z": 26,
+          "radius": 3.2,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabSpectrum-mute-4",
+          "type": "mute",
+          "x": 0,
+          "z": 12,
+          "radius": 3.2,
+          "dischargeMs": 5000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreLabCenterService",
@@ -1168,7 +1528,29 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabCenterResearch-lift",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterResearch.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterResearch.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCenterResearch-seam-1",
+          "type": "seam",
+          "x": -12,
+          "z": 20,
+          "radius": 3,
+          "dischargeMs": 3000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCenterResearch-sink-1",
+          "type": "sink",
+          "x": 12,
+          "z": 20,
+          "radius": 3,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor",
@@ -1190,7 +1572,29 @@
       "worldRevision": "kromka-1",
       "migrationSpawnId": "coreLabCenterReactor-lift",
       "legacyStable": false,
-      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity"
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity",
+      "anomalyFields": [
+        {
+          "id": "coreLabCenterReactor-glass-1",
+          "type": "glass",
+          "x": -14,
+          "z": 8,
+          "radius": 3.4,
+          "dischargeMs": 4000,
+          "training": false,
+          "placement": "unity-authored"
+        },
+        {
+          "id": "coreLabCenterReactor-chime-1",
+          "type": "chime",
+          "x": 14,
+          "z": 8,
+          "radius": 3.4,
+          "dischargeMs": 6000,
+          "training": false,
+          "placement": "unity-authored"
+        }
+      ]
     }
   ]
 }

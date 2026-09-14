@@ -205,6 +205,11 @@ namespace RealmOfAshes.Game
             Add(result, "ammoParts", "Детали патронов", 0.18f);
             Add(result, "food", "Пища", 0.65f);
             Add(result, "weaponParts", "Оружейные детали", 0.85f);
+            Add(result, "bioReagent", "Биореагент", 0.3f);
+            Add(result, "circuitModule", "Контурный модуль", 0.4f);
+            Add(result, "alloyPlate", "Пластина сплава", 0.7f);
+            Add(result, "spectrumSample", "Спектральная проба", 0.25f);
+            Add(result, "stabilizerCatalyst", "Катализатор стабилизации", 0.2f);
             Add(result, "silver", "Марки Тракта", 0f);
             Add(result, "blue", "Кассета сини", 0.4f);
             Add(result, "trophy", "Трофей", 0.5f);

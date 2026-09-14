@@ -135,12 +135,29 @@ const {
   artifactIndexes,
   beltCapacity: serverArtifactBeltCapacity,
   calculateArtifactEffects,
+  previewArtifactEffects,
   sanitizeArtifactLoadout,
   sanitizeArtifactRecords,
   claimedArtifactIdsFromSaves
 } = require('./src/server/artifact-effects');
+const {
+  publicArtifactCatalog,
+  publicArtifactRecord,
+  salvageYields: artifactSalvageYields,
+  stabilizationCost: artifactStabilizationCost,
+  stabilizeRecord: stabilizeArtifactRecord
+} = require('./src/server/artifact-instances');
+const {
+  claimBirth: claimArtifactBirth,
+  currentEmissionId: artifactEmissionId,
+  lastEmissionEndAt: artifactEmissionEndAt,
+  liveBirths: liveArtifactBirths,
+  normalizeBirthStore: normalizeArtifactBirthStore,
+  tickLocationBirths: tickArtifactBirths
+} = require('./src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('./src/server/shift-cycle');
 const {
+  mergeBirthArtifacts,
   pickupArtifact: serverPickupArtifact,
   publicArtifactsForPlayer,
   reconcileArtifactSpawns
@@ -1983,6 +2000,12 @@ app.get('/api/kromka/items', (_, res) => {
   });
 });
 
+// Каталог артефактов для клиента: виды, тиры с цветами, источники по типам
+// аномалий и цены услуг. Скрытых свойств экземпляров здесь нет по построению.
+app.get('/api/kromka/artifacts', (_, res) => {
+  res.json({ ok: true, catalog: publicArtifactCatalog(KROMKA_ARTIFACT_CATALOG) });
+});
+
 let globalMapResponseCache = null;
 
 function invalidateGlobalMapResponseCache() {
@@ -2158,7 +2181,12 @@ function publicKromkaOperationsMetrics(now = Date.now()) {
   return {
     worldRevision: 'kromka-1',
     shift: serverCurrentShiftState(now),
-    artifacts: { active: activeArtifacts, claimed: KROMKA_CLAIMED_ARTIFACT_IDS.size },
+    artifacts: {
+      active: activeArtifacts,
+      claimed: KROMKA_CLAIMED_ARTIFACT_IDS.size,
+      births: Object.values(savesDb.anomalyBirths?.locations || {})
+        .reduce((sum, row) => sum + Object.keys(row?.artifacts || {}).length, 0)
+    },
     personalBases: {
       total: personalBases.length,
       activeRooms: [...rooms.values()].filter(room => room?.locationId === 'personalBase').length,
@@ -3699,6 +3727,8 @@ sanitizeSiegeStore(savesDb.kromkaSieges);
 // Runtime-состояние аванпостов Сердцевины живёт в сохранениях сервера, отдельно
 // от авторских определений в data/kromka/territory.json.
 savesDb.kromkaTerritory = normalizeTerritoryStore(savesDb.kromkaTerritory, KROMKA_TERRITORY_CATALOG, Date.now());
+// Рождённые аномалиями артефакты: по одному на поле, переживают перезапуск.
+savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
 const KROMKA_CLAIMED_ARTIFACT_IDS = claimedArtifactIdsFromSaves(savesDb);
@@ -10880,6 +10910,36 @@ function serverItemProtectedFromPvpDrop(itemId = '') {
   return SERVER_PVP_PROTECTED_ITEM_IDS.has(id) || /(?:^|_)(?:quest|story|key)(?:_|$)/i.test(id);
 }
 
+// Где доступна стабилизация: NPC-исследователь/терминал (service artifactLab),
+// станок личной базы или, для старых поселений без сервисных NPC, защищённая
+// локация-поселение.
+function serverArtifactStabilizationPlace(player = {}, loc = null) {
+  const rules = KROMKA_ARTIFACT_CATALOG.stabilization || {};
+  if (rules.personalBaseAllowed !== false && String(player?.locationId || '') === 'personalBase') return { ok: true, kind: 'personalBase' };
+  const serviceId = String(rules.serviceId || 'artifactLab');
+  if (serverNearbyServiceActor(player, serviceId)) return { ok: true, kind: serviceId };
+  if (rules.legacySafeSettlementAllowed !== false && loc?.safe === true && String(loc?.kind || '') !== 'base') return { ok: true, kind: 'settlement' };
+  return { ok: false, error: 'Нужен исследователь артефактов, терминал базы или станок личной базы.' };
+}
+
+function serverArtifactCostShortage(player = {}, cost = {}) {
+  const silver = Math.max(0, Math.floor(Number(cost?.silver || 0)));
+  if (silver > 0 && serverInventoryQty(player.inventory, 'silver') < silver) return `Не хватает марок: нужно ${silver}.`;
+  for (const row of Array.isArray(cost?.items) ? cost.items : []) {
+    if (serverInventoryQty(player.inventory, row.id) < row.qty) {
+      return `Не хватает компонентов: ${KROMKA_ITEM_INDEXES.byId[row.id]?.name || row.id} ×${row.qty}.`;
+    }
+  }
+  return '';
+}
+
+// Смена контейнера артефактов вне боя: после урона должна пройти пауза.
+function serverArtifactLoadoutCombatLocked(player = {}, now = Date.now()) {
+  const lockMs = Math.max(0, Number(KROMKA_ARTIFACT_CATALOG.rules?.loadoutChangeCombatLockMs || 10000));
+  const lastDamage = Math.max(Number(player?.lastServerDamageAt || 0), Number(player?.serverCombat?.lastAttackAt || 0));
+  return lockMs > 0 && lastDamage > 0 && now - lastDamage < lockMs;
+}
+
 function serverInstalledArtifactCounts(target = {}) {
   sanitizeArtifactLoadout(target, KROMKA_ARTIFACT_CATALOG);
   const counts = new Map();
@@ -17774,9 +17834,17 @@ function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
   return true;
 }
 
+// Публичная проекция runtime-записи предмета: у артефактов скрытые свойства и
+// seed не покидают сервер до стабилизации (земля, торговля, склад).
+function publicWeaponRuntimeRecord(record = null) {
+  if (!record || typeof record !== 'object') return record;
+  if (!record.artifact) return record;
+  return { ...record, artifact: publicArtifactRecord(record.artifact, KROMKA_ARTIFACT_CATALOG) };
+}
+
 function publicGroundItem(g) {
   const itemRuntimeRecords = (Array.isArray(g?.itemRuntimeRecords) ? g.itemRuntimeRecords : [])
-    .map(record => sanitizeServerWeaponRuntimeRecord(record, g?.itemId || ''))
+    .map(record => publicWeaponRuntimeRecord(sanitizeServerWeaponRuntimeRecord(record, g?.itemId || '')))
     .filter(Boolean);
   return {
     id: g.id,
@@ -18022,6 +18090,62 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
   };
 }
 
+// Аномальные поля локации для рождения артефактов: авторская runtime-сцена
+// (Unity-экспорт) имеет приоритет, лор-каталог — запасной источник.
+function serverLocationAnomalyFields(locationId = '') {
+  const runtime = LOCATIONS[normalizeLocationId(locationId)];
+  if (Array.isArray(runtime?.anomalyFields) && runtime.anomalyFields.length) return runtime.anomalyFields;
+  const lore = kromkaLocationLore(locationId);
+  return Array.isArray(lore?.anomalyFields) ? lore.anomalyFields : [];
+}
+
+function serverArtifactBirthStore() {
+  if (!savesDb.anomalyBirths || typeof savesDb.anomalyBirths !== 'object') {
+    savesDb.anomalyBirths = normalizeArtifactBirthStore(null);
+  }
+  return savesDb.anomalyBirths;
+}
+
+let serverArtifactBirthPersistTimer = null;
+function scheduleServerArtifactBirthPersist() {
+  if (serverArtifactBirthPersistTimer) return;
+  serverArtifactBirthPersistTimer = setTimeout(() => {
+    serverArtifactBirthPersistTimer = null;
+    try { persistSaves(); } catch (err) { console.error('Artifact birth persist failed:', err); }
+  }, 1500);
+  if (typeof serverArtifactBirthPersistTimer.unref === 'function') serverArtifactBirthPersistTimer.unref();
+}
+
+// Одна проверка в минуту на свободное поле каждой локации с аномалиями.
+// Шанс растёт после активной фазы выброса и затухает за 30 реальных минут.
+function serverTickAnomalyBirths(now = Date.now(), options = {}) {
+  const store = serverArtifactBirthStore();
+  const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
+  const emissionId = artifactEmissionId(KROMKA_SHIFT_CYCLE, now);
+  const touched = new Set();
+  let changed = false;
+  for (const locationId of Object.keys(LOCATIONS)) {
+    const fields = serverLocationAnomalyFields(locationId);
+    if (!fields.length) continue;
+    const result = tickArtifactBirths(store, locationId, fields, KROMKA_ARTIFACT_CATALOG, now, {
+      emissionEndAt, emissionId, random: options.random
+    });
+    if (result.births.length || result.refreshed.length) {
+      changed = true;
+      touched.add(locationId);
+    }
+  }
+  if (changed) {
+    scheduleServerArtifactBirthPersist();
+    for (const room of rooms.values()) {
+      if (!touched.has(String(room?.locationId || ''))) continue;
+      serverEnsureRoomArtifacts(room, now);
+      room.worldStateDirty = true;
+    }
+  }
+  return { changed, locations: [...touched] };
+}
+
 function serverEnsureRoomArtifacts(room, now = Date.now()) {
   if (!room) return null;
   const location = kromkaLocationLore(room.locationId) || { id: room.locationId, macroRegion: 'default', anomalyFields: [] };
@@ -18038,6 +18162,9 @@ function serverEnsureRoomArtifacts(room, now = Date.now()) {
     now,
     { causalArtifactRequired: true, opportunity }
   );
+  // Комнаты одной локации (личные встречи, инстансы) видят одни и те же
+  // рождённые артефакты: их владелец — хранилище, а не комната.
+  if (!room.personalEncounter) mergeBirthArtifacts(room, liveArtifactBirths(serverArtifactBirthStore(), room.locationId));
   for (const artifact of state?.artifacts || []) {
     if (KROMKA_CLAIMED_ARTIFACT_IDS.has(String(artifact?.id || ''))) artifact.pickedUp = true;
   }
@@ -23349,7 +23476,9 @@ function publicAuthoritativePlayerState(p = {}) {
     knownFactionSecrets: p.knownFactionSecrets && typeof p.knownFactionSecrets === 'object'
       ? p.knownFactionSecrets : {},
     kromkaQuestJournal: questJournal,
-    artifactRecords: p.artifactRecords.map(record => ({ ...record,
+    // Свойства экземпляра уходят клиенту только после стабилизации; seed — никогда.
+    artifactRecords: p.artifactRecords.map(record => ({
+      ...publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG),
       implementationNote: String(KROMKA_ARTIFACT_INDEXES.byId[record.typeId]?.implementationNote || '')
     })),
     artifactSlots: p.artifactSlots,
@@ -25286,6 +25415,14 @@ io.on('connection', (socket) => {
     if (!result.ok) return fail(result.error || 'Артефакт не удалось забрать.');
     KROMKA_CLAIMED_ARTIFACT_IDS.add(String(result.record.id || ''));
     savesDb.claimedArtifactIds = [...KROMKA_CLAIMED_ARTIFACT_IDS];
+    if (result.birth) {
+      // Поле освобождается: следующая минутная проверка может родить новый.
+      claimArtifactBirth(serverArtifactBirthStore(), room.locationId, result.record.id);
+      for (const other of rooms.values()) {
+        if (other !== room && String(other?.locationId || '') === String(room.locationId || '')) serverEnsureRoomArtifacts(other, Date.now());
+      }
+      scheduleServerArtifactBirthPersist();
+    }
     serverInventoryAdd(p, result.record.itemId, 1);
     serverRecordKromkaQuestEvent(p, 'recover_magnetic_core', {
       locationId: p.locationId,
@@ -25298,25 +25435,89 @@ io.on('connection', (socket) => {
     for (const occupant of livePlayersInRoom(room)) emitServerArtifactState(occupant, 'pickedUp');
     const self = publicAuthoritativePlayerState(p);
     emitAuthoritativePlayerState(p, { reason: 'artifactPickup' });
-    if (typeof ack === 'function') ack({ ok: true, record: result.record, self });
+    if (typeof ack === 'function') ack({ ok: true, record: publicArtifactRecord(result.record, KROMKA_ARTIFACT_CATALOG), self });
   });
 
+  // Стабилизация — платная гарантированная услуга исследователя/терминала
+  // (service artifactLab), капитала или станка личной базы. Она единственная
+  // раскрывает свойства экземпляра; requestId делает повтор после reconnect
+  // безопасным (второй платы не будет).
   socket.on('stabilizeArtifact', (data = {}, ack) => {
     const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || p.dead || p.onGlobalMap) return fail('Стабилизация здесь недоступна.');
-    const loc = roomLocation(rooms.get(p.roomId));
-    if (!loc?.safe && p.locationId !== 'personalBase') return fail('Нужен безопасный специалист или станок личной базы.');
+    const room = rooms.get(p.roomId);
+    const loc = roomLocation(room);
+    const place = serverArtifactStabilizationPlace(p, loc);
+    if (!place.ok) return fail(place.error);
     sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
     const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
     if (!record) return fail('Артефакт не найден.');
-    if (record.stabilized && !record.hot) return fail('Артефакт уже стабилизирован.');
-    record.hot = false;
-    record.stabilized = true;
-    record.containerId = '';
+    const cost = artifactStabilizationCost(record, KROMKA_ARTIFACT_CATALOG);
+    if (String(data.action || '') === 'quote') {
+      if (typeof ack === 'function') ack({ ok: true, quote: true, cost, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG), place: place.kind });
+      return;
+    }
+    const transaction = beginCriticalAction(p, 'stabilizeArtifact', data, ['recordId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      // Повтор после reconnect: тот же ответ, без второй оплаты.
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    if (record.stabilized && record.revealed) return fail('Артефакт уже стабилизирован.');
+    const shortage = serverArtifactCostShortage(p, cost);
+    if (shortage) return fail(shortage);
+    if (cost.silver > 0) serverInventoryRemove(p, 'silver', cost.silver);
+    for (const row of cost.items) serverInventoryRemove(p, row.id, row.qty);
+    stabilizeArtifactRecord(record);
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const publicRecord = publicArtifactRecord(p.artifactRecords.find(row => row.id === record.id) || record, KROMKA_ARTIFACT_CATALOG);
+    const payload = { ok: true, cost, place: place.kind, record: publicRecord };
+    commitCriticalAction(p, transaction, payload);
     persistActivePlayerState(p);
     emitAuthoritativePlayerState(p, { reason: 'artifactStabilized' });
-    if (typeof ack === 'function') ack({ ok: true, record, self: publicAuthoritativePlayerState(p) });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
+  // Разбор ненужного артефакта на компоненты: выход ниже цены стабилизации
+  // того же тира. Установленный в контейнер артефакт сначала нужно снять.
+  socket.on('salvageArtifact', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || p.downed || p.onGlobalMap) return fail('Разбор сейчас недоступен.');
+    if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Нельзя разбирать артефакты в бою.');
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const record = p.artifactRecords.find(row => row.id === String(data.recordId || ''));
+    if (!record) return fail('Артефакт не найден.');
+    if (p.artifactSlots.includes(record.id)) return fail('Сначала снимите артефакт с пояса.');
+    const yields = artifactSalvageYields(record, KROMKA_ARTIFACT_CATALOG);
+    if (String(data.action || '') === 'quote') {
+      if (typeof ack === 'function') ack({ ok: true, quote: true, yields, record: publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG) });
+      return;
+    }
+    const transaction = beginCriticalAction(p, 'salvageArtifact', data, ['recordId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) {
+      if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
+    const carryCheck = serverLimitItemsByCarry(p, data, yields.map(row => ({ id: row.id, qty: row.qty })), { apply: false });
+    if (yields.some(row => !carryCheck.items.some(item => item.id === row.id && item.qty >= row.qty)))
+      return fail('Нет места или грузоподъёмности для компонентов.');
+    const validation = serverValidateWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1, itemRuntimeId: record.id });
+    if (!validation.ok) return fail(validation.error || 'Артефакт недоступен для разбора.');
+    serverInventoryRemove(p, record.itemId, 1);
+    serverFinalizeWeaponRuntimeRemoval(p, { id: record.itemId, qty: 1 }, validation);
+    for (const row of yields) serverInventoryAdd(p, row.id, row.qty);
+    sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
+    const payload = { ok: true, recordId: record.id, itemId: record.itemId, tier: record.tier, yields };
+    commitCriticalAction(p, transaction, payload);
+    serverApplyDerivedVitals(p);
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'artifactSalvaged' });
+    if (typeof ack === 'function') ack({ ...payload, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 
   socket.on('artifactLoadoutAction', (data = {}, ack) => {
@@ -25328,20 +25529,32 @@ io.on('connection', (socket) => {
     if (capacity <= 0) return fail('Сначала наденьте пояс-контейнер.');
     const action = String(data.action || 'equip');
     const recordId = String(data.recordId || '').slice(0, 96);
-    if (action === 'unequip') {
-      p.artifactSlots = p.artifactSlots.filter(id => id !== recordId);
-    } else {
+    const nextSlotsFor = (mode) => {
+      if (mode === 'unequip') return p.artifactSlots.filter(id => id !== recordId);
       const record = p.artifactRecords.find(row => row.id === recordId);
-      if (!record || !record.stabilized || record.hot) return fail('На пояс ставится только стабилизированный артефакт.');
+      if (!record || !record.stabilized || record.hot || record.revealed !== true) return { error: 'На пояс ставится только стабилизированный артефакт.' };
       const equippedRecords = p.artifactRecords.filter(row => p.artifactSlots.includes(row.id));
-      if (equippedRecords.some(row => row.typeId === record.typeId && row.id !== record.id)) return fail('Два одинаковых артефакта не складываются.');
+      if (equippedRecords.some(row => row.typeId === record.typeId && row.id !== record.id)) return { error: 'Два одинаковых артефакта не складываются.' };
       const slotIndex = Math.floor(Number(data.slotIndex ?? p.artifactSlots.length));
-      if (!Number.isFinite(slotIndex) || slotIndex < 0 || slotIndex >= capacity) return fail('На поясе нет свободного места. Сначала снимите артефакт.');
+      if (!Number.isFinite(slotIndex) || slotIndex < 0 || slotIndex >= capacity) return { error: 'На поясе нет свободного места. Сначала снимите артефакт.' };
       const next = p.artifactSlots.filter(id => id !== recordId);
       while (next.length < capacity) next.push('');
       next[slotIndex] = recordId;
-      p.artifactSlots = next.filter(Boolean).slice(0, capacity);
+      return next.filter(Boolean).slice(0, capacity);
+    };
+    if (action === 'preview') {
+      // Предпросмотр «что изменится» не трогает состояние и разрешён в бою.
+      const mode = p.artifactSlots.includes(recordId) ? 'unequip' : 'equip';
+      const next = nextSlotsFor(mode);
+      if (!Array.isArray(next)) return fail(next.error);
+      const preview = previewArtifactEffects(p, KROMKA_ARTIFACT_CATALOG, next);
+      if (typeof ack === 'function') ack({ ok: true, preview: true, mode, recordId, slots: next, delta: preview.delta, after: preview.after });
+      return;
     }
+    if (serverArtifactLoadoutCombatLocked(p, Date.now())) return fail('Контейнер артефактов нельзя менять в бою.');
+    const next = nextSlotsFor(action === 'unequip' ? 'unequip' : 'equip');
+    if (!Array.isArray(next)) return fail(next.error);
+    p.artifactSlots = next;
     sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
     serverApplyDerivedVitals(p);
     sanitizeCarrySnapshot(p);
@@ -28893,6 +29106,15 @@ setInterval(() => {
     console.error('Kromka siege scheduler tick failed:', error);
   }
 }, 1000);
+
+// Рождение артефактов идёт по реальному времени даже в пустых локациях.
+setInterval(() => {
+  try {
+    serverTickAnomalyBirths(Date.now());
+  } catch (error) {
+    console.error('Anomaly artifact birth tick failed:', error);
+  }
+}, 15000);
 
 // Аванпосты Сердцевины считаются по реальному времени независимо от игроков,
 // загрузки сцены и скорости игрового времени.

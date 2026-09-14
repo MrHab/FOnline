@@ -87,7 +87,7 @@
 | 6 | Лаборатории, центральный комплекс, боссы | — |
 | 7 | PvE-области и персональные встречи | — |
 | 8 | Публичные события | — |
-| 9 | Артефакты и рождение в аномалиях | — |
+| 9 | Артефакты и рождение в аномалиях | готово (сервер): `data/artifacts.json` v2 (5 тиров с цветами экипировки, `anomalySources`, семьи компонентов, цены стабилизации/разбора), `src/server/artifact-instances.js` (экземпляр = вид + тир + seed, свойства выводятся детерминированно и не хранятся, `publicArtifactRecord` скрывает их до стабилизации, миграция старых записей без потерь), `src/server/anomaly-artifact-births.js` (одна проверка в минуту на свободное поле, шанс 0,2 % → 2 % после выброса с затуханием 30 мин, один артефакт на поле, обновление новым выбросом, `savesDb.anomalyBirths`), подбор без контейнера, `stabilizeArtifact` с ценой и `requestId`, `salvageArtifact`, предпросмотр и запрет смены контейнера в бою, `/api/kromka/artifacts`, новые предметы `bioReagent/circuitModule/alloyPlate/spectrumSample/stabilizerCatalyst`; проверки `check-artifact-instances.js`, `check-anomaly-births.js`; Unity UI — этап 11 |
 | 10 | Экономика (аукцион, разбор, компоненты) | — |
 | 11 | Unity-клиент | — |
 | 12 | Документация, полный `npm run check`, PR | — |

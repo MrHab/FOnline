@@ -1,6 +1,6 @@
 {
-  "schema": "kromka.artifacts.v1",
-  "version": 1,
+  "schema": "kromka.artifacts.v2",
+  "version": 2,
   "shift": {
     "cycleMs": 7200000,
     "warningMs": 600000,
@@ -9,9 +9,9 @@
     "safeShelterLocationIds": ["settlement", "sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "personalBase"]
   },
   "detectors": [
-    { "itemId": "artifactDetectorMk1", "level": 1, "signalRange": 12, "revealRange": 3, "identifiesBeforePickup": false },
-    { "itemId": "artifactDetectorMk2", "level": 2, "signalRange": 18, "revealRange": 5, "identifiesBeforePickup": false },
-    { "itemId": "artifactDetectorMk3", "level": 3, "signalRange": 24, "revealRange": 7, "identifiesBeforePickup": true }
+    { "itemId": "artifactDetectorMk1", "level": 1, "signalRange": 12, "revealRange": 3, "identifiesBeforePickup": false, "tierHint": false },
+    { "itemId": "artifactDetectorMk2", "level": 2, "signalRange": 18, "revealRange": 5, "identifiesBeforePickup": false, "tierHint": true },
+    { "itemId": "artifactDetectorMk3", "level": 3, "signalRange": 24, "revealRange": 7, "identifiesBeforePickup": true, "tierHint": true }
   ],
   "belts": [
     { "itemId": "artifactBelt2", "slots": 2 },
@@ -22,25 +22,68 @@
   "rules": {
     "duplicateTypeAllowed": false,
     "secondarySimilarEffectMultiplier": 0.5,
+    "sameEffectOrder": "strongestFirst",
     "maxSpeedBonusPct": 0.18,
     "maxResistancePct": 0.6,
     "maxCarryBonusKg": 30,
-    "maxRegenHpPerSecond": 1
+    "maxRegenHpPerSecond": 1,
+    "loadoutChangeCombatLockMs": 10000
+  },
+  "tiers": [
+    { "tier": 1, "short": "Т1", "displayName": "Тусклый", "color": "#8a939b", "benefitScale": 0.8, "drawbackScale": 1.1, "stabilization": { "silver": 40, "items": [{ "id": "chemicals", "qty": 1 }] }, "salvage": { "items": [{ "id": "chemicals", "qty": 1 }], "familyComponentQty": 0 } },
+    { "tier": 2, "short": "Т2", "displayName": "Ровный", "color": "#d8d2c0", "benefitScale": 1.0, "drawbackScale": 1.0, "stabilization": { "silver": 90, "items": [{ "id": "chemicals", "qty": 2 }, { "id": "electronics", "qty": 1 }] }, "salvage": { "items": [{ "id": "chemicals", "qty": 1 }, { "id": "electronics", "qty": 1 }], "familyComponentQty": 0 } },
+    { "tier": 3, "short": "Т3", "displayName": "Яркий", "color": "#efd078", "benefitScale": 1.25, "drawbackScale": 0.92, "stabilization": { "silver": 180, "items": [{ "id": "stabilizerCatalyst", "qty": 1 }] }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 1 }], "familyComponentQty": 0 } },
+    { "tier": 4, "short": "Т4", "displayName": "Чистый", "color": "#9fd7ff", "benefitScale": 1.55, "drawbackScale": 0.85, "stabilization": { "silver": 320, "items": [{ "id": "stabilizerCatalyst", "qty": 2 }], "familyComponentQty": 1 }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 1 }], "familyComponentQty": 1 } },
+    { "tier": 5, "short": "Т5", "displayName": "Первородный", "color": "#ff9a54", "benefitScale": 1.9, "drawbackScale": 0.75, "stabilization": { "silver": 600, "items": [{ "id": "stabilizerCatalyst", "qty": 3 }], "familyComponentQty": 2 }, "salvage": { "items": [{ "id": "stabilizerCatalyst", "qty": 2 }], "familyComponentQty": 1 } }
+  ],
+  "families": {
+    "bio": { "displayName": "Биологический", "componentItemId": "bioReagent" },
+    "circuit": { "displayName": "Контурный", "componentItemId": "circuitModule" },
+    "alloy": { "displayName": "Сплавной", "componentItemId": "alloyPlate" },
+    "spectrum": { "displayName": "Спектральный", "componentItemId": "spectrumSample" }
+  },
+  "instanceRoll": {
+    "benefitSpread": 0.3,
+    "drawbackSpread": 0.3,
+    "tierOffsetWeights": [0.55, 0.3, 0.15]
+  },
+  "stabilization": {
+    "serviceId": "artifactLab",
+    "personalBaseAllowed": true,
+    "legacySafeSettlementAllowed": true
+  },
+  "anomalySources": {
+    "pull": ["anchor", "vein"],
+    "seam": ["bloodkin"],
+    "carousel": ["spring"],
+    "glass": ["warmer", "shell"],
+    "dew": ["drop", "dew"],
+    "sink": ["node", "sieve"],
+    "chime": ["thunderer"],
+    "mute": ["husher", "memory"]
+  },
+  "births": {
+    "checkIntervalMs": 60000,
+    "baseChance": 0.002,
+    "peakChance": 0.02,
+    "decayMs": 1800000,
+    "maxPerField": 1,
+    "refreshOnEmission": true
   },
   "types": [
-    { "id": "spring", "itemId": "artifactSpring", "displayName": "Пружина", "rarity": "common", "color": "#72d8ff", "effects": { "speedPct": 0.08, "apRegenPct": 0.10, "resistances": { "electric": -0.20 } }, "benefit": "Скорость +8%, восстановление ОД +10%", "cost": "Электрический урон +20%" },
-    { "id": "vein", "itemId": "artifactVein", "displayName": "Жила", "rarity": "common", "color": "#d55c54", "effects": { "carryKg": 15, "meleeDamagePct": 0.12, "speedPct": -0.06 }, "benefit": "Грузоподъёмность +15 кг, ближний урон +12%", "cost": "Скорость −6%" },
-    { "id": "node", "itemId": "artifactNode", "displayName": "Узел", "rarity": "common", "color": "#b37af2", "effects": { "maxHpFlat": 25, "medkitEffectPct": -0.20 }, "benefit": "Максимум здоровья +25", "cost": "Лечение аптечками −20%" },
-    { "id": "drop", "itemId": "artifactDrop", "displayName": "Капля", "rarity": "common", "color": "#67c7ad", "effects": { "regenHpPerSecond": 0.6, "regenDelaySeconds": 6, "waterUsePct": 0.30 }, "benefit": "Через 6 секунд без урона восстанавливает 0,6 HP/с", "cost": "Расход воды +30%" },
-    { "id": "bloodkin", "itemId": "artifactBloodkin", "displayName": "Кровник", "rarity": "rare", "color": "#be2633", "effects": { "lowHealthThresholdPct": 0.30, "lowHealthHeal": 20, "lowHealthDurationSeconds": 10, "lowHealthCooldownSeconds": 90, "radiationOnTrigger": 15 }, "benefit": "Ниже 30% здоровья восстанавливает 20 HP за 10 секунд", "cost": "После срабатывания +15 радиации" },
-    { "id": "shell", "itemId": "artifactShell", "displayName": "Панцирь", "rarity": "common", "color": "#9c8b68", "effects": { "resistances": { "ballistic": 0.12, "explosive": 0.08 }, "speedPct": -0.08 }, "benefit": "Баллистическое сопротивление +12%, взрывное +8%", "cost": "Скорость −8%" },
-    { "id": "warmer", "itemId": "artifactWarmer", "displayName": "Тепляк", "rarity": "uncommon", "color": "#ff8e3b", "effects": { "resistances": { "fire": 0.35 }, "maxApPct": -0.15 }, "benefit": "Сопротивление огню +35%", "cost": "Максимум ОД −15%" },
-    { "id": "sieve", "itemId": "artifactSieve", "displayName": "Сито", "rarity": "uncommon", "color": "#b9d66b", "effects": { "resistances": { "radiation": 0.40 }, "maxHpFlat": -10 }, "benefit": "Сопротивление радиации +40%", "cost": "Максимум здоровья −10" },
-    { "id": "thunderer", "itemId": "artifactThunderer", "displayName": "Громник", "rarity": "rare", "color": "#8ab7ff", "effects": { "resistances": { "electric": 0.45 }, "wetElectricStun": true }, "benefit": "Сопротивление электричеству +45%", "cost": "Во влажной среде электрический удар дополнительно оглушает" },
-    { "id": "husher", "itemId": "artifactHusher", "displayName": "Молчун", "rarity": "uncommon", "color": "#68717c", "effects": { "movementNoisePct": -0.35, "resistances": { "explosive": 0.20 }, "hearingRangePct": -0.30 }, "benefit": "Шум движения −35%, сопротивление взрыву +20%", "cost": "Радиус слышимости −30%" },
-    { "id": "anchor", "itemId": "artifactAnchor", "displayName": "Якорь", "rarity": "uncommon", "color": "#596b82", "effects": { "knockbackResistance": 0.60, "carryKg": 8, "speedPct": -0.10 }, "benefit": "Сопротивление притяжению и отбрасыванию +60%, груз +8 кг", "cost": "Скорость −10%" },
-    { "id": "dew", "itemId": "artifactDew", "displayName": "Роса", "rarity": "uncommon", "color": "#83e39f", "effects": { "resistances": { "toxic": 0.35 }, "stimDurationPct": 0.20, "foodHealingDisabled": true }, "benefit": "Сопротивление токсинам +35%, стимуляторы действуют на 20% дольше", "cost": "Обычная еда не лечит" },
-    { "id": "memory", "itemId": "artifactMemory", "displayName": "Память", "rarity": "rare", "color": "#e2c4ff", "effects": { "detectorTraceDurationPct": 0.40, "falseDetectorSignals": true }, "benefit": "След виден детектору на 40% дольше", "cost": "Редкие ложные сигналы" }
+    { "id": "spring", "itemId": "artifactSpring", "displayName": "Пружина", "rarity": "common", "baseTier": 1, "family": "circuit", "color": "#72d8ff", "effects": { "speedPct": 0.08, "apRegenPct": 0.10, "resistances": { "electric": -0.20 } }, "benefit": "Скорость +8%, восстановление ОД +10%", "cost": "Электрический урон +20%" },
+    { "id": "vein", "itemId": "artifactVein", "displayName": "Жила", "rarity": "common", "baseTier": 1, "family": "alloy", "color": "#d55c54", "effects": { "carryKg": 15, "meleeDamagePct": 0.12, "speedPct": -0.06 }, "benefit": "Грузоподъёмность +15 кг, ближний урон +12%", "cost": "Скорость −6%" },
+    { "id": "node", "itemId": "artifactNode", "displayName": "Узел", "rarity": "common", "baseTier": 1, "family": "bio", "color": "#b37af2", "effects": { "maxHpFlat": 25, "medkitEffectPct": -0.20 }, "benefit": "Максимум здоровья +25", "cost": "Лечение аптечками −20%" },
+    { "id": "drop", "itemId": "artifactDrop", "displayName": "Капля", "rarity": "common", "baseTier": 1, "family": "bio", "color": "#67c7ad", "effects": { "regenHpPerSecond": 0.6, "regenDelaySeconds": 6, "waterUsePct": 0.30 }, "benefit": "Через 6 секунд без урона восстанавливает 0,6 HP/с", "cost": "Расход воды +30%" },
+    { "id": "bloodkin", "itemId": "artifactBloodkin", "displayName": "Кровник", "rarity": "rare", "baseTier": 3, "family": "bio", "color": "#be2633", "effects": { "lowHealthThresholdPct": 0.30, "lowHealthHeal": 20, "lowHealthDurationSeconds": 10, "lowHealthCooldownSeconds": 90, "radiationOnTrigger": 15 }, "benefit": "Ниже 30% здоровья восстанавливает 20 HP за 10 секунд", "cost": "После срабатывания +15 радиации" },
+    { "id": "shell", "itemId": "artifactShell", "displayName": "Панцирь", "rarity": "common", "baseTier": 1, "family": "alloy", "color": "#9c8b68", "effects": { "resistances": { "ballistic": 0.12, "explosive": 0.08 }, "speedPct": -0.08 }, "benefit": "Баллистическое сопротивление +12%, взрывное +8%", "cost": "Скорость −8%" },
+    { "id": "warmer", "itemId": "artifactWarmer", "displayName": "Тепляк", "rarity": "uncommon", "baseTier": 2, "family": "spectrum", "color": "#ff8e3b", "effects": { "resistances": { "fire": 0.35 }, "maxApPct": -0.15 }, "benefit": "Сопротивление огню +35%", "cost": "Максимум ОД −15%" },
+    { "id": "sieve", "itemId": "artifactSieve", "displayName": "Сито", "rarity": "uncommon", "baseTier": 2, "family": "spectrum", "color": "#b9d66b", "effects": { "resistances": { "radiation": 0.40 }, "maxHpFlat": -10 }, "benefit": "Сопротивление радиации +40%", "cost": "Максимум здоровья −10" },
+    { "id": "thunderer", "itemId": "artifactThunderer", "displayName": "Громник", "rarity": "rare", "baseTier": 3, "family": "circuit", "color": "#8ab7ff", "effects": { "resistances": { "electric": 0.45 }, "wetElectricStun": true }, "benefit": "Сопротивление электричеству +45%", "cost": "Во влажной среде электрический удар дополнительно оглушает" },
+    { "id": "husher", "itemId": "artifactHusher", "displayName": "Молчун", "rarity": "uncommon", "baseTier": 2, "family": "spectrum", "color": "#68717c", "effects": { "movementNoisePct": -0.35, "resistances": { "explosive": 0.20 }, "hearingRangePct": -0.30 }, "benefit": "Шум движения −35%, сопротивление взрыву +20%", "cost": "Радиус слышимости −30%" },
+    { "id": "anchor", "itemId": "artifactAnchor", "displayName": "Якорь", "rarity": "uncommon", "baseTier": 2, "family": "alloy", "color": "#596b82", "effects": { "knockbackResistance": 0.60, "carryKg": 8, "speedPct": -0.10 }, "benefit": "Сопротивление притяжению и отбрасыванию +60%, груз +8 кг", "cost": "Скорость −10%" },
+    { "id": "dew", "itemId": "artifactDew", "displayName": "Роса", "rarity": "uncommon", "baseTier": 2, "family": "bio", "color": "#83e39f", "effects": { "resistances": { "toxic": 0.35 }, "stimDurationPct": 0.20, "foodHealingDisabled": true }, "benefit": "Сопротивление токсинам +35%, стимуляторы действуют на 20% дольше", "cost": "Обычная еда не лечит" },
+    { "id": "memory", "itemId": "artifactMemory", "displayName": "Память", "rarity": "rare", "baseTier": 3, "family": "circuit", "color": "#e2c4ff", "effects": { "detectorTraceDurationPct": 0.40, "falseDetectorSignals": true }, "benefit": "След виден детектору на 40% дольше", "cost": "Редкие ложные сигналы" }
   ],
   "spawnTables": {
     "default": { "spring": 14, "vein": 13, "node": 12, "drop": 12, "shell": 11, "warmer": 8, "sieve": 8, "husher": 7, "anchor": 7, "dew": 6, "bloodkin": 3, "thunderer": 3, "memory": 2 },

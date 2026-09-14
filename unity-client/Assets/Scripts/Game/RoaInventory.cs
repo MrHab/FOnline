@@ -583,6 +583,7 @@ namespace RealmOfAshes.Game
                 completed?.Invoke(ack);
             };
             if (action == "stabilize") Socket.EmitWithAck("stabilizeArtifact", payload, onAck);
+            else if (action == "salvage") Socket.EmitWithAck("salvageArtifact", payload, onAck);
             else Socket.EmitWithAck("artifactLoadoutAction", payload, onAck);
             return true;
         }

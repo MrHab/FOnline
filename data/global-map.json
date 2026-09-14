@@ -762,6 +762,7 @@
       "locationId": "coreZone",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "relayAntenna",
       "modelScale": 1,
@@ -769,8 +770,7 @@
       "note": "Сердцевина. central-installation, metro-platforms.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-core-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "coreBaseUprava",
@@ -781,6 +781,7 @@
       "locationId": "coreBaseUprava",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -788,8 +789,7 @@
       "note": "Узел Управы. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-uprava-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "coreBaseArtels",
@@ -800,6 +800,7 @@
       "locationId": "coreBaseArtels",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -807,8 +808,7 @@
       "note": "Артельный узел. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-free_artels-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     },
     {
       "id": "coreBaseContour",
@@ -819,6 +819,7 @@
       "locationId": "coreBaseContour",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": false,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -826,8 +827,7 @@
       "note": "Узел Контура. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-contour-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": false
+      "worldRevision": "kromka-1"
     },
     {
       "id": "coreBaseLeague",
@@ -838,6 +838,7 @@
       "locationId": "coreBaseLeague",
       "capital": false,
       "capitalFaction": "",
+      "roadAccess": true,
       "danger": 1,
       "model": "wastelandShack",
       "modelScale": 1,
@@ -845,8 +846,7 @@
       "note": "Узел Лиги. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-tract_league-v1",
-      "worldRevision": "kromka-1",
-      "roadAccess": true
+      "worldRevision": "kromka-1"
     }
   ],
   "infrastructure": [

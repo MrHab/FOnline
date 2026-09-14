@@ -183,7 +183,10 @@
         { "id": "ballisticVest", "price": 82, "qty": 1 },
         { "id": "scoutBoots", "price": 20, "qty": 1 },
         { "id": "backpack", "price": 32, "qty": 1 },
-        { "id": "water", "price": 6, "qty": 5 }
+        { "id": "water", "price": 6, "qty": 5 },
+        { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "chemicals", "price": 7, "qty": 12 },
+        { "id": "electronics", "price": 11, "qty": 6 }
       ]
     },
     "coreBaseArtels": {
@@ -213,7 +216,10 @@
         { "id": "ballisticVest", "price": 82, "qty": 1 },
         { "id": "scoutBoots", "price": 20, "qty": 1 },
         { "id": "backpack", "price": 32, "qty": 1 },
-        { "id": "water", "price": 6, "qty": 5 }
+        { "id": "water", "price": 6, "qty": 5 },
+        { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "chemicals", "price": 7, "qty": 12 },
+        { "id": "electronics", "price": 11, "qty": 6 }
       ]
     },
     "coreBaseContour": {
@@ -243,7 +249,10 @@
         { "id": "ballisticVest", "price": 82, "qty": 1 },
         { "id": "scoutBoots", "price": 20, "qty": 1 },
         { "id": "backpack", "price": 32, "qty": 1 },
-        { "id": "water", "price": 6, "qty": 5 }
+        { "id": "water", "price": 6, "qty": 5 },
+        { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "chemicals", "price": 7, "qty": 12 },
+        { "id": "electronics", "price": 11, "qty": 6 }
       ]
     },
     "coreBaseLeague": {
@@ -273,7 +282,10 @@
         { "id": "ballisticVest", "price": 82, "qty": 1 },
         { "id": "scoutBoots", "price": 20, "qty": 1 },
         { "id": "backpack", "price": 32, "qty": 1 },
-        { "id": "water", "price": 6, "qty": 5 }
+        { "id": "water", "price": 6, "qty": 5 },
+        { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "chemicals", "price": 7, "qty": 12 },
+        { "id": "electronics", "price": 11, "qty": 6 }
       ]
     }
   }

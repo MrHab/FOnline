@@ -112,3 +112,8 @@ unity-client/Data/
 # public/radio/ генерируется командой build при деплое.
 radio-library/
 public/radio/
+
+# Unity AI Assistant (preview package) local state, created on first use.
+unity-client/ProjectSettings/AI.Assistant/
+unity-client/Assets/AssistantCustomInstructions.txt
+unity-client/Assets/AssistantCustomInstructions.txt.meta

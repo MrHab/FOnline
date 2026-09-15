@@ -110,7 +110,26 @@
       "rotationY": 0,
       "bossLoot": "zeroCustodian",
       "locked": true,
-      "lockDifficulty": "hard"
+      "lockDifficulty": "hard",
+      "loot": [
+        {
+          "id": "stabilizerCatalyst",
+          "qty": 2
+        },
+        {
+          "id": "circuitModule",
+          "qty": 1
+        },
+        {
+          "id": "alloyPlate",
+          "qty": 1
+        },
+        {
+          "id": "electronics",
+          "qty": 3
+        }
+      ],
+      "lootTable": true
     },
     {
       "id": "boss_vault_b",
@@ -124,7 +143,26 @@
       "rotationY": 0,
       "bossLoot": "zeroCustodian",
       "locked": true,
-      "lockDifficulty": "hard"
+      "lockDifficulty": "hard",
+      "loot": [
+        {
+          "id": "stabilizerCatalyst",
+          "qty": 2
+        },
+        {
+          "id": "bioReagent",
+          "qty": 1
+        },
+        {
+          "id": "spectrumSample",
+          "qty": 1
+        },
+        {
+          "id": "medicine",
+          "qty": 3
+        }
+      ],
+      "lootTable": true
     }
   ],
   "objects": [

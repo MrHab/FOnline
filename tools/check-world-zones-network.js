@@ -6,7 +6,7 @@
 // стабилизации, разбор с идемпотентным requestId, личные комнаты PvE-области
 // и «Искать следы», аванпосты и публичные события в /api/wasteland и /health,
 // мировой босс в снимке комнаты установки, зал боковой лаборатории и правила
-// его узлов.
+// его узлов, незабранная награда босса после перезапуска.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -288,6 +288,33 @@ const getJson = route => new Promise((resolve, reject) => {
   const otherHall = await h.socketAck(accounts.progression.socket, 'labNodeAction', { nodeId: 'node_a' });
   assert(!otherHall.ok, 'The installation has no hall nodes: ' + JSON.stringify(otherHall));
   console.log('PASS laboratory hall snapshot and node range');
+
+  // --- награда побеждённого босса переживает перезапуск -------------------------------------------
+  for (const account of Object.values(accounts)) h.closeSocket(account);
+  await h.stopServer();
+  const restartSaves = JSON.parse(fs.readFileSync(savesPath));
+  const defeatedAt = Date.now() - 60000;
+  restartSaves.worldBosses = {
+    zeroCustodian: {
+      bossId: 'zeroCustodian', defeatedAt, respawnAt: defeatedAt + 5400000, kills: 1,
+      // Один сейф уже обобрали, второй так и остался нетронутым.
+      reward: { unlockedAt: defeatedAt, claimed: ['boss_vault_a'] }
+    }
+  };
+  fs.writeFileSync(savesPath, JSON.stringify(restartSaves, null, 2));
+  await h.startServer();
+  await h.connectAndJoin(accounts.progression);
+  const afterRestart = accounts.progression.join.worldState;
+  assert.equal(afterRestart.worldBoss.phase, 'defeated', 'The defeated boss stays defeated after a restart.');
+  const vaults = Object.fromEntries((afterRestart.containers || [])
+    .filter(row => String(row.defId || '').startsWith('boss_vault'))
+    .map(row => [row.defId, row]));
+  assert(vaults.boss_vault_a && vaults.boss_vault_b, 'The installation keeps both reward containers: ' + JSON.stringify(Object.keys(vaults)));
+  assert.equal(vaults.boss_vault_a.locked, true, 'The looted reward does not open a second time.');
+  assert.equal(vaults.boss_vault_b.locked, false, 'The untouched reward waits for its owner after the restart.');
+  assert.equal(vaults.boss_vault_b.terminalLocked, false, 'The untouched reward is not held by the terminal either.');
+  assert(vaults.boss_vault_b.empty === false, 'The restored reward is not empty: ' + JSON.stringify(vaults.boss_vault_b).slice(0, 200));
+  console.log('PASS the untouched boss reward survives a restart');
 })().catch(error => {
   console.error(error.stack);
   const logs = h.serverLogs().trim();

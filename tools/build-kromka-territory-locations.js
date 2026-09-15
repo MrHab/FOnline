@@ -368,6 +368,15 @@ function zoneDefinition() {
   };
 }
 
+// Награда лаборатории: первым идёт компонент её семьи (без него не собрать
+// старшие тиры стабилизации), дальше — материалы направления.
+function labLoot(lab, componentQty = 1) {
+  const [component, ...rest] = lab.rewardComponents || [];
+  const rows = component ? [{ id: component, qty: Math.max(1, Math.floor(componentQty)) }] : [];
+  for (const id of rest) rows.push({ id, qty: 2 });
+  return rows;
+}
+
 function labDefinition(lab, index) {
   const width = 76;
   const depth = 76;
@@ -422,9 +431,9 @@ function labDefinition(lab, index) {
     ],
     worldZones: [],
     containers: [
-      container('outer_vault', 'Внешний шкаф', -18, -2, width, depth, 'rare', { locked: true, lockDifficulty: 'medium' }),
+      container('outer_vault', 'Внешний шкаф', -18, -2, width, depth, 'rare', { locked: true, lockDifficulty: 'medium', loot: labLoot(lab, 1), lootTable: true }),
       container('inner_vault', `Сейф: ${lab.displayName}`, 0, 28, width, depth, 'rare', { locked: true, lockDifficulty: 'hard', terminalLocked: true, terminalDifficulty: 'medium', terminalUnlocksLock: true, terminalName: `Терминал: ${lab.displayName}`, loot: labLoot(lab, 2), lootTable: true }),
-      container('inner_cabinet', 'Внутренний шкаф', 16, 24, width, depth, 'rare', { locked: true, lockDifficulty: 'medium' })
+      container('inner_cabinet', 'Внутренний шкаф', 16, 24, width, depth, 'rare', { locked: true, lockDifficulty: 'medium', loot: labLoot(lab, 1), lootTable: true })
     ],
     objects,
     anomalyFields: themeFields.map(([type, x, z], k) => anomalyField(`${lab.id}-${type}-${k + 1}`, type, x, z, 3.2, 'lab', [2, 4])),
@@ -489,8 +498,16 @@ function centralLevelDefinition(level, index) {
       entity: { bossId: c.worldBoss.id, worldBoss: true, hp: 1800, atk: 34 }
     }));
     ['burned', 'burned', 'fold'].forEach((kind, k) => enemies.push(mutant(`custodian_escort_${k + 1}`, kind, -8 + k * 8, 14)));
-    containers.push(container('boss_vault_a', 'Контейнер установки', -12, 26, width, depth, 'rare', { bossLoot: c.worldBoss.id, locked: true, lockDifficulty: 'hard' }));
-    containers.push(container('boss_vault_b', 'Контейнер установки', 12, 26, width, depth, 'rare', { bossLoot: c.worldBoss.id, locked: true, lockDifficulty: 'hard' }));
+    // Победа над Хранителем даёт то, чего не собрать в боковых залах: по
+    // компоненту каждой семьи и катализаторы для старших тиров стабилизации.
+    containers.push(container('boss_vault_a', 'Контейнер установки', -12, 26, width, depth, 'rare', {
+      bossLoot: c.worldBoss.id, locked: true, lockDifficulty: 'hard', lootTable: true,
+      loot: [{ id: 'stabilizerCatalyst', qty: 2 }, { id: 'circuitModule', qty: 1 }, { id: 'alloyPlate', qty: 1 }, { id: 'electronics', qty: 3 }]
+    }));
+    containers.push(container('boss_vault_b', 'Контейнер установки', 12, 26, width, depth, 'rare', {
+      bossLoot: c.worldBoss.id, locked: true, lockDifficulty: 'hard', lootTable: true,
+      loot: [{ id: 'stabilizerCatalyst', qty: 2 }, { id: 'bioReagent', qty: 1 }, { id: 'spectrumSample', qty: 1 }, { id: 'medicine', qty: 3 }]
+    }));
   }
   return {
     schema: 'realm.location.v1', version: 1, id: level.id, name: level.displayName,

@@ -46,8 +46,13 @@ for (const token of [
 const dialogue = read('unity-client/Assets/Scripts/Game/RoaDialogueCanvas.cs');
 for (const token of ['AddServiceOptions()', '"medic"', '"registrar"', '"auction"', '"artifactLab"',
   'RoaTerritoryNet.UseMedic', 'RoaTerritoryNet.JoinFaction', 'RoaTerritoryNet.LeaveFaction',
-  'RoaAuctionNet.Buy', 'RoaAuctionNet.Cancel', 'RoaAuctionNet.Claim', 'SubmitArtifactAction("stabilize"'])
+  'SubmitArtifactAction("stabilize"'])
   assert(dialogue.includes(token), `RoaDialogueCanvas is missing ${token}`);
+// Аукционер открывает собственный экран, поэтому торги живут не в диалоге.
+const auctionCanvas = read('unity-client/Assets/Scripts/Game/RoaAuctionCanvas.cs');
+for (const token of ['RoaAuctionNet.Bid', 'RoaAuctionNet.Buyout', 'RoaAuctionNet.Cancel', 'RoaAuctionNet.Claim',
+  'RoaAuctionNet.ListItem'])
+  assert(auctionCanvas.includes(token), `RoaAuctionCanvas is missing ${token}`);
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 assert(interaction.includes('public string NpcService') && interaction.includes('public string NpcTerritoryFactionId'),
   'RoaInteraction must expose the NPC service.');
@@ -73,7 +78,8 @@ for (const token of ['ArtifactEffectList(', 'ArtifactSourceLabel(', "properties[
   assert(pipboy.includes(token), `RoaPipboyCanvas is missing ${token}`);
 assert(!/benefit \+ " \(×"/.test(pipboy), 'The stabilized card must not fall back to the type text with a multiplier.');
 assert(dialogue.includes('AuctionArtifactLine('), 'The auction lot must describe the artifact state before purchase.');
-assert(dialogue.includes('Получить у аукционера этой базы'), 'The buyer must see where the lot is handed over.');
+assert(auctionCanvas.includes('AuctionArtifactLine('), 'The auction screen must show the artifact state before purchase.');
+assert(auctionCanvas.includes('на полке у аукционера'), 'The buyer must see where the lot is handed over.');
 const auctionModule = read('src/server/faction-auction.js');
 assert(auctionModule.includes('projectArtifact'), 'The auction projection must be able to expose artifact state.');
 assert(read('server.js').includes('projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)'),

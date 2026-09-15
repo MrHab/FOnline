@@ -71,6 +71,7 @@
     "check:world-boss": "node --check src/server/world-boss.js && node tools/check-world-boss.js",
     "check:lab-mechanics": "node --check src/server/lab-mechanics.js && node --check tools/check-lab-mechanics.js && node tools/check-lab-mechanics.js",
     "check:faction-auction": "node --check src/server/faction-auction.js && node tools/check-faction-auction.js",
+    "check:auction-network": "node --check tools/check-auction-network.js && node tools/check-auction-network.js",
     "check:unity-world-zones": "node tools/check-unity-world-zones.js",
     "check:world-zones": "npm run check:zone-modes && npm run check:territory-membership && npm run check:artifact-instances && npm run check:pve-areas && npm run check:public-events && npm run check:world-boss && npm run check:lab-mechanics && npm run check:faction-auction && npm run check:unity-world-zones",
     "check:kromka-personal-base": "node --check src/server/personal-bases.js && node --check src/server/base-construction.js && node --check src/server/base-jobs.js && node --check tools/check-kromka-personal-base.js && node --check tools/check-unity-kromka-personal-base.js && node tools/check-kromka-personal-base.js && node tools/check-unity-kromka-personal-base.js",

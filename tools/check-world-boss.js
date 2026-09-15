@@ -20,9 +20,15 @@ assert.equal(territory.centralLab.worldBoss.id, 'zeroCustodian');
 assert.equal(reactor.lab.worldBoss.id, 'zeroCustodian');
 const bossObject = reactor.objects.find(row => row.entity?.worldBoss === true);
 assert(bossObject && bossObject.entity.bossId === 'zeroCustodian' && bossObject.entity.hp >= 1000, 'The reactor level authors the boss NPC.');
+const rewardVaults = (reactor.containers || []).filter(row => row.bossLoot === 'zeroCustodian').map(row => row.id);
+assert.deepEqual(rewardVaults, ['boss_vault_a', 'boss_vault_b'], 'The reward containers of the installation are named in the data.');
 const nodeObjects = reactor.objects.filter(row => Array.isArray(row.tags) && row.tags.includes('shield-node'));
 assert.equal(nodeObjects.length, 4, 'Four shield nodes are authored around the installation.');
 assert(reactor.containers.filter(row => row.bossLoot === 'zeroCustodian').length >= 2, 'Reward containers are bound to the boss.');
+for (const vault of reactor.containers.filter(row => row.bossLoot === 'zeroCustodian')) {
+  assert(Array.isArray(vault.loot) && vault.loot.length > 0, `${vault.id}: the victory reward is authored, not rolled from an empty table.`);
+  assert.equal(vault.lootTable, true, `${vault.id}: the tier table still adds to the authored reward.`);
+}
 for (const level of territory.centralLab.levels) {
   const loc = JSON.parse(read(`data/locations/${level.id}.json`));
   assert.equal(loc.kind, 'territoryLab');
@@ -105,12 +111,27 @@ assert.deepEqual(boss.tickWorldBoss(state, rules, pulseAt + 6000), [], 'A defeat
 assert(!boss.bossRespawnDue(state, state.respawnAt - 1));
 assert(boss.bossRespawnDue(state, state.respawnAt));
 
+// Награда за победу: выдаётся один раз и ждёт того, кто её не забрал.
+assert.equal(boss.bossRewardPending(state, 'boss_vault_a'), false, 'Until the containers are opened there is nothing to wait for.');
+boss.noteBossRewardUnlocked(state, pulseAt + 5000);
+assert(boss.bossRewardPending(state, 'boss_vault_a') && boss.bossRewardPending(state, 'boss_vault_b'),
+  'After the defeat both containers wait for their owner.');
+assert(boss.noteBossRewardClaimed(state, 'boss_vault_a'));
+assert(!boss.noteBossRewardClaimed(state, 'boss_vault_a'), 'A container is claimed once.');
+assert.equal(boss.bossRewardPending(state, 'boss_vault_a'), false, 'A looted container does not open again.');
+assert(boss.bossRewardPending(state, 'boss_vault_b'), 'The untouched container still waits.');
+
 // Перезапуск сервера: сохранённый таймер держит босса побеждённым.
 const persisted = boss.persistedBossState(state);
-assert.deepEqual(persisted, { bossId: 'zeroCustodian', defeatedAt: pulseAt + 5000, respawnAt: state.respawnAt, kills: 1 });
+assert.deepEqual(persisted, {
+  bossId: 'zeroCustodian', defeatedAt: pulseAt + 5000, respawnAt: state.respawnAt, kills: 1,
+  reward: { unlockedAt: pulseAt + 5000, claimed: ['boss_vault_a'] }
+});
 const restored = boss.applyPersistedBossState(boss.createBossState(territory.centralLab.worldBoss, nodes, rules, state.respawnAt - 1000), persisted, state.respawnAt - 1000);
 assert.equal(restored.phase, 'defeated');
 assert.equal(boss.aliveNodes(restored).length, 0);
+assert.equal(boss.bossRewardPending(restored, 'boss_vault_a'), false, 'The claimed reward stays claimed after a restart.');
+assert(boss.bossRewardPending(restored, 'boss_vault_b'), 'The untouched reward survives a restart.');
 const afterTimer = boss.applyPersistedBossState(boss.createBossState(territory.centralLab.worldBoss, nodes, rules, state.respawnAt + 1), persisted, state.respawnAt + 1);
 assert.equal(afterTimer.phase, 'shielded', 'An elapsed timer restores the boss on load.');
 assert.equal(afterTimer.kills, 1);
@@ -121,6 +142,8 @@ assert.deepEqual(events, [{ type: 'respawn' }]);
 assert.equal(state.phase, 'shielded');
 assert.equal(boss.aliveNodes(state).length, 4);
 assert.equal(state.pulse.count, 0);
+assert.deepEqual(state.reward, { unlockedAt: 0, claimed: [] }, 'A living boss holds its reward again.');
+assert.equal(boss.bossRewardPending(state, 'boss_vault_b'), false, 'While the boss lives nothing waits in the containers.');
 
 // --- серверные крючки -------------------------------------------------------------
 const server = read('server.js');
@@ -158,7 +181,12 @@ for (const needle of [
   'function serverWorldBossArenaCenter(',
   'const hazards = worldBossHazards(state, serverWorldBossRules(serverWorldBossDefForRoom(room)),',
   'const hazard = hazards.find(row => Math.hypot(Number(p.x || 0) - row.x, Number(p.z || 0) - row.z) <= row.radius);',
-  'center: serverWorldBossArenaCenter(room, boss)'
+  'center: serverWorldBossArenaCenter(room, boss)',
+  // Незабранная награда возвращается вместе с комнатой после перезапуска.
+  "serverUnlockBossContainers(room, state.bossId, { onlyPending: true });",
+  'function serverNoteBossRewardTaken(room, container) {',
+  'serverNoteBossRewardTaken(room, container);',
+  'if (onlyPending && !(state && bossRewardPending(state, container.defId || container.id))) continue;'
 ]) assert(serverSource.includes(needle), `server.js must run the changing arena: ${needle}`);
 
 console.log('World boss OK: shield nodes, vulnerability window, telegraphed pulses, defeat with reward unlock, persisted respawn timer and server hooks.');

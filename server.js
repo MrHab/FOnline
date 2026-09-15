@@ -184,22 +184,27 @@ const {
   searchTracks: pveSearchTracks
 } = require('./src/server/pve-areas');
 const {
-  buyListing: auctionBuyListing,
+  buyoutListing: auctionBuyoutListing,
   cancelListing: auctionCancelListing,
   commitShelfClaim: auctionCommitShelfClaim,
   createListing: auctionCreateListing,
   expireListings: auctionExpireListings,
+  minimumBid: auctionMinimumBid,
   normalizeAuctionRules,
   normalizeAuctionStore,
+  placeBid: auctionPlaceBid,
   publicAuction,
   shelfFor: auctionShelfFor
 } = require('./src/server/faction-auction');
 const {
   applyPersistedBossState,
   bossDamageMultiplier,
+  bossRewardPending,
   createBossState,
   normalizeWorldBossRules,
   noteBossDefeated,
+  noteBossRewardClaimed,
+  noteBossRewardUnlocked,
   noteShieldNodeDestroyed,
   persistedBossState,
   publicWorldBoss,
@@ -19103,9 +19108,11 @@ function serverAuctionStore() {
 }
 
 function serverTickAuctions(now = Date.now()) {
-  const expired = auctionExpireListings(serverAuctionStore(), now);
-  if (expired.length) scheduleServerPublicEventPersist();
-  return expired.length;
+  // Истёкший лот со ставкой уходит победителю, без ставок — назад продавцу;
+  // и то и другое ложится на полку у аукционера.
+  const resolved = auctionExpireListings(serverAuctionStore(), KROMKA_AUCTION_RULES, now);
+  if (resolved.length) scheduleServerPublicEventPersist();
+  return resolved.length;
 }
 
 // Полка забирается целиком в пределах переносимого веса и предела стаков.
@@ -19271,6 +19278,9 @@ function serverEnsureWorldBossRoom(room, now = Date.now()) {
   if (state.phase === 'defeated') {
     if (boss && !boss.dead) roomEnemyDelete(room, boss.id);
     serverRemoveShieldNodeActors(room);
+    // Комната создаётся заново после перезапуска: незабранная награда
+    // побеждённого босса снова доступна, забранная остаётся закрытой.
+    serverUnlockBossContainers(room, state.bossId, { onlyPending: true });
   } else if (serverSpawnShieldNodeActors(room, state)) {
     refreshRoomWorldState(room, { force: true });
   }
@@ -19305,23 +19315,41 @@ function serverWorldBossDamageAfterShield(room, enemy, damage = 0) {
   return Math.max(0, Math.round(Number(damage || 0) * bossDamageMultiplier(room.worldBossState)));
 }
 
-function serverUnlockBossContainers(room, bossId = '') {
+function serverUnlockBossContainers(room, bossId = '', options = {}) {
   const loc = roomLocation(room);
+  const state = room?.worldBossState || null;
+  // После перезапуска открываются только те контейнеры, из которых ещё никто
+  // не брал: награда за победу выдаётся один раз, но и не пропадает.
+  const onlyPending = options.onlyPending === true;
   let changed = 0;
   for (const container of room.containers?.values?.() || []) {
     const def = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
     if (!def || String(def.bossLoot || '') !== String(bossId)) continue;
+    if (onlyPending && !(state && bossRewardPending(state, container.defId || container.id))) continue;
     container.locked = false;
     container.terminalLocked = false;
     container.loot = rollWorldContainerLootServer(room, def);
     container.bossLoot = String(bossId);
     changed += 1;
   }
+  if (state && changed) noteBossRewardUnlocked(state, Date.now());
   if (changed) {
     refreshRoomWorldState(room, { force: true });
     emitWorldContainersSnapshot(room, true);
   }
   return changed;
+}
+
+/**
+ * Из контейнера награды взяли: помечаем его в состоянии босса, чтобы после
+ * перезапуска он не открылся снова с новой добычей.
+ */
+function serverNoteBossRewardTaken(room, container) {
+  const state = room?.worldBossState;
+  if (!state || !container?.bossLoot) return false;
+  if (!noteBossRewardClaimed(state, container.defId || container.id)) return false;
+  serverPersistWorldBoss(state);
+  return true;
 }
 
 function serverBossLootError(room, container) {
@@ -27005,9 +27033,10 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, result: { completed: result.completed === true, awaitingOutcome: result.awaitingOutcome === true, awaitingTurnIn: result.awaitingTurnIn === true, outcomeTag: result.outcomeTag || '' }, journal: publicKromkaQuestJournal(p.kromkaQuestState, KROMKA_QUEST_CATALOG), self: publicAuthoritativePlayerState(p) });
   });
 
-  // Фракционный аукцион на базе Сердцевины: состояние, выставить, купить,
-  // снять, забрать полку. Только член фракции рядом с аукционером; лоты и
-  // покупки идемпотентны по requestId.
+  // Фракционный аукцион на базе Сердцевины: состояние, выставить лот в
+  // категорию на выбранный срок, ставка, выкуп, снятие, забор полки. Только
+  // член фракции рядом с аукционером; ставки, выкуп и лоты идемпотентны по
+  // requestId, а марки ставки держит лот до конца торгов.
   socket.on('auctionAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
@@ -27020,7 +27049,7 @@ io.on('connection', (socket) => {
     if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');
     const now = Date.now();
     const store = serverAuctionStore();
-    auctionExpireListings(store, now);
+    auctionExpireListings(store, KROMKA_AUCTION_RULES, now);
     const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
     const auctionState = () => publicAuction(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now, {
       // Состояние артефакта видно до покупки; скрытые свойства сырого
@@ -27031,8 +27060,9 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
       return;
     }
-    if (!['list', 'buy', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
-    const transaction = beginCriticalAction(p, 'auctionAction', data, ['action', 'itemId', 'qty', 'price', 'listingId', 'itemRuntimeId']);
+    if (!['list', 'bid', 'buyout', 'cancel', 'claim'].includes(action)) return fail('Неизвестное действие аукциона.');
+    const transaction = beginCriticalAction(p, 'auctionAction', data,
+      ['action', 'itemId', 'qty', 'startPrice', 'buyoutPrice', 'durationHours', 'amount', 'listingId', 'itemRuntimeId']);
     if (!transaction.ok) return fail(transaction.error);
     if (transaction.replay) {
       if (typeof ack === 'function') ack({ ...transaction.result, auction: auctionState(), self: publicAuthoritativePlayerState(p) });
@@ -27042,7 +27072,11 @@ io.on('connection', (socket) => {
     if (action === 'list') {
       const itemId = serverBaseItemId(data.itemId || '');
       const qty = Math.max(0, Math.floor(Number(data.qty || 0)));
-      const price = Math.max(0, Math.floor(Number(data.price || 0)));
+      // Цена выкупа необязательна: 0 означает торги до конца срока.
+      const startPrice = Math.max(0, Math.floor(Number(data.startPrice ?? data.price ?? 0)));
+      const buyoutPrice = Math.max(0, Math.floor(Number(data.buyoutPrice || 0)));
+      const durationHours = Math.max(0, Math.floor(Number(data.durationHours || 0)));
+      const durationMs = durationHours > 0 ? durationHours * 3600000 : KROMKA_AUCTION_RULES.listingLifetimeMs;
       if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
       if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
       if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
@@ -27053,7 +27087,10 @@ io.on('connection', (socket) => {
       serverInventoryRemove(p, itemId, qty);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
       const created = auctionCreateListing(store, {
-        factionId, sellerCharacterId: p.characterId, sellerName: p.name, itemId, qty, price, records
+        factionId, sellerCharacterId: p.characterId, sellerName: p.name, itemId, qty, records,
+        // Категория лота — собственная категория предмета из каталога сервера.
+        category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc',
+        startPrice, buyoutPrice, durationMs
       }, KROMKA_AUCTION_RULES, now);
       if (!created.ok) {
         serverInventoryAdd(p, itemId, qty);
@@ -27062,21 +27099,43 @@ io.on('connection', (socket) => {
         return fail(created.error);
       }
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
-      payload = { ok: true, action, listingId: created.listing.id };
-    } else if (action === 'buy') {
+      payload = {
+        ok: true, action, listingId: created.listing.id, category: created.listing.category,
+        startPrice: created.listing.startPrice, buyoutPrice: created.listing.buyoutPrice,
+        expiresAt: created.listing.expiresAt
+      };
+    } else if (action === 'bid') {
+      // Ставка снимает марки сразу: лот держит их до конца торгов, перебитая
+      // ставка возвращается прежнему претенденту на его полку.
       const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
       const listing = store.factions?.[factionId]?.listings?.[listingId];
       if (!listing) return fail('Лот уже снят.');
-      if (serverInventoryQty(p.inventory, 'silver') < listing.price) return fail(`Не хватает марок: нужно ${listing.price}.`);
+      const amount = Math.max(0, Math.floor(Number(data.amount || 0)));
+      const minimum = auctionMinimumBid(listing, KROMKA_AUCTION_RULES);
+      if (amount < minimum) return fail(`Ставка от ${minimum} марок.`);
+      if (serverInventoryQty(p.inventory, 'silver') < amount) return fail(`Не хватает марок: нужно ${amount}.`);
+      const placed = auctionPlaceBid(store, factionId, listingId, { characterId: p.characterId, name: p.name }, amount, KROMKA_AUCTION_RULES, now);
+      if (!placed.ok) return fail(placed.error);
+      serverInventoryRemove(p, 'silver', amount);
+      payload = {
+        ok: true, action, listingId, amount, nextBid: placed.nextBid, extended: placed.extended,
+        expiresAt: placed.listing.expiresAt
+      };
+    } else if (action === 'buyout') {
+      const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+      const listing = store.factions?.[factionId]?.listings?.[listingId];
+      if (!listing) return fail('Лот уже снят.');
+      if (Number(listing.buyoutPrice || 0) <= 0) return fail('У этого лота нет цены выкупа.');
+      if (serverInventoryQty(p.inventory, 'silver') < listing.buyoutPrice) return fail(`Не хватает марок: нужно ${listing.buyoutPrice}.`);
       const carryCheck = serverLimitItemsByCarry(p, data, [{ id: listing.itemId, qty: listing.qty }], { apply: false });
       if (!carryCheck.items.some(entry => entry.id === listing.itemId && entry.qty >= listing.qty)) return fail('Нет места или грузоподъёмности для покупки.');
-      const bought = auctionBuyListing(store, factionId, listingId, p.characterId, KROMKA_AUCTION_RULES, now);
+      const bought = auctionBuyoutListing(store, factionId, listingId, p.characterId, KROMKA_AUCTION_RULES, now);
       if (!bought.ok) return fail(bought.error);
-      serverInventoryRemove(p, 'silver', bought.listing.price);
+      serverInventoryRemove(p, 'silver', bought.price);
       serverInventoryAdd(p, bought.listing.itemId, bought.listing.qty);
       serverRestoreWeaponRuntimeRecords(p, bought.listing.records || []);
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
-      payload = { ok: true, action, listingId, itemId: bought.listing.itemId, qty: bought.listing.qty, price: bought.listing.price, fee: bought.fee };
+      payload = { ok: true, action, listingId, itemId: bought.listing.itemId, qty: bought.listing.qty, price: bought.price, tax: bought.tax };
     } else if (action === 'cancel') {
       const listingId = String(data.listingId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
       const cancelled = auctionCancelListing(store, factionId, listingId, p.characterId, now);
@@ -30723,6 +30782,7 @@ io.on('connection', (socket) => {
     const finalCarry = serverLimitItemsByCarry(p, data, finalTaken).carry;
     finalTaken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
     serverTakeTutorialSupplies(p, container, finalTaken);
+    serverNoteBossRewardTaken(room, container);
     refreshRoomWorldState(room);
     const pub = publicWorldContainer(container);
     if (typeof ack === 'function') ack({ ok: true, items: finalTaken, container: pub, empty: pub.empty, partial: !!carryCheck.blocked, carry: finalCarry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });

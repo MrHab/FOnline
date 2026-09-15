@@ -655,6 +655,34 @@ function checkLaboratoryRewards() {
   }
 }
 
+// Награда мирового босса: сейфы установки не могут быть пустыми — случайные
+// таблицы в проекте выключены, поэтому добыча авторская.
+function checkWorldBossRewards() {
+  const reactor = readJson('data/locations/coreLabCenterReactor.json');
+  const vaults = (reactor.containers || []).filter(row => row.bossLoot);
+  if (vaults.length < 2) {
+    errors.push('world boss: the installation must keep at least two reward containers');
+    return;
+  }
+  for (const vault of vaults) {
+    const loot = Array.isArray(vault.loot) ? vault.loot : [];
+    if (!loot.length) {
+      errors.push(`world boss: container ${vault.id} is empty, defeating the Custodian would give nothing`);
+      continue;
+    }
+    if (!loot.some(row => row.id === 'stabilizerCatalyst' && Number(row.qty) > 0)) {
+      errors.push(`world boss: container ${vault.id} does not yield stabilization catalysts`);
+    }
+    if (vault.locked !== true) errors.push(`world boss: container ${vault.id} must stay locked until the victory`);
+  }
+  const families = new Set(vaults.flatMap(row => (row.loot || []).map(entry => entry.id)));
+  for (const component of ['bioReagent', 'circuitModule', 'alloyPlate', 'spectrumSample']) {
+    if (!families.has(component)) {
+      errors.push(`world boss: the reward misses the ${component} family component`);
+    }
+  }
+}
+
 function checkPersistentFactionEconomy() {
   const recipeData = readJson('data/economy-recipes.json');
   const traderData = readJson('data/traders.json');
@@ -772,6 +800,7 @@ function checkPersistentFactionEconomy() {
 
 checkPersistentFactionEconomy();
 checkLaboratoryRewards();
+checkWorldBossRewards();
 
 if (errors.length) {
   console.error('Economy generation guard failed:');

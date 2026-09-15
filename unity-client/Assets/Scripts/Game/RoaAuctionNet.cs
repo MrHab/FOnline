@@ -6,9 +6,9 @@ using RealmOfAshes.Net;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Фракционный аукцион на базе Сердцевины. Сервер проверяет членство,
-    /// присутствие рядом с аукционером, снимает предметы и марки; requestId
-    /// делает покупку и выставление лота безопасными при повторе.
+    /// Аукцион на базе Сердцевины. Сервер проверяет членство, присутствие
+    /// рядом с аукционером, категорию и срок лота, снимает предметы и марки;
+    /// requestId делает ставку, выкуп и выставление безопасными при повторе.
     /// </summary>
     public static class RoaAuctionNet
     {
@@ -17,27 +17,46 @@ namespace RealmOfAshes.Game
             return Send(socket, new Dictionary<string, object> { ["action"] = "state" }, completed);
         }
 
-        public static bool ListItem(RoaSocketClient socket, string itemId, int qty, int price, string itemRuntimeId, Action<JObject> completed)
+        /// <summary>
+        /// Выставить лот: стартовая цена обязательна, цена выкупа нулём
+        /// означает торги до конца срока, срок — один из предложенных сервером.
+        /// </summary>
+        public static bool ListItem(RoaSocketClient socket, string itemId, int qty, int startPrice, int buyoutPrice,
+                                    int durationHours, string itemRuntimeId, Action<JObject> completed)
         {
             var payload = new Dictionary<string, object>
             {
                 ["action"] = "list",
                 ["itemId"] = itemId ?? string.Empty,
                 ["qty"] = Math.Max(1, qty),
-                ["price"] = Math.Max(1, price),
+                ["startPrice"] = Math.Max(1, startPrice),
+                ["buyoutPrice"] = Math.Max(0, buyoutPrice),
+                ["durationHours"] = Math.Max(0, durationHours),
                 ["requestId"] = NewRequestId("auction-list")
             };
             if (!string.IsNullOrEmpty(itemRuntimeId)) payload["itemRuntimeId"] = itemRuntimeId;
             return Send(socket, payload, completed);
         }
 
-        public static bool Buy(RoaSocketClient socket, string listingId, Action<JObject> completed)
+        /// <summary>Ставка: марки уходят сразу и возвращаются на полку, если её перебьют.</summary>
+        public static bool Bid(RoaSocketClient socket, string listingId, int amount, Action<JObject> completed)
         {
             return Send(socket, new Dictionary<string, object>
             {
-                ["action"] = "buy",
+                ["action"] = "bid",
                 ["listingId"] = listingId ?? string.Empty,
-                ["requestId"] = NewRequestId("auction-buy")
+                ["amount"] = Math.Max(1, amount),
+                ["requestId"] = NewRequestId("auction-bid")
+            }, completed);
+        }
+
+        public static bool Buyout(RoaSocketClient socket, string listingId, Action<JObject> completed)
+        {
+            return Send(socket, new Dictionary<string, object>
+            {
+                ["action"] = "buyout",
+                ["listingId"] = listingId ?? string.Empty,
+                ["requestId"] = NewRequestId("auction-buyout")
             }, completed);
         }
 

@@ -160,6 +160,7 @@ namespace RealmOfAshes.Game
             _text.text = string.Join("\n", lines);
             _text.color = (_worldBoss != null && _worldBoss["pulseTelegraph"]?.Value<bool>() == true)
                 || (_publicEvent != null && _publicEvent["warning"]?.Value<bool>() == true) ? Warn : Ink;
+            ResizePanel();
             RefreshChestButton(roomId);
             bool tracks = _pveArea != null && _pveArea["roomId"]?.ToString() == roomId;
             _tracksButton.gameObject.SetActive(tracks);
@@ -169,6 +170,36 @@ namespace RealmOfAshes.Game
                 _tracksLabel.text = (_pveArea["tracksLabel"]?.ToString() ?? "Искать следы").ToUpperInvariant()
                     + (ready > 0 ? " · " + ready + " с" : string.Empty);
                 _tracksButton.interactable = ready <= 0;
+            }
+        }
+
+        /// <summary>
+        /// Панель растёт под свой текст и уводит за собой кнопки. Раньше высота
+        /// была жёсткой, а лишнее просто обрезалось: в Сердцевине с тремя
+        /// аванпостами и правилами захвата хвост сообщения игрок не видел.
+        /// Предел роста — доля высоты экрана, чтобы панель не съедала обзор.
+        /// </summary>
+        private void ResizePanel()
+        {
+            if (_panel == null || _text == null) return;
+            bool mobile = Application.isMobilePlatform;
+            Vector2 size = PanelSize(mobile);
+            var rect = (RectTransform)_panel.transform;
+            float content = _text.preferredHeight + PanelPadding * 2f;
+            float height = Mathf.Clamp(content, size.y, PanelMaxHeight(mobile));
+            rect.sizeDelta = new Vector2(size.x, height);
+            float top = rect.anchoredPosition.y;
+            float gap = mobile ? 8f : 10f;
+            Vector2 button = ButtonSize(mobile);
+            if (_tracksButton != null)
+            {
+                var br = (RectTransform)_tracksButton.transform;
+                br.anchoredPosition = new Vector2(br.anchoredPosition.x, top - height - gap);
+            }
+            if (_openChestButton != null)
+            {
+                var cr = (RectTransform)_openChestButton.transform;
+                cr.anchoredPosition = new Vector2(cr.anchoredPosition.x, top - height - gap * 2f - button.y);
             }
         }
 
@@ -506,10 +537,10 @@ namespace RealmOfAshes.Game
             rect.anchorMax = new Vector2(1, 1);
             rect.pivot = new Vector2(1, 1);
             rect.anchoredPosition = mobile ? new Vector2(-12, -58) : new Vector2(-16, -84);
-            rect.sizeDelta = mobile ? new Vector2(300, 118) : new Vector2(360, 150);
+            rect.sizeDelta = PanelSize(mobile);
             _panel.GetComponent<Image>().color = new Color(0.035f, 0.05f, 0.045f, 0.9f);
-            _text = CreateText("Status", rect, mobile ? 12 : 14, TextAnchor.UpperLeft, Ink);
-            Stretch(_text.rectTransform, 8);
+            _text = CreateText("Status", rect, PanelFontSize(mobile), TextAnchor.UpperLeft, Ink);
+            Stretch(_text.rectTransform, PanelPadding);
             _text.horizontalOverflow = HorizontalWrapMode.Wrap;
             _text.verticalOverflow = VerticalWrapMode.Truncate;
             GameObject button = new GameObject("SearchTracks", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -519,7 +550,7 @@ namespace RealmOfAshes.Game
             br.anchorMax = new Vector2(1, 1);
             br.pivot = new Vector2(1, 1);
             br.anchoredPosition = mobile ? new Vector2(-12, -182) : new Vector2(-16, -240);
-            br.sizeDelta = mobile ? new Vector2(180, 30) : new Vector2(220, 34);
+            br.sizeDelta = ButtonSize(mobile);
             button.GetComponent<Image>().color = new Color(0.16f, 0.28f, 0.12f, 0.95f);
             _tracksButton = button.GetComponent<Button>();
             _tracksButton.onClick.AddListener(SearchTracks);
@@ -535,7 +566,7 @@ namespace RealmOfAshes.Game
             cr.anchorMax = new Vector2(1, 1);
             cr.pivot = new Vector2(1, 1);
             cr.anchoredPosition = mobile ? new Vector2(-12, -218) : new Vector2(-16, -280);
-            cr.sizeDelta = mobile ? new Vector2(180, 30) : new Vector2(220, 34);
+            cr.sizeDelta = ButtonSize(mobile);
             chestButton.GetComponent<Image>().color = new Color(0.3f, 0.22f, 0.08f, 0.95f);
             _openChestButton = chestButton.GetComponent<Button>();
             _openChestButton.onClick.AddListener(OpenEventChest);
@@ -543,6 +574,35 @@ namespace RealmOfAshes.Game
             Stretch(_openChestLabel.rectTransform, 4);
             _openChestButton.gameObject.SetActive(false);
             _panel.SetActive(false);
+        }
+
+        /// <summary>Отступ текста от края панели: по нему считается ширина строки.</summary>
+        public const float PanelPadding = 8f;
+
+        /// <summary>
+        /// Размер панели мировых событий. Вынесен сюда, чтобы проба раскладки
+        /// могла померить, помещается ли текст на мобильном альбомном экране:
+        /// у панели включено обрезание, и не влезший хвост игрок не увидит.
+        /// </summary>
+        public static Vector2 PanelSize(bool mobile)
+        {
+            return mobile ? new Vector2(300f, 118f) : new Vector2(360f, 150f);
+        }
+
+        public static int PanelFontSize(bool mobile)
+        {
+            return mobile ? 12 : 14;
+        }
+
+        /// <summary>Предел роста панели: дальше текст обрезается, но обзор цел.</summary>
+        public static float PanelMaxHeight(bool mobile)
+        {
+            return mobile ? 288f : 324f;
+        }
+
+        public static Vector2 ButtonSize(bool mobile)
+        {
+            return mobile ? new Vector2(180f, 30f) : new Vector2(220f, 34f);
         }
 
         private static Text CreateText(string name, RectTransform parent, int size, TextAnchor anchor, Color color)

@@ -617,7 +617,9 @@ namespace RealmOfAshes.Game
             intro.horizontalOverflow = HorizontalWrapMode.Wrap;
             intro.text = ContractIntroText(null);
             _contractIntro = intro;
-            Place(intro.rectTransform, 0f, 1f, 1f, 1f, new Vector2(20f, -92f), new Vector2(-20f, -50f));
+            // Вступление занимает две строки и меняется по числу подписавших,
+            // поэтому коробке дан запас: раньше текст ложился впритык.
+            Place(intro.rectTransform, 0f, 1f, 1f, 1f, new Vector2(20f, -104f), new Vector2(-20f, -50f));
 
             for (int index = 0; index < ContractRowCount; index++)
             {
@@ -625,7 +627,7 @@ namespace RealmOfAshes.Game
                 Button row = UiButton(panel, string.Empty, out Text rowLabel, () => SelectContractRow(rowIndex));
                 rowLabel.alignment = TextAnchor.MiddleLeft;
                 Place((RectTransform)row.transform, 0f, 1f, 1f, 1f,
-                    new Vector2(20f, -130f - index * 38f), new Vector2(-20f, -96f - index * 38f));
+                    new Vector2(20f, -142f - index * 38f), new Vector2(-20f, -108f - index * 38f));
                 _contractRows.Add(row);
                 _contractRowLabels.Add(rowLabel);
             }

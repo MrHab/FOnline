@@ -415,7 +415,7 @@ function labDefinition(lab, index) {
     worldZones: [],
     containers: [
       container('outer_vault', 'Внешний шкаф', -18, -2, width, depth, 'rare', { locked: true, lockDifficulty: 'medium' }),
-      container('inner_vault', `Сейф: ${lab.displayName}`, 0, 28, width, depth, 'rare', { locked: true, lockDifficulty: 'hard', terminalLocked: true, terminalDifficulty: 'medium', terminalUnlocksLock: true, terminalName: `Терминал: ${lab.displayName}` }),
+      container('inner_vault', `Сейф: ${lab.displayName}`, 0, 28, width, depth, 'rare', { locked: true, lockDifficulty: 'hard', terminalLocked: true, terminalDifficulty: 'medium', terminalUnlocksLock: true, terminalName: `Терминал: ${lab.displayName}`, loot: labLoot(lab, 2), lootTable: true }),
       container('inner_cabinet', 'Внутренний шкаф', 16, 24, width, depth, 'rare', { locked: true, lockDifficulty: 'medium' })
     ],
     objects,

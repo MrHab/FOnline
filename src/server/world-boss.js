@@ -13,7 +13,12 @@ const DEFAULT_RULES = Object.freeze({
   pulseRadius: 9,
   pulseDamage: 28,
   respawnMs: 5400000,
-  nodeRestoreMs: 0
+  nodeRestoreMs: 0,
+  hazardSectors: 6,
+  hazardActive: 2,
+  hazardRadius: 5,
+  hazardDistance: 9,
+  hazardDamage: 16
 });
 
 const PHASE_LABELS = Object.freeze({
@@ -41,7 +46,14 @@ function normalizeWorldBossRules(input = {}, override = {}) {
     pulseRadius: clamp(Number(src.pulseRadius || DEFAULT_RULES.pulseRadius), 1, 60),
     pulseDamage: Math.max(1, Math.floor(Number(src.pulseDamage || DEFAULT_RULES.pulseDamage))),
     respawnMs: Math.max(60000, Math.floor(Number(src.respawnMs || DEFAULT_RULES.respawnMs))),
-    nodeRestoreMs: Math.max(0, Math.floor(Number(src.nodeRestoreMs ?? DEFAULT_RULES.nodeRestoreMs)))
+    nodeRestoreMs: Math.max(0, Math.floor(Number(src.nodeRestoreMs ?? DEFAULT_RULES.nodeRestoreMs))),
+    // Опасные участки арены: сколько секторов у круга установки, сколько из них
+    // горит одновременно и насколько они смещаются с каждым импульсом.
+    hazardSectors: clamp(Math.floor(Number(src.hazardSectors ?? DEFAULT_RULES.hazardSectors)), 3, 12),
+    hazardActive: clamp(Math.floor(Number(src.hazardActive ?? DEFAULT_RULES.hazardActive)), 1, 6),
+    hazardRadius: clamp(Number(src.hazardRadius ?? DEFAULT_RULES.hazardRadius), 1, 30),
+    hazardDistance: clamp(Number(src.hazardDistance ?? DEFAULT_RULES.hazardDistance), 1, 40),
+    hazardDamage: Math.max(1, Math.floor(Number(src.hazardDamage ?? DEFAULT_RULES.hazardDamage)))
   };
 }
 
@@ -60,6 +72,8 @@ function createBossState(def = {}, nodes = [], rules = DEFAULT_RULES, now = Date
     vulnerableUntil: 0,
     cycles: 0,
     pulse: { nextAt: Number(now) + rules.pulseIntervalMs, telegraphedAt: 0, count: 0 },
+    // Смещение горящих секторов арены: меняется с каждым импульсом и при смене фазы.
+    hazardOffset: 0,
     defeatedAt: 0,
     respawnAt: 0,
     restoredAt: Number(now),
@@ -152,6 +166,7 @@ function tickWorldBoss(state = {}, rules = DEFAULT_RULES, now = Date.now()) {
   if (state.phase === 'vulnerable' && Number(now) >= Number(state.vulnerableUntil || 0)) {
     state.phase = 'shielded';
     state.vulnerableUntil = 0;
+    state.hazardOffset = (Math.floor(Number(state.hazardOffset || 0)) + 1) % Math.max(3, Math.floor(Number(rules.hazardSectors || DEFAULT_RULES.hazardSectors)));
     for (const node of state.nodes) { node.alive = true; node.actorId = ''; }
     events.push({ type: 'shieldRestored' });
   }
@@ -164,9 +179,41 @@ function tickWorldBoss(state = {}, rules = DEFAULT_RULES, now = Date.now()) {
     pulse.count += 1;
     pulse.nextAt = Number(now) + rules.pulseIntervalMs;
     pulse.telegraphedAt = 0;
-    events.push({ type: 'pulse', radius: rules.pulseRadius, damage: rules.pulseDamage });
+    // Импульс смещает горящие сектора: безопасное место меняется каждый раз.
+    state.hazardOffset = (Math.floor(Number(state.hazardOffset || 0)) + 1) % Math.max(3, Math.floor(Number(rules.hazardSectors || DEFAULT_RULES.hazardSectors)));
+    events.push({ type: 'pulse', radius: rules.pulseRadius, damage: rules.pulseDamage, hazardOffset: state.hazardOffset });
   }
   return events;
+}
+
+/**
+ * Опасные участки арены: круги вокруг установки, которые смещаются с каждым
+ * импульсом и сужаются, пока босс уязвим. Чистая функция — арена читается и
+ * сервером, и проверкой одинаково.
+ */
+function worldBossHazards(state = null, rules = DEFAULT_RULES, center = { x: 0, z: 0 }) {
+  if (!state || state.phase === 'defeated') return [];
+  const sectors = Math.max(3, Math.floor(Number(rules.hazardSectors || DEFAULT_RULES.hazardSectors)));
+  // В фазе уязвимости горит на один сектор меньше: есть куда встать и бить.
+  const active = Math.max(1, Math.floor(Number(rules.hazardActive || DEFAULT_RULES.hazardActive))
+    - (state.phase === 'vulnerable' ? 1 : 0));
+  const offset = Math.max(0, Math.floor(Number(state.hazardOffset || 0)));
+  const distance = Number(rules.hazardDistance || DEFAULT_RULES.hazardDistance);
+  const radius = Number(rules.hazardRadius || DEFAULT_RULES.hazardRadius);
+  const rows = [];
+  for (let i = 0; i < active; i += 1) {
+    const sector = (offset + i * 2) % sectors;
+    const angle = (sector / sectors) * Math.PI * 2;
+    rows.push({
+      id: `hazard_${sector}`,
+      sector,
+      x: Number((Number(center?.x || 0) + Math.cos(angle) * distance).toFixed(2)),
+      z: Number((Number(center?.z || 0) + Math.sin(angle) * distance).toFixed(2)),
+      radius,
+      damage: Math.max(1, Math.floor(Number(rules.hazardDamage || DEFAULT_RULES.hazardDamage)))
+    });
+  }
+  return rows;
 }
 
 function publicWorldBoss(state = null, rules = DEFAULT_RULES, now = Date.now(), extra = {}) {
@@ -189,11 +236,14 @@ function publicWorldBoss(state = null, rules = DEFAULT_RULES, now = Date.now(), 
     kills: Number(state.kills || 0),
     bossHp: Math.max(0, Math.round(Number(extra.bossHp || 0))),
     bossMaxHp: Math.max(0, Math.round(Number(extra.bossMaxHp || 0))),
-    rewardOpen: state.phase === 'defeated'
+    rewardOpen: state.phase === 'defeated',
+    // Опасные участки арены для клиента: их центр и радиус меняются по ходу боя.
+    hazards: worldBossHazards(state, rules, extra.center || { x: 0, z: 0 })
   };
 }
 
 module.exports = {
+  worldBossHazards,
   DEFAULT_RULES,
   PHASE_LABELS,
   aliveNodes,

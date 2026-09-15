@@ -92,7 +92,18 @@
       "z": -2,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "circuitModule",
+          "qty": 1
+        },
+        {
+          "id": "electronics",
+          "qty": 2
+        }
+      ],
+      "lootTable": true
     },
     {
       "id": "inner_vault",
@@ -109,7 +120,18 @@
       "terminalLocked": true,
       "terminalDifficulty": "medium",
       "terminalUnlocksLock": true,
-      "terminalName": "Терминал: Лаборатория «Цепь»"
+      "terminalName": "Терминал: Лаборатория «Цепь»",
+      "loot": [
+        {
+          "id": "circuitModule",
+          "qty": 2
+        },
+        {
+          "id": "electronics",
+          "qty": 2
+        }
+      ],
+      "lootTable": true
     },
     {
       "id": "inner_cabinet",
@@ -122,7 +144,18 @@
       "z": 24,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "circuitModule",
+          "qty": 1
+        },
+        {
+          "id": "electronics",
+          "qty": 2
+        }
+      ],
+      "lootTable": true
     }
   ],
   "objects": [

@@ -93,6 +93,9 @@ namespace RealmOfAshes.Game
             public RoaEquipmentView CreatureEquipment;
             public Dictionary<string, Transform> CreatureBones;
 
+            /// <summary>Локальный срок показа реплики, вычисленный из speechMs снимка.</summary>
+            public long SpeechUntilMs;
+
             public Vector3 TargetPosition;
             public Vector3 Velocity;
             public Vector3 PresentationVelocity;
@@ -952,6 +955,14 @@ namespace RealmOfAshes.Game
                 else if (enemy.CarriesWeapon) _ = RefreshCreatureWeapon(enemy);
             }
             enemy.KromkaPresentation?.PlayImpact(payload?["attackId"]?.ToString());
+            // Выстрелы NPC озвучивает общий слой эффектов через событие shoot, а
+            // ближний бой не озвучивал никто: мутант замахивался и бил беззвучно.
+            if (!ranged && enemy.Root != null)
+            {
+                string meleeWeapon = payload?["weapon"]?.ToString();
+                RoaAudio.Active?.PlayMeleeSwing(enemy.Root.transform.position,
+                    string.IsNullOrEmpty(meleeWeapon) ? "fists" : meleeWeapon);
+            }
             bool windupAnimated = Time.time < enemy.AttackWindupUntil;
             enemy.ThreatActive = false;
             enemy.ThreatRemaining = 0f;
@@ -993,6 +1004,9 @@ namespace RealmOfAshes.Game
                 enemy.CharacterView.PrepareDeath(RoaCoords.ToUnity(
                     Value(payload, "sourceX"), Value(payload, "sourceZ")));
             }
+            // Смерть существа была полностью беззвучной.
+            if (newlyDead && enemy.Root != null)
+                RoaAudio.Active?.PlayCreatureDown(enemy.Root.transform.position);
             enemy.Dead = true;
             enemy.Moving = false;
             enemy.PresentationMoving = false;
@@ -1143,6 +1157,15 @@ namespace RealmOfAshes.Game
             enemy.ActivityRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
             enemy.Hp = resolvedDead ? 0 : nextHp;
             enemy.Snapshot = (JObject)row.DeepClone();
+            // Сервер присылает speechMs — сколько реплике осталось висеть, и делает
+            // это заново в каждом снимке. Клиент же читал speechUntil, которого в
+            // протоколе нет вовсе, поэтому пузыри NPC не показывались никогда.
+            // Переводим остаток в локальный срок при получении снимка.
+            long speechMs = row["speechMs"]?.ToObject<long>() ?? 0L;
+            string speechLine = row["speechText"]?.ToString();
+            enemy.SpeechUntilMs = speechMs > 0 && !string.IsNullOrWhiteSpace(speechLine)
+                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + speechMs
+                : 0L;
             enemy.Snapshot["dead"] = resolvedDead;
             enemy.Snapshot["moving"] = enemy.Moving;
             if (resolvedDead) enemy.Snapshot["hp"] = 0;
@@ -1952,7 +1975,7 @@ namespace RealmOfAshes.Game
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
                 string speech = enemy.Snapshot["speechText"]?.ToString()?.Trim();
                 if (string.IsNullOrEmpty(speech)) continue;
-                long until = enemy.Snapshot["speechUntil"]?.ToObject<long>() ?? 0L;
+                long until = enemy.SpeechUntilMs;
                 if (until <= now) continue;
                 float opacity = Mathf.Clamp01((until - now) / 420f);
                 float rawScale = Value(enemy.Snapshot, "scale");

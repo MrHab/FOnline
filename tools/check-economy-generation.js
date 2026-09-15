@@ -627,6 +627,34 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
   }
 }
 
+// Награда лаборатории тематическая: её сейфы гарантируют компонент своей семьи,
+// иначе старшие тиры стабилизации не из чего собрать.
+function checkLaboratoryRewards() {
+  const territory = readJson('data/kromka/territory.json');
+  for (const lab of territory.labs || []) {
+    const definition = readJson(`data/locations/${lab.id}.json`);
+    const component = (lab.rewardComponents || [])[0];
+    if (!component) {
+      errors.push(`laboratory ${lab.id}: rewardComponents is empty, the lab has no economic purpose`);
+      continue;
+    }
+    const safes = (definition.containers || []).filter(row => ['outer_vault', 'inner_vault', 'inner_cabinet'].includes(row.id));
+    if (safes.length !== 3) {
+      errors.push(`laboratory ${lab.id}: expected three safes, found ${safes.length}`);
+      continue;
+    }
+    for (const safe of safes) {
+      const loot = Array.isArray(safe.loot) ? safe.loot : [];
+      if (!loot.some(row => row.id === component && Number(row.qty) > 0)) {
+        errors.push(`laboratory ${lab.id}: safe ${safe.id} does not yield its family component ${component}`);
+      }
+      if (safe.lootTable !== true) {
+        errors.push(`laboratory ${lab.id}: safe ${safe.id} must still roll its tier table on top of the themed reward`);
+      }
+    }
+  }
+}
+
 function checkPersistentFactionEconomy() {
   const recipeData = readJson('data/economy-recipes.json');
   const traderData = readJson('data/traders.json');
@@ -743,6 +771,7 @@ function checkPersistentFactionEconomy() {
 }
 
 checkPersistentFactionEconomy();
+checkLaboratoryRewards();
 
 if (errors.length) {
   console.error('Economy generation guard failed:');

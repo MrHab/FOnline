@@ -312,6 +312,10 @@ namespace RealmOfAshes.Game
             int hp = payload["bossHp"]?.Value<int>() ?? 0;
             int maxHp = payload["bossMaxHp"]?.Value<int>() ?? 0;
             if (maxHp > 0) sb.Append(" · HP ").Append(hp).Append('/').Append(maxHp);
+            // Опасные участки арены смещаются с каждым импульсом: игрок должен
+            // видеть, сколько секторов горит прямо сейчас.
+            int hazards = (payload["hazards"] as JArray)?.Count ?? 0;
+            if (hazards > 0) sb.Append(" · горящих секторов: ").Append(hazards);
             if (payload["pulseTelegraph"]?.Value<bool>() == true) sb.Append("\nИМПУЛЬС! Отойдите на ").Append(payload["pulseRadius"]?.Value<int>() ?? 9).Append(" м");
             else sb.Append("\nИмпульс через ").Append(Math.Max(0, (payload["pulseInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с");
             return sb.ToString();

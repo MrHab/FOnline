@@ -51,9 +51,10 @@ namespace RealmOfAshes.EditorTools
             publicEvent["rejoinInSeconds"] = 70;
             Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 10).Contains("через 60 с"), "Death rejoin delay is shown");
 
-            var boss = JObject.Parse(@"{'roomId':'coreLabCenterReactor','displayName':'Хранитель Нуля','phase':'shielded','phaseLabel':'Щит активен','nodesAlive':2,'nodesTotal':4,'pulseInSeconds':12,'pulseTelegraph':false,'bossHp':1800,'bossMaxHp':1800,'pulseRadius':9}");
+            var boss = JObject.Parse(@"{'roomId':'coreLabCenterReactor','displayName':'Хранитель Нуля','phase':'shielded','phaseLabel':'Щит активен','nodesAlive':2,'nodesTotal':4,'pulseInSeconds':12,'pulseTelegraph':false,'bossHp':1800,'bossMaxHp':1800,'pulseRadius':9,'hazards':[{'id':'hazard_0','x':9,'z':0,'radius':5},{'id':'hazard_2','x':-4.5,'z':7.8,'radius':5}]}");
             string bossText = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 2);
             Require(bossText.Contains("Узлы щита: 2/4") && bossText.Contains("Импульс через 10 с") && bossText.Contains("HP 1800/1800"), "Shielded boss shows nodes, pulse and HP");
+            Require(bossText.Contains("горящих секторов: 2"), "The changing arena is announced: " + bossText);
             boss["phase"] = "vulnerable"; boss["vulnerableSeconds"] = 30; boss["pulseTelegraph"] = true;
             string vulnerable = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
             Require(vulnerable.Contains("уязвим ещё 30 с") && vulnerable.Contains("ИМПУЛЬС!"), "Vulnerability window and telegraph are announced");

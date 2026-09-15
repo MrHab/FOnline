@@ -13,9 +13,14 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const account = accounts.trade;
   const state = saves.characters[users.users[account.login].id][account.characterId].state;
-  Object.assign(state.inventory, { food: 3, water: 3, stim: 3, artifactDew: 1, artifactBelt4: 1 });
+  Object.assign(state.inventory, { food: 3, water: 3, stim: 3, artifactDew: 1, artifactSpring: 1, artifactBelt4: 1 });
   state.equipment.artifactBelt = 'artifactBelt4';
-  state.artifactRecords = [{ id: 'network_dew', typeId: 'dew', itemId: 'artifactDew', stabilized: true }];
+  state.artifactRecords = [
+    { id: 'network_dew', typeId: 'dew', itemId: 'artifactDew', stabilized: true },
+    // Экземпляр с тиром и раскрытыми свойствами: его id, тир и состояние
+    // обязаны пережить перезапуск сервера без потерь.
+    { id: 'network_spring', typeId: 'spring', itemId: 'artifactSpring', tier: 4, seed: 'network:spring:4', hot: false, stabilized: true, revealed: true, recordVersion: 2 }
+  ];
   state.artifactSlots = ['network_dew'];
   state.player.hp = 20;
   state.artifactRuntime = { hydration: 35 };
@@ -69,6 +74,16 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert.equal(qty(restored, 'water'), 2);
   assert.equal(qty(restored, 'stim'), 2);
   assert.deepEqual(restored.artifactSlots, []);
+
+  // Личность экземпляра переживает перезапуск: тот же id, тир и состояние
+  // стабилизации, а seed по-прежнему не покидает сервер.
+  const restoredSpring = (restored.artifactRecords || []).find(row => row.id === 'network_spring');
+  assert(restoredSpring, 'The instance survives the restart: ' + JSON.stringify((restored.artifactRecords || []).map(row => row.id)));
+  assert.equal(restoredSpring.tier, 4, 'The tier survives the restart');
+  assert.equal(restoredSpring.typeId, 'spring', 'The kind survives the restart');
+  assert.equal(restoredSpring.stabilized, true, 'The stabilization state survives the restart');
+  assert(!('seed' in restoredSpring), 'The seed never leaves the server, not even after a restart');
+  assert(restoredSpring.properties, 'A stabilized instance keeps its revealed properties: ' + JSON.stringify(restoredSpring).slice(0, 200));
   console.log('Artifact network OK: /health + Socket.IO, usable provisions, Dew restrictions/duration, forged state rejection, belt removal and restart persistence.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   Object.values(accounts).forEach(h.closeSocket);

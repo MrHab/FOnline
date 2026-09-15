@@ -20060,6 +20060,39 @@ function serverLabDamageModifier(room, enemy, damage = 0) {
   return Math.max(0, Math.round(Number(damage || 0) * labOverheatDamageMultiplier(state, mechanics)));
 }
 
+/**
+ * Логово или база налётчиков после перезапуска: комната создаётся заново и
+ * оказывалась пустой — событие числилось активным, но зачищать было некого,
+ * и тайник не открывался никогда. Здесь встреча восстанавливается по самому
+ * событию: тому же encounterId и режиму зоны.
+ */
+function serverEnsurePublicEventEncounter(room, now = Date.now()) {
+  const event = room ? serverPublicEventForRoom(room) : null;
+  if (!event || event.status === 'expired' || event.cleared) return false;
+  // Ровно один раз на комнату: иначе перебитое игроками логово наполнялось бы
+  // снова и снова, и зачистить событие стало бы невозможно.
+  if (String(room.publicEventEncounterId || '') === String(event.id || '')) return false;
+  room.locationWorldEvent = true;
+  room.encounterId = String(event.encounterId || room.encounterId || '').slice(0, 40);
+  if (!room.encounterId) return false;
+  room.pvpModeOverride = normalizeLocationPvpMode(event.pvpMode || 'pvpEvent', false);
+  // Зона события назначается после расстановки: с уже проставленным worldZoneId
+  // комната считалась бы отданной боевой зоне симуляции и осталась бы пустой.
+  // Отметка о прошлой расстановке тоже снимается — иначе setup выйдет сразу.
+  room.worldZoneId = '';
+  room.serverRealTimeBattleZoneId = '';
+  room.encounterSetupDone = false;
+  setupRandomEncounterRoom(room, room.encounterId, {
+    force: true,
+    preserveExisting: true,
+    pvpMode: room.pvpModeOverride
+  });
+  room.worldZoneId = String(event.id || '').slice(0, 64);
+  room.publicEventEncounterId = String(event.id || '').slice(0, 64);
+  void now;
+  return true;
+}
+
 function serverPublicEventHostilesAlive(room) {
   let count = 0;
   for (const enemy of room?.enemies?.values?.() || []) {
@@ -20126,6 +20159,9 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
     if (event.status === 'expired') continue;
     const room = rooms.get(String(event.roomId || ''));
     const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
+    // Комната могла быть создана заново после перезапуска: восстановить встречу
+    // до всех остальных шагов, иначе зачищать нечего.
+    if (room && serverEnsurePublicEventEncounter(room, now)) changed = true;
     if (room && room.encounterSetupDone && !event.cleared) {
       if (serverEnsurePublicEventBoss(room, event, now)) changed = true;
       if (serverEnsurePublicEventSupports(room, event, now)) changed = true;
@@ -26624,6 +26660,9 @@ io.on('connection', (socket) => {
           pvpMode: room.pvpModeOverride || ''
         });
       }
+      // Вернувшийся в активное публичное событие видит его обитателей сразу,
+      // а не через тик: комната восстанавливается по самому событию.
+      serverEnsurePublicEventEncounter(room, Date.now());
     }
     {
       const safePos = findRoomSafeSpawnWorld(room, p.x, p.z, {

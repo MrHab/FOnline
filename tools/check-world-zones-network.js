@@ -102,6 +102,17 @@ const getJson = route => new Promise((resolve, reject) => {
   raider.serverLocationContext = { locationId: 'coreLabCenterReactor' };
   raider.territoryFaction = membership('uprava');
 
+  // Двое в одном публичном событии: комната общая, враги и тайник — одни.
+  for (const role of ['dualPistols', 'equipmentAp']) {
+    const visitor = stateFor(role);
+    visitor.currentLocationId = 'randomDryBasin';
+    visitor.serverLocationContext = {
+      locationId: 'randomDryBasin',
+      roomId: 'randomDryBasin#pubev_gari_den_1',
+      worldZoneId: 'pubev_gari_den_1'
+    };
+  }
+
   // Активное публичное событие, чтобы /api/wasteland и /health его показали.
   saves.publicEvents = { version: 1, lastSpawnAt: Date.now(), startedAt: Date.now(), counter: 1, events: {
     pubev_gari_den_1: {
@@ -284,6 +295,27 @@ const getJson = route => new Promise((resolve, reject) => {
   const eventRow = (wasteland.json.publicEvents || [])[0];
   assert(eventRow && eventRow.danger >= 1, 'The event carries its danger: ' + JSON.stringify(eventRow).slice(0, 200));
   assert(eventRow.boss && eventRow.boss.displayName, 'The event names its mini boss: ' + JSON.stringify(eventRow.boss));
+  // Логово — общая реальность: оба игрока попадают в одну комнату события и
+  // видят одних и тех же врагов, а не личные копии.
+  await h.connectAndJoin(accounts.dualPistols);
+  await h.connectAndJoin(accounts.equipmentAp);
+  assert.equal(accounts.dualPistols.join.roomId, 'randomDryBasin#pubev_gari_den_1',
+    'A visitor lands in the room of the event: ' + accounts.dualPistols.join.roomId);
+  assert.equal(accounts.equipmentAp.join.roomId, accounts.dualPistols.join.roomId,
+    'Both visitors share one room of the event.');
+  const firstEnemies = (accounts.dualPistols.join.worldState.enemies || []).map(row => row.id).sort();
+  const secondEnemies = (accounts.equipmentAp.join.worldState.enemies || []).map(row => row.id).sort();
+  assert(firstEnemies.length > 0, 'The lair is inhabited: ' + JSON.stringify(firstEnemies).slice(0, 200));
+  assert.deepEqual(secondEnemies, firstEnemies, 'Both visitors see the same enemies, not personal copies.');
+  const firstEvent = accounts.dualPistols.join.worldState.publicEvent;
+  const secondEvent = accounts.equipmentAp.join.worldState.publicEvent;
+  assert(firstEvent && firstEvent.id === 'pubev_gari_den_1', 'The room carries the event: ' + JSON.stringify(firstEvent || {}).slice(0, 200));
+  assert.equal(secondEvent?.id, firstEvent.id, 'The event state is shared by the room.');
+  assert.equal(secondEvent?.cleared, firstEvent.cleared, 'Clearing the lair is a shared goal.');
+  const eventPvp = accounts.dualPistols.join.zoneRules || accounts.dualPistols.join.worldState.zoneRules;
+  if (eventPvp) assert.equal(eventPvp.loss, 'none', 'A public event costs no items on death: ' + JSON.stringify(eventPvp));
+  console.log('PASS two players share one public event room');
+
   console.log('PASS outposts, public events and health');
 
   // --- мировой босс -----------------------------------------------------------------------------

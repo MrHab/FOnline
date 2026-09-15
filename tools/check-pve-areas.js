@@ -254,6 +254,10 @@ for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAr
   pve.notePveDistance(state, 30);
   assert.equal(pve.publicPveRoomState(state, area, catalog.rules, 0, { aliveCount: 0, members: 1 }).distanceToRollM,
     catalog.rules.distancePerRollM - 30, 'The remaining way shrinks as the party walks.');
+  // Игрок должен видеть остаток пути, иначе тишина выглядит поломкой.
+  const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
+  assert(presentation.includes('int toRoll = payload["distanceToRollM"]?.Value<int>() ?? 0;'),
+    'The area line must say how far the party still has to walk.');
 }
 
 console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);

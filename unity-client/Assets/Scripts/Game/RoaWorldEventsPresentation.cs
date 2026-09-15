@@ -505,6 +505,11 @@ namespace RealmOfAshes.Game
             sb.Append("\nВрагов рядом: ").Append(alive);
             int calm = Math.Max(0, (payload["calmSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);
             if (calm > 0) sb.Append(" · затишье ").Append(calm).Append(" с");
+            // Встречи приходят к идущему: пока отряд не прошёл свою долю пути по
+            // области, проверки не будет. Без этой строки тишина выглядит
+            // поломкой, а не правилом.
+            int toRoll = payload["distanceToRollM"]?.Value<int>() ?? 0;
+            if (calm <= 0 && toRoll > 0) sb.Append(" · идти ещё ").Append(toRoll).Append(" м");
             string last = payload["lastResultLabel"]?.ToString();
             if (!string.IsNullOrEmpty(last)) sb.Append('\n').Append(last);
             return sb.ToString();

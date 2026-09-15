@@ -68,6 +68,37 @@ assert.deepStrictEqual(bag.kept.map(row => [row.id, row.qty]), [
 ], 'only the installed artifact instance, currency and story items stay');
 assert.deepStrictEqual(selectBagDropRows([{ id: 'ammo9', qty: 0 }, { id: '', qty: 3 }]).drops, []);
 
+// Надетый рюкзак — это экипировка: сам он остаётся на персонаже, а всё, что
+// в нём лежит, выпадает. Быстрые слоты защиты не дают: они только ссылаются
+// на предметы инвентаря.
+{
+  const carrier = {
+    characterId: 'char-bag',
+    equipment: { backpack: 'backpack', armor: 'leatherArmor' },
+    inventory: [
+      { id: 'medkit', qty: 2 },
+      { id: 'ammo9', qty: 30 },
+      { id: 'backpack', qty: 1 },
+      { id: 'silver', qty: 15 }
+    ],
+    quickbar: ['medkit', 'ammo9'],
+    artifactRecords: [],
+    artifactSlots: []
+  };
+  const carried = selectBagDropRows(carrier.inventory, {
+    installedCounts: new Map(),
+    isProtected: id => id === 'silver'
+  });
+  assert.deepStrictEqual(carried.drops.map(row => row.id), ['medkit', 'ammo9', 'backpack'],
+    'the contents of the bag and a spare bag drop, quick slots protect nothing');
+  assert.deepStrictEqual(carried.kept.map(row => row.id), ['silver'], 'only currency stays in the bag');
+  for (const id of carrier.quickbar) {
+    assert(carried.drops.some(row => row.id === id), `quick slot ${id} does not protect the item`);
+  }
+  assert.equal(carrier.equipment.backpack, 'backpack', 'the worn bag itself stays on the character');
+  assert.equal(carrier.equipment.armor, 'leatherArmor', 'worn armour stays too');
+}
+
 let mutations = 0;
 const victim = { id: 'socket-a', characterId: 'char-a', diedAt: 1700000000000 };
 const first = resolveDeathLootTransaction(victim, 'pvpFullDrop', victim.diedAt, () => {

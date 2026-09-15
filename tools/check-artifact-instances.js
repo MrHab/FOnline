@@ -111,6 +111,20 @@ assert.deepEqual(legacy.map(row => [row.id, row.tier, row.revealed, row.stabiliz
   ['tampered', 1, false, false, true, 2]
 ], 'Legacy rarity maps to tier, stabilized maps to revealed, tampered revealed flags are dropped.');
 assert(legacy.every(row => row.containerId === ''), 'Containers are no longer part of the record.');
+
+// Своя прежняя редкость записи сильнее базового тира вида: редкая находка
+// старого мира не обесценивается до обычной.
+{
+  const promoted = sanitizeArtifactRecords([
+    { id: 'old-rare-spring', typeId: 'spring', itemId: 'artifactSpring', rarity: 'rare', stabilized: true },
+    { id: 'old-plain-spring', typeId: 'spring', itemId: 'artifactSpring', stabilized: true }
+  ], catalog);
+  assert.equal(promoted[0].tier, 3, 'A record that was rare stays rare after the migration.');
+  assert.equal(promoted[1].tier, 1, 'A record without its own rarity keeps the base tier of its kind.');
+  assert.equal(promoted[0].seed, '', 'The migration does not invent a seed: old properties stay as they were.');
+  assert.deepEqual(sanitizeArtifactRecords(promoted, catalog).map(row => [row.id, row.tier, row.seed]),
+    promoted.map(row => [row.id, row.tier, row.seed]), 'Repeated normalization changes nothing.');
+}
 for (const type of catalog.types) {
   const migrated = sanitizeArtifactRecords([{ id: type.id, typeId: type.id, stabilized: true }], catalog)[0];
   assert.deepEqual(inst.instanceProperties(migrated, catalog).effects, type.effects,

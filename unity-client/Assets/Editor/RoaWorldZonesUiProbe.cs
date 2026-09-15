@@ -36,10 +36,13 @@ namespace RealmOfAshes.EditorTools
             Require(outposts.Contains("отходит: Артели 40%"), "A retiring column of the previous owner is named: " + outposts);
             Require(RoaWorldEventsPresentation.DescribeOutposts(territory, "settlement") == string.Empty, "Outposts stay hidden outside the core zone");
 
-            var publicEvent = JObject.Parse(@"{'roomId':'randomAshGrove#pubev_1','displayName':'Логово Гари','remainingSeconds':1500,'warning':false,'cleared':true,'chestOpen':false,'chestClaimed':false,'chestOpensInSeconds':50}");
+            var publicEvent = JObject.Parse(@"{'roomId':'randomAshGrove#pubev_1','displayName':'Логово Гари','remainingSeconds':1500,'warning':false,'cleared':true,'chestOpen':false,'chestClaimed':false,'chestOpensInSeconds':50,
+                'danger':3,'boss':{'displayName':'Вожак Гари','alive':false,'killed':true}}");
             string eventText = RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 5);
             Require(eventText.Contains("ЛОГОВО ГАРИ · 24:55") && eventText.Contains("откроется через 45 с") && eventText.Contains("PvP разрешено"),
                 "Cleared event counts the contested chest down with elapsed time");
+            Require(eventText.Contains("опасность 3") && eventText.Contains("Вожак Гари: повержен"),
+                "Event line shows its danger and the mini boss: " + eventText);
             publicEvent["warning"] = true; publicEvent["chestOpen"] = true;
             Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 0).Contains("СКОРО ЗАКРОЕТСЯ")
                 && RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 0).Contains("ТАЙНИК ОТКРЫТ"),

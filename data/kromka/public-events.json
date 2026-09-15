@@ -16,6 +16,14 @@
   "templates": [
     {
       "id": "raider_base",
+      "danger": 3,
+      "boss": {
+        "id": "raider_leader",
+        "displayName": "Главарь налётчиков",
+        "modelKey": "enemyRaider",
+        "species": "raider",
+        "hpMultiplier": 2.4
+      },
       "kind": "raiderBase",
       "displayName": "База налётчиков",
       "text": "Налётчики укрепились на разбитом тракте. Кто первым доберётся до их схрона — тот и заберёт добычу.",
@@ -35,6 +43,14 @@
     },
     {
       "id": "mutant_lair",
+      "danger": 4,
+      "boss": {
+        "id": "mutant_matriarch",
+        "displayName": "Матка складней",
+        "modelKey": "enemySuperMutant",
+        "species": "mutant",
+        "hpMultiplier": 2.8
+      },
       "kind": "monsterLair",
       "displayName": "Логово Складней",
       "text": "В полосе №8 завёлся тканевый выводок. Логово временное: через час мутанты уйдут.",
@@ -53,6 +69,14 @@
     },
     {
       "id": "gari_den",
+      "danger": 3,
+      "boss": {
+        "id": "gari_alpha",
+        "displayName": "Вожак Гари",
+        "modelKey": "enemyFireGecko",
+        "species": "mutant",
+        "hpMultiplier": 2.2
+      },
       "kind": "monsterLair",
       "displayName": "Логово Гари",
       "text": "Стая гари засела в меловой чаше. Добыча достаётся тому, кто удержит чашу до вскрытия тайника.",
@@ -71,6 +95,14 @@
     },
     {
       "id": "scorpion_pit",
+      "danger": 5,
+      "boss": {
+        "id": "rykhlyak_queen",
+        "displayName": "Матка рыхляков",
+        "modelKey": "enemyRadscorpion",
+        "species": "mutant",
+        "hpMultiplier": 2.6
+      },
       "kind": "monsterLair",
       "displayName": "Яма Рыхляков",
       "text": "Рыхляки роют под полосой №8. Пока яма открыта, сюда сходятся все, кому нужны пластины сплава.",

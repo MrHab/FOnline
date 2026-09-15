@@ -62,6 +62,16 @@ function normalizeTemplate(input = {}) {
   if (!id || !locationId || !encounterId) return null;
   const kind = String(input?.kind || '') === 'raiderBase' ? 'raiderBase' : 'monsterLair';
   const chest = input?.chest && typeof input.chest === 'object' ? input.chest : {};
+  // Мини-босс сценария: без него событие нельзя зачистить, а награда не
+  // открывается. Опасность объявляется автором, а не угадывается по клетке.
+  const bossRaw = input?.boss && typeof input.boss === 'object' ? input.boss : null;
+  const boss = bossRaw && cleanId(bossRaw.id) ? {
+    id: cleanId(bossRaw.id),
+    displayName: String(bossRaw.displayName || 'Главарь').slice(0, 96),
+    modelKey: cleanId(bossRaw.modelKey, 48),
+    species: cleanId(bossRaw.species, 32) || 'mutant',
+    hpMultiplier: clamp(Number(bossRaw.hpMultiplier || 2), 1, 8)
+  } : null;
   return {
     id,
     kind,
@@ -69,6 +79,8 @@ function normalizeTemplate(input = {}) {
     text: String(input?.text || '').slice(0, 420),
     locationId,
     encounterId,
+    danger: clamp(Math.floor(Number(input?.danger ?? 3)), 1, 5),
+    boss,
     weight: Math.max(0, Number(input?.weight || 1)),
     chest: {
       name: String(chest.name || 'Тайник события').slice(0, 96),
@@ -121,10 +133,18 @@ function sanitizeEvent(input = {}) {
     status,
     cleared: input?.cleared === true,
     clearedAt: Math.max(0, Math.floor(Number(input?.clearedAt || 0))),
+    danger: clamp(Math.floor(Number(input?.danger ?? 3)), 1, 5),
+    // Состояние мини-босса и уже объявленного сундука переживают перезапуск:
+    // иначе после рестарта награда исчезала, а босс появлялся заново.
+    boss: {
+      spawned: input?.boss?.spawned === true,
+      killedAt: Math.max(0, Math.floor(Number(input?.boss?.killedAt || 0)))
+    },
     chest: {
       opensAt: Math.max(0, Math.floor(Number(input?.chest?.opensAt || 0))),
       claimedAt: Math.max(0, Math.floor(Number(input?.chest?.claimedAt || 0))),
-      claimedBy: cleanId(input?.chest?.claimedBy, 96)
+      claimedBy: cleanId(input?.chest?.claimedBy, 96),
+      announced: input?.chest?.announced === true
     },
     deaths,
     visits: Math.max(0, Math.floor(Number(input?.visits || 0)))
@@ -179,6 +199,7 @@ function createPublicEvent(template = {}, options = {}) {
     text: template.text,
     locationId: template.locationId,
     encounterId: template.encounterId,
+    danger: template.danger,
     roomId: `${template.locationId}#${id}`,
     x: point.x,
     y: point.y,
@@ -295,7 +316,7 @@ function publicEventEntryError(event = {}, characterId = '', now = Date.now()) {
   return '';
 }
 
-function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES) {
+function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES, options = {}) {
   if (!event) return null;
   const remaining = Math.max(0, Number(event.expiresAt || 0) - Number(now));
   return {
@@ -315,6 +336,13 @@ function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES) {
     remainingSeconds: Math.round(remaining / 1000),
     warning: event.status === 'warning',
     warningInSeconds: Math.max(0, Math.round((Number(event.warningAt || 0) - Number(now)) / 1000)),
+    danger: Number(event.danger || 3),
+    // Мини-босс сценария: имя и состояние видны участникам, пока он жив.
+    boss: {
+      displayName: String(options?.bossName || ''),
+      alive: event.boss?.killedAt ? false : event.boss?.spawned === true,
+      killed: Number(event.boss?.killedAt || 0) > 0
+    },
     cleared: event.cleared === true,
     chestOpensInSeconds: event.cleared ? Math.max(0, Math.round((Number(event.chest.opensAt || 0) - Number(now)) / 1000)) : 0,
     chestOpen: publicEventChestOpen(event, now),
@@ -323,11 +351,38 @@ function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES) {
   };
 }
 
-function publicEvents(store = {}, now = Date.now()) {
+function publicEvents(store = {}, now = Date.now(), catalog = null) {
+  const byId = catalog?.byId && typeof catalog.byId === 'object' ? catalog.byId : {};
   return Object.values(store?.events || {})
     .filter(row => row && row.status !== 'expired')
     .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
-    .map(row => publicEvent(row, now));
+    .map(row => publicEvent(row, now, catalog?.rules || DEFAULT_RULES, {
+      bossName: byId[row.templateId]?.boss?.displayName || ''
+    }));
+}
+
+/**
+ * Мини-босс сценария: отмечает появление и гибель. Пока босс не убит, событие
+ * не считается зачищенным и награда не открывается.
+ */
+function notePublicEventBoss(event = {}, options = {}) {
+  if (!event.boss || typeof event.boss !== 'object') event.boss = { spawned: false, killedAt: 0 };
+  let changed = false;
+  if (options.spawned === true && event.boss.spawned !== true) {
+    event.boss.spawned = true;
+    changed = true;
+  }
+  if (options.killedAt && !event.boss.killedAt) {
+    event.boss.killedAt = Math.max(0, Math.floor(Number(options.killedAt)));
+    changed = true;
+  }
+  return changed;
+}
+
+/** Событие зачищено только когда объявленный сценарием босс мёртв. */
+function publicEventBossDefeated(event = {}, template = null) {
+  if (!template?.boss) return true;
+  return Number(event?.boss?.killedAt || 0) > 0;
 }
 
 // Зона на глобальной карте для симуляции: общая комната события, вход через
@@ -356,6 +411,8 @@ function publicEventZone(event = {}, rules = DEFAULT_RULES, worldHour = 0) {
 }
 
 module.exports = {
+  notePublicEventBoss,
+  publicEventBossDefeated,
   DEFAULT_RULES,
   STORE_VERSION,
   activeEvents,

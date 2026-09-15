@@ -228,6 +228,10 @@ const getJson = route => new Promise((resolve, reject) => {
   const health = await getJson('/health');
   assert.equal(health.status, 200);
   assert.equal(health.json.kromka?.publicEvents ?? health.json.operations?.publicEvents ?? health.json.publicEvents, 1, '/health counts public events: ' + JSON.stringify(health.json).slice(0, 300));
+  // Сценарий события: опасность и мини-босс доходят до клиента.
+  const eventRow = (wasteland.json.publicEvents || [])[0];
+  assert(eventRow && eventRow.danger >= 1, 'The event carries its danger: ' + JSON.stringify(eventRow).slice(0, 200));
+  assert(eventRow.boss && eventRow.boss.displayName, 'The event names its mini boss: ' + JSON.stringify(eventRow.boss));
   console.log('PASS outposts, public events and health');
 
   // --- мировой босс -----------------------------------------------------------------------------

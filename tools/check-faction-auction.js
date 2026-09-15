@@ -81,6 +81,21 @@ assert.equal(view.listings[0].artifactCount, 1);
 assert(!('sellerCharacterId' in view.listings[0]) && !('records' in view.listings[0]), 'Seller ids and artifact records stay private.');
 assert(!JSON.stringify(view).includes('secret'), 'Artifact seeds never leave the server through the auction.');
 assert.equal(auction.publicAuction(store, 'uprava', 'char-seller', rules, t0 + 2000).listings[0].mine, true);
+assert.deepEqual(view.listings[0].artifacts, [], 'Without a projection the lot exposes nothing but the counter.');
+
+// Состояние артефакта видно до покупки: проекцию передаёт сервер, скрытый ролл
+// в неё не попадает.
+const { publicArtifactRecord } = require('../src/server/artifact-instances');
+const artifactCatalog = JSON.parse(read('data/artifacts.json'));
+const shown = auction.publicAuction(store, 'uprava', 'char-buyer', rules, t0 + 2000, {
+  projectArtifact: record => publicArtifactRecord(record, artifactCatalog)
+});
+const lotArtifact = shown.listings[0].artifacts[0];
+assert(lotArtifact, 'The lot carries the projected artifact: ' + JSON.stringify(shown.listings[0]));
+assert(lotArtifact.tier >= 1 && lotArtifact.tierColor && typeof lotArtifact.stabilized === 'boolean',
+  'A buyer sees the kind, the tier and whether the artifact is stabilized.');
+assert(!('seed' in lotArtifact), 'The seed never reaches the buyer.');
+assert(!JSON.stringify(shown).includes('secret'), 'Hidden rolls never leave the server through the auction projection.');
 
 // --- серверные крючки и Unity ----------------------------------------------------------------
 const server = read('server.js');

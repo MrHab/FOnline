@@ -9856,6 +9856,18 @@ function serverPlayerMaxAp(p = {}) {
   return clamp(Math.round(base * multiplier), 1, 99);
 }
 
+// Текущее здоровье цели перед вычитанием урона. Записывать `hp || maxHp` нельзя:
+// ноль — валидное значение, поэтому такая форма воскрешала цель, добитую первой
+// пулей парного залпа, почти до полного здоровья, и смерть не наступала вовсе.
+function serverCurrentHp(actor = {}) {
+  // null и undefined означают «поле не заполнено» и падают на maxHp, как раньше.
+  // Отличать их от нуля обязательно: Number(null) равен нулю, и без этой проверки
+  // персонаж с пустым hp умирал бы от первого же попадания.
+  if (actor?.hp === null || actor?.hp === undefined) return Number(actor?.maxHp || 0);
+  const hp = Number(actor.hp);
+  return Number.isFinite(hp) ? hp : Number(actor?.maxHp || 0);
+}
+
 function serverApplyDerivedVitals(p = {}) {
   const previousHp = Number(p.hp);
   const maxHp = serverPlayerMaxHp(p);
@@ -10662,6 +10674,35 @@ function serverConeWidthAtDistance(w = SERVER_WEAPONS.fists, distance = 0) {
   return 0.45;
 }
 
+// События shoot и melee — косметические: сервер пересылает их всей комнате, чтобы
+// нарисовать вспышку и замах. Урон они не наносят, но каждое сообщение умножается
+// на число игроков в комнате, поэтому частота ограничивается. Порог заметно выше
+// любого честного темпа стрельбы, включая парные пистолеты и очередь.
+function serverAllowCosmeticRelay(p = {}, now = Date.now()) {
+  const windowMs = 1000;
+  const limit = 24;
+  const state = p.cosmeticRelay && typeof p.cosmeticRelay === 'object'
+    ? p.cosmeticRelay : (p.cosmeticRelay = { windowStart: 0, count: 0 });
+  if (now - Number(state.windowStart || 0) >= windowMs) {
+    state.windowStart = now;
+    state.count = 0;
+  }
+  state.count = Math.max(0, Math.floor(Number(state.count || 0))) + 1;
+  return state.count <= limit;
+}
+
+// Отмечает цель как обработанную этим токеном атаки. Общий учёт для обычного и
+// конусного попадания: один патрон не должен дважды задеть одну и ту же цель.
+function serverMarkAttackTargetHit(spend = {}, target = {}) {
+  const spent = spend?.spent;
+  if (!spent) return;
+  if (!spent.targetHits || typeof spent.targetHits !== 'object') spent.targetHits = {};
+  const targetId = String(target?.id || '');
+  if (!targetId) return;
+  const current = Math.max(0, Math.floor(Number(spent.targetHits[targetId] || 0)));
+  spent.targetHits[targetId] = current + 1;
+}
+
 function serverValidateMultiTargetHit(spend = {}, p = {}, weapon = SERVER_WEAPONS.fists, modeInfo = {}, origin = {}, enemy = {}, data = {}) {
   if (!['shotgun', 'flamethrower'].includes(weapon.id)) return { ok: false, error: 'Это оружие не наносит конусный урон.' };
   if (!spend.token || !spend.spent) return { ok: false, error: 'Сервер: отсутствует токен групповой атаки.' };
@@ -11064,6 +11105,12 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
 }
 
 function serverApplyReload(p = {}, data = {}, now = Date.now()) {
+  // Те же запреты, что у атаки: оглушённый игрок не стреляет и не двигается, но
+  // раньше свободно перезаряжался и тратил на это ОД, а в кат-сцене каравана
+  // магазин набивался прямо посреди ролика.
+  if (isArtifactStunned(p, now)) return { ok: false, error: 'Персонаж оглушён.' };
+  if (caravanCinematicHeld(rooms.get(p.roomId), now))
+    return { ok: false, error: 'Дождитесь окончания кат-сцены или пропустите её.' };
   const pair = serverDualWieldPistolPair(p);
   const activeSlot = serverActiveWeaponSlot(p);
   const activeEntry = serverEquippedWeaponEntryForSlot(p, activeSlot);
@@ -23065,7 +23112,7 @@ function updateServerEnemies(room, dt, opts = {}) {
           }
           serverApplyDerivedVitals(target);
           const secondChance = serverTrySecondChance(target, damage, now);
-          if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - damage);
+          if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - damage);
           const newInjuries = serverApplyInjuriesFromHit(target, damage, damageType, attackProfile.injurySource || enemy.name, {
             injuryProfile: attackProfile.injuryProfile,
             attackEffect: attackProfile.effect,
@@ -26435,7 +26482,11 @@ io.on('connection', (socket) => {
     const store = serverAuctionStore();
     auctionExpireListings(store, now);
     const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
-    const auctionState = () => publicAuction(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now);
+    const auctionState = () => publicAuction(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now, {
+      // Состояние артефакта видно до покупки; скрытые свойства сырого
+      // экземпляра публичная проекция по-прежнему не отдаёт.
+      projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)
+    });
     if (action === 'state') {
       if (typeof ack === 'function') ack({ ok: true, auction: auctionState() });
       return;
@@ -28545,6 +28596,7 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
+    if (!serverAllowCosmeticRelay(p)) return;
     const handSlot = data.handSlot === 'offhand' ? 'offhand' : 'weapon';
     const handWeapon = serverEquippedWeaponEntryForSlot(p, handSlot);
     if (!handWeapon) return;
@@ -28586,7 +28638,17 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId) return;
     const room = rooms.get(p.roomId);
     if (!room) return;
-    const weapon = String(data.weapon || serverActiveWeaponId(p)).slice(0, 32);
+    if (!serverAllowCosmeticRelay(p)) return;
+    // Оружие берётся из рук игрока, а не из пакета: иначе клиент показывал
+    // остальным любую анимацию, например ракетницу при надетом ноже.
+    const requestedWeapon = serverBaseItemId(data.weapon || '');
+    const equippedWeapons = ['weapon', 'offhand']
+      .map(slot => serverEquippedWeaponEntryForSlot(p, slot))
+      .filter(Boolean)
+      .map(entry => entry.weapon.id);
+    const weapon = String(equippedWeapons.includes(requestedWeapon)
+      ? requestedWeapon
+      : serverActiveWeaponId(p)).slice(0, 32);
     const payload = {
       shooterId: socket.id,
       characterId: p.characterId || '',
@@ -28796,7 +28858,7 @@ io.on('connection', (socket) => {
       serverApplyDerivedVitals(target);
       const dmgInfo = serverMitigateDamage(raw, target, 'explosive');
       const secondChance = serverTrySecondChance(target, dmgInfo.damage, now);
-      if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
+      if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
       serverApplyArtifactImpact(target, room, { x: impactX, z: impactZ }, 'explosive', 2 * falloff, now);
@@ -28959,6 +29021,10 @@ io.on('connection', (socket) => {
       ? serverValidateMultiTargetHit(spend, p, weapon, modeInfo, origin, targetProxy, data)
       : null;
     if (multiTarget && !multiTarget.ok) return fail(multiTarget.error || 'Сервер: цель вне области атаки.');
+    // Обычное попадание тоже занимает цель в токене. Счётчик вёл только конусный
+    // путь, поэтому повторный пакет с флагом multiTarget по той же цели проходил
+    // проверку «эта цель уже обработана» и наносил второй урон тем же патроном.
+    if (!isMultiTargetHit) serverMarkAttackTargetHit(spend, enemy);
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE * Math.max(...spend.entries.map(entry => Number(entry.weapon.modNoiseMul || 1)))), socket.id, weapon.ammoType ? 'combat' : 'melee');
     // The shot is valid and spent normally; protected targets receive no damage,
@@ -29183,7 +29249,7 @@ io.on('connection', (socket) => {
       });
       raw = dmgInfo.raw;
       const secondChance = serverTrySecondChance(target, dmgInfo.damage, now);
-      if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
+      if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - dmgInfo.damage);
       newInjuries.push(...serverApplyInjuriesFromHit(target, dmgInfo.damage, damageType, attacker.name || 'player attack'));
       hits.push({
         handSlot: entry.slot,

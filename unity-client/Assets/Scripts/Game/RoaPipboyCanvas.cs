@@ -1313,20 +1313,82 @@ namespace RealmOfAshes.Game
             JObject properties = record["properties"] as JObject;
             if (stabilized && properties != null)
             {
-                string benefit = record["benefit"]?.ToString();
-                string cost = record["cost"]?.ToString();
-                float mul = properties["benefitMul"]?.Value<float>() ?? 1f;
-                if (!string.IsNullOrEmpty(benefit)) parts.Add(benefit + " (×" + mul.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ")");
-                if (!string.IsNullOrEmpty(cost)) parts.Add("цена: " + cost);
+                // После стабилизации показываются точные значения экземпляра, а не
+                // типовое описание вида: сервер присылает primary/secondary/drawback.
+                string values = ArtifactEffectList(properties["primary"], properties["secondary"]);
+                if (!string.IsNullOrEmpty(values)) parts.Add(values);
+                else
+                {
+                    string benefit = record["benefit"]?.ToString();
+                    if (!string.IsNullOrEmpty(benefit)) parts.Add(benefit);
+                }
+                string drawbacks = ArtifactEffectList(null, properties["drawback"]);
+                if (!string.IsNullOrEmpty(drawbacks)) parts.Add("недостатки: " + drawbacks);
+                else
+                {
+                    string cost = record["cost"]?.ToString();
+                    if (!string.IsNullOrEmpty(cost)) parts.Add("недостатки: " + cost);
+                }
             }
             else
             {
                 parts.Add("свойства скрыты до стабилизации");
+                string source = ArtifactSourceLabel(record["sourceAnomalyType"]?.ToString());
+                if (!string.IsNullOrEmpty(source)) parts.Add("источник: " + source);
                 parts.Add("стабилизация: " + ArtifactCostLabel(record["stabilizationCost"] as JObject));
             }
             string salvage = ArtifactYieldLabel(record["salvageYields"] as JArray);
             if (!string.IsNullOrEmpty(salvage)) parts.Add("разбор: " + salvage);
             return string.Join(" · ", parts);
+        }
+
+        /// <summary>
+        /// Список эффектов экземпляра «имя значение» из строк сервера
+        /// ({ key, value }). Первым идёт основное свойство, затем остальные.
+        /// </summary>
+        public static string ArtifactEffectList(JToken primary, JToken rest)
+        {
+            var parts = new List<string>();
+            AppendArtifactEffect(parts, primary as JObject);
+            if (rest is JArray rows)
+            {
+                foreach (JToken row in rows) AppendArtifactEffect(parts, row as JObject);
+            }
+            else AppendArtifactEffect(parts, rest as JObject);
+            return parts.Count > 0 ? string.Join(", ", parts) : string.Empty;
+        }
+
+        private static void AppendArtifactEffect(List<string> parts, JObject effect)
+        {
+            if (effect == null) return;
+            string key = effect["key"]?.ToString();
+            if (string.IsNullOrEmpty(key)) return;
+            JToken valueToken = effect["value"];
+            if (valueToken == null || (valueToken.Type != JTokenType.Float && valueToken.Type != JTokenType.Integer)) return;
+            float value = valueToken.Value<float>();
+            if (key.StartsWith("resistances."))
+            {
+                parts.Add("сопр. " + key.Substring("resistances.".Length) + " " + Signed(value, true));
+                return;
+            }
+            parts.Add(ArtifactStatName(key) + " " + Signed(value, key.EndsWith("Pct")));
+        }
+
+        /// <summary>Природный источник вида: тип аномалии, в которой он рождается.</summary>
+        public static string ArtifactSourceLabel(string anomalyType)
+        {
+            switch (anomalyType)
+            {
+                case "pull": return "Тяга";
+                case "seam": return "Шов";
+                case "carousel": return "Карусель";
+                case "glass": return "Стекло";
+                case "dew": return "Роса";
+                case "sink": return "Провал";
+                case "chime": return "Звон";
+                case "mute": return "Молчун";
+                default: return string.Empty;
+            }
         }
 
         public static string ArtifactCostLabel(JObject cost)

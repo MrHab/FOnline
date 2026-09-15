@@ -68,10 +68,17 @@ namespace RealmOfAshes.EditorTools
             Require(raw.Contains("разбор: " + RoaItemData.Name("stabilizerCatalyst") + " ×1"), "Salvage yields are listed");
             record["stabilized"] = true; record["hot"] = false; record["revealed"] = true;
             record["benefit"] = "Скорость +8%"; record["cost"] = "Электрический урон +20%";
-            record["properties"] = JObject.Parse(@"{'benefitMul':1.79,'drawbackMul':0.87}");
+            record["properties"] = JObject.Parse(@"{'benefitMul':1.79,'drawbackMul':0.87,
+                'primary':{'key':'speedPct','value':0.1432},'secondary':[{'key':'apRegenPct','value':0.179}],
+                'drawback':[{'key':'resistances.electric','value':-0.174}]}");
             string stable = RoaPipboyCanvas.ArtifactCardSummary(record, 2);
-            Require(stable.Contains("стабильный") && stable.Contains("Скорость +8% (×1.79)") && stable.Contains("экз. ×2") && !stable.Contains("скрыты"),
-                "Stabilized artifact shows its revealed properties");
+            Require(stable.Contains("стабильный") && stable.Contains("экз. ×2") && !stable.Contains("скрыты"),
+                "Stabilized artifact no longer hides its properties");
+            Require(stable.Contains("скорость +14%") && stable.Contains("восст. ОД +18%"),
+                "Stabilized card shows the exact instance values, not the type description: " + stable);
+            Require(stable.Contains("недостатки: сопр. electric -17%"),
+                "Stabilized card lists the drawback with its number: " + stable);
+            Require(RoaPipboyCanvas.ArtifactSourceLabel("carousel") == "Карусель", "Raw artifact names its natural source");
             string preview = RoaPipboyCanvas.ArtifactPreviewLabel(JObject.Parse(@"{'delta':{'speedPct':0.06,'carryKg':-4,'resistances':{'ballistic':0.12}}}"));
             Require(preview.Contains("скорость +6%") && preview.Contains("груз (кг) -4") && preview.Contains("сопр. ballistic +12%"), "Preview delta lists changed stats");
             Require(RoaPipboyCanvas.ArtifactPreviewLabel(JObject.Parse(@"{'delta':{}}")) == "Характеристики не изменятся.", "Empty delta is explained");

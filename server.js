@@ -20285,9 +20285,19 @@ function serverPveAliveCount(room) {
   return count;
 }
 
+/**
+ * Расстановка стаи с учётом обстоятельств: обычно она появляется поодаль,
+ * в засаде — вплотную и сразу настороже, а смешанная приводит с собой соседа
+ * другого вида. Раньше менялись только вид пачки и её численность.
+ */
 function serverSpawnPvePack(room, area, pack, now = Date.now()) {
   const rules = KROMKA_PVE_AREA_CATALOG.rules;
+  const circumstance = pack?.circumstance || null;
+  const ambush = circumstance?.kind === 'ambush';
   const spawned = [];
+  if (circumstance?.companion) {
+    spawned.push(...serverSpawnPvePack(room, area, { ...circumstance.companion, circumstance: null }, now));
+  }
   for (let i = 0; i < Number(pack?.spawnCount || 0); i += 1) {
     const opts = {
       creatureTypeId: pack.creatureTypeId || undefined,
@@ -20302,12 +20312,20 @@ function serverSpawnPvePack(room, area, pack, now = Date.now()) {
       visual: visualModel.visual,
       modelKey: visualModel.modelKey,
       force: true,
-      minPlayerDistance: rules.spawnMinPlayerDistance
+      minPlayerDistance: ambush ? rules.ambushMinPlayerDistance : rules.spawnMinPlayerDistance
     });
     if (!enemy) break;
     enemy.pveAreaId = area.id;
     enemy.pvePackId = pack.id;
+    enemy.pveCircumstance = circumstance?.kind || 'wandering';
     enemy.spawnedAt = now;
+    // Засада не ждёт, пока её заметят: звери сразу идут на ближайшего игрока.
+    if (ambush) {
+      const prey = livePlayersInRoom(room)
+        .map(player => ({ player, distance: Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z) }))
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (prey?.player) aggroEnemyFromHit(room, enemy, prey.player, now);
+    }
     spawned.push(enemy);
   }
   if (spawned.length) {

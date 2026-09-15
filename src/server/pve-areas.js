@@ -13,7 +13,13 @@ const DEFAULT_RULES = Object.freeze({
   tracksChance: 0.8,
   maxAlive: 8,
   spawnMinPlayerDistance: 14,
-  roomIdleResetMs: 600000
+  roomIdleResetMs: 600000,
+  // Обстоятельства встречи: обычно стая бродит поодаль, иногда поджидает
+  // вплотную, иногда приходит смешанной — с гостем другого вида.
+  ambushChance: 0.25,
+  ambushMinPlayerDistance: 6,
+  mixedChance: 0.25,
+  mixedCompanionCount: 1
 });
 
 function clamp(value, min, max) {
@@ -34,7 +40,11 @@ function normalizePveRules(input = {}) {
     tracksChance: clamp(Number(src.tracksChance ?? DEFAULT_RULES.tracksChance), 0, 1),
     maxAlive: Math.max(1, Math.floor(Number(src.maxAlive || DEFAULT_RULES.maxAlive))),
     spawnMinPlayerDistance: Math.max(2, Number(src.spawnMinPlayerDistance || DEFAULT_RULES.spawnMinPlayerDistance)),
-    roomIdleResetMs: Math.max(10000, Math.floor(Number(src.roomIdleResetMs || DEFAULT_RULES.roomIdleResetMs)))
+    roomIdleResetMs: Math.max(10000, Math.floor(Number(src.roomIdleResetMs || DEFAULT_RULES.roomIdleResetMs))),
+    ambushChance: clamp(Number(src.ambushChance ?? DEFAULT_RULES.ambushChance), 0, 1),
+    ambushMinPlayerDistance: Math.max(2, Number(src.ambushMinPlayerDistance || DEFAULT_RULES.ambushMinPlayerDistance)),
+    mixedChance: clamp(Number(src.mixedChance ?? DEFAULT_RULES.mixedChance), 0, 1),
+    mixedCompanionCount: Math.max(1, Math.floor(Number(src.mixedCompanionCount || DEFAULT_RULES.mixedCompanionCount)))
   };
 }
 
@@ -160,6 +170,7 @@ function createPveRoomState(area = {}, rules = DEFAULT_RULES, now = Date.now(), 
     lastAlive: 0,
     lastResult: 'idle',
     lastPackLabel: '',
+    lastCircumstance: 'wandering',
     initialSpawned: false
   };
 }
@@ -176,6 +187,32 @@ function choosePack(area = {}, random = Math.random) {
   }
   const count = chosen.count[0] + Math.floor(random() * (chosen.count[1] - chosen.count[0] + 1));
   return { ...chosen, spawnCount: clamp(count, chosen.count[0], chosen.count[1]) };
+}
+
+/**
+ * Обстоятельства встречи. Стая приходит по-разному: обычно бродит поодаль,
+ * иногда поджидает вплотную (засада), иногда приводит с собой соседа другого
+ * вида (смешанная). Спутник выбирается из других пачек области, поэтому
+ * «обстоятельства» остаются авторскими: чего в области нет, то и не придёт.
+ */
+function chooseCircumstance(area = {}, pack = null, rules = DEFAULT_RULES, random = Math.random) {
+  if (!pack) return null;
+  const roll = random();
+  if (roll < Number(rules.ambushChance || 0)) {
+    return { kind: 'ambush', label: 'засада', companion: null };
+  }
+  if (roll < Number(rules.ambushChance || 0) + Number(rules.mixedChance || 0)) {
+    const others = (area.packs || []).filter(row => row.id !== pack.id && row.weight > 0);
+    if (others.length) {
+      const companion = others[Math.min(others.length - 1, Math.floor(random() * others.length))];
+      return {
+        kind: 'mixed',
+        label: 'смешанная стая',
+        companion: { ...companion, spawnCount: Math.max(1, Math.floor(Number(rules.mixedCompanionCount || 1))) }
+      };
+    }
+  }
+  return { kind: 'wandering', label: '', companion: null };
 }
 
 function initialPacks(state = {}, area = {}, random = Math.random) {
@@ -218,10 +255,12 @@ function rollPveEncounter(state = {}, area = {}, rules = DEFAULT_RULES, now = Da
   }
   const pack = choosePack(area, random);
   if (!pack) return { rolled: true, spawn: null, reason: 'quiet' };
+  const circumstance = chooseCircumstance(area, pack, rules, random);
   state.packsSpawned += 1;
   state.lastResult = 'spawned';
   state.lastPackLabel = pack.label;
-  return { rolled: true, spawn: pack, reason: 'spawned' };
+  state.lastCircumstance = circumstance?.kind || 'wandering';
+  return { rolled: true, spawn: { ...pack, circumstance }, reason: 'spawned' };
 }
 
 // «Искать следы»: игрок сам провоцирует встречу с повышенным шансом; своя
@@ -243,11 +282,15 @@ function searchTracks(state = {}, area = {}, rules = DEFAULT_RULES, now = Date.n
   }
   const pack = choosePack(area, random);
   if (!pack) return { ok: true, spawn: null, reason: 'noTracks' };
+  // По следам идут сами: засады тут не бывает, но соседи по области прийти
+  // вместе со стаей могут.
+  const circumstance = chooseCircumstance(area, pack, { ...rules, ambushChance: 0 }, random);
   state.calmUntil = 0;
   state.packsSpawned += 1;
   state.lastResult = 'tracked';
   state.lastPackLabel = pack.label;
-  return { ok: true, spawn: pack, reason: 'tracked' };
+  state.lastCircumstance = circumstance?.kind || 'wandering';
+  return { ok: true, spawn: { ...pack, circumstance }, reason: 'tracked' };
 }
 
 // Зачистка: все звери мертвы — начинается затишье, следующая плановая
@@ -281,6 +324,14 @@ const RESULT_LABELS = Object.freeze({
   cleared: 'Область зачищена — затишье.'
 });
 
+// Обстоятельства встречи игрок должен слышать словами, а не угадывать по
+// тому, что звери вдруг оказались вплотную.
+const CIRCUMSTANCE_LABELS = Object.freeze({
+  wandering: '',
+  ambush: 'Они уже рядом — засада.',
+  mixed: 'Пришли не одни: стая смешанная.'
+});
+
 function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, now = Date.now(), extra = {}) {
   if (!state || !area) return null;
   return {
@@ -299,13 +350,20 @@ function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, no
     packsSpawned: Number(state.packsSpawned || 0),
     kills: Number(state.kills || 0),
     lastResult: String(state.lastResult || 'idle'),
-    lastResultLabel: RESULT_LABELS[String(state.lastResult || 'idle')] || RESULT_LABELS.idle,
+    lastResultLabel: [
+      RESULT_LABELS[String(state.lastResult || 'idle')] || RESULT_LABELS.idle,
+      ['spawned', 'tracked'].includes(String(state.lastResult || ''))
+        ? (CIRCUMSTANCE_LABELS[String(state.lastCircumstance || 'wandering')] || '')
+        : ''
+    ].filter(Boolean).join(' '),
     lastPackLabel: String(state.lastPackLabel || ''),
+    lastCircumstance: String(state.lastCircumstance || 'wandering'),
     members: Math.max(0, Math.floor(Number(extra.members || 0)))
   };
 }
 
 module.exports = {
+  chooseCircumstance,
   publicPveAreaCatalog,
   DEFAULT_RULES,
   RESULT_LABELS,

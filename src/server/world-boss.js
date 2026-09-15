@@ -77,16 +77,53 @@ function createBossState(def = {}, nodes = [], rules = DEFAULT_RULES, now = Date
     defeatedAt: 0,
     respawnAt: 0,
     restoredAt: Number(now),
-    kills: 0
+    kills: 0,
+    // Награда за победу: выдаётся один раз за поражение босса и ждёт, пока её
+    // не заберут, — в том числе через перезапуск сервера.
+    reward: { unlockedAt: 0, claimed: [] }
   };
 }
 
+/** Награда этого поражения: контейнеры, из которых ещё никто не брал. */
+function bossReward(state = {}) {
+  if (!state.reward || typeof state.reward !== 'object') state.reward = { unlockedAt: 0, claimed: [] };
+  if (!Array.isArray(state.reward.claimed)) state.reward.claimed = [];
+  return state.reward;
+}
+
+/** Контейнер награды ещё не тронут: его можно открыть после перезапуска. */
+function bossRewardPending(state = {}, containerId = '') {
+  const reward = bossReward(state);
+  if (state.phase !== 'defeated' || !Number(reward.unlockedAt || 0)) return false;
+  return !reward.claimed.includes(cleanId(containerId, 64));
+}
+
+function noteBossRewardUnlocked(state = {}, now = Date.now()) {
+  const reward = bossReward(state);
+  if (!Number(reward.unlockedAt || 0)) reward.unlockedAt = Number(now);
+  return reward;
+}
+
+/** Из контейнера награды взяли: второй раз он уже не откроется. */
+function noteBossRewardClaimed(state = {}, containerId = '') {
+  const reward = bossReward(state);
+  const id = cleanId(containerId, 64);
+  if (!id || reward.claimed.includes(id)) return false;
+  reward.claimed.push(id);
+  return true;
+}
+
 function persistedBossState(state = {}) {
+  const reward = bossReward(state || {});
   return {
     bossId: String(state?.bossId || ''),
     defeatedAt: Math.max(0, Math.floor(Number(state?.defeatedAt || 0))),
     respawnAt: Math.max(0, Math.floor(Number(state?.respawnAt || 0))),
-    kills: Math.max(0, Math.floor(Number(state?.kills || 0)))
+    kills: Math.max(0, Math.floor(Number(state?.kills || 0))),
+    reward: {
+      unlockedAt: Math.max(0, Math.floor(Number(reward.unlockedAt || 0))),
+      claimed: reward.claimed.map(id => cleanId(id, 64)).filter(Boolean)
+    }
   };
 }
 
@@ -100,6 +137,11 @@ function applyPersistedBossState(state = {}, persisted = null, now = Date.now())
     state.defeatedAt = Math.max(0, Math.floor(Number(persisted.defeatedAt || 0)));
     state.respawnAt = respawnAt;
     for (const node of state.nodes) node.alive = false;
+    // Незабранная награда переживает перезапуск вместе с фазой.
+    const reward = bossReward(state);
+    reward.unlockedAt = Math.max(0, Math.floor(Number(persisted.reward?.unlockedAt || 0)));
+    reward.claimed = (Array.isArray(persisted.reward?.claimed) ? persisted.reward.claimed : [])
+      .map(id => cleanId(id, 64)).filter(Boolean);
   }
   return state;
 }
@@ -146,6 +188,8 @@ function restoreBoss(state = {}, rules = DEFAULT_RULES, now = Date.now()) {
   state.defeatedAt = 0;
   state.respawnAt = 0;
   state.restoredAt = Number(now);
+  // Живой босс снова держит награду при себе.
+  state.reward = { unlockedAt: 0, claimed: [] };
   state.pulse = { nextAt: Number(now) + rules.pulseIntervalMs, telegraphedAt: 0, count: 0 };
   for (const node of state.nodes) { node.alive = true; node.actorId = ''; }
   return state;
@@ -250,9 +294,13 @@ module.exports = {
   applyPersistedBossState,
   bossDamageMultiplier,
   bossRespawnDue,
+  bossReward,
+  bossRewardPending,
   createBossState,
   normalizeWorldBossRules,
   noteBossDefeated,
+  noteBossRewardClaimed,
+  noteBossRewardUnlocked,
   noteShieldNodeDestroyed,
   persistedBossState,
   publicWorldBoss,

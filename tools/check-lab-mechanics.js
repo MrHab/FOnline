@@ -143,6 +143,11 @@ assert(snapshot.nodes[0].readyInSeconds > 0, 'The snapshot shows the node cooldo
 assert.equal(snapshot.nodes[0].effectSeconds, Math.round((circuitMechanics.nodes[0].effectMs - 1000) / 1000),
   'The snapshot shows how long the machine stays without power.');
 assert.equal(snapshot.nodes[1].effectSeconds, 0, 'An untouched node has no effect window.');
+// Окно снимает щит только с охранной машины, поэтому снимок и называет её:
+// в зале без машины показывать по этому окну нечего.
+assert.equal(snapshot.guardName, circuitMechanics.guard.displayName, 'The snapshot names the guard machine of the hall.');
+assert.equal(lab.publicLabState(lab.normalizeLabState({}), byId.coreLabSpectrum, { x: 0, z: 0 }, t0).guardName, '',
+  'A hall without a guard machine names none.');
 assert.equal(lab.publicLabState(circuit, circuitMechanics, { x: 0, z: 0 }, t0 + circuitMechanics.nodes[0].effectMs + 1000)
   .nodes[0].effectSeconds, 0, 'When the power returns the window closes.');
 assert(snapshot.sectors.length === circuitMechanics.hazard.active);
@@ -199,9 +204,9 @@ for (const token of [
 // Окно побочного эффекта узла сервер публикует; без него игрок не знает,
 // сколько секунд у него есть на охранную машину.
 for (const token of [
-  'public static string NodeEffectLine(JArray nodes)',
+  'public static string NodeEffectLine(JArray nodes, bool hasGuard)',
   'row["effectSeconds"]?.Value<int>() ?? 0',
-  'string effect = NodeEffectLine(payload["nodes"] as JArray);'
+  'string effect = NodeEffectLine(payload["nodes"] as JArray,'
 ]) assert(presentation.includes(token), `The hall line must show the node effect window: ${token}`);
 
 const probe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');

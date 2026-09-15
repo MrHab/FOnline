@@ -137,7 +137,8 @@ namespace RealmOfAshes.EditorTools
             // Зал боковой лаборатории: шкала угрозы, объявленный удар и
             // готовность узлов на стенах.
             var lab = JObject.Parse(@"{'roomId':'coreLabCircuit','meterLabel':'Перегрузка','meter':0.62,
-                'hazardName':'Разряд по залу','telegraph':false,'telegraphInSeconds':0,'guardShielded':true,
+                'hazardName':'Разряд по залу','telegraph':false,'telegraphInSeconds':0,
+                'guardName':'Охранная машина','guardShielded':true,
                 'nodes':[{'id':'node_a','displayName':'Распределительный щит','readyInSeconds':0},
                          {'id':'node_b','displayName':'Распределительный щит','readyInSeconds':12}]}");
             string labText = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
@@ -158,16 +159,18 @@ namespace RealmOfAshes.EditorTools
                 "Identical ready nodes collapse into one row");
             // Снятое питание — это и есть окно, когда машину можно бить.
             lab["guardShielded"] = false;
-            lab["nodes"][0]["action"] = "power";
             lab["nodes"][0]["effectSeconds"] = 14;
             string labPower = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
             Require(labPower.Contains("ПИТАНИЕ СНЯТО: 14 с"),
                 "The node effect window says how long the guard machine stays open: " + labPower);
-            lab["nodes"][0]["action"] = "shift";
-            Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит: 14 с"),
-                "Any other node signs its window with its own name");
+            // В зале без охранной машины это окно ничего не решает: сервер шлёт
+            // его и там, но обещать по нему нечего.
+            lab["guardName"] = string.Empty;
+            Require(!RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("ПИТАНИЕ СНЯТО"),
+                "A hall without a guard machine promises nothing for the window");
+            lab["guardName"] = "Охранная машина";
             lab["nodes"][0]["effectSeconds"] = 0;
-            Require(RoaWorldEventsPresentation.NodeEffectLine(null) == string.Empty, "Without nodes no window is shown");
+            Require(RoaWorldEventsPresentation.NodeEffectLine(null, true) == string.Empty, "Without nodes no window is shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabAlloy") == string.Empty, "Another hall's state is not shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(null, "coreLabCircuit") == string.Empty, "Without a hall the line stays empty");
 

@@ -153,6 +153,10 @@ const MAX_EVENT_COUNT = 90;
 const MAX_WORLD_TASK_COUNT = 80;
 const MAX_WORLD_TASK_HISTORY_COUNT = 400;
 const MAX_WORLD_ZONE_COUNT = 80;
+// Потолок бойцов в одной зоне боя. Зона разворачивается в обычную комнату, и её
+// обслуживает тот же бюджет ИИ, что и все прочие, поэтому неограниченный долив
+// присоединяющихся отрядов делает комнату неиграбельной, особенно в браузере.
+const MAX_BATTLE_ZONE_ACTORS = 24;
 const LIVE_ACTIVITY_TYPES = new Set([
   'escort_caravan',
   'patrol_mission',
@@ -9526,9 +9530,16 @@ function createWastelandSimulation(options = {}) {
       if (actor?.side === 'defender') counters.defender += 1;
       if (actor?.side === 'attacker') counters.attacker += 1;
     });
+    // Зона боя материализуется в обычную комнату, поэтому число бойцов ограничено.
+    // Без потолка каждый проходящий отряд доливал своих: наблюдалась зона на 54
+    // актёра, а её комнату вдобавок обслуживает бюджет ИИ в одну комнату за тик.
+    const presentActors = counters.defender + counters.attacker;
+    const freeActorSlots = MAX_BATTLE_ZONE_ACTORS - presentActors;
+    if (freeActorSlots <= 0) return false;
     const actors = partyClashActorsForParty(party, side, counters)
-      .map((actor, index) => normalizeBattleActor(actor, index + counters.defender + counters.attacker, state.worldHour))
-      .filter(Boolean);
+      .map((actor, index) => normalizeBattleActor(actor, index + presentActors, state.worldHour))
+      .filter(Boolean)
+      .slice(0, freeActorSlots);
     if (!actors.length) return false;
     if (stateKey === 'onsite') detachPartyOnsiteZoneForBattle(party, zone);
     party.x = Number(contact.point.x || party.x || zone.x || 0);

@@ -33,6 +33,9 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaMobileControlsProbe),
             typeof(RoaHudCanvasProbe),
             typeof(RoaHudReadabilityProbe),
+            // Читаемость на настольном и мобильном альбомном экране: панели
+            // обрезают текст молча, поэтому раскладка меряется отдельно.
+            typeof(RoaMobileLayoutProbe),
             typeof(RoaUiPrefabProbe),
             typeof(RoaLightingProbe),
             typeof(RoaCameraProbe),

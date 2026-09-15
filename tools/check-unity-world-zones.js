@@ -118,4 +118,40 @@ assert(auctionModule.includes('projectArtifact'), 'The market projection must be
 assert(read('server.js').includes('projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)'),
   'The server must project auction artifacts through the public record.');
 
+// Читаемость на мобильном альбомном экране: панель мировых событий обрезает
+// всё, что не поместилось, поэтому раскладка меряется отдельной пробой, а не
+// только строковыми проверками.
+const mobileProbe = read('unity-client/Assets/Editor/RoaMobileLayoutProbe.cs');
+for (const token of [
+  'MenuItem("Realm of Ashes/Probe/Mobile layout")',
+  'RoaWorldEventsPresentation.PanelSize(mobile)',
+  'RoaWorldEventsPresentation.PanelFontSize(mobile)',
+  'RoaGlobalMapCanvas.ZoneRulesDescription(rules)',
+  'public static Vector2 CanvasSize(Vector2 screen, Vector2 reference)'
+]) assert(mobileProbe.includes(token), `The mobile layout probe must measure the real panels: ${token}`);
+assert(read('unity-client/Assets/Editor/RoaClientAuditRunner.cs').includes('typeof(RoaMobileLayoutProbe),'),
+  'The client audit must run the mobile layout probe.');
+for (const token of ['public static Vector2 PanelSize(bool mobile)', 'public static int PanelFontSize(bool mobile)',
+  'public const float PanelPadding', 'public static float PanelMaxHeight(bool mobile)',
+  'public static Vector2 ButtonSize(bool mobile)'])
+  assert(presentation.includes(token), `The world events panel must expose its layout to the probe: ${token}`);
+// Панель растёт под свой текст и уводит кнопки за собой: раньше хвост сообщения
+// в Сердцевине просто обрезался, и ни один строковый тест этого не видел.
+for (const token of ['private void ResizePanel()', 'float height = Mathf.Clamp(content, size.y, PanelMaxHeight(mobile));',
+  'br.anchoredPosition = new Vector2(br.anchoredPosition.x, top - height - gap);'])
+  assert(presentation.includes(token), `The world events panel must grow to its content: ${token}`);
+assert(mobileProbe.includes('RoaWorldEventsPresentation.PanelMaxHeight(mobile)'),
+  'The mobile layout probe must measure against the growth limit of the panel.');
+// Проба меряет и остальные поверхности, названные аудитом: окно контракта и
+// подсказку предмета, где теперь живёт итог пояса с потолками.
+for (const token of [
+  'RoaGlobalMapCanvas.ContractIntroText(contract)',
+  'RoaGlobalMapCanvas.ContractRowText(contractRow, false)',
+  'RoaPipboyCanvas.ArtifactCardSummary(record, 2)',
+  'RoaPipboyCanvas.BeltTotalsLine(beltEffects)'
+]) assert(mobileProbe.includes(token), `The mobile layout probe must measure ${token}`);
+for (const token of ['public static string BeltTotalsLine(JObject effects)',
+  'BeltTotalsLine(Pipboy?.Self?["artifactEffects"] as JObject)'])
+  assert(pipboy.includes(token), `The belt totals with their ceilings must reach the player: ${token}`);
+
 console.log('Unity world zones UI OK: world events HUD, tier-tinted artifact cards with preview and salvage, base service dialogues, net wrappers and audit probe.');

@@ -1310,6 +1310,13 @@ namespace RealmOfAshes.Game
             var parts = new List<string>();
             if (Inventory != null && (Inventory.IsRepairable(baseId)))
                 parts.Add("состояние " + Mathf.RoundToInt(Inventory.ConditionPercent(baseId)) + "%");
+            // Пояс показывает, что он сейчас даёт и где потолок: до этого итог
+            // эффектов считался на сервере, но игроку его никто не показывал.
+            if (baseId != null && baseId.StartsWith("artifactBelt", StringComparison.Ordinal))
+            {
+                string totals = BeltTotalsLine(Pipboy?.Self?["artifactEffects"] as JObject);
+                if (!string.IsNullOrEmpty(totals)) parts.Add(totals);
+            }
             var artifacts = Inventory != null ? Inventory.ArtifactsFor(baseId) : new List<JObject>();
             if (artifacts.Count > 0)
             {
@@ -1318,6 +1325,42 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(note)) parts.Add(note);
             }
             return parts.Count > 0 ? string.Join(" · ", parts) : null;
+        }
+
+        /// <summary>
+        /// Итог пояса одной строкой: что он сейчас даёт и где потолок. Потолки
+        /// приходят с сервера вместе с эффектами; без них игрок не понимает,
+        /// почему четвёртая «Пружина» уже ничего не добавляет.
+        /// </summary>
+        public static string BeltTotalsLine(JObject effects)
+        {
+            if (effects == null) return string.Empty;
+            int count = (effects["artifactTypeIds"] as JArray)?.Count ?? 0;
+            if (count == 0) return "пояс пуст";
+            JObject caps = effects["caps"] as JObject;
+            var parts = new List<string>();
+            AddTotal(parts, "скорость", effects["speedPct"]?.Value<float>() ?? 0f, caps?["speedPct"]?.Value<float>() ?? 0f, true, string.Empty);
+            AddTotal(parts, "груз", effects["carryKg"]?.Value<float>() ?? 0f, caps?["carryKg"]?.Value<float>() ?? 0f, false, " кг");
+            AddTotal(parts, "регенерация", effects["regenHpPerSecond"]?.Value<float>() ?? 0f,
+                caps?["regenHpPerSecond"]?.Value<float>() ?? 0f, false, " HP/с");
+            AddTotal(parts, "ближний урон", effects["meleeDamagePct"]?.Value<float>() ?? 0f, 0f, true, string.Empty);
+            if (parts.Count == 0) return "артефактов на поясе: " + count;
+            return "пояс (" + count + "): " + string.Join(", ", parts);
+        }
+
+        private static void AddTotal(List<string> parts, string name, float value, float cap, bool percent, string unit)
+        {
+            if (Mathf.Abs(value) < 0.0005f) return;
+            string shown = percent
+                ? (value > 0f ? "+" : string.Empty) + Mathf.RoundToInt(value * 100f) + "%"
+                : (value > 0f ? "+" : string.Empty) + value.ToString("0.#") + unit;
+            if (cap > 0f)
+            {
+                shown += value >= cap - 0.0005f
+                    ? " (предел)"
+                    : " (до " + (percent ? "+" + Mathf.RoundToInt(cap * 100f) + "%" : "+" + cap.ToString("0.#") + unit) + ")";
+            }
+            parts.Add(name + " " + shown);
         }
 
         /// <summary>

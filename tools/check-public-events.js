@@ -274,7 +274,16 @@ for (const needle of [
   'function serverAdvancePublicEventScenario(',
   'function serverApplyPublicEventStrike(',
   'function serverSpawnPublicEventReinforcement(',
-  'if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;'
+  'if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;',
+  // Комната события, созданная заново после перезапуска, должна снова получить
+  // своих обитателей — иначе зачищать некого и тайник не открывается никогда.
+  'function serverEnsurePublicEventEncounter(room, now = Date.now()) {',
+  'if (room && serverEnsurePublicEventEncounter(room, now)) changed = true;',
+  'serverEnsurePublicEventEncounter(room, Date.now());',
+  'room.encounterSetupDone = false;',
+  // Ровно один раз на комнату: перебитое игроками логово не наполняется снова.
+  "if (String(room.publicEventEncounterId || '') === String(event.id || '')) return false;",
+  "room.publicEventEncounterId = String(event.id || '').slice(0, 64);"
 ]) assert(scenarioServer.includes(needle), `server.js must run the scenario mechanics: ${needle}`);
 
 console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

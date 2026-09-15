@@ -201,6 +201,24 @@ namespace RealmOfAshes.EditorTools
             Require(RoaLootCanvas.ArtifactRowSuffix(rowArtifact).Contains("стабилизирован"), "A stabilized instance says so");
             Require(RoaLootCanvas.ArtifactRowSuffix(null) == string.Empty, "An ordinary item keeps its plain row");
 
+            // Запертый сейф лаборатории: сложность, нужный навык и остаток
+            // заминки после неудачи приходят в снимке контейнера.
+            var safe = JObject.Parse(@"{'id':'labSafe','locked':true,'lockDifficultyLabel':'Сложный','lockRequiredSkill':75,
+                'terminalLocked':true,'terminalDifficultyLabel':'Средний','terminalRequiredSkill':55,
+                'terminalName':'Пульт секции','terminalUnlocksLock':true,'lockCooldownUntil':0,'terminalCooldownUntil':0}");
+            string lockLine = RoaInteraction.SecurityLine(safe, false, 1000L);
+            Require(lockLine.Contains("Замок: Сложный") && lockLine.Contains("нужен Взлом 75%"),
+                "A locked container names its difficulty and the skill it asks for: " + lockLine);
+            Require(!lockLine.Contains("до новой попытки"), "A lock that is not jammed promises no wait: " + lockLine);
+            string terminalLine = RoaInteraction.SecurityLine(safe, true, 1000L);
+            Require(terminalLine.Contains("«Пульт секции»") && terminalLine.Contains("нужна Наука 55%")
+                && terminalLine.Contains("снимет и замок"),
+                "A terminal names itself, its difficulty and what hacking it gives: " + terminalLine);
+            safe["lockCooldownUntil"] = 13000L;
+            Require(RoaInteraction.SecurityLine(safe, false, 1000L).Contains("Ещё 12 с до новой попытки"),
+                "A jammed lock says how long the wait is");
+            Require(RoaInteraction.SecurityLine(null, false, 0L) == string.Empty, "Without a container there is no security line");
+
             // Итог эффектов пояса: рядом с показателем назван его потолок,
             // а на самом потолке так и сказано.
             var beltEffects = JObject.Parse(@"{'artifactTypeIds':['spring','vein'],'speedPct':0.09,'apRegenPct':0.12,'carryKg':8,

@@ -240,9 +240,20 @@ namespace RealmOfAshes.Game
 
             if (locked || terminal)
             {
-                AddInfoRow(_leftList, terminal ? "Доступ защищён терминалом." : "Контейнер заперт.");
-                if (locked) AddActionRow(_leftList, "Взломать замок", () => Interaction.LootSecurity("pickLock"));
-                if (terminal) AddActionRow(_leftList, "Взломать терминал", () => Interaction.LootSecurity("hackTerminal"));
+                // Сложность, нужный навык и остаток заминки приходят в снимке
+                // контейнера: терминал стоит первым, потому что он гасит замок.
+                long nowMs = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                JObject state = Interaction.LootSecurityState;
+                if (terminal)
+                {
+                    AddInfoRow(_leftList, RoaInteraction.SecurityLine(state, true, nowMs), SecurityRowHeight);
+                    AddActionRow(_leftList, "Взломать терминал", () => Interaction.LootSecurity("hackTerminal"));
+                }
+                if (locked)
+                {
+                    AddInfoRow(_leftList, RoaInteraction.SecurityLine(state, false, nowMs), SecurityRowHeight);
+                    AddActionRow(_leftList, "Взломать замок", () => Interaction.LootSecurity("pickLock"));
+                }
                 _primaryButton.interactable = false;
                 return;
             }
@@ -336,14 +347,20 @@ namespace RealmOfAshes.Game
             row.GetComponent<Button>().onClick.AddListener(() => { onClick(); _refreshAt = Time.unscaledTime + 0.4f; });
         }
 
-        private void AddInfoRow(RectTransform list, string text)
+        private void AddInfoRow(RectTransform list, string text, float height = 30f)
         {
-            GameObject row = Row(list, 30f, false);
+            GameObject row = Row(list, height, false);
             Text label = Label("Text", (RectTransform)row.transform, 12, TextAnchor.MiddleLeft, InkDim);
             Place(label.rectTransform, 0f, 0f, 1f, 1f, new Vector2(6f, 0f), new Vector2(-6f, 0f));
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.text = text;
         }
+
+        /// <summary>
+        /// Строка защиты переносится на две строки: в ней и сложность, и навык,
+        /// и остаток заминки. Обычной тридцатки ей не хватает.
+        /// </summary>
+        public const float SecurityRowHeight = 34f;
 
         private GameObject Row(RectTransform list, float height, bool withButton)
         {

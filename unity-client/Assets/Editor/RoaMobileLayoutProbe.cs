@@ -91,6 +91,25 @@ namespace RealmOfAshes.EditorTools
                 Require(lastRowBottom <= hintTop,
                     "the faction rows of the contract window overlap its hint");
 
+                // --- строка защиты в окне контейнера -----------------------------------
+                // Колонка окна лута шириной 620 × 0,94 минус отступы прокрутки и
+                // самой строки: текст защиты обязан уместиться в свою строку.
+                var safe = JObject.Parse(@"{'locked':true,'lockDifficultyLabel':'Очень сложный','lockRequiredSkill':90,
+                    'terminalLocked':true,'terminalDifficultyLabel':'Очень сложный','terminalRequiredSkill':90,
+                    'terminalName':'Пульт аварийной секции','terminalUnlocksLock':true,
+                    'lockCooldownUntil':45000,'terminalCooldownUntil':45000}");
+                const float SecurityWidth = 620f * 0.94f - 8f - 12f;
+                foreach (bool asTerminal in new[] { false, true })
+                {
+                    string line = RoaInteraction.SecurityLine(safe, asTerminal, 1000L);
+                    float needed = TextHeight(host, line, 12, SecurityWidth);
+                    Debug.Log("[MOBILE LAYOUT] container security (" + (asTerminal ? "терминал" : "замок") + "): "
+                        + Mathf.CeilToInt(needed) + " / " + RoaLootCanvas.SecurityRowHeight + " px");
+                    Require(needed <= RoaLootCanvas.SecurityRowHeight,
+                        "the security line of a container does not fit its row — " + Mathf.CeilToInt(needed)
+                        + " px of text in a " + RoaLootCanvas.SecurityRowHeight + " px row: " + line);
+                }
+
                 // --- подсказка предмета (ПУТНИК) ---------------------------------------
                 // Ширина 280 с отступами 10, шрифт 11, высота растёт под текст —
                 // но не должна вылезти за экран телефона.
@@ -131,7 +150,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 Finish();
-                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window and item tooltip keep their text on desktop and on a landscape phone.");
+                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row and item tooltip keep their text on desktop and on a landscape phone.");
             }
             finally
             {

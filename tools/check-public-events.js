@@ -23,7 +23,10 @@ const items = new Set(JSON.parse(read('data/kromka/items.json')).items.map(row =
 assert(catalog.templates.length >= 4, 'At least four event templates.');
 assert.deepEqual(catalog.rules, {
   maxActive: 3, spawnIntervalMs: 900000, initialSpawnDelayMs: 60000, minLifetimeMs: 1800000, maxLifetimeMs: 2700000,
-  expiryWarningMs: 300000, chestOpenDelayMs: [45000, 60000], deathRejoinDelayMs: [60000, 90000], zoneRadius: 9
+  expiryWarningMs: 300000, chestOpenDelayMs: [45000, 60000], deathRejoinDelayMs: [60000, 90000], zoneRadius: 9,
+  // Вскрытие тайника: длительность канала, дистанция удержания и радиус, с
+  // которого чужой игрок останавливает прогресс.
+  chestChannelMs: 8000, chestChannelRangeM: 2.5, chestContestRangeM: 14
 });
 assert(catalog.templates.some(row => row.kind === 'raiderBase') && catalog.templates.some(row => row.kind === 'monsterLair'));
 for (const template of catalog.templates) {
@@ -93,9 +96,31 @@ assert(!events.publicEventChestOpen(lair, clearAt + 44999));
 const early = events.claimPublicEventChest(lair, 'char-a', clearAt + 10000);
 assert(!early.ok && early.opensInMs === 35000, 'The chest stays contested until it opens.');
 assert(events.publicEventChestOpen(lair, clearAt + 45000));
-assert(events.claimPublicEventChest(lair, 'char-a', clearAt + 45000).ok, 'The first to loot after opening takes it.');
-assert.equal(events.claimPublicEventChest(lair, 'char-b', clearAt + 45001).error, 'Тайник уже забрали.');
-assert.equal(events.publicEvent(lair, clearAt + 45001).chestClaimed, true);
+
+// Вскрытие — процесс: канал держат у тайника, чужие рядом ставят его на паузу,
+// уход или смерть сбрасывают прогресс, награду получает только завершивший.
+const openAt = clearAt + 45000;
+const rushed = events.claimPublicEventChest(lair, 'char-a', openAt, rules);
+assert(!rushed.ok && rushed.needsOpening, 'Without the opening channel the reward is not handed out.');
+assert(events.beginChestOpening(lair, { characterId: 'char-a', name: 'Первый' }, rules, openAt).ok);
+const busy = events.beginChestOpening(lair, { characterId: 'char-b', name: 'Второй' }, rules, openAt + 100);
+assert(!busy.ok && busy.busy, 'A second player cannot hijack an active channel.');
+let step = events.tickChestOpening(lair, { present: true, contested: true }, rules, openAt + 3000);
+assert(step.active && step.contested && step.progressMs === 0, 'An enemy nearby pauses the progress.');
+step = events.tickChestOpening(lair, { present: true, contested: false }, rules, openAt + 6000);
+assert(step.progressMs === 3000 && !step.done, 'Without enemies the channel advances.');
+step = events.tickChestOpening(lair, { present: false }, rules, openAt + 7000);
+assert(step.cancelled && !lair.chest.opening.characterId, 'Leaving the chest resets the channel.');
+assert(!events.claimPublicEventChest(lair, 'char-a', openAt + 7000, rules).ok, 'A broken channel gives nothing.');
+assert(events.beginChestOpening(lair, { characterId: 'char-a', name: 'Первый' }, rules, openAt + 8000).ok,
+  'After the reset the channel can be started again.');
+events.tickChestOpening(lair, { present: true, contested: false }, rules, openAt + 8000 + rules.chestChannelMs);
+assert.equal(lair.chest.opening.progressMs, rules.chestChannelMs, 'The full channel is accumulated.');
+assert(events.claimPublicEventChest(lair, 'char-a', openAt + 20000, rules).ok, 'The one who finished the channel takes the reward.');
+assert.equal(lair.chest.opening.characterId, '', 'A claimed chest closes its channel.');
+assert.equal(events.claimPublicEventChest(lair, 'char-b', openAt + 20001, rules).error, 'Тайник уже забрали.');
+assert(events.claimPublicEventChest(lair, 'char-a', openAt + 20002, rules).repeat, 'The owner may re-open his own chest.');
+assert.equal(events.publicEvent(lair, openAt + 20002).chestClaimed, true);
 
 // --- задержка возврата после смерти --------------------------------------------------
 const until = events.recordPublicEventDeath(lair, 'char-b', rules, clearAt, () => 0);
@@ -168,6 +193,10 @@ assert.equal(restoredEvent.boss.killedAt, t0 + 1000, 'The defeated boss stays de
 assert.equal(restoredEvent.chest.announced, true, 'An announced chest is not announced twice after a restart.');
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 for (const needle of [
+  "socket.on('publicEventAction'",
+  'function serverAdvanceChestOpening(',
+  "cancelChestOpening(event, player.characterId, 'death')",
+  "claimPublicEventChest(event, player?.characterId || '', now, KROMKA_PUBLIC_EVENT_CATALOG.rules)",
   'function serverEnsurePublicEventBoss(',
   'publicEventBossDefeated(event, template)',
   "if (room && event.cleared && !event.chest.claimedBy) serverSpawnPublicEventChest(room, event, now);"

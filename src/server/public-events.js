@@ -17,7 +17,10 @@ const DEFAULT_RULES = Object.freeze({
   expiryWarningMs: 300000,
   chestOpenDelayMs: [45000, 60000],
   deathRejoinDelayMs: [60000, 90000],
-  zoneRadius: 9
+  zoneRadius: 9,
+  chestChannelMs: 8000,
+  chestChannelRangeM: 2.5,
+  chestContestRangeM: 14,
 });
 
 function clamp(value, min, max) {
@@ -50,6 +53,11 @@ function normalizePublicEventRules(input = {}) {
     maxLifetimeMs: Math.max(minLifetimeMs, Math.floor(Number(src.maxLifetimeMs || DEFAULT_RULES.maxLifetimeMs))),
     expiryWarningMs: Math.max(10000, Math.floor(Number(src.expiryWarningMs || DEFAULT_RULES.expiryWarningMs))),
     chestOpenDelayMs: rangeMs(src.chestOpenDelayMs, DEFAULT_RULES.chestOpenDelayMs),
+    // Вскрытие тайника — процесс: держать канал столько миллисекунд, стоя не
+    // дальше chestChannelRangeM, пока рядом нет чужих (ближе chestContestRangeM).
+    chestChannelMs: Math.max(1000, Math.floor(Number(src.chestChannelMs ?? DEFAULT_RULES.chestChannelMs))),
+    chestChannelRangeM: clamp(Number(src.chestChannelRangeM ?? DEFAULT_RULES.chestChannelRangeM), 1, 12),
+    chestContestRangeM: clamp(Number(src.chestContestRangeM ?? DEFAULT_RULES.chestContestRangeM), 1, 40),
     deathRejoinDelayMs: rangeMs(src.deathRejoinDelayMs, DEFAULT_RULES.deathRejoinDelayMs),
     zoneRadius: clamp(Number(src.zoneRadius || DEFAULT_RULES.zoneRadius), 2, 28)
   };
@@ -144,7 +152,17 @@ function sanitizeEvent(input = {}) {
       opensAt: Math.max(0, Math.floor(Number(input?.chest?.opensAt || 0))),
       claimedAt: Math.max(0, Math.floor(Number(input?.chest?.claimedAt || 0))),
       claimedBy: cleanId(input?.chest?.claimedBy, 96),
-      announced: input?.chest?.announced === true
+      announced: input?.chest?.announced === true,
+      // Текущее вскрытие: кто держит канал, с какого момента и сколько уже
+      // накоплено. Переживает перезапуск, чтобы прогресс не дублировал награду.
+      opening: {
+        characterId: cleanId(input?.chest?.opening?.characterId, 96),
+        name: String(input?.chest?.opening?.name || '').slice(0, 64),
+        startedAt: Math.max(0, Math.floor(Number(input?.chest?.opening?.startedAt || 0))),
+        progressMs: Math.max(0, Math.floor(Number(input?.chest?.opening?.progressMs || 0))),
+        contested: input?.chest?.opening?.contested === true,
+        updatedAt: Math.max(0, Math.floor(Number(input?.chest?.opening?.updatedAt || 0)))
+      }
     },
     deaths,
     visits: Math.max(0, Math.floor(Number(input?.visits || 0)))
@@ -280,18 +298,103 @@ function publicEventChestOpen(event = {}, now = Date.now()) {
   return !!event?.cleared && Number(event.chest?.opensAt || 0) > 0 && Number(now) >= Number(event.chest.opensAt);
 }
 
-function claimPublicEventChest(event = {}, characterId = '', now = Date.now()) {
+function claimPublicEventChest(event = {}, characterId = '', now = Date.now(), rules = DEFAULT_RULES) {
+  const key = cleanId(characterId, 96);
+  if (event?.chest?.claimedBy === key && key) return { ok: true, repeat: true };
+  const gate = claimableChest(event, now);
+  if (!gate.ok) {
+    return event?.chest?.opensAt && !event?.chest?.claimedBy
+      ? { ...gate, opensInMs: Number(event.chest.opensAt) - Number(now) }
+      : gate;
+  }
+  // Награду получает только тот, кто довёл вскрытие до конца: одна выдача на
+  // событие, без гонки одновременных обращений.
+  const opening = event.chest.opening;
+  if (opening?.characterId !== key || Number(opening?.progressMs || 0) < Number(rules.chestChannelMs || DEFAULT_RULES.chestChannelMs)) {
+    return { ok: false, error: 'Сначала вскройте тайник: держите канал рядом с ним.', needsOpening: true };
+  }
+  event.chest.claimedBy = key;
+  event.chest.claimedAt = Number(now);
+  cancelChestOpening(event, key, 'claimed');
+  return { ok: true };
+}
+
+/**
+ * Начать вскрытие тайника. Канал держит один игрок; чужая попытка перехватывает
+ * его только если прежний бросил канал (ушёл, погиб, отменил).
+ */
+function beginChestOpening(event = {}, opener = {}, rules = DEFAULT_RULES, now = Date.now()) {
+  const key = cleanId(opener?.characterId, 96);
+  if (!key) return { ok: false, error: 'Персонаж недоступен.' };
+  const gate = claimableChest(event, now);
+  if (!gate.ok) return gate;
+  const opening = event.chest.opening;
+  if (opening.characterId && opening.characterId !== key) {
+    return { ok: false, error: `Тайник уже вскрывает ${opening.name || 'другой игрок'}.`, busy: true };
+  }
+  if (opening.characterId === key) return { ok: true, already: true, opening };
+  event.chest.opening = {
+    characterId: key,
+    name: String(opener?.name || '').slice(0, 64),
+    startedAt: Number(now),
+    progressMs: 0,
+    contested: false,
+    updatedAt: Number(now)
+  };
+  return { ok: true, opening: event.chest.opening };
+}
+
+/** Тайник доступен для вскрытия: событие живо, зачищено, открыто и не забрано. */
+function claimableChest(event = {}, now = Date.now()) {
   if (!event || event.status === 'expired') return { ok: false, error: 'Событие уже завершилось.' };
   if (!event.cleared) return { ok: false, error: 'Сначала зачистите логово.' };
   if (!publicEventChestOpen(event, now)) {
-    return { ok: false, error: `Тайник откроется через ${Math.ceil((Number(event.chest.opensAt) - Number(now)) / 1000)} с.`, opensInMs: Number(event.chest.opensAt) - Number(now) };
+    return { ok: false, error: `Тайник откроется через ${Math.ceil((Number(event.chest.opensAt) - Number(now)) / 1000)} с.` };
   }
-  const key = cleanId(characterId, 96);
-  if (event.chest.claimedBy && event.chest.claimedBy !== key) return { ok: false, error: 'Тайник уже забрали.' };
-  if (event.chest.claimedBy === key) return { ok: true, repeat: true };
-  event.chest.claimedBy = key;
-  event.chest.claimedAt = Number(now);
+  if (event.chest.claimedBy) return { ok: false, error: 'Тайник уже забрали.' };
   return { ok: true };
+}
+
+/** Сбросить канал: уход, смерть или отмена. Прогресс не сохраняется. */
+function cancelChestOpening(event = {}, characterId = '', reason = '') {
+  const opening = event?.chest?.opening;
+  if (!opening?.characterId) return false;
+  const key = cleanId(characterId, 96);
+  if (key && opening.characterId !== key) return false;
+  event.chest.opening = {
+    characterId: '', name: '', startedAt: 0, progressMs: 0, contested: false, updatedAt: 0
+  };
+  void reason;
+  return true;
+}
+
+/**
+ * Шаг вскрытия. Прогресс идёт, пока игрок стоит у тайника и рядом нет чужих;
+ * присутствие противника ставит его на паузу, уход или смерть сбрасывают.
+ * Возвращает состояние и признак завершения — награду выдаёт сервер.
+ */
+function tickChestOpening(event = {}, options = {}, rules = DEFAULT_RULES, now = Date.now()) {
+  const opening = event?.chest?.opening;
+  if (!opening?.characterId) return { active: false, changed: false };
+  const changedBefore = `${opening.progressMs}:${opening.contested}`;
+  if (options.present !== true) {
+    cancelChestOpening(event, opening.characterId, 'left');
+    return { active: false, changed: true, cancelled: true, reason: 'left' };
+  }
+  const contested = options.contested === true;
+  const elapsed = Math.max(0, Number(now) - Math.max(Number(opening.updatedAt || opening.startedAt || now), 0));
+  if (!contested) opening.progressMs = Math.min(rules.chestChannelMs, Number(opening.progressMs || 0) + elapsed);
+  opening.contested = contested;
+  opening.updatedAt = Number(now);
+  const done = Number(opening.progressMs || 0) >= rules.chestChannelMs;
+  return {
+    active: true,
+    changed: changedBefore !== `${opening.progressMs}:${opening.contested}`,
+    contested,
+    done,
+    progressMs: Number(opening.progressMs || 0),
+    characterId: opening.characterId
+  };
 }
 
 // Смерть внутри события: вернуться можно только через 60–90 с.
@@ -411,6 +514,10 @@ function publicEventZone(event = {}, rules = DEFAULT_RULES, worldHour = 0) {
 }
 
 module.exports = {
+  beginChestOpening,
+  cancelChestOpening,
+  claimableChest,
+  tickChestOpening,
   notePublicEventBoss,
   publicEventBossDefeated,
   DEFAULT_RULES,

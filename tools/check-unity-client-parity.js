@@ -238,6 +238,7 @@ const unityOnlyKromkaEmits = [
   'personalBaseAction',
   'playerTradeAction',
   'pickupArtifact',
+  'publicEventAction',
   'pveAreaAction',
   'requestArtifactState',
   'requestKromkaClanState',

@@ -29,6 +29,8 @@ namespace RealmOfAshes.Game
         private Text _text;
         private Button _tracksButton;
         private Text _tracksLabel;
+        private Button _openChestButton;
+        private Text _openChestLabel;
         private JObject _territory;
         private JObject _publicEvent;
         private JObject _worldBoss;
@@ -150,6 +152,7 @@ namespace RealmOfAshes.Game
             _text.text = string.Join("\n", lines);
             _text.color = (_worldBoss != null && _worldBoss["pulseTelegraph"]?.Value<bool>() == true)
                 || (_publicEvent != null && _publicEvent["warning"]?.Value<bool>() == true) ? Warn : Ink;
+            RefreshChestButton(roomId);
             bool tracks = _pveArea != null && _pveArea["roomId"]?.ToString() == roomId;
             _tracksButton.gameObject.SetActive(tracks);
             if (tracks)
@@ -159,6 +162,45 @@ namespace RealmOfAshes.Game
                     + (ready > 0 ? " · " + ready + " с" : string.Empty);
                 _tracksButton.interactable = ready <= 0;
             }
+        }
+
+        private void RefreshChestButton(string roomId)
+        {
+            if (_openChestButton == null) return;
+            bool mine = _publicEvent != null && _publicEvent["roomId"]?.ToString() == roomId;
+            bool open = mine && _publicEvent["chestOpen"]?.Value<bool>() == true
+                && _publicEvent["chestClaimed"]?.Value<bool>() != true;
+            if (_openChestButton.gameObject.activeSelf != open) _openChestButton.gameObject.SetActive(open);
+            if (!open) return;
+            _openChestLabel.text = ChestButtonLabel(_publicEvent["chestOpening"] as JObject);
+        }
+
+        /// <summary>Надпись кнопки вскрытия: доля канала и причина паузы.</summary>
+        public static string ChestButtonLabel(JObject opening)
+        {
+            long channel = opening?["channelMs"]?.Value<long>() ?? 0L;
+            long progress = opening?["progressMs"]?.Value<long>() ?? 0L;
+            string holder = opening?["characterId"]?.ToString();
+            if (string.IsNullOrEmpty(holder) || channel <= 0) return "ВСКРЫТЬ ТАЙНИК";
+            int percent = Mathf.Clamp(Mathf.RoundToInt(progress * 100f / Mathf.Max(1f, channel)), 0, 100);
+            return opening?["contested"]?.Value<bool>() == true
+                ? "ВСКРЫТИЕ " + percent + "% · ОСПАРИВАЕТСЯ"
+                : "ВСКРЫТИЕ " + percent + "%";
+        }
+
+        private void OpenEventChest()
+        {
+            if (_socket == null || _socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return;
+            _socket.EmitWithAck("publicEventAction", new Dictionary<string, object> { ["action"] = "open" }, ack =>
+            {
+                if (ack == null) return;
+                if (ack["ok"]?.Value<bool>() == true)
+                {
+                    if (ack["event"] is JObject updated) _publicEvent = updated;
+                    if (ack["opening"] is JObject opening && _publicEvent != null) _publicEvent["chestOpening"] = opening;
+                }
+                else if (_text != null) _text.text = ack["error"]?.ToString() ?? _text.text;
+            });
         }
 
         private void SearchTracks()
@@ -382,6 +424,22 @@ namespace RealmOfAshes.Game
             _tracksLabel = CreateText("Label", br, mobile ? 12 : 14, TextAnchor.MiddleCenter, Calm);
             Stretch(_tracksLabel.rectTransform, 4);
             _tracksButton.gameObject.SetActive(false);
+
+            // Вскрытие тайника события: канал держится, пока игрок стоит у сундука.
+            GameObject chestButton = new GameObject("OpenChest", typeof(RectTransform), typeof(Image), typeof(Button));
+            chestButton.transform.SetParent(_canvas.transform, false);
+            RectTransform cr = (RectTransform)chestButton.transform;
+            cr.anchorMin = new Vector2(1, 1);
+            cr.anchorMax = new Vector2(1, 1);
+            cr.pivot = new Vector2(1, 1);
+            cr.anchoredPosition = mobile ? new Vector2(-12, -218) : new Vector2(-16, -280);
+            cr.sizeDelta = mobile ? new Vector2(180, 30) : new Vector2(220, 34);
+            chestButton.GetComponent<Image>().color = new Color(0.3f, 0.22f, 0.08f, 0.95f);
+            _openChestButton = chestButton.GetComponent<Button>();
+            _openChestButton.onClick.AddListener(OpenEventChest);
+            _openChestLabel = CreateText("Label", cr, mobile ? 12 : 14, TextAnchor.MiddleCenter, Calm);
+            Stretch(_openChestLabel.rectTransform, 4);
+            _openChestButton.gameObject.SetActive(false);
             _panel.SetActive(false);
         }
 

@@ -258,6 +258,13 @@ for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAr
   const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
   assert(presentation.includes('int toRoll = payload["distanceToRollM"]?.Value<int>() ?? 0;'),
     'The area line must say how far the party still has to walk.');
+  // Проверка требует обоих условий: пройденного пути и выдержанного интервала.
+  // Прошедший свою долю отряд иначе стоит в тишине и не знает, чего ждёт.
+  assert(view.nextRollInSeconds > 0, 'A fresh area waits out its interval before the first roll.');
+  assert(presentation.includes('int nextRoll = Math.Max(0, (payload["nextRollInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);'),
+    'The area line must say how long the party still waits for the roll.');
+  assert(presentation.includes('sb.Append(" · проверка через ").Append(nextRoll).Append(" с");'),
+    'The waiting time must reach the panel.');
 }
 
 console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);

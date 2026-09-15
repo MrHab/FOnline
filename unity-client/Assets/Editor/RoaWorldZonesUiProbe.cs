@@ -118,6 +118,13 @@ namespace RealmOfAshes.EditorTools
             pve["distanceToRollM"] = 0;
             Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0).Contains("идти ещё"),
                 "A party that has walked its share is not nagged");
+            // Проверке нужен и путь, и выдержанный интервал: прошедший свою
+            // долю отряд должен знать, чего он ждёт.
+            pve["nextRollInSeconds"] = 12;
+            string waiting = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
+            Require(waiting.Contains("проверка через 12 с"), "The area says what the party is waiting for: " + waiting);
+            Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 12).Contains("проверка через"),
+                "The countdown runs out with the local clock");
 
             Require(RoaWorldEventsPresentation.Clock(754) == "12:34", "Clock formatting");
 

@@ -578,7 +578,15 @@ namespace RealmOfAshes.Game
             // области, проверки не будет. Без этой строки тишина выглядит
             // поломкой, а не правилом.
             int toRoll = payload["distanceToRollM"]?.Value<int>() ?? 0;
-            if (calm <= 0 && toRoll > 0) sb.Append(" · идти ещё ").Append(toRoll).Append(" м");
+            // Проверка требует и пройденного пути, и выдержанного интервала.
+            // Пока показывали только путь, прошедший его отряд стоял в тишине
+            // и не понимал, чего ждёт.
+            int nextRoll = Math.Max(0, (payload["nextRollInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);
+            if (calm <= 0)
+            {
+                if (toRoll > 0) sb.Append(" · идти ещё ").Append(toRoll).Append(" м");
+                if (nextRoll > 0) sb.Append(" · проверка через ").Append(nextRoll).Append(" с");
+            }
             string last = payload["lastResultLabel"]?.ToString();
             if (!string.IsNullOrEmpty(last)) sb.Append('\n').Append(last);
             return sb.ToString();

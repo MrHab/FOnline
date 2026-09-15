@@ -126,6 +126,21 @@ namespace RealmOfAshes.EditorTools
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabAlloy") == string.Empty, "Another hall's state is not shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(null, "coreLabCircuit") == string.Empty, "Without a hall the line stays empty");
 
+            // Переход со сменой правил зоны: первое нажатие предупреждает,
+            // второе входит. Мирные переходы не переспрашивают.
+            var coreRules = JObject.Parse(@"{'mode':'pvpFullDrop','label':'Сердцевина','loss':'inventory',
+                'lossLabel':'Выпадает рюкзак; экипировка и артефакты остаются.','pvpLabel':'PvP разрешено между разными фракциями.',
+                'confirmBeforeEntry':true}");
+            Require(RoaInteraction.TransitionNeedsConfirmation(coreRules, string.Empty), "Entering the territory asks for confirmation");
+            Require(!RoaInteraction.TransitionNeedsConfirmation(coreRules, "pvpFullDrop"), "The already acknowledged mode does not ask twice");
+            string warning = RoaInteraction.TransitionZoneWarning(coreRules, "Платформа метро");
+            Require(warning.Contains("Платформа метро") && warning.Contains("Выпадает рюкзак") && warning.Contains("Нажмите ещё раз"),
+                "The warning names the transition, the loss and how to continue: " + warning);
+            var peacefulRules = JObject.Parse(@"{'mode':'peaceful','label':'Мирная зона','loss':'none','confirmBeforeEntry':false}");
+            Require(!RoaInteraction.TransitionNeedsConfirmation(peacefulRules, string.Empty), "A peaceful transition does not ask");
+            Require(!RoaInteraction.TransitionNeedsConfirmation(null, string.Empty), "Without rules the transition works as before");
+            Require(RoaInteraction.TransitionZoneWarning(null, "Выход") == string.Empty, "Without rules there is no warning");
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);
@@ -175,7 +190,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, artifact tier cards, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

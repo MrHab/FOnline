@@ -3954,8 +3954,28 @@ function kromkaLocationLore(locationId = '') {
     .find(row => String(row?.id || '') === String(locationId || '')) || null;
 }
 
+/**
+ * Правила зоны за переходом: клиент показывает их до входа, чтобы смена
+ * режима (мирная база → Сердцевина → лаборатория) не случалась молча.
+ */
+function serverTransitionZoneRules(row = {}) {
+  const target = LOCATIONS[normalizeLocationId(row?.to || '')];
+  if (!target) return null;
+  return zoneRules(locationPvpMode(target), serverZoneRulesExtra(target));
+}
+
 function kromkaPublicLocationDefinition(location = {}) {
   const next = transformKromkaPublicValue(location);
+  if (Array.isArray(next.transitions)) {
+    next.transitions = next.transitions.map(row => {
+      const rules = serverTransitionZoneRules(row);
+      return rules ? { ...row, targetPvpMode: rules.mode, targetZoneRules: rules } : row;
+    });
+  }
+  if (next.exit && next.exit.to) {
+    const rules = serverTransitionZoneRules(next.exit);
+    if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
+  }
   const lore = kromkaLocationLore(next.id);
   const node = kromkaGlobalNode(next.id);
   if (lore?.displayName) next.name = lore.displayName;

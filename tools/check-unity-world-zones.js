@@ -57,6 +57,23 @@ const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 assert(interaction.includes('public string NpcService') && interaction.includes('public string NpcTerritoryFactionId'),
   'RoaInteraction must expose the NPC service.');
 
+// Смена правил зоны на местном переходе (база → Сердцевина → лаборатория)
+// предупреждается до входа, а не после прибытия.
+for (const token of [
+  'public static bool TransitionNeedsConfirmation(JObject rules, string acknowledgedMode)',
+  'public static string TransitionZoneWarning(JObject rules, string label)',
+  '["targetZoneRules"] = transition.TargetZoneRules != null',
+  'if (TransitionNeedsConfirmation(targetRules, _acknowledgedZoneMode)'
+]) assert(interaction.includes(token), `RoaInteraction must warn about the zone behind a transition: ${token}`);
+const locationModel = read('unity-client/Assets/Scripts/World/RoaLocationData.cs');
+for (const token of ['[JsonProperty("targetPvpMode")] public string TargetPvpMode;',
+  '[JsonProperty("targetZoneRules")] public JObject TargetZoneRules;'])
+  assert(locationModel.includes(token), `LocationTransition must carry the rules of the zone behind it: ${token}`);
+assert(read('server.js').includes('function serverTransitionZoneRules(row = {}) {'),
+  'The server must publish the rules of the zone behind every transition.');
+assert(read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs').includes('RoaInteraction.TransitionNeedsConfirmation('),
+  'The editor probe must cover the transition warning.');
+
 const inventory = read('unity-client/Assets/Scripts/Game/RoaInventory.cs');
 assert(inventory.includes('Socket.EmitWithAck("salvageArtifact", payload, onAck)'), 'Salvage must reach the server.');
 for (const file of ['RoaTerritoryNet.cs', 'RoaPveAreaNet.cs', 'RoaAuctionNet.cs'])

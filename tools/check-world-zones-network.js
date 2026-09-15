@@ -89,6 +89,13 @@ const getJson = route => new Promise((resolve, reject) => {
   technician.serverLocationContext = { locationId: 'coreLabCircuit' };
   technician.territoryFaction = membership('uprava');
 
+  // Второй член фракции в той же лаборатории: подземелья общие, личных копий
+  // наград там нет — обоих ждёт одна комната и одни сейфы.
+  const rival = stateFor('strictAp');
+  rival.currentLocationId = 'coreLabCircuit';
+  rival.serverLocationContext = { locationId: 'coreLabCircuit' };
+  rival.territoryFaction = membership('contour');
+
   // Член «Управы» внутри установки «Объекта Ноль».
   const raider = stateFor('progression');
   raider.currentLocationId = 'coreLabCenterReactor';
@@ -121,6 +128,21 @@ const getJson = route => new Promise((resolve, reject) => {
   assert.equal(membershipState.membership.changeLocked, true, 'The 72-hour change cooldown is reported.');
   const forbidden = await h.socketAck(accounts.target.socket, 'changeLocation', { locationId: 'coreBaseUprava' });
   assert(!forbidden.ok && forbidden.zoneRules, 'A foreign base rejects entry and still explains the zone rules.');
+  // Правила зоны за переходом приходят вместе с самим переходом: клиент
+  // предупреждает до входа, а не после прибытия.
+  const definitions = await getJson('/api/locations');
+  assert.equal(definitions.status, 200);
+  const baseDefinition = definitions.json.locations.coreBaseUprava;
+  const metro = (baseDefinition.transitions || []).find(row => row.id === 'metro_platform');
+  assert(metro && metro.targetZoneRules, 'The metro platform carries the rules of the zone behind it: ' + JSON.stringify(metro || {}).slice(0, 200));
+  assert.equal(metro.targetPvpMode, 'pvpFullDrop');
+  assert.equal(metro.targetZoneRules.confirmBeforeEntry, true, 'The territory asks for confirmation before entry.');
+  assert(String(metro.targetZoneRules.lossLabel || '').length > 0, 'The rules explain what is lost on death.');
+  const labDoor = (definitions.json.locations.coreZone.transitions || []).find(row => row.id === 'enter_coreLabSprout');
+  assert.equal(labDoor.targetZoneRules.mode, 'pvpFullDrop', 'A laboratory inherits the rules of the territory.');
+  const settlementExit = (definitions.json.locations.settlement.transitions || [])
+    .find(row => row.targetZoneRules && row.targetZoneRules.mode === 'peaceful');
+  if (settlementExit) assert.equal(settlementExit.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
   console.log('PASS territory membership on reconnect and transitions');
 
   // --- контракт наёмника у ворот Сердцевины -----------------------------------------
@@ -297,7 +319,19 @@ const getJson = route => new Promise((resolve, reject) => {
     + JSON.stringify(byName('Складень').map(row => row.maxHp)));
   assert(byName('Выжженный').some(row => row.maxHp === 87), 'The second inner guard is reinforced too: '
     + JSON.stringify(byName('Выжженный').map(row => row.maxHp)));
-  console.log('PASS laboratory hall snapshot, node range and the dangerous inner section');
+  // Лаборатория — общая реальность: второй игрок, пусть даже из другой
+  // фракции, попадает в ту же комнату и видит те же контейнеры.
+  await h.connectAndJoin(accounts.strictAp);
+  assert.equal(accounts.strictAp.join.locationId, 'coreLabCircuit');
+  assert.equal(accounts.strictAp.join.roomId, accounts.modification.join.roomId,
+    'Two players share one laboratory room: ' + accounts.strictAp.join.roomId + ' vs ' + accounts.modification.join.roomId);
+  const mine = (accounts.modification.join.worldState.containers || []).map(row => row.id).sort();
+  const theirs = (accounts.strictAp.join.worldState.containers || []).map(row => row.id).sort();
+  assert(mine.length >= 3 && theirs.length >= 3, 'The laboratory keeps its safes: ' + JSON.stringify(mine));
+  assert.deepEqual(theirs, mine, 'Both players see the same safes, not personal copies.');
+  assert.equal(accounts.strictAp.join.worldState.labHall?.roomId, accounts.modification.join.worldState.labHall?.roomId,
+    'The hall threat is shared by the room, not owned by a player.');
+  console.log('PASS laboratory hall snapshot, node range, the dangerous inner section and the shared room');
 
   // --- награда побеждённого босса переживает перезапуск -------------------------------------------
   for (const account of Object.values(accounts)) h.closeSocket(account);

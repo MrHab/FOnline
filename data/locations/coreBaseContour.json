@@ -778,6 +778,42 @@
       "worldRevision": "kromka-1"
     },
     {
+      "id": "bunk_10",
+      "model": "cotBed",
+      "name": "Койка казармы",
+      "position": {
+        "x": -28,
+        "y": 0,
+        "z": -22
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-base",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
       "id": "command",
       "model": "wastelandShack",
       "name": "Штаб: Узел Контура",

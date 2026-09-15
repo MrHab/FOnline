@@ -93,6 +93,9 @@ namespace RealmOfAshes.Game
             public RoaEquipmentView CreatureEquipment;
             public Dictionary<string, Transform> CreatureBones;
 
+            /// <summary>Локальный срок показа реплики, вычисленный из speechMs снимка.</summary>
+            public long SpeechUntilMs;
+
             public Vector3 TargetPosition;
             public Vector3 Velocity;
             public Vector3 PresentationVelocity;
@@ -1143,6 +1146,15 @@ namespace RealmOfAshes.Game
             enemy.ActivityRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
             enemy.Hp = resolvedDead ? 0 : nextHp;
             enemy.Snapshot = (JObject)row.DeepClone();
+            // Сервер присылает speechMs — сколько реплике осталось висеть, и делает
+            // это заново в каждом снимке. Клиент же читал speechUntil, которого в
+            // протоколе нет вовсе, поэтому пузыри NPC не показывались никогда.
+            // Переводим остаток в локальный срок при получении снимка.
+            long speechMs = row["speechMs"]?.ToObject<long>() ?? 0L;
+            string speechLine = row["speechText"]?.ToString();
+            enemy.SpeechUntilMs = speechMs > 0 && !string.IsNullOrWhiteSpace(speechLine)
+                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + speechMs
+                : 0L;
             enemy.Snapshot["dead"] = resolvedDead;
             enemy.Snapshot["moving"] = enemy.Moving;
             if (resolvedDead) enemy.Snapshot["hp"] = 0;
@@ -1952,7 +1964,7 @@ namespace RealmOfAshes.Game
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
                 string speech = enemy.Snapshot["speechText"]?.ToString()?.Trim();
                 if (string.IsNullOrEmpty(speech)) continue;
-                long until = enemy.Snapshot["speechUntil"]?.ToObject<long>() ?? 0L;
+                long until = enemy.SpeechUntilMs;
                 if (until <= now) continue;
                 float opacity = Mathf.Clamp01((until - now) / 420f);
                 float rawScale = Value(enemy.Snapshot, "scale");

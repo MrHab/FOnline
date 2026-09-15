@@ -75,7 +75,12 @@ find "$CLIENT/Assets/Scripts" "$CLIENT/Assets/Editor" -name "*.cs" \
 echo "Компилирую $(wc -l < "$WORK/sources.rsp") файлов..."
 
 # CS1701 — расхождение версии netstandard у Newtonsoft. Unity его тоже гасит.
+# UNITY_EDITOR обязателен: без него файлы под "#if UNITY_EDITOR" компилируются
+# пустыми, и каждая ссылка на их классы превращается в CS0103 — проверка выдаёт
+# десятки несуществующих ошибок в чужих файлах. В compile-check.ps1 символ
+# определён с самого начала, здесь его не хватало.
 "$DOTNET" "$CSC" -nologo -target:library -langversion:9 -nostdlib+ -noconfig \
+  -define:UNITY_EDITOR \
   -nowarn:1701 -out:"$WORK/RoaCompileCheck.dll" \
   "@$WORK/refs.rsp" "@$WORK/sources.rsp"
 

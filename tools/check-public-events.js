@@ -286,4 +286,26 @@ for (const needle of [
   "room.publicEventEncounterId = String(event.id || '').slice(0, 64);"
 ]) assert(scenarioServer.includes(needle), `server.js must run the scenario mechanics: ${needle}`);
 
+// --- несколько подходов к цели ---------------------------------------------------
+// У каждого сценария не меньше двух опор, и они стоят с разных сторон: отряд
+// выбирает, с какой заходить, а не идёт одним коридором.
+for (const template of catalog.templates) {
+  const supports = template.mechanics?.supports || [];
+  assert(supports.length >= 2, `${template.id}: the objective must be approachable from more than one side`);
+  const sides = new Set(supports.map(row => scenarios.supportSide(row.x, row.z)));
+  assert(sides.size >= 2, `${template.id}: the supports must stand on different sides, got ${[...sides].join(', ')}`);
+  for (const row of supports) {
+    assert(Math.hypot(Number(row.x || 0), Number(row.z || 0)) >= 4,
+      `${template.id}/${row.id}: a support next to the objective gives no approach to choose`);
+  }
+  const view = scenarios.publicScenario(scenarios.normalizeScenarioState({}), template.mechanics, { x: 0, z: 0 }, 0);
+  assert.equal(view.supports.length, supports.length);
+  for (const row of view.supports) assert(row.side, `${template.id}/${row.id}: the snapshot names the side of the support`);
+}
+{
+  const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
+  assert(presentation.includes('string side = row["side"]?.ToString();'),
+    'The event line must name the side of every intact support.');
+}
+
 console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

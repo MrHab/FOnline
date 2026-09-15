@@ -65,6 +65,17 @@ namespace RealmOfAshes.EditorTools
                 "A telegraphed strike shouts");
             Require(RoaWorldEventsPresentation.ScenarioLine(null) == string.Empty, "Without a scenario the line stays empty");
 
+            // Стороны опор: отряд видит, с какой стороны что стоит, и выбирает
+            // подход, а не идёт одним коридором.
+            var sided = JObject.Parse(@"{'supports':[{'id':'a','displayName':'Гнездо','alive':true,'side':'северо-восток'},
+                {'id':'b','displayName':'Нора','alive':true,'side':'юго-запад'}]}");
+            string sidedLine = RoaWorldEventsPresentation.ScenarioLine(sided);
+            Require(sidedLine.Contains("Гнездо (северо-восток)") && sidedLine.Contains("Нора (юго-запад)"),
+                "Each intact support names its side: " + sidedLine);
+            var sideless = JObject.Parse(@"{'supports':[{'id':'a','displayName':'Гнездо','alive':true}]}");
+            Require(RoaWorldEventsPresentation.ScenarioLine(sideless).Contains("цело: Гнездо"),
+                "An old server without sides still renders");
+
             // Вскрытие тайника: кнопка показывает долю канала и паузу при чужих.
             Require(RoaWorldEventsPresentation.ChestButtonLabel(null) == "ВСКРЫТЬ ТАЙНИК",
                 "Without an active channel the button offers to start it");

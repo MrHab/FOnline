@@ -207,6 +207,14 @@ const {
   worldBossHazards
 } = require('./src/server/world-boss');
 const {
+  noteSupportDestroyed: noteScenarioSupportDestroyed,
+  publicScenario,
+  scenarioBossShielded,
+  scenarioHazards,
+  supportAlive: scenarioSupportAlive,
+  tickScenario
+} = require('./src/server/public-event-scenarios');
+const {
   beginChestOpening,
   cancelChestOpening,
   claimPublicEventChest,
@@ -19280,6 +19288,9 @@ function serverEmitWorldBossState(room, extra = {}, now = Date.now()) {
 
 // Урон по боссу проходит только в фазе уязвимости; узлы щита — обычные цели.
 function serverWorldBossDamageAfterShield(room, enemy, damage = 0) {
+  // Главарь публичного события под защитным генератором урона не получает:
+  // сначала ломают опору сценария.
+  if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;
   if (!enemy?.worldBossId || !room?.worldBossState) return damage;
   return Math.max(0, Math.round(Number(damage || 0) * bossDamageMultiplier(room.worldBossState)));
 }
@@ -19495,8 +19506,15 @@ function serverSyncPublicEventZone(event) {
 function serverPublicEventPayload(event, now = Date.now(), extra = {}) {
   // Имя мини-босса берётся из шаблона сценария: игрок видит, кого искать.
   const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  const room = rooms.get(String(event?.roomId || ''));
+  const boss = room ? [...(room.enemies?.values?.() || [])].find(enemy => enemy?.publicEventBossId === event.id) : null;
   return {
     ...publicPublicEvent(event, now, KROMKA_PUBLIC_EVENT_CATALOG.rules, { bossName: template?.boss?.displayName || '' }),
+    // Механики сценария: что ещё цело, когда прилетит удар и где горит земля.
+    scenario: template?.mechanics
+      ? publicScenario(event.scenario, template.mechanics,
+        boss ? { x: Number(boss.x || 0), z: Number(boss.z || 0) } : { x: 0, z: 0 }, now)
+      : null,
     ...extra,
     t: now
   };
@@ -19657,6 +19675,178 @@ function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
   return notePublicEventBoss(event, { spawned: true });
 }
 
+/**
+ * Опоры сценария: защитный генератор, радиостанция, гнёзда. Это разрушаемые
+ * объекты без собственной агрессии; пока цела опора-щит, главарь неуязвим, а
+ * пока целы опоры-подкрепления, событие вызывает новых бойцов.
+ */
+function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  const supports = template?.mechanics?.supports || [];
+  if (!room || !event || !supports.length) return false;
+  let changed = false;
+  for (const support of supports) {
+    const actor = [...(room.enemies?.values?.() || [])]
+      .find(enemy => enemy?.publicEventSupportId === support.id && enemy?.publicEventId === event.id);
+    if (actor) {
+      if (actor.dead && noteScenarioSupportDestroyed(event.scenario, support.id)) {
+        changed = true;
+        serverEmitPublicEventState(event, { supportDestroyed: support.id }, now);
+      }
+      continue;
+    }
+    if (!scenarioSupportAlive(event.scenario, support.id)) continue;
+    if (event.scenario.spawned === true) continue;
+    const dims = roomTileDims(room);
+    const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+    const world = tileToWorld(center.tx, center.tz, dims);
+    const tile = worldToTile(world.x + Number(support.x || 0), world.z + Number(support.z || 0), dims);
+    const spot = findRoomSafeSpawnTile(room, clamp(tile.tx, 1, dims.w - 2), clamp(tile.tz, 1, dims.h - 2),
+      { maxRadius: 6, radius: 0.7, minEnemyDistance: 0.8, minPlayerDistance: 6 })
+      || { tx: clamp(tile.tx, 1, dims.w - 2), tz: clamp(tile.tz, 1, dims.h - 2) };
+    const structure = spawnEncounterActor(room, spot.tx, spot.tz, {
+      faction: template.kind === 'raiderBase' ? 'raiders' : 'monsters',
+      role: 'monster',
+      species: 'structure',
+      modelKey: support.modelKey || 'scrapHeap',
+      hostileToPlayer: false,
+      stationary: true,
+      canDialogue: false,
+      name: support.displayName,
+      hp: support.hp
+    });
+    if (!structure) continue;
+    structure.publicEventSupportId = support.id;
+    structure.publicEventId = event.id;
+    structure.atk = 0;
+    structure.visionRange = 0;
+    changed = true;
+  }
+  if (changed || event.scenario.spawned !== true) {
+    event.scenario.spawned = true;
+    room.structureDirty = true;
+  }
+  return changed;
+}
+
+/**
+ * Шаг сценария в комнате: обозначенный удар, сам удар по объявленной точке,
+ * подкрепления от целых опор и урон от опасной земли.
+ */
+function serverAdvancePublicEventScenario(room, event, now = Date.now()) {
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  if (!room || !event || !template?.mechanics) return false;
+  const boss = [...(room.enemies?.values?.() || [])].find(enemy => enemy?.publicEventBossId === event.id);
+  const players = [...livePlayersInRoom(room)].filter(row => row && !row.dead && Number(row.hp || 0) > 0);
+  const events = tickScenario(event.scenario, template.mechanics, {
+    bossAlive: !!boss && !boss.dead,
+    hostilesAlive: serverPublicEventHostilesAlive(room),
+    pickTarget: () => {
+      if (!players.length) return null;
+      const pick = players[Math.floor((room.rng || Math.random)() * players.length) % players.length];
+      return { x: Number(pick.x || 0), z: Number(pick.z || 0) };
+    }
+  }, now);
+  for (const row of events) {
+    if (row.type === 'strikeTelegraph') {
+      serverEmitPublicEventState(event, {
+        strikeTelegraph: { kind: row.kind, displayName: row.displayName, x: row.x, z: row.z, radius: row.radius }
+      }, now);
+      continue;
+    }
+    if (row.type === 'strike') {
+      const hit = serverApplyPublicEventStrike(room, row, now);
+      serverEmitPublicEventState(event, {
+        strike: { kind: row.kind, displayName: row.displayName, x: row.x, z: row.z, radius: row.radius, hit }
+      }, now);
+      continue;
+    }
+    if (row.type === 'reinforcement') serverSpawnPublicEventReinforcement(room, event, row, now);
+  }
+  // Опасная земля бьёт вместе с ударом: участки смещаются после каждого удара.
+  if (events.some(row => row.type === 'strike')) {
+    const hazards = scenarioHazards(event.scenario, template.mechanics,
+      boss ? { x: Number(boss.x || 0), z: Number(boss.z || 0) } : { x: 0, z: 0 });
+    for (const hazard of hazards) serverApplyPublicEventStrike(room, hazard, now);
+  }
+  return events.length > 0;
+}
+
+/** Урон по площадке: обозначенный удар или опасная земля. */
+function serverApplyPublicEventStrike(room, area, now = Date.now()) {
+  let hit = 0;
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(area.x || 0), Number(p.z || 0) - Number(area.z || 0)) > Number(area.radius || 0)) continue;
+    const mitigation = serverMitigateDamage(Number(area.damage || 0), p, 'explosive');
+    p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
+    const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'explosive', String(area.displayName || 'Удар события'));
+    p.lastServerDamageAt = now;
+    const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
+    io.to(p.id).emit('playerStatusEffect', {
+      effect: 'publicEventStrike',
+      damage: mitigation.damage,
+      rawDamage: Number(area.damage || 0),
+      absorbed: mitigation.absorbed,
+      hp: Math.round(Number(p.hp || 0)),
+      maxHp: Math.round(Number(p.maxHp || 1)),
+      downed,
+      injuries: sanitizeInjuries(p.injuries || {}),
+      newInjuries,
+      t: now
+    });
+    hit += 1;
+  }
+  return hit;
+}
+
+/** Подкрепление от целой опоры: бойцы выходят рядом с ней. */
+function serverSpawnPublicEventReinforcement(room, event, row, now = Date.now()) {
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  if (!template) return 0;
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const world = tileToWorld(center.tx, center.tz, dims);
+  const tile = worldToTile(world.x + Number(row.x || 0), world.z + Number(row.z || 0), dims);
+  let spawned = 0;
+  for (let i = 0; i < Math.max(1, Number(row.squad || 1)); i += 1) {
+    const spot = findRoomSafeSpawnTile(room, clamp(tile.tx + i, 1, dims.w - 2), clamp(tile.tz, 1, dims.h - 2),
+      { maxRadius: 5, radius: 0.6, minEnemyDistance: 0.8, minPlayerDistance: 6 });
+    if (!spot) continue;
+    const actor = spawnEncounterActor(room, spot.tx, spot.tz, {
+      faction: template.kind === 'raiderBase' ? 'raiders' : 'monsters',
+      role: 'monster',
+      species: template.kind === 'raiderBase' ? 'raider' : String(template.boss?.species || 'mutant'),
+      modelKey: template.kind === 'raiderBase' ? 'enemyRaider' : String(template.boss?.modelKey || 'enemyGhoul'),
+      hostileToPlayer: true,
+      name: template.kind === 'raiderBase' ? 'Подкрепление налётчиков' : 'Выводок логова'
+    });
+    if (!actor) continue;
+    actor.publicEventId = event.id;
+    spawned += 1;
+  }
+  if (spawned > 0) {
+    room.structureDirty = true;
+    serverEmitPublicEventState(event, {
+      reinforcement: { supportId: row.supportId, displayName: row.displayName, count: spawned }
+    }, now);
+  }
+  return spawned;
+}
+
+/**
+ * Щит главаря: пока цел защитный генератор, урон по боссу события не проходит.
+ * Сначала ломают опору — это и есть механика сценария.
+ */
+function serverPublicEventDamageBlocked(room, target) {
+  const eventId = String(target?.publicEventBossId || '');
+  if (!eventId) return false;
+  const event = serverPublicEventById(eventId);
+  const template = event ? KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId] : null;
+  if (!event || !template?.mechanics) return false;
+  return scenarioBossShielded(event.scenario, template.mechanics);
+}
+
 function serverPublicEventHostilesAlive(room) {
   let count = 0;
   for (const enemy of room?.enemies?.values?.() || []) {
@@ -19725,6 +19915,8 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
     const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
     if (room && room.encounterSetupDone && !event.cleared) {
       if (serverEnsurePublicEventBoss(room, event, now)) changed = true;
+      if (serverEnsurePublicEventSupports(room, event, now)) changed = true;
+      if (serverAdvancePublicEventScenario(room, event, now)) changed = true;
     }
     if (room && room.encounterSetupDone && !event.cleared
       && serverPublicEventHostilesAlive(room) === 0 && publicEventBossDefeated(event, template)) {

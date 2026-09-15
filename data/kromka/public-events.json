@@ -19,6 +19,14 @@
   "templates": [
     {
       "id": "raider_base",
+      "mechanics": {
+        "supports": [
+          { "id": "shield_generator", "kind": "shield", "displayName": "Защитный генератор", "modelKey": "relayAntenna", "hp": 260, "x": 6, "z": 4 },
+          { "id": "radio_mast", "kind": "reinforcement", "displayName": "Радиостанция", "modelKey": "utilityPole", "hp": 200, "x": -7, "z": 5, "intervalMs": 25000, "maxAlive": 5, "squad": 2 }
+        ],
+        "strike": { "kind": "grenade", "displayName": "Гранатный удар", "intervalMs": 18000, "telegraphMs": 2500, "radius": 4, "damage": 26 },
+        "hazards": { "count": 0 }
+      },
       "danger": 3,
       "boss": {
         "id": "raider_leader",
@@ -46,6 +54,14 @@
     },
     {
       "id": "mutant_lair",
+      "mechanics": {
+        "supports": [
+          { "id": "nest_west", "kind": "reinforcement", "displayName": "Гнездо", "modelKey": "scrapHeap", "hp": 180, "x": -8, "z": -6, "intervalMs": 22000, "maxAlive": 5, "squad": 1 },
+          { "id": "nest_east", "kind": "reinforcement", "displayName": "Гнездо", "modelKey": "scrapHeap", "hp": 180, "x": 8, "z": -6, "intervalMs": 22000, "maxAlive": 5, "squad": 1 }
+        ],
+        "strike": { "kind": "dash", "displayName": "Рывок матки", "intervalMs": 15000, "telegraphMs": 2000, "radius": 3, "damage": 22 },
+        "hazards": { "count": 2, "radius": 4, "distance": 9, "damage": 12, "displayName": "Разъеденная земля" }
+      },
       "danger": 4,
       "boss": {
         "id": "mutant_matriarch",
@@ -72,6 +88,13 @@
     },
     {
       "id": "gari_den",
+      "mechanics": {
+        "supports": [
+          { "id": "den_nest", "kind": "reinforcement", "displayName": "Логовище", "modelKey": "scrapHeap", "hp": 180, "x": -6, "z": 6, "intervalMs": 24000, "maxAlive": 4, "squad": 1 }
+        ],
+        "strike": { "kind": "dash", "displayName": "Рывок вожака", "intervalMs": 16000, "telegraphMs": 2000, "radius": 3, "damage": 20 },
+        "hazards": { "count": 1, "radius": 4, "distance": 8, "damage": 10, "displayName": "Выжженная земля" }
+      },
       "danger": 3,
       "boss": {
         "id": "gari_alpha",
@@ -98,6 +121,13 @@
     },
     {
       "id": "scorpion_pit",
+      "mechanics": {
+        "supports": [
+          { "id": "pit_nest", "kind": "reinforcement", "displayName": "Кладка", "modelKey": "oreOutcrop", "hp": 200, "x": 0, "z": -8, "intervalMs": 20000, "maxAlive": 6, "squad": 2 }
+        ],
+        "strike": { "kind": "dash", "displayName": "Рывок матки", "intervalMs": 14000, "telegraphMs": 2000, "radius": 3, "damage": 24 },
+        "hazards": { "count": 2, "radius": 4, "distance": 10, "damage": 14, "displayName": "Ядовитая земля" }
+      },
       "danger": 5,
       "boss": {
         "id": "rykhlyak_queen",

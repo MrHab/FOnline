@@ -48,6 +48,23 @@ namespace RealmOfAshes.EditorTools
                 && RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 0).Contains("ТАЙНИК ОТКРЫТ"),
                 "Warning and open chest are announced");
             Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "otherRoom", 0) == string.Empty, "Events of other rooms are hidden");
+            // Механики сценария в строке события: целые опоры, щит главаря и
+            // обозначенный удар.
+            var scenario = JObject.Parse(@"{'supports':[{'id':'shield_generator','displayName':'Защитный генератор','alive':true},
+                {'id':'radio_mast','displayName':'Радиостанция','alive':false}],'shielded':true,
+                'strike':{'kind':'grenade','displayName':'Гранатный удар','telegraph':false,'inSeconds':7},
+                'hazards':[{'id':'ground_0'}]}");
+            string scenarioLine = RoaWorldEventsPresentation.ScenarioLine(scenario);
+            Require(scenarioLine.Contains("цело: Защитный генератор") && !scenarioLine.Contains("Радиостанция"),
+                "Only intact supports are listed: " + scenarioLine);
+            Require(scenarioLine.Contains("ГЛАВАРЬ ПОД ЩИТОМ"), "A shielded leader is announced: " + scenarioLine);
+            Require(scenarioLine.Contains("Гранатный удар через 7 с"), "The coming strike is counted down: " + scenarioLine);
+            Require(scenarioLine.Contains("опасная земля: 1"), "Dangerous ground is announced: " + scenarioLine);
+            scenario["strike"]["telegraph"] = true;
+            Require(RoaWorldEventsPresentation.ScenarioLine(scenario).Contains("ГРАНАТНЫЙ УДАР!"),
+                "A telegraphed strike shouts");
+            Require(RoaWorldEventsPresentation.ScenarioLine(null) == string.Empty, "Without a scenario the line stays empty");
+
             // Вскрытие тайника: кнопка показывает долю канала и паузу при чужих.
             Require(RoaWorldEventsPresentation.ChestButtonLabel(null) == "ВСКРЫТЬ ТАЙНИК",
                 "Without an active channel the button offers to start it");

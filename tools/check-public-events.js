@@ -203,4 +203,78 @@ for (const needle of [
 ]) assert(serverSource.includes(needle), `server.js must run the scenario boss and restore the reward: ${needle}`);
 assert(!serverSource.includes('event.chestAnnounced'), 'The announcement flag must live in the persisted event.');
 
+// --- механики сценария ---------------------------------------------------------
+// Спецификация требует у базы налётчиков главаря, защитный генератор,
+// обозначенные гранатные удары и подкрепления через радиостанцию; у логова —
+// матку, гнёзда, обозначенный рывок и опасные участки земли.
+const scenarios = require('../src/server/public-event-scenarios');
+const raider = catalog.byId.raider_base.mechanics;
+assert(raider.supports.some(row => row.kind === 'shield'), 'The raider base is protected by a shield generator.');
+assert(raider.supports.some(row => row.kind === 'reinforcement'), 'The raider base calls reinforcements by radio.');
+assert.equal(raider.strike.kind, 'grenade', 'The leader throws telegraphed grenades.');
+const lairMechanics = catalog.byId.mutant_lair.mechanics;
+assert(lairMechanics.supports.filter(row => row.kind === 'reinforcement').length >= 2, 'The lair breeds from nests.');
+assert.equal(lairMechanics.strike.kind, 'dash', 'The matriarch dashes.');
+assert(lairMechanics.hazards.count >= 1, 'The lair floor is dangerous.');
+
+const scenarioEvent = events.createPublicEvent(catalog.byId.raider_base,
+  { now: t0, rules, random: () => 0.5, point: { x: 10, y: 10 } });
+assert.equal(scenarios.scenarioBossShielded(scenarioEvent.scenario, raider), true,
+  'While the generator stands the leader is shielded.');
+assert(scenarios.noteSupportDestroyed(scenarioEvent.scenario, 'shield_generator'));
+assert.equal(scenarios.scenarioBossShielded(scenarioEvent.scenario, raider), false,
+  'A destroyed generator drops the shield.');
+assert(!scenarios.noteSupportDestroyed(scenarioEvent.scenario, 'shield_generator'), 'A support is destroyed once.');
+
+// Удар бьёт по точке, объявленной в момент обозначения, а не по текущей позиции.
+let strikeEvents = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: 0, pickTarget: () => ({ x: 4, z: 4 }) }, t0 + 1000);
+assert.deepEqual(strikeEvents.map(row => row.type), [], 'Nothing happens before the interval.');
+strikeEvents = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: 0, pickTarget: () => ({ x: 4, z: 4 }) }, t0 + 1000 + raider.strike.intervalMs - raider.strike.telegraphMs);
+assert.equal(strikeEvents[0]?.type, 'strikeTelegraph', 'The strike is telegraphed first.');
+strikeEvents = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: 0, pickTarget: () => ({ x: 30, z: 30 }) }, t0 + 1000 + raider.strike.intervalMs);
+const landed = strikeEvents.find(row => row.type === 'strike');
+assert(landed && landed.x === 4 && landed.z === 4, 'The strike lands where it was announced, not where the target moved.');
+
+// Подкрепления идут от целых опор и не превышают порога живых врагов.
+const radio = raider.supports.find(row => row.kind === 'reinforcement');
+scenarios.tickScenario(scenarioEvent.scenario, raider, { bossAlive: true, hostilesAlive: 0 }, t0 + 2000);
+const wave = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: 0 }, t0 + 2000 + radio.intervalMs);
+assert(wave.some(row => row.type === 'reinforcement' && row.supportId === radio.id), 'An intact radio calls reinforcements.');
+const crowded = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: radio.maxAlive }, t0 + 2000 + radio.intervalMs * 2);
+assert(!crowded.some(row => row.type === 'reinforcement'), 'A crowded room gets no new reinforcements.');
+scenarios.noteSupportDestroyed(scenarioEvent.scenario, radio.id);
+const silenced = scenarios.tickScenario(scenarioEvent.scenario, raider,
+  { bossAlive: true, hostilesAlive: 0 }, t0 + 2000 + radio.intervalMs * 3);
+assert(!silenced.some(row => row.type === 'reinforcement'), 'A destroyed radio stops the reinforcements.');
+
+// Опасная земля логова смещается после удара и переживает перезапуск.
+const lairEvent = events.createPublicEvent(catalog.byId.mutant_lair,
+  { now: t0, rules, random: () => 0.5, point: { x: 10, y: 10 } });
+const groundBefore = scenarios.scenarioHazards(lairEvent.scenario, lairMechanics, { x: 0, z: 0 });
+assert.equal(groundBefore.length, lairMechanics.hazards.count, 'The lair floor burns in the authored number of patches.');
+lairEvent.scenario.hazardOffset += 1;
+const groundAfter = scenarios.scenarioHazards(lairEvent.scenario, lairMechanics, { x: 0, z: 0 });
+assert.notDeepEqual(groundAfter.map(row => row.id), groundBefore.map(row => row.id), 'Dangerous ground moves.');
+const restoredScenario = events.normalizePublicEventStore({ version: 1, events: { [scenarioEvent.id]: scenarioEvent } })
+  .events[scenarioEvent.id].scenario;
+assert(restoredScenario.destroyed.includes('shield_generator'), 'Destroyed supports stay destroyed after a restart.');
+
+const view = scenarios.publicScenario(scenarioEvent.scenario, raider, { x: 0, z: 0 }, t0 + 3000);
+assert.equal(view.shielded, false);
+assert(view.supports.every(row => row.alive === false), 'The snapshot reports what is already broken.');
+
+const scenarioServer = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+for (const needle of [
+  'function serverEnsurePublicEventSupports(',
+  'function serverAdvancePublicEventScenario(',
+  'function serverApplyPublicEventStrike(',
+  'function serverSpawnPublicEventReinforcement(',
+  'if (enemy?.publicEventBossId && serverPublicEventDamageBlocked(room, enemy)) return 0;'
+]) assert(scenarioServer.includes(needle), `server.js must run the scenario mechanics: ${needle}`);
+
 console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

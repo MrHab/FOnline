@@ -57,11 +57,14 @@ assert(read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs').includes('Hu
   'The bootstrap must give the HUD its artifact source.');
 
 for (const token of [
-  'public static string DetectorReadout(bool hasDetector, float signal, int tier, string tierColor, string displayName)',
   'RoaGearData.TierShortLabel(tier)',
   'view.Tier = row["tier"]?.Value<int>() ?? 0;',
   'view.DisplayName = row["displayName"]?.ToString() ?? string.Empty;'
-]) assert(detector.includes(token), `The detector panel must show the pre-pickup identification: ${token}`);
+]) assert(detector.includes(token), `The detector must keep the pre-pickup identification: ${token}`);
+// Панели детектора и пояса в клиенте нет: их мёртвые поля и форматтеры убраны,
+// а данные живут в подсказке подбора и в ПУТНИКе.
+for (const token of ['_detectorText', '_effectsText', '_artifactRecordText', 'FormatEffects', 'DetectorReadout'])
+  assert(!detector.includes(token), `The ghost detector panel must stay removed: ${token}`);
 const spawns = read('src/server/artifact-spawns.js');
 for (const token of [
   'typeId: visible && detector.identifiesBeforePickup ? artifact.typeId :',

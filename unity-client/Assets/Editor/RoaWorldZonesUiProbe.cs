@@ -172,17 +172,18 @@ namespace RealmOfAshes.EditorTools
             var beltEffects = JObject.Parse(@"{'artifactTypeIds':['spring','vein'],'speedPct':0.09,'apRegenPct':0.12,'carryKg':8,
                 'maxHpFlat':10,'regenHpPerSecond':0.2,'meleeDamagePct':0.05,
                 'caps':{'speedPct':0.18,'carryKg':30,'regenHpPerSecond':1,'resistancePct':0.6,'secondarySimilarEffectMultiplier':0.5}}");
-            string totals = RoaKromkaShiftAndDetector.FormatEffects(beltEffects);
-            Require(totals.Contains("Скорость: +9% (предел +18%)"), "The speed total names its ceiling: " + totals);
-            Require(totals.Contains("Груз: +8 кг (предел +30 кг)"), "The carry total names its ceiling: " + totals);
-            Require(totals.Contains("Одинаковая польза от второго и дальше — 50%, штрафы — полностью."),
-                "The stacking rule is spelled out: " + totals);
+            string totals = RoaPipboyCanvas.BeltTotalsLine(beltEffects);
+            Require(totals.Contains("скорость +9% (до +18%)"), "The speed total names its ceiling: " + totals);
+            Require(totals.Contains("груз +8 кг (до +30 кг)"), "The carry total names its ceiling: " + totals);
+            Require(totals.StartsWith("пояс (2):"), "The line says how many artifacts are on the belt: " + totals);
             beltEffects["speedPct"] = 0.18;
-            Require(RoaKromkaShiftAndDetector.FormatEffects(beltEffects).Contains("Скорость: +18% (предел достигнут)"),
-                "At the ceiling the panel says so");
+            Require(RoaPipboyCanvas.BeltTotalsLine(beltEffects).Contains("скорость +18% (предел)"),
+                "At the ceiling the line says so");
             var noCaps = JObject.Parse(@"{'artifactTypeIds':['spring'],'speedPct':0.09}");
-            Require(!RoaKromkaShiftAndDetector.FormatEffects(noCaps).Contains("предел"),
-                "Without caps from the server the panel stays as it was");
+            Require(!RoaPipboyCanvas.BeltTotalsLine(noCaps).Contains("до +"),
+                "Without caps from the server the line stays as it was");
+            Require(RoaPipboyCanvas.BeltTotalsLine(JObject.Parse(@"{'artifactTypeIds':[]}")) == "пояс пуст",
+                "An empty belt says so");
 
             // Панель сдвига: окно повышенного рождения после выброса названо
             // прямо, вместе с остатком времени и множителем находок.
@@ -194,18 +195,6 @@ namespace RealmOfAshes.EditorTools
             Require(excitedLine.Contains("ПОЛЯ АКТИВНЫ: ещё 15 мин"), "The excited window is counted down: " + excitedLine);
             Require(excitedLine.Contains("находки ×5.5") || excitedLine.Contains("находки ×5,5"),
                 "The line says how much richer the fields are: " + excitedLine);
-            // Детектор: Mk1 говорит только о сигнале, Mk2 добавляет тир,
-            // Mk3 называет вид — всё это до подбора.
-            Require(RoaKromkaShiftAndDetector.DetectorReadout(false, 0f, 0, null, null) == "ДЕТЕКТОР: слот пуст",
-                "Without a detector the line says the slot is empty");
-            Require(RoaKromkaShiftAndDetector.DetectorReadout(true, 0f, 0, null, null) == "ДЕТЕКТОР: тихо",
-                "Without a signal the detector is quiet");
-            string mk1 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.62f, 0, null, null);
-            Require(mk1 == "ДЕТЕКТОР: сигнал 62%", "Mk1 reports only the signal: " + mk1);
-            string mk2 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.62f, 3, "#efd078", null);
-            Require(mk2.Contains("<color=#efd078>" + RoaGearData.TierShortLabel(3) + "</color>"),
-                "Mk2 names the tier in the shared colour: " + mk2);
-            Require(!mk2.Contains("Жила"), "Mk2 does not name the kind");
             // Подсказка подбора: строкой, которой находку и поднимают, видно,
             // что именно лежит под ногами.
             string hintMk1 = RoaKromkaShiftAndDetector.PickupHintText("G", 0, null, null);
@@ -220,9 +209,6 @@ namespace RealmOfAshes.EditorTools
             Require(pickupKey == "G" && pickupAction.Contains("Жила"),
                 "The HUD prompt splits the pickup hint into a key and an action: " + pickupKey + " / " + pickupAction);
 
-            string mk3 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.9f, 4, "", "Жила");
-            Require(mk3.Contains("Жила") && mk3.Contains(RoaGearData.TierShortLabel(4)),
-                "Mk3 names both the tier and the kind before pickup: " + mk3);
 
             var activeShift = JObject.Parse(@"{'phase':'active','remainingMs':45000,'strength':3,'sheltered':false,'fieldsExcited':false}");
             string activeLine = RoaKromkaShiftAndDetector.ShiftLine(activeShift);

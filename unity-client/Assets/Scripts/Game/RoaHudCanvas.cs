@@ -1182,6 +1182,14 @@ namespace RealmOfAshes.Game
                 && Time.unscaledTime < _globalStatusUntil)
                 PushSystemLine(status);
 
+            // Отказ подобрать находку тоже попадает в журнал: своей панели у
+            // детектора нет.
+            if (_artifacts != null)
+            {
+                string failure = _artifacts.ConsumePickupFailure();
+                if (!string.IsNullOrEmpty(failure)) PushSystemLine(failure);
+            }
+
             // Результаты взаимодействия остаются в журнале; доступное действие
             // постоянно показывает отдельная центральная плашка.
             if (_interaction != null)

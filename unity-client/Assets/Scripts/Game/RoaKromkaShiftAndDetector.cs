@@ -46,21 +46,6 @@ namespace RealmOfAshes.Game
         private Canvas _canvas;
         private Image _shiftPanel;
         private Text _shiftText;
-        private Text _detectorText;
-        private Image _signalFill;
-        private Button _pickupButton;
-        private Text _pickupLabel;
-        private GameObject _effectsPanel;
-        private Text _effectsText;
-        private Text _artifactRecordText;
-        private Button _stabilizeButton;
-        private Text _stabilizeLabel;
-        private Button _equipButton;
-        private Text _equipLabel;
-        private JArray _artifactRecords = new JArray();
-        private readonly HashSet<string> _artifactSlots = new HashSet<string>();
-        private int _artifactBeltCapacity;
-        private int _selectedArtifactIndex;
         private string _roomId = string.Empty;
         private string _nearestRevealedId = string.Empty;
         private float _nextBeepAt;
@@ -129,89 +114,16 @@ namespace RealmOfAshes.Game
         {
             JObject equipment = self?["equipment"] as JObject;
             _hasDetector = !string.IsNullOrEmpty(equipment?["detector"]?.ToString());
-            JObject effects = self?["artifactEffects"] as JObject;
-            if (_effectsText != null) _effectsText.text = FormatEffects(effects);
-            _artifactRecords = self?["artifactRecords"] is JArray records ? (JArray)records.DeepClone() : new JArray();
-            _artifactSlots.Clear();
-            foreach (JToken slot in self?["artifactSlots"] as JArray ?? new JArray())
-            {
-                string id = slot?.ToString();
-                if (!string.IsNullOrEmpty(id)) _artifactSlots.Add(id);
-            }
-            _artifactBeltCapacity = Mathf.Max(0, self?["artifactBeltCapacity"]?.Value<int>() ?? 0);
-            if (_artifactRecords.Count == 0) _selectedArtifactIndex = 0;
-            else _selectedArtifactIndex = Mathf.Clamp(_selectedArtifactIndex, 0, _artifactRecords.Count - 1);
-            RefreshArtifactControls();
+            // Пояс и находки живут в ПУТНИКе: там их видно, стабилизируют и
+            // ставят на пояс. Здесь остаётся только детектор в мире.
             if (!_hasDetector) ClearViews();
         }
 
-        private void SelectArtifact(int direction)
-        {
-            if (_artifactRecords.Count == 0) return;
-            _selectedArtifactIndex = (_selectedArtifactIndex + direction + _artifactRecords.Count) % _artifactRecords.Count;
-            RefreshArtifactControls();
-        }
 
-        private JObject SelectedArtifact()
-        {
-            if (_artifactRecords.Count == 0 || _selectedArtifactIndex < 0 || _selectedArtifactIndex >= _artifactRecords.Count) return null;
-            return _artifactRecords[_selectedArtifactIndex] as JObject;
-        }
 
-        private void StabilizeSelectedArtifact()
-        {
-            JObject record = SelectedArtifact();
-            string recordId = record?["id"]?.ToString();
-            if (string.IsNullOrEmpty(recordId) || _socket == null) return;
-            _socket.EmitWithAck("stabilizeArtifact", new Dictionary<string, object> { ["recordId"] = recordId }, HandleArtifactActionAck);
-        }
 
-        private void ToggleSelectedArtifact()
-        {
-            JObject record = SelectedArtifact();
-            string recordId = record?["id"]?.ToString();
-            if (string.IsNullOrEmpty(recordId) || _socket == null) return;
-            bool equipped = _artifactSlots.Contains(recordId);
-            _socket.EmitWithAck("artifactLoadoutAction", new Dictionary<string, object>
-            {
-                ["action"] = equipped ? "unequip" : "equip",
-                ["recordId"] = recordId,
-                ["slotIndex"] = Mathf.Clamp(_artifactSlots.Count, 0, Mathf.Max(0, _artifactBeltCapacity - 1))
-            }, HandleArtifactActionAck);
-        }
 
-        private void HandleArtifactActionAck(JObject ack)
-        {
-            if (ack?["ok"]?.Value<bool>() == true && ack["self"] is JObject self) ApplySelf(self);
-            else if (_artifactRecordText != null) _artifactRecordText.text = ack?["error"]?.ToString() ?? "Операция с артефактом отклонена.";
-        }
 
-        private void RefreshArtifactControls()
-        {
-            if (_artifactRecordText == null || _stabilizeButton == null || _equipButton == null) return;
-            JObject record = SelectedArtifact();
-            if (record == null)
-            {
-                _artifactRecordText.text = "НАХОДКИ\nКонтейнер пуст.";
-                _stabilizeButton.gameObject.SetActive(false);
-                _equipButton.gameObject.SetActive(false);
-                return;
-            }
-            string id = record["id"]?.ToString() ?? string.Empty;
-            string typeId = record["typeId"]?.ToString() ?? "unknown";
-            bool hot = record["hot"]?.Value<bool>() == true;
-            bool stabilized = record["stabilized"]?.Value<bool>() == true && !hot;
-            bool equipped = _artifactSlots.Contains(id);
-            _artifactRecordText.text = $"НАХОДКА {_selectedArtifactIndex + 1}/{_artifactRecords.Count}\n{ArtifactDisplayName(typeId)}"
-                + $" · {(hot ? "ГОРЯЧИЙ" : stabilized ? "СТАБИЛЬНЫЙ" : "НЕСТАБИЛЬНЫЙ")}" 
-                + (equipped ? " · НА ПОЯСЕ" : string.Empty)
-                + $"\nПояс: {_artifactSlots.Count}/{_artifactBeltCapacity}";
-            _stabilizeButton.gameObject.SetActive(!stabilized);
-            _stabilizeLabel.text = "СТАБИЛИЗИРОВАТЬ";
-            _equipButton.gameObject.SetActive(stabilized);
-            _equipButton.interactable = equipped || _artifactSlots.Count < _artifactBeltCapacity;
-            _equipLabel.text = equipped ? "СНЯТЬ С ПОЯСА" : (_artifactSlots.Count >= _artifactBeltCapacity ? "ПОЯС ПОЛОН" : "УСТАНОВИТЬ");
-        }
 
         private void ApplyArtifactState(JObject state)
         {
@@ -267,7 +179,6 @@ namespace RealmOfAshes.Game
                 if (_views[id].Root != null) Destroy(_views[id].Root);
                 _views.Remove(id);
             }
-            UpdateDetectorUi();
         }
 
         /// <summary>
@@ -372,45 +283,7 @@ namespace RealmOfAshes.Game
             if (Input.GetKeyDown(KeyCode.G) && !string.IsNullOrEmpty(_nearestRevealedId)) PickupNearest();
         }
 
-        /// <summary>
-        /// Строка детектора. Mk2 добавляет к сигналу тир находки, Mk3 — ещё и
-        /// вид: сервер присылает это в самом сигнале, и решение «идти или не
-        /// идти» принимается до подбора. Цвет тира — общая шкала экипировки.
-        /// </summary>
-        public static string DetectorReadout(bool hasDetector, float signal, int tier, string tierColor, string displayName)
-        {
-            if (!hasDetector) return "ДЕТЕКТОР: слот пуст";
-            if (signal <= 0.001f) return "ДЕТЕКТОР: тихо";
-            var sb = new StringBuilder("ДЕТЕКТОР: сигнал ").Append(Mathf.RoundToInt(signal * 100f)).Append('%');
-            if (tier >= 1 && tier <= 5)
-            {
-                string hex = string.IsNullOrEmpty(tierColor)
-                    ? ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier))
-                    : tierColor.TrimStart('#');
-                sb.Append(" · <color=#").Append(hex).Append('>').Append(RoaGearData.TierShortLabel(tier)).Append("</color>");
-            }
-            if (!string.IsNullOrEmpty(displayName)) sb.Append(" · ").Append(displayName);
-            return sb.ToString();
-        }
 
-        private void UpdateDetectorUi()
-        {
-            if (_detectorText == null || _signalFill == null || _pickupButton == null) return;
-            ArtifactView nearest = !string.IsNullOrEmpty(_nearestRevealedId) && _views.ContainsKey(_nearestRevealedId)
-                ? _views[_nearestRevealedId]
-                : null;
-            _detectorText.text = DetectorReadout(_hasDetector, _strongestSignal,
-                nearest?.Tier ?? 0, nearest?.TierColor, nearest?.DisplayName);
-            _signalFill.fillAmount = _hasDetector ? _strongestSignal : 0f;
-            bool canPickup = !string.IsNullOrEmpty(_nearestRevealedId);
-            _pickupButton.gameObject.SetActive(canPickup);
-            if (canPickup)
-            {
-                _pickupLabel.text = string.IsNullOrEmpty(nearest?.DisplayName)
-                    ? "ЗАБРАТЬ [G]"
-                    : "ЗАБРАТЬ: " + nearest.DisplayName + " [G]";
-            }
-        }
 
         /// <summary>
         /// Подсказка подбора для HUD: что именно лежит под ногами. Mk2 называет
@@ -444,6 +317,17 @@ namespace RealmOfAshes.Game
             return sb.ToString();
         }
 
+        /// <summary>Последний отказ сервера на подбор: HUD показывает его в журнале.</summary>
+        public string PickupFailed { get; private set; } = string.Empty;
+
+        /// <summary>Журнал забрал сообщение: больше его показывать не нужно.</summary>
+        public string ConsumePickupFailure()
+        {
+            string message = PickupFailed;
+            PickupFailed = string.Empty;
+            return message;
+        }
+
         /// <summary>Рядом лежит проявленный артефакт, который можно поднять.</summary>
         public bool HasRevealedArtifactInRange
         {
@@ -473,7 +357,9 @@ namespace RealmOfAshes.Game
                     if (ack["self"] is JObject self) ApplySelf(self);
                     RequestState();
                 }
-                else if (_detectorText != null) _detectorText.text = ack?["error"]?.ToString() ?? "Артефакт не поднят";
+                // Отказ уходит в системный журнал HUD: отдельной панели
+                // детектора в клиенте нет.
+                else PickupFailed = ack?["error"]?.ToString() ?? "Артефакт не поднят";
             });
         }
 
@@ -555,7 +441,6 @@ namespace RealmOfAshes.Game
             _views.Clear();
             _nearestRevealedId = string.Empty;
             _strongestSignal = 0f;
-            UpdateDetectorUi();
         }
 
         private void BuildAudio()
@@ -600,72 +485,10 @@ namespace RealmOfAshes.Game
             // no permanent detector bar or artifact button covers gameplay.
         }
 
-        /// <summary>
-        /// Итог эффектов пояса. У показателей с потолком он назван рядом:
-        /// иначе непонятно, почему четвёртая «Пружина» уже ничего не даёт.
-        /// Одинаковая польза складывается с уменьшением, штрафы — полностью;
-        /// это тоже сказано прямо.
-        /// </summary>
-        public static string FormatEffects(JObject effects)
-        {
-            if (effects == null) return "ПОЯС-КОНТЕЙНЕР\nНет активных артефактов.";
-            int count = (effects["artifactTypeIds"] as JArray)?.Count ?? 0;
-            if (count == 0) return "ПОЯС-КОНТЕЙНЕР\nНет активных артефактов.\n\nСтабилизируйте находку и установите её на пояс.";
-            JObject caps = effects["caps"] as JObject;
-            return "ИТОГ ЭФФЕКТОВ\n"
-                + $"Артефактов: {count}\n"
-                + $"Скорость: {Percent(effects, "speedPct")}{CapPercent(caps, "speedPct", Value(effects, "speedPct"))}\n"
-                + $"Восстановление ОД: {Percent(effects, "apRegenPct")}\n"
-                + $"Груз: {Signed(Value(effects, "carryKg"))} кг{CapValue(caps, "carryKg", Value(effects, "carryKg"), " кг")}\n"
-                + $"Макс. здоровье: {Signed(Value(effects, "maxHpFlat"))}\n"
-                + $"Регенерация: {Value(effects, "regenHpPerSecond"):0.0} HP/с{CapValue(caps, "regenHpPerSecond", Value(effects, "regenHpPerSecond"), " HP/с")}\n"
-                + $"Ближний урон: {Percent(effects, "meleeDamagePct")}\n\n"
-                + SecondaryRuleLine(caps)
-                + "Бонусы и штрафы уже учтены сервером.";
-        }
 
-        /// <summary>Потолок показателя: «(предел +18%)» или «(предел достигнут)».</summary>
-        private static string CapPercent(JObject caps, string key, float value)
-        {
-            float cap = caps?[key]?.Value<float>() ?? 0f;
-            if (cap <= 0f) return string.Empty;
-            return value >= cap - 0.0005f ? " (предел достигнут)" : " (предел " + Signed(cap * 100f) + "%)";
-        }
 
-        private static string CapValue(JObject caps, string key, float value, string unit)
-        {
-            float cap = caps?[key]?.Value<float>() ?? 0f;
-            if (cap <= 0f) return string.Empty;
-            return value >= cap - 0.0005f ? " (предел достигнут)" : " (предел " + Signed(cap) + unit + ")";
-        }
 
-        private static string SecondaryRuleLine(JObject caps)
-        {
-            float secondary = caps?["secondarySimilarEffectMultiplier"]?.Value<float>() ?? 0f;
-            if (secondary <= 0f) return string.Empty;
-            return "Одинаковая польза от второго и дальше — " + Mathf.RoundToInt(secondary * 100f) + "%, штрафы — полностью.\n";
-        }
 
-        private static string ArtifactDisplayName(string typeId)
-        {
-            switch (typeId)
-            {
-                case "spring": return "Пружина";
-                case "vein": return "Жила";
-                case "node": return "Узел";
-                case "drop": return "Капля";
-                case "bloodkin": return "Кровник";
-                case "shell": return "Панцирь";
-                case "warmer": return "Тепляк";
-                case "sieve": return "Сито";
-                case "thunderer": return "Громник";
-                case "husher": return "Молчун";
-                case "anchor": return "Якорь";
-                case "dew": return "Роса";
-                case "memory": return "Память";
-                default: return string.IsNullOrEmpty(typeId) ? "Неизвестный артефакт" : typeId;
-            }
-        }
 
         private static string Percent(JObject row, string key) => Signed(Value(row, key) * 100f) + "%";
         private static string Signed(float value) => value > 0.005f ? "+" + value.ToString("0.#") : value.ToString("0.#");

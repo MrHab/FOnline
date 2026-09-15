@@ -50,8 +50,8 @@ for (const token of ['AddServiceOptions()', '"medic"', '"registrar"', '"auction"
   assert(dialogue.includes(token), `RoaDialogueCanvas is missing ${token}`);
 // Аукционер открывает собственный экран, поэтому торги живут не в диалоге.
 const auctionCanvas = read('unity-client/Assets/Scripts/Game/RoaAuctionCanvas.cs');
-for (const token of ['RoaAuctionNet.Bid', 'RoaAuctionNet.Buyout', 'RoaAuctionNet.Cancel', 'RoaAuctionNet.Claim',
-  'RoaAuctionNet.ListItem'])
+for (const token of ['RoaAuctionNet.SellOrder', 'RoaAuctionNet.BuyOrder', 'RoaAuctionNet.BuyNow',
+  'RoaAuctionNet.SellNow', 'RoaAuctionNet.Cancel', 'RoaAuctionNet.Claim'])
   assert(auctionCanvas.includes(token), `RoaAuctionCanvas is missing ${token}`);
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 assert(interaction.includes('public string NpcService') && interaction.includes('public string NpcTerritoryFactionId'),
@@ -111,11 +111,10 @@ assert(probe.includes('RoaGlobalMapCanvas.ContractRowText') && probe.includes('R
 for (const token of ['ArtifactEffectList(', 'ArtifactSourceLabel(', "properties[\"primary\"]", "properties[\"drawback\"]"])
   assert(pipboy.includes(token), `RoaPipboyCanvas is missing ${token}`);
 assert(!/benefit \+ " \(×"/.test(pipboy), 'The stabilized card must not fall back to the type text with a multiplier.');
-assert(dialogue.includes('AuctionArtifactLine('), 'The auction lot must describe the artifact state before purchase.');
-assert(auctionCanvas.includes('AuctionArtifactLine('), 'The auction screen must show the artifact state before purchase.');
-assert(auctionCanvas.includes('на полке у аукционера'), 'The buyer must see where the lot is handed over.');
-const auctionModule = read('src/server/faction-auction.js');
-assert(auctionModule.includes('projectArtifact'), 'The auction projection must be able to expose artifact state.');
+assert(auctionCanvas.includes('AuctionArtifactLine('), 'The market screen must show the artifact state before purchase.');
+assert(auctionCanvas.includes('на полке у аукционера'), 'The buyer must see where the goods are handed over.');
+const auctionModule = read('src/server/faction-market.js');
+assert(auctionModule.includes('projectArtifact'), 'The market projection must be able to expose artifact state.');
 assert(read('server.js').includes('projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)'),
   'The server must project auction artifacts through the public record.');
 

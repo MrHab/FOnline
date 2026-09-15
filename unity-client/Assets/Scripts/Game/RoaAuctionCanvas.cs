@@ -7,15 +7,16 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Экран аукциона Сердцевины: открывается взаимодействием с аукционером и
+    /// Экран рынка фракции: открывается взаимодействием с аукционером и
     /// заменяет собой диалог, поэтому вариантов ответа у аукционера нет.
     ///
-    /// Слева — разделы (ТОРГИ, МОИ ЛОТЫ, ВЫСТАВИТЬ, ПОЛКА) и категории товаров
-    /// со счётчиками, в центре — лоты, справа — карточка выбранного лота со
-    /// ставкой и выкупом либо форма выставления. Все проверки серверные:
-    /// экран только показывает снимок `auctionAction:state` и отправляет
-    /// действия, а цифры срока идут от последнего снимка, чтобы таймер шёл
-    /// между обновлениями.
+    /// Торговля идёт книгой ордеров, а не ставками. Слева — разделы (ПОКУПКА,
+    /// ПРОДАЖА, МОИ ОРДЕРА, ПОЛКА) и категории товаров со счётчиками, в центре
+    /// — товары книги или строки ордеров по выбранному предмету, справа — форма
+    /// ордера на выкуп или на продажу со сбором, налогом и сроком. Все проверки
+    /// серверные: экран показывает снимок `auctionAction:state` и отправляет
+    /// действия, а срок ордера идёт от последнего снимка, чтобы таймер не
+    /// замирал между обновлениями.
     /// </summary>
     public sealed class RoaAuctionCanvas : MonoBehaviour
     {
@@ -31,7 +32,7 @@ namespace RealmOfAshes.Game
         private static readonly Color ButtonBg = new Color(0.16f, 0.28f, 0.12f, 0.95f);
         private static readonly Color QuietBg = new Color(0f, 0f, 0f, 0.35f);
 
-        private enum Tab { Trade, Mine, Sell, Shelf }
+        private enum Tab { Buy, Sell, Mine, Shelf }
 
         public RoaInteraction Interaction;
 
@@ -46,16 +47,13 @@ namespace RealmOfAshes.Game
         private RectTransform _categoryColumn;
         private RectTransform _list;
         private RectTransform _detail;
-        private RectTransform _sellForm;
-        private InputField _bidInput;
+        private InputField _priceInput;
         private InputField _qtyInput;
-        private InputField _startInput;
-        private InputField _buyoutInput;
 
         private readonly List<GameObject> _rows = new List<GameObject>();
         private readonly List<GameObject> _detailRows = new List<GameObject>();
         private readonly List<GameObject> _categoryRows = new List<GameObject>();
-        private readonly List<(Text label, long deadline)> _timers = new List<(Text, long)>();
+        private readonly List<KeyValuePair<Text, long>> _timers = new List<KeyValuePair<Text, long>>();
 
         private JObject _state;
         private bool _pending;
@@ -63,11 +61,11 @@ namespace RealmOfAshes.Game
         private float _refreshAt;
         private float _clockAt;
         private long _snapshotAt;
-        private Tab _tab = Tab.Trade;
+        private Tab _tab = Tab.Buy;
         private string _category = "all";
-        private string _selectedLotId = string.Empty;
-        private string _sellItemId = string.Empty;
-        private int _sellHours;
+        private string _itemId = string.Empty;
+        private string _orderId = string.Empty;
+        private int _durationHours;
         private float _detailCursor;
         private int _detailButtons;
 
@@ -101,7 +99,8 @@ namespace RealmOfAshes.Game
                     _root.SetActive(false);
                     _state = null;
                     _note = string.Empty;
-                    _selectedLotId = string.Empty;
+                    _itemId = string.Empty;
+                    _orderId = string.Empty;
                 }
                 return;
             }
@@ -110,8 +109,10 @@ namespace RealmOfAshes.Game
             if (!_root.activeSelf)
             {
                 _root.SetActive(true);
-                _tab = Tab.Trade;
+                _tab = Tab.Buy;
                 _category = "all";
+                _itemId = string.Empty;
+                _orderId = string.Empty;
                 _refreshAt = 0f;
             }
 
@@ -127,7 +128,7 @@ namespace RealmOfAshes.Game
                 TickTimers();
             }
 
-            if (Input.GetKeyDown(KeyCode.Escape)) Close();
+            if (Input.GetKeyDown(KeyCode.Escape) && !RoaPipboyCanvas.TypingInInputField()) Close();
         }
 
         private void Close()
@@ -167,16 +168,29 @@ namespace RealmOfAshes.Game
 
         private static string ActionNote(JObject ack)
         {
-            string action = ack["action"]?.ToString() ?? string.Empty;
-            switch (action)
+            int qty = ack["qty"]?.Value<int>() ?? 0;
+            switch (ack["action"]?.ToString() ?? string.Empty)
             {
-                case "list": return "Лот выставлен.";
-                case "bid":
-                    return "Ставка принята: " + (ack["amount"]?.Value<int>() ?? 0) + " марок."
-                        + (ack["extended"]?.Value<bool>() == true ? " Торги продлены." : string.Empty);
-                case "buyout":
-                    return "Выкуплено за " + (ack["price"]?.Value<int>() ?? 0) + " марок.";
-                case "cancel": return "Лот снят, предметы ждут на полке.";
+                case "sell":
+                {
+                    int sold = ack["soldQty"]?.Value<int>() ?? 0;
+                    int resting = ack["restingQty"]?.Value<int>() ?? 0;
+                    string note = sold > 0 ? "Продано сразу: " + sold + " шт за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " шт.";
+                    return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + ".";
+                }
+                case "buy":
+                {
+                    int bought = ack["boughtQty"]?.Value<int>() ?? 0;
+                    int resting = ack["restingQty"]?.Value<int>() ?? 0;
+                    string note = bought > 0 ? "Куплено сразу: " + bought + " шт за " + (ack["spent"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "Ордер на выкуп: " + resting + " шт, заморожено " + (ack["escrow"]?.Value<int>() ?? 0) + ".";
+                    if ((ack["shelved"]?.Value<int>() ?? 0) > 0) note += " Часть не влезла в рюкзак и ждёт на полке.";
+                    return note;
+                }
+                case "buyNow": return "Куплено " + qty + " шт за " + (ack["cost"]?.Value<int>() ?? 0) + " марок.";
+                case "sellNow": return "Продано " + qty + " шт, на руки " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок.";
+                case "cancel": return "Ордер отменён, товар и марки ждут на полке.";
                 case "claim": return "Полка забрана.";
                 default: return string.Empty;
             }
@@ -184,24 +198,29 @@ namespace RealmOfAshes.Game
 
         private void Apply(JObject ack)
         {
-            JObject auction = ack["auction"] as JObject;
-            if (auction == null) return;
-            _state = auction;
+            JObject market = ack["auction"] as JObject;
+            if (market == null) return;
+            _state = market;
             _snapshotAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (_sellHours <= 0)
+            if (_durationHours <= 0)
             {
-                JArray choices = auction["durationChoicesHours"] as JArray;
-                int fallback = auction["listingLifetimeHours"]?.Value<int>() ?? 24;
-                _sellHours = choices != null && choices.Count > 0 ? choices[choices.Count - 1].Value<int>() : fallback;
+                JArray choices = market["durationChoicesHours"] as JArray;
+                _durationHours = choices != null && choices.Count > 0
+                    ? choices[1 % choices.Count].Value<int>()
+                    : (market["listingLifetimeHours"]?.Value<int>() ?? 24);
             }
         }
 
         // ------------------------------------------------------------------
         // Данные снимка
 
-        private JArray Listings { get { return _state?["listings"] as JArray ?? new JArray(); } }
+        private JArray Orders { get { return _state?["orders"] as JArray ?? new JArray(); } }
+
+        private JArray MarketItems { get { return _state?["items"] as JArray ?? new JArray(); } }
 
         private float TaxPct { get { return _state?["taxPct"]?.Value<float>() ?? 0.05f; } }
+
+        private float SetupFeePct { get { return _state?["setupFeePct"]?.Value<float>() ?? 0.015f; } }
 
         private JObject Shelf { get { return _state?["shelf"] as JObject; } }
 
@@ -214,45 +233,72 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private List<JObject> VisibleLots()
+        private int Backpack(string itemId)
+        {
+            RoaInventory inventory = FindObjectOfType<RoaInventory>();
+            return inventory != null && !string.IsNullOrEmpty(itemId) ? inventory.CountOf(itemId) : 0;
+        }
+
+        /// <summary>Ордер на выкуп ставится только на предмет без износа и свойств — правило сервера.</summary>
+        private static bool Fungible(string itemId)
+        {
+            return !string.IsNullOrEmpty(itemId)
+                && itemId != "silver"
+                && RoaItemData.ConditionMode(itemId) == "none"
+                && RoaItemData.Category(itemId) != "artifacts";
+        }
+
+        /// <summary>Сторона книги по предмету: продажи от дешёвых, выкупы от дорогих.</summary>
+        private List<JObject> Book(string itemId, string side)
         {
             var rows = new List<JObject>();
-            foreach (JToken token in Listings)
+            foreach (JToken token in Orders)
             {
-                JObject lot = token as JObject;
-                if (lot == null) continue;
-                bool mine = lot["mine"]?.Value<bool>() == true;
-                if (_tab == Tab.Mine && !mine) continue;
-                if (_tab == Tab.Trade && mine) continue;
-                if (_tab == Tab.Trade && _category != "all" && (lot["category"]?.ToString() ?? "misc") != _category) continue;
-                rows.Add(lot);
+                JObject order = token as JObject;
+                if (order == null) continue;
+                if ((order["itemId"]?.ToString() ?? string.Empty) != itemId) continue;
+                if ((order["side"]?.ToString() ?? string.Empty) != side) continue;
+                rows.Add(order);
             }
+            rows.Sort((a, b) =>
+            {
+                int left = a["price"]?.Value<int>() ?? 0;
+                int right = b["price"]?.Value<int>() ?? 0;
+                return side == "sell" ? left.CompareTo(right) : right.CompareTo(left);
+            });
             return rows;
         }
 
-        private JObject SelectedLot()
+        private int BestPrice(string itemId, string side)
         {
-            if (string.IsNullOrEmpty(_selectedLotId)) return null;
-            foreach (JToken token in Listings)
+            List<JObject> rows = Book(itemId, side);
+            return rows.Count > 0 ? (rows[0]["price"]?.Value<int>() ?? 0) : 0;
+        }
+
+        private JObject SelectedOrder()
+        {
+            if (string.IsNullOrEmpty(_orderId)) return null;
+            foreach (JToken token in Orders)
             {
-                JObject lot = token as JObject;
-                if (lot != null && lot["id"]?.ToString() == _selectedLotId) return lot;
+                JObject order = token as JObject;
+                if (order != null && order["id"]?.ToString() == _orderId) return order;
             }
             return null;
         }
 
         /// <summary>Остаток срока на момент снимка, доигранный локальными часами.</summary>
-        private long DeadlineFor(JObject lot)
+        private long DeadlineFor(JObject order)
         {
-            int remaining = lot?["remainingSeconds"]?.Value<int>() ?? 0;
+            int remaining = order?["remainingSeconds"]?.Value<int>() ?? 0;
             return _snapshotAt + remaining * 1000L;
         }
 
         private static string Clock(long deadlineMs)
         {
             long seconds = Math.Max(0, (deadlineMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) / 1000);
+            if (seconds >= 86400) return (seconds / 86400) + " д " + ((seconds % 86400) / 3600) + " ч";
             if (seconds >= 3600) return (seconds / 3600) + " ч " + ((seconds % 3600) / 60) + " мин";
-            if (seconds >= 60) return (seconds / 60) + " мин " + (seconds % 60) + " с";
+            if (seconds >= 60) return (seconds / 60) + " мин";
             return seconds + " с";
         }
 
@@ -260,12 +306,23 @@ namespace RealmOfAshes.Game
         {
             for (int i = _timers.Count - 1; i >= 0; i -= 1)
             {
-                (Text label, long deadline) = _timers[i];
+                Text label = _timers[i].Key;
                 if (label == null) { _timers.RemoveAt(i); continue; }
+                long deadline = _timers[i].Value;
                 label.text = Clock(deadline);
-                label.color = deadline - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < 300000 ? Warn : InkDim;
+                label.color = deadline - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < 600000 ? Warn : InkDim;
             }
         }
+
+        private static int ParseNumber(string text, int fallback)
+        {
+            int value;
+            return int.TryParse((text ?? string.Empty).Trim(), out value) && value >= 0 ? value : fallback;
+        }
+
+        private int FormPrice { get { return Math.Max(0, ParseNumber(_priceInput.text, 0)); } }
+
+        private int FormQty { get { return Math.Max(1, ParseNumber(_qtyInput.text, 1)); } }
 
         // ------------------------------------------------------------------
         // Сборка окна
@@ -315,6 +372,7 @@ namespace RealmOfAshes.Game
 
             _status = Label("Status", _panel, 12, TextAnchor.LowerLeft, InkDim);
             Place(_status.rectTransform, 0f, 0f, 1f, 0f, new Vector2(18f, 8f), new Vector2(-18f, 28f));
+            _status.horizontalOverflow = HorizontalWrapMode.Wrap;
 
             // Левая колонка: разделы и категории товаров.
             RectTransform left = Child("Left", _panel);
@@ -336,7 +394,7 @@ namespace RealmOfAshes.Game
             categoryLayout.childControlHeight = true;
             categoryLayout.childControlWidth = true;
 
-            // Центр: список лотов или предметов рюкзака.
+            // Центр: товары книги, строки ордеров или полка.
             RectTransform scrollArea = Child("Scroll", _panel);
             Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(222f, 32f), new Vector2(-396f, -76f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
@@ -358,41 +416,19 @@ namespace RealmOfAshes.Game
             scroll.viewport = viewport;
             RoaUiScroll.Configure(scroll);
 
-            // Правая колонка: карточка лота или форма выставления.
+            // Правая колонка: форма ордера или карточка выбранного ордера.
             _detail = Child("Detail", _panel);
             Place(_detail, 1f, 0f, 1f, 1f, new Vector2(-388f, 32f), new Vector2(-14f, -76f));
             _detail.gameObject.AddComponent<Image>().color = QuietBg;
 
-            _sellForm = Child("SellForm", _detail);
-            Stretch(_sellForm, 10f);
-            BuildSellForm();
-            _sellForm.gameObject.SetActive(false);
-
-            // Поле своей ставки живёт над стопкой кнопок и переживает перерисовку:
-            // иначе набранная сумма пропадала бы при каждом обновлении снимка.
-            _bidInput = NumberInput("BidInput", _detail, "Своя ставка");
-            var bidRect = (RectTransform)_bidInput.transform;
-            bidRect.anchorMin = new Vector2(0f, 0f);
-            bidRect.anchorMax = new Vector2(1f, 0f);
-            bidRect.offsetMin = new Vector2(12f, 96f);
-            bidRect.offsetMax = new Vector2(-12f, 128f);
-            _bidInput.gameObject.SetActive(false);
-        }
-
-        private void BuildSellForm()
-        {
-            Text heading = Label("SellTitle", _sellForm, 15, TextAnchor.UpperLeft, Accent, FontStyle.Bold);
-            Place(heading.rectTransform, 0f, 1f, 1f, 1f, new Vector2(4f, -26f), new Vector2(-4f, -2f));
-            heading.text = "ВЫСТАВИТЬ ЛОТ";
-
-            _qtyInput = NumberInput("Qty", _sellForm, "Количество");
-            Place((RectTransform)_qtyInput.transform, 0f, 1f, 1f, 1f, new Vector2(4f, -118f), new Vector2(-4f, -86f));
-
-            _startInput = NumberInput("StartPrice", _sellForm, "Стартовая цена");
-            Place((RectTransform)_startInput.transform, 0f, 1f, 1f, 1f, new Vector2(4f, -180f), new Vector2(-4f, -148f));
-
-            _buyoutInput = NumberInput("BuyoutPrice", _sellForm, "Цена выкупа (0 — без выкупа)");
-            Place((RectTransform)_buyoutInput.transform, 0f, 1f, 1f, 1f, new Vector2(4f, -242f), new Vector2(-4f, -210f));
+            // Поля формы переживают перерисовку: иначе набранная цена пропадала
+            // бы при каждом обновлении снимка книги.
+            _priceInput = NumberInput("Price", _detail, "Цена за штуку");
+            Place((RectTransform)_priceInput.transform, 0f, 1f, 1f, 1f, new Vector2(12f, -150f), new Vector2(-12f, -118f));
+            _qtyInput = NumberInput("Qty", _detail, "Количество");
+            Place((RectTransform)_qtyInput.transform, 0f, 1f, 1f, 1f, new Vector2(12f, -196f), new Vector2(-12f, -164f));
+            _priceInput.gameObject.SetActive(false);
+            _qtyInput.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------
@@ -403,14 +439,11 @@ namespace RealmOfAshes.Game
             if (_root == null || !_root.activeSelf) return;
 
             string factionId = _state?["factionId"]?.ToString() ?? string.Empty;
-            _title.text = "АУКЦИОН" + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + factionId.ToUpperInvariant());
-            int stepPct = Mathf.RoundToInt((_state?["minBidStepPct"]?.Value<float>() ?? 0.05f) * 100f);
-            int antiSnipe = _state?["antiSnipeSeconds"]?.Value<int>() ?? 120;
-            _terms.text = "Налог на продажу " + Mathf.RoundToInt(TaxPct * 100f) + "% · шаг ставки " + stepPct
-                + "% · ставка в последние " + Mathf.Max(1, antiSnipe / 60) + " мин продлевает торги · у вас "
-                + Marks + " марок";
+            _title.text = "РЫНОК" + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + factionId.ToUpperInvariant());
+            _terms.text = "Налог с продажи " + Mathf.RoundToInt(TaxPct * 100f) + "% · сбор за ордер "
+                + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
             _status.text = string.IsNullOrEmpty(_note)
-                ? (_pending ? "Аукционер сверяет книги…" : "Купленное, выигранное и возвраты ждут на полке у аукционера.")
+                ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")
                 : _note;
             _status.color = string.IsNullOrEmpty(_note) ? InkDim : Accent;
 
@@ -421,9 +454,14 @@ namespace RealmOfAshes.Game
 
             switch (_tab)
             {
-                case Tab.Sell: BuildSellPage(); break;
+                case Tab.Sell:
+                    if (string.IsNullOrEmpty(_itemId)) BuildBackpackPage(); else BuildBookPage();
+                    break;
+                case Tab.Mine: BuildMyOrdersPage(); break;
                 case Tab.Shelf: BuildShelfPage(); break;
-                default: BuildLotsPage(); break;
+                default:
+                    if (string.IsNullOrEmpty(_itemId)) BuildMarketPage(); else BuildBookPage();
+                    break;
             }
 
             RebuildDetail();
@@ -434,15 +472,14 @@ namespace RealmOfAshes.Game
         {
             foreach (Transform child in _tabsColumn) Destroy(child.gameObject);
             int mine = _state?["mineCount"]?.Value<int>() ?? 0;
-            int leading = _state?["leadingCount"]?.Value<int>() ?? 0;
             JObject shelf = Shelf;
             int shelfSilver = shelf?["silver"]?.Value<int>() ?? 0;
             int shelfItems = 0;
             foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) shelfItems += row["qty"]?.Value<int>() ?? 0;
 
-            AddTab(Tab.Trade, "ТОРГИ" + (leading > 0 ? " (веду " + leading + ")" : string.Empty));
-            AddTab(Tab.Mine, "МОИ ЛОТЫ" + (mine > 0 ? " (" + mine + ")" : string.Empty));
-            AddTab(Tab.Sell, "ВЫСТАВИТЬ");
+            AddTab(Tab.Buy, "ПОКУПКА");
+            AddTab(Tab.Sell, "ПРОДАЖА");
+            AddTab(Tab.Mine, "МОИ ОРДЕРА" + (mine > 0 ? " (" + mine + ")" : string.Empty));
             AddTab(Tab.Shelf, "ПОЛКА" + (shelfSilver > 0 || shelfItems > 0 ? " ●" : string.Empty));
         }
 
@@ -463,7 +500,8 @@ namespace RealmOfAshes.Game
             button.onClick.AddListener(() =>
             {
                 _tab = captured;
-                _selectedLotId = string.Empty;
+                _itemId = string.Empty;
+                _orderId = string.Empty;
                 _note = string.Empty;
                 Rebuild();
             });
@@ -472,7 +510,7 @@ namespace RealmOfAshes.Game
         private void RebuildCategories()
         {
             ClearRows(_categoryRows);
-            if (_tab != Tab.Trade)
+            if (_tab != Tab.Buy || !string.IsNullOrEmpty(_itemId))
             {
                 _categoryColumn.gameObject.SetActive(false);
                 return;
@@ -487,13 +525,7 @@ namespace RealmOfAshes.Game
             headingText.text = "КАТЕГОРИИ ТОВАРОВ";
             _categoryRows.Add(heading);
 
-            int total = 0;
-            foreach (JToken token in Listings)
-            {
-                JObject lot = token as JObject;
-                if (lot != null && lot["mine"]?.Value<bool>() != true) total += 1;
-            }
-            AddCategory("all", "Все лоты", total);
+            AddCategory("all", "Все товары", MarketItems.Count);
             foreach (JToken token in _state?["categories"] as JArray ?? new JArray())
             {
                 JObject row = token as JObject;
@@ -520,86 +552,81 @@ namespace RealmOfAshes.Game
             Place(text.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 0f), new Vector2(-8f, 0f));
             text.text = label + "  " + count;
             string captured = id;
-            button.onClick.AddListener(() => { _category = captured; _selectedLotId = string.Empty; Rebuild(); });
+            button.onClick.AddListener(() => { _category = captured; Rebuild(); });
             _categoryRows.Add(row);
         }
 
-        // --- лоты ---------------------------------------------------------
+        // --- товары книги -------------------------------------------------
 
-        private void BuildLotsPage()
+        private void BuildMarketPage()
         {
-            List<JObject> lots = VisibleLots();
-            if (lots.Count == 0)
+            int shown = 0;
+            foreach (JToken token in MarketItems)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                if (_category != "all" && (row["category"]?.ToString() ?? "misc") != _category) continue;
+                shown += 1;
+                AddMarketItemRow(row);
+            }
+            if (shown == 0)
             {
                 AddNote(_state == null
-                    ? (_pending ? "Аукционер раскладывает книги…" : "Аукцион не ответил.")
-                    : _tab == Tab.Mine
-                        ? "Вы ничего не выставили. Раздел «ВЫСТАВИТЬ» примет предмет из рюкзака."
-                        : "В этой категории пока пусто.");
-                return;
+                    ? (_pending ? "Аукционер раскладывает книгу…" : "Рынок не ответил.")
+                    : "В этой категории книга пуста. Поставьте ордер на выкуп — продавцы увидят цену.");
             }
-            foreach (JObject lot in lots) AddLotRow(lot);
         }
 
-        private void AddLotRow(JObject lot)
+        private void AddMarketItemRow(JObject row)
         {
-            string id = lot["id"]?.ToString() ?? string.Empty;
-            string itemId = lot["itemId"]?.ToString() ?? string.Empty;
-            int qty = lot["qty"]?.Value<int>() ?? 0;
-            int bid = lot["bid"]?.Value<int>() ?? 0;
-            int startPrice = lot["startPrice"]?.Value<int>() ?? 0;
-            int buyout = lot["buyoutPrice"]?.Value<int>() ?? 0;
-            bool leading = lot["leading"]?.Value<bool>() == true;
-            bool mine = lot["mine"]?.Value<bool>() == true;
+            string itemId = row["itemId"]?.ToString() ?? string.Empty;
+            int sellQty = row["sellQty"]?.Value<int>() ?? 0;
+            int sellPrice = row["sellPrice"]?.Value<int>() ?? 0;
+            int buyQty = row["buyQty"]?.Value<int>() ?? 0;
+            int buyPrice = row["buyPrice"]?.Value<int>() ?? 0;
 
-            var row = new GameObject("Lot", typeof(RectTransform));
-            row.transform.SetParent(_list, false);
-            row.AddComponent<LayoutElement>().preferredHeight = 46f;
-            var back = row.AddComponent<Image>();
-            back.color = _selectedLotId == id ? RowSelected : RowBg;
-            var button = row.AddComponent<Button>();
+            var go = new GameObject("Item", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 38f;
+            var back = go.AddComponent<Image>();
+            back.color = row["mine"]?.Value<bool>() == true ? RowSelected : RowBg;
+            var button = go.AddComponent<Button>();
             button.targetGraphic = back;
-            var rect = (RectTransform)row.transform;
+            var rect = (RectTransform)go.transform;
 
-            Text name = Label("Name", rect, 14, TextAnchor.UpperLeft, Ink, FontStyle.Bold);
-            Place(name.rectTransform, 0f, 0f, 0.44f, 1f, new Vector2(10f, 22f), new Vector2(-4f, -4f));
-            name.text = RoaItemData.Name(itemId) + (qty > 1 ? " ×" + qty : string.Empty);
+            Text name = Label("Name", rect, 14, TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+            Place(name.rectTransform, 0f, 0f, 0.44f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
+            name.text = RoaItemData.Name(itemId);
 
-            Text seller = Label("Seller", rect, 11, TextAnchor.LowerLeft, InkDim);
-            Place(seller.rectTransform, 0f, 0f, 0.44f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -24f));
-            seller.text = mine ? "ваш лот" : "продавец: " + (lot["sellerName"]?.ToString() ?? "—");
+            Text sell = Label("Sell", rect, 12, TextAnchor.MiddleLeft, sellQty > 0 ? Ink : InkDim);
+            Place(sell.rectTransform, 0.44f, 0f, 0.72f, 1f, new Vector2(0f, 0f), new Vector2(-4f, 0f));
+            sell.text = sellQty > 0 ? "продают " + sellQty + " шт от " + sellPrice : "не продают";
 
-            Text price = Label("Price", rect, 13, TextAnchor.UpperLeft, bid > 0 ? (leading ? Good : Ink) : InkDim);
-            Place(price.rectTransform, 0.44f, 0f, 0.72f, 1f, new Vector2(0f, 22f), new Vector2(-4f, -4f));
-            price.text = bid > 0 ? "ставка " + bid : "старт " + startPrice;
+            Text buy = Label("Buy", rect, 12, TextAnchor.MiddleLeft, buyQty > 0 ? Good : InkDim);
+            Place(buy.rectTransform, 0.72f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
+            buy.text = buyQty > 0 ? "выкупают " + buyQty + " шт по " + buyPrice : "нет заявок";
 
-            Text bidder = Label("Bidder", rect, 11, TextAnchor.LowerLeft, InkDim);
-            Place(bidder.rectTransform, 0.44f, 0f, 0.72f, 1f, new Vector2(0f, 4f), new Vector2(-4f, -24f));
-            bidder.text = bid > 0
-                ? (leading ? "ваша ставка ведёт" : "ведёт " + (lot["bidderName"]?.ToString() ?? "—"))
-                : "ставок нет";
-
-            Text buyoutText = Label("Buyout", rect, 13, TextAnchor.UpperLeft, buyout > 0 ? Accent : InkDim);
-            Place(buyoutText.rectTransform, 0.72f, 0f, 0.88f, 1f, new Vector2(0f, 22f), new Vector2(-4f, -4f));
-            buyoutText.text = buyout > 0 ? "выкуп " + buyout : "без выкупа";
-
-            Text timer = Label("Timer", rect, 12, TextAnchor.LowerRight, InkDim);
-            Place(timer.rectTransform, 0.72f, 0f, 1f, 1f, new Vector2(0f, 4f), new Vector2(-10f, -24f));
-            _timers.Add((timer, DeadlineFor(lot)));
-
-            string captured = id;
-            button.onClick.AddListener(() =>
-            {
-                _selectedLotId = captured;
-                _note = string.Empty;
-                Rebuild();
-            });
-            _rows.Add(row);
+            string captured = itemId;
+            button.onClick.AddListener(() => SelectItem(captured));
+            _rows.Add(go);
         }
 
-        // --- выставление --------------------------------------------------
+        private void SelectItem(string itemId)
+        {
+            _itemId = itemId;
+            _note = string.Empty;
+            // Предложение по умолчанию: цена из книги, иначе каталожная.
+            int suggested = _tab == Tab.Sell
+                ? (BestPrice(itemId, "sell") > 0 ? BestPrice(itemId, "sell") : Mathf.Max(1, RoaItemData.BasePrice(itemId) * 2))
+                : (BestPrice(itemId, "buy") > 0 ? BestPrice(itemId, "buy") : Mathf.Max(1, RoaItemData.BasePrice(itemId)));
+            _priceInput.text = suggested.ToString();
+            _qtyInput.text = _tab == Tab.Sell ? Mathf.Max(1, Backpack(itemId)).ToString() : "1";
+            Rebuild();
+        }
 
-        private void BuildSellPage()
+        // --- рюкзак для продажи -------------------------------------------
+
+        private void BuildBackpackPage()
         {
             RoaInventory inventory = FindObjectOfType<RoaInventory>();
             if (inventory == null) { AddNote("Рюкзак недоступен."); return; }
@@ -608,43 +635,186 @@ namespace RealmOfAshes.Game
             {
                 if (string.IsNullOrEmpty(item.Id) || item.Id == "silver" || item.Qty <= 0) continue;
                 shown += 1;
-                AddSellCandidate(item.Id, item.Qty);
+                AddBackpackRow(item.Id, item.Qty);
             }
-            if (shown == 0) AddNote("В рюкзаке нечего выставить.");
+            if (shown == 0) AddNote("В рюкзаке нечего продавать.");
         }
 
-        private void AddSellCandidate(string itemId, int qty)
+        private void AddBackpackRow(string itemId, int qty)
         {
-            var row = new GameObject("Candidate", typeof(RectTransform));
-            row.transform.SetParent(_list, false);
-            row.AddComponent<LayoutElement>().preferredHeight = 34f;
-            var back = row.AddComponent<Image>();
-            back.color = _sellItemId == itemId ? RowSelected : RowBg;
-            var button = row.AddComponent<Button>();
+            var go = new GameObject("Backpack", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 34f;
+            var back = go.AddComponent<Image>();
+            back.color = RowBg;
+            var button = go.AddComponent<Button>();
             button.targetGraphic = back;
-            var rect = (RectTransform)row.transform;
+            var rect = (RectTransform)go.transform;
 
             Text name = Label("Name", rect, 13, TextAnchor.MiddleLeft, Ink);
-            Place(name.rectTransform, 0f, 0f, 0.62f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
+            Place(name.rectTransform, 0f, 0f, 0.55f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
             name.text = RoaItemData.Name(itemId) + " ×" + qty;
 
-            Text hint = Label("Hint", rect, 11, TextAnchor.MiddleRight, InkDim);
-            Place(hint.rectTransform, 0.62f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
-            hint.text = "каталог " + RoaItemData.BasePrice(itemId) + " марок";
+            int best = BestPrice(itemId, "buy");
+            Text hint = Label("Hint", rect, 11, TextAnchor.MiddleRight, best > 0 ? Good : InkDim);
+            Place(hint.rectTransform, 0.55f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
+            hint.text = best > 0 ? "выкупают по " + best : "каталог " + RoaItemData.BasePrice(itemId);
 
             string captured = itemId;
+            button.onClick.AddListener(() => SelectItem(captured));
+            _rows.Add(go);
+        }
+
+        // --- книга по предмету --------------------------------------------
+
+        private void BuildBookPage()
+        {
+            AddBackRow(RoaItemData.Name(_itemId) + " · книга ордеров");
+            List<JObject> sells = Book(_itemId, "sell");
+            List<JObject> buys = Book(_itemId, "buy");
+
+            AddHeading("ПРОДАЮТ" + (sells.Count == 0 ? " — пусто" : string.Empty));
+            foreach (JObject order in sells) AddOrderRow(order);
+            AddHeading("ВЫКУПАЮТ" + (buys.Count == 0 ? " — пусто" : string.Empty));
+            foreach (JObject order in buys) AddOrderRow(order);
+        }
+
+        private void AddOrderRow(JObject order)
+        {
+            string id = order["id"]?.ToString() ?? string.Empty;
+            string side = order["side"]?.ToString() ?? "sell";
+            string itemId = order["itemId"]?.ToString() ?? string.Empty;
+            int qty = order["qty"]?.Value<int>() ?? 0;
+            int price = order["price"]?.Value<int>() ?? 0;
+            bool mine = order["mine"]?.Value<bool>() == true;
+
+            var go = new GameObject("Order", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 44f;
+            go.AddComponent<Image>().color = mine ? RowSelected : RowBg;
+            var rect = (RectTransform)go.transform;
+
+            Text priceText = Label("Price", rect, 15, TextAnchor.UpperLeft, side == "sell" ? Ink : Good, FontStyle.Bold);
+            Place(priceText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(10f, 20f), new Vector2(-4f, -3f));
+            priceText.text = price + " за шт";
+
+            Text qtyText = Label("Qty", rect, 11, TextAnchor.LowerLeft, InkDim);
+            Place(qtyText.rectTransform, 0f, 0f, 0.3f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -22f));
+            qtyText.text = qty + " шт · всего " + (qty * price);
+
+            Text owner = Label("Owner", rect, 12, TextAnchor.UpperLeft, InkDim);
+            Place(owner.rectTransform, 0.3f, 0f, 0.62f, 1f, new Vector2(0f, 20f), new Vector2(-4f, -3f));
+            owner.text = mine ? "ваш ордер" : (order["ownerName"]?.ToString() ?? "—");
+
+            Text extra = Label("Extra", rect, 11, TextAnchor.LowerLeft, InkDim);
+            Place(extra.rectTransform, 0.3f, 0f, 0.62f, 1f, new Vector2(0f, 4f), new Vector2(-4f, -22f));
+            string artifacts = AuctionArtifactLine(order);
+            extra.text = string.IsNullOrEmpty(artifacts)
+                ? "исполнено " + (order["filled"]?.Value<int>() ?? 0)
+                : artifacts.TrimStart('\n').Replace("\n", " · ");
+
+            Text timer = Label("Timer", rect, 11, TextAnchor.UpperRight, InkDim);
+            Place(timer.rectTransform, 0.62f, 0f, 1f, 1f, new Vector2(0f, 20f), new Vector2(-10f, -3f));
+            _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
+
+            string label;
+            Action action;
+            if (mine)
+            {
+                label = "Отменить";
+                action = () => RoaAuctionNet.Cancel(Interaction.Socket, id, AfterAction);
+            }
+            else if (side == "sell")
+            {
+                label = "Купить " + qty;
+                action = () => RoaAuctionNet.BuyNow(Interaction.Socket, id, qty, AfterAction);
+            }
+            else
+            {
+                int have = Backpack(itemId);
+                int take = Mathf.Min(qty, have);
+                label = have > 0 ? "Продать " + take : "Нет товара";
+                action = have > 0 ? (Action)(() => RoaAuctionNet.SellNow(Interaction.Socket, id, take, string.Empty, AfterAction)) : null;
+            }
+            Button button = TextButton("Act", rect, label, 12, out Text buttonLabel);
+            var buttonRect = (RectTransform)button.transform;
+            buttonRect.anchorMin = new Vector2(0.62f, 0f);
+            buttonRect.anchorMax = new Vector2(1f, 0f);
+            buttonRect.offsetMin = new Vector2(0f, 5f);
+            buttonRect.offsetMax = new Vector2(-10f, 27f);
+            button.GetComponent<Image>().color = action == null ? QuietBg : ButtonBg;
+            buttonLabel.color = action == null ? InkDim : Accent;
+            Action captured = action;
             button.onClick.AddListener(() =>
             {
-                _sellItemId = captured;
-                _note = string.Empty;
-                // Предложение по умолчанию: одна штука, старт по каталогу, выкуп вдвое.
-                int basePrice = Mathf.Max(1, RoaItemData.BasePrice(captured));
-                _qtyInput.text = "1";
-                _startInput.text = basePrice.ToString();
-                _buyoutInput.text = (basePrice * 2).ToString();
-                Rebuild();
+                if (captured != null && Interaction != null && Interaction.Socket != null) captured();
             });
-            _rows.Add(row);
+
+            _rows.Add(go);
+        }
+
+        // --- мои ордера ---------------------------------------------------
+
+        private void BuildMyOrdersPage()
+        {
+            int shown = 0;
+            foreach (JToken token in Orders)
+            {
+                JObject order = token as JObject;
+                if (order == null || order["mine"]?.Value<bool>() != true) continue;
+                shown += 1;
+                AddMyOrderRow(order);
+            }
+            if (shown == 0) AddNote("У вас нет ордеров. Раздел «ПРОДАЖА» выставит товар, «ПОКУПКА» — заявку на выкуп.");
+        }
+
+        private void AddMyOrderRow(JObject order)
+        {
+            string id = order["id"]?.ToString() ?? string.Empty;
+            bool sell = (order["side"]?.ToString() ?? "sell") == "sell";
+            int qty = order["qty"]?.Value<int>() ?? 0;
+            int price = order["price"]?.Value<int>() ?? 0;
+
+            var go = new GameObject("MyOrder", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 44f;
+            var back = go.AddComponent<Image>();
+            back.color = _orderId == id ? RowSelected : RowBg;
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = back;
+            var rect = (RectTransform)go.transform;
+
+            Text name = Label("Name", rect, 14, TextAnchor.UpperLeft, sell ? Ink : Good, FontStyle.Bold);
+            Place(name.rectTransform, 0f, 0f, 0.5f, 1f, new Vector2(10f, 20f), new Vector2(-4f, -3f));
+            name.text = (sell ? "Продажа: " : "Выкуп: ") + RoaItemData.Name(order["itemId"]?.ToString());
+
+            Text detail = Label("Detail", rect, 11, TextAnchor.LowerLeft, InkDim);
+            Place(detail.rectTransform, 0f, 0f, 0.5f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -22f));
+            detail.text = qty + " шт по " + price + " · исполнено " + (order["filled"]?.Value<int>() ?? 0);
+
+            Text total = Label("Total", rect, 12, TextAnchor.UpperLeft, InkDim);
+            Place(total.rectTransform, 0.5f, 0f, 0.78f, 1f, new Vector2(0f, 20f), new Vector2(-4f, -3f));
+            total.text = sell ? "в книге на " + (qty * price) : "заморожено " + (qty * price);
+
+            Text timer = Label("Timer", rect, 11, TextAnchor.UpperRight, InkDim);
+            Place(timer.rectTransform, 0.78f, 0f, 1f, 1f, new Vector2(0f, 20f), new Vector2(-10f, -3f));
+            _timers.Add(new KeyValuePair<Text, long>(timer, DeadlineFor(order)));
+
+            Button cancel = TextButton("Cancel", rect, "Отменить", 12, out Text cancelLabel);
+            var cancelRect = (RectTransform)cancel.transform;
+            cancelRect.anchorMin = new Vector2(0.78f, 0f);
+            cancelRect.anchorMax = new Vector2(1f, 0f);
+            cancelRect.offsetMin = new Vector2(0f, 5f);
+            cancelRect.offsetMax = new Vector2(-10f, 27f);
+            cancel.GetComponent<Image>().color = QuietBg;
+            cancelLabel.color = Warn;
+            string captured = id;
+            cancel.onClick.AddListener(() =>
+            {
+                if (Interaction != null && Interaction.Socket != null) RoaAuctionNet.Cancel(Interaction.Socket, captured, AfterAction);
+            });
+            button.onClick.AddListener(() => { _orderId = captured; Rebuild(); });
+            _rows.Add(go);
         }
 
         // --- полка --------------------------------------------------------
@@ -656,7 +826,7 @@ namespace RealmOfAshes.Game
             JArray items = shelf?["items"] as JArray ?? new JArray();
             if (silver <= 0 && items.Count == 0)
             {
-                AddNote("Полка пуста. Сюда попадают выручка, выигранные лоты, возвраты снятых и перебитые ставки.");
+                AddNote("Полка пуста. Сюда попадают выручка проданного, купленный товар, отменённые ордера и замороженные марки.");
                 return;
             }
             if (silver > 0) AddShelfRow("Марки", silver, "выручка и возвраты");
@@ -673,20 +843,20 @@ namespace RealmOfAshes.Game
         {
             switch (reason)
             {
-                case "won": return "выигранный лот";
-                case "cancelled": return "снятый лот";
-                case "expired": return "срок вышел";
+                case "bought": return "куплено по ордеру";
+                case "cancelled": return "отменённый ордер";
+                case "expired": return "срок ордера вышел";
                 default: return "возврат";
             }
         }
 
         private void AddShelfRow(string title, int qty, string reason)
         {
-            var row = new GameObject("ShelfRow", typeof(RectTransform));
-            row.transform.SetParent(_list, false);
-            row.AddComponent<LayoutElement>().preferredHeight = 32f;
-            row.AddComponent<Image>().color = RowBg;
-            var rect = (RectTransform)row.transform;
+            var go = new GameObject("ShelfRow", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 32f;
+            go.AddComponent<Image>().color = RowBg;
+            var rect = (RectTransform)go.transform;
 
             Text name = Label("Name", rect, 13, TextAnchor.MiddleLeft, Ink);
             Place(name.rectTransform, 0f, 0f, 0.7f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
@@ -695,19 +865,48 @@ namespace RealmOfAshes.Game
             Text hint = Label("Reason", rect, 11, TextAnchor.MiddleRight, InkDim);
             Place(hint.rectTransform, 0.7f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
             hint.text = reason;
-            _rows.Add(row);
+            _rows.Add(go);
+        }
+
+        // --- вспомогательные строки списка --------------------------------
+
+        private void AddBackRow(string caption)
+        {
+            var go = new GameObject("Back", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 32f;
+            var back = go.AddComponent<Image>();
+            back.color = RowSelected;
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = back;
+            Text text = Label("Text", (RectTransform)go.transform, 13, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            Place(text.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 0f), new Vector2(-10f, 0f));
+            text.text = "‹  " + caption;
+            button.onClick.AddListener(() => { _itemId = string.Empty; _note = string.Empty; Rebuild(); });
+            _rows.Add(go);
+        }
+
+        private void AddHeading(string caption)
+        {
+            var go = new GameObject("Heading", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 24f;
+            Text text = Label("Text", (RectTransform)go.transform, 11, TextAnchor.LowerLeft, InkDim, FontStyle.Bold);
+            Place(text.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 2f), new Vector2(-10f, -2f));
+            text.text = caption;
+            _rows.Add(go);
         }
 
         private void AddNote(string text)
         {
-            var row = new GameObject("Note", typeof(RectTransform));
-            row.transform.SetParent(_list, false);
-            row.AddComponent<LayoutElement>().preferredHeight = 60f;
-            Text label = Label("Text", (RectTransform)row.transform, 13, TextAnchor.UpperLeft, InkDim);
+            var go = new GameObject("Note", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 60f;
+            Text label = Label("Text", (RectTransform)go.transform, 13, TextAnchor.UpperLeft, InkDim);
             Place(label.rectTransform, 0f, 0f, 1f, 1f, new Vector2(10f, 6f), new Vector2(-10f, -6f));
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.text = text;
-            _rows.Add(row);
+            _rows.Add(go);
         }
 
         // ------------------------------------------------------------------
@@ -716,73 +915,133 @@ namespace RealmOfAshes.Game
         private void RebuildDetail()
         {
             ClearRows(_detailRows);
-            bool sell = _tab == Tab.Sell;
-            _sellForm.gameObject.SetActive(sell);
-            if (sell) { RebuildSellForm(); return; }
+            bool form = (_tab == Tab.Buy || _tab == Tab.Sell) && !string.IsNullOrEmpty(_itemId);
+            bool sellForm = _tab == Tab.Sell;
+            bool showInputs = form && (sellForm || Fungible(_itemId));
+            _priceInput.gameObject.SetActive(showInputs);
+            _qtyInput.gameObject.SetActive(showInputs);
 
-            _bidInput.gameObject.SetActive(false);
             if (_tab == Tab.Shelf) { RebuildShelfPanel(); return; }
-
-            JObject lot = SelectedLot();
-            if (lot == null)
+            if (_tab == Tab.Mine) { RebuildOrderPanel(); return; }
+            if (!form)
             {
-                AddDetailText("Выберите лот слева: в карточке появятся ставка, выкуп и срок.", 13, InkDim, 90f);
+                AddDetailText(_tab == Tab.Sell
+                    ? "Выберите предмет из рюкзака: справа появится форма ордера на продажу, в центре — книга по нему."
+                    : "Выберите товар слева: в центре откроется книга ордеров, справа — форма ордера на выкуп.", 13, InkDim, 90f);
                 return;
             }
+            if (sellForm) RebuildSellForm(); else RebuildBuyForm();
+        }
 
-            string itemId = lot["itemId"]?.ToString() ?? string.Empty;
-            int qty = lot["qty"]?.Value<int>() ?? 0;
-            int bid = lot["bid"]?.Value<int>() ?? 0;
-            int nextBid = lot["nextBid"]?.Value<int>() ?? 0;
-            int buyout = lot["buyoutPrice"]?.Value<int>() ?? 0;
-            bool mine = lot["mine"]?.Value<bool>() == true;
-            bool leading = lot["leading"]?.Value<bool>() == true;
-            string lotId = lot["id"]?.ToString() ?? string.Empty;
-            int marks = Marks;
-
-            AddDetailText(RoaItemData.Name(itemId) + (qty > 1 ? " ×" + qty : string.Empty), 17, Accent, 30f, FontStyle.Bold);
-            AddDetailText(CategoryLabel(lot["category"]?.ToString()) + " · срок лота "
-                + (lot["durationHours"]?.Value<int>() ?? 0) + " ч · осталось " + Clock(DeadlineFor(lot)), 12, InkDim, 20f);
-            AddDetailText(mine ? "Ваш лот" : "Продавец: " + (lot["sellerName"]?.ToString() ?? "—"), 12, InkDim, 20f);
-
-            AddDetailText(bid > 0
-                ? "Ставка " + bid + " марок · " + (leading ? "ведёте вы" : "ведёт " + (lot["bidderName"]?.ToString() ?? "—"))
-                : "Ставок нет · старт " + (lot["startPrice"]?.Value<int>() ?? 0) + " марок",
-                14, bid > 0 && leading ? Good : Ink, 26f);
-
-            string artifacts = RoaDialogueCanvas.AuctionArtifactLine(lot);
-            if (!string.IsNullOrEmpty(artifacts)) AddDetailText(artifacts.TrimStart('\n'), 11, InkDim, 62f);
-
-            if (mine)
+        private void RebuildBuyForm()
+        {
+            AddDetailText("ОРДЕР НА ВЫКУП", 15, Accent, 24f, FontStyle.Bold);
+            AddDetailText(RoaItemData.Name(_itemId), 14, Ink, 22f);
+            if (!Fungible(_itemId))
             {
-                AddDetailText(bid > 0
-                    ? "Снять лот со ставкой нельзя: торги идут до конца срока, выручка придёт на полку за вычетом налога."
-                    : "Пока ставок нет, лот можно снять — предметы вернутся на полку.", 11, InkDim, 54f);
-                if (bid <= 0)
+                AddDetailText("У этого предмета есть износ или собственные свойства, поэтому обезличенную заявку на него не поставить — такой товар покупают ордером продавца в центре списка.", 12, InkDim, 90f);
+                return;
+            }
+            // Поля формы стоят на своих местах; подписи и кнопка ложатся ниже.
+            _detailCursor = -204f;
+            int price = FormPrice;
+            int qty = FormQty;
+            int fee = Mathf.FloorToInt(price * qty * SetupFeePct);
+            int best = BestPrice(_itemId, "sell");
+
+            AddDetailText(best > 0
+                ? "Дешевле всего продают по " + best + " — ордер выше этой цены исполнится сразу."
+                : "Сейчас никто не продаёт: ордер будет ждать продавца.", 11, InkDim, 34f);
+            AddDurationRow();
+            AddDetailText("Заморозится " + (price * qty) + " марок, сбор за ордер " + fee
+                + ". У вас " + Marks + ".", 11, price * qty + fee > Marks ? Warn : InkDim, 40f);
+
+            bool ready = price > 0 && qty > 0 && price * qty + fee <= Marks;
+            AddDetailButton(ready ? "ПОСТАВИТЬ ОРДЕР НА " + _durationHours + " Ч" : "УКАЖИТЕ ЦЕНУ И КОЛИЧЕСТВО",
+                ready ? ButtonBg : QuietBg, () =>
                 {
-                    AddDetailButton("СНЯТЬ ЛОТ", Warn, () =>
-                        RoaAuctionNet.Cancel(Interaction.Socket, lotId, AfterAction));
-                }
+                    if (!ready) return;
+                    RoaAuctionNet.BuyOrder(Interaction.Socket, _itemId, qty, price, _durationHours, AfterAction);
+                });
+        }
+
+        private void RebuildSellForm()
+        {
+            AddDetailText("ОРДЕР НА ПРОДАЖУ", 15, Accent, 24f, FontStyle.Bold);
+            int have = Backpack(_itemId);
+            AddDetailText(RoaItemData.Name(_itemId) + " · в рюкзаке " + have, 14, Ink, 22f);
+            _detailCursor = -204f;
+            int price = FormPrice;
+            int qty = Mathf.Min(FormQty, Mathf.Max(1, have));
+            int fee = Mathf.FloorToInt(price * qty * SetupFeePct);
+            int tax = Mathf.FloorToInt(price * qty * TaxPct);
+            int best = BestPrice(_itemId, "buy");
+
+            AddDetailText(best > 0
+                ? "Дороже всего выкупают по " + best + " — ордер ниже этой цены продастся сразу."
+                : "Заявок на выкуп нет: ордер будет ждать покупателя.", 11, InkDim, 34f);
+            AddDurationRow();
+            AddDetailText("Сбор за ордер " + fee + " · налог с продажи " + tax
+                + " · на руки " + Mathf.Max(0, price * qty - tax) + ".", 11, fee > Marks ? Warn : InkDim, 40f);
+
+            bool ready = price > 0 && have > 0 && qty > 0 && fee <= Marks;
+            AddDetailButton(ready ? "ВЫСТАВИТЬ ОРДЕР НА " + _durationHours + " Ч" : "УКАЖИТЕ ЦЕНУ И КОЛИЧЕСТВО",
+                ready ? ButtonBg : QuietBg, () =>
+                {
+                    if (!ready) return;
+                    RoaAuctionNet.SellOrder(Interaction.Socket, _itemId, qty, price, _durationHours, string.Empty, AfterAction);
+                });
+        }
+
+        private void AddDurationRow()
+        {
+            AddDetailText("СРОК ОРДЕРА", 11, InkDim, 18f, FontStyle.Bold);
+            float top = _detailCursor;
+            float x = 12f;
+            foreach (JToken token in _state?["durationChoicesHours"] as JArray ?? new JArray())
+            {
+                int choice = token?.Value<int>() ?? 0;
+                if (choice <= 0) continue;
+                string caption = choice >= 24 ? (choice / 24) + " д" : choice + " ч";
+                Button button = TextButton("Duration", _detail, caption, 12, out Text label);
+                var rect = (RectTransform)button.transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.anchoredPosition = new Vector2(x, top);
+                rect.sizeDelta = new Vector2(80f, 28f);
+                x += 84f;
+                button.GetComponent<Image>().color = _durationHours == choice ? ButtonBg : QuietBg;
+                label.color = _durationHours == choice ? Accent : Ink;
+                int captured = choice;
+                button.onClick.AddListener(() => { _durationHours = captured; Rebuild(); });
+                _detailRows.Add(button.gameObject);
+            }
+            _detailCursor = top - 34f;
+        }
+
+        private void RebuildOrderPanel()
+        {
+            JObject order = SelectedOrder();
+            if (order == null || order["mine"]?.Value<bool>() != true)
+            {
+                AddDetailText("Выберите свой ордер: здесь появятся его цена, остаток и срок.", 13, InkDim, 70f);
                 return;
             }
+            bool sell = (order["side"]?.ToString() ?? "sell") == "sell";
+            int qty = order["qty"]?.Value<int>() ?? 0;
+            int price = order["price"]?.Value<int>() ?? 0;
+            string id = order["id"]?.ToString() ?? string.Empty;
 
-            AddDetailText("Минимальная ставка: " + nextBid + " марок · у вас " + marks, 12,
-                marks >= nextBid ? InkDim : Warn, 22f);
-            _bidInput.gameObject.SetActive(true);
-            if (string.IsNullOrEmpty(_bidInput.text) || !leading) _bidInput.text = nextBid.ToString();
-
-            AddDetailButton("СТАВКА " + nextBid, marks >= nextBid ? ButtonBg : QuietBg, () =>
-            {
-                int amount = ParseNumber(_bidInput.text, nextBid);
-                RoaAuctionNet.Bid(Interaction.Socket, lotId, Mathf.Max(nextBid, amount), AfterAction);
-            });
-
-            if (buyout > 0)
-            {
-                AddDetailButton("ВЫКУП ЗА " + buyout, marks >= buyout ? ButtonBg : QuietBg, () =>
-                    RoaAuctionNet.Buyout(Interaction.Socket, lotId, AfterAction));
-            }
-            else AddDetailText("Выкупа у этого лота нет — только торги.", 11, InkDim, 20f);
+            AddDetailText(RoaItemData.Name(order["itemId"]?.ToString()), 17, Accent, 30f, FontStyle.Bold);
+            AddDetailText(sell ? "Ордер на продажу" : "Ордер на выкуп", 13, sell ? Ink : Good, 22f);
+            AddDetailText("Цена за штуку: " + price + "\nОсталось: " + qty + " шт\nИсполнено: "
+                + (order["filled"]?.Value<int>() ?? 0) + " шт\nСрок: " + Clock(DeadlineFor(order)), 12, InkDim, 76f);
+            string artifacts = AuctionArtifactLine(order);
+            if (!string.IsNullOrEmpty(artifacts)) AddDetailText(artifacts.TrimStart('\n'), 11, InkDim, 62f);
+            AddDetailText(sell
+                ? "Отмена вернёт товар на полку; сбор за размещение не возвращается."
+                : "Отмена вернёт замороженные марки на полку; сбор за размещение не возвращается.", 11, InkDim, 46f);
+            AddDetailButton("ОТМЕНИТЬ ОРДЕР", Warn, () => RoaAuctionNet.Cancel(Interaction.Socket, id, AfterAction));
         }
 
         private void RebuildShelfPanel()
@@ -792,87 +1051,36 @@ namespace RealmOfAshes.Game
             int items = 0;
             foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) items += row["qty"]?.Value<int>() ?? 0;
             AddDetailText("ПОЛКА У АУКЦИОНЕРА", 15, Accent, 28f, FontStyle.Bold);
-            AddDetailText("Марки: " + silver + "\nПредметов: " + items + "\nПродаж: " + (shelf?["sales"]?.Value<int>() ?? 0), 13, Ink, 60f);
-            AddDetailText("Забирается целиком, насколько хватит места и грузоподъёмности; остаток остаётся на полке.", 11, InkDim, 52f);
+            AddDetailText("Марки: " + silver + "\nПредметов: " + items + "\nСделок: " + (shelf?["sales"]?.Value<int>() ?? 0), 13, Ink, 60f);
+            AddDetailText("Забирается целиком, насколько хватит места и грузоподъёмности; остаток остаётся на полке у аукционера.", 11, InkDim, 52f);
             if (silver > 0 || items > 0)
                 AddDetailButton("ЗАБРАТЬ ПОЛКУ", ButtonBg, () => RoaAuctionNet.Claim(Interaction.Socket, AfterAction));
         }
 
-        private void RebuildSellForm()
+        /// <summary>
+        /// Состояние артефакта в ордере до покупки: вид, тир и признак
+        /// стабилизации, а у исследованного — его точные свойства. Сервер
+        /// присылает записи в публичной проекции, поэтому скрытый ролл сюда не
+        /// попадает.
+        /// </summary>
+        public static string AuctionArtifactLine(JObject order)
         {
-            int hours = Mathf.Max(1, _sellHours);
-            int start = ParseNumber(_startInput.text, 0);
-            int buyout = ParseNumber(_buyoutInput.text, 0);
-            int qty = Mathf.Max(1, ParseNumber(_qtyInput.text, 1));
-            int tax = Mathf.FloorToInt(Mathf.Max(start, buyout) * TaxPct);
-
-            // Поля формы стоят на своих местах в _sellForm; подписи и кнопки
-            // ложатся ниже них, поэтому курсор колонки начинается под полями.
-            _detailCursor = -252f;
-            AddDetailText(string.IsNullOrEmpty(_sellItemId)
-                ? "Выберите предмет из рюкзака слева."
-                : "Предмет: " + RoaItemData.Name(_sellItemId) + " ×" + qty, 13,
-                string.IsNullOrEmpty(_sellItemId) ? InkDim : Ink, 22f);
-
-            AddDetailText("СРОК ВЫСТАВЛЕНИЯ", 11, InkDim, 18f, FontStyle.Bold);
-            float top = _detailCursor;
-            float x = 12f;
-            foreach (JToken token in _state?["durationChoicesHours"] as JArray ?? new JArray())
+            JArray artifacts = order?["artifacts"] as JArray;
+            if (artifacts == null || artifacts.Count == 0)
             {
-                int choice = token?.Value<int>() ?? 0;
-                if (choice <= 0) continue;
-                Button button = TextButton("Duration", _detail, choice + " ч", 12, out Text label);
-                var rect = (RectTransform)button.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-                rect.pivot = new Vector2(0f, 1f);
-                rect.anchoredPosition = new Vector2(x, top);
-                rect.sizeDelta = new Vector2(80f, 28f);
-                x += 84f;
-                button.GetComponent<Image>().color = hours == choice ? ButtonBg : QuietBg;
-                label.color = hours == choice ? Accent : Ink;
-                int captured = choice;
-                button.onClick.AddListener(() => { _sellHours = captured; Rebuild(); });
-                _detailRows.Add(button.gameObject);
+                int count = order?["artifactCount"]?.Value<int>() ?? 0;
+                return count > 0 ? "\nАртефактов в ордере: " + count : string.Empty;
             }
-            _detailCursor = top - 34f;
-
-            AddDetailText("Налог на продажу " + Mathf.RoundToInt(TaxPct * 100f) + "%: при продаже удержат "
-                + tax + " марок, на полку придёт " + Mathf.Max(0, Mathf.Max(start, buyout) - tax) + ".",
-                11, InkDim, 46f);
-
-            bool ready = !string.IsNullOrEmpty(_sellItemId) && start > 0 && (buyout == 0 || buyout >= start);
-            AddDetailButton(ready ? "ВЫСТАВИТЬ НА " + hours + " Ч" : "ВЫБЕРИТЕ ПРЕДМЕТ И ЦЕНУ",
-                ready ? ButtonBg : QuietBg, () =>
-                {
-                    if (!ready) return;
-                    RoaAuctionNet.ListItem(Interaction.Socket, _sellItemId, qty, start, buyout, hours, string.Empty, ack =>
-                    {
-                        if (ack != null && ack["ok"]?.Value<bool>() == true) _sellItemId = string.Empty;
-                        AfterAction(ack);
-                    });
-                });
-        }
-
-        private static string CategoryLabel(string id)
-        {
-            switch (id)
+            var lines = new List<string>();
+            foreach (JToken token in artifacts)
             {
-                case "weapons": return "Оружие";
-                case "armor": return "Броня";
-                case "ammo": return "Патроны";
-                case "aid": return "Медицина";
-                case "artifacts": return "Артефакты";
-                case "tools": return "Инструменты";
-                case "materials": return "Материалы";
-                case "strategic": return "Стратегическое";
-                default: return "Разное";
+                JObject record = token as JObject;
+                if (record == null) continue;
+                lines.Add((record["displayName"]?.ToString() ?? "Артефакт") + ": "
+                    + RoaPipboyCanvas.ArtifactCardSummary(record, 1));
+                if (lines.Count >= 4) break;
             }
-        }
-
-        private static int ParseNumber(string text, int fallback)
-        {
-            int value;
-            return int.TryParse((text ?? string.Empty).Trim(), out value) && value >= 0 ? value : fallback;
+            return lines.Count > 0 ? "\n" + string.Join("\n", lines) : string.Empty;
         }
 
         // ------------------------------------------------------------------

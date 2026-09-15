@@ -174,6 +174,7 @@ const {
   initialPacks: pveInitialPacks,
   normalizePveAreaCatalog,
   notePveAlive,
+  notePveDistance,
   publicPveAreaCatalog,
   publicPveRoomState,
   pveAreaForLocation,
@@ -20358,6 +20359,29 @@ function serverPveRoomEntered(room, player, now = Date.now()) {
   state.lastAlive = serverPveAliveCount(room);
 }
 
+/**
+ * Сколько отряд прошёл по области с прошлого тика. Считается по самому
+ * прыткому участнику: группа идёт вместе, а стоящий у входа лагерь зверей не
+ * собирает.
+ */
+function serverNotePveTravel(room, occupants = []) {
+  if (!room?.pveState) return 0;
+  if (!(room.pveTravelMarks instanceof Map)) room.pveTravelMarks = new Map();
+  let best = 0;
+  const seen = new Set();
+  for (const player of occupants) {
+    if (!player?.id) continue;
+    seen.add(player.id);
+    const mark = room.pveTravelMarks.get(player.id);
+    const x = Number(player.x || 0);
+    const z = Number(player.z || 0);
+    if (mark) best = Math.max(best, Math.hypot(x - mark.x, z - mark.z));
+    room.pveTravelMarks.set(player.id, { x, z });
+  }
+  for (const id of [...room.pveTravelMarks.keys()]) if (!seen.has(id)) room.pveTravelMarks.delete(id);
+  return notePveDistance(room.pveState, best);
+}
+
 function serverTickPveRooms(now = Date.now(), options = {}) {
   const rules = KROMKA_PVE_AREA_CATALOG.rules;
   const results = [];
@@ -20377,6 +20401,9 @@ function serverTickPveRooms(now = Date.now(), options = {}) {
       }
       continue;
     }
+    // Пройденный отрядом путь по области: встречи приходят к идущему, поэтому
+    // проверка ждёт не только часов, но и расстояния.
+    serverNotePveTravel(room, occupants);
     const alive = serverPveAliveCount(room);
     const cleared = notePveAlive(room.pveState, rules, alive, now);
     const roll = rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });

@@ -23,6 +23,8 @@ assert(catalog.areas.length >= 5, 'At least five persistent PvE areas.');
 assert.deepEqual(catalog.rules, {
   rollIntervalMs: 90000, calmAfterClearMs: 45000, rollChance: 0.35, tracksCooldownMs: 30000,
   tracksChance: 0.8, maxAlive: 8, spawnMinPlayerDistance: 14, roomIdleResetMs: 600000,
+  // Встречи приходят к идущему: между проверками отряд проходит свою долю пути.
+  distancePerRollM: 90,
   // Обстоятельства встречи: засада подводит стаю вплотную, смешанная приводит
   // соседа другого вида.
   ambushChance: 0.25, ambushMinPlayerDistance: 6, mixedChance: 0.25, mixedCompanionCount: 1
@@ -71,13 +73,26 @@ assert.deepEqual(pve.initialPacks(state, area, () => 0), [], 'Initial packs spaw
 
 assert.equal(pve.rollPveEncounter(state, area, rules, t0 + 1000, { random: () => 0, aliveCount: 2, occupied: true }).reason, 'cooldown');
 assert.equal(pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs, { random: () => 0, aliveCount: 2, occupied: false }).reason, 'empty', 'Empty rooms never roll.');
+// Стоящий отряд не собирает зверей: проверка ждёт пройденного пути и не
+// тратит интервал впустую.
+const still = pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs, { random: () => 0, aliveCount: 2, occupied: true });
+assert.equal(still.reason, 'still', 'Standing still means no encounter check at all.');
+assert.equal(state.rolls, 0, 'A refused check does not count as a roll.');
+assert.equal(state.nextRollAt, t0 + rules.rollIntervalMs, 'A refused check does not spend the interval.');
+assert.equal(pve.notePveDistance(state, rules.distancePerRollM / 2), rules.distancePerRollM / 2, 'Travel accumulates.');
+assert.equal(pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs, { random: () => 0, aliveCount: 2, occupied: true }).reason,
+  'still', 'Half the way is not enough.');
+pve.notePveDistance(state, rules.distancePerRollM / 2);
 const quiet = pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs, { random: () => 0.99, aliveCount: 2, occupied: true });
+assert.equal(state.distanceSinceRollM, 0, 'A check resets the travelled distance.');
 assert.equal(quiet.reason, 'quiet');
 assert.equal(state.rolls, 1);
 assert.equal(state.nextRollAt, t0 + rules.rollIntervalMs * 2, 'A roll schedules the next one a full interval later.');
+pve.notePveDistance(state, rules.distancePerRollM);
 const spawned = pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs * 2, { random: () => 0, aliveCount: 2, occupied: true });
 assert.equal(spawned.reason, 'spawned');
 assert(spawned.spawn && spawned.spawn.spawnCount >= 2);
+pve.notePveDistance(state, rules.distancePerRollM);
 assert.equal(pve.rollPveEncounter(state, area, rules, t0 + rules.rollIntervalMs * 3, { random: () => 0, aliveCount: rules.maxAlive, occupied: true }).reason, 'crowded');
 
 // Зачистка → затишье: плановая проверка ждёт конца затишья.
@@ -90,6 +105,7 @@ assert.equal(state.lastResult, 'cleared');
 assert(state.nextRollAt >= state.calmUntil, 'No scheduled roll lands inside the calm window.');
 assert(!pve.notePveAlive(state, rules, 0, clearAt + 10), 'A clear is reported once.');
 state.nextRollAt = clearAt + 1000;
+pve.notePveDistance(state, rules.distancePerRollM);
 assert.equal(pve.rollPveEncounter(state, area, rules, clearAt + 1000, { random: () => 0, aliveCount: 0, occupied: true }).reason, 'calm', 'A forced early roll still respects the calm.');
 
 // «Искать следы»: своя перезарядка, работает в затишье, повышенный шанс.
@@ -192,6 +208,7 @@ for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAr
 
   // Обстоятельство доезжает до сервера вместе с пачкой и до игрока — словами.
   const state = pve.createPveRoomState(area, catalog.rules, 0, 'char-x');
+  pve.notePveDistance(state, catalog.rules.distancePerRollM);
   const rolled = pve.rollPveEncounter(state, area, catalog.rules, catalog.rules.rollIntervalMs, {
     aliveCount: 0, occupied: true, random: () => 0.01
   });
@@ -220,6 +237,23 @@ for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAr
     'minPlayerDistance: ambush ? rules.ambushMinPlayerDistance : rules.spawnMinPlayerDistance',
     'if (prey?.player) aggroEnemyFromHit(room, enemy, prey.player, now);'
   ]) assert(serverSource.includes(token), `server.js must honour the encounter circumstances: ${token}`);
+}
+
+// Сервер обязан считать пройденный путь и показывать остаток игроку.
+{
+  const serverSource = read('server.js');
+  for (const token of [
+    'function serverNotePveTravel(room, occupants = []) {',
+    'serverNotePveTravel(room, occupants);',
+    'if (mark) best = Math.max(best, Math.hypot(x - mark.x, z - mark.z));'
+  ]) assert(serverSource.includes(token), `server.js must count the travelled path: ${token}`);
+  const area = catalog.areas[0];
+  const state = pve.createPveRoomState(area, catalog.rules, 0, 'char-z');
+  const view = pve.publicPveRoomState(state, area, catalog.rules, 0, { aliveCount: 0, members: 1 });
+  assert.equal(view.distanceToRollM, catalog.rules.distancePerRollM, 'A standing party sees the whole way ahead.');
+  pve.notePveDistance(state, 30);
+  assert.equal(pve.publicPveRoomState(state, area, catalog.rules, 0, { aliveCount: 0, members: 1 }).distanceToRollM,
+    catalog.rules.distancePerRollM - 30, 'The remaining way shrinks as the party walks.');
 }
 
 console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);

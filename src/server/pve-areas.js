@@ -16,6 +16,9 @@ const DEFAULT_RULES = Object.freeze({
   roomIdleResetMs: 600000,
   // Обстоятельства встречи: обычно стая бродит поодаль, иногда поджидает
   // вплотную, иногда приходит смешанной — с гостем другого вида.
+  // Встречи приходят к идущему: между проверками отряд должен пройти по
+  // области хоть сколько-то. Стоящий на месте лагерь зверей не собирает.
+  distancePerRollM: 90,
   ambushChance: 0.25,
   ambushMinPlayerDistance: 6,
   mixedChance: 0.25,
@@ -41,6 +44,7 @@ function normalizePveRules(input = {}) {
     maxAlive: Math.max(1, Math.floor(Number(src.maxAlive || DEFAULT_RULES.maxAlive))),
     spawnMinPlayerDistance: Math.max(2, Number(src.spawnMinPlayerDistance || DEFAULT_RULES.spawnMinPlayerDistance)),
     roomIdleResetMs: Math.max(10000, Math.floor(Number(src.roomIdleResetMs || DEFAULT_RULES.roomIdleResetMs))),
+    distancePerRollM: Math.max(0, Number(src.distancePerRollM ?? DEFAULT_RULES.distancePerRollM)),
     ambushChance: clamp(Number(src.ambushChance ?? DEFAULT_RULES.ambushChance), 0, 1),
     ambushMinPlayerDistance: Math.max(2, Number(src.ambushMinPlayerDistance || DEFAULT_RULES.ambushMinPlayerDistance)),
     mixedChance: clamp(Number(src.mixedChance ?? DEFAULT_RULES.mixedChance), 0, 1),
@@ -171,6 +175,8 @@ function createPveRoomState(area = {}, rules = DEFAULT_RULES, now = Date.now(), 
     lastResult: 'idle',
     lastPackLabel: '',
     lastCircumstance: 'wandering',
+    // Пройденное по области расстояние с последней проверки.
+    distanceSinceRollM: 0,
     initialSpawned: false
   };
 }
@@ -233,11 +239,29 @@ function initialPacks(state = {}, area = {}, random = Math.random) {
 
 // Плановая проверка: только при игроках в комнате, не чаще интервала,
 // не в «затишье» после зачистки и не при переполнении.
+/**
+ * Пройденное отрядом расстояние внутри области. Частота встреч считается по
+ * нему, а не только по часам: кто идёт — встречает, кто стоит — нет.
+ */
+function notePveDistance(state = {}, metres = 0) {
+  const step = Math.max(0, Number(metres) || 0);
+  if (!step) return Number(state.distanceSinceRollM || 0);
+  state.distanceSinceRollM = Number(state.distanceSinceRollM || 0) + step;
+  return state.distanceSinceRollM;
+}
+
 function rollPveEncounter(state = {}, area = {}, rules = DEFAULT_RULES, now = Date.now(), options = {}) {
   const random = typeof options.random === 'function' ? options.random : Math.random;
   const aliveCount = Math.max(0, Math.floor(Number(options.aliveCount || 0)));
   if (options.occupied === false) return { rolled: false, spawn: null, reason: 'empty' };
   if (Number(now) < Number(state.nextRollAt || 0)) return { rolled: false, spawn: null, reason: 'cooldown' };
+  // Проверка не делается, пока отряд не прошёл свою долю пути по области.
+  const needed = Math.max(0, Number(rules.distancePerRollM || 0));
+  if (needed > 0 && Number(state.distanceSinceRollM || 0) < needed) {
+    state.lastResult = 'still';
+    return { rolled: false, spawn: null, reason: 'still' };
+  }
+  state.distanceSinceRollM = 0;
   state.lastRollAt = Number(now);
   state.nextRollAt = Number(now) + rules.rollIntervalMs;
   state.rolls += 1;
@@ -319,6 +343,7 @@ const RESULT_LABELS = Object.freeze({
   calm: 'После зачистки здесь тихо.',
   crowded: 'Логово и так кишит.',
   quiet: 'Пока спокойно.',
+  still: 'Пока стоим на месте — никого.',
   noTracks: 'Следов не нашлось.',
   tracked: 'По следам вышла группа.',
   cleared: 'Область зачищена — затишье.'
@@ -344,6 +369,9 @@ function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, no
     alive: Math.max(0, Math.floor(Number(extra.aliveCount ?? state.lastAlive ?? 0))),
     maxAlive: rules.maxAlive,
     nextRollInSeconds: Math.max(0, Math.round((Number(state.nextRollAt || 0) - Number(now)) / 1000)),
+    // Сколько ещё пройти по области до следующей проверки: встречи приходят
+    // к идущему, и игрок должен это видеть.
+    distanceToRollM: Math.max(0, Math.round(Number(rules.distancePerRollM || 0) - Number(state.distanceSinceRollM || 0))),
     calmSeconds: Math.max(0, Math.round((Number(state.calmUntil || 0) - Number(now)) / 1000)),
     tracksReadyInSeconds: Math.max(0, Math.round((Number(state.tracksReadyAt || 0) - Number(now)) / 1000)),
     rolls: Number(state.rolls || 0),
@@ -364,6 +392,7 @@ function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, no
 
 module.exports = {
   chooseCircumstance,
+  notePveDistance,
   publicPveAreaCatalog,
   DEFAULT_RULES,
   RESULT_LABELS,

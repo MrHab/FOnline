@@ -955,6 +955,14 @@ namespace RealmOfAshes.Game
                 else if (enemy.CarriesWeapon) _ = RefreshCreatureWeapon(enemy);
             }
             enemy.KromkaPresentation?.PlayImpact(payload?["attackId"]?.ToString());
+            // Выстрелы NPC озвучивает общий слой эффектов через событие shoot, а
+            // ближний бой не озвучивал никто: мутант замахивался и бил беззвучно.
+            if (!ranged && enemy.Root != null)
+            {
+                string meleeWeapon = payload?["weapon"]?.ToString();
+                RoaAudio.Active?.PlayMeleeSwing(enemy.Root.transform.position,
+                    string.IsNullOrEmpty(meleeWeapon) ? "fists" : meleeWeapon);
+            }
             bool windupAnimated = Time.time < enemy.AttackWindupUntil;
             enemy.ThreatActive = false;
             enemy.ThreatRemaining = 0f;
@@ -996,6 +1004,9 @@ namespace RealmOfAshes.Game
                 enemy.CharacterView.PrepareDeath(RoaCoords.ToUnity(
                     Value(payload, "sourceX"), Value(payload, "sourceZ")));
             }
+            // Смерть существа была полностью беззвучной.
+            if (newlyDead && enemy.Root != null)
+                RoaAudio.Active?.PlayCreatureDown(enemy.Root.transform.position);
             enemy.Dead = true;
             enemy.Moving = false;
             enemy.PresentationMoving = false;

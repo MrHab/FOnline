@@ -255,6 +255,17 @@ namespace RealmOfAshes.Game
                 critical ? Pitch(0.78f, 0.9f) : Pitch(0.92f, 1.08f), 20f);
         }
 
+        /// <summary>
+        /// Падение тела: у существ и NPC не было ни одного звука смерти, они умирали
+        /// беззвучно. Отдельный клип намеренно не синтезируем — берём готовый удар с
+        /// низким тоном, чтобы не менять число сгенерированных клипов, которое
+        /// фиксируют редакторские пробы.
+        /// </summary>
+        public void PlayCreatureDown(Vector3 center)
+        {
+            PlayWorld(_unarmedImpact, center, 0.46f, Pitch(0.56f, 0.68f), 26f);
+        }
+
         public void PlayHurt(int damage)
         {
             float strength = Mathf.InverseLerp(2f, 45f, Mathf.Max(0, damage));

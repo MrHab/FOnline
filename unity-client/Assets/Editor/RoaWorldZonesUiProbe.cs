@@ -289,6 +289,12 @@ namespace RealmOfAshes.EditorTools
             Require(intro.Contains("Сердцевина") && intro.Contains("12"), "Contract window explains the territory and how many signed");
             Require(RoaGlobalMapCanvas.ContractIntroText(JObject.Parse(@"{'signedCharacters':0}")).Contains("не подписал никто"),
                 "An empty territory says so instead of showing zeroes");
+            // Подпись связывает на срок, и срок этот приходит в самом предложении.
+            Require(!intro.Contains("сменить фракцию"), "Without a published cooldown nothing is promised: " + intro);
+            contract["changeCooldownMs"] = 259200000L;
+            string bound = RoaGlobalMapCanvas.ContractIntroText(contract);
+            Require(bound.Contains("сменить фракцию можно будет только через 72 ч."),
+                "The contract window says how long the choice binds before it is signed: " + bound);
             string upravaRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][0], true);
             Require(upravaRow.Contains("Управа") && upravaRow.Contains("66.7%") && upravaRow.Contains("8 чел.") && upravaRow.Contains("Узел Управы"),
                 "Faction row shows the share, the people and the base: " + upravaRow);

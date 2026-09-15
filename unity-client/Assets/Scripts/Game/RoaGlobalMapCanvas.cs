@@ -617,9 +617,10 @@ namespace RealmOfAshes.Game
             intro.horizontalOverflow = HorizontalWrapMode.Wrap;
             intro.text = ContractIntroText(null);
             _contractIntro = intro;
-            // Вступление занимает две строки и меняется по числу подписавших,
-            // поэтому коробке дан запас: раньше текст ложился впритык.
-            Place(intro.rectTransform, 0f, 1f, 1f, 1f, new Vector2(20f, -104f), new Vector2(-20f, -50f));
+            // Вступление занимает три строки — заголовок, доли и срок, на который
+            // связывает подпись, — и меняется по числу подписавших: коробке дан
+            // запас, раньше текст ложился впритык.
+            Place(intro.rectTransform, 0f, 1f, 1f, 1f, new Vector2(20f, -120f), new Vector2(-20f, -50f));
 
             for (int index = 0; index < ContractRowCount; index++)
             {
@@ -627,7 +628,7 @@ namespace RealmOfAshes.Game
                 Button row = UiButton(panel, string.Empty, out Text rowLabel, () => SelectContractRow(rowIndex));
                 rowLabel.alignment = TextAnchor.MiddleLeft;
                 Place((RectTransform)row.transform, 0f, 1f, 1f, 1f,
-                    new Vector2(20f, -142f - index * 38f), new Vector2(-20f, -108f - index * 38f));
+                    new Vector2(20f, -158f - index * 38f), new Vector2(-20f, -124f - index * 38f));
                 _contractRows.Add(row);
                 _contractRowLabels.Add(rowLabel);
             }
@@ -664,8 +665,15 @@ namespace RealmOfAshes.Game
             string territory = contract?["displayName"]?.ToString();
             if (string.IsNullOrWhiteSpace(territory)) territory = "Сердцевина";
             string head = territory + " пускает только по контракту. Выберите сторону — вы появитесь на её базе.";
-            if (signed <= 0) return head + "\nКонтракт пока не подписал никто: доли откроются с первыми наёмниками.";
-            return head + "\nКонтракт подписали персонажей: " + signed + ". Доли ниже — от этого числа.";
+            // Подпись связывает: сервер шлёт срок, после которого фракцию можно
+            // сменить, и назвать его надо до подписи, а не потом у регистратора.
+            long cooldownMs = contract?["changeCooldownMs"]?.ToObject<long>() ?? 0L;
+            string bind = cooldownMs > 0
+                ? "\nВыбор связывает: сменить фракцию можно будет только через "
+                  + System.Math.Max(1L, cooldownMs / 3600000L) + " ч."
+                : string.Empty;
+            if (signed <= 0) return head + "\nКонтракт пока не подписал никто: доли откроются с первыми наёмниками." + bind;
+            return head + "\nКонтракт подписали персонажей: " + signed + ". Доли ниже — от этого числа." + bind;
         }
 
         /// <summary>Строка фракции в окне контракта: доля, люди и база.</summary>

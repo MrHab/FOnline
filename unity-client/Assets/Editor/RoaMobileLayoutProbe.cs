@@ -70,14 +70,14 @@ namespace RealmOfAshes.EditorTools
                 // --- окно контракта фракции --------------------------------------------
                 // Панель 540×380: вступление, четыре строки фракций и подсказка.
                 var contract = JObject.Parse(@"{'displayName':'Сердцевина','characters':128,'signedCharacters':96,'canSign':true,
-                    'changeLocked':true,'changeAllowedInHours':71}");
+                    'changeLocked':true,'changeAllowedInHours':71,'changeCooldownMs':259200000}");
                 // Коробкам с жёсткой высотой нужен запас: текст меняется по числу
                 // подписавших и по длине названий фракций.
                 const float Headroom = 6f;
                 float introNeeded = TextHeight(host, RoaGlobalMapCanvas.ContractIntroText(contract), 12, 500f);
-                Debug.Log("[MOBILE LAYOUT] contract intro: " + Mathf.CeilToInt(introNeeded) + " / 54 px");
-                Require(introNeeded + Headroom <= 54f,
-                    "the contract window leaves no room for its intro — " + Mathf.CeilToInt(introNeeded) + " px of text in a 54 px box");
+                Debug.Log("[MOBILE LAYOUT] contract intro: " + Mathf.CeilToInt(introNeeded) + " / 70 px");
+                Require(introNeeded + Headroom <= 70f,
+                    "the contract window leaves no room for its intro — " + Mathf.CeilToInt(introNeeded) + " px of text in a 70 px box");
                 var contractRow = JObject.Parse(@"{'factionId':'free_artels','displayName':'Вольные артели','sharePct':37,
                     'characters':47,'baseDisplayName':'Артельный узел','canSign':false,'reason':'Смена фракции будет доступна через 71 ч.'}");
                 float rowNeeded = TextHeight(host, RoaGlobalMapCanvas.ContractRowText(contractRow, false), 12, 480f);
@@ -85,7 +85,7 @@ namespace RealmOfAshes.EditorTools
                 Require(rowNeeded <= 34f,
                     "a faction row in the contract window does not fit its button — " + Mathf.CeilToInt(rowNeeded) + " px in a 34 px box");
                 // Четыре строки фракций не должны налезть на подсказку внизу окна.
-                float lastRowBottom = 142f + 3f * 38f;
+                float lastRowBottom = 158f + 3f * 38f;
                 float hintTop = 380f - 98f;
                 Debug.Log("[MOBILE LAYOUT] contract rows end at " + lastRowBottom + " px, hint starts at " + hintTop + " px");
                 Require(lastRowBottom <= hintTop,

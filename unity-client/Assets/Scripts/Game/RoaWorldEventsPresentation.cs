@@ -374,6 +374,10 @@ namespace RealmOfAshes.Game
                     int inSeconds = strike["inSeconds"]?.Value<int>() ?? 0;
                     if (inSeconds > 0) parts.Add(name + " через " + inSeconds + " с");
                 }
+                // Обозначенный удар называет сторону: точка прихода известна
+                // заранее, и уходить надо в другую.
+                string strikeSide = CompassSide(strike["x"]?.Value<float>() ?? 0f, strike["z"]?.Value<float>() ?? 0f);
+                if (!string.IsNullOrEmpty(strikeSide) && strikeSide != "центр") parts.Add("удар с: " + strikeSide);
             }
             int hazards = (scenario["hazards"] as JArray)?.Count ?? 0;
             if (hazards > 0) parts.Add("опасная земля: " + hazards);
@@ -429,7 +433,7 @@ namespace RealmOfAshes.Game
         /// Стороны зала, по которым придёт удар: «север, юго-запад». Считается
         /// от центра зала, вокруг которого сервер и раскладывает сектора.
         /// </summary>
-        public static string HazardSides(JArray sectors)
+        public static string HazardSides(JArray sectors, float centerX = 0f, float centerZ = 0f)
         {
             if (sectors == null || sectors.Count == 0) return string.Empty;
             var sides = new List<string>();
@@ -437,7 +441,8 @@ namespace RealmOfAshes.Game
             {
                 JObject row = token as JObject;
                 if (row == null) continue;
-                string side = CompassSide(row["x"]?.Value<float>() ?? 0f, row["z"]?.Value<float>() ?? 0f);
+                string side = CompassSide((row["x"]?.Value<float>() ?? 0f) - centerX,
+                    (row["z"]?.Value<float>() ?? 0f) - centerZ);
                 if (!string.IsNullOrEmpty(side) && !sides.Contains(side)) sides.Add(side);
             }
             return sides.Count > 0 ? string.Join(", ", sides) : string.Empty;
@@ -522,7 +527,14 @@ namespace RealmOfAshes.Game
             // Опасные участки арены смещаются с каждым импульсом: игрок должен
             // видеть, сколько секторов горит прямо сейчас.
             int hazards = (payload["hazards"] as JArray)?.Count ?? 0;
-            if (hazards > 0) sb.Append(" · горящих секторов: ").Append(hazards);
+            if (hazards > 0)
+            {
+                sb.Append(" · горит: ");
+                JObject arena = payload["arenaCenter"] as JObject;
+                string sides = HazardSides(payload["hazards"] as JArray,
+                    arena?["x"]?.Value<float>() ?? 0f, arena?["z"]?.Value<float>() ?? 0f);
+                sb.Append(string.IsNullOrEmpty(sides) ? hazards + " сект." : sides);
+            }
             if (payload["pulseTelegraph"]?.Value<bool>() == true) sb.Append("\nИМПУЛЬС! Отойдите на ").Append(payload["pulseRadius"]?.Value<int>() ?? 9).Append(" м");
             else sb.Append("\nИмпульс через ").Append(Math.Max(0, (payload["pulseInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)).Append(" с");
             return sb.ToString();

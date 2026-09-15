@@ -175,6 +175,11 @@ assert(socketClient.includes('_connection.On("worldBossState"') && socketClient.
   assert.deepEqual(boss.worldBossHazards(arena, rules, { x: 0, z: 0 }), [], 'A defeated boss leaves a safe arena.');
   const snapshot = boss.publicWorldBoss(wide.length ? arena : arena, rules, 2000, { center: { x: 5, z: 5 } });
   assert(Array.isArray(snapshot.hazards), 'The snapshot always carries the hazard list.');
+  // Центр арены нужен клиенту, чтобы назвать стороны горящих участков.
+  assert.deepEqual(snapshot.arenaCenter, { x: 5, z: 5 }, 'The snapshot carries the centre of the arena.');
+  const presentationSource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
+  assert(presentationSource.includes('JObject arena = payload["arenaCenter"] as JObject;'),
+    'The boss line must name the burning sides around the installation.');
 }
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 for (const needle of [

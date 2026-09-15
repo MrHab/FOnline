@@ -185,7 +185,7 @@ assert(presentation.includes('_labHall = world?["labHall"] as JObject;'), 'The H
 // Объявленный удар обязан называть стороны, по которым придёт: сектора
 // сервер шлёт, и игрок должен знать, куда уходить.
 for (const token of [
-  'public static string HazardSides(JArray sectors)',
+  'public static string HazardSides(JArray sectors, float centerX = 0f, float centerZ = 0f)',
   'public static string CompassSide(float x, float z)',
   'string sides = HazardSides(payload["sectors"] as JArray);'
 ]) assert(presentation.includes(token), `The hall line must name the sides of the announced strike: ${token}`);

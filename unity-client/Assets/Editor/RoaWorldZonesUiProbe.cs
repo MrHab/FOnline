@@ -52,7 +52,7 @@ namespace RealmOfAshes.EditorTools
             // обозначенный удар.
             var scenario = JObject.Parse(@"{'supports':[{'id':'shield_generator','displayName':'Защитный генератор','alive':true},
                 {'id':'radio_mast','displayName':'Радиостанция','alive':false}],'shielded':true,
-                'strike':{'kind':'grenade','displayName':'Гранатный удар','telegraph':false,'inSeconds':7},
+                'strike':{'kind':'grenade','displayName':'Гранатный удар','telegraph':false,'inSeconds':7,'x':9,'z':-4},
                 'hazards':[{'id':'ground_0'}]}");
             string scenarioLine = RoaWorldEventsPresentation.ScenarioLine(scenario);
             Require(scenarioLine.Contains("цело: Защитный генератор") && !scenarioLine.Contains("Радиостанция"),
@@ -60,6 +60,7 @@ namespace RealmOfAshes.EditorTools
             Require(scenarioLine.Contains("ГЛАВАРЬ ПОД ЩИТОМ"), "A shielded leader is announced: " + scenarioLine);
             Require(scenarioLine.Contains("Гранатный удар через 7 с"), "The coming strike is counted down: " + scenarioLine);
             Require(scenarioLine.Contains("опасная земля: 1"), "Dangerous ground is announced: " + scenarioLine);
+            Require(scenarioLine.Contains("удар с: "), "The telegraphed strike names the side it comes from: " + scenarioLine);
             scenario["strike"]["telegraph"] = true;
             Require(RoaWorldEventsPresentation.ScenarioLine(scenario).Contains("ГРАНАТНЫЙ УДАР!"),
                 "A telegraphed strike shouts");
@@ -91,7 +92,10 @@ namespace RealmOfAshes.EditorTools
             var boss = JObject.Parse(@"{'roomId':'coreLabCenterReactor','displayName':'Хранитель Нуля','phase':'shielded','phaseLabel':'Щит активен','nodesAlive':2,'nodesTotal':4,'pulseInSeconds':12,'pulseTelegraph':false,'bossHp':1800,'bossMaxHp':1800,'pulseRadius':9,'hazards':[{'id':'hazard_0','x':9,'z':0,'radius':5},{'id':'hazard_2','x':-4.5,'z':7.8,'radius':5}]}");
             string bossText = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 2);
             Require(bossText.Contains("Узлы щита: 2/4") && bossText.Contains("Импульс через 10 с") && bossText.Contains("HP 1800/1800"), "Shielded boss shows nodes, pulse and HP");
-            Require(bossText.Contains("горящих секторов: 2"), "The changing arena is announced: " + bossText);
+            // Горящие участки арены называются сторонами от самой установки,
+            // а не числом: игроку важно, куда не вставать.
+            Require(bossText.Contains("горит: ") && (bossText.Contains("восток") || bossText.Contains("север")),
+                "The changing arena names its burning sides: " + bossText);
             boss["phase"] = "vulnerable"; boss["vulnerableSeconds"] = 30; boss["pulseTelegraph"] = true;
             string vulnerable = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
             Require(vulnerable.Contains("уязвим ещё 30 с") && vulnerable.Contains("ИМПУЛЬС!"), "Vulnerability window and telegraph are announced");

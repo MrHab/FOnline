@@ -52,6 +52,14 @@ namespace RealmOfAshes.Game
         {
             bool open = Interaction != null && (Interaction.NpcOpen || Interaction.JobBoardOpen);
 
+            // Аукционер ведёт собственный экран торгов: разговор с ним сразу
+            // открывает аукцион, поэтому вариантов диалога у него нет.
+            if (open && Interaction.NpcOpen && Interaction.NpcService == "auction")
+            {
+                RoaAuctionCanvas.Ensure(Interaction, gameObject);
+                open = false;
+            }
+
             if (!open)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
@@ -315,7 +323,7 @@ namespace RealmOfAshes.Game
             {
                 case "medic": AddMedicOptions(); break;
                 case "registrar": AddRegistrarOptions(); break;
-                case "auction": AddAuctionOptions(); break;
+                // "auction" сюда не доходит: аукционер открывает RoaAuctionCanvas.
                 case "artifactLab": AddArtifactLabOptions(); break;
             }
             if (!string.IsNullOrEmpty(_serviceNote)) AddHeading(_serviceNote);
@@ -334,7 +342,6 @@ namespace RealmOfAshes.Game
             };
             bool sent = service == "medic" ? RoaTerritoryNet.RequestMedicState(Interaction.Socket, completed)
                 : service == "registrar" ? RoaTerritoryNet.RequestMembershipState(Interaction.Socket, completed)
-                : service == "auction" ? RoaAuctionNet.RequestState(Interaction.Socket, completed)
                 : false;
             if (!sent) _servicePending = false;
         }
@@ -392,53 +399,9 @@ namespace RealmOfAshes.Game
             AddCard("Членство", body, actions);
         }
 
-        private void AddAuctionOptions()
-        {
-            AddHeading("АУКЦИОН ФРАКЦИИ");
-            JObject auction = _serviceState?["auction"] as JObject;
-            if (auction == null) { AddCard("Лоты", _servicePending ? "Запрашиваю лоты…" : "Нет данных.", null); return; }
-            JObject shelf = auction["shelf"] as JObject;
-            int shelfSilver = shelf?["silver"]?.Value<int>() ?? 0;
-            int shelfItems = 0;
-            foreach (JToken row in shelf?["items"] as JArray ?? new JArray()) shelfItems += row["qty"]?.Value<int>() ?? 0;
-            var shelfActions = new List<(string, System.Action)>();
-            if (shelfSilver > 0 || shelfItems > 0) shelfActions.Add(("Забрать", () => RoaAuctionNet.Claim(Interaction.Socket, AfterServiceAction)));
-            // Выставляется предмет, выбранный в ПУТНИКе: одна штука по двойной
-            // каталожной цене; сервер снимает предмет и проверяет лимиты.
-            string selectedItem = FindObjectOfType<RoaPipboyCanvas>()?.SelectedItemId ?? string.Empty;
-            string listHint = "\nВыставить: выберите предмет в ПУТНИКе и вернитесь к аукционеру.";
-            if (!string.IsNullOrEmpty(selectedItem) && selectedItem != "silver")
-            {
-                int askPrice = Mathf.Max(1, RoaItemData.BasePrice(selectedItem) * 2);
-                string captured = selectedItem;
-                shelfActions.Add(("Выставить " + RoaItemData.Name(selectedItem) + " ×1 за " + askPrice,
-                    () => RoaAuctionNet.ListItem(Interaction.Socket, captured, 1, askPrice, string.Empty, AfterServiceAction)));
-                listHint = string.Empty;
-            }
-            AddCard("Ваша полка", "Марки: " + shelfSilver + " · предметов: " + shelfItems + "\nСбор аукциона: "
-                + Mathf.RoundToInt((auction["feePct"]?.Value<float>() ?? 0f) * 100f) + "% · срок лота: " + (auction["listingLifetimeHours"]?.Value<int>() ?? 24) + " ч"
-                + listHint, shelfActions);
-            int shown = 0;
-            foreach (JToken token in auction["listings"] as JArray ?? new JArray())
-            {
-                JObject listing = token as JObject;
-                if (listing == null || shown >= 12) continue;
-                shown += 1;
-                string id = listing["id"]?.ToString() ?? string.Empty;
-                bool mine = listing["mine"]?.Value<bool>() == true;
-                string itemId = listing["itemId"]?.ToString() ?? string.Empty;
-                int qty = listing["qty"]?.Value<int>() ?? 0;
-                int price = listing["price"]?.Value<int>() ?? 0;
-                int remaining = listing["remainingSeconds"]?.Value<int>() ?? 0;
-                var actions = new List<(string, System.Action)>();
-                if (mine) actions.Add(("Снять лот", () => RoaAuctionNet.Cancel(Interaction.Socket, id, AfterServiceAction)));
-                else actions.Add(("Купить за " + price, () => RoaAuctionNet.Buy(Interaction.Socket, id, AfterServiceAction)));
-                AddCard(RoaItemData.Name(itemId) + " ×" + qty + " — " + price + " марок",
-                    "Продавец: " + (listing["sellerName"]?.ToString() ?? "—") + " · осталось " + RoaWorldEventsPresentation.Clock(remaining)
-                    + "\nПолучить у аукционера этой базы" + AuctionArtifactLine(listing), actions);
-            }
-            if (shown == 0) AddCard("Лоты", "Пока никто ничего не выставил.", null);
-        }
+        // Вариантов аукциона в диалоге нет: разговор с аукционером открывает
+        // отдельный экран торгов RoaAuctionCanvas с категориями, ставками,
+        // выкупом и сроком лота.
 
         /// <summary>
         /// Состояние артефакта в лоте до покупки: вид, тир и признак стабилизации,

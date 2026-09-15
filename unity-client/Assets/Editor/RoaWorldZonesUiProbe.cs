@@ -156,6 +156,18 @@ namespace RealmOfAshes.EditorTools
             lab["nodes"][1]["readyInSeconds"] = 0;
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит ×2"),
                 "Identical ready nodes collapse into one row");
+            // Снятое питание — это и есть окно, когда машину можно бить.
+            lab["guardShielded"] = false;
+            lab["nodes"][0]["action"] = "power";
+            lab["nodes"][0]["effectSeconds"] = 14;
+            string labPower = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
+            Require(labPower.Contains("ПИТАНИЕ СНЯТО: 14 с"),
+                "The node effect window says how long the guard machine stays open: " + labPower);
+            lab["nodes"][0]["action"] = "shift";
+            Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит: 14 с"),
+                "Any other node signs its window with its own name");
+            lab["nodes"][0]["effectSeconds"] = 0;
+            Require(RoaWorldEventsPresentation.NodeEffectLine(null) == string.Empty, "Without nodes no window is shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabAlloy") == string.Empty, "Another hall's state is not shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(null, "coreLabCircuit") == string.Empty, "Without a hall the line stays empty");
 

@@ -138,6 +138,13 @@ assert.equal(snapshot.hazardName, circuitMechanics.hazard.displayName);
 assert.equal(snapshot.telegraph, false);
 assert.equal(snapshot.nodes.length, circuitMechanics.nodes.length);
 assert(snapshot.nodes[0].readyInSeconds > 0, 'The snapshot shows the node cooldown.');
+// Снятое питание держится считаные секунды, и это окно решает, успеют ли
+// добить машину: снимок обязан называть остаток, а не только перезарядку.
+assert.equal(snapshot.nodes[0].effectSeconds, Math.round((circuitMechanics.nodes[0].effectMs - 1000) / 1000),
+  'The snapshot shows how long the machine stays without power.');
+assert.equal(snapshot.nodes[1].effectSeconds, 0, 'An untouched node has no effect window.');
+assert.equal(lab.publicLabState(circuit, circuitMechanics, { x: 0, z: 0 }, t0 + circuitMechanics.nodes[0].effectMs + 1000)
+  .nodes[0].effectSeconds, 0, 'When the power returns the window closes.');
 assert(snapshot.sectors.length === circuitMechanics.hazard.active);
 assert.equal(lab.publicLabState({}, null), null, 'Without mechanics there is no snapshot.');
 {
@@ -189,8 +196,16 @@ for (const token of [
   'public static string CompassSide(float x, float z)',
   'string sides = HazardSides(payload["sectors"] as JArray);'
 ]) assert(presentation.includes(token), `The hall line must name the sides of the announced strike: ${token}`);
+// Окно побочного эффекта узла сервер публикует; без него игрок не знает,
+// сколько секунд у него есть на охранную машину.
+for (const token of [
+  'public static string NodeEffectLine(JArray nodes)',
+  'row["effectSeconds"]?.Value<int>() ?? 0',
+  'string effect = NodeEffectLine(payload["nodes"] as JArray);'
+]) assert(presentation.includes(token), `The hall line must show the node effect window: ${token}`);
 
 const probe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');
 assert(probe.includes('DescribeLabHall(lab, "coreLabCircuit")'), 'The editor probe checks the hall line.');
+assert(probe.includes('ПИТАНИЕ СНЯТО: 14 с'), 'The editor probe checks the node effect window.');
 
 console.log('Laboratory halls OK: meter, announced strike over shifting sectors, relieving nodes, guard machine power, overheat bonus, snapshot and server/client hooks.');

@@ -407,6 +407,11 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(sides)) sb.Append(" · ").Append(sides);
             }
             if (payload["guardShielded"]?.Value<bool>() == true) sb.Append(" · МАШИНА ПОД ПИТАНИЕМ");
+            // Окно побочного эффекта узла — это и есть время, когда охранную
+            // машину можно бить: щит снят, пока оно идёт. Сервер шлёт остаток,
+            // и без него игрок бьёт вслепую.
+            string effect = NodeEffectLine(payload["nodes"] as JArray);
+            if (!string.IsNullOrEmpty(effect)) sb.Append(" · ").Append(effect);
             // Одинаковые приборы на стенах называются одинаково, поэтому
             // совпадающие строки сводятся в одну с количеством.
             var ready = new List<string>();
@@ -427,6 +432,30 @@ namespace RealmOfAshes.Game
             }
             if (ready.Count > 0) sb.Append("\nУзлы: ").Append(string.Join(", ", ready));
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Остаток окна побочного эффекта узла. Узел питания снимает щит с
+        /// охранной машины, поэтому его окно называется прямо; у остальных
+        /// узлов окно подписывается именем самого узла.
+        /// </summary>
+        public static string NodeEffectLine(JArray nodes)
+        {
+            int power = 0;
+            int other = 0;
+            string otherName = string.Empty;
+            foreach (JToken token in nodes ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                int seconds = row["effectSeconds"]?.Value<int>() ?? 0;
+                if (seconds <= 0) continue;
+                if ((row["action"]?.ToString() ?? string.Empty) == "power") { power = Mathf.Max(power, seconds); continue; }
+                if (seconds > other) { other = seconds; otherName = row["displayName"]?.ToString() ?? "узел"; }
+            }
+            if (power > 0) return "ПИТАНИЕ СНЯТО: " + power + " с";
+            if (other > 0) return otherName + ": " + other + " с";
+            return string.Empty;
         }
 
         /// <summary>

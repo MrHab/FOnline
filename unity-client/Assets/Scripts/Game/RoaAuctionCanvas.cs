@@ -224,19 +224,23 @@ namespace RealmOfAshes.Game
 
         private JObject Shelf { get { return _state?["shelf"] as JObject; } }
 
-        private int Marks
+        /// <summary>Рюкзак ищется один раз: строк книги бывает много, а поиск по сцене недёшев.</summary>
+        private RoaInventory _inventory;
+
+        private RoaInventory Inventory
         {
             get
             {
-                RoaInventory inventory = FindObjectOfType<RoaInventory>();
-                return inventory != null ? inventory.CountOf("silver") : 0;
+                if (_inventory == null) _inventory = FindObjectOfType<RoaInventory>();
+                return _inventory;
             }
         }
 
+        private int Marks { get { return Inventory != null ? Inventory.CountOf("silver") : 0; } }
+
         private int Backpack(string itemId)
         {
-            RoaInventory inventory = FindObjectOfType<RoaInventory>();
-            return inventory != null && !string.IsNullOrEmpty(itemId) ? inventory.CountOf(itemId) : 0;
+            return Inventory != null && !string.IsNullOrEmpty(itemId) ? Inventory.CountOf(itemId) : 0;
         }
 
         /// <summary>Ордер на выкуп ставится только на предмет без износа и свойств — правило сервера.</summary>
@@ -405,6 +409,11 @@ namespace RealmOfAshes.Game
             _list.anchorMin = new Vector2(0f, 1f);
             _list.anchorMax = new Vector2(1f, 1f);
             _list.pivot = new Vector2(0.5f, 1f);
+            // Ширина строго по окну прокрутки: у нового RectTransform sizeDelta
+            // равен (100,100), и список вылезал на 50 px в каждую сторону —
+            // маска срезала начало названий и конец строки ордера.
+            _list.sizeDelta = Vector2.zero;
+            _list.anchoredPosition = Vector2.zero;
             var listLayout = _list.gameObject.AddComponent<VerticalLayoutGroup>();
             listLayout.spacing = 4f;
             listLayout.childForceExpandHeight = false;
@@ -628,7 +637,7 @@ namespace RealmOfAshes.Game
 
         private void BuildBackpackPage()
         {
-            RoaInventory inventory = FindObjectOfType<RoaInventory>();
+            RoaInventory inventory = Inventory;
             if (inventory == null) { AddNote("Рюкзак недоступен."); return; }
             int shown = 0;
             foreach (RoaInventory.Row item in inventory.Items)

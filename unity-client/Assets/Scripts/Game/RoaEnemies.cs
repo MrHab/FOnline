@@ -832,6 +832,11 @@ namespace RealmOfAshes.Game
             foreach (Enemy enemy in _enemies.Values)
             {
                 if (enemy.Root == null || enemy.Snapshot == null) continue;
+                // Скрытый туманом труп или НПС не должен предлагать «обыскать»:
+                // подсказка показывала имя невидимой цели, а сервер отвечал отказом
+                // по линии видимости, и игрок видел непонятную ошибку. Остальные
+                // выборки целей этот же гейт уже проверяют.
+                if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
 
                 bool dead = ReadBoolean(enemy.Snapshot["dead"], enemy.Dead);
                 bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);

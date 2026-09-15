@@ -25,11 +25,15 @@ namespace RealmOfAshes.EditorTools
 
             var territory = JObject.Parse(@"{'zoneLocationId':'coreZone','factionNames':{'uprava':'Управа','free_artels':'Артели'},'outposts':[
                 {'id':'north','displayName':'Северный','ownerFactionId':'uprava','eventStatus':'closed','eventOpensInMs':754000,'capture':{'progress':{},'leadingFactionId':'','contested':false},'garrison':{'state':'arrived'}},
-                {'id':'east','displayName':'Восточный','ownerFactionId':'','eventStatus':'open','eventOpensInMs':0,'capture':{'progress':{'free_artels':0.42},'leadingFactionId':'free_artels','contested':true},'garrison':{'state':'enroute'}}]}");
+                {'id':'east','displayName':'Восточный','ownerFactionId':'','eventStatus':'open','eventOpensInMs':0,'capture':{'progress':{'free_artels':0.42},'leadingFactionId':'free_artels','contested':true},'garrison':{'state':'enroute'},'retiring':[{'factionId':'free_artels','progress':0.4}]}],
+                'rules':{'captureHoldMs':180000,'captureDecayRate':0.5,'contestPausesProgress':true}}");
             string outposts = RoaWorldEventsPresentation.DescribeOutposts(territory, "coreZone");
             Require(outposts.Contains("Северный: Управа") && outposts.Contains("захват через 12:34") && outposts.Contains("прибыл"), "Locked outpost shows owner, countdown and garrison");
             Require(outposts.Contains("Восточный: нейтральный") && outposts.Contains("ЗАХВАТ ОТКРЫТ") && outposts.Contains("Артели 42%") && outposts.Contains("ОСПАРИВАЕТСЯ") && outposts.Contains("в пути"),
                 "Open outpost shows capture progress, contest and garrison state");
+            Require(outposts.Contains("удержание") && outposts.Contains("оспаривание останавливает прогресс"),
+                "Capture rules from the snapshot are shown: " + outposts);
+            Require(outposts.Contains("отходит: Артели 40%"), "A retiring column of the previous owner is named: " + outposts);
             Require(RoaWorldEventsPresentation.DescribeOutposts(territory, "settlement") == string.Empty, "Outposts stay hidden outside the core zone");
 
             var publicEvent = JObject.Parse(@"{'roomId':'randomAshGrove#pubev_1','displayName':'Логово Гари','remainingSeconds':1500,'warning':false,'cleared':true,'chestOpen':false,'chestClaimed':false,'chestOpensInSeconds':50}");

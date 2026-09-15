@@ -761,7 +761,14 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (weapon == "shotgun" || weapon == "flamethrower")
+            TryResolvePrimaryTarget(cursor, out string enemyId, out Vector3 enemyPosition,
+                out PublicPlayer remote, out Vector3 remotePosition);
+
+            // Конус собирает только NPC, а сервер отклоняет повторный токен в PvP,
+            // поэтому веер и удар по игроку в одной атаке несовместимы. Если игрок
+            // целится в другого игрока, цель важнее веера: раньше дробовик в PvP не
+            // наносил ничего, стоило рядом оказаться любому мобу.
+            if ((weapon == "shotgun" || weapon == "flamethrower") && remote == null)
             {
                 Vector3 shotDirection = cursor - self;
                 shotDirection.y = 0f;
@@ -782,9 +789,6 @@ namespace RealmOfAshes.Game
                     return;
                 }
             }
-
-            TryResolvePrimaryTarget(cursor, out string enemyId, out Vector3 enemyPosition,
-                out PublicPlayer remote, out Vector3 remotePosition);
 
             if (remote != null)
             {

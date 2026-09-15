@@ -61,6 +61,29 @@ assert(bootstrap.includes('gameObject.AddComponent<RoaMobileControlsCanvas>()')
   && bootstrap.includes('mobileCanvas.Configure(MobileControls, BoltThrower);')
   && bootstrap.includes('MobileControls.CanvasDriven = true;'),
   'Bootstrap does not activate the mobile Canvas and gate the old IMGUI path');
+
+// Кнопки сумки, ПУТНИКа и игрока обязаны открывать канву терминала. Если они снова
+// начнут дёргать только IMGUI-панели (в бою те выключены флагом CanvasDriven), на
+// телефоне пропадут HUD, движение и сам слой кнопок, а выхода не будет: Esc там нет.
+assert(controls.includes('public void SetTerminal(RoaPipboyCanvas terminal)')
+  && controls.includes('private RoaPipboyCanvas _terminal;'),
+  'Mobile controls no longer hold the ПУТНИК canvas that actually renders');
+for (const [action, page] of [
+  ['TriggerInventory', 'Items'], ['TriggerPipboy', 'Status'], ['TriggerPlayerPanel', 'Friends']
+]) {
+  const body = controls.slice(controls.indexOf(`public void ${action}(`));
+  const scope = body.slice(0, body.indexOf('\n        }'));
+  assert(scope.includes(`ToggleTerminalPage(RoaPipboyCanvas.Page.${page}`),
+    `Mobile ${action} must open the ПУТНИК canvas page ${page}, not a hidden IMGUI panel`);
+}
+assert(controls.includes('private bool TerminalOpen')
+  && /private bool IsPanelOpen\(\)\s*\{\s*return DialogueOpen\(\) \|\| TerminalOpen/.test(controls),
+  'Mobile panel state ignores the ПУТНИК canvas: stick and fire would stay live under it');
+assert(bootstrap.includes('MobileControls.SetTerminal(PipboyCanvas);'),
+  'Bootstrap does not wire the ПУТНИК canvas into the touch buttons');
+assert(read(game, 'RoaPipboyCanvas.cs').includes('dimButton.onClick.AddListener(Close);'),
+  'ПУТНИК has no large tap-outside exit: on a phone the × shrinks with the frame');
+
 assert(probe.includes('mobile Canvas control leaves the device safe area')
   && probe.includes('left shortcut rail can no longer steal the floating joystick finger')
   && probe.includes('mobile Canvas pointer-down does not start held fire')

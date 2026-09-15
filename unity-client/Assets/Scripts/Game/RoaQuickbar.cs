@@ -227,6 +227,22 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            // Цифры применяют слот сразу — так обещают обучение и README, и так же
+            // это работает на глобальной карте. Раньше в локации ветка знала только E.
+            // Пока открыт круг, выбор ведёт он: иначе цифра и отпускание E применили бы
+            // два предмета за одно нажатие.
+            if (!_radialOpen && !RoaPipboyCanvas.TypingInInputField())
+            {
+                for (int i = 0; i < SlotCount; i++)
+                {
+                    if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+                    {
+                        Activate(i);
+                        break;
+                    }
+                }
+            }
+
             if (Input.GetKeyDown(KeyCode.E))
             {
                 _eHeld = true;
@@ -496,7 +512,7 @@ namespace RealmOfAshes.Game
             Rect centerRect = new Rect(_radialCenter.x - 56f, _radialCenter.y - 32f, 112f, 64f);
             string centerText = _assignRadial
                 ? "выбери\nслот"
-                : (hasAssignedItems ? "выбери\nи отпусти" : "слоты пусты\nTab: сумка");
+                : (hasAssignedItems ? "выбери\nи отпусти" : "слоты пусты\nI: инвентарь");
             GUI.Box(centerRect, centerText, _slotStyle);
         }
 

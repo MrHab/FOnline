@@ -343,6 +343,24 @@ namespace RealmOfAshes.Game
             if (canPickup) _pickupLabel.text = "ЗАБРАТЬ [G]";
         }
 
+        /// <summary>Рядом лежит проявленный артефакт, который можно поднять.</summary>
+        public bool HasRevealedArtifactInRange
+        {
+            get { return !string.IsNullOrEmpty(_nearestRevealedId); }
+        }
+
+        /// <summary>
+        /// Поднимает ближайшую находку. Нужен и кнопке взаимодействия на телефоне, где
+        /// клавиши G нет вовсе, и клавише G на ПК, где она иначе спорит с выходом на
+        /// глобальную карту.
+        /// </summary>
+        public bool TryPickupRevealedArtifact()
+        {
+            if (!HasRevealedArtifactInRange) return false;
+            PickupNearest();
+            return true;
+        }
+
         private void PickupNearest()
         {
             string id = _nearestRevealedId;

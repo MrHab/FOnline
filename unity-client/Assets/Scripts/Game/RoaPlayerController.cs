@@ -169,7 +169,11 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
-            if (!InputEnabled || Downed || Time.unscaledTime < _artifactStunUntil || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
+            // BlocksWorldHud закрывает и канву ПУТНИКа: раньше гейт смотрел только на
+            // старые IMGUI-панели, поэтому «wasd» в поле имени клана уводил персонажа.
+            if (!InputEnabled || Downed || Time.unscaledTime < _artifactStunUntil
+                || RoaGameBootstrap.BlocksWorldHud
+                || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
             {
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;

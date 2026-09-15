@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace RealmOfAshes.Game
@@ -20,11 +21,18 @@ namespace RealmOfAshes.Game
             public readonly string Category;
             public readonly string Slot;
             public readonly string ConditionMode;
+            /// <summary>Слоты экипировки из каталога сервера: weapon, offhand и т.д.</summary>
+            public readonly string[] CompatibleSlots;
+            /// <summary>Непустой тип патронов отличает огнестрел от ножа и инструмента.</summary>
+            public readonly string AmmoType;
 
             public Definition(string id, string name, float weight, int basePrice = 0,
                               int stackLimit = 0, string category = "", string slot = "",
-                              string conditionMode = "none")
+                              string conditionMode = "none", string[] compatibleSlots = null,
+                              string ammoType = "")
             {
+                CompatibleSlots = compatibleSlots ?? EmptySlots;
+                AmmoType = ammoType ?? string.Empty;
                 Id = id;
                 Name = name;
                 Weight = weight;
@@ -36,6 +44,7 @@ namespace RealmOfAshes.Game
             }
         }
 
+        private static readonly string[] EmptySlots = new string[0];
         private static readonly Dictionary<string, Definition> ById = Build();
         public static int CatalogVersion { get; private set; }
 
@@ -86,6 +95,22 @@ namespace RealmOfAshes.Game
                 ? definition.Slot : string.Empty;
         }
 
+        /// <summary>Слоты, в которые предмет разрешает надеть себя серверный каталог.</summary>
+        public static string[] CompatibleSlots(string itemOrRuntimeId)
+        {
+            Definition definition;
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId), out definition)
+                ? definition.CompatibleSlots : EmptySlots;
+        }
+
+        /// <summary>Тип патронов; пусто у ножа, кулаков и инструментов.</summary>
+        public static string AmmoType(string itemOrRuntimeId)
+        {
+            Definition definition;
+            return ById.TryGetValue(RoaInventory.BaseId(itemOrRuntimeId), out definition)
+                ? definition.AmmoType : string.Empty;
+        }
+
         public static string ConditionMode(string itemOrRuntimeId)
         {
             Definition definition;
@@ -119,6 +144,12 @@ namespace RealmOfAshes.Game
                 string category = row?["category"]?.ToString() ?? string.Empty;
                 string slot = row?["slot"]?.ToString() ?? string.Empty;
                 string conditionMode = row?["conditionMode"]?.ToString() ?? string.Empty;
+                var slotsArray = row?["compatibleSlots"] as JArray;
+                string[] compatibleSlots = slotsArray != null
+                    ? slotsArray.Select(entry => entry?.ToString() ?? string.Empty)
+                        .Where(entry => !string.IsNullOrEmpty(entry)).ToArray()
+                    : EmptySlots;
+                string ammoType = row?["ammoType"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name)
                     || weight < 0f || basePrice < 0 || stackLimit < 0
                     || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(conditionMode)
@@ -128,7 +159,7 @@ namespace RealmOfAshes.Game
                     return false;
                 }
                 next[id] = new Definition(id, name, weight, basePrice, stackLimit,
-                    category, slot, conditionMode);
+                    category, slot, conditionMode, compatibleSlots, ammoType);
             }
             if (!next.ContainsKey("fists") || !next.ContainsKey("silver")
                 || !next.ContainsKey("artifactDetectorMk1") || !next.ContainsKey("artifactBelt2"))

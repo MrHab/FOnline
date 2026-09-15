@@ -337,6 +337,7 @@ namespace RealmOfAshes.Game
             if (ShiftAndDetector == null) ShiftAndDetector = GetComponent<RoaKromkaShiftAndDetector>();
             if (ShiftAndDetector == null) ShiftAndDetector = gameObject.AddComponent<RoaKromkaShiftAndDetector>();
             ShiftAndDetector.Configure(this, Socket);
+            if (MobileControls != null) MobileControls.SetArtifacts(ShiftAndDetector);
             if (PersonalBaseCanvas == null) PersonalBaseCanvas = GetComponent<RoaPersonalBaseCanvas>();
             if (PersonalBaseCanvas == null) PersonalBaseCanvas = gameObject.AddComponent<RoaPersonalBaseCanvas>();
             PersonalBaseCanvas.Configure(this, Socket);
@@ -391,6 +392,10 @@ namespace RealmOfAshes.Game
             PipboyCanvas.Quickbar = Quickbar;
             PipboyCanvas.PersonalBaseCanvas = PersonalBaseCanvas;
             if (Combat != null) Combat.PipboyCanvas = PipboyCanvas;
+            // Сенсорные кнопки открывают тот же терминал, что и клавиши: без этой
+            // связи «Сумка» и «ПУТНИК» на телефоне гасили HUD и слой кнопок, не
+            // показав окна, и выйти было нечем — Esc на телефоне нет.
+            if (MobileControls != null) MobileControls.SetTerminal(PipboyCanvas);
             if (Inventory != null) Inventory.CanvasDriven = true;
             if (Pipboy != null) Pipboy.CanvasDriven = true;
 
@@ -647,9 +652,12 @@ namespace RealmOfAshes.Game
             if (_characterPreview != null)
                 _characterPreview.SetVisible(_stage == Stage.CreateCharacter);
 
+            // G у границы уводит на глобальную карту, но той же клавишей поднимается
+            // проявленный артефакт. Находка под ногами важнее выхода из локации.
             if (!_cinematicActive && CurrentLocationAllowsGlobalMapExit
                 && _stage == Stage.InWorld && !_gameMenuOpen
-                && Input.GetKeyDown(KeyCode.G) && GlobalMap != null)
+                && Input.GetKeyDown(KeyCode.G) && GlobalMap != null
+                && (ShiftAndDetector == null || !ShiftAndDetector.HasRevealedArtifactInRange))
                 GlobalMap.RequestEnterFromLocation();
             UpdateWorldMapEdgeExit();
 
@@ -2172,7 +2180,7 @@ namespace RealmOfAshes.Game
             GUILayout.Label("Короткое E открывает разговор, торговлю, хранилище, контейнер, ресурс или станок. Удержание E открывает круг быстрых слотов; клавиши 1–8 используют слот сразу.", WrappedLabel());
             GUILayout.Space(6f);
             GUILayout.Label("<b>Окна</b>", RichLabel());
-            GUILayout.Label("Tab — сумка, P — Пип-бой, G у границы — глобальная карта, Esc — меню. В сумке кнопка «быстро» назначает предмет; количество стека выбирается отдельным ползунком.", WrappedLabel());
+            GUILayout.Label("Tab — состояние, I — инвентарь, K — навыки, P — крафт, G у границы — глобальная карта, Esc — меню. В инвентаре кнопка «быстро» назначает предмет; количество стека выбирается отдельным ползунком.", WrappedLabel());
             GUILayout.Space(6f);
             GUILayout.Label("<b>Глобальная карта</b>", RichLabel());
             GUILayout.Label("Выберите точку и подтвердите маршрут. Время, встречи, состав группы, отмену и прибытие ведёт сервер; закрытие меню не останавливает путь.", WrappedLabel());

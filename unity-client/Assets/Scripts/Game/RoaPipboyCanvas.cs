@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
@@ -142,12 +143,20 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            // Клавиши как в web: TAB/I/B/P. Повторное нажатие своей клавиши закрывает.
+            // Escape закрывает окно всегда, даже из поля ввода: иначе набранное имя
+            // клана запирало бы игрока в терминале.
+            if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) { Close(); return; }
+
+            // Во время набора текста буквы принадлежат полю ввода, а не терминалу.
+            if (TypingInInputField()) return;
+
+            // Tab — статус, I — инвентарь, K — навыки, P — крафт. Повторное нажатие
+            // своей клавиши закрывает. Клавишу B занимает болт (RoaBoltThrower), и
+            // обучение прямо просит нажать её, чтобы достать щуп.
             if (Input.GetKeyDown(KeyCode.Tab)) TogglePage(Page.Status);
             else if (Input.GetKeyDown(KeyCode.I)) TogglePage(Page.Items);
-            else if (Input.GetKeyDown(KeyCode.B)) TogglePage(Page.Skills);
+            else if (Input.GetKeyDown(KeyCode.K)) TogglePage(Page.Skills);
             else if (Input.GetKeyDown(KeyCode.P)) TogglePage(Page.Craft);
-            else if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) Close();
 
             if (!IsOpen) return;
             FitFrameToViewport();
@@ -157,6 +166,20 @@ namespace RealmOfAshes.Game
                 _refreshAt = Time.unscaledTime + 0.25f;
                 Refresh();
             }
+        }
+
+        /// <summary>
+        /// Фокус стоит в поле ввода: имя клана, поиск перка. Пока игрок печатает,
+        /// буквы принадлежат полю, иначе «wasd» уводил персонажа гулять, а «i» и «p»
+        /// переключали страницы прямо посреди слова.
+        /// </summary>
+        public static bool TypingInInputField()
+        {
+            EventSystem events = EventSystem.current;
+            GameObject focus = events != null ? events.currentSelectedGameObject : null;
+            if (focus == null) return false;
+            var field = focus.GetComponent<InputField>();
+            return field != null && field.isFocused;
         }
 
         public void TogglePage(Page page)
@@ -230,6 +253,12 @@ namespace RealmOfAshes.Game
             rootRect.offsetMax = Vector2.zero;
             var dim = _root.AddComponent<Image>();
             dim.color = new Color(0f, 0f, 0f, 0.46f);
+            // Тап по затемнению закрывает окно. На телефоне рамка ужимается под экран
+            // вместе с крестиком, поэтому крупная зона выхода обязательна: клавиши Esc
+            // там нет. Клики внутри рамки перехватывает её собственный Image.
+            var dimButton = _root.AddComponent<Button>();
+            dimButton.transition = Selectable.Transition.None;
+            dimButton.onClick.AddListener(Close);
 
             // Латунная рамка 980x780 по центру.
             RectTransform frame = Child("Frame", rootRect);
@@ -315,7 +344,7 @@ namespace RealmOfAshes.Game
             closeRect.anchorMin = new Vector2(1f, 0.5f);
             closeRect.anchorMax = new Vector2(1f, 0.5f);
             closeRect.pivot = new Vector2(1f, 0.5f);
-            closeRect.sizeDelta = new Vector2(38f, 34f);
+            closeRect.sizeDelta = new Vector2(56f, 46f);
             closeText.color = AccentWarm;
             close.onClick.AddListener(Close);
         }
@@ -402,7 +431,7 @@ namespace RealmOfAshes.Game
         private void BuildStatusPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Status, parent);
-            SectionTitle(page, "STATUS");
+            SectionTitle(page, "СОСТОЯНИЕ");
 
             // Левая колонка: пластина персонажа + сетка слотов.
             RectTransform left = Child("Left", page);
@@ -613,7 +642,7 @@ namespace RealmOfAshes.Game
         private void BuildItemsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Items, parent);
-            SectionTitle(page, "ITEMS");
+            SectionTitle(page, "ИНВЕНТАРЬ");
 
             // Слева — панель персонажа (inventory-character-panel): шапка, модель, слоты вокруг.
             RectTransform panel = Panel_(page, PlateBg, PlateBorder);
@@ -839,11 +868,11 @@ namespace RealmOfAshes.Game
             if (Hud != null && Inventory != null)
             {
                 _topline.text =
-                    Chip("WG", Inventory.CarryWeight.ToString("0.0") + "/" + Inventory.CarryCapacity.ToString("0"))
-                    + Chip("HP", Hud.Hp + "/" + Mathf.Max(1, Hud.MaxHp))
-                    + Chip("AP", Mathf.FloorToInt(Hud.Ap) + "/" + Mathf.Max(1, Hud.MaxAp))
-                    + Chip("DT", Hud.ArmorThreshold.ToString())
-                    + Chip("Caps", CapsCount().ToString())
+                    Chip("ВЕС", Inventory.CarryWeight.ToString("0.0") + "/" + Inventory.CarryCapacity.ToString("0"))
+                    + Chip("ОЗ", Hud.Hp + "/" + Mathf.Max(1, Hud.MaxHp))
+                    + Chip("ОД", Mathf.FloorToInt(Hud.Ap) + "/" + Mathf.Max(1, Hud.MaxAp))
+                    + Chip("БРОНЯ", Hud.ArmorThreshold.ToString())
+                    + Chip("МАРКИ", CapsCount().ToString())
                     + Chip("УРОВЕНЬ", Hud.Level.ToString());
             }
 
@@ -1714,7 +1743,7 @@ namespace RealmOfAshes.Game
         private void BuildCraftPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Craft, parent);
-            SectionTitle(page, "CRAFT");
+            SectionTitle(page, "КРАФТ");
             _craftList = ListArea(page, out _);
 
             _craftStatus = Label("CraftStatus", page, 13, TextAnchor.LowerLeft, ScreenInkDim);
@@ -2108,7 +2137,7 @@ namespace RealmOfAshes.Game
         private void BuildWorldPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.World, parent);
-            SectionTitle(page, "WORLD");
+            SectionTitle(page, "МИР");
             _worldHeader = Label("Header", page, 13, TextAnchor.MiddleLeft, ScreenInk, FontStyle.Bold);
             _worldHeader.rectTransform.anchorMin = new Vector2(0f, 1f);
             _worldHeader.rectTransform.anchorMax = new Vector2(0.8f, 1f);
@@ -2466,7 +2495,7 @@ namespace RealmOfAshes.Game
         private void BuildFactionsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Factions, parent);
-            SectionTitle(page, "FACTIONS");
+            SectionTitle(page, "ФРАКЦИИ");
             _factionsList = ListArea(page, out _);
         }
 
@@ -2554,7 +2583,7 @@ namespace RealmOfAshes.Game
         private void BuildFriendsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Friends, parent);
-            SectionTitle(page, "FRIENDS");
+            SectionTitle(page, "ДРУЗЬЯ");
             _friendsList = ListArea(page, out _);
             _socialStatus = Label("SocialStatus", page, 13, TextAnchor.LowerLeft, ScreenInkDim);
             _socialStatus.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -2795,7 +2824,7 @@ namespace RealmOfAshes.Game
         private void BuildClanPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Clan, parent);
-            SectionTitle(page, "CLAN");
+            SectionTitle(page, "КЛАН");
             _clanList = ListArea(page, out _);
         }
 
@@ -2899,7 +2928,7 @@ namespace RealmOfAshes.Game
         private void BuildRadioPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Radio, parent);
-            SectionTitle(page, "RADIO");
+            SectionTitle(page, "РАДИО");
             _radioList = ListArea(page, out _);
         }
 

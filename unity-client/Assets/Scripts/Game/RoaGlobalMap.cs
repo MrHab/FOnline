@@ -5673,6 +5673,13 @@ namespace RealmOfAshes.Game
                 case "production": return "ПРОИЗВОДСТВО";
                 case "resource": return "РЕСУРС";
                 case "pointofinterest": return "ТОЧКА ИНТЕРЕСА";
+                // Мир отдаёт ещё три типа: логово, комплекс и клановое владение.
+                // Без них 17 из 44 точек, включая гнёзда мутантов, выглядели
+                // безобидной «точкой пустоши».
+                case "lair": return "ЛОГОВО";
+                case "complex": return "КОМПЛЕКС";
+                case "clan_base":
+                case "clanbase": return "КЛАНОВОЕ ВЛАДЕНИЕ";
                 default: return "ТОЧКА ПУСТОШИ";
             }
         }
@@ -5701,6 +5708,12 @@ namespace RealmOfAshes.Game
                 case "resource": return new Color(0.31f, 0.82f, 0.70f, 1f);
                 case "pointofinterest": return new Color(0.45f, 0.72f, 0.96f, 1f);
                 case "settlement": return new Color(0.94f, 0.82f, 0.47f, 1f);
+                // Логово читается как угроза, комплекс как объект, владение клана
+                // как чужая территория: цветом, а не только подписью.
+                case "lair": return new Color(0.88f, 0.33f, 0.26f, 1f);
+                case "complex": return new Color(0.66f, 0.56f, 0.92f, 1f);
+                case "clan_base":
+                case "clanbase": return new Color(0.85f, 0.55f, 0.85f, 1f);
                 default: return new Color(0.78f, 0.72f, 0.56f, 1f);
             }
         }
@@ -5716,7 +5729,11 @@ namespace RealmOfAshes.Game
             if (kind == "zone") return 105;
             if (kind == "party") return type == "patrol" ? 72 : (type == "caravan" ? 62 : (type == "refugees" ? 56 : 68));
             if (type == "settlement") return 100;
+            // Логово опаснее аванпоста и обязано перекрывать его при наложении подписей.
+            if (type == "lair") return 92;
+            if (type == "clan_base" || type == "clanbase") return 88;
             if (type == "outpost") return 82;
+            if (type == "complex") return 70;
             if (type == "resource") return 64;
             if (type == "production") return 58;
             if (type == "pointofinterest") return 52;
@@ -5732,6 +5749,10 @@ namespace RealmOfAshes.Game
                 case "production": return "Производственная точка";
                 case "resource": return "Ресурсная точка";
                 case "pointofinterest": return "Точка интереса";
+                case "lair": return "Логово";
+                case "complex": return "Комплекс";
+                case "clan_base":
+                case "clanbase": return "Клановое владение";
                 default: return "Точка пустоши";
             }
         }

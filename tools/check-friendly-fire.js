@@ -99,7 +99,10 @@ function fixture(mode = 'pvp') {
     'locationPvpMode', 'locationAllowsPvp', 'locationAllowsNpcCombat', 'roomAllowsNpcCombat', 'locationHasFullInventoryDrop',
     'serverFactionKey', 'serverWorldFactionKey', 'serverCombatFactionGroup', 'serverFactionRelation',
     'serverFactionsHostile', 'serverActorHostileToPlayer', 'serverCombatFactionsAllied', 'serverPlayersAllied',
-    'serverPlayerCanDamageNpc', 'serverPlayerCanDamagePlayer', 'serverProtectedAttackAck'
+    'serverPlayerCanDamageNpc', 'serverPlayerCanDamagePlayer', 'serverProtectedAttackAck',
+    // Учёт попаданий по токену, безопасное чтение здоровья и лимит косметических
+    // событий: обработчики боя зовут их напрямую, заглушки здесь не годятся.
+    'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay'
   ]) vm.runInContext(functionSource(name), context);
   for (const event of ['shoot', 'melee', 'combatAttack', 'enemyHit', 'playerHit', 'explosionAttack'])
     vm.runInContext(handlerSource(event), context);

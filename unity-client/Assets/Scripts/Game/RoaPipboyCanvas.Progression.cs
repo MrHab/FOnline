@@ -76,7 +76,7 @@ namespace RealmOfAshes.Game
         private void BuildSkillsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Skills, parent);
-            SectionTitle(page, "SKILLS");
+            SectionTitle(page, "НАВЫКИ");
 
             // #skills-header: «НАВЫКИ  очков: N»
             Text header = Label("Header", page, 15, TextAnchor.MiddleLeft, Gold, FontStyle.Bold);
@@ -334,7 +334,7 @@ namespace RealmOfAshes.Game
         private void BuildPerksPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Perks, parent);
-            SectionTitle(page, "PERKS");
+            SectionTitle(page, "ПЕРКИ");
 
             // .perk-board-status: пять плиток.
             _perkStatus = Child("Status", page);

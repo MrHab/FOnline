@@ -19807,9 +19807,11 @@ function serverGarrisonRoutePoint(def = {}, factionId = '', progress = 0) {
   return { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
 }
 
-function serverGarrisonPostSlot(def = {}, index = 0, total = 1) {
+function serverGarrisonPostSlot(def = {}, index = 0, total = 1, radiusMeters = 0) {
   const angle = (index / Math.max(1, total)) * Math.PI * 2 + 0.6;
-  const radius = 3.2;
+  // Радиус обороны — авторский параметр гарнизона: отряд занимает позиции по
+  // кругу вокруг флага, а не в одной точке.
+  const radius = Number(radiusMeters) > 0 ? Number(radiusMeters) : 3.2;
   return {
     x: Number(def.position?.x || 0) + Math.cos(angle) * radius,
     z: Number(def.position?.z || 0) + Math.sin(angle) * radius
@@ -19844,8 +19846,9 @@ function serverGarrisonActors(room, outpostId = '') {
   return [...room.enemies.values()].filter(enemy => enemy && String(enemy.garrisonOutpostId || '') === String(outpostId || ''));
 }
 
-function serverSpawnGarrisonActor(room, def, outpost, index, total, point) {
+function serverSpawnGarrisonActor(room, def, outpost, index, total, point, rules = null) {
   const factionId = String(outpost.garrison.factionId || '');
+  const squad = rules?.garrison || outpostRules(KROMKA_TERRITORY_CATALOG).garrison;
   const dims = roomTileDims(room);
   const tile = worldToTile(point.x, point.z, dims);
   const actor = spawnServerEnemy(room, {
@@ -19857,9 +19860,9 @@ function serverSpawnGarrisonActor(room, def, outpost, index, total, point) {
     minEnemyDistance: 0.6,
     minPlayerDistance: 0,
     typeIndex: 0,
-    visual: 'raider',
-    modelKey: 'caravanGuard',
-    species: 'guard',
+    visual: squad.visual,
+    modelKey: squad.modelKey,
+    species: squad.species,
     tags: ['npc', 'guard', 'garrison', factionId],
     npcSeed: `garrison:${def.id}:${outpost.garrison.seq}:${index}`,
     name: index === 0 ? `Квартирмейстер (${serverTerritoryFactionLabel(factionId)})` : `Гарнизон: ${serverTerritoryFactionLabel(factionId)}`,
@@ -19867,8 +19870,8 @@ function serverSpawnGarrisonActor(room, def, outpost, index, total, point) {
     faction: factionId,
     hostileToPlayer: false,
     territoryFactionId: factionId,
-    equipmentProfile: 'guard',
-    statProfile: 'guard',
+    equipmentProfile: squad.equipmentProfile,
+    statProfile: squad.statProfile,
     canDialogue: false,
     stationary: false
   });
@@ -19902,24 +19905,43 @@ function serverMarkGarrisonSpawned(room, def, garrison) {
 function serverSyncGarrisonActors(room, def, outpost, now, rules) {
   const garrison = outpost.garrison || {};
   const active = ['enroute', 'arrived', 'returning'].includes(String(garrison.state || ''));
+  const retiring = Array.isArray(outpost.retiring) ? outpost.retiring : [];
+  // Актор принадлежит либо текущему гарнизону, либо отряду прежнего владельца,
+  // который ещё отходит к своей платформе. Всё остальное снимается со сцены.
+  const squadOf = actor => {
+    const seq = Number(actor?.garrisonSeq || 0);
+    const faction = String(actor?.garrisonFactionId || '');
+    if (active && seq === Number(garrison.seq || 0) && faction === String(garrison.factionId || '')) return garrison;
+    return retiring.find(row => Number(row.seq || 0) === seq && String(row.factionId || '') === faction) || null;
+  };
   const actors = serverGarrisonActors(room, def.id);
   let structureChanged = false;
   for (const actor of actors) {
-    const stale = !active || Number(actor.garrisonSeq || 0) !== Number(garrison.seq || 0)
-      || String(actor.garrisonFactionId || '') !== String(garrison.factionId || '');
-    if (stale) {
-      if (roomEnemyDelete(room, actor.id)) structureChanged = true;
-    }
+    if (squadOf(actor)) continue;
+    if (roomEnemyDelete(room, actor.id)) structureChanged = true;
+  }
+  // Отходящие колонны шагают назад по своему маршруту, пока не дойдут домой.
+  for (const actor of serverGarrisonActors(room, def.id)) {
+    const squad = squadOf(actor);
+    if (!squad || squad === garrison || actor.dead) continue;
+    const point = serverGarrisonRoutePoint(def, squad.factionId, squad.progress);
+    const index = Number(actor.garrisonIndex || 0);
+    actor.garrisonTargetX = point.x + Math.cos(index * 1.7) * 1.4;
+    actor.garrisonTargetZ = point.z + Math.sin(index * 1.7) * 1.4;
+    actor.homeX = actor.garrisonTargetX;
+    actor.homeZ = actor.garrisonTargetZ;
   }
   if (!active) return structureChanged;
   const total = Math.max(1, Number(rules.garrison.guards || 0) + Number(rules.garrison.quartermaster || 0));
-  const alive = serverGarrisonActors(room, def.id).filter(actor => !actor.dead);
-  const known = serverGarrisonActors(room, def.id);
+  const mine = serverGarrisonActors(room, def.id).filter(actor => squadOf(actor) === garrison);
+  const alive = mine.filter(actor => !actor.dead);
+  const known = mine;
   if (known.length === 0 && !serverGarrisonSpawnedInRoom(room, def, garrison)) {
     const point = serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
     for (let i = 0; i < total; i++) {
-      const offset = { x: point.x + Math.cos(i * 1.7) * 1.4, z: point.z + Math.sin(i * 1.7) * 1.4 };
-      if (serverSpawnGarrisonActor(room, def, outpost, i, total, offset)) structureChanged = true;
+      const spacing = Number(rules.garrison.columnSpacing || 1.4);
+      const offset = { x: point.x + Math.cos(i * 1.7) * spacing, z: point.z + Math.sin(i * 1.7) * spacing };
+      if (serverSpawnGarrisonActor(room, def, outpost, i, total, offset, rules)) structureChanged = true;
     }
     serverMarkGarrisonSpawned(room, def, garrison);
   } else if (known.length > 0 && alive.length === 0 && serverGarrisonSpawnedInRoom(room, def, garrison)) {
@@ -19932,9 +19954,11 @@ function serverSyncGarrisonActors(room, def, outpost, now, rules) {
     ? null
     : serverGarrisonRoutePoint(def, garrison.factionId, garrison.progress);
   for (const actor of alive) {
+    const spacing = Number(rules.garrison.columnSpacing || 1.4);
     const post = garrison.state === 'arrived'
-      ? serverGarrisonPostSlot(def, Number(actor.garrisonIndex || 0), Number(actor.garrisonTotal || total))
-      : { x: targetPoint.x + Math.cos(Number(actor.garrisonIndex || 0) * 1.7) * 1.4, z: targetPoint.z + Math.sin(Number(actor.garrisonIndex || 0) * 1.7) * 1.4 };
+      ? serverGarrisonPostSlot(def, Number(actor.garrisonIndex || 0), Number(actor.garrisonTotal || total),
+        Math.max(Number(rules.garrison.postRadius || 0), Number(rules.garrison.arrivalRadius || 0) * 0.8))
+      : { x: targetPoint.x + Math.cos(Number(actor.garrisonIndex || 0) * 1.7) * spacing, z: targetPoint.z + Math.sin(Number(actor.garrisonIndex || 0) * 1.7) * spacing };
     actor.garrisonTargetX = post.x;
     actor.garrisonTargetZ = post.z;
     actor.homeX = post.x;

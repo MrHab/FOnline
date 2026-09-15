@@ -35,7 +35,10 @@ assert.equal(publicObjects, 160000);
 let spawned = 0;
 for (let index = 0; index < 500; index += 1) {
   const room = { locationId: `load-${index}` };
-  const fields = Array.from({ length: 5 }, (_, i) => ({ id: `f${i}`, x: i * 3, z: index % 7, radius: 2 }));
+  // Поле объявляет тип аномалии: вид артефакта берётся из него, иначе волна
+  // ничего не породит — единственный природный источник вида.
+  const fieldTypes = ['pull', 'seam', 'carousel', 'glass', 'dew'];
+  const fields = Array.from({ length: 5 }, (_, i) => ({ id: `f${i}`, type: fieldTypes[i % fieldTypes.length], x: i * 3, z: index % 7, radius: 2 }));
   spawned += reconcileArtifactSpawns(room, { id: room.locationId, macroRegion: 'glasslands' }, { phase: 'active', shiftId: 'load-shift', strength: 3 }, artifactCatalog, fields, 1000).artifacts.length;
 }
 assert.equal(spawned, 1500);

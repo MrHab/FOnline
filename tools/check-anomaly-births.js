@@ -16,7 +16,7 @@ const catalog = JSON.parse(read('data/artifacts.json'));
 const anomalies = JSON.parse(read('data/anomalies.json'));
 const births = require('../src/server/anomaly-artifact-births');
 const { createShiftCycle } = require('../src/server/shift-cycle');
-const { mergeBirthArtifacts, pickupArtifact } = require('../src/server/artifact-spawns');
+const { mergeBirthArtifacts, pickupArtifact, reconcileArtifactSpawns } = require('../src/server/artifact-spawns');
 const { baseTierOfType } = require('../src/server/artifact-instances');
 
 const close = (a, b, message) => assert(Math.abs(Number(a) - Number(b)) < 1e-9, message || `${a} != ${b}`);
@@ -135,5 +135,42 @@ for (const needle of [
   'artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now)',
   'function serverLocationAnomalyFields('
 ]) assert(server.includes(needle), `server.js is missing the birth contract: ${needle}`);
+assert(server.includes("instanceSalt: () => crypto.randomBytes(8).toString('hex')"),
+  'The server must salt artifact seeds so the hidden roll is not derivable from the public id.');
+
+// --- волновой спавн подчиняется тем же обязательным правилам ------------------
+const waveFields = [
+  { id: 'wf_carousel', type: 'carousel', x: 10, z: 10, radius: 2 },
+  { id: 'wf_chime', type: 'chime', x: 30, z: 10, radius: 2 },
+  { id: 'wf_pull', type: 'pull', x: 50, z: 10, radius: 2 }
+];
+const waveLocation = { id: 'waveZone', macroRegion: 'middle_vein', anomalyFields: waveFields };
+const waveRoom = () => ({ id: 'wave', locationId: 'waveZone', kromkaArtifactState: { shiftId: '', artifacts: [] } });
+const runWave = (strength, salt) => {
+  const room = waveRoom();
+  reconcileArtifactSpawns(room, waveLocation, { shiftId: 'shift_wave_1', phase: 'active', strength },
+    catalog, waveFields, t0, { instanceSalt: salt });
+  return room.kromkaArtifactState.artifacts;
+};
+const wave = runWave(3, 'salt-a');
+assert(wave.length > 0, 'An emission wave still spawns artifacts.');
+for (const row of wave) {
+  const sources = catalog.anomalySources[row.sourceAnomalyType] || [];
+  assert(sources.includes(row.typeId),
+    `Wave artifact ${row.typeId} must belong to its anomaly ${row.sourceAnomalyType}: the regional table never overrides the natural source.`);
+  assert.notEqual(row.seed, row.id, 'The wave seed is salted, so hidden properties are not derivable from the public id.');
+}
+assert.equal(new Set(wave.map(row => row.sourceFieldId)).size, wave.length,
+  'One anomaly holds at most one unpicked wave artifact.');
+const strongWave = runWave(5, 'salt-a');
+assert.deepEqual(strongWave.map(row => row.tier), wave.map(row => row.tier),
+  'Emission strength changes how often artifacts appear, never their tier.');
+const occupied = waveRoom();
+occupied.kromkaArtifactState.artifacts = [{ id: 'birth:x', typeId: 'spring', itemId: 'artifactSpring', tier: 1,
+  seed: 'x', sourceFieldId: 'wf_carousel', sourceAnomalyType: 'carousel', x: 10, z: 10, pickedUp: false, birth: true }];
+reconcileArtifactSpawns(occupied, waveLocation, { shiftId: 'shift_wave_2', phase: 'active', strength: 3 },
+  catalog, waveFields, t0, { instanceSalt: 'salt-b' });
+assert(!occupied.kromkaArtifactState.artifacts.some(row => row.birth !== true && row.sourceFieldId === 'wf_carousel'),
+  'A wave never adds a second artifact to an anomaly that already holds an unpicked one.');
 
 console.log('Anomaly artifact births OK: post-emission chance decay, one check per minute per free field, one artifact per anomaly, kinds by anomaly type, claim/refresh/persist and room merge.');

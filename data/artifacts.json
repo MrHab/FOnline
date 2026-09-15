@@ -84,11 +84,5 @@
     { "id": "anchor", "itemId": "artifactAnchor", "displayName": "Якорь", "rarity": "uncommon", "baseTier": 2, "family": "alloy", "color": "#596b82", "effects": { "knockbackResistance": 0.60, "carryKg": 8, "speedPct": -0.10 }, "benefit": "Сопротивление притяжению и отбрасыванию +60%, груз +8 кг", "cost": "Скорость −10%" },
     { "id": "dew", "itemId": "artifactDew", "displayName": "Роса", "rarity": "uncommon", "baseTier": 2, "family": "bio", "color": "#83e39f", "effects": { "resistances": { "toxic": 0.35 }, "stimDurationPct": 0.20, "foodHealingDisabled": true }, "benefit": "Сопротивление токсинам +35%, стимуляторы действуют на 20% дольше", "cost": "Обычная еда не лечит" },
     { "id": "memory", "itemId": "artifactMemory", "displayName": "Память", "rarity": "rare", "baseTier": 3, "family": "circuit", "color": "#e2c4ff", "effects": { "detectorTraceDurationPct": 0.40, "falseDetectorSignals": true }, "benefit": "След виден детектору на 40% дольше", "cost": "Редкие ложные сигналы" }
-  ],
-  "spawnTables": {
-    "default": { "spring": 14, "vein": 13, "node": 12, "drop": 12, "shell": 11, "warmer": 8, "sieve": 8, "husher": 7, "anchor": 7, "dew": 6, "bloodkin": 3, "thunderer": 3, "memory": 2 },
-    "glasslands": { "spring": 15, "node": 10, "shell": 8, "warmer": 14, "sieve": 8, "thunderer": 7, "memory": 4 },
-    "chalk_lowland": { "drop": 14, "dew": 16, "sieve": 12, "anchor": 9, "bloodkin": 4 },
-    "zero_basin": { "memory": 14, "bloodkin": 10, "thunderer": 10, "node": 8, "husher": 12 }
-  }
+  ]
 }

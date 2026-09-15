@@ -185,6 +185,10 @@
         { "id": "backpack", "price": 32, "qty": 1 },
         { "id": "water", "price": 6, "qty": 5 },
         { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "artifactBelt2", "price": 150, "qty": 2 },
+        { "id": "artifactBelt3", "price": 340, "qty": 1 },
+        { "id": "artifactDetectorMk1", "price": 95, "qty": 2 },
+        { "id": "artifactDetectorMk2", "price": 235, "qty": 1 },
         { "id": "chemicals", "price": 7, "qty": 12 },
         { "id": "electronics", "price": 11, "qty": 6 }
       ]
@@ -218,6 +222,10 @@
         { "id": "backpack", "price": 32, "qty": 1 },
         { "id": "water", "price": 6, "qty": 5 },
         { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "artifactBelt2", "price": 150, "qty": 2 },
+        { "id": "artifactBelt3", "price": 340, "qty": 1 },
+        { "id": "artifactDetectorMk1", "price": 95, "qty": 2 },
+        { "id": "artifactDetectorMk2", "price": 235, "qty": 1 },
         { "id": "chemicals", "price": 7, "qty": 12 },
         { "id": "electronics", "price": 11, "qty": 6 }
       ]
@@ -251,6 +259,10 @@
         { "id": "backpack", "price": 32, "qty": 1 },
         { "id": "water", "price": 6, "qty": 5 },
         { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "artifactBelt2", "price": 150, "qty": 2 },
+        { "id": "artifactBelt3", "price": 340, "qty": 1 },
+        { "id": "artifactDetectorMk1", "price": 95, "qty": 2 },
+        { "id": "artifactDetectorMk2", "price": 235, "qty": 1 },
         { "id": "chemicals", "price": 7, "qty": 12 },
         { "id": "electronics", "price": 11, "qty": 6 }
       ]
@@ -284,6 +296,10 @@
         { "id": "backpack", "price": 32, "qty": 1 },
         { "id": "water", "price": 6, "qty": 5 },
         { "id": "stabilizerCatalyst", "price": 60, "qty": 6 },
+        { "id": "artifactBelt2", "price": 150, "qty": 2 },
+        { "id": "artifactBelt3", "price": 340, "qty": 1 },
+        { "id": "artifactDetectorMk1", "price": 95, "qty": 2 },
+        { "id": "artifactDetectorMk2", "price": 235, "qty": 1 },
         { "id": "chemicals", "price": 7, "qty": 12 },
         { "id": "electronics", "price": 11, "qty": 6 }
       ]

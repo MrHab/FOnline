@@ -199,9 +199,12 @@ const {
 const {
   applyPersistedBossState,
   bossDamageMultiplier,
+  bossRewardPending,
   createBossState,
   normalizeWorldBossRules,
   noteBossDefeated,
+  noteBossRewardClaimed,
+  noteBossRewardUnlocked,
   noteShieldNodeDestroyed,
   persistedBossState,
   publicWorldBoss,
@@ -19275,6 +19278,9 @@ function serverEnsureWorldBossRoom(room, now = Date.now()) {
   if (state.phase === 'defeated') {
     if (boss && !boss.dead) roomEnemyDelete(room, boss.id);
     serverRemoveShieldNodeActors(room);
+    // Комната создаётся заново после перезапуска: незабранная награда
+    // побеждённого босса снова доступна, забранная остаётся закрытой.
+    serverUnlockBossContainers(room, state.bossId, { onlyPending: true });
   } else if (serverSpawnShieldNodeActors(room, state)) {
     refreshRoomWorldState(room, { force: true });
   }
@@ -19309,23 +19315,41 @@ function serverWorldBossDamageAfterShield(room, enemy, damage = 0) {
   return Math.max(0, Math.round(Number(damage || 0) * bossDamageMultiplier(room.worldBossState)));
 }
 
-function serverUnlockBossContainers(room, bossId = '') {
+function serverUnlockBossContainers(room, bossId = '', options = {}) {
   const loc = roomLocation(room);
+  const state = room?.worldBossState || null;
+  // После перезапуска открываются только те контейнеры, из которых ещё никто
+  // не брал: награда за победу выдаётся один раз, но и не пропадает.
+  const onlyPending = options.onlyPending === true;
   let changed = 0;
   for (const container of room.containers?.values?.() || []) {
     const def = (loc.containers || []).find(row => String(row?.id || '') === String(container.defId || ''));
     if (!def || String(def.bossLoot || '') !== String(bossId)) continue;
+    if (onlyPending && !(state && bossRewardPending(state, container.defId || container.id))) continue;
     container.locked = false;
     container.terminalLocked = false;
     container.loot = rollWorldContainerLootServer(room, def);
     container.bossLoot = String(bossId);
     changed += 1;
   }
+  if (state && changed) noteBossRewardUnlocked(state, Date.now());
   if (changed) {
     refreshRoomWorldState(room, { force: true });
     emitWorldContainersSnapshot(room, true);
   }
   return changed;
+}
+
+/**
+ * Из контейнера награды взяли: помечаем его в состоянии босса, чтобы после
+ * перезапуска он не открылся снова с новой добычей.
+ */
+function serverNoteBossRewardTaken(room, container) {
+  const state = room?.worldBossState;
+  if (!state || !container?.bossLoot) return false;
+  if (!noteBossRewardClaimed(state, container.defId || container.id)) return false;
+  serverPersistWorldBoss(state);
+  return true;
 }
 
 function serverBossLootError(room, container) {
@@ -30758,6 +30782,7 @@ io.on('connection', (socket) => {
     const finalCarry = serverLimitItemsByCarry(p, data, finalTaken).carry;
     finalTaken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
     serverTakeTutorialSupplies(p, container, finalTaken);
+    serverNoteBossRewardTaken(room, container);
     refreshRoomWorldState(room);
     const pub = publicWorldContainer(container);
     if (typeof ack === 'function') ack({ ok: true, items: finalTaken, container: pub, empty: pub.empty, partial: !!carryCheck.blocked, carry: finalCarry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });

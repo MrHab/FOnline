@@ -72,6 +72,13 @@ function normalizePveAreaCatalog(raw = {}) {
       displayName: String(input?.displayName || id).slice(0, 96),
       tracksLabel: String(input?.tracksLabel || 'Искать следы').slice(0, 48),
       initialPacks: Math.max(0, Math.floor(Number(input?.initialPacks ?? 1))),
+      // Игрок видит область до входа: её границы на карте, оценку опасности и
+      // характерные категории добычи. Всё это авторские данные, а не догадка
+      // клиента по типу узла.
+      radiusPoints: clamp(Number(input?.radiusPoints ?? 24), 4, 80),
+      dangerBand: clamp(Math.floor(Number(input?.dangerBand ?? 1)), 1, 5),
+      lootCategories: (Array.isArray(input?.lootCategories) ? input.lootCategories : [])
+        .map(row => String(row || '').slice(0, 64)).filter(Boolean).slice(0, 6),
       packs
     });
   }
@@ -82,6 +89,29 @@ function normalizePveAreaCatalog(raw = {}) {
     areas,
     byLocation: Object.fromEntries(areas.map(area => [area.locationId, area]))
   };
+}
+
+/**
+ * Каталог областей для клиента: название, границы, опасность, обитатели и
+ * категории добычи. Точку центра сервер берёт из узла глобальной карты, потому
+ * что координаты мира живут там.
+ */
+function publicPveAreaCatalog(catalog = {}, pointForLocation = null) {
+  return (Array.isArray(catalog?.areas) ? catalog.areas : []).map(area => {
+    const point = typeof pointForLocation === 'function' ? pointForLocation(area.locationId) : null;
+    return {
+      id: area.id,
+      locationId: area.locationId,
+      displayName: area.displayName,
+      x: Number(point?.x ?? 0),
+      y: Number(point?.y ?? 0),
+      radiusPoints: area.radiusPoints,
+      danger: area.dangerBand,
+      personal: true,
+      inhabitants: area.packs.map(pack => String(pack.label || pack.typeName || pack.creatureTypeId || '')).filter(Boolean),
+      lootCategories: [...area.lootCategories]
+    };
+  });
 }
 
 function pveAreaForLocation(catalog = {}, locationId = '') {
@@ -276,6 +306,7 @@ function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, no
 }
 
 module.exports = {
+  publicPveAreaCatalog,
   DEFAULT_RULES,
   RESULT_LABELS,
   choosePack,

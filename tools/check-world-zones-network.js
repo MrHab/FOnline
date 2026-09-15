@@ -203,7 +203,15 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(!tracksAgain.ok && /Подождите/.test(tracksAgain.error), 'Tracks respect their cooldown.');
   const forgedRoom = await h.socketAck(accounts.cadence.socket, 'changeLocation', { locationId: 'antHive', roomId: roomB });
   assert(!forgedRoom.ok || forgedRoom.roomId !== roomB, 'A forged room id never enters someone else\'s personal room.');
-  console.log('PASS personal PvE rooms and tracks');
+  // Область видна на карте до входа: границы, опасность, обитатели и добыча.
+  const wastelandAreas = await getJson('/api/wasteland');
+  const areaRows = wastelandAreas.json.pveAreas || [];
+  assert.equal(areaRows.length, 5, 'Every persistent PvE area reaches the client: ' + JSON.stringify(areaRows).slice(0, 200));
+  const hive = areaRows.find(row => row.locationId === 'antHive');
+  assert(hive && hive.radiusPoints > 0 && hive.x > 0 && hive.y > 0, 'The area carries its centre and borders.');
+  assert(hive.danger >= 1 && hive.inhabitants.length > 0 && hive.lootCategories.length > 0,
+    'The area names its danger, inhabitants and loot categories: ' + JSON.stringify(hive));
+  console.log('PASS personal PvE rooms, tracks and areas on the world map');
 
   // --- аванпосты, публичные события, здоровье -------------------------------------------------
   const territory = await request(accounts.trade, 'requestTerritoryState', {});

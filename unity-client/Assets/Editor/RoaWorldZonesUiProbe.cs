@@ -63,6 +63,19 @@ namespace RealmOfAshes.EditorTools
                 "PvE area line shows personal mode, enemies and last result");
             Require(RoaWorldEventsPresentation.Clock(754) == "12:34", "Clock formatting");
 
+            // Постоянная PvE-область на карте: название, опасность, обитатели и
+            // характерные категории добычи видны до входа.
+            var area = JObject.Parse(@"{'id':'antHive','displayName':'Колония Пыльников','danger':2,
+                'inhabitants':['рой пыльников','пара рыхляков'],
+                'lootCategories':['хитин и железы пыльников','ремесленный лом']}");
+            string areaLine = RoaGlobalMap.PveAreaLabel(area);
+            Require(areaLine.Contains("ОБЛАСТЬ: Колония Пыльников") && areaLine.Contains("опасность 2"),
+                "Area summary names the area and its danger: " + areaLine);
+            Require(areaLine.Contains("обитатели: рой пыльников, пара рыхляков"), "Area summary lists its inhabitants: " + areaLine);
+            Require(areaLine.Contains("добыча: хитин и железы пыльников"), "Area summary lists loot categories: " + areaLine);
+            Require(areaLine.Contains("встреча личная"), "Area summary explains that the encounter is personal");
+            Require(RoaGlobalMap.PveAreaLabel(null) == string.Empty, "Without an area the summary stays empty");
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);

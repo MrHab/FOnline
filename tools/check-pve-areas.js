@@ -141,4 +141,26 @@ const socketClient = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 assert(socketClient.includes('_connection.On("pveAreaState"') && socketClient.includes('OnPveAreaState?.Invoke(payload)'), 'Unity must route pveAreaState.');
 assert(read('unity-client/Assets/Scripts/Game/RoaPveAreaNet.cs').includes('EmitWithAck("pveAreaAction"'), 'Unity must be able to search for tracks.');
 
+// --- область видна на карте до входа -------------------------------------------
+const mapNodes = JSON.parse(read('data/global-map.json')).nodes;
+const pointFor = locationId => {
+  const node = mapNodes.find(row => row.locationId === locationId || row.id === locationId);
+  return node ? { x: node.x, y: node.y } : null;
+};
+const publicAreas = pve.publicPveAreaCatalog(catalog, pointFor);
+assert.equal(publicAreas.length, catalog.areas.length, 'Every area reaches the client.');
+for (const row of publicAreas) {
+  assert(row.x > 0 && row.y > 0, `${row.id}: the area has a centre on the world map`);
+  assert(row.radiusPoints >= 4, `${row.id}: the area has borders`);
+  assert(row.danger >= 1 && row.danger <= 5, `${row.id}: the area declares its danger`);
+  assert(row.inhabitants.length > 0, `${row.id}: the area names its inhabitants`);
+  assert(row.lootCategories.length > 0, `${row.id}: the area names its loot categories`);
+  assert.equal(row.personal, true, `${row.id}: the encounter is personal`);
+}
+assert(server.includes('pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation)'),
+  '/api/wasteland must publish the area catalog: without it the client cannot draw borders.');
+const clientMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
+for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAreaLabel(', 'PveAreaAt('])
+  assert(clientMap.includes(token), `RoaGlobalMap must show the area: ${token}`);
+
 console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);

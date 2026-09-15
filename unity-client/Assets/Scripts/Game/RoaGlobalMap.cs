@@ -1424,6 +1424,24 @@ namespace RealmOfAshes.Game
                 }
             }
 
+            // Постоянные PvE-области: контур границ, чтобы игрок видел, где
+            // начинаются угодья обитателей, ещё до входа.
+            JArray pveAreas = _wasteland["pveAreas"] as JArray;
+            if (pveAreas != null)
+            {
+                foreach (JToken token in pveAreas)
+                {
+                    JObject row = token as JObject;
+                    if (row == null) continue;
+                    float radius = Mathf.Clamp(Float(row["radiusPoints"], 24f), 4f, 80f);
+                    var center = new GlobalMapPoint { X = Float(row["x"], 0f), Y = Float(row["y"], 0f) };
+                    if (center.X <= 0f && center.Y <= 0f) continue;
+                    DrawWorldRing("PveArea:" + (row["id"]?.ToString() ?? string.Empty), center, radius,
+                                  new Color(0.55f, 0.82f, 0.45f, 0.26f),
+                                  0.08f, 0.1f, DynamicVisualLayer.Threat, false, 0);
+                }
+            }
+
             // Временные публичные события (логова, базы налётчиков): точка и
             // worldZoneId для серверного билета входа, таймер и предупреждение.
             JArray publicEvents = _wasteland["publicEvents"] as JArray;
@@ -5379,6 +5397,65 @@ namespace RealmOfAshes.Game
                              (rgb & 0xff) / 255f, 1f);
         }
 
+        /// <summary>
+        /// Описание постоянной PvE-области под выбранной точкой: название,
+        /// опасность, обитатели и характерные категории добычи. Данные —
+        /// авторский каталог, который сервер отдаёт в снимке пустоши.
+        /// </summary>
+        public string PveAreaSummary(GlobalMapPoint point)
+        {
+            JObject area = PveAreaAt(point);
+            if (area == null) return string.Empty;
+            return PveAreaLabel(area);
+        }
+
+        public JObject PveAreaAt(GlobalMapPoint point)
+        {
+            JArray areas = _wasteland?["pveAreas"] as JArray;
+            if (areas == null || point == null) return null;
+            JObject best = null;
+            float bestDistance = float.MaxValue;
+            foreach (JToken token in areas)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                float radius = Float(row["radiusPoints"], 24f);
+                float dx = Float(row["x"], 0f) - point.X;
+                float dy = Float(row["y"], 0f) - point.Y;
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                if (distance > radius || distance >= bestDistance) continue;
+                bestDistance = distance;
+                best = row;
+            }
+            return best;
+        }
+
+        /// <summary>Строка области для сводки выбора. Чистая функция — её проверяет проба.</summary>
+        public static string PveAreaLabel(JObject area)
+        {
+            if (area == null) return string.Empty;
+            var parts = new List<string>();
+            parts.Add("ОБЛАСТЬ: " + (area["displayName"]?.ToString() ?? "угодья"));
+            int danger = area["danger"]?.Value<int>() ?? 0;
+            if (danger > 0) parts.Add("опасность " + danger);
+            parts.Add("встреча личная, PvP отключён, вещи сохраняются");
+            var inhabitants = new List<string>();
+            foreach (JToken token in area["inhabitants"] as JArray ?? new JArray())
+            {
+                string label = token?.ToString();
+                if (!string.IsNullOrWhiteSpace(label)) inhabitants.Add(label);
+            }
+            if (inhabitants.Count > 0) parts.Add("обитатели: " + string.Join(", ", inhabitants));
+            var loot = new List<string>();
+            foreach (JToken token in area["lootCategories"] as JArray ?? new JArray())
+            {
+                string label = token?.ToString();
+                if (!string.IsNullOrWhiteSpace(label)) loot.Add(label);
+            }
+            if (loot.Count > 0) parts.Add("добыча: " + string.Join(", ", loot));
+            return string.Join(" · ", parts);
+        }
+
         private string BuildSelectionSummary()
         {
             if (_map == null || _map.Grid == null || _selectedPoint == null) return string.Empty;
@@ -5398,6 +5475,9 @@ namespace RealmOfAshes.Game
             if (chance > 0.01f) cellLine += " · встреча " + chance.ToString("0.#") + "%";
             if (cell != null && !string.IsNullOrEmpty(cell.PvpMode)) cellLine += " · " + PvpLabel(cell.PvpMode);
             lines.Add(cellLine);
+
+            string areaSummary = PveAreaSummary(_selectedPoint);
+            if (!string.IsNullOrEmpty(areaSummary)) lines.Add(areaSummary);
 
             float distancePoints = Distance(_playerPoint, _selectedPoint);
             float distanceKm = distancePoints / Mathf.Max(0.001f, _map.Grid.CellPoints) * _map.Grid.CellKm;

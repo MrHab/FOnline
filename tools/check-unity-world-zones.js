@@ -74,6 +74,25 @@ for (const token of [
   'stable ? "стабилизирован" : "сырой"',
   'RoaInteraction.ArtifactForRuntimeId('
 ]) assert(lootCanvas.includes(token), `RoaLootCanvas must show the artifact state in a row: ${token}`);
+
+// Сейфы лабораторий заперты и прикрыты терминалами: сложность, нужный навык и
+// остаток заминки сервер публикует в снимке контейнера, и окно обязано их
+// показать — раньше игрок видел только «Контейнер заперт.».
+const interactionSource = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
+for (const token of [
+  'public static string SecurityLine(JObject container, bool terminal, long nowMs)',
+  'container["lockDifficultyLabel"]',
+  'container["lockRequiredSkill"]',
+  'container["lockCooldownUntil"]',
+  'container["terminalUnlocksLock"]',
+  ' с до новой попытки.'
+]) assert(interactionSource.includes(token), `RoaInteraction must explain a locked container: ${token}`);
+for (const token of [
+  'RoaInteraction.SecurityLine(state, true, nowMs)',
+  'RoaInteraction.SecurityLine(state, false, nowMs)'
+]) assert(lootCanvas.includes(token), `RoaLootCanvas must show the security line: ${token}`);
+assert(read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs').includes('RoaInteraction.SecurityLine(safe, false, 1000L)'),
+  'The editor probe must check the security line of a locked safe.');
 for (const token of [
   'public static JObject ArtifactForRuntimeId(JArray records, string runtimeId)',
   'public JArray StorageRuntimeRecords',

@@ -27,19 +27,3 @@ MonoBehaviour:
     prefab: {fileID: 3263121585391160069, guid: b906249dda334074085a99d886fc178a, type: 3}
   - sourceUrl: /assets/models/characters/npc/npc_humanoid_animations.glb
     prefab: {fileID: 9071860110875983437, guid: f3faa7c8b7c783742acef23c07ba6cd3, type: 3}
-  - sourceUrl: /assets/models/wasteland/brahmin.glb
-    prefab: {fileID: 5635988986985348765, guid: 98f48e4d66e9ea946b0316d94ae081bb, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_ash_wolf.glb
-    prefab: {fileID: 4293081618108315741, guid: c1019b8456d5e8541a2f5a43c5397e15, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_fire_gecko.glb
-    prefab: {fileID: 8250634240932639904, guid: 13576563c552e5442adec3d01344bba9, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_gecko.glb
-    prefab: {fileID: 3857105491611449263, guid: 4d7e1053b193b274eb79d95040767670, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_ghoul.glb
-    prefab: {fileID: 2882596692508787526, guid: e0fb1a4aa5e00fb47bf20f863cc6e468, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_mutant_ant.glb
-    prefab: {fileID: 238666572597406880, guid: 4dd71dc73541d0d4f80f5791b5764fb1, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_radscorpion.glb
-    prefab: {fileID: 4415182887389652907, guid: c50408004620e324ab80230646c67bb8, type: 3}
-  - sourceUrl: /assets/models/wasteland/npc_super_mutant.glb
-    prefab: {fileID: 5681379148403661094, guid: 1d1715e4767c6054584d334733e6dcb0, type: 3}

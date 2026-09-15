@@ -1062,6 +1062,37 @@ namespace RealmOfAshes.Game
         public bool StorageOpen { get { return _panel == PanelKind.Storage; } }
         public bool LootLocked { get { return _active?["locked"]?.ToObject<bool>() == true; } }
         public bool LootTerminalLocked { get { return _active?["terminalLocked"]?.ToObject<bool>() == true; } }
+
+        /// <summary>Снимок открытого контейнера: в нём лежат и правила защиты.</summary>
+        public JObject LootSecurityState { get { return _active; } }
+
+        /// <summary>
+        /// Строка запертого контейнера: сложность, нужный навык и остаток
+        /// заминки после неудачи. Сервер шлёт всё это в снимке контейнера, но
+        /// раньше игрок узнавал сложность только из отказа после нажатия, а
+        /// длину заминки — никогда.
+        /// </summary>
+        public static string SecurityLine(JObject container, bool terminal, long nowMs)
+        {
+            if (container == null) return string.Empty;
+            string label = (terminal ? container["terminalDifficultyLabel"] : container["lockDifficultyLabel"])?.ToString() ?? string.Empty;
+            int required = (terminal ? container["terminalRequiredSkill"] : container["lockRequiredSkill"])?.ToObject<int>() ?? 0;
+            long until = (terminal ? container["terminalCooldownUntil"] : container["lockCooldownUntil"])?.ToObject<long>() ?? 0L;
+            string name = terminal ? container["terminalName"]?.ToString() ?? string.Empty : string.Empty;
+            var sb = new StringBuilder(terminal
+                ? (string.IsNullOrWhiteSpace(name) ? "Доступ защищён терминалом." : "Доступ защищён терминалом «" + name + "».")
+                : "Контейнер заперт.");
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                sb.Append(terminal ? " Терминал: " : " Замок: ").Append(label);
+                if (required > 0) sb.Append(terminal ? ", нужна Наука " : ", нужен Взлом ").Append(required).Append('%');
+                sb.Append('.');
+            }
+            if (terminal && container["terminalUnlocksLock"]?.ToObject<bool>() == true) sb.Append(" Взлом терминала снимет и замок.");
+            int wait = until > nowMs ? (int)((until - nowMs + 999L) / 1000L) : 0;
+            if (wait > 0) sb.Append(" Ещё ").Append(wait).Append(" с до новой попытки.");
+            return sb.ToString();
+        }
         public JArray LootRows { get { return _active?["loot"] as JArray; } }
 
         /// <summary>Записи экземпляров в открытом контейнере или трупе, если сервер их прислал.</summary>

@@ -407,6 +407,13 @@ namespace RealmOfAshes.Game
                 if (!string.IsNullOrEmpty(sides)) sb.Append(" · ").Append(sides);
             }
             if (payload["guardShielded"]?.Value<bool>() == true) sb.Append(" · МАШИНА ПОД ПИТАНИЕМ");
+            // Окно побочного эффекта узла — это и есть время, когда охранную
+            // машину можно бить: щит снят, пока оно идёт. Сервер шлёт остаток,
+            // и без него игрок бьёт вслепую. В зале без машины окно ничего не
+            // решает, поэтому там оно и не называется.
+            string effect = NodeEffectLine(payload["nodes"] as JArray,
+                !string.IsNullOrEmpty(payload["guardName"]?.ToString()));
+            if (!string.IsNullOrEmpty(effect)) sb.Append(" · ").Append(effect);
             // Одинаковые приборы на стенах называются одинаково, поэтому
             // совпадающие строки сводятся в одну с количеством.
             var ready = new List<string>();
@@ -427,6 +434,24 @@ namespace RealmOfAshes.Game
             }
             if (ready.Count > 0) sb.Append("\nУзлы: ").Append(string.Join(", ", ready));
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Остаток окна побочного эффекта узла. Сервер снимает щит с охранной
+        /// машины, пока идёт окно любого узла, и больше это окно ни на что не
+        /// влияет — в зале без машины оно не называется вовсе.
+        /// </summary>
+        public static string NodeEffectLine(JArray nodes, bool hasGuard)
+        {
+            if (!hasGuard) return string.Empty;
+            int best = 0;
+            foreach (JToken token in nodes ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                best = Mathf.Max(best, row["effectSeconds"]?.Value<int>() ?? 0);
+            }
+            return best > 0 ? "ПИТАНИЕ СНЯТО: " + best + " с" : string.Empty;
         }
 
         /// <summary>

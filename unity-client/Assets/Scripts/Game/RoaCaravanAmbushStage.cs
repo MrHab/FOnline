@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GLTFast;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.World;
 using UnityEngine;
@@ -94,13 +95,31 @@ namespace RealmOfAshes.Game
                     _people.Add(performer);
                     loads.Add(LoadPerson(performer, baseUrl, i));
                 }
+                // Брамин грузится по URL, как и всякая другая тварь: в каталоге
+                // Resources он стоил бы 37 МБ распакованных текстур в сборке у
+                // каждого игрока. Импорт делается один раз на обоих животных.
+                GltfImport brahminImport = null;
+                string brahminRelative = RoaEnemyModels.Url("brahmin");
                 for (int i = 0; i < BrahminCount; i++)
                 {
                     var root = new GameObject("PackBrahmin_" + (i + 1));
                     root.transform.SetParent(transform, false);
-                    if (!RoaModelPrefabCatalog.TryInstantiate(RoaEnemyModels.Url("brahmin"),
-                            root.transform, out GameObject model))
-                        throw new InvalidOperationException("The bundled brahmin prefab is missing.");
+                    if (!RoaModelPrefabCatalog.TryInstantiate(brahminRelative, root.transform, out GameObject model))
+                    {
+                        if (brahminImport == null)
+                        {
+                            string url = RoaModelUrl.Lite(baseUrl.TrimEnd('/') + brahminRelative);
+                            brahminImport = new GltfImport();
+                            if (!await brahminImport.Load(url, new ImportSettings { AnimationMethod = AnimationMethod.Legacy }))
+                                throw new InvalidOperationException("The caravan brahmin did not load: " + url);
+                        }
+                        if (_disposed || this == null) return;
+                        model = new GameObject("Brahmin");
+                        model.transform.SetParent(root.transform, false);
+                        if (!await brahminImport.InstantiateMainSceneAsync(model.transform))
+                            throw new InvalidOperationException("Could not instantiate the caravan brahmin.");
+                        if (_disposed || this == null) return;
+                    }
                     foreach (Collider collider in model.GetComponentsInChildren<Collider>(true))
                         collider.enabled = false;
                     var renderers = model.GetComponentsInChildren<Renderer>(true);

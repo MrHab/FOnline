@@ -211,19 +211,19 @@ namespace RealmOfAshes.Editor
             AssetDatabase.CreateFolder(parent, name);
         }
 
+        // Каталог Resources попадает в сборку целиком, а GLB при импорте
+        // разворачивается в несжатые текстуры и вершины: файл на 4 МБ весит в
+        // player data 37 МБ. Поэтому здесь остаётся только то, что нужно
+        // каждому игроку сразу и всегда — тело персонажа и общая библиотека
+        // анимаций. Твари встречаются по одной-две на локацию и подгружаются
+        // тем же путём, что и всё остальное: по URL из /assets/models-lite/
+        // (RoaCharacterView → LoadCached), где облегчённая тварь весит
+        // 0,4–2,8 МБ вместо 20–37 МБ в сборке.
         private static HashSet<string> BuildRuntimeModelUrls()
         {
             var urls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "/assets/models/characters/npc/npc_humanoid_animations.glb",
-                "/assets/models/wasteland/npc_ghoul.glb",
-                "/assets/models/wasteland/npc_super_mutant.glb",
-                "/assets/models/wasteland/npc_ash_wolf.glb",
-                "/assets/models/wasteland/npc_radscorpion.glb",
-                "/assets/models/wasteland/npc_mutant_ant.glb",
-                "/assets/models/wasteland/npc_gecko.glb",
-                "/assets/models/wasteland/npc_fire_gecko.glb",
-                "/assets/models/wasteland/brahmin.glb"
+                "/assets/models/characters/npc/npc_humanoid_animations.glb"
             };
             foreach (string sex in new[] { "female", "male" })
                 foreach (string body in new[] { "slim", "medium", "large" })

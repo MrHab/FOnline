@@ -150,4 +150,13 @@ for (const token of [
 ]) assert(canvas.includes(token), `RoaGlobalMapCanvas is missing ${token}`);
 assert(/sharePct/.test(canvas), 'окно показывает долю фракции в процентах');
 
+// Подпись связывает игрока на срок смены фракции, и сервер шлёт этот срок в
+// самом предложении: окно обязано назвать его до подписи, а не потом.
+assert(/changeCooldownMs/.test(canvas), 'окно контракта читает срок, на который связывает подпись');
+assert(canvas.includes('сменить фракцию можно будет только через'),
+  'окно контракта называет срок до смены фракции');
+const gateProbe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');
+assert(gateProbe.includes('сменить фракцию можно будет только через 72 ч.'),
+  'проба проверяет срок в окне контракта');
+
 console.log('Territory contract OK: faction shares, gate offer, base routing, hidden base markers and the Unity contract window are wired.');

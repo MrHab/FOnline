@@ -201,6 +201,9 @@ function publicLabState(state = {}, mechanics = null, center = { x: 0, z: 0 }, n
       ? Math.max(0, Math.round((Number(state.telegraphedAt) + mechanics.hazard.telegraphMs - Number(now)) / 1000))
       : 0,
     sectors: labHazardSectors(state, mechanics, center),
+    // Имя охранной машины заодно говорит клиенту, что она в этом зале есть:
+    // окно эффекта узла снимает щит только с неё и больше ни на что не влияет.
+    guardName: mechanics.guard ? mechanics.guard.displayName : '',
     guardShielded: labGuardShielded(state, mechanics, now),
     nodes: (mechanics.nodes || []).map(node => ({
       id: node.id,

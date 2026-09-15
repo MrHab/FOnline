@@ -137,7 +137,8 @@ namespace RealmOfAshes.EditorTools
             // Зал боковой лаборатории: шкала угрозы, объявленный удар и
             // готовность узлов на стенах.
             var lab = JObject.Parse(@"{'roomId':'coreLabCircuit','meterLabel':'Перегрузка','meter':0.62,
-                'hazardName':'Разряд по залу','telegraph':false,'telegraphInSeconds':0,'guardShielded':true,
+                'hazardName':'Разряд по залу','telegraph':false,'telegraphInSeconds':0,
+                'guardName':'Охранная машина','guardShielded':true,
                 'nodes':[{'id':'node_a','displayName':'Распределительный щит','readyInSeconds':0},
                          {'id':'node_b','displayName':'Распределительный щит','readyInSeconds':12}]}");
             string labText = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
@@ -156,6 +157,20 @@ namespace RealmOfAshes.EditorTools
             lab["nodes"][1]["readyInSeconds"] = 0;
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит ×2"),
                 "Identical ready nodes collapse into one row");
+            // Снятое питание — это и есть окно, когда машину можно бить.
+            lab["guardShielded"] = false;
+            lab["nodes"][0]["effectSeconds"] = 14;
+            string labPower = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
+            Require(labPower.Contains("ПИТАНИЕ СНЯТО: 14 с"),
+                "The node effect window says how long the guard machine stays open: " + labPower);
+            // В зале без охранной машины это окно ничего не решает: сервер шлёт
+            // его и там, но обещать по нему нечего.
+            lab["guardName"] = string.Empty;
+            Require(!RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("ПИТАНИЕ СНЯТО"),
+                "A hall without a guard machine promises nothing for the window");
+            lab["guardName"] = "Охранная машина";
+            lab["nodes"][0]["effectSeconds"] = 0;
+            Require(RoaWorldEventsPresentation.NodeEffectLine(null, true) == string.Empty, "Without nodes no window is shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabAlloy") == string.Empty, "Another hall's state is not shown");
             Require(RoaWorldEventsPresentation.DescribeLabHall(null, "coreLabCircuit") == string.Empty, "Without a hall the line stays empty");
 
@@ -188,6 +203,24 @@ namespace RealmOfAshes.EditorTools
             rowArtifact["stabilized"] = true; rowArtifact["hot"] = false;
             Require(RoaLootCanvas.ArtifactRowSuffix(rowArtifact).Contains("стабилизирован"), "A stabilized instance says so");
             Require(RoaLootCanvas.ArtifactRowSuffix(null) == string.Empty, "An ordinary item keeps its plain row");
+
+            // Запертый сейф лаборатории: сложность, нужный навык и остаток
+            // заминки после неудачи приходят в снимке контейнера.
+            var safe = JObject.Parse(@"{'id':'labSafe','locked':true,'lockDifficultyLabel':'Сложный','lockRequiredSkill':75,
+                'terminalLocked':true,'terminalDifficultyLabel':'Средний','terminalRequiredSkill':55,
+                'terminalName':'Пульт секции','terminalUnlocksLock':true,'lockCooldownUntil':0,'terminalCooldownUntil':0}");
+            string lockLine = RoaInteraction.SecurityLine(safe, false, 1000L);
+            Require(lockLine.Contains("Замок: Сложный") && lockLine.Contains("нужен Взлом 75%"),
+                "A locked container names its difficulty and the skill it asks for: " + lockLine);
+            Require(!lockLine.Contains("до новой попытки"), "A lock that is not jammed promises no wait: " + lockLine);
+            string terminalLine = RoaInteraction.SecurityLine(safe, true, 1000L);
+            Require(terminalLine.Contains("«Пульт секции»") && terminalLine.Contains("нужна Наука 55%")
+                && terminalLine.Contains("снимет и замок"),
+                "A terminal names itself, its difficulty and what hacking it gives: " + terminalLine);
+            safe["lockCooldownUntil"] = 13000L;
+            Require(RoaInteraction.SecurityLine(safe, false, 1000L).Contains("Ещё 12 с до новой попытки"),
+                "A jammed lock says how long the wait is");
+            Require(RoaInteraction.SecurityLine(null, false, 0L) == string.Empty, "Without a container there is no security line");
 
             // Итог эффектов пояса: рядом с показателем назван его потолок,
             // а на самом потолке так и сказано.
@@ -277,6 +310,12 @@ namespace RealmOfAshes.EditorTools
             Require(intro.Contains("Сердцевина") && intro.Contains("12"), "Contract window explains the territory and how many signed");
             Require(RoaGlobalMapCanvas.ContractIntroText(JObject.Parse(@"{'signedCharacters':0}")).Contains("не подписал никто"),
                 "An empty territory says so instead of showing zeroes");
+            // Подпись связывает на срок, и срок этот приходит в самом предложении.
+            Require(!intro.Contains("сменить фракцию"), "Without a published cooldown nothing is promised: " + intro);
+            contract["changeCooldownMs"] = 259200000L;
+            string bound = RoaGlobalMapCanvas.ContractIntroText(contract);
+            Require(bound.Contains("сменить фракцию можно будет только через 72 ч."),
+                "The contract window says how long the choice binds before it is signed: " + bound);
             string upravaRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][0], true);
             Require(upravaRow.Contains("Управа") && upravaRow.Contains("66.7%") && upravaRow.Contains("8 чел.") && upravaRow.Contains("Узел Управы"),
                 "Faction row shows the share, the people and the base: " + upravaRow);

@@ -306,6 +306,8 @@ for (const template of catalog.templates) {
   const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
   assert(presentation.includes('string side = row["side"]?.ToString();'),
     'The event line must name the side of every intact support.');
+  assert(presentation.includes('string strikeSide = CompassSide(strike["x"]?.Value<float>() ?? 0f, strike["z"]?.Value<float>() ?? 0f);'),
+    'The telegraphed strike must name the side it comes from.');
 }
 
 console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

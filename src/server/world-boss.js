@@ -282,6 +282,12 @@ function publicWorldBoss(state = null, rules = DEFAULT_RULES, now = Date.now(), 
     bossMaxHp: Math.max(0, Math.round(Number(extra.bossMaxHp || 0))),
     rewardOpen: state.phase === 'defeated',
     // Опасные участки арены для клиента: их центр и радиус меняются по ходу боя.
+    // Центр арены нужен, чтобы клиент мог назвать стороны горящих участков:
+    // сами участки приходят в абсолютных координатах комнаты.
+    arenaCenter: {
+      x: Number(Number(extra.center?.x || 0).toFixed(2)),
+      z: Number(Number(extra.center?.z || 0).toFixed(2))
+    },
     hazards: worldBossHazards(state, rules, extra.center || { x: 0, z: 0 })
   };
 }

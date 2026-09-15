@@ -206,6 +206,22 @@ const duplicate = { ...belt, artifactRecords: [{ id: 'v1', typeId: 'vein', stabi
 sanitizeArtifactLoadout(duplicate, catalog);
 assert.deepEqual(calculateArtifactEffects(duplicate, catalog).artifactRecordIds, ['v1'], 'Two artifacts of one kind never stack.');
 
+// --- предельные значения видны игроку -----------------------------------------
+// Без потолка непонятно, почему четвёртый одинаковый артефакт уже ничего не
+// даёт, поэтому caps уходят вместе с итогом эффектов.
+{
+  const effects = calculateArtifactEffects({ artifactRecords: [], artifactSlots: [] }, catalog);
+  assert(effects.caps, 'The effect totals carry the ceilings.');
+  assert.equal(effects.caps.speedPct, catalog.rules.maxSpeedBonusPct);
+  assert.equal(effects.caps.carryKg, catalog.rules.maxCarryBonusKg);
+  assert.equal(effects.caps.regenHpPerSecond, catalog.rules.maxRegenHpPerSecond);
+  assert.equal(effects.caps.resistancePct, catalog.rules.maxResistancePct);
+  assert.equal(effects.caps.secondarySimilarEffectMultiplier, catalog.rules.secondarySimilarEffectMultiplier);
+  const panel = read('unity-client/Assets/Scripts/Game/RoaKromkaShiftAndDetector.cs');
+  for (const token of ['public static string FormatEffects(JObject effects)', 'CapPercent(caps,', 'SecondaryRuleLine(caps)'])
+    assert(panel.includes(token), `The belt panel must show the ceilings: ${token}`);
+}
+
 // --- серверные контракты ------------------------------------------------------
 const server = read('server.js');
 for (const needle of [

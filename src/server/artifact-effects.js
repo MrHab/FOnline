@@ -124,6 +124,15 @@ function calculateArtifactEffects(player = {}, catalog = {}, slotsOverride = nul
     lowHealthCooldownSeconds: Math.max(1, get('lowHealthCooldownSeconds')),
     radiationOnTrigger: Math.max(0, get('radiationOnTrigger')),
     resistances: resolvedResistances,
+    // Предельные значения из каталога: игрок должен видеть, где потолок, —
+    // иначе непонятно, почему четвёртая «Пружина» уже ничего не даёт.
+    caps: {
+      speedPct: Number(rules.maxSpeedBonusPct || 0.18),
+      carryKg: Number(rules.maxCarryBonusKg || 30),
+      regenHpPerSecond: Number(rules.maxRegenHpPerSecond || 1),
+      resistancePct: Number(rules.maxResistancePct || 0.6),
+      secondarySimilarEffectMultiplier: secondary
+    },
     flags
   };
 }

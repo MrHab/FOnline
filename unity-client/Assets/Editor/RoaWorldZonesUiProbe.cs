@@ -156,6 +156,23 @@ namespace RealmOfAshes.EditorTools
             Require(RoaLootCanvas.ArtifactRowSuffix(rowArtifact).Contains("стабилизирован"), "A stabilized instance says so");
             Require(RoaLootCanvas.ArtifactRowSuffix(null) == string.Empty, "An ordinary item keeps its plain row");
 
+            // Итог эффектов пояса: рядом с показателем назван его потолок,
+            // а на самом потолке так и сказано.
+            var beltEffects = JObject.Parse(@"{'artifactTypeIds':['spring','vein'],'speedPct':0.09,'apRegenPct':0.12,'carryKg':8,
+                'maxHpFlat':10,'regenHpPerSecond':0.2,'meleeDamagePct':0.05,
+                'caps':{'speedPct':0.18,'carryKg':30,'regenHpPerSecond':1,'resistancePct':0.6,'secondarySimilarEffectMultiplier':0.5}}");
+            string totals = RoaKromkaShiftAndDetector.FormatEffects(beltEffects);
+            Require(totals.Contains("Скорость: +9% (предел +18%)"), "The speed total names its ceiling: " + totals);
+            Require(totals.Contains("Груз: +8 кг (предел +30 кг)"), "The carry total names its ceiling: " + totals);
+            Require(totals.Contains("Одинаковая польза от второго и дальше — 50%, штрафы — полностью."),
+                "The stacking rule is spelled out: " + totals);
+            beltEffects["speedPct"] = 0.18;
+            Require(RoaKromkaShiftAndDetector.FormatEffects(beltEffects).Contains("Скорость: +18% (предел достигнут)"),
+                "At the ceiling the panel says so");
+            var noCaps = JObject.Parse(@"{'artifactTypeIds':['spring'],'speedPct':0.09}");
+            Require(!RoaKromkaShiftAndDetector.FormatEffects(noCaps).Contains("предел"),
+                "Without caps from the server the panel stays as it was");
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);
@@ -205,7 +222,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards and list rows, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows and belt caps, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

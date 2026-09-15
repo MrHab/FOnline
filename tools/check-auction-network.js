@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка аукциона на реальном сервере (изолированный DATA_DIR):
-// экран аукционера открывается только рядом с ним, лот уходит в категорию на
-// выбранный срок, ставка снимает марки и возвращает перебитую на полку,
-// выкуп закрывает торги с налогом продавцу, снятие и забор полки доводят
-// предметы до рюкзака, а повтор requestId не списывает марки дважды.
+// Сетевая проверка рынка на реальном сервере (изолированный DATA_DIR): книга
+// ордеров у аукционера открывается только рядом с ним, ордер на продажу уходит
+// в категорию на выбранный срок за сбор, ордер на выкуп замораживает марки и
+// исполняется встречными по цене книги, мгновенные «купить/продать сейчас»
+// доводят товар и выручку до рюкзака, отмена и забор полки возвращают
+// остальное, а повтор requestId не списывает марки дважды.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -71,96 +72,105 @@ const walkToAuctioneer = async account => (await walkTo(account, AUCTIONEER.x, A
     return response;
   };
 
-  // --- аукционер открывает экран только рядом с собой --------------------
+  // --- аукционер открывает книгу только рядом с собой ---------------------
   const far = await walkTo(accounts.trade, 16, -18, false);
-  assert.equal(far.ok, false, 'The auction screen stays shut away from the auctioneer.');
+  assert.equal(far.ok, false, 'The market stays shut away from the auctioneer.');
   assert.match(far.error, /Аукционер/, far.error);
 
   const opened = await walkToAuctioneer(accounts.trade);
   assert.equal(opened.taxPct, 0.05, 'The screen states the sales tax up front.');
-  assert.deepEqual(opened.durationChoicesHours, [6, 12, 24, 48], 'The seller chooses the listing term from the server list.');
+  assert.equal(opened.setupFeePct, 0.015, 'The screen states the setup fee up front.');
+  assert.deepEqual(opened.durationChoicesHours, [6, 24, 72, 168], 'The trader picks the order term from the server list.');
   assert(opened.categories.length >= 9 && opened.categories.every(row => row.id && row.label),
     'Every product category arrives with its label.');
-  assert.equal(opened.limits.maxQtyPerListing, 200);
+  assert.equal(opened.limits.maxQtyPerOrder, 500);
   for (const role of ['target', 'untargeted']) await walkToAuctioneer(accounts[role]);
 
-  // --- выставление --------------------------------------------------------
-  await send('trade', { action: 'list', itemId: 'ammo9', qty: 20, startPrice: 100, buyoutPrice: 40, durationHours: 6, requestId: 'lot-bad' }, false);
-  await send('trade', { action: 'list', itemId: 'ammo9', qty: 20, startPrice: 100, buyoutPrice: 500, durationHours: 5, requestId: 'lot-term' }, false);
-  const listed = await send('trade', {
-    action: 'list', itemId: 'ammo9', qty: 20, startPrice: 100, buyoutPrice: 500, durationHours: 6, requestId: 'lot-1'
-  });
-  assert.equal(listed.category, 'ammo', 'The server files the lot under the category of its own item catalog.');
+  // --- ордер на продажу ---------------------------------------------------
+  await send('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 5, requestId: 'sell-term' }, false);
+  await send('trade', { action: 'sell', itemId: 'ammo9', qty: 999, price: 10, durationHours: 24, requestId: 'sell-many' }, false);
+  const listed = await send('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 24, requestId: 'sell-1' });
+  assert.equal(listed.restingQty, 20, 'With no counter-orders the whole order rests in the book.');
+  assert.equal(listed.soldQty, 0);
+  assert.equal(listed.setupFee, 3, 'The setup fee is 1.5% of the order.');
   assert.equal(qty(listed.self, 'ammo9'), 20, 'The listed stack leaves the backpack at once.');
-  const lotId = listed.listingId;
+  assert.equal(qty(listed.self, 'silver'), 297, 'The setup fee is paid on the spot.');
+  const sellOrderId = listed.orderId;
 
   const buyerView = await send('target', { action: 'state' });
-  const lot = buyerView.auction.listings.find(row => row.id === lotId);
-  assert(lot, 'Faction members see the lot: ' + JSON.stringify(buyerView.auction.listings).slice(0, 300));
-  assert.equal(lot.category, 'ammo');
-  assert.equal(lot.startPrice, 100);
-  assert.equal(lot.buyoutPrice, 500);
-  assert.equal(lot.nextBid, 100);
-  assert.equal(lot.durationHours, 6);
-  assert.equal(lot.mine, false);
-  assert(!('bidderCharacterId' in lot) && !('sellerCharacterId' in lot), 'The screen never learns who is behind a lot.');
-  assert.equal(buyerView.auction.categories.find(row => row.id === 'ammo').count, 1);
+  const book = buyerView.auction.orders.find(row => row.id === sellOrderId);
+  assert(book, 'Faction members see the order: ' + JSON.stringify(buyerView.auction.orders).slice(0, 300));
+  assert.equal(book.side, 'sell');
+  assert.equal(book.price, 10);
+  assert.equal(book.category, 'ammo', 'The server files the order under the category of its own item catalog.');
+  assert.equal(book.durationHours, 24);
+  assert.equal(book.mine, false);
+  assert(!('ownerCharacterId' in book) && !('escrow' in book), 'The screen never learns who is behind an order.');
+  assert.deepEqual(buyerView.auction.items, [{ itemId: 'ammo9', category: 'ammo', sellQty: 20, sellPrice: 10, buyQty: 0, buyPrice: 0, mine: false }],
+    'The item summary carries the best price of each side.');
 
-  // --- ставки -------------------------------------------------------------
-  await send('target', { action: 'bid', listingId: lotId, amount: 99, requestId: 'bid-low' }, false);
-  const firstBid = await send('target', { action: 'bid', listingId: lotId, amount: 100, requestId: 'bid-1' });
-  assert.equal(firstBid.nextBid, 105, 'The next bid has to clear the step.');
-  assert.equal(qty(firstBid.self, 'silver'), 1900, 'A bid takes the marks at once, so the lot holds real money.');
+  // --- купить сейчас частью ордера ---------------------------------------
+  await send('trade', { action: 'buyNow', orderId: sellOrderId, qty: 1, requestId: 'self-buy' }, false);
+  const instant = await send('target', { action: 'buyNow', orderId: sellOrderId, qty: 5, requestId: 'buynow-1' });
+  assert.equal(instant.cost, 50);
+  assert.equal(instant.tax, 2, 'The sales tax is held back from the seller, not added to the buyer.');
+  assert.equal(qty(instant.self, 'ammo9'), 5, 'An instant buy hands the goods over on the spot.');
+  assert.equal(qty(instant.self, 'silver'), 1950);
+
+  // --- ордер на выкуп исполняется встречными по цене книги -----------------
+  await send('untargeted', { action: 'buy', itemId: 'rifle', qty: 1, price: 100, durationHours: 24, requestId: 'buy-instance' }, false);
+  const order = await send('untargeted', { action: 'buy', itemId: 'ammo9', qty: 20, price: 12, durationHours: 24, requestId: 'buy-1' });
+  assert.equal(order.boughtQty, 15, 'A buy order takes every unit the book offers below its price.');
+  assert.equal(order.spent, 150, 'A crossing order pays the resting price, not its own.');
+  assert.equal(order.restingQty, 5);
+  assert.equal(order.escrow, 60, 'The rest of the order freezes marks at its own price.');
+  assert.equal(order.setupFee, 3);
+  assert.equal(qty(order.self, 'ammo9'), 15, 'What was bought at once lands in the backpack.');
+  assert.equal(qty(order.self, 'silver'), 1787, 'The buyer pays the fills, the escrow and the fee together.');
 
   // Повтор того же requestId не списывает марки второй раз.
-  const replay = await send('target', { action: 'bid', listingId: lotId, amount: 100, requestId: 'bid-1' });
-  assert.equal(replay.reused, true, 'A repeated bid request replays instead of charging twice.');
-  assert.equal(qty(replay.self, 'silver'), 1900);
+  const replay = await send('untargeted', { action: 'buy', itemId: 'ammo9', qty: 20, price: 12, durationHours: 24, requestId: 'buy-1' });
+  assert.equal(replay.reused, true, 'A repeated order request replays instead of charging twice.');
+  assert.equal(qty(replay.self, 'silver'), 1787);
 
-  await send('untargeted', { action: 'bid', listingId: lotId, amount: 104, requestId: 'bid-2' }, false);
-  const rivalBid = await send('untargeted', { action: 'bid', listingId: lotId, amount: 105, requestId: 'bid-3' });
-  assert.equal(qty(rivalBid.self, 'silver'), 1895);
-  const outbid = await send('target', { action: 'state' });
-  assert.equal(outbid.auction.shelf.silver, 100, 'An outbid claimant finds every mark back on the shelf.');
-  assert.equal(outbid.auction.listings.find(row => row.id === lotId).bid, 105);
+  const buyOrderId = order.orderId;
+  const sellerBook = await send('trade', { action: 'state' });
+  assert.equal(sellerBook.auction.items[0].buyQty, 5, 'The resting buy order shows up in the book.');
+  assert.equal(sellerBook.auction.items[0].buyPrice, 12);
+  assert.equal(sellerBook.auction.shelf.silver, 191, 'Both fills paid the seller the price minus the tax.');
 
-  await send('trade', { action: 'cancel', listingId: lotId, requestId: 'cancel-bid' }, false);
+  // --- продать сейчас в стоящий ордер на выкуп ----------------------------
+  const soldNow = await send('trade', { action: 'sellNow', orderId: buyOrderId, qty: 5, requestId: 'sellnow-1' });
+  assert.equal(soldNow.price, 12);
+  assert.equal(soldNow.tax, 3);
+  assert.equal(soldNow.proceeds, 57, 'An instant sale pays the seller straight into the backpack.');
+  assert.equal(qty(soldNow.self, 'silver'), 354);
+  assert.equal(qty(soldNow.self, 'ammo9'), 15);
+  const filled = await send('untargeted', { action: 'state' });
+  assert.equal(filled.auction.orders.length, 0, 'A fully filled order leaves the book.');
+  assert.deepEqual(filled.auction.shelf.items.map(row => [row.itemId, row.qty, row.reason]), [['ammo9', 5, 'bought']],
+    'The buyer collects the goods from the shelf at the auctioneer.');
 
-  // --- выкуп --------------------------------------------------------------
-  const bought = await send('target', { action: 'buyout', listingId: lotId, requestId: 'buyout-1' });
-  assert.equal(bought.price, 500);
-  assert.equal(bought.tax, 25, 'The five percent sales tax is held back from the seller.');
-  assert.equal(qty(bought.self, 'ammo9'), 20, 'The buyout hands the goods over on the spot.');
-  assert.equal(qty(bought.self, 'silver'), 1400, 'The buyer pays the buyout price on top of the bid already held.');
-
-  const rivalAfter = await send('untargeted', { action: 'state' });
-  assert.equal(rivalAfter.auction.shelf.silver, 105, 'The losing bid comes back when the lot is bought out.');
-
-  const sellerAfter = await send('trade', { action: 'state' });
-  assert.equal(sellerAfter.auction.shelf.silver, 475, 'The seller receives the price minus the tax.');
-  assert.equal(sellerAfter.auction.shelf.sales, 1);
-  assert.equal(sellerAfter.auction.listings.length, 0);
-
-  // --- снятие лота и полка ------------------------------------------------
-  const second = await send('trade', {
-    action: 'list', itemId: 'medkit', qty: 2, startPrice: 60, buyoutPrice: 0, durationHours: 12, requestId: 'lot-2'
-  });
-  assert.equal(second.buyoutPrice, 0, 'A lot may go to auction without a buyout at all.');
-  await send('target', { action: 'buyout', listingId: second.listingId, requestId: 'buyout-2' }, false);
-  await send('trade', { action: 'cancel', listingId: second.listingId, requestId: 'cancel-2' });
+  // --- отмена ордера и полка ----------------------------------------------
+  const second = await send('trade', { action: 'sell', itemId: 'medkit', qty: 2, price: 60, durationHours: 72, requestId: 'sell-2' });
+  assert.equal(second.restingQty, 2);
+  await send('target', { action: 'cancel', orderId: second.orderId, requestId: 'cancel-foreign' }, false);
+  const cancelled = await send('trade', { action: 'cancel', orderId: second.orderId, requestId: 'cancel-2' });
+  assert.equal(cancelled.side, 'sell');
 
   const claimed = await send('trade', { action: 'claim', requestId: 'claim-1' });
-  assert.equal(qty(claimed.self, 'silver'), 775, 'The shelf pays out the sale to the seller backpack.');
-  assert.equal(qty(claimed.self, 'medkit'), 2, 'The cancelled lot comes home through the shelf.');
+  assert.equal(qty(claimed.self, 'silver'), 544, 'The shelf pays the sales out to the trader backpack.');
+  assert.equal(qty(claimed.self, 'medkit'), 2, 'The cancelled order comes home through the shelf.');
   const emptied = await send('trade', { action: 'state' });
   assert.equal(emptied.auction.shelf.silver, 0);
   assert.equal(emptied.auction.shelf.items.length, 0);
   await send('trade', { action: 'claim', requestId: 'claim-2' }, false);
 
   const rivalClaim = await send('untargeted', { action: 'claim', requestId: 'claim-3' });
-  assert.equal(qty(rivalClaim.self, 'silver'), 2000, 'The outbid rival ends the day whole.');
+  assert.equal(qty(rivalClaim.self, 'ammo9'), 20, 'The filled buy order delivers through the shelf.');
+  assert.equal(qty(rivalClaim.self, 'silver'), 1787, 'Every mark of the order went into goods and fees, none vanished.');
 
-  console.log('Auction network OK: proximity to the auctioneer, categories and terms from the server, escrowed bids with refunds, replay-safe requests, buyout with the sales tax, cancel and shelf claims.');
+  console.log('Market network OK: proximity to the auctioneer, categories and terms from the server, resting sell orders with a setup fee, buy orders crossing at the book price with escrow, replay-safe requests, instant buy and sell with the sales tax, cancel and shelf claims.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   Object.values(accounts).forEach(h.closeSocket);
   await h.stopServer();

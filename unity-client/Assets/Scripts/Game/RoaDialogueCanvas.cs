@@ -399,34 +399,11 @@ namespace RealmOfAshes.Game
             AddCard("Членство", body, actions);
         }
 
-        // Вариантов аукциона в диалоге нет: разговор с аукционером открывает
-        // отдельный экран торгов RoaAuctionCanvas с категориями, ставками,
-        // выкупом и сроком лота.
-
-        /// <summary>
-        /// Состояние артефакта в лоте до покупки: вид, тир и признак стабилизации,
-        /// а у исследованного — его точные свойства. Сервер присылает записи в
-        /// публичной проекции, поэтому скрытый ролл сюда не попадает.
-        /// </summary>
-        public static string AuctionArtifactLine(JObject listing)
-        {
-            JArray artifacts = listing?["artifacts"] as JArray;
-            if (artifacts == null || artifacts.Count == 0)
-            {
-                int count = listing?["artifactCount"]?.Value<int>() ?? 0;
-                return count > 0 ? "\nАртефактов в лоте: " + count : string.Empty;
-            }
-            var lines = new List<string>();
-            foreach (JToken token in artifacts)
-            {
-                JObject record = token as JObject;
-                if (record == null) continue;
-                lines.Add((record["displayName"]?.ToString() ?? "Артефакт") + ": "
-                    + RoaPipboyCanvas.ArtifactCardSummary(record, 1));
-                if (lines.Count >= 4) break;
-            }
-            return lines.Count > 0 ? "\n" + string.Join("\n", lines) : string.Empty;
-        }
+        // Вариантов рынка в диалоге нет: разговор с аукционером открывает
+        // отдельный экран книги ордеров RoaAuctionCanvas с категориями,
+        // ордерами на продажу и выкуп, мгновенными сделками и сроком ордера.
+        // Состояние артефакта до покупки описывает он же
+        // (RoaAuctionCanvas.AuctionArtifactLine).
 
         private void AddArtifactLabOptions()
         {

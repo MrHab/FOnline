@@ -22,7 +22,10 @@ const mutantIds = new Set(mutants.types.map(row => row.id));
 assert(catalog.areas.length >= 5, 'At least five persistent PvE areas.');
 assert.deepEqual(catalog.rules, {
   rollIntervalMs: 90000, calmAfterClearMs: 45000, rollChance: 0.35, tracksCooldownMs: 30000,
-  tracksChance: 0.8, maxAlive: 8, spawnMinPlayerDistance: 14, roomIdleResetMs: 600000
+  tracksChance: 0.8, maxAlive: 8, spawnMinPlayerDistance: 14, roomIdleResetMs: 600000,
+  // Обстоятельства встречи: засада подводит стаю вплотную, смешанная приводит
+  // соседа другого вида.
+  ambushChance: 0.25, ambushMinPlayerDistance: 6, mixedChance: 0.25, mixedCompanionCount: 1
 });
 for (const area of catalog.areas) {
   const location = JSON.parse(read(`data/locations/${area.locationId}.json`));
@@ -162,5 +165,61 @@ assert(server.includes('pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, 
 const clientMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAreaLabel(', 'PveAreaAt('])
   assert(clientMap.includes(token), `RoaGlobalMap must show the area: ${token}`);
+
+// --- обстоятельства встречи ------------------------------------------------------
+// Одна и та же область встречает по-разному: обычно стая бродит поодаль,
+// иногда поджидает вплотную, иногда приводит соседа другого вида.
+{
+  const area = catalog.areas.find(row => row.packs.length > 1);
+  assert(area, 'An area with more than one pack is needed for mixed encounters.');
+  const pack = area.packs[0];
+  const kinds = new Map();
+  for (let i = 0; i < 400; i += 1) {
+    const roll = i / 400;
+    const circumstance = pve.chooseCircumstance(area, pack, catalog.rules, () => roll);
+    kinds.set(circumstance.kind, (kinds.get(circumstance.kind) || 0) + 1);
+    if (circumstance.kind === 'mixed') {
+      assert(circumstance.companion && circumstance.companion.id !== pack.id,
+        'A mixed encounter brings a neighbour of another kind.');
+      assert(area.packs.some(row => row.id === circumstance.companion.id),
+        'The companion is authored for this very area.');
+      assert(circumstance.companion.spawnCount >= 1);
+    }
+    if (circumstance.kind !== 'mixed') assert.equal(circumstance.companion, null);
+  }
+  assert.deepEqual([...kinds.keys()].sort(), ['ambush', 'mixed', 'wandering'], 'All three circumstances happen.');
+  assert(kinds.get('wandering') > kinds.get('ambush'), 'Wandering stays the usual case.');
+
+  // Обстоятельство доезжает до сервера вместе с пачкой и до игрока — словами.
+  const state = pve.createPveRoomState(area, catalog.rules, 0, 'char-x');
+  const rolled = pve.rollPveEncounter(state, area, catalog.rules, catalog.rules.rollIntervalMs, {
+    aliveCount: 0, occupied: true, random: () => 0.01
+  });
+  assert(rolled.spawn && rolled.spawn.circumstance, 'The roll carries the circumstance: ' + JSON.stringify(rolled.spawn || {}));
+  assert.equal(rolled.spawn.circumstance.kind, 'ambush', 'A low roll means an ambush.');
+  const view = pve.publicPveRoomState(state, area, catalog.rules, catalog.rules.rollIntervalMs, { aliveCount: 3, members: 1 });
+  assert.equal(view.lastCircumstance, 'ambush');
+  assert(view.lastResultLabel.includes('засада'), 'The player is told about the ambush: ' + view.lastResultLabel);
+
+  // По следам идут сами — засады не бывает.
+  const tracked = pve.createPveRoomState(area, catalog.rules, 0, 'char-y');
+  const tracks = pve.searchTracks(tracked, area, catalog.rules, catalog.rules.tracksCooldownMs, {
+    aliveCount: 0, random: () => 0.01
+  });
+  assert(tracks.ok && tracks.spawn, 'Tracks lead to a group: ' + JSON.stringify(tracks));
+  assert.notEqual(tracks.spawn.circumstance.kind, 'ambush', 'Following tracks is never an ambush.');
+}
+
+// Сервер обязан различать обстоятельства: засада появляется ближе и сразу
+// идёт на игрока, смешанная приводит спутника.
+{
+  const serverSource = read('server.js');
+  for (const token of [
+    "const ambush = circumstance?.kind === 'ambush';",
+    'spawned.push(...serverSpawnPvePack(room, area, { ...circumstance.companion, circumstance: null }, now));',
+    'minPlayerDistance: ambush ? rules.ambushMinPlayerDistance : rules.spawnMinPlayerDistance',
+    'if (prey?.player) aggroEnemyFromHit(room, enemy, prey.player, now);'
+  ]) assert(serverSource.includes(token), `server.js must honour the encounter circumstances: ${token}`);
+}
 
 console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);

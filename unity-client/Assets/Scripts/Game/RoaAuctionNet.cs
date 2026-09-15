@@ -6,9 +6,10 @@ using RealmOfAshes.Net;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Аукцион на базе Сердцевины. Сервер проверяет членство, присутствие
-    /// рядом с аукционером, категорию и срок лота, снимает предметы и марки;
-    /// requestId делает ставку, выкуп и выставление безопасными при повторе.
+    /// Рынок фракции у аукционера базы: книга ордеров на продажу и на выкуп.
+    /// Сервер проверяет членство, присутствие рядом с аукционером, категорию,
+    /// срок и цену, снимает предметы и марки; requestId делает ордер, покупку и
+    /// продажу безопасными при повторе.
     /// </summary>
     public static class RoaAuctionNet
     {
@@ -18,55 +19,76 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Выставить лот: стартовая цена обязательна, цена выкупа нулём
-        /// означает торги до конца срока, срок — один из предложенных сервером.
+        /// Ордер на продажу: цена за штуку и срок из предложенных сервером.
+        /// Встречные ордера на выкуп исполняются сразу, остаток встаёт в книгу.
         /// </summary>
-        public static bool ListItem(RoaSocketClient socket, string itemId, int qty, int startPrice, int buyoutPrice,
-                                    int durationHours, string itemRuntimeId, Action<JObject> completed)
+        public static bool SellOrder(RoaSocketClient socket, string itemId, int qty, int price,
+                                     int durationHours, string itemRuntimeId, Action<JObject> completed)
         {
             var payload = new Dictionary<string, object>
             {
-                ["action"] = "list",
+                ["action"] = "sell",
                 ["itemId"] = itemId ?? string.Empty,
                 ["qty"] = Math.Max(1, qty),
-                ["startPrice"] = Math.Max(1, startPrice),
-                ["buyoutPrice"] = Math.Max(0, buyoutPrice),
+                ["price"] = Math.Max(1, price),
                 ["durationHours"] = Math.Max(0, durationHours),
-                ["requestId"] = NewRequestId("auction-list")
+                ["requestId"] = NewRequestId("market-sell")
             };
             if (!string.IsNullOrEmpty(itemRuntimeId)) payload["itemRuntimeId"] = itemRuntimeId;
             return Send(socket, payload, completed);
         }
 
-        /// <summary>Ставка: марки уходят сразу и возвращаются на полку, если её перебьют.</summary>
-        public static bool Bid(RoaSocketClient socket, string listingId, int amount, Action<JObject> completed)
+        /// <summary>
+        /// Ордер на выкуп: марки замораживаются до исполнения, отмены или срока.
+        /// Ставится только на предметы без износа и собственных свойств.
+        /// </summary>
+        public static bool BuyOrder(RoaSocketClient socket, string itemId, int qty, int price,
+                                    int durationHours, Action<JObject> completed)
         {
             return Send(socket, new Dictionary<string, object>
             {
-                ["action"] = "bid",
-                ["listingId"] = listingId ?? string.Empty,
-                ["amount"] = Math.Max(1, amount),
-                ["requestId"] = NewRequestId("auction-bid")
+                ["action"] = "buy",
+                ["itemId"] = itemId ?? string.Empty,
+                ["qty"] = Math.Max(1, qty),
+                ["price"] = Math.Max(1, price),
+                ["durationHours"] = Math.Max(0, durationHours),
+                ["requestId"] = NewRequestId("market-buy")
             }, completed);
         }
 
-        public static bool Buyout(RoaSocketClient socket, string listingId, Action<JObject> completed)
+        /// <summary>Купить сейчас с конкретного ордера на продажу.</summary>
+        public static bool BuyNow(RoaSocketClient socket, string orderId, int qty, Action<JObject> completed)
         {
             return Send(socket, new Dictionary<string, object>
             {
-                ["action"] = "buyout",
-                ["listingId"] = listingId ?? string.Empty,
-                ["requestId"] = NewRequestId("auction-buyout")
+                ["action"] = "buyNow",
+                ["orderId"] = orderId ?? string.Empty,
+                ["qty"] = Math.Max(1, qty),
+                ["requestId"] = NewRequestId("market-buynow")
             }, completed);
         }
 
-        public static bool Cancel(RoaSocketClient socket, string listingId, Action<JObject> completed)
+        /// <summary>Продать сейчас в конкретный ордер на выкуп.</summary>
+        public static bool SellNow(RoaSocketClient socket, string orderId, int qty, string itemRuntimeId, Action<JObject> completed)
+        {
+            var payload = new Dictionary<string, object>
+            {
+                ["action"] = "sellNow",
+                ["orderId"] = orderId ?? string.Empty,
+                ["qty"] = Math.Max(1, qty),
+                ["requestId"] = NewRequestId("market-sellnow")
+            };
+            if (!string.IsNullOrEmpty(itemRuntimeId)) payload["itemRuntimeId"] = itemRuntimeId;
+            return Send(socket, payload, completed);
+        }
+
+        public static bool Cancel(RoaSocketClient socket, string orderId, Action<JObject> completed)
         {
             return Send(socket, new Dictionary<string, object>
             {
                 ["action"] = "cancel",
-                ["listingId"] = listingId ?? string.Empty,
-                ["requestId"] = NewRequestId("auction-cancel")
+                ["orderId"] = orderId ?? string.Empty,
+                ["requestId"] = NewRequestId("market-cancel")
             }, completed);
         }
 
@@ -75,7 +97,7 @@ namespace RealmOfAshes.Game
             return Send(socket, new Dictionary<string, object>
             {
                 ["action"] = "claim",
-                ["requestId"] = NewRequestId("auction-claim")
+                ["requestId"] = NewRequestId("market-claim")
             }, completed);
         }
 

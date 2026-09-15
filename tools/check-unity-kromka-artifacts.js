@@ -40,4 +40,19 @@ for (const token of [
   'shift["fieldsChanceMultiplier"]'
 ]) assert(detector.includes(token), `The shift panel must show the excited fields: ${token}`);
 
+// Предварительное определение находки: сервер шлёт тир (Mk2) и вид (Mk3) в
+// самом сигнале, панель детектора обязана их показывать — решение «идти или
+// нет» принимается до подбора.
+for (const token of [
+  'public static string DetectorReadout(bool hasDetector, float signal, int tier, string tierColor, string displayName)',
+  'RoaGearData.TierShortLabel(tier)',
+  'view.Tier = row["tier"]?.Value<int>() ?? 0;',
+  'view.DisplayName = row["displayName"]?.ToString() ?? string.Empty;'
+]) assert(detector.includes(token), `The detector panel must show the pre-pickup identification: ${token}`);
+const spawns = read('src/server/artifact-spawns.js');
+for (const token of [
+  'typeId: visible && detector.identifiesBeforePickup ? artifact.typeId :',
+  'tier: tier ? tier.tier : 0,'
+]) assert(spawns.includes(token), `The server must send the pre-pickup identification: ${token}`);
+
 console.log('Unity Kromka artifacts OK: inventory slots visible, permanent detector/artifact HUD absent.');

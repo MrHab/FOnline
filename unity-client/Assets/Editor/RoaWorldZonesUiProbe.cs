@@ -194,6 +194,22 @@ namespace RealmOfAshes.EditorTools
             Require(excitedLine.Contains("ПОЛЯ АКТИВНЫ: ещё 15 мин"), "The excited window is counted down: " + excitedLine);
             Require(excitedLine.Contains("находки ×5.5") || excitedLine.Contains("находки ×5,5"),
                 "The line says how much richer the fields are: " + excitedLine);
+            // Детектор: Mk1 говорит только о сигнале, Mk2 добавляет тир,
+            // Mk3 называет вид — всё это до подбора.
+            Require(RoaKromkaShiftAndDetector.DetectorReadout(false, 0f, 0, null, null) == "ДЕТЕКТОР: слот пуст",
+                "Without a detector the line says the slot is empty");
+            Require(RoaKromkaShiftAndDetector.DetectorReadout(true, 0f, 0, null, null) == "ДЕТЕКТОР: тихо",
+                "Without a signal the detector is quiet");
+            string mk1 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.62f, 0, null, null);
+            Require(mk1 == "ДЕТЕКТОР: сигнал 62%", "Mk1 reports only the signal: " + mk1);
+            string mk2 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.62f, 3, "#efd078", null);
+            Require(mk2.Contains("<color=#efd078>" + RoaGearData.TierShortLabel(3) + "</color>"),
+                "Mk2 names the tier in the shared colour: " + mk2);
+            Require(!mk2.Contains("Жила"), "Mk2 does not name the kind");
+            string mk3 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.9f, 4, "", "Жила");
+            Require(mk3.Contains("Жила") && mk3.Contains(RoaGearData.TierShortLabel(4)),
+                "Mk3 names both the tier and the kind before pickup: " + mk3);
+
             var activeShift = JObject.Parse(@"{'phase':'active','remainingMs':45000,'strength':3,'sheltered':false,'fieldsExcited':false}");
             string activeLine = RoaKromkaShiftAndDetector.ShiftLine(activeShift);
             Require(activeLine.Contains("СДВИГ ИДЁТ") && activeLine.Contains("сила 3") && activeLine.Contains("ИЩИТЕ УКРЫТИЕ"),
@@ -255,7 +271,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows, belt caps, excited fields and the outpost/base difference, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows, belt caps, excited fields, detector readout and the outpost/base difference, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

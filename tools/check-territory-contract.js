@@ -111,7 +111,9 @@ for (const token of [
   "if (targetLoc.noGlobalMapEntry === true && !territoryGateEntry) {",
   "if (action === 'offer') {",
   "const atGate = action === 'join' && serverPlayerAtTerritoryGate(p, now);",
-  'invalidateTerritoryFactionSharesCache();'
+  'invalidateTerritoryFactionSharesCache();',
+  // Маршрут к Сердцевине открывает ворота даже если прибытие свелось к точке.
+  'if (stayOnWorldMap && serverIsTerritoryGateLocation(session.targetLocationId)) {'
 ]) assert(server.includes(token), `server.js is missing the territory contract wiring: ${token}`);
 assert(server.includes('Сменить фракцию можно только у регистратора на её базе.'),
   'у ворот подписывают первый контракт, смена фракции остаётся у регистратора');
@@ -129,6 +131,12 @@ for (const token of [
   'RoaTerritoryNet.JoinFaction(Socket, factionId',
   '|| _territoryContractPending) return;'
 ]) assert(map.includes(token), `RoaGlobalMap is missing ${token}`);
+// Клиент не рисует скрытые узлы даже если карта пришла из кэша или старой
+// сборки: метки баз фракций не должны возвращаться на карту.
+const mapModel = read('unity-client/Assets/Scripts/World/RoaGlobalMapData.cs');
+assert(/\[JsonProperty\("hidden"\)\] public bool Hidden;/.test(mapModel), 'The node model must read the hidden flag.');
+assert(map.includes('_map.Nodes.RemoveAll(node => node == null || node.Hidden);'),
+  'The client must drop hidden nodes right after loading the map.');
 const canvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
 for (const token of [
   'BuildContractModal(',

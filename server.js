@@ -25515,13 +25515,27 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
   }
 
   if (!resolution?.point) return fail('Сервер не смог подтвердить точку входа.');
-  const stayOnWorldMap = resolution.kind === 'point';
+  let stayOnWorldMap = resolution.kind === 'point';
   let targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
   if (!stayOnWorldMap && !LOCATIONS[targetLocationId]) return fail('Локация встречи больше недоступна.');
   // Узел Сердцевины — ворота территории: сервер заводит прибывших на базу их
   // фракции, а без подписанного контракта возвращает предложение выбрать её.
   // Сама зона по-прежнему открывается только с платформы метро своей базы.
   let territoryGateEntry = false;
+  // Маршрут был нацелен на Сердцевину, но прибытие свелось к точке карты
+  // (клик рядом с узлом, сдвинутая точка контакта): ворота всё равно должны
+  // сработать, иначе игрок «доехал и ничего не произошло».
+  if (stayOnWorldMap && serverIsTerritoryGateLocation(session.targetLocationId)) {
+    const gatePoint = serverTerritoryGatePoint();
+    const arrival = sanitizeServerGlobalMapPoint(resolution.point);
+    if (gatePoint && arrival
+      && serverGlobalPointDistance(arrival, gatePoint) <= SERVER_GLOBAL_LOCATION_RADIUS) {
+      stayOnWorldMap = false;
+      targetLocationId = serverTerritoryZoneLocationId();
+      resolution.kind = 'location';
+      resolution.locationId = targetLocationId;
+    }
+  }
   if (!stayOnWorldMap && serverIsTerritoryGateLocation(targetLocationId)) {
     const gateParty = (Array.isArray(session.memberIds) ? session.memberIds : [])
       .map(id => players.get(id))

@@ -1159,6 +1159,13 @@ namespace RealmOfAshes.Game
                 yield break;
             }
 
+            // Скрытые узлы (базы фракций Сердцевины) не рисуются и не выбираются:
+            // попасть туда можно только по контракту через узел Сердцевины.
+            if (_map?.Nodes != null)
+            {
+                _map.Nodes.RemoveAll(node => node == null || node.Hidden);
+            }
+
             var missingNodes = new List<string>();
             if (_map?.Nodes != null)
             {

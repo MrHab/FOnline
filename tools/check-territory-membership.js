@@ -18,6 +18,10 @@ const {
 
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+// Канонные характеристики видов: усиление внутренней части считается от них.
+const mutantStats = Object.fromEntries(
+  (JSON.parse(read('data/mutants.json')).types || []).map(row => [row.id, row.stats || {}])
+);
 const catalog = JSON.parse(read('data/kromka/territory.json'));
 const now = 1_900_000_000_000;
 const cooldown = territoryChangeCooldownMs(catalog);
@@ -131,12 +135,48 @@ for (const labRow of catalog.labs) {
     `${labRow.id}: the shaft is a way out, not a second entrance`);
   assert(definition.objects.some(row => row.id === 'vent_shaft' && row.interactive?.kind === 'transition' && row.interactive.to === 'coreZone'),
     `${labRow.id}: the shaft is visible in the hall`);
+
+  // Внешние помещения и опасная внутренняя часть отличаются не только
+  // расстановкой: за герметичной секцией стоят откормленные твари.
+  const guardians = definition.objects.filter(row => String(row.id || '').includes('_guardian_'));
+  assert(guardians.length >= 4, `${labRow.id}: the hall is guarded`);
+  const outer = guardians.filter(row => row.entity?.labSection === 'outer');
+  const inner = guardians.filter(row => row.entity?.labSection === 'inner');
+  assert(outer.length >= 1 && inner.length >= 2, `${labRow.id}: the hall has both an outer and an inner guard`);
+  for (const row of outer) {
+    assert(Number(row.position?.z || 0) < 12, `${labRow.id}: ${row.id} stands in the outer rooms`);
+    assert(row.entity.hp === undefined && row.entity.atk === undefined, `${labRow.id}: ${row.id} keeps the ordinary stats of its kind`);
+  }
+  for (const row of inner) {
+    assert(Number(row.position?.z || 0) >= 12, `${labRow.id}: ${row.id} stands beyond the sealed section`);
+    const base = mutantStats[row.entity.creatureTypeId] || {};
+    assert.equal(row.entity.hp, Math.round(Number(base.hp || 40) * 1.5), `${labRow.id}: ${row.id} is fed up on health`);
+    assert.equal(row.entity.atk, Math.round(Number(base.attack || 5) * 1.3), `${labRow.id}: ${row.id} hits harder than its kin outside`);
+  }
 }
 const service = JSON.parse(read('data/locations/coreLabCenterService.json'));
 const research = JSON.parse(read('data/locations/coreLabCenterResearch.json'));
 const reactor = JSON.parse(read('data/locations/coreLabCenterReactor.json'));
 assert(service.transitions.some(row => row.to === 'coreLabCenterResearch') && research.transitions.some(row => row.to === 'coreLabCenterReactor'));
 assert(research.transitions.filter(row => row.to === 'coreZone' || row.to === 'coreLabCenterService').length >= 2, 'the research level has several ways back');
+
+// Исследовательский уровень разделён на крылья, и спуск к установке есть в
+// каждом: центральный лифт и восточный грузовой ствол. Тем же стволом уходят
+// обратно, поэтому из зала установки наверх ведут два пути.
+const descents = research.transitions.filter(row => row.to === 'coreLabCenterReactor');
+assert.equal(descents.length, 2, 'the research level offers two routes down to the installation');
+assert.equal(new Set(descents.map(row => row.entryKey)).size, 2, 'each descent arrives at its own point');
+for (const row of descents) assert(reactor[row.entryKey], `the installation has the arrival point ${row.entryKey}`);
+assert(Math.hypot(descents[0].x - descents[1].x, descents[0].z - descents[1].z) > 15, 'the routes down run through different wings');
+assert(Math.hypot(reactor[descents[0].entryKey].x - reactor[descents[1].entryKey].x,
+  reactor[descents[0].entryKey].z - reactor[descents[1].entryKey].z) > 15, 'the routes land in different parts of the hall');
+const ascents = reactor.transitions.filter(row => row.to === 'coreLabCenterResearch');
+assert.equal(ascents.length, 2, 'the installation has two ways back up');
+for (const row of ascents) assert(research[row.entryKey], `the research level has the arrival point ${row.entryKey}`);
+for (const level of [research, reactor]) {
+  assert(level.objects.some(row => row.id === 'east_shaft' && row.interactive?.kind === 'transition'),
+    'the cargo shaft is visible on both levels');
+}
 assert(reactor.objects.some(row => row.entity?.worldBoss === true), 'the reactor level hosts the world boss');
 assert(reactor.objects.filter(row => row.interactive?.role === 'shield').length === 4, 'the boss has four shield nodes');
 
@@ -166,7 +206,13 @@ for (const token of [
   'serverAccessibleSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId',
   'territoryFaction: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG)',
   "coreBaseUprava: 'uprava'",
-  '&& !ticketedRuntimeLocation && !localTransition) {'
+  '&& !ticketedRuntimeLocation && !localTransition) {',
+  // Авторские характеристики доходят до актёра — иначе усиленные стражи
+  // внутренней части лаборатории ничем не отличались бы от внешних.
+  'hp: Number.isFinite(Number(entity.hp)) ? Math.max(1, Math.floor(Number(entity.hp))) : undefined,',
+  'atk: Number.isFinite(Number(entity.atk)) ? Math.max(0, Math.floor(Number(entity.atk))) : undefined,',
+  'if (Number.isFinite(Number(opts.hp))) {',
+  'enemy.maxHp = Math.max(1, Math.floor(Number(opts.hp)));'
 ]) assert(server.includes(token), `server.js is missing territory wiring: ${token}`);
 assert(!server.includes('Постоянного вступления больше нет') || server.includes("socket.on('worldFactionJoin'"),
   'legacy permanent-join stub stays for old clients while territory allegiance is the new path');

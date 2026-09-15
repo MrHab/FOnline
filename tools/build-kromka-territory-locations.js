@@ -83,6 +83,11 @@ function raider(id, name, x, z, rotationY = 0) {
 
 // Kromka mutants keep their legacy alias in `species` so the authored spawner
 // resolves the right creature and `creatureTypeId` names the canonical kind.
+const MUTANT_STATS = Object.fromEntries(
+  (JSON.parse(fs.readFileSync(path.join(root, 'data/mutants.json'), 'utf8')).types || [])
+    .map(row => [row.id, row.stats || {}])
+);
+
 const MUTANTS = {
   gari: { alias: 'ashWolf', model: 'enemyAshWolf', name: 'Гарь', faction: 'wild' },
   rykhlyak: { alias: 'radScorpion', model: 'enemyRadscorpion', name: 'Рыхляк', faction: 'wild' },
@@ -413,7 +418,18 @@ function labDefinition(lab, index) {
     }),
     prop('landmark', lab.displayName, theme === 'energy' ? 'relay_antenna.glb' : theme === 'bio' ? 'water_tank.glb' : 'cargo_stack.glb', 0, 26, 1.8, ['lab', 'landmark', theme])
   ];
-  themeEnemies.forEach(([kind, x, z], k) => objects.push(mutant(`${theme}_guardian_${k + 1}`, kind, x, z)));
+  // Внешние помещения держат обычные твари, за герметичной секцией (z ≥ 12)
+  // стоят откормленные: половина здоровья сверху и треть урона.
+  themeEnemies.forEach(([kind, x, z], k) => {
+    const stats = MUTANT_STATS[kind] || {};
+    const inner = z >= 12;
+    const entity = inner ? {
+      hp: Math.round(Number(stats.hp || 40) * 1.5),
+      atk: Math.round(Number(stats.attack || 5) * 1.3),
+      labSection: 'inner'
+    } : { labSection: 'outer' };
+    objects.push(mutant(`${theme}_guardian_${k + 1}`, kind, x, z, 0, { entity }));
+  });
   return {
     schema: 'realm.location.v1', version: 1, id: lab.id, name: lab.displayName,
     seed: 2026091520 + index, safe: false, pvpMode: territory.zone.pvpMode, kind: 'territoryLab', respawnAllowed: false,
@@ -464,6 +480,22 @@ function centralLevelDefinition(level, index) {
   ];
   if (next) {
     transitions.push({ id: 'lift_down', type: 'location', label: `Спуск: ${next.displayName}`, to: next.id, entryKey: 'entryFromAbove', ...point(0, 34, width, depth), radius: 3 });
+    // Исследовательский уровень разделён переборкой на два крыла, и спуск к
+    // установке есть в каждом: центральный лифт и восточный грузовой ствол,
+    // который выводит за спину защитным узлам.
+    if (level.role === 'research') {
+      objects.push(prop('east_shaft', 'Грузовой ствол', 'cargo_stack.glb', 20, 28, { x: 1.4, y: 1.6, z: 1 }, ['central-lab', 'lab-door'], {
+        fields: { interactive: { kind: 'transition', role: 'labDoor', to: next.id } }
+      }));
+      transitions.push({ id: 'lift_down_east', type: 'location', label: `Грузовой ствол: ${next.displayName}`, to: next.id, entryKey: 'entryFromAboveEast', ...point(20, 30, width, depth), radius: 3 });
+    }
+  }
+  if (prev && level.role === 'reactor') {
+    // Тем же стволом уходят обратно: второй путь наверх из зала установки.
+    objects.push(prop('east_shaft', 'Грузовой ствол', 'cargo_stack.glb', 20, -28, { x: 1.4, y: 1.6, z: 1 }, ['central-lab', 'lab-door'], {
+      fields: { interactive: { kind: 'transition', role: 'labDoor', to: prev.id } }
+    }));
+    transitions.push({ id: 'lift_up_east', type: 'location', label: `Грузовой ствол: ${prev.displayName}`, to: prev.id, entryKey: 'entryFromBelowEast', ...point(20, -30, width, depth), radius: 3 });
   }
   if (level.role === 'service') {
     objects.push(prop('store_a', 'Складская стойка', 'storage_lean_to.glb', -14, 6, 1.3, ['central-lab', 'stockpile']));
@@ -522,6 +554,10 @@ function centralLevelDefinition(level, index) {
     entryFromCore: point(0, -30, width, depth),
     entryFromAbove: point(0, -30, width, depth),
     entryFromBelow: point(0, 30, width, depth, { rotationY: Math.PI }),
+    // Точки прибытия восточного грузового ствола: спуск выводит в дальний угол
+    // зала установки, подъём — в восточное крыло исследовательского уровня.
+    entryFromAboveEast: point(20, -26, width, depth),
+    entryFromBelowEast: point(20, 26, width, depth, { rotationY: Math.PI }),
     transitions,
     worldZones: [],
     containers,

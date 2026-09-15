@@ -15946,6 +15946,12 @@ function spawnAuthoredLocationActors(room, loc) {
       tradeProfile: String(entity.tradeProfile || '').slice(0, 64),
       traderProfile: String(entity.traderProfile || '').slice(0, 64),
       creatureTypeId: String(entity.creatureTypeId || '').slice(0, 32),
+      // Авторские характеристики: ими различают внешнюю и внутреннюю часть
+      // локации — за герметичной секцией лаборатории стоят те же виды, но
+      // откормленные. Без этого поля данных не доходили до актёра.
+      hp: Number.isFinite(Number(entity.hp)) ? Math.max(1, Math.floor(Number(entity.hp))) : undefined,
+      atk: Number.isFinite(Number(entity.atk)) ? Math.max(0, Math.floor(Number(entity.atk))) : undefined,
+      speed: Number.isFinite(Number(entity.speed)) ? Math.max(0.1, Number(entity.speed)) : undefined,
       service: String(entity.service || '').slice(0, 32),
       territoryFactionId: String(entity.territoryFactionId || '').slice(0, 32),
       canDialogue: authoredNpcCanDialogue(row, role),
@@ -22082,6 +22088,15 @@ function spawnServerEnemy(room, opts = {}) {
     corpseLootHolderId: ''
   };
   delete enemy.startingCaps;
+  // Авторские характеристики сильнее вида: ими различают внешнюю и внутреннюю
+  // часть локации — за герметичной секцией лаборатории стоят те же твари, но
+  // откормленные. Урон и скорость задаются так же.
+  if (Number.isFinite(Number(opts.hp))) {
+    enemy.maxHp = Math.max(1, Math.floor(Number(opts.hp)));
+    enemy.hp = enemy.maxHp;
+  }
+  if (Number.isFinite(Number(opts.atk))) enemy.atk = Math.max(0, Math.floor(Number(opts.atk)));
+  if (Number.isFinite(Number(opts.speed))) enemy.speed = Math.max(0.1, Number(opts.speed));
   normalizeServerNaturalCreatureState(enemy);
   ensureServerFriendlyNpcSocialState(enemy);
   roomEnemySet(room, enemy.id, enemy);

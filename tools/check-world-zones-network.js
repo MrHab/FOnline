@@ -287,7 +287,17 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(!farNode.ok && /Подойдите/i.test(farNode.error), 'A distant node is refused: ' + JSON.stringify(farNode));
   const otherHall = await h.socketAck(accounts.progression.socket, 'labNodeAction', { nodeId: 'node_a' });
   assert(!otherHall.ok, 'The installation has no hall nodes: ' + JSON.stringify(otherHall));
-  console.log('PASS laboratory hall snapshot and node range');
+  // Внутренняя часть опаснее внешней: за герметичной секцией стоят те же
+  // виды, но откормленные, и сервер выдаёт им авторские характеристики.
+  const labEnemies = accounts.modification.join.worldState.enemies || [];
+  const byName = name => labEnemies.filter(row => String(row.name || '') === name);
+  assert(byName('Слухач').every(row => row.maxHp === 54), 'The outer guards keep the ordinary stats of their kind: '
+    + JSON.stringify(byName('Слухач').map(row => row.maxHp)));
+  assert(byName('Складень').some(row => row.maxHp === 252), 'The inner guard is fed up on health: '
+    + JSON.stringify(byName('Складень').map(row => row.maxHp)));
+  assert(byName('Выжженный').some(row => row.maxHp === 87), 'The second inner guard is reinforced too: '
+    + JSON.stringify(byName('Выжженный').map(row => row.maxHp)));
+  console.log('PASS laboratory hall snapshot, node range and the dangerous inner section');
 
   // --- награда побеждённого босса переживает перезапуск -------------------------------------------
   for (const account of Object.values(accounts)) h.closeSocket(account);

@@ -76,6 +76,22 @@
     "z": 30,
     "rotationY": 3.1415926535897931
   },
+  "entryFromAboveEast": {
+    "tx": 29,
+    "tz": 6,
+    "x": 20.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromBelowEast": {
+    "tx": 29,
+    "tz": 32,
+    "x": 20.0,
+    "y": 0.1,
+    "z": 26.0,
+    "rotationY": 3.141592653589793
+  },
   "transitions": [
     {
       "id": "lift_up",
@@ -118,6 +134,20 @@
       "z": -30,
       "rotationY": 0,
       "radius": 3
+    },
+    {
+      "id": "lift_down_east",
+      "type": "location",
+      "label": "Грузовой ствол: Объект Ноль: установка",
+      "to": "coreLabCenterReactor",
+      "entryKey": "entryFromAboveEast",
+      "tx": 29,
+      "tz": 34,
+      "x": 20.0,
+      "y": 0.1,
+      "z": 30.0,
+      "rotationY": 0.0,
+      "radius": 3
     }
   ],
   "worldZones": [],
@@ -152,6 +182,44 @@
     }
   ],
   "objects": [
+    {
+      "id": "east_shaft",
+      "model": "cargoStack",
+      "name": "Грузовой ствол",
+      "position": {
+        "x": 20.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "central-lab",
+        "lab-door"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreLabCenterReactor"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      }
+    },
     {
       "id": "research_threat_1",
       "model": "enemySuperMutant",

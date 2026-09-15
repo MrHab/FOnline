@@ -176,7 +176,10 @@ function baseDefinition(faction, index) {
   return {
     schema: 'realm.location.v1', version: 1, id: faction.baseLocationId, name: faction.baseDisplayName,
     seed: 2026091500 + index, safe: true, pvpMode: 'peaceful', kind: 'settlement', respawnAllowed: true,
-    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: true,
+    // База — не отдельная метка глобальной карты: попасть на неё можно только
+    // через узел Сердцевины, подписав контракт с фракцией. Выход воротами в
+    // пустошь остаётся.
+    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: true, noGlobalMapEntry: true,
     territoryId: territory.id, territoryRole: 'base', factionAccess: faction.id,
     territoryBase: { factionId: faction.id, capitalLocationId: faction.capitalLocationId, zoneLocationId: territory.zoneLocationId },
     ground: { preset: 'industrialDust', label: faction.baseDisplayName },

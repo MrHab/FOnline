@@ -40,6 +40,11 @@ const {
   territoryMembershipActive
 } = require('./src/server/territory-membership');
 const {
+  territoryContractBaseLocationId,
+  territoryContractOffer,
+  territoryFactionShares
+} = require('./src/server/territory-contract');
+const {
   advanceGarrison: advanceTerritoryGarrison,
   applyCapturePresence: applyOutpostCapturePresence,
   applyOwnerChange: applyOutpostOwnerChange,
@@ -1141,6 +1146,10 @@ function normalizeGlobalMapConfig(raw = {}) {
       // when the server normalizes and persists the map, otherwise a restart
       // turns valid junctions into world-data overlap errors.
       roadAccess: node?.roadAccess === true,
+      // Скрытый узел остаётся точкой мира для сервера (выход из локации, сайты
+      // симуляции), но не уходит клиентам и не рисуется на карте: так базы
+      // фракций перестали быть отдельными метками после ввода контракта.
+      hidden: node?.hidden === true,
       danger: clamp(Number(node?.danger || 0), 0, 10),
       model: String(node?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       modelScale: clamp(Number(node?.modelScale || 1), 0.4, 4),
@@ -2070,9 +2079,20 @@ function invalidateGlobalMapResponseCache() {
   globalMapResponseCache = null;
 }
 
+/**
+ * Карта для клиента: скрытые узлы не уходят игрокам. Базы фракций Сердцевины
+ * остаются точками мира на сервере, но метками на карте больше не являются —
+ * попасть туда можно только по контракту через узел Сердцевины.
+ */
+function publicGlobalMap(map = null) {
+  const src = map && typeof map === 'object' ? map : {};
+  const nodes = (Array.isArray(src.nodes) ? src.nodes : []).filter(node => node?.hidden !== true);
+  return { ...src, nodes };
+}
+
 app.get('/api/global-map', (req, res) => {
   if (!globalMapResponseCache) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: GLOBAL_MAP }), 'utf8');
+    const body = Buffer.from(JSON.stringify({ ok: true, map: publicGlobalMap(GLOBAL_MAP) }), 'utf8');
     globalMapResponseCache = { body, gzip: gzipJsonBuffer(body) };
   }
   sendJsonBuffer(res, globalMapResponseCache.body, globalMapResponseCache.gzip);
@@ -4619,6 +4639,139 @@ function publicTerritoryCatalog() {
       joinRequiresReputation: Number(catalog.rules?.joinRequiresReputation || 0)
     }
   };
+}
+
+// --- Контракт наёмника на входе в Сердцевину -------------------------------
+// Узел Сердцевины на глобальной карте работает как ворота территории: игрок
+// или группа приходит туда, подписывает контракт с фракцией и попадает на её
+// базу. Метки самих баз на карте скрыты, отдельными точками входа они больше
+// не являются.
+
+const TERRITORY_FACTION_SHARES_TTL_MS = 15000;
+let territoryFactionSharesCache = { at: 0, value: null };
+
+function serverTerritoryZoneLocationId() {
+  return normalizeLocationId(String(KROMKA_TERRITORY_CATALOG?.zoneLocationId || 'coreZone'));
+}
+
+function serverIsTerritoryGateLocation(locationId = '') {
+  const id = normalizeLocationId(locationId);
+  return !!id && id === serverTerritoryZoneLocationId();
+}
+
+function serverTerritoryFactionNames() {
+  const names = {};
+  for (const row of Array.isArray(KROMKA_FACTION_CATALOG?.factions) ? KROMKA_FACTION_CATALOG.factions : []) {
+    const id = String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+    if (id) names[id] = String(row?.displayName || row?.name || id);
+  }
+  return names;
+}
+
+function invalidateTerritoryFactionSharesCache() {
+  territoryFactionSharesCache = { at: 0, value: null };
+}
+
+/**
+ * Доли фракций по всем сохранённым персонажам. Пересчёт стоит обхода всех
+ * сохранений, поэтому результат живёт несколько секунд и сбрасывается при
+ * смене принадлежности.
+ */
+function serverTerritoryFactionShares(now = Date.now()) {
+  if (territoryFactionSharesCache.value && now - territoryFactionSharesCache.at < TERRITORY_FACTION_SHARES_TTL_MS) {
+    return territoryFactionSharesCache.value;
+  }
+  const memberships = [];
+  for (const store of Object.values(savesDb.characters || {})) {
+    for (const row of Object.values(store || {})) {
+      memberships.push(row?.state?.territoryFaction || null);
+    }
+  }
+  const value = territoryFactionShares(memberships, KROMKA_TERRITORY_CATALOG);
+  territoryFactionSharesCache = { at: now, value };
+  return value;
+}
+
+function serverTerritoryContractOffer(player = null, now = Date.now()) {
+  return territoryContractOffer({
+    catalog: KROMKA_TERRITORY_CATALOG,
+    factionNames: serverTerritoryFactionNames(),
+    membership: player?.territoryFaction,
+    shares: serverTerritoryFactionShares(now),
+    reputation: sanitizeServerWorldFactionReputation(player?.worldFactionReputation || {}),
+    now
+  });
+}
+
+/**
+ * Куда сервер заводит прибывшего к воротам территории. Без подписанного
+ * контракта возвращает предложение выбрать фракцию.
+ */
+function serverTerritoryGateArrival(leader = null, members = [], now = Date.now()) {
+  const party = (Array.isArray(members) && members.length ? members : [leader]).filter(Boolean);
+  const pending = party.filter(member => !territoryMembershipActive(member.territoryFaction));
+  if (pending.length > 0) {
+    const offer = serverTerritoryContractOffer(leader, now);
+    offer.partyPending = pending.length;
+    offer.partyPendingNames = pending.map(member => String(member.name || 'Игрок')).slice(0, 8);
+    // Лидер с контрактом набирает спутников в свою фракцию, без контракта —
+    // подписывает за всю группу выбранную фракцию.
+    offer.canSign = offer.canSign || (territoryMembershipActive(leader?.territoryFaction) && pending.length > 0);
+    return {
+      ok: false,
+      error: pending.some(member => member === leader)
+        ? 'Контракт с фракцией не подписан: выберите фракцию на входе в Сердцевину.'
+        : `Без контракта в Сердцевину не пускают: ${pending.map(member => member.name || 'Игрок').join(', ')}.`,
+      contract: offer
+    };
+  }
+  const baseLocationId = normalizeLocationId(
+    territoryContractBaseLocationId(leader?.territoryFaction, KROMKA_TERRITORY_CATALOG)
+  );
+  if (!LOCATIONS[baseLocationId]) {
+    return { ok: false, error: 'База фракции недоступна.', contract: serverTerritoryContractOffer(leader, now) };
+  }
+  return { ok: true, locationId: baseLocationId };
+}
+
+function serverTerritoryGatePoint() {
+  const zoneId = serverTerritoryZoneLocationId();
+  const node = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])
+    .find(row => normalizeLocationId(row?.locationId || row?.id || '') === zoneId);
+  return node ? { x: Number(node.x || 0), y: Number(node.y || 0) } : null;
+}
+
+/**
+ * Контракт подписывают только у ворот: игрок на глобальной карте рядом с
+ * узлом Сердцевины. Это исключает вступление из любой точки мира и оставляет
+ * регистратора базы для смены и выхода.
+ */
+function serverPlayerAtTerritoryGate(player = null, now = Date.now()) {
+  if (!player || !player.onGlobalMap || player.roomId || player.dead) return false;
+  const gate = serverTerritoryGatePoint();
+  if (!gate) return false;
+  const session = globalTravelSessionForMember(player.id);
+  const point = session
+    ? serverGlobalTravelCurrentPoint(session, now)
+    : sanitizeServerGlobalMapPoint(player.globalWorldPoint);
+  if (!point) return false;
+  const dx = Number(point.x || 0) - gate.x;
+  const dy = Number(point.y || 0) - gate.y;
+  return Math.sqrt(dx * dx + dy * dy) <= SERVER_GLOBAL_LOCATION_RADIUS;
+}
+
+/**
+ * Спутники, подписывающие контракт вместе с лидером группы. Свою фракцию они
+ * не меняют: вступают только те, кто ещё не подписал контракт.
+ */
+function serverTerritoryGateCompanions(leader = null) {
+  if (!leader) return [];
+  const session = globalTravelSessions.get(leader.id);
+  if (!session || String(session.leaderId || '') !== String(leader.id)) return [];
+  return (Array.isArray(session.memberIds) ? session.memberIds : [])
+    .filter(id => String(id || '') !== String(leader.id))
+    .map(id => players.get(id))
+    .filter(member => member && !territoryMembershipActive(member.territoryFaction));
 }
 
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
@@ -25203,11 +25356,33 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
 
   if (!resolution?.point) return fail('Сервер не смог подтвердить точку входа.');
   const stayOnWorldMap = resolution.kind === 'point';
-  const targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
+  let targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
   if (!stayOnWorldMap && !LOCATIONS[targetLocationId]) return fail('Локация встречи больше недоступна.');
+  // Узел Сердцевины — ворота территории: сервер заводит прибывших на базу их
+  // фракции, а без подписанного контракта возвращает предложение выбрать её.
+  // Сама зона по-прежнему открывается только с платформы метро своей базы.
+  let territoryGateEntry = false;
+  if (!stayOnWorldMap && serverIsTerritoryGateLocation(targetLocationId)) {
+    const gateParty = (Array.isArray(session.memberIds) ? session.memberIds : [])
+      .map(id => players.get(id))
+      .filter(Boolean);
+    const gate = serverTerritoryGateArrival(leader, gateParty, now);
+    if (!gate.ok) {
+      return fail(gate.error, {
+        contractRequired: true,
+        contract: gate.contract,
+        worldPoint: serverGlobalTravelCurrentPoint(session, now)
+      });
+    }
+    territoryGateEntry = true;
+    targetLocationId = gate.locationId;
+    resolution.locationId = gate.locationId;
+    resolution.entryKey = 'entryFromWorld';
+    resolution.pvpMode = locationPvpMode(LOCATIONS[gate.locationId] || {});
+  }
   if (!stayOnWorldMap) {
     const targetLoc = LOCATIONS[targetLocationId] || {};
-    if (targetLoc.noGlobalMapEntry === true) {
+    if (targetLoc.noGlobalMapEntry === true && !territoryGateEntry) {
       return fail('В Сердцевину нельзя войти с глобальной карты: используйте платформу метро на базе своей фракции.');
     }
     for (const id of session.memberIds) {
@@ -27944,22 +28119,45 @@ io.on('connection', (socket) => {
       });
       return;
     }
+    // Предложение контракта: доли фракций среди персонажей и причина отказа по
+    // каждой. Клиент показывает его окном у ворот Сердцевины.
+    if (action === 'offer') {
+      if (typeof ack === 'function') ack({
+        ok: true,
+        atGate: serverPlayerAtTerritoryGate(p, now),
+        contract: serverTerritoryContractOffer(p, now),
+        membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
+        catalog: publicTerritoryCatalog()
+      });
+      return;
+    }
     if (action !== 'join' && action !== 'leave') return fail('Неизвестное действие с фракцией.');
-    if (p.onGlobalMap || !p.roomId) return fail('Вступление и выход оформляются на базе или в столице фракции.');
+    // Первый контракт подписывают у ворот Сердцевины прямо с глобальной карты;
+    // смена фракции и выход по-прежнему оформляются у регистратора базы или в
+    // столице фракции.
+    const atGate = action === 'join' && serverPlayerAtTerritoryGate(p, now);
+    if (!atGate && (p.onGlobalMap || !p.roomId)) {
+      return fail('Контракт подписывают у ворот Сердцевины, на базе или в столице фракции.');
+    }
     const transaction = beginCriticalAction(p, 'territoryFactionAction', data, ['action', 'factionId']);
     if (!transaction.ok) return fail(transaction.error);
     if (transaction.replay) {
       if (typeof ack === 'function') ack({ ...transaction.result, self: publicAuthoritativePlayerState(p) });
       return;
     }
-    const room = rooms.get(p.roomId);
-    const loc = roomLocation(room);
-    const registrar = serverNearbyServiceActor(p, 'registrar');
-    const capitalFaction = locationCapitalFaction(loc);
+    const room = atGate ? null : rooms.get(p.roomId);
+    const loc = atGate ? {} : roomLocation(room);
+    const registrar = atGate ? null : serverNearbyServiceActor(p, 'registrar');
+    const capitalFaction = atGate ? '' : locationCapitalFaction(loc);
     const factionId = action === 'join'
       ? String(data.factionId || registrar?.territoryFactionId || capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
       : '';
-    if (action === 'join') {
+    const currentFactionId = String(p.territoryFaction?.factionId || '');
+    if (action === 'join' && atGate) {
+      if (currentFactionId && currentFactionId !== factionId) {
+        return fail('Сменить фракцию можно только у регистратора на её базе.');
+      }
+    } else if (action === 'join') {
       const registrarFaction = String(registrar?.territoryFactionId || '');
       const atOwnCapital = !!capitalFaction && capitalFaction === factionId && !String(loc.territoryId || '');
       const atRegistrar = !!registrar && (!registrarFaction || registrarFaction === factionId);
@@ -27969,22 +28167,57 @@ io.on('connection', (socket) => {
     } else if (!registrar && !capitalFaction) {
       return fail('Выйти из фракции можно у регистратора или в столице фракции.');
     }
+    // Контракт у ворот подписывает лидер: спутники без контракта вступают в ту
+    // же фракцию, уже состоящие в ней сохраняют свою принадлежность.
+    const companions = atGate ? serverTerritoryGateCompanions(p) : [];
     const reputation = Number(sanitizeServerWorldFactionReputation(p.worldFactionReputation || {})[factionId] || 0);
-    const result = action === 'join'
-      ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
-      : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
+    let result;
+    if (action === 'join' && atGate && currentFactionId === factionId && factionId) {
+      if (!companions.length) return fail('Вы уже состоите в этой фракции.');
+      result = {
+        ok: true,
+        membership: sanitizeTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG),
+        previousFactionId: currentFactionId
+      };
+    } else {
+      result = action === 'join'
+        ? joinTerritoryFaction(p.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation })
+        : leaveTerritoryFaction(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now);
+    }
     if (!result.ok) return fail(result.error);
     p.territoryFaction = result.membership;
+    const joinedCompanions = [];
+    if (action === 'join' && atGate) {
+      for (const member of companions) {
+        const memberReputation = Number(
+          sanitizeServerWorldFactionReputation(member.worldFactionReputation || {})[factionId] || 0
+        );
+        const memberResult = joinTerritoryFaction(
+          member.territoryFaction, factionId, KROMKA_TERRITORY_CATALOG, now, { reputation: memberReputation }
+        );
+        if (!memberResult.ok) continue;
+        member.territoryFaction = memberResult.membership;
+        joinedCompanions.push(member);
+      }
+    }
+    invalidateTerritoryFactionSharesCache();
     const payload = {
       ok: true,
       action,
+      atGate,
       factionId: result.membership.factionId,
       previousFactionId: String(result.previousFactionId || ''),
-      membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now)
+      companions: joinedCompanions.map(member => String(member.name || 'Игрок')),
+      membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
+      contract: serverTerritoryContractOffer(p, now)
     };
     commitCriticalAction(p, transaction, payload);
     persistActivePlayerState(p);
     emitAuthoritativePlayerState(p, { reason: 'territoryFaction' });
+    for (const member of joinedCompanions) {
+      persistActivePlayerState(member);
+      emitAuthoritativePlayerState(member, { reason: 'territoryFaction' });
+    }
     if (typeof ack === 'function') ack({ ...payload, self: publicAuthoritativePlayerState(p) });
   });
 

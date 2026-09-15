@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.World;
@@ -115,6 +117,12 @@ namespace RealmOfAshes.Game
         private GameObject _fullLootModal;
         private Text _zoneRulesTitle;
         private Text _zoneRulesText;
+        private GameObject _contractModal;
+        private Text _contractIntro;
+        private Text _contractHint;
+        private Text _contractSignLabel;
+        private readonly List<Button> _contractRows = new List<Button>();
+        private readonly List<Text> _contractRowLabels = new List<Text>();
         private RectTransform _workList;
         private readonly List<GameObject> _workRows = new List<GameObject>();
         private string _workSignature;
@@ -158,6 +166,7 @@ namespace RealmOfAshes.Game
             ApplyResponsiveLayout();
             UpdateWorldChangeToastVisual();
             RefreshFullLootConfirmation();
+            RefreshTerritoryContract();
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.3f;
             Refresh();
@@ -574,7 +583,146 @@ namespace RealmOfAshes.Game
             _fullLootModal = modal.gameObject;
             _fullLootModal.SetActive(false);
 
+            BuildContractModal(rootRect);
+
             _root.SetActive(false);
+        }
+
+        /// <summary>
+        /// Окно контракта с фракцией на входе в Сердцевину: доли фракций среди
+        /// персонажей, выбор стороны и подпись. Данные присылает сервер вместе
+        /// с отказом на прибытие к воротам территории.
+        /// </summary>
+        private void BuildContractModal(RectTransform rootRect)
+        {
+            RectTransform modal = Child("TerritoryContract", rootRect);
+            Stretch(modal, 0f);
+            Image blocker = modal.gameObject.AddComponent<Image>();
+            blocker.color = new Color(0f, 0f, 0f, 0.78f);
+            blocker.raycastTarget = true;
+
+            RectTransform panel = Child("Panel", modal);
+            Place(panel, 0.5f, 0.5f, 0.5f, 0.5f, new Vector2(-270f, -190f), new Vector2(270f, 190f));
+            Image panelBg = panel.gameObject.AddComponent<Image>();
+            panelBg.color = new Color(0.07f, 0.09f, 0.08f, 0.98f);
+            var panelOutline = panel.gameObject.AddComponent<Outline>();
+            panelOutline.effectColor = new Color(0.937f, 0.816f, 0.471f, 0.92f);
+            panelOutline.effectDistance = new Vector2(2f, -2f);
+
+            Text title = Label("Title", panel, 18, TextAnchor.MiddleCenter, MonoBold, FontStyle.Bold);
+            title.text = "КОНТРАКТ С ФРАКЦИЕЙ";
+            Place(title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(18f, -50f), new Vector2(-18f, -12f));
+
+            Text intro = Label("Intro", panel, 12, TextAnchor.UpperCenter, Mono);
+            intro.horizontalOverflow = HorizontalWrapMode.Wrap;
+            intro.text = ContractIntroText(null);
+            _contractIntro = intro;
+            Place(intro.rectTransform, 0f, 1f, 1f, 1f, new Vector2(20f, -92f), new Vector2(-20f, -50f));
+
+            for (int index = 0; index < ContractRowCount; index++)
+            {
+                int rowIndex = index;
+                Button row = UiButton(panel, string.Empty, out Text rowLabel, () => SelectContractRow(rowIndex));
+                rowLabel.alignment = TextAnchor.MiddleLeft;
+                Place((RectTransform)row.transform, 0f, 1f, 1f, 1f,
+                    new Vector2(20f, -130f - index * 38f), new Vector2(-20f, -96f - index * 38f));
+                _contractRows.Add(row);
+                _contractRowLabels.Add(rowLabel);
+            }
+
+            Text hint = Label("Hint", panel, 11, TextAnchor.UpperCenter, Mono);
+            hint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _contractHint = hint;
+            Place(hint.rectTransform, 0f, 0f, 1f, 0f, new Vector2(20f, 58f), new Vector2(-20f, 98f));
+
+            Button cancel = UiButton(panel, "ОСТАТЬСЯ НА КАРТЕ", out _, () => Map?.CancelTerritoryContract());
+            Place((RectTransform)cancel.transform, 0f, 0f, 0.5f, 0f, new Vector2(20f, 16f), new Vector2(-5f, 50f));
+            Button sign = UiButton(panel, "ПОДПИСАТЬ КОНТРАКТ", out _contractSignLabel, () => Map?.SignTerritoryContract());
+            Place((RectTransform)sign.transform, 0.5f, 0f, 1f, 0f, new Vector2(5f, 16f), new Vector2(-20f, 50f));
+
+            _contractModal = modal.gameObject;
+            _contractModal.SetActive(false);
+        }
+
+        private const int ContractRowCount = 4;
+
+        private void SelectContractRow(int index)
+        {
+            JArray factions = Map?.TerritoryContractFactions;
+            if (factions == null || index < 0 || index >= factions.Count) return;
+            JObject row = factions[index] as JObject;
+            if (row == null) return;
+            Map.SelectTerritoryContractFaction(row["factionId"]?.ToString() ?? string.Empty);
+        }
+
+        /// <summary>Пояснение к окну: сколько персонажей уже подписали контракт.</summary>
+        public static string ContractIntroText(JObject contract)
+        {
+            int signed = contract?["signedCharacters"]?.ToObject<int>() ?? 0;
+            string territory = contract?["displayName"]?.ToString();
+            if (string.IsNullOrWhiteSpace(territory)) territory = "Сердцевина";
+            string head = territory + " пускает только по контракту. Выберите сторону — вы появитесь на её базе.";
+            if (signed <= 0) return head + "\nКонтракт пока не подписал никто: доли откроются с первыми наёмниками.";
+            return head + "\nКонтракт подписали персонажей: " + signed + ". Доли ниже — от этого числа.";
+        }
+
+        /// <summary>Строка фракции в окне контракта: доля, люди и база.</summary>
+        public static string ContractRowText(JObject faction, bool selected)
+        {
+            if (faction == null) return string.Empty;
+            string name = faction["displayName"]?.ToString();
+            if (string.IsNullOrWhiteSpace(name)) name = faction["factionId"]?.ToString() ?? "фракция";
+            float share = faction["sharePct"]?.ToObject<float>() ?? 0f;
+            int characters = faction["characters"]?.ToObject<int>() ?? 0;
+            string baseName = faction["baseDisplayName"]?.ToString() ?? string.Empty;
+            string mark = selected ? "> " : "  ";
+            string row = mark + name + " — " + share.ToString("0.#", CultureInfo.InvariantCulture) + "% ("
+                + characters + " чел.)";
+            if (!string.IsNullOrWhiteSpace(baseName)) row += " · " + baseName;
+            string reason = faction["reason"]?.ToString();
+            if (faction["canSign"]?.ToObject<bool>() != true && !string.IsNullOrWhiteSpace(reason)) row += " · " + reason;
+            return row;
+        }
+
+        private void RefreshTerritoryContract()
+        {
+            if (_contractModal == null) return;
+            bool visible = Map != null && Map.TerritoryContractPending;
+            if (_contractModal.activeSelf != visible) _contractModal.SetActive(visible);
+            if (!visible) return;
+            JObject contract = Map.TerritoryContract;
+            JArray factions = Map.TerritoryContractFactions;
+            string selectedId = Map.TerritoryContractFactionId ?? string.Empty;
+            if (_contractIntro != null) _contractIntro.text = ContractIntroText(contract);
+            for (int index = 0; index < _contractRows.Count; index++)
+            {
+                JObject row = factions != null && index < factions.Count ? factions[index] as JObject : null;
+                bool rowVisible = row != null;
+                if (_contractRows[index].gameObject.activeSelf != rowVisible) _contractRows[index].gameObject.SetActive(rowVisible);
+                if (!rowVisible) continue;
+                bool selected = string.Equals(row["factionId"]?.ToString(), selectedId, StringComparison.Ordinal);
+                bool canSign = row["canSign"]?.ToObject<bool>() == true;
+                _contractRowLabels[index].text = ContractRowText(row, selected);
+                _contractRowLabels[index].color = canSign ? BtnInk : new Color(0.62f, 0.62f, 0.58f, 1f);
+                var background = _contractRows[index].targetGraphic as Image;
+                if (background != null)
+                {
+                    background.color = selected ? new Color(0.20f, 0.26f, 0.16f, 1f) : BtnBg;
+                }
+            }
+            if (_contractSignLabel != null)
+            {
+                _contractSignLabel.text = Map.TerritoryContractSigning ? "ПОДПИСЫВАЕМ..." : "ПОДПИСАТЬ КОНТРАКТ";
+            }
+            if (_contractHint != null)
+            {
+                string error = Map.TerritoryContractError;
+                int pending = contract?["partyPending"]?.ToObject<int>() ?? 0;
+                if (!string.IsNullOrWhiteSpace(error)) _contractHint.text = error;
+                else if (pending > 1) _contractHint.text = "Контракт подписывается за всю группу: без контракта — " + pending + ".";
+                else _contractHint.text = "Смена фракции позже оформляется только у регистратора её базы.";
+            }
+            _contractModal.transform.SetAsLastSibling();
         }
 
         private void RefreshFullLootConfirmation()

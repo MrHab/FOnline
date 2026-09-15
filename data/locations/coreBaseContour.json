@@ -12,6 +12,7 @@
   "spawnCount": 0,
   "noRespawn": true,
   "allowGlobalMapExit": true,
+  "noGlobalMapEntry": true,
   "territoryId": "core",
   "territoryRole": "base",
   "factionAccess": "contour",

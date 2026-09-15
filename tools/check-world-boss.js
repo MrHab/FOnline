@@ -194,4 +194,14 @@ for (const needle of [
   'if (onlyPending && !(state && bossRewardPending(state, container.defId || container.id))) continue;'
 ]) assert(serverSource.includes(needle), `server.js must run the changing arena: ${needle}`);
 
+// Победа открывает сейфы установки, и возвращение Хранителя их запирает:
+// панель обязана сказать, что забирать награду нужно сейчас.
+{
+  const presentationSource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
+  assert(presentationSource.includes('if (payload["rewardOpen"]?.Value<bool>() == true) sb.Append(" · сейфы установки открыты");'),
+    'The defeated boss panel must say that the reward containers are open.');
+  const probeSource = fs.readFileSync(path.join(root, 'unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs'), 'utf8');
+  assert(probeSource.includes('сейфы установки открыты'), 'The editor probe must check the open reward.');
+}
+
 console.log('World boss OK: shield nodes, vulnerability window, telegraphed pulses, defeat with reward unlock, persisted respawn timer and server hooks.');

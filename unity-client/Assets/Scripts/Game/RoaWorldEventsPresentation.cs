@@ -542,6 +542,9 @@ namespace RealmOfAshes.Game
             if (phase == "defeated")
             {
                 sb.Append("\nВозвращение через ").Append(Clock(Math.Max(0, (payload["respawnInSeconds"]?.Value<int>() ?? 0) - elapsedSeconds)));
+                // Победа открывает сейфы установки, и закроет их возвращение
+                // Хранителя: этот же отсчёт и есть срок, чтобы их забрать.
+                if (payload["rewardOpen"]?.Value<bool>() == true) sb.Append(" · сейфы установки открыты");
                 return sb.ToString();
             }
             sb.Append("\nУзлы щита: ").Append(payload["nodesAlive"]?.Value<int>() ?? 0).Append('/').Append(payload["nodesTotal"]?.Value<int>() ?? 0);

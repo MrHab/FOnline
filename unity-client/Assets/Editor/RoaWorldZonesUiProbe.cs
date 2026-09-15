@@ -99,8 +99,14 @@ namespace RealmOfAshes.EditorTools
             boss["phase"] = "vulnerable"; boss["vulnerableSeconds"] = 30; boss["pulseTelegraph"] = true;
             string vulnerable = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
             Require(vulnerable.Contains("уязвим ещё 30 с") && vulnerable.Contains("ИМПУЛЬС!"), "Vulnerability window and telegraph are announced");
-            boss["phase"] = "defeated"; boss["respawnInSeconds"] = 5400;
-            Require(RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0).Contains("90:00"), "Defeated boss shows the respawn timer");
+            boss["phase"] = "defeated"; boss["respawnInSeconds"] = 5400; boss["rewardOpen"] = true;
+            string defeated = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
+            Require(defeated.Contains("90:00"), "Defeated boss shows the respawn timer");
+            // Победа открывает сейфы установки, возвращение их запирает.
+            Require(defeated.Contains("сейфы установки открыты"), "The defeated boss says the reward is open: " + defeated);
+            boss["rewardOpen"] = false;
+            Require(!RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0).Contains("сейфы"),
+                "A taken reward is not promised twice");
 
             var pve = JObject.Parse(@"{'roomId':'antHive#pve_char','displayName':'Колония Пыльников','alive':3,'calmSeconds':0,'tracksReadyInSeconds':0,'tracksLabel':'Искать следы','lastResultLabel':'Слышно движение: появилась новая группа.'}");
             string pveText = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);

@@ -212,6 +212,8 @@ function sanitizeArtifactRecords(input = [], catalog = {}) {
     const legacy = Math.floor(Number(row?.recordVersion || 0)) < RECORD_VERSION;
     const stabilized = row?.stabilized === true && row?.hot !== true;
     const base = baseTierOfType(type);
+    const legacyRarity = String(row?.rarity || '').toLowerCase();
+    const legacyTier = RARITY_BASE_TIER[legacyRarity] || base;
     const tierInput = Math.floor(Number(row?.tier || 0));
     return {
       id,
@@ -222,7 +224,13 @@ function sanitizeArtifactRecords(input = [], catalog = {}) {
       // Инвариант: раскрытие свойств и есть стабилизация. Подделать
       // revealed без stabilized (или наоборот) в сохранении нельзя.
       revealed: stabilized,
-      tier: tierInput >= 1 && tierInput <= 5 ? tierInput : base,
+      // Миграция старой записи: тир берётся из её прежней редкости (common → Т1,
+      // uncommon → Т2, rare → Т3), иначе редкая находка старого мира
+      // обесценивалась бы до обычной. Зерно остаётся пустым намеренно: без него
+      // свойства равны авторским базовым значениям вида, то есть у старого
+      // артефакта они не меняются задним числом. Новые экземпляры рождаются с
+      // зерном и катятся как положено.
+      tier: tierInput >= 1 && tierInput <= 5 ? tierInput : (legacy ? legacyTier : base),
       seed: legacy ? String(row?.seed || '') : String(row?.seed || '').slice(0, 160),
       sourceAnomalyType: cleanId(row?.sourceAnomalyType, 32),
       sourceFieldId: cleanId(row?.sourceFieldId, 96),

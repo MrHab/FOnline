@@ -192,11 +192,13 @@ const belt = {
   artifactSlots: ['v', 's', 'a']
 };
 sanitizeArtifactLoadout(belt, catalog);
-close(calculateArtifactEffects(belt, catalog).speedPct, -0.10 - 0.5 * 0.08 - 0.5 * 0.06, 'Strongest speed penalty counts fully, the rest by half.');
-close(calculateArtifactEffects(belt, catalog).carryKg, 15 + 0.5 * 8);
+close(calculateArtifactEffects(belt, catalog).speedPct, -0.10 - 0.08 - 0.06,
+  'Drawbacks count in full: three speed penalties add up without any discount.');
+close(calculateArtifactEffects(belt, catalog).carryKg, 15 + 0.5 * 8,
+  'Benefits keep the rule «strongest in full, the rest by half».');
 const preview = previewArtifactEffects(belt, catalog, ['v', 's']);
-// Было: −0,10 − 0,04 − 0,03 = −0,17; станет: −0,08 − 0,03 = −0,11; дельта +0,06.
-close(preview.delta.speedPct, 0.06, 'Preview shows the change of removing Anchor.');
+// Было: −0,10 − 0,08 − 0,06 = −0,24; станет: −0,08 − 0,06 = −0,14; дельта +0,10.
+close(preview.delta.speedPct, 0.10, 'Preview shows the change of removing Anchor.');
 close(preview.delta.knockbackResistance, -0.6);
 assert.deepEqual(calculateArtifactEffects(belt, catalog).artifactRecordIds, ['v', 's', 'a'], 'Preview does not mutate the loadout.');
 const duplicate = { ...belt, artifactRecords: [{ id: 'v1', typeId: 'vein', stabilized: true }, { id: 'v2', typeId: 'vein', stabilized: true }],
@@ -219,6 +221,38 @@ for (const needle of [
   'stabilizeArtifactRecord(record)'
 ]) assert(server.includes(needle), `server.js is missing the artifact contract: ${needle}`);
 assert(!server.includes('Нужен свободный защитный контейнер'), 'Pickup must not require a container any more.');
+// Снять пояс в бою нельзя: иначе правило «смена артефактов вне боя» обходится
+// снятием контейнера целиком вместе со всеми штрафами.
+assert(server.includes("if (String(data.slot || '') === 'artifactBelt' && serverArtifactLoadoutCombatLocked(p, Date.now()))"),
+  'equipmentAction must refuse artifact belt changes during combat.');
+// Правила потерь не зависят от причины смерти: самоподрыв роняет то же самое.
+assert(server.includes("droppedItems = serverDropPvpLootForMode(room, target, isSelf ? null : p, loc, now);"),
+  'A self-inflicted explosion must go through the same loss funnel.');
+assert(!server.includes('fullDrop: !isSelf &&'), 'The loss flags of an explosion death must not depend on who caused it.');
+
+// --- пояса и детекторы доступны игроку ---------------------------------------
+const recipes = JSON.parse(read('data/economy-recipes.json')).recipes;
+const traderProfiles = JSON.parse(read('data/traders.json')).profiles;
+const soldItemIds = new Set();
+for (const profile of Object.values(traderProfiles)) {
+  for (const row of profile.stock || []) soldItemIds.add(row.id);
+}
+for (const beltRow of catalog.belts) {
+  const item = itemById[beltRow.itemId];
+  assert(item, `belt ${beltRow.itemId} is missing from the item catalog`);
+  assert(Number(item.basePrice) > 0, `belt ${beltRow.itemId} must have a price: without it the belt cannot be traded`);
+  assert(recipes[beltRow.itemId], `belt ${beltRow.itemId} must be craftable, otherwise the artifact loop never closes`);
+}
+assert(soldItemIds.has('artifactBelt2'), 'The smallest belt is sold, so a fresh mercenary can start the artifact loop.');
+for (const detector of catalog.detectors) {
+  const item = itemById[detector.itemId];
+  assert(item && Number(item.basePrice) > 0, `detector ${detector.itemId} must have a price`);
+  assert(recipes[detector.itemId], `detector ${detector.itemId} must be craftable`);
+}
+assert(soldItemIds.has('artifactDetectorMk1'), 'The first detector is sold at a faction base.');
+// Старшие ступени тянут лабораторные компоненты: у лабораторий есть спрос.
+assert(Object.keys(recipes.artifactBelt4.inputs).some(id => ['alloyPlate', 'circuitModule', 'spectrumSample', 'bioReagent'].includes(id)),
+  'The largest belt consumes laboratory components.');
 const unityInventory = read('unity-client/Assets/Scripts/Game/RoaInventory.cs');
 assert(unityInventory.includes('Socket.EmitWithAck("salvageArtifact", payload, onAck)'), 'Unity must be able to salvage artifacts.');
 

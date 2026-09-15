@@ -143,19 +143,23 @@ function usableFields(fields = [], catalog = {}) {
     && Array.isArray(sources[String(field.type || '')]) && sources[String(field.type || '')].length);
 }
 
-function makeBirth(locationId, field, catalog, now, emissionId, seedSalt = '') {
+function makeBirth(locationId, field, catalog, now, emissionId, seedSalt = '', instanceSalt = '') {
   const seed = `${locationId}:${cleanId(field.id)}:${now}:${seedSalt}`;
   const pick = pickBirthType(String(field.type || ''), field.tierRange, catalog, seed);
   if (!pick) return null;
   const id = `birth:${cleanId(locationId)}:${cleanId(field.id)}:${hash32(seed).toString(36)}`;
   const position = fieldPosition(field, id);
+  // Зерно экземпляра не выводится из публичного id: свойства считаются хешем
+  // от зерна, и совпадение позволило бы клиенту вычислить скрытый ролл до
+  // стабилизации. Соль приходит от сервера и остаётся только в записи.
+  const instanceSeed = instanceSalt ? `${seed}:${instanceSalt}` : id;
   return sanitizeBirthRow({
     id,
     fieldId: field.id,
     typeId: pick.type.id,
     itemId: pick.type.itemId,
     tier: pick.tier,
-    seed: id,
+    seed: instanceSeed,
     sourceAnomalyType: String(field.type || ''),
     x: position.x,
     z: position.z,
@@ -169,6 +173,12 @@ function makeBirth(locationId, field, catalog, now, emissionId, seedSalt = '') {
 function tickLocationBirths(store = {}, locationId = '', fields = [], catalog = {}, now = Date.now(), options = {}) {
   const rules = birthRules(catalog);
   const random = typeof options.random === 'function' ? options.random : Math.random;
+  // Соль экземпляра: сервер передаёт источник случайности, чтобы зерно нельзя
+  // было восстановить по публичному id находки. Пустая соль оставляет прежнее
+  // детерминированное поведение для проверок.
+  const instanceSalt = typeof options.instanceSalt === 'function'
+    ? options.instanceSalt
+    : () => String(options.instanceSalt || '');
   const emissionEndAt = Number(options.emissionEndAt || 0);
   const emissionId = cleanId(options.emissionId || '', 48);
   const loc = ensureLocation(store, locationId);
@@ -181,7 +191,7 @@ function tickLocationBirths(store = {}, locationId = '', fields = [], catalog = 
     for (const field of candidates) {
       const existing = loc.artifacts[cleanId(field.id)];
       if (!existing) continue;
-      const next = makeBirth(locationId, field, catalog, now, emissionId, 'refresh');
+      const next = makeBirth(locationId, field, catalog, now, emissionId, 'refresh', instanceSalt());
       if (!next) continue;
       loc.artifacts[cleanId(field.id)] = next;
       refreshed.push(next);
@@ -197,7 +207,7 @@ function tickLocationBirths(store = {}, locationId = '', fields = [], catalog = 
     checked += 1;
     const chance = birthChance(now, emissionEndAt, rules);
     if (random() >= chance) continue;
-    const birth = makeBirth(locationId, field, catalog, now, emissionId, 'birth');
+    const birth = makeBirth(locationId, field, catalog, now, emissionId, 'birth', instanceSalt());
     if (!birth) continue;
     loc.artifacts[fieldId] = birth;
     loc.births += 1;

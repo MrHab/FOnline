@@ -49,7 +49,9 @@ effects.sanitizeArtifactLoadout(player, catalog);
 assert.deepEqual(player.artifactRecords.map(row => row.id), recoveredIds);
 
 const shift = { phase: 'active', shiftId: 'regression_shift', strength: 1 };
-const location = { id: 'regression_field', macroRegion: 'glasslands', anomalyFields: [{ id: 'a', x: 0, z: 0, radius: 2 }] };
+// Поле аномалии всегда объявляет тип: вид артефакта берётся из него, а не из
+// региональной таблицы — у каждого вида единственный природный источник.
+const location = { id: 'regression_field', macroRegion: 'glasslands', anomalyFields: [{ id: 'a', type: 'glass', x: 0, z: 0, radius: 2 }] };
 const opportunity = { locationId: location.id, shiftId: shift.shiftId, artifactCount: 1 };
 const room = { locationId: location.id };
 spawns.reconcileArtifactSpawns(room, location, shift, catalog, location.anomalyFields, 1000, { causalArtifactRequired: true, opportunity });
@@ -58,6 +60,8 @@ const savesDb = { claimedArtifactIds: [artifact.id], characters: { account: { ch
 const claimed = effects.claimedArtifactIdsFromSaves(JSON.parse(JSON.stringify(savesDb)));
 assert(claimed.has(record.id) && claimed.has(artifact.id));
 const context = vm.createContext({
+  // Соль зерна артефакта сервер берёт из crypto: песочница должна дать его же.
+  crypto: require('node:crypto'),
   KROMKA_CLAIMED_ARTIFACT_IDS: claimed, KROMKA_SHIFT_CYCLE: { state: () => shift },
   WASTELAND_SIM: { artifactOpportunityForLocation: () => opportunity },
   kromkaLocationLore: () => location, KROMKA_ARTIFACT_CATALOG: catalog,

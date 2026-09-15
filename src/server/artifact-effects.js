@@ -52,6 +52,38 @@ function diminishingSum(values = [], secondaryMultiplier = 0.5) {
   return sorted.reduce((sum, value, index) => sum + value * (index === 0 ? 1 : secondaryMultiplier), 0);
 }
 
+// Направление пользы: у большинства эффектов «больше — лучше», но шум движения,
+// расход воды, задержка регенерации, перезарядка спасения и полученная радиация
+// полезны в минус. Знак нужен, чтобы отличать преимущество от недостатка.
+const LOWER_IS_BETTER_EFFECTS = new Set([
+  'waterUsePct',
+  'movementNoisePct',
+  'regenDelaySeconds',
+  'lowHealthCooldownSeconds',
+  'radiationOnTrigger'
+]);
+
+function artifactEffectBenefitSign(key = '') {
+  return LOWER_IS_BETTER_EFFECTS.has(String(key)) ? -1 : 1;
+}
+
+/**
+ * Сложение одного эффекта с нескольких артефактов: преимущества по правилу
+ * «сильнейшее полностью, остальные вполовину», недостатки — полностью. Правило
+ * баланса Сердцевины: снизить можно выгоду от набора, но не его цену.
+ */
+function combineEffectValues(values = [], benefitSign = 1, secondaryMultiplier = 0.5) {
+  const benefits = [];
+  let drawbacks = 0;
+  for (const raw of values) {
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value === 0) continue;
+    if (value * benefitSign > 0) benefits.push(value);
+    else drawbacks += value;
+  }
+  return diminishingSum(benefits, secondaryMultiplier) + drawbacks;
+}
+
 function calculateArtifactEffects(player = {}, catalog = {}, slotsOverride = null) {
   const instances = equippedArtifactInstances(player, catalog, slotsOverride);
   const buckets = {};
@@ -76,10 +108,10 @@ function calculateArtifactEffects(player = {}, catalog = {}, slotsOverride = nul
   }
   const rules = catalog.rules || {};
   const secondary = clamp(Number(rules.secondarySimilarEffectMultiplier ?? 0.5), 0, 1);
-  const get = key => diminishingSum(buckets[key] || [], secondary);
+  const get = key => combineEffectValues(buckets[key] || [], artifactEffectBenefitSign(key), secondary);
   const resolvedResistances = {};
   for (const [damageType, values] of Object.entries(resistances)) {
-    resolvedResistances[damageType] = clamp(diminishingSum(values, secondary), -0.5, Number(rules.maxResistancePct || 0.6));
+    resolvedResistances[damageType] = clamp(combineEffectValues(values, 1, secondary), -0.5, Number(rules.maxResistancePct || 0.6));
   }
   return {
     artifactTypeIds: instances.map(row => row.type.id),
@@ -186,6 +218,7 @@ function claimedArtifactIdsFromSaves(saves = {}) {
 module.exports = {
   claimedArtifactIdsFromSaves,
   ownedArtifactRecords,
+  artifactEffectBenefitSign,
   artifactIndexes,
   beltCapacity,
   calculateArtifactEffects,

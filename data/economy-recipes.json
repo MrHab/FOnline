@@ -494,6 +494,64 @@
         "chemicals": 3,
         "electronics": 1
       }
+    },
+    "artifactBelt2": {
+      "station": "tool_bench",
+      "workHours": 3,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 4,
+        "alloyPlate": 1
+      }
+    },
+    "artifactBelt3": {
+      "station": "tool_bench",
+      "workHours": 4,
+      "outputQty": 1,
+      "inputs": {
+        "artifactBelt2": 1,
+        "alloyPlate": 1,
+        "circuitModule": 1
+      }
+    },
+    "artifactBelt4": {
+      "station": "tool_bench",
+      "workHours": 5,
+      "outputQty": 1,
+      "inputs": {
+        "artifactBelt3": 1,
+        "alloyPlate": 2,
+        "spectrumSample": 1
+      }
+    },
+    "artifactDetectorMk1": {
+      "station": "energy_bench",
+      "workHours": 3,
+      "outputQty": 1,
+      "inputs": {
+        "electronics": 2,
+        "scrap": 2
+      }
+    },
+    "artifactDetectorMk2": {
+      "station": "energy_bench",
+      "workHours": 4,
+      "outputQty": 1,
+      "inputs": {
+        "artifactDetectorMk1": 1,
+        "circuitModule": 1,
+        "electronics": 2
+      }
+    },
+    "artifactDetectorMk3": {
+      "station": "energy_bench",
+      "workHours": 5,
+      "outputQty": 1,
+      "inputs": {
+        "artifactDetectorMk2": 1,
+        "circuitModule": 2,
+        "spectrumSample": 1
+      }
     }
   }
 }

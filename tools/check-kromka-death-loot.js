@@ -168,4 +168,14 @@ for (const [file, source] of [['RoaHudCanvas', hud], ['RoaGlobalMap', map], ['Ro
   assert(!/полн(ый|ого|ым) (лут|дроп)|ПОЛНЫЙ ЛУТ/i.test(source), `${file} must not call the partial-loss mode full loot`);
 }
 
+// Правило потерь не зависит от причины смерти: собственный взрыв идёт через ту
+// же воронку, что и чужая ракета, аномалия или выброс.
+const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+assert(serverSource.includes('droppedItems = serverDropPvpLootForMode(room, target, isSelf ? null : p, loc, now);'),
+  'A self-inflicted explosion must drop loot by the zone rule.');
+assert(!serverSource.includes('if (!isSelf) droppedItems = serverDropPvpLootForMode'),
+  'The old exception for self-inflicted deaths must be gone.');
+assert(!serverSource.includes('fullDrop: !isSelf &&') && !serverSource.includes('consumableDrop: !isSelf &&'),
+  'Loss flags of an explosion death must not depend on who caused it.');
+
 console.log('Kromka death/loot contract: OK (5 zone modes, partial-loss drop by instance, atomic and reconnect-safe death loot, persisted ground drops, zone rules before entry).');

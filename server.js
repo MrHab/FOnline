@@ -137,6 +137,7 @@ const {
   isWetEnvironment, displaceArtifactPlayer, artifactFootstep, publicArtifactRuntime
 } = require('./src/server/artifact-runtime');
 const {
+  artifactEffectBenefitSign,
   artifactIndexes,
   beltCapacity: serverArtifactBeltCapacity,
   calculateArtifactEffects,
@@ -6550,7 +6551,11 @@ function serverArtifactEffects(p = {}) {
   if (penaltyReduction <= 0) return effects;
   const adjusted = { ...effects, resistances: { ...(effects.resistances || {}) } };
   for (const [key, value] of Object.entries(adjusted)) {
-    if (typeof value === 'number' && value < 0) adjusted[key] = Number((value * (1 - penaltyReduction)).toFixed(6));
+    // Смягчается именно недостаток: у шума движения и расхода воды польза в
+    // минус, и уменьшать такие значения означало бы отбирать преимущество.
+    if (typeof value !== 'number') continue;
+    if (value * artifactEffectBenefitSign(key) >= 0) continue;
+    adjusted[key] = Number((value * (1 - penaltyReduction)).toFixed(6));
   }
   for (const [key, value] of Object.entries(adjusted.resistances)) {
     if (Number(value) < 0) adjusted.resistances[key] = Number((Number(value) * (1 - penaltyReduction)).toFixed(6));
@@ -6940,8 +6945,11 @@ function ensureServerFactionStorageRuntime(player = {}) {
 function serverFactionStorageWeaponRuntimeSnapshot(player = {}, factionId = '') {
   const faction = serverStorageFactionKey(factionId);
   if (!faction) return [];
+  // Снимок уходит клиенту, поэтому запись артефакта внутри рантайма проходит
+  // публичную проекцию: seed и скрытые свойства не покидают сервер до
+  // стабилизации, даже если артефакт лежит на складе фракции.
   return Object.values(ensureServerFactionStorageRuntime(player)[faction] || {})
-    .map(record => sanitizeServerWeaponRuntimeRecord(record, record?.baseId || ''))
+    .map(record => publicWeaponRuntimeRecord(sanitizeServerWeaponRuntimeRecord(record, record?.baseId || '')))
     .filter(Boolean)
     .sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0) || a.id.localeCompare(b.id));
 }
@@ -18356,7 +18364,12 @@ function serverTickAnomalyBirths(now = Date.now(), options = {}) {
     const fields = serverLocationAnomalyFields(locationId);
     if (!fields.length) continue;
     const result = tickArtifactBirths(store, locationId, fields, KROMKA_ARTIFACT_CATALOG, now, {
-      emissionEndAt, emissionId, random: options.random
+      emissionEndAt,
+      emissionId,
+      random: options.random,
+      // Приватная соль экземпляра: свойства находки нельзя вычислить по её
+      // публичному id, пока артефакт не стабилизирован.
+      instanceSalt: options.instanceSalt || (() => crypto.randomBytes(8).toString('hex'))
     });
     if (result.births.length || result.refreshed.length) {
       changed = true;
@@ -18388,7 +18401,13 @@ function serverEnsureRoomArtifacts(room, now = Date.now()) {
     KROMKA_ARTIFACT_CATALOG,
     location.anomalyFields || [],
     now,
-    { causalArtifactRequired: true, opportunity }
+    {
+      causalArtifactRequired: true,
+      opportunity,
+      // Приватная соль экземпляра: скрытый ролл нельзя восстановить по
+      // публичному id находки до стабилизации.
+      instanceSalt: () => crypto.randomBytes(8).toString('hex')
+    }
   );
   // Комнаты одной локации (личные встречи, инстансы) видят одни и те же
   // рождённые артефакты: их владелец — хранилище, а не комната.
@@ -26222,6 +26241,11 @@ io.on('connection', (socket) => {
     if (!p || p.dead || Number(p.hp || 0) <= 0) {
       return respond({ ok: false, error: 'Игрок недоступен.' });
     }
+    // Пояс артефактов — часть набора: снять или заменить его в бою нельзя, иначе
+    // правило «смена артефактов вне боя» обходится снятием контейнера целиком.
+    if (String(data.slot || '') === 'artifactBelt' && serverArtifactLoadoutCombatLocked(p, Date.now())) {
+      return respond({ ok: false, error: 'Контейнер артефактов нельзя менять в бою.' });
+    }
     const result = serverApplyEquipmentAction(p, data, Date.now());
     if (result.ok && serverTutorialEquipmentReady(p)) serverRecordTutorialFact(p, 'equipmentWorn');
     if (result.ok && ['detector', 'artifactBelt'].includes(String(data.slot || ''))) {
@@ -28783,7 +28807,10 @@ io.on('connection', (socket) => {
       if (killed) {
         target.dead = true;
         target.diedAt = now;
-        if (!isSelf) droppedItems = serverDropPvpLootForMode(room, target, p, loc, now);
+        // Правила потерь зоны не зависят от причины смерти: собственный взрыв
+        // роняет то же, что взрыв чужой ракеты. Иначе в Сердцевине самоподрыв
+        // был бы способом сохранить инвентарь.
+        droppedItems = serverDropPvpLootForMode(room, target, isSelf ? null : p, loc, now);
       }
       const payload = {
         roomId: room.id,
@@ -28812,8 +28839,8 @@ io.on('connection', (socket) => {
         secondChance,
         injuries: sanitizeInjuries(target.injuries || {}),
         newInjuries,
-        fullDrop: !isSelf && locationHasFullInventoryDrop(loc),
-        consumableDrop: !isSelf && locationPvpMode(loc) === 'pvp',
+        fullDrop: locationHasFullInventoryDrop(loc),
+        consumableDrop: locationPvpMode(loc) === 'pvp',
         droppedItems,
         t: now
       };

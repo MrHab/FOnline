@@ -1,21 +1,9 @@
 'use strict';
 
 const { artifactIndexes, calculateArtifactEffects } = require('./artifact-effects');
-const { RECORD_VERSION, baseTierOfType, rollTier, tierRow } = require('./artifact-instances');
+const { RECORD_VERSION, baseTierOfType, pickBirthType, tierRow } = require('./artifact-instances');
 const { RULES } = require('./artifact-runtime');
 const { hash32 } = require('./shift-cycle');
-
-function weightedPick(weights = {}, seed = '') {
-  const rows = Object.entries(weights).filter(([, weight]) => Number(weight) > 0);
-  const total = rows.reduce((sum, [, weight]) => sum + Number(weight), 0);
-  if (!rows.length || total <= 0) return '';
-  let cursor = (hash32(seed) / 0xffffffff) * total;
-  for (const [id, weight] of rows) {
-    cursor -= Number(weight);
-    if (cursor <= 0) return id;
-  }
-  return rows[rows.length - 1][0];
-}
 
 function fieldTierRange(field = {}) {
   const range = Array.isArray(field?.tierRange) && field.tierRange.length >= 2 ? field.tierRange : null;
@@ -42,30 +30,45 @@ function reconcileArtifactSpawns(room = {}, location = {}, shift = {}, catalog =
   }
   if (state.shiftId === shift.shiftId) return state;
   const indexes = artifactIndexes(catalog);
-  const table = catalog.spawnTables?.[String(location.macroRegion || location.regionId || '')]
-    || catalog.spawnTables?.default || {};
   const fields = (Array.isArray(anomalyFields) ? anomalyFields : []).filter(row => row && Number.isFinite(Number(row.x)) && Number.isFinite(Number(row.z)));
   const requestedCount = opportunity
     ? Math.max(0, Math.floor(Number(opportunity.artifactCount || 0)))
     : Math.max(1, Math.floor(Number(shift.strength || 1)));
   const count = Math.min(fields.length, requestedCount);
+  // Поле с неподобранной находкой пропускается: в одной аномалии одновременно
+  // лежит не больше одного артефакта, включая рождённые между выбросами.
+  const occupiedFields = new Set((state.artifacts || [])
+    .filter(row => row && row.pickedUp !== true)
+    .map(row => String(row.sourceFieldId || '')));
+  const instanceSalt = typeof options.instanceSalt === 'function'
+    ? options.instanceSalt
+    : () => String(options.instanceSalt || '');
   const artifacts = [];
   for (let index = 0; index < count; index += 1) {
     const field = fields[index % Math.max(1, fields.length)] || { x: 0, z: 0, radius: 1.5, id: `fallback_${index}` };
-    const typeId = weightedPick(table, `${shift.shiftId}:${location.id || room.locationId}:${field.id}:${index}`);
-    const type = indexes.byId[typeId];
-    if (!type) continue;
+    if (occupiedFields.has(String(field.id || ''))) continue;
+    // Вид определяется типом аномалии, а не региональной таблицей: у каждого
+    // артефакта единственный природный источник. Тир задаёт опасность поля,
+    // сила выброса влияет только на частоту появления.
+    const fieldSeed = `${shift.shiftId}:${location.id || room.locationId}:${field.id}:${index}`;
+    const range = fieldTierRange(field);
+    const pick = pickBirthType(String(field.type || ''), range, catalog, fieldSeed);
+    if (!pick) continue;
+    const type = pick.type;
+    const typeId = type.id;
     const angle = (hash32(`${shift.shiftId}:${field.id}:angle`) % 628) / 100;
     const radius = Math.max(0.35, Math.min(Number(field.radius || 1.5) * 0.62, 2.2));
     const id = `artifact:${shift.shiftId}:${String(location.id || room.locationId || 'room')}:${index}`;
-    const strengthBonus = Math.max(0, Math.floor(Number(shift.strength || 1)) - 1);
-    const range = fieldTierRange(field) || [baseTierOfType(type), Math.min(5, baseTierOfType(type) + strengthBonus)];
+    const salt = instanceSalt();
+    occupiedFields.add(String(field.id || ''));
     artifacts.push({
       id,
       typeId,
       itemId: type.itemId,
-      tier: rollTier(type, range, id, catalog),
-      seed: id,
+      tier: pick.tier,
+      // Зерно не выводится из публичного id: иначе скрытый ролл считается на
+      // клиенте до стабилизации.
+      seed: salt ? `${fieldSeed}:${salt}` : id,
       sourceAnomalyType: String(field.type || ''),
       sourceFieldId: String(field.id || ''),
       x: Number((Number(field.x || 0) + Math.cos(angle) * radius).toFixed(3)),
@@ -231,6 +234,5 @@ module.exports = {
   mergeBirthArtifacts,
   pickupArtifact,
   publicArtifactsForPlayer,
-  reconcileArtifactSpawns,
-  weightedPick
+  reconcileArtifactSpawns
 };

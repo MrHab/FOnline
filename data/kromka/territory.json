@@ -107,6 +107,13 @@
     "contestPausesProgress": true,
     "captureTickMs": 1000,
     "garrison": {
+      "modelKey": "caravanGuard",
+      "visual": "raider",
+      "species": "guard",
+      "equipmentProfile": "guard",
+      "statProfile": "guard",
+      "postRadius": 3.2,
+      "columnSpacing": 1.4,
       "guards": 4,
       "quartermaster": 1,
       "speedMps": 2.2,

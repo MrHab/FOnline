@@ -168,4 +168,51 @@ assert.strictEqual(snapshot.rules.ownerChangeLockMs, LOCK);
 const depot = snapshot.outposts.find(row => row.id === 'outpostDepot');
 assert.strictEqual(depot.eventStatus, 'open', 'an untouched neutral outpost stays capturable');
 
+// --- отход отряда прежнего владельца -------------------------------------------
+// Спецификация требует явного поведения: старый отряд не становится гарнизоном
+// новой фракции. Он разворачивается и уходит к своей платформе.
+{
+  const store = normalizeTerritoryStore({}, catalog, t0);
+  const outpostId = catalog.outposts[0].id;
+  const outpost = store.outposts[outpostId];
+  outpost.event = { status: 'open', openedAtMs: t0, openedForSeq: outpost.ownerChangeSeq };
+  assert(applyOwnerChange(store, outpostId, 'uprava', t0, catalog, { routeLengthMeters: 120 }).ok);
+  advanceGarrison(outpost, t0 + 30000, rules);
+  assert.equal(outpost.garrison.state, 'enroute', 'The first squad is on its way.');
+  const firstSeq = outpost.garrison.seq;
+  outpost.event = { status: 'open', openedAtMs: t0 + 40000, openedForSeq: outpost.ownerChangeSeq };
+  assert(applyOwnerChange(store, outpostId, 'contour', t0 + 40000, catalog, { routeLengthMeters: 120 }).ok);
+  assert.equal(outpost.garrison.factionId, 'contour', 'The new owner dispatches its own squad.');
+  assert.equal(outpost.retiring.length, 1, 'The squad of the previous owner stays on the map as a retiring column.');
+  assert.equal(outpost.retiring[0].factionId, 'uprava');
+  assert.equal(outpost.retiring[0].seq, firstSeq, 'The retiring column keeps its own ownership sequence.');
+  assert(outpost.retiring[0].progress > 0);
+  const snapshot = publicTerritoryState(store, catalog, t0 + 41000);
+  const row = snapshot.outposts.find(item => item.id === outpostId);
+  assert.equal(row.garrison.factionId, 'contour', 'The garrison of the outpost belongs to the new owner only.');
+  assert.equal(row.retiring[0].factionId, 'uprava', 'The snapshot shows the retiring column separately.');
+  advanceGarrison(outpost, t0 + 600000, rules);
+  assert.equal(outpost.retiring.length, 0, 'At home the retiring column disappears.');
+  // Перезапуск не воскрешает дошедшую колонну и не теряет идущую.
+  outpost.retiring = [{ ...outpost.garrison, state: 'returning', factionId: 'free_artels', progress: 0.4, returnFromProgress: 0.4, returnStartedAtMs: t0 }];
+  const restored = normalizeTerritoryStore(JSON.parse(JSON.stringify(store)), catalog, t0 + 600000);
+  assert.equal(restored.outposts[outpostId].retiring.length, 1, 'A retiring column survives a restart.');
+  assert.equal(restored.outposts[outpostId].retiring[0].factionId, 'free_artels');
+}
+
+// --- состав отряда и радиусы приходят из авторских данных -----------------------
+assert.equal(rules.garrison.modelKey, 'caravanGuard', 'Squad model comes from the territory catalog.');
+assert(rules.garrison.equipmentProfile && rules.garrison.statProfile, 'Squad profiles are authored, not hardcoded.');
+assert(rules.garrison.postRadius > 0 && rules.garrison.columnSpacing > 0, 'Defensive posts and column spacing are configurable.');
+const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+for (const needle of [
+  'const squad = rules?.garrison || outpostRules(KROMKA_TERRITORY_CATALOG).garrison;',
+  'visual: squad.visual,',
+  'equipmentProfile: squad.equipmentProfile,',
+  'Number(rules.garrison.postRadius || 0)',
+  'const spacing = Number(rules.garrison.columnSpacing || 1.4);'
+]) assert(serverSource.includes(needle), `server.js must build the squad from authored rules: ${needle}`);
+assert(!serverSource.includes("modelKey: 'caravanGuard',"), 'The squad model must not stay hardcoded in server.js.');
+assert(serverSource.includes('const squadOf = actor =>'), 'The room sync must tell the garrison from a retiring column.');
+
 console.log('Territory outposts OK: 20-minute lock boundary, single opening, contest/decay rules, one garrison per owner change, restart safety and public snapshot.');

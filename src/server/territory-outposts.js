@@ -20,7 +20,11 @@ const DEFAULT_RULES = Object.freeze({
   captureDecayRate: 0.5,
   contestPausesProgress: true,
   captureTickMs: 1000,
-  garrison: Object.freeze({ guards: 4, quartermaster: 1, speedMps: 2.2, arrivalRadius: 4 })
+  garrison: Object.freeze({
+    guards: 4, quartermaster: 1, speedMps: 2.2, arrivalRadius: 4,
+    modelKey: 'caravanGuard', visual: 'raider', species: 'guard',
+    equipmentProfile: 'guard', statProfile: 'guard', postRadius: 3.2, columnSpacing: 1.4
+  })
 });
 
 function safeId(value = '', limit = 48) {
@@ -45,7 +49,16 @@ function outpostRules(catalog = {}) {
       guards: Math.max(0, Math.floor(num(garrisonRaw.guards, DEFAULT_RULES.garrison.guards))),
       quartermaster: Math.max(0, Math.floor(num(garrisonRaw.quartermaster, DEFAULT_RULES.garrison.quartermaster))),
       speedMps: Math.max(0.2, num(garrisonRaw.speedMps, DEFAULT_RULES.garrison.speedMps)),
-      arrivalRadius: Math.max(1, num(garrisonRaw.arrivalRadius, DEFAULT_RULES.garrison.arrivalRadius))
+      arrivalRadius: Math.max(1, num(garrisonRaw.arrivalRadius, DEFAULT_RULES.garrison.arrivalRadius)),
+      // Состав отряда — авторские данные, а не константы сервера: модель,
+      // профили снаряжения и статов, радиус постов и интервал в колонне.
+      modelKey: safeId(garrisonRaw.modelKey, 48) || DEFAULT_RULES.garrison.modelKey,
+      visual: safeId(garrisonRaw.visual, 32) || DEFAULT_RULES.garrison.visual,
+      species: safeId(garrisonRaw.species, 32) || DEFAULT_RULES.garrison.species,
+      equipmentProfile: safeId(garrisonRaw.equipmentProfile, 32) || DEFAULT_RULES.garrison.equipmentProfile,
+      statProfile: safeId(garrisonRaw.statProfile, 32) || DEFAULT_RULES.garrison.statProfile,
+      postRadius: Math.max(1, num(garrisonRaw.postRadius, DEFAULT_RULES.garrison.postRadius)),
+      columnSpacing: Math.max(0.4, num(garrisonRaw.columnSpacing, DEFAULT_RULES.garrison.columnSpacing))
     }
   };
 }
@@ -124,6 +137,24 @@ function sanitizeOutpostRuntime(input = null, def = {}, now = 0) {
     casualties: Math.max(0, Math.floor(num(garrisonSrc.casualties)))
   };
   if (garrison.state === 'none') garrison.factionId = '';
+  // Отряды прежних владельцев, которые ещё отходят к своей базе. Их не больше
+  // двух: старые записи вытесняются, чтобы состояние не росло без предела.
+  const retiring = (Array.isArray(src.retiring) ? src.retiring : [])
+    .map(row => ({
+      ...emptyGarrison(),
+      state: 'returning',
+      seq: Math.max(0, Math.floor(num(row?.seq))),
+      factionId: safeId(row?.factionId, 32),
+      dispatchedAtMs: Math.max(0, Math.floor(num(row?.dispatchedAtMs))),
+      arrivedAtMs: Math.max(0, Math.floor(num(row?.arrivedAtMs))),
+      returnStartedAtMs: Math.max(0, Math.floor(num(row?.returnStartedAtMs))),
+      returnFromProgress: Math.min(1, Math.max(0, num(row?.returnFromProgress))),
+      progress: Math.min(1, Math.max(0, num(row?.progress))),
+      routeLengthMeters: Math.max(0, num(row?.routeLengthMeters)),
+      casualties: Math.max(0, Math.floor(num(row?.casualties)))
+    }))
+    .filter(row => row.factionId && row.progress > 0)
+    .slice(-2);
   return {
     id: safeId(def.id || src.id),
     ownerFactionId: owner,
@@ -142,6 +173,7 @@ function sanitizeOutpostRuntime(input = null, def = {}, now = 0) {
       lastPresenceAtMs: Math.max(0, Math.floor(num(src.capture?.lastPresenceAtMs)))
     },
     garrison,
+    retiring,
     history: (Array.isArray(src.history) ? src.history : []).slice(-16).map(row => ({
       seq: Math.max(0, Math.floor(num(row?.seq))),
       factionId: safeId(row?.factionId, 32),
@@ -272,6 +304,19 @@ function applyOwnerChange(store = {}, outpostId = '', factionId = '', now = 0, c
   outpost.ownerChangeSeq += 1;
   outpost.event = { status: 'closed', openedAtMs: 0, openedForSeq: 0 };
   outpost.capture = emptyCapture(now);
+  // Отряд прежнего владельца не переходит новой фракции и не растворяется в
+  // воздухе: он разворачивается и уходит к своей платформе.
+  const leaving = outpost.garrison;
+  if (leaving && ['dispatched', 'enroute', 'arrived'].includes(String(leaving.state || ''))) {
+    const fromProgress = leaving.state === 'arrived' ? 1 : Math.min(1, Math.max(0, num(leaving.progress)));
+    outpost.retiring = [...(Array.isArray(outpost.retiring) ? outpost.retiring : []), {
+      ...leaving,
+      state: 'returning',
+      returnStartedAtMs: now,
+      returnFromProgress: fromProgress,
+      progress: fromProgress
+    }].slice(-2);
+  }
   outpost.garrison = {
     ...emptyGarrison(),
     state: 'dispatched',
@@ -292,6 +337,8 @@ function applyOwnerChange(store = {}, outpostId = '', factionId = '', now = 0, c
  */
 function advanceGarrison(outpost = {}, now = 0, rules = DEFAULT_RULES) {
   const garrison = outpost.garrison || (outpost.garrison = emptyGarrison());
+  const retiringBefore = (Array.isArray(outpost.retiring) ? outpost.retiring : [])
+    .map(row => `${row.factionId}:${Number(row.progress || 0).toFixed(4)}`).join('|');
   const before = `${garrison.state}:${garrison.progress.toFixed(4)}`;
   const travelMs = Math.max(1000, garrison.routeLengthMeters / rules.garrison.speedMps * 1000);
   if (garrison.state === 'dispatched') garrison.state = 'enroute';
@@ -313,8 +360,23 @@ function advanceGarrison(outpost = {}, now = 0, rules = DEFAULT_RULES) {
       outpost.garrison = emptyGarrison();
     }
   }
+  // Отходящие отряды идут назад по тому же маршруту и исчезают у своей базы.
+  if (Array.isArray(outpost.retiring) && outpost.retiring.length > 0) {
+    outpost.retiring = outpost.retiring.map(row => {
+      const rowTravelMs = Math.max(1000, Number(row.routeLengthMeters || 0) / rules.garrison.speedMps * 1000);
+      const elapsed = Math.max(0, now - Number(row.returnStartedAtMs || 0));
+      return { ...row, progress: Math.max(0, Number(row.returnFromProgress || 0) - elapsed / rowTravelMs) };
+    }).filter(row => row.progress > 0);
+  }
+  const retiringAfter = (Array.isArray(outpost.retiring) ? outpost.retiring : [])
+    .map(row => `${row.factionId}:${Number(row.progress || 0).toFixed(4)}`).join('|');
   const after = `${outpost.garrison.state}:${outpost.garrison.progress.toFixed(4)}`;
-  return { changed: before !== after, state: outpost.garrison.state, progress: outpost.garrison.progress };
+  return {
+    changed: before !== after || retiringBefore !== retiringAfter,
+    state: outpost.garrison.state,
+    progress: outpost.garrison.progress,
+    retiring: (Array.isArray(outpost.retiring) ? outpost.retiring : []).length
+  };
 }
 
 function markGarrisonDestroyed(outpost = {}, now = 0) {
@@ -360,7 +422,13 @@ function publicOutpost(def = {}, outpost = {}, now = 0, rules = DEFAULT_RULES) {
       etaMs: garrison.state === 'enroute' ? Math.max(0, Math.round(travelMs * (1 - num(garrison.progress)))) : 0,
       dispatchedAtMs: garrison.dispatchedAtMs || 0,
       arrivedAtMs: garrison.arrivedAtMs || 0
-    }
+    },
+    // Отряды прежних владельцев, ещё идущие к своим базам: игрок видит, что на
+    // маршруте есть чужая колонна, но гарнизоном аванпоста она не является.
+    retiring: (Array.isArray(outpost.retiring) ? outpost.retiring : []).map(row => ({
+      factionId: String(row.factionId || ''),
+      progress: Number(num(row.progress).toFixed(3))
+    }))
   };
 }
 

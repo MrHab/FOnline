@@ -180,7 +180,11 @@ namespace RealmOfAshes.Game
             JArray outposts = territory["outposts"] as JArray;
             if (outposts == null || outposts.Count == 0) return string.Empty;
             JObject factionNames = territory["factionNames"] as JObject;
+            // Правила захвата приходят в снимке: игрок видит, сколько нужно
+            // удерживать область и что мешает прогрессу.
             var sb = new StringBuilder("АВАНПОСТЫ");
+            string captureRules = CaptureRulesLabel(territory["rules"] as JObject);
+            if (!string.IsNullOrEmpty(captureRules)) sb.Append(" · ").Append(captureRules);
             foreach (JToken token in outposts)
             {
                 JObject row = token as JObject;
@@ -201,8 +205,47 @@ namespace RealmOfAshes.Game
                 if (open && progress > 0) sb.Append(" · ").Append(FactionLabel(factionNames, leading)).Append(' ').Append(progress).Append('%');
                 if (open && contested) sb.Append(" · ОСПАРИВАЕТСЯ");
                 if (!string.IsNullOrEmpty(garrison)) sb.Append(" · гарнизон: ").Append(garrison);
+                if (open && contested) sb.Append(" (прогресс стоит)");
+                string retiring = RetiringLabel(factionNames, row["retiring"] as JArray);
+                if (!string.IsNullOrEmpty(retiring)) sb.Append(" · отходит: ").Append(retiring);
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Правила захвата для панели: длительность удержания, остановка при
+        /// оспаривании и скорость отката. Значения приходят с сервера.
+        /// </summary>
+        public static string CaptureRulesLabel(JObject rules)
+        {
+            if (rules == null) return string.Empty;
+            long holdMs = rules["captureHoldMs"]?.Value<long>() ?? 0L;
+            if (holdMs <= 0) return string.Empty;
+            var parts = new List<string>();
+            parts.Add("удержание " + Clock(Mathf.CeilToInt(holdMs / 1000f)));
+            if (rules["contestPausesProgress"]?.Value<bool>() == true) parts.Add("оспаривание останавливает прогресс");
+            float decay = rules["captureDecayRate"]?.Value<float>() ?? 0f;
+            if (decay > 0f) parts.Add("откат " + Mathf.RoundToInt(decay * 100f) + "%/с");
+            return string.Join(", ", parts);
+        }
+
+        /// <summary>
+        /// Колонны прежних владельцев, ещё идущие к своим базам. Гарнизоном
+        /// аванпоста они не являются и флаг не защищают.
+        /// </summary>
+        public static string RetiringLabel(JObject factionNames, JArray retiring)
+        {
+            if (retiring == null || retiring.Count == 0) return string.Empty;
+            var parts = new List<string>();
+            foreach (JToken token in retiring)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                string label = FactionLabel(factionNames, row["factionId"]?.ToString());
+                if (string.IsNullOrEmpty(label)) continue;
+                parts.Add(label + " " + Mathf.RoundToInt((row["progress"]?.Value<float>() ?? 0f) * 100f) + "%");
+            }
+            return string.Join(", ", parts);
         }
 
         public static string FactionLabel(JObject factionNames, string factionId)

@@ -19870,8 +19870,8 @@ function serverSpawnGarrisonActor(room, def, outpost, index, total, point, rules
     faction: factionId,
     hostileToPlayer: false,
     territoryFactionId: factionId,
-    equipmentProfile: 'guard',
-    statProfile: 'guard',
+    equipmentProfile: squad.equipmentProfile,
+    statProfile: squad.statProfile,
     canDialogue: false,
     stationary: false
   });

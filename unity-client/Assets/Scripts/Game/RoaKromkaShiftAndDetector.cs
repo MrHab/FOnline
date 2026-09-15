@@ -27,6 +27,11 @@ namespace RealmOfAshes.Game
             public bool Trace;
             public float TraceUntil;
             public string ModelId;
+            // Предварительное определение до подбора: тир приходит с Mk2,
+            // вид с названием — только с Mk3. Клиент их только показывает.
+            public int Tier;
+            public string TierColor;
+            public string DisplayName;
             public GameObject Model;
             public int ModelRequest;
             public bool ModelLoading;
@@ -240,6 +245,9 @@ namespace RealmOfAshes.Game
                     view.Signal = signal;
                     view.Revealed = revealed;
                     view.Trace = row["trace"]?.Value<bool>() == true;
+                    view.Tier = row["tier"]?.Value<int>() ?? 0;
+                    view.TierColor = row["tierColor"]?.ToString() ?? string.Empty;
+                    view.DisplayName = row["displayName"]?.ToString() ?? string.Empty;
                     view.TraceUntil = Time.unscaledTime + Value(row, "traceSeconds");
                     if (revealed && row["x"] != null && row["z"] != null)
                     {
@@ -364,16 +372,44 @@ namespace RealmOfAshes.Game
             if (Input.GetKeyDown(KeyCode.G) && !string.IsNullOrEmpty(_nearestRevealedId)) PickupNearest();
         }
 
+        /// <summary>
+        /// Строка детектора. Mk2 добавляет к сигналу тир находки, Mk3 — ещё и
+        /// вид: сервер присылает это в самом сигнале, и решение «идти или не
+        /// идти» принимается до подбора. Цвет тира — общая шкала экипировки.
+        /// </summary>
+        public static string DetectorReadout(bool hasDetector, float signal, int tier, string tierColor, string displayName)
+        {
+            if (!hasDetector) return "ДЕТЕКТОР: слот пуст";
+            if (signal <= 0.001f) return "ДЕТЕКТОР: тихо";
+            var sb = new StringBuilder("ДЕТЕКТОР: сигнал ").Append(Mathf.RoundToInt(signal * 100f)).Append('%');
+            if (tier >= 1 && tier <= 5)
+            {
+                string hex = string.IsNullOrEmpty(tierColor)
+                    ? ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier))
+                    : tierColor.TrimStart('#');
+                sb.Append(" · <color=#").Append(hex).Append('>').Append(RoaGearData.TierShortLabel(tier)).Append("</color>");
+            }
+            if (!string.IsNullOrEmpty(displayName)) sb.Append(" · ").Append(displayName);
+            return sb.ToString();
+        }
+
         private void UpdateDetectorUi()
         {
             if (_detectorText == null || _signalFill == null || _pickupButton == null) return;
-            _detectorText.text = !_hasDetector ? "ДЕТЕКТОР: слот пуст"
-                : _strongestSignal <= 0.001f ? "ДЕТЕКТОР: тихо"
-                : $"ДЕТЕКТОР: сигнал {Mathf.RoundToInt(_strongestSignal * 100f)}%";
+            ArtifactView nearest = !string.IsNullOrEmpty(_nearestRevealedId) && _views.ContainsKey(_nearestRevealedId)
+                ? _views[_nearestRevealedId]
+                : null;
+            _detectorText.text = DetectorReadout(_hasDetector, _strongestSignal,
+                nearest?.Tier ?? 0, nearest?.TierColor, nearest?.DisplayName);
             _signalFill.fillAmount = _hasDetector ? _strongestSignal : 0f;
             bool canPickup = !string.IsNullOrEmpty(_nearestRevealedId);
             _pickupButton.gameObject.SetActive(canPickup);
-            if (canPickup) _pickupLabel.text = "ЗАБРАТЬ [G]";
+            if (canPickup)
+            {
+                _pickupLabel.text = string.IsNullOrEmpty(nearest?.DisplayName)
+                    ? "ЗАБРАТЬ [G]"
+                    : "ЗАБРАТЬ: " + nearest.DisplayName + " [G]";
+            }
         }
 
         /// <summary>Рядом лежит проявленный артефакт, который можно поднять.</summary>

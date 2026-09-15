@@ -203,7 +203,8 @@ const {
   noteShieldNodeDestroyed,
   persistedBossState,
   publicWorldBoss,
-  tickWorldBoss
+  tickWorldBoss,
+  worldBossHazards
 } = require('./src/server/world-boss');
 const {
   claimPublicEventChest,
@@ -13787,9 +13788,18 @@ function rollEnemyStartingInventoryServer(room, type) {
 function rollWorldContainerLootServer(room, def = {}) {
   const explicitLoot = Array.isArray(def.loot) ? def.loot : (Array.isArray(def.items) ? def.items : (Array.isArray(def.inventory) ? def.inventory : null));
   if (explicitLoot) {
-    return explicitLoot
+    const authored = explicitLoot
       .map(row => ({ id: serverBaseItemId(row?.id || ''), qty: clamp(Math.floor(Number(row?.qty || 0)), 0, 9999) }))
       .filter(row => row.id && SERVER_ITEM_IDS.has(row.id) && row.qty > 0);
+    // `lootTable: true` — авторская награда плюс обычная таблица тира: сейф
+    // лаборатории гарантирует компонент своего направления и всё ещё может
+    // дать случайную редкость.
+    if (def.lootTable !== true || !ECONOMY_RULES.randomLootTables) return authored;
+    const merged = new Map(authored.map(row => [row.id, row.qty]));
+    for (const row of rollContainerLootTable(room.rng || Math.random, def.tier)) {
+      merged.set(row.id, (merged.get(row.id) || 0) + row.qty);
+    }
+    return [...merged.entries()].map(([id, qty]) => ({ id, qty }));
   }
   if (!ECONOMY_RULES.randomLootTables) return [];
   const rng = room.rng || Math.random;
@@ -19252,7 +19262,9 @@ function serverEmitWorldBossState(room, extra = {}, now = Date.now()) {
     roomId: room.id,
     locationId: room.locationId,
     ...publicWorldBoss(room.worldBossState, serverWorldBossRules(serverWorldBossDefForRoom(room)), now, {
-      bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+      bossHp: boss && !boss.dead ? boss.hp : 0,
+      bossMaxHp: boss ? boss.maxHp : 0,
+      center: serverWorldBossArenaCenter(room, boss)
     }),
     ...extra,
     t: now
@@ -19319,14 +19331,28 @@ function serverNoteWorldBossKill(room, enemy, now = Date.now()) {
 }
 
 // Импульс: урон всем живым игрокам в радиусе от босса (как урон выброса).
+/** Центр арены: позиция босса, вокруг неё вращаются опасные участки. */
+function serverWorldBossArenaCenter(room, boss = null) {
+  const actor = boss || serverWorldBossActor(room);
+  if (actor) return { x: Number(actor.x || 0), z: Number(actor.z || 0) };
+  const def = serverWorldBossDefForRoom(room);
+  return { x: Number(def?.x || 0), z: Number(def?.z || 0) };
+}
+
 function serverApplyWorldBossPulse(room, state, event, now = Date.now()) {
   const boss = serverWorldBossActor(room);
   if (!boss || boss.dead) return 0;
+  // Опасные участки арены смещаются с каждым импульсом: стоять на месте нельзя.
+  const hazards = worldBossHazards(state, serverWorldBossRules(serverWorldBossDefForRoom(room)),
+    serverWorldBossArenaCenter(room, boss));
   let hit = 0;
   for (const p of livePlayersInRoom(room)) {
     if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
-    if (Math.hypot(Number(p.x || 0) - Number(boss.x || 0), Number(p.z || 0) - Number(boss.z || 0)) > Number(event.radius || 0)) continue;
-    const mitigation = serverMitigateDamage(Number(event.damage || 0), p, 'anomalous');
+    const inPulse = Math.hypot(Number(p.x || 0) - Number(boss.x || 0), Number(p.z || 0) - Number(boss.z || 0)) <= Number(event.radius || 0);
+    const hazard = hazards.find(row => Math.hypot(Number(p.x || 0) - row.x, Number(p.z || 0) - row.z) <= row.radius);
+    if (!inPulse && !hazard) continue;
+    const raw = (inPulse ? Number(event.damage || 0) : 0) + (hazard ? Number(hazard.damage || 0) : 0);
+    const mitigation = serverMitigateDamage(raw, p, 'anomalous');
     p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
     const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, 'anomalous', 'Импульс Хранителя');
     p.lastServerDamageAt = now;
@@ -20187,7 +20213,9 @@ function publicWorldState(room, includeMap = true) {
       const state = room.worldBossState || serverEnsureWorldBossRoom(room, Date.now());
       const boss = serverWorldBossActor(room);
       return state ? publicWorldBoss(state, serverWorldBossRules(def), Date.now(), {
-        bossHp: boss && !boss.dead ? boss.hp : 0, bossMaxHp: boss ? boss.maxHp : 0
+        bossHp: boss && !boss.dead ? boss.hp : 0,
+        bossMaxHp: boss ? boss.maxHp : 0,
+        center: serverWorldBossArenaCenter(room, boss)
       }) : null;
     })(),
     shift: serverCurrentShiftState(Date.now()),

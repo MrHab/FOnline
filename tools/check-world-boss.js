@@ -77,8 +77,16 @@ assert.equal(events[0].inMs, rules.pulseTelegraphMs);
 assert(boss.publicWorldBoss(state, rules, pulseAt - 1000).pulseTelegraph, 'Clients see the telegraph.');
 assert.deepEqual(boss.tickWorldBoss(state, rules, pulseAt - 1), [], 'The telegraph fires once.');
 const pulseCountBefore = state.pulse.count;
+const hazardsBefore = boss.worldBossHazards(state, rules, { x: 0, z: 0 });
 events = boss.tickWorldBoss(state, rules, pulseAt);
-assert.deepEqual(events, [{ type: 'pulse', radius: rules.pulseRadius, damage: rules.pulseDamage }]);
+assert.deepEqual(events, [{ type: 'pulse', radius: rules.pulseRadius, damage: rules.pulseDamage, hazardOffset: state.hazardOffset }]);
+// Импульс смещает опасные участки арены: безопасное место меняется.
+const hazardsAfter = boss.worldBossHazards(state, rules, { x: 0, z: 0 });
+assert.equal(hazardsAfter.length, rules.hazardActive, 'The arena keeps its number of burning sectors.');
+assert.notDeepEqual(hazardsAfter.map(row => row.sector), hazardsBefore.map(row => row.sector),
+  'After a pulse the dangerous sectors move.');
+assert(hazardsAfter.every(row => row.radius === rules.hazardRadius && row.damage === rules.hazardDamage),
+  'Hazard radius and damage come from the rules.');
 assert.equal(state.pulse.nextAt, pulseAt + rules.pulseIntervalMs);
 assert.equal(state.pulse.count, pulseCountBefore + 1);
 assert(!boss.publicWorldBoss(state, rules, pulseAt + 1).pulseTelegraph);
@@ -130,5 +138,27 @@ for (const needle of [
 assert.equal((server.match(/serverWorldBossDamageAfterShield\(room, enemy, dmgInfo\.damage\)/g) || []).length, 2, 'Both player damage paths respect the shield.');
 const socketClient = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 assert(socketClient.includes('_connection.On("worldBossState"') && socketClient.includes('OnWorldBossState?.Invoke(payload)'), 'Unity must route worldBossState.');
+
+// Фаза уязвимости сужает опасную зону, поверженный босс её гасит; сервер
+// наносит урон стоящим в участке и публикует их клиенту.
+{
+  const arena = boss.createBossState({ id: 'zero', displayName: 'Хранитель' }, [{ id: 'n1', x: 2, z: 2 }], rules, 1000);
+  arena.phase = 'vulnerable';
+  const narrow = boss.worldBossHazards(arena, rules, { x: 0, z: 0 });
+  arena.phase = 'shielded';
+  const wide = boss.worldBossHazards(arena, rules, { x: 0, z: 0 });
+  assert(narrow.length < wide.length, 'While the boss is vulnerable the arena burns less.');
+  arena.phase = 'defeated';
+  assert.deepEqual(boss.worldBossHazards(arena, rules, { x: 0, z: 0 }), [], 'A defeated boss leaves a safe arena.');
+  const snapshot = boss.publicWorldBoss(wide.length ? arena : arena, rules, 2000, { center: { x: 5, z: 5 } });
+  assert(Array.isArray(snapshot.hazards), 'The snapshot always carries the hazard list.');
+}
+const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+for (const needle of [
+  'function serverWorldBossArenaCenter(',
+  'const hazards = worldBossHazards(state, serverWorldBossRules(serverWorldBossDefForRoom(room)),',
+  'const hazard = hazards.find(row => Math.hypot(Number(p.x || 0) - row.x, Number(p.z || 0) - row.z) <= row.radius);',
+  'center: serverWorldBossArenaCenter(room, boss)'
+]) assert(serverSource.includes(needle), `server.js must run the changing arena: ${needle}`);
 
 console.log('World boss OK: shield nodes, vulnerability window, telegraphed pulses, defeat with reward unlock, persisted respawn timer and server hooks.');

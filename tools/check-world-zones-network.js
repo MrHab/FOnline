@@ -5,7 +5,8 @@
 // членство во фракции на путях входа, скрытые свойства артефактов до платной
 // стабилизации, разбор с идемпотентным requestId, личные комнаты PvE-области
 // и «Искать следы», аванпосты и публичные события в /api/wasteland и /health,
-// мировой босс в снимке комнаты установки.
+// мировой босс в снимке комнаты установки, зал боковой лаборатории и правила
+// его узлов.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -81,6 +82,12 @@ const getJson = route => new Promise((resolve, reject) => {
   const courier = stateFor('harvest');
   courier.territoryFaction = membership('uprava');
   courier.globalMap = { onWorldMap: true, playerX: 190, playerY: 162 };
+
+  // Член «Управы» в зале боковой лаборатории «Цепь».
+  const technician = stateFor('modification');
+  technician.currentLocationId = 'coreLabCircuit';
+  technician.serverLocationContext = { locationId: 'coreLabCircuit' };
+  technician.territoryFaction = membership('uprava');
 
   // Член «Управы» внутри установки «Объекта Ноль».
   const raider = stateFor('progression');
@@ -263,6 +270,24 @@ const getJson = route => new Promise((resolve, reject) => {
   const boss = accounts.progression.join.worldState.worldBoss;
   assert(boss && boss.phase === 'shielded' && boss.nodesTotal === 4 && boss.nodesAlive === 4, 'The Custodian starts shielded by four nodes: ' + JSON.stringify(boss));
   console.log('PASS world boss snapshot');
+
+  // --- зал боковой лаборатории -------------------------------------------------------------------
+  await h.connectAndJoin(accounts.modification);
+  assert.equal(accounts.modification.join.locationId, 'coreLabCircuit', 'A faction member enters the side laboratory.');
+  const hall = accounts.modification.join.worldState.labHall;
+  assert(hall && hall.meterLabel === 'Перегрузка' && hall.hazardName && hall.nodes.length === 2,
+    'The hall snapshot carries its meter, hazard and nodes: ' + JSON.stringify(hall).slice(0, 300));
+  assert(hall.sectors.length >= 1 && hall.sectors.every(row => Number.isFinite(row.x) && Number.isFinite(row.z)),
+    'The snapshot names the sectors that will burn.');
+  assert(!('seed' in hall), 'The hall snapshot stays public.');
+  const unknownNode = await h.socketAck(accounts.modification.socket, 'labNodeAction', { nodeId: 'node_zzz' });
+  assert(!unknownNode.ok && /узл/i.test(unknownNode.error), 'An unknown node is refused: ' + JSON.stringify(unknownNode));
+  // Узел работает только вблизи: от точки прибытия щиты недосягаемы.
+  const farNode = await h.socketAck(accounts.modification.socket, 'labNodeAction', { nodeId: 'node_a' });
+  assert(!farNode.ok && /Подойдите/i.test(farNode.error), 'A distant node is refused: ' + JSON.stringify(farNode));
+  const otherHall = await h.socketAck(accounts.progression.socket, 'labNodeAction', { nodeId: 'node_a' });
+  assert(!otherHall.ok, 'The installation has no hall nodes: ' + JSON.stringify(otherHall));
+  console.log('PASS laboratory hall snapshot and node range');
 })().catch(error => {
   console.error(error.stack);
   const logs = h.serverLogs().trim();

@@ -82,6 +82,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnPveAreaState;
         public event Action<JObject> OnPublicEventState;
         public event Action<JObject> OnWorldBossState;
+        public event Action<JObject> OnLabHallState;
         public event Action<JObject> OnKromkaOnboardingState;
         public event Action<JObject> OnWorldActivityFeedChanged;
 
@@ -510,6 +511,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnPveAreaState?.Invoke(payload);
+            }));
+
+            // Залы боковых лабораторий: шкала угрозы, объявленный удар и
+            // готовность узлов приходят всей комнате после каждого изменения.
+            _connection.On("labHallState", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnLabHallState?.Invoke(payload);
             }));
 
             // Публичные события пустоши: предупреждение об истечении, зачистка,

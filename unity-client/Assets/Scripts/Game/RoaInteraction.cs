@@ -72,7 +72,7 @@ namespace RealmOfAshes.Game
         [Tooltip("Радиус выбора контейнеров. Сервер разрешает открытие не дальше 3.2 м.")]
         public float ContainerRange = 3.1f;
 
-        private enum TargetKind { None, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
+        private enum TargetKind { None, LabNode, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
         private enum PanelKind { None, Npc, Trade, MachineTrade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
@@ -1778,6 +1778,12 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            if (_candidateKind == TargetKind.LabNode)
+            {
+                UseLabNode(_candidate);
+                return;
+            }
+
             if (_candidateKind == TargetKind.TradeMachine)
             {
                 OpenTradeMachine(_candidate);
@@ -1928,6 +1934,25 @@ namespace RealmOfAshes.Game
                     Show("Некорректный ответ пустоши: " + error.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Использовать узел зала лаборатории. Сервер проверяет расстояние и
+        /// перезарядку, сбрасывает шкалу угрозы и рассылает состояние зала.
+        /// </summary>
+        private void UseLabNode(JObject node)
+        {
+            string id = node?["id"]?.ToString();
+            if (string.IsNullOrEmpty(id) || Socket == null) return;
+            Socket.EmitWithAck("labNodeAction", new Dictionary<string, object> { ["nodeId"] = id }, ack =>
+            {
+                if (ack?["ok"]?.ToObject<bool>() == true)
+                {
+                    Show((ack["node"]?.ToString() ?? "Узел") + ": сработал.", 2.5f);
+                    return;
+                }
+                Show(ack?["error"]?.ToString() ?? "Узел зала недоступен.");
+            });
         }
 
         private void OpenTradeMachine(JObject machine)
@@ -3414,6 +3439,10 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(CraftingStationId(entry))
                 || kind == "craftingstation" || HasTag(entry, "crafting-station"))
                 return TargetKind.CraftingStation;
+
+            // Узел зала лаборатории: вентиляция, щит питания, охлаждение,
+            // излучатель. Использование сбрасывает шкалу угрозы зала.
+            if (kind == "labnode" || HasTag(entry, "lab-node")) return TargetKind.LabNode;
 
             bool tradeMachine = model == "trademachine"
                 || kind == "trademachine" || kind == "vendingmachine"

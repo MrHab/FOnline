@@ -12,7 +12,8 @@ namespace RealmOfAshes.Game
     /// Компактная панель мировых событий в HUD: аванпосты Сердцевины (владелец,
     /// состояние события, отсчёт, прогресс, гарнизон), публичное событие
     /// (таймер, предупреждение, спорный сундук, возврат после смерти), мировой
-    /// босс (щит, уязвимость, телеграф импульса) и PvE-область («Искать следы»).
+    /// босс (щит, уязвимость, телеграф импульса), PvE-область («Искать следы»)
+    /// и зал боковой лаборатории (шкала угрозы, объявленный удар, узлы).
     /// Все значения приходят с сервера; клиент только форматирует и показывает
     /// то, что относится к текущей комнате.
     /// </summary>
@@ -35,6 +36,7 @@ namespace RealmOfAshes.Game
         private JObject _publicEvent;
         private JObject _worldBoss;
         private JObject _pveArea;
+        private JObject _labHall;
         private float _nextRefreshAt;
         private double _receivedAt;
 
@@ -57,6 +59,7 @@ namespace RealmOfAshes.Game
             _socket.OnPublicEventState += ApplyPublicEvent;
             _socket.OnWorldBossState += ApplyWorldBoss;
             _socket.OnPveAreaState += ApplyPveArea;
+            _socket.OnLabHallState += ApplyLabHall;
             _socket.OnJoined += HandleJoined;
             _socket.OnServerWorldTransfer += HandleTransfer;
         }
@@ -68,6 +71,7 @@ namespace RealmOfAshes.Game
             _socket.OnPublicEventState -= ApplyPublicEvent;
             _socket.OnWorldBossState -= ApplyWorldBoss;
             _socket.OnPveAreaState -= ApplyPveArea;
+            _socket.OnLabHallState -= ApplyLabHall;
             _socket.OnJoined -= HandleJoined;
             _socket.OnServerWorldTransfer -= HandleTransfer;
         }
@@ -80,6 +84,7 @@ namespace RealmOfAshes.Game
         {
             JObject world = _socket?.Session?.WorldState;
             _publicEvent = world?["publicEvent"] as JObject;
+            _labHall = world?["labHall"] as JObject;
             _worldBoss = world?["worldBoss"] as JObject;
             _pveArea = world?["pveArea"] as JObject;
             _receivedAt = Time.realtimeSinceStartupAsDouble;
@@ -122,6 +127,7 @@ namespace RealmOfAshes.Game
 
         private void ApplyWorldBoss(JObject payload) { _worldBoss = payload; _receivedAt = Time.realtimeSinceStartupAsDouble; Refresh(); }
         private void ApplyPveArea(JObject payload) { _pveArea = payload; _receivedAt = Time.realtimeSinceStartupAsDouble; Refresh(); }
+        private void ApplyLabHall(JObject payload) { _labHall = payload; _receivedAt = Time.realtimeSinceStartupAsDouble; Refresh(); }
 
         private void Update()
         {
@@ -145,6 +151,8 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(worldBoss)) lines.Add(worldBoss);
             string pve = DescribePveArea(_pveArea, roomId, elapsed);
             if (!string.IsNullOrEmpty(pve)) lines.Add(pve);
+            string lab = DescribeLabHall(_labHall, roomId);
+            if (!string.IsNullOrEmpty(lab)) lines.Add(lab);
             bool visible = lines.Count > 0 && _socket != null && _socket.Phase == RoaSocketClient.ConnectionPhase.Joined
                 && _socket.Session != null && !(_socket.Session.Self?["onGlobalMap"]?.Value<bool>() ?? false);
             _panel.SetActive(visible);
@@ -321,6 +329,47 @@ namespace RealmOfAshes.Game
             int hazards = (scenario["hazards"] as JArray)?.Count ?? 0;
             if (hazards > 0) parts.Add("опасная земля: " + hazards);
             return parts.Count > 0 ? "\n" + string.Join(" · ", parts) : string.Empty;
+        }
+
+        /// <summary>
+        /// Зал лаборатории: шкала угрозы, объявленный удар и готовность узлов.
+        /// Данные присылает сервер; клиент только показывает их.
+        /// </summary>
+        public static string DescribeLabHall(JObject payload, string roomId)
+        {
+            if (payload == null) return string.Empty;
+            string payloadRoom = payload["roomId"]?.ToString();
+            if (!string.IsNullOrEmpty(payloadRoom) && !string.IsNullOrEmpty(roomId) && payloadRoom != roomId) return string.Empty;
+            string meterLabel = payload["meterLabel"]?.ToString() ?? "Угроза";
+            int percent = Mathf.Clamp(Mathf.RoundToInt((payload["meter"]?.Value<float>() ?? 0f) * 100f), 0, 100);
+            var sb = new StringBuilder(meterLabel.ToUpperInvariant()).Append(": ").Append(percent).Append('%');
+            if (payload["telegraph"]?.Value<bool>() == true)
+            {
+                sb.Append(" · ").Append((payload["hazardName"]?.ToString() ?? "УДАР").ToUpperInvariant()).Append('!');
+                int inSeconds = payload["telegraphInSeconds"]?.Value<int>() ?? 0;
+                if (inSeconds > 0) sb.Append(' ').Append(inSeconds).Append(" с");
+            }
+            if (payload["guardShielded"]?.Value<bool>() == true) sb.Append(" · МАШИНА ПОД ПИТАНИЕМ");
+            // Одинаковые приборы на стенах называются одинаково, поэтому
+            // совпадающие строки сводятся в одну с количеством.
+            var ready = new List<string>();
+            var counts = new Dictionary<string, int>();
+            foreach (JToken token in payload["nodes"] as JArray ?? new JArray())
+            {
+                JObject node = token as JObject;
+                if (node == null) continue;
+                int readyIn = node["readyInSeconds"]?.Value<int>() ?? 0;
+                string name = node["displayName"]?.ToString() ?? "узел";
+                string row = readyIn > 0 ? name + " (" + readyIn + " с)" : name;
+                if (counts.TryGetValue(row, out int seen)) counts[row] = seen + 1;
+                else { counts[row] = 1; ready.Add(row); }
+            }
+            for (int i = 0; i < ready.Count; i++)
+            {
+                if (counts[ready[i]] > 1) ready[i] = ready[i] + " ×" + counts[ready[i]];
+            }
+            if (ready.Count > 0) sb.Append("\nУзлы: ").Append(string.Join(", ", ready));
+            return sb.ToString();
         }
 
         public static string FactionLabel(JObject factionNames, string factionId)

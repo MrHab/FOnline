@@ -207,6 +207,16 @@ const {
   worldBossHazards
 } = require('./src/server/world-boss');
 const {
+  activateLabNode,
+  labGuardShielded,
+  labHazardSectors,
+  labOverheatDamageMultiplier,
+  normalizeLabMechanics,
+  normalizeLabState,
+  publicLabState,
+  tickLab
+} = require('./src/server/lab-mechanics');
+const {
   noteSupportDestroyed: noteScenarioSupportDestroyed,
   publicScenario,
   scenarioBossShielded,
@@ -19847,6 +19857,155 @@ function serverPublicEventDamageBlocked(room, target) {
   return scenarioBossShielded(event.scenario, template.mechanics);
 }
 
+// ---------------------------------------------------------------------------
+// Залы боковых лабораторий: шкала копится сама, на пике объявляется удар и
+// бьёт по секторам, а узлы на стенах её сбрасывают. Конфигурация авторская —
+// data/kromka/territory.json, labs[].mechanics.
+// ---------------------------------------------------------------------------
+const SERVER_LAB_MECHANICS = Object.fromEntries(
+  (Array.isArray(KROMKA_TERRITORY_CATALOG?.labs) ? KROMKA_TERRITORY_CATALOG.labs : [])
+    .map(row => [normalizeLocationId(row?.id || ''), normalizeLabMechanics(row?.mechanics)])
+    .filter(([id, mechanics]) => id && mechanics)
+);
+
+function serverLabMechanicsForRoom(room) {
+  return SERVER_LAB_MECHANICS[normalizeLocationId(room?.locationId || '')] || null;
+}
+
+function serverLabState(room) {
+  if (!room) return null;
+  if (!room.labState) room.labState = normalizeLabState({});
+  return room.labState;
+}
+
+/** Центр зала: вокруг него раскладываются опасные сектора. */
+function serverLabCenter(room) {
+  const dims = roomTileDims(room);
+  return tileToWorld(Math.floor(dims.w / 2), Math.floor(dims.h / 2), dims);
+}
+
+/**
+ * Шаг зала лаборатории: объявление удара, сам удар по секторам и рассылка
+ * состояния. Возвращает true, если состояние изменилось.
+ */
+function serverTickLabRoom(room, now = Date.now()) {
+  const mechanics = serverLabMechanicsForRoom(room);
+  if (!mechanics || !room?.sockets?.size) return false;
+  serverEnsureLabGuard(room, mechanics);
+  const state = serverLabState(room);
+  const events = tickLab(state, mechanics, now);
+  if (!events.length) return false;
+  for (const row of events) {
+    if (row.type === 'telegraph') {
+      serverEmitLabState(room, { telegraph: true, displayName: row.displayName }, now);
+      continue;
+    }
+    if (row.type !== 'hazard') continue;
+    const center = serverLabCenter(room);
+    let hit = 0;
+    for (const sector of labHazardSectors(state, mechanics, center)) {
+      hit += serverApplyLabHazard(room, sector, now);
+    }
+    serverEmitLabState(room, { hazard: true, displayName: row.displayName, hit }, now);
+  }
+  return true;
+}
+
+/**
+ * Охранная машина зала: стационарный противник, защищённый, пока питание идёт
+ * на него. Появляется один раз на комнату.
+ */
+function serverEnsureLabGuard(room, mechanics) {
+  if (!mechanics?.guard || room.labGuardSpawned === true) return false;
+  const existing = [...(room.enemies?.values?.() || [])].some(enemy => enemy?.labGuard === true);
+  if (existing) {
+    room.labGuardSpawned = true;
+    return false;
+  }
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const spot = findRoomSafeSpawnTile(room, center.tx, center.tz,
+    { maxRadius: 8, radius: 0.8, minEnemyDistance: 1, minPlayerDistance: 8 }) || center;
+  const guard = spawnEncounterActor(room, spot.tx, spot.tz, {
+    faction: 'monsters',
+    role: 'monster',
+    species: 'machine',
+    modelKey: mechanics.guard.modelKey || 'craftStationEnergy',
+    hostileToPlayer: true,
+    stationary: true,
+    canDialogue: false,
+    name: mechanics.guard.displayName,
+    hp: mechanics.guard.hp
+  });
+  if (!guard) return false;
+  guard.labGuard = true;
+  room.labGuardSpawned = true;
+  room.structureDirty = true;
+  return true;
+}
+
+/** Урон по сектору зала: тип урона зависит от механики лаборатории. */
+function serverApplyLabHazard(room, sector, now = Date.now()) {
+  const damageType = sector.id.startsWith('heat') ? 'fire'
+    : sector.id.startsWith('discharge') ? 'electric'
+      : sector.id.startsWith('spores') ? 'toxic' : 'anomalous';
+  let hit = 0;
+  for (const p of livePlayersInRoom(room)) {
+    if (!p || p.dead || Number(p.hp || 0) <= 0) continue;
+    if (Math.hypot(Number(p.x || 0) - Number(sector.x || 0), Number(p.z || 0) - Number(sector.z || 0)) > Number(sector.radius || 0)) continue;
+    const mitigation = serverMitigateDamage(Number(sector.damage || 0), p, damageType);
+    p.hp = Math.max(0, Number(p.hp || p.maxHp || 1) - mitigation.damage);
+    const newInjuries = serverApplyInjuriesFromHit(p, mitigation.damage, damageType, String(sector.displayName || 'Удар зала'));
+    p.lastServerDamageAt = now;
+    const downed = Number(p.hp || 0) <= 0 && serverTryDownWorldActivityPlayer(p, room, now);
+    io.to(p.id).emit('playerStatusEffect', {
+      effect: 'labHazard',
+      damage: mitigation.damage,
+      rawDamage: Number(sector.damage || 0),
+      absorbed: mitigation.absorbed,
+      hp: Math.round(Number(p.hp || 0)),
+      maxHp: Math.round(Number(p.maxHp || 1)),
+      downed,
+      injuries: sanitizeInjuries(p.injuries || {}),
+      newInjuries,
+      t: now
+    });
+    hit += 1;
+  }
+  return hit;
+}
+
+function serverLabPayload(room, extra = {}, now = Date.now()) {
+  const mechanics = serverLabMechanicsForRoom(room);
+  if (!mechanics) return null;
+  return {
+    roomId: room.id,
+    locationId: room.locationId,
+    ...publicLabState(serverLabState(room), mechanics, serverLabCenter(room), now),
+    ...extra,
+    t: now
+  };
+}
+
+function serverEmitLabState(room, extra = {}, now = Date.now()) {
+  const payload = serverLabPayload(room, extra, now);
+  if (!payload) return null;
+  io.to(room.id).emit('labHallState', payload);
+  return payload;
+}
+
+/**
+ * Урон по противникам зала: охранная машина под питанием защищена, а
+ * перегретые противники «Сплава» получают больше урона.
+ */
+function serverLabDamageModifier(room, enemy, damage = 0) {
+  const mechanics = serverLabMechanicsForRoom(room);
+  if (!mechanics || !enemy) return damage;
+  const state = serverLabState(room);
+  if (enemy.labGuard === true && labGuardShielded(state, mechanics, Date.now())) return 0;
+  return Math.max(0, Math.round(Number(damage || 0) * labOverheatDamageMultiplier(state, mechanics)));
+}
+
 function serverPublicEventHostilesAlive(room) {
   let count = 0;
   for (const enemy of room?.enemies?.values?.() || []) {
@@ -20461,6 +20620,8 @@ function publicWorldState(room, includeMap = true) {
         center: serverWorldBossArenaCenter(room, boss)
       }) : null;
     })(),
+    // Зал лаборатории: шкала угрозы, объявленный удар и готовность узлов.
+    labHall: serverLabPayload(room, {}, Date.now()),
     shift: serverCurrentShiftState(Date.now()),
     anomalies: ANOMALY_SYSTEM.snapshot(room.id, room.locationId),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
@@ -26937,6 +27098,28 @@ io.on('connection', (socket) => {
 
   // PvE-область: снимок личной встречи и «Искать следы». Следы можно искать
   // только живым и только в своей (или групповой) комнате области.
+  // Узел зала лаборатории: вентиляция, распределительный щит, охлаждение или
+  // импульсный излучатель. Сбрасывает шкалу угрозы и снимает объявленный удар.
+  socket.on('labNodeAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.onGlobalMap || p.dead) return fail('Игрок недоступен.');
+    const room = rooms.get(p.roomId);
+    const mechanics = room ? serverLabMechanicsForRoom(room) : null;
+    if (!room || !mechanics) return fail('Здесь нет узлов зала.');
+    const now = Date.now();
+    const nodeId = String(data.nodeId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+    const loc = roomLocation(room);
+    const prop = (loc.objects || []).find(row => String(row?.id || '') === nodeId);
+    if (!prop) return fail('Такого узла в зале нет.');
+    const distance = Math.hypot(Number(p.x || 0) - Number(prop.position?.x || 0), Number(p.z || 0) - Number(prop.position?.z || 0));
+    if (distance > 3.2) return fail('Подойдите к узлу.');
+    const result = activateLabNode(serverLabState(room), mechanics, nodeId, now);
+    if (!result.ok) return fail(result.error);
+    const payload = serverEmitLabState(room, { usedNodeId: nodeId, usedBy: String(p.name || '') }, now);
+    if (typeof ack === 'function') ack({ ok: true, node: result.node.displayName, lab: payload });
+  });
+
   // Вскрытие тайника публичного события: канал начинает и отменяет игрок,
   // прогресс считает сервер по присутствию у сундука и чужим рядом.
   socket.on('publicEventAction', (data = {}, ack) => {
@@ -29241,6 +29424,7 @@ io.on('connection', (socket) => {
       const raw = Math.max(1, Math.round(baseRaw * falloff * (1 + ambushLevel * 0.14)));
       const dmgInfo = serverMitigateEnemyDamage(raw, enemy, 'explosive');
       dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
+      dmgInfo.damage = serverLabDamageModifier(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, Number(enemy.hp || 0) - dmgInfo.damage);
       if (enemy.hp > 0) {
         aggroEnemyFromHit(room, enemy, p, now);
@@ -29512,6 +29696,7 @@ io.on('connection', (socket) => {
       });
       raw = dmgInfo.raw;
       dmgInfo.damage = serverWorldBossDamageAfterShield(room, enemy, dmgInfo.damage);
+      dmgInfo.damage = serverLabDamageModifier(room, enemy, dmgInfo.damage);
       enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
       hits.push({
         handSlot: entry.slot,
@@ -30863,6 +31048,16 @@ setInterval(() => {
     console.error('Public event tick failed:', error);
   }
 }, 5000);
+
+// Залы лабораторий: шкала угрозы, объявление удара и урон по секторам.
+setInterval(() => {
+  try {
+    const now = Date.now();
+    for (const room of rooms.values()) serverTickLabRoom(room, now);
+  } catch (error) {
+    console.error('Laboratory hall tick failed:', error);
+  }
+}, 1000);
 
 // Встречи в PvE-областях: плановые проверки и сброс пустых личных комнат.
 setInterval(() => {

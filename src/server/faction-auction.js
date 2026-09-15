@@ -233,7 +233,13 @@ function commitShelfClaim(store = {}, factionId = '', characterId = '', claimed 
   return shelf;
 }
 
-function publicListing(listing = {}, now = Date.now(), viewerCharacterId = '') {
+/**
+ * Состояние артефакта видно до покупки: вид, тир и признак стабилизации, а у
+ * исследованного — его точные свойства. Проекцию передаёт сервер, чтобы модуль
+ * аукциона не знал про каталог артефактов; без неё остаётся только счётчик.
+ */
+function publicListing(listing = {}, now = Date.now(), viewerCharacterId = '', projectArtifact = null) {
+  const artifactRows = listing.records.filter(row => row?.artifact);
   return {
     id: listing.id,
     itemId: listing.itemId,
@@ -242,17 +248,21 @@ function publicListing(listing = {}, now = Date.now(), viewerCharacterId = '') {
     sellerName: listing.sellerName || 'Член фракции',
     mine: listing.sellerCharacterId === cleanId(viewerCharacterId, 96),
     remainingSeconds: Math.max(0, Math.round((Number(listing.expiresAt) - Number(now)) / 1000)),
-    artifactCount: listing.records.filter(row => row?.artifact).length
+    artifactCount: artifactRows.length,
+    artifacts: typeof projectArtifact === 'function'
+      ? artifactRows.map(row => projectArtifact(row.artifact)).filter(Boolean)
+      : []
   };
 }
 
-function publicAuction(store = {}, factionId = '', viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now()) {
+function publicAuction(store = {}, factionId = '', viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now(), options = {}) {
   const shelf = shelfFor(store, factionId, viewerCharacterId);
+  const projectArtifact = typeof options?.projectArtifact === 'function' ? options.projectArtifact : null;
   return {
     factionId: cleanId(factionId, 32),
     feePct: rules.feePct,
     listingLifetimeHours: Math.round(rules.listingLifetimeMs / 3600000),
-    listings: activeListings(store, factionId, now).map(row => publicListing(row, now, viewerCharacterId)),
+    listings: activeListings(store, factionId, now).map(row => publicListing(row, now, viewerCharacterId, projectArtifact)),
     shelf: {
       silver: shelf.silver,
       items: shelf.items.map(row => ({ itemId: row.itemId, qty: row.qty, reason: row.reason, at: row.at })),

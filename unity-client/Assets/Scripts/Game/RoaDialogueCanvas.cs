@@ -435,9 +435,34 @@ namespace RealmOfAshes.Game
                 else actions.Add(("Купить за " + price, () => RoaAuctionNet.Buy(Interaction.Socket, id, AfterServiceAction)));
                 AddCard(RoaItemData.Name(itemId) + " ×" + qty + " — " + price + " марок",
                     "Продавец: " + (listing["sellerName"]?.ToString() ?? "—") + " · осталось " + RoaWorldEventsPresentation.Clock(remaining)
-                    + ((listing["artifactCount"]?.Value<int>() ?? 0) > 0 ? "\nАртефакт: свойства раскрываются после стабилизации" : string.Empty), actions);
+                    + "\nПолучить у аукционера этой базы" + AuctionArtifactLine(listing), actions);
             }
             if (shown == 0) AddCard("Лоты", "Пока никто ничего не выставил.", null);
+        }
+
+        /// <summary>
+        /// Состояние артефакта в лоте до покупки: вид, тир и признак стабилизации,
+        /// а у исследованного — его точные свойства. Сервер присылает записи в
+        /// публичной проекции, поэтому скрытый ролл сюда не попадает.
+        /// </summary>
+        public static string AuctionArtifactLine(JObject listing)
+        {
+            JArray artifacts = listing?["artifacts"] as JArray;
+            if (artifacts == null || artifacts.Count == 0)
+            {
+                int count = listing?["artifactCount"]?.Value<int>() ?? 0;
+                return count > 0 ? "\nАртефактов в лоте: " + count : string.Empty;
+            }
+            var lines = new List<string>();
+            foreach (JToken token in artifacts)
+            {
+                JObject record = token as JObject;
+                if (record == null) continue;
+                lines.Add((record["displayName"]?.ToString() ?? "Артефакт") + ": "
+                    + RoaPipboyCanvas.ArtifactCardSummary(record, 1));
+                if (lines.Count >= 4) break;
+            }
+            return lines.Count > 0 ? "\n" + string.Join("\n", lines) : string.Empty;
         }
 
         private void AddArtifactLabOptions()

@@ -3,6 +3,7 @@
 const { randomUUID } = require('node:crypto');
 const {
   RECORD_VERSION,
+  artifactEffectBenefitSign,
   artifactIndexes,
   baseTierOfType,
   instanceProperties,
@@ -50,21 +51,6 @@ function equippedArtifactTypes(player = {}, catalog = {}) {
 function diminishingSum(values = [], secondaryMultiplier = 0.5) {
   const sorted = values.map(Number).filter(Number.isFinite).sort((a, b) => Math.abs(b) - Math.abs(a));
   return sorted.reduce((sum, value, index) => sum + value * (index === 0 ? 1 : secondaryMultiplier), 0);
-}
-
-// Направление пользы: у большинства эффектов «больше — лучше», но шум движения,
-// расход воды, задержка регенерации, перезарядка спасения и полученная радиация
-// полезны в минус. Знак нужен, чтобы отличать преимущество от недостатка.
-const LOWER_IS_BETTER_EFFECTS = new Set([
-  'waterUsePct',
-  'movementNoisePct',
-  'regenDelaySeconds',
-  'lowHealthCooldownSeconds',
-  'radiationOnTrigger'
-]);
-
-function artifactEffectBenefitSign(key = '') {
-  return LOWER_IS_BETTER_EFFECTS.has(String(key)) ? -1 : 1;
 }
 
 /**

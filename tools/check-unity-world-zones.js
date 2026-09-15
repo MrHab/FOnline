@@ -67,5 +67,16 @@ assert(probe.includes('RoaWorldEventsPresentation.DescribeOutposts') && probe.in
   'The probe must cover outposts and artifact cards.');
 assert(probe.includes('RoaGlobalMapCanvas.ContractRowText') && probe.includes('RoaGlobalMapCanvas.ContractIntroText'),
   'The probe must cover the faction contract window at the territory gate.');
+// Карточка стабилизированного артефакта показывает значения экземпляра, а не
+// типовое описание вида; сырая — природный источник и цену стабилизации.
+for (const token of ['ArtifactEffectList(', 'ArtifactSourceLabel(', "properties[\"primary\"]", "properties[\"drawback\"]"])
+  assert(pipboy.includes(token), `RoaPipboyCanvas is missing ${token}`);
+assert(!/benefit \+ " \(×"/.test(pipboy), 'The stabilized card must not fall back to the type text with a multiplier.');
+assert(dialogue.includes('AuctionArtifactLine('), 'The auction lot must describe the artifact state before purchase.');
+assert(dialogue.includes('Получить у аукционера этой базы'), 'The buyer must see where the lot is handed over.');
+const auctionModule = read('src/server/faction-auction.js');
+assert(auctionModule.includes('projectArtifact'), 'The auction projection must be able to expose artifact state.');
+assert(read('server.js').includes('projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)'),
+  'The server must project auction artifacts through the public record.');
 
 console.log('Unity world zones UI OK: world events HUD, tier-tinted artifact cards with preview and salvage, base service dialogues, net wrappers and audit probe.');

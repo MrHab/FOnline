@@ -21,6 +21,15 @@ const BENEFIT_WHEN_NEGATIVE = new Set([
   'movementNoisePct', 'waterUsePct', 'regenDelaySeconds', 'radiationOnTrigger', 'lowHealthCooldownSeconds'
 ]);
 
+/**
+ * Направление пользы эффекта: +1 — «больше лучше», −1 — «меньше лучше».
+ * Один источник правды для масштабирования экземпляра и для сложения набора:
+ * по нему же отличают преимущество от недостатка.
+ */
+function artifactEffectBenefitSign(key = '') {
+  return BENEFIT_WHEN_NEGATIVE.has(String(key)) ? -1 : 1;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value || 0)));
 }
@@ -316,6 +325,7 @@ function pickBirthType(anomalyType = '', tierRange = null, catalog = {}, seed = 
 module.exports = {
   RECORD_VERSION,
   TIER_COLORS,
+  artifactEffectBenefitSign,
   artifactIndexes,
   baseTierOfType,
   instanceProperties,

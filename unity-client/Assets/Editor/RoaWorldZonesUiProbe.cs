@@ -141,8 +141,13 @@ namespace RealmOfAshes.EditorTools
             Require(labText.Contains("МАШИНА ПОД ПИТАНИЕМ"), "A shielded guard machine is announced: " + labText);
             Require(labText.Contains("Распределительный щит (12 с)"), "A recharging node shows its timer: " + labText);
             lab["telegraph"] = true; lab["telegraphInSeconds"] = 3;
+            lab["sectors"] = JArray.Parse(@"[{'id':'discharge_0','x':8,'z':0,'radius':7},{'id':'discharge_2','x':-4,'z':-7,'radius':7}]");
             string labStrike = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
             Require(labStrike.Contains("РАЗРЯД ПО ЗАЛУ!") && labStrike.Contains("3 с"), "The announced strike is counted down: " + labStrike);
+            Require(labStrike.Contains("восток") && labStrike.Contains("юго-запад"),
+                "The announced strike says which sides it will burn: " + labStrike);
+            Require(RoaWorldEventsPresentation.HazardSides(null) == string.Empty, "Without sectors no sides are named");
+            Require(RoaWorldEventsPresentation.CompassSide(0f, 0f) == "центр", "The centre of the hall is named plainly");
             lab["telegraph"] = false;
             lab["nodes"][1]["readyInSeconds"] = 0;
             Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит ×2"),

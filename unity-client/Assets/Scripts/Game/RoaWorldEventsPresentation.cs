@@ -397,6 +397,10 @@ namespace RealmOfAshes.Game
                 sb.Append(" · ").Append((payload["hazardName"]?.ToString() ?? "УДАР").ToUpperInvariant()).Append('!');
                 int inSeconds = payload["telegraphInSeconds"]?.Value<int>() ?? 0;
                 if (inSeconds > 0) sb.Append(' ').Append(inSeconds).Append(" с");
+                // Объявленный удар обязан говорить, куда он придёт: сервер шлёт
+                // сами сектора, а игрок должен знать, с какой стороны уходить.
+                string sides = HazardSides(payload["sectors"] as JArray);
+                if (!string.IsNullOrEmpty(sides)) sb.Append(" · ").Append(sides);
             }
             if (payload["guardShielded"]?.Value<bool>() == true) sb.Append(" · МАШИНА ПОД ПИТАНИЕМ");
             // Одинаковые приборы на стенах называются одинаково, поэтому
@@ -419,6 +423,34 @@ namespace RealmOfAshes.Game
             }
             if (ready.Count > 0) sb.Append("\nУзлы: ").Append(string.Join(", ", ready));
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Стороны зала, по которым придёт удар: «север, юго-запад». Считается
+        /// от центра зала, вокруг которого сервер и раскладывает сектора.
+        /// </summary>
+        public static string HazardSides(JArray sectors)
+        {
+            if (sectors == null || sectors.Count == 0) return string.Empty;
+            var sides = new List<string>();
+            foreach (JToken token in sectors)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                string side = CompassSide(row["x"]?.Value<float>() ?? 0f, row["z"]?.Value<float>() ?? 0f);
+                if (!string.IsNullOrEmpty(side) && !sides.Contains(side)) sides.Add(side);
+            }
+            return sides.Count > 0 ? string.Join(", ", sides) : string.Empty;
+        }
+
+        /// <summary>Сторона света точки относительно центра зала.</summary>
+        public static string CompassSide(float x, float z)
+        {
+            if (Mathf.Abs(x) < 1f && Mathf.Abs(z) < 1f) return "центр";
+            string vertical = Mathf.Abs(z) >= Mathf.Abs(x) * 0.5f ? (z >= 0f ? "север" : "юг") : string.Empty;
+            string horizontal = Mathf.Abs(x) >= Mathf.Abs(z) * 0.5f ? (x >= 0f ? "восток" : "запад") : string.Empty;
+            if (!string.IsNullOrEmpty(vertical) && !string.IsNullOrEmpty(horizontal)) return vertical + "о-" + horizontal;
+            return string.IsNullOrEmpty(vertical) ? horizontal : vertical;
         }
 
         public static string FactionLabel(JObject factionNames, string factionId)

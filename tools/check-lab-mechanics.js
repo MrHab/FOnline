@@ -182,6 +182,14 @@ const presentation = read('unity-client/Assets/Scripts/Game/RoaWorldEventsPresen
 assert(presentation.includes('_socket.OnLabHallState += ApplyLabHall;'), 'The HUD subscribes to the hall state.');
 assert(presentation.includes('DescribeLabHall('), 'The HUD shows the hall state.');
 assert(presentation.includes('_labHall = world?["labHall"] as JObject;'), 'The HUD reads the hall from the room snapshot.');
+// Объявленный удар обязан называть стороны, по которым придёт: сектора
+// сервер шлёт, и игрок должен знать, куда уходить.
+for (const token of [
+  'public static string HazardSides(JArray sectors)',
+  'public static string CompassSide(float x, float z)',
+  'string sides = HazardSides(payload["sectors"] as JArray);'
+]) assert(presentation.includes(token), `The hall line must name the sides of the announced strike: ${token}`);
+
 const probe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');
 assert(probe.includes('DescribeLabHall(lab, "coreLabCircuit")'), 'The editor probe checks the hall line.');
 

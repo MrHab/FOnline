@@ -141,6 +141,28 @@ namespace RealmOfAshes.EditorTools
             Require(areaLine.Contains("встреча личная"), "Area summary explains that the encounter is personal");
             Require(RoaGlobalMap.PveAreaLabel(null) == string.Empty, "Without an area the summary stays empty");
 
+            // Временное событие под целью маршрута: имя и остаток времени.
+            var mapEvent = JObject.Parse(@"{'displayName':'Логово Гари','remainingSeconds':1471,'warning':false,
+                'status':'active','x':10,'y':10,'radius':9}");
+            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31",
+                "The map names the event and how long it lasts: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
+            mapEvent["warning"] = true;
+            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31!",
+                "A closing event warns on the map: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
+            Require(RoaGlobalMap.PublicEventMetaLabel(null) == string.Empty, "Without an event the target line is unchanged");
+            Require(RoaGlobalMap.PveAreaMetaLabel(area) == "Колония Пыльников · опасность 2",
+                "The target line names the area and its danger: " + RoaGlobalMap.PveAreaMetaLabel(area));
+            Require(RoaGlobalMap.PveAreaMetaLabel(null) == string.Empty, "Outside an area the target line is unchanged");
+            // Вводная сценария объясняет, за что там дерутся, и читается перед
+            // входом — в окне правил зоны.
+            var eventRules = JObject.Parse(@"{'mode':'pvpEvent','label':'Событие','lossLabel':'Вещи сохраняются.',
+                'pvpLabel':'PvP разрешено.','confirmBeforeEntry':true}");
+            string briefed = RoaGlobalMapCanvas.ZoneRulesDescription(eventRules, "Стая гари засела в меловой чаше.");
+            Require(briefed.Contains("Стая гари засела в меловой чаше."),
+                "The zone rules window carries the briefing of the event: " + briefed);
+            Require(!RoaGlobalMapCanvas.ZoneRulesDescription(eventRules).Contains("чаше"),
+                "Without a briefing the window is unchanged");
+
             // Зал боковой лаборатории: шкала угрозы, объявленный удар и
             // готовность узлов на стенах.
             var lab = JObject.Parse(@"{'roomId':'coreLabCircuit','meterLabel':'Перегрузка','meter':0.62,

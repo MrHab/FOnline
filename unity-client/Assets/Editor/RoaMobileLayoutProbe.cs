@@ -62,7 +62,10 @@ namespace RealmOfAshes.EditorTools
                     'lossLabel':'Выпадает рюкзак; экипировка и установленные артефакты остаются.',
                     'pvpLabel':'PvP разрешено между разными фракциями.',
                     'accessLabel':'Вход только для членов фракций Сердцевины.','confirmBeforeEntry':true}");
-                float zoneNeeded = TextHeight(host, RoaGlobalMapCanvas.ZoneRulesDescription(rules), 12, 416f);
+                // Окно правил несёт ещё и вводную события: меряется с самой
+                // длинной авторской строкой.
+                const string Briefing = "Налётчики укрепились на разбитом тракте. Кто первым доберётся до их схрона — тот и заберёт добычу.";
+                float zoneNeeded = TextHeight(host, RoaGlobalMapCanvas.ZoneRulesDescription(rules, Briefing), 12, 416f);
                 Debug.Log("[MOBILE LAYOUT] zone rules modal: " + Mathf.CeilToInt(zoneNeeded) + " / 142 px");
                 Require(zoneNeeded <= 142f,
                     "the zone rules modal cuts its own text — " + Mathf.CeilToInt(zoneNeeded) + " px of text in a 142 px box");
@@ -90,6 +93,17 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[MOBILE LAYOUT] contract rows end at " + lastRowBottom + " px, hint starts at " + hintTop + " px");
                 Require(lastRowBottom <= hintTop,
                     "the faction rows of the contract window overlap its hint");
+
+                // --- строка цели на карте ----------------------------------------------
+                // RouteMeta в карточке маршрута — одна строка 21 px шириной с
+                // боковую панель: расстояние, риск и остаток события.
+                var mapEvent = JObject.Parse(@"{'displayName':'Логово Складней','remainingSeconds':1471,'warning':true}");
+                string routeMeta = "12.4 км · риск высокий · " + RoaGlobalMap.PublicEventMetaLabel(mapEvent);
+                float metaNeeded = TextHeight(host, routeMeta, 11, RoaGlobalMapCanvas.SidebarWidth - 18f);
+                Debug.Log("[MOBILE LAYOUT] route meta: " + Mathf.CeilToInt(metaNeeded) + " / 21 px — " + routeMeta);
+                Require(metaNeeded <= 21f,
+                    "the target line of the map does not fit its row — " + Mathf.CeilToInt(metaNeeded)
+                    + " px of text in a 21 px row: " + routeMeta);
 
                 // --- строка защиты в окне контейнера -----------------------------------
                 // Колонка окна лута шириной 620 × 0,94 минус отступы прокрутки и
@@ -150,7 +164,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 Finish();
-                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row and item tooltip keep their text on desktop and on a landscape phone.");
+                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row, map target line and item tooltip keep their text on desktop and on a landscape phone.");
             }
             finally
             {

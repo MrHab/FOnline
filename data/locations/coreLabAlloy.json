@@ -13,6 +13,7 @@
   "noRespawn": true,
   "allowGlobalMapExit": false,
   "noGlobalMap": true,
+  "noGlobalMapEntry": true,
   "territoryId": "core",
   "territoryRole": "lab",
   "factionAccess": "territory",
@@ -77,6 +78,20 @@
       "y": 0.1,
       "z": -34,
       "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "vent_to_core",
+      "type": "location",
+      "label": "Аварийный шлюз — в Сердцевину",
+      "to": "coreZone",
+      "entryKey": "entryFromLabAlloyVent",
+      "tx": 10,
+      "tz": 34,
+      "x": -18.0,
+      "y": 0.1,
+      "z": 30.0,
+      "rotationY": 0.0,
       "radius": 3
     }
   ],
@@ -1033,6 +1048,45 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "vent_shaft",
+      "model": "cargoStack",
+      "name": "Аварийный шлюз",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": 28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.6,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "lab",
+        "lab-door",
+        "materials"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "labDoor",
+        "to": "coreZone"
+      },
+      "footprint": {
+        "x": 2.708,
+        "z": 0.557
+      }
     },
     {
       "id": "node_a",

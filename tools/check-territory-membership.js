@@ -101,11 +101,36 @@ for (const faction of catalog.factions) {
   assert(base.objects.some(row => row.interactive?.role === 'storage' && row.interactive.storageFaction === faction.id), `${faction.id} base has personal storage`);
   assert(base.objects.some(row => row.entity?.traderProfile === faction.traderProfile), `${faction.id} base has a trader`);
 }
+// Все пять лабораторий наследуют правила территории: вход только для членов
+// фракции, тот же режим PvP и та же частичная потеря при смерти, что в зоне.
+const labIds = [...catalog.labs.map(row => row.id), 'coreLabCenterService', 'coreLabCenterResearch', 'coreLabCenterReactor'];
+for (const labId of labIds) {
+  const definition = JSON.parse(read(`data/locations/${labId}.json`));
+  assert.strictEqual(definition.pvpMode, zone.pvpMode, `${labId} keeps the territory PvP mode`);
+  assert.strictEqual(definition.safe, false, `${labId} is not a safe location`);
+  assert.strictEqual(definition.factionAccess, 'territory', `${labId} is open only to members of the territory factions`);
+  assert.strictEqual(definition.noGlobalMapEntry, true, `${labId} is not entered from the world map`);
+  assert.notStrictEqual(definition.allowGlobalMapExit, true, `${labId} has no way out to the world map`);
+}
 for (const labRow of catalog.labs) {
   const definition = JSON.parse(read(`data/locations/${labRow.id}.json`));
-  const exit = definition.transitions.find(row => row.to === 'coreZone');
-  assert(exit && exit.entryKey === labRow.entryKey && zone[labRow.entryKey], `${labRow.id} returns to its zone entrance`);
+  const exit = definition.transitions.find(row => row.id === 'exit_to_core');
+  assert(exit && exit.to === 'coreZone' && exit.entryKey === labRow.entryKey && zone[labRow.entryKey], `${labRow.id} returns to its zone entrance`);
   assert(zone.transitions.some(row => row.to === labRow.id), `zone has an entrance into ${labRow.id}`);
+
+  // Второй путь наружу: аварийный шлюз в дальнем конце внутренней секции
+  // выводит к вентиляционной шахте, а не к гермодвери, через которую вошли.
+  const vent = definition.transitions.find(row => row.id === 'vent_to_core');
+  assert(vent && vent.to === 'coreZone' && vent.entryKey === labRow.ventEntryKey,
+    `${labRow.id} has an emergency way back`);
+  assert(zone[labRow.ventEntryKey], `zone has the surface point of the ${labRow.id} shaft`);
+  assert(Math.hypot(vent.x - exit.x, vent.z - exit.z) > 20, `${labRow.id}: the shaft is not next to the main door`);
+  assert(Math.hypot(zone[labRow.ventEntryKey].x - zone[labRow.entryKey].x, zone[labRow.ventEntryKey].z - zone[labRow.entryKey].z) > 10,
+    `${labRow.id}: the shaft surfaces away from the laboratory door`);
+  assert(!zone.transitions.some(row => row.entryKey === labRow.ventEntryKey),
+    `${labRow.id}: the shaft is a way out, not a second entrance`);
+  assert(definition.objects.some(row => row.id === 'vent_shaft' && row.interactive?.kind === 'transition' && row.interactive.to === 'coreZone'),
+    `${labRow.id}: the shaft is visible in the hall`);
 }
 const service = JSON.parse(read('data/locations/coreLabCenterService.json'));
 const research = JSON.parse(read('data/locations/coreLabCenterResearch.json'));

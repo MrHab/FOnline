@@ -166,6 +166,11 @@
         "z": 72
       },
       "entryKey": "entryFromLabSprout",
+      "ventEntryKey": "entryFromLabSproutVent",
+      "ventExit": {
+        "x": 74,
+        "z": 82
+      },
       "rewardComponents": [
         "bioReagent",
         "medicine",
@@ -212,6 +217,11 @@
         "z": 72
       },
       "entryKey": "entryFromLabCircuit",
+      "ventEntryKey": "entryFromLabCircuitVent",
+      "ventExit": {
+        "x": -70,
+        "z": 82
+      },
       "rewardComponents": [
         "circuitModule",
         "electronics"
@@ -265,6 +275,11 @@
         "z": -72
       },
       "entryKey": "entryFromLabAlloy",
+      "ventEntryKey": "entryFromLabAlloyVent",
+      "ventExit": {
+        "x": -82,
+        "z": -70
+      },
       "rewardComponents": [
         "alloyPlate",
         "scrap",
@@ -315,6 +330,11 @@
         "z": -72
       },
       "entryKey": "entryFromLabSpectrum",
+      "ventEntryKey": "entryFromLabSpectrumVent",
+      "ventExit": {
+        "x": 84,
+        "z": -60
+      },
       "rewardComponents": [
         "spectrumSample",
         "stabilizerCatalyst"

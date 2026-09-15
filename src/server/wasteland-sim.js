@@ -172,6 +172,13 @@ const SITE_ACTIVITY_TYPES = new Set([
 ]);
 const WORLD_SIM_MAX_STEP_HOURS = 1;
 const WORLD_SIM_MAX_CATCHUP_STEPS = 360;
+// Сколько миллисекунд один тик вправе потратить на догон пропущенных часов.
+// Тик вызывается раз в пять секунд, поэтому такой бюджет не рвёт двадцатигерцевый
+// цикл движения, а остаток часов доигрывается следующими тиками.
+const WORLD_SIM_CATCHUP_BUDGET_MS = Math.max(
+  20,
+  Number(process.env.WORLD_SIM_CATCHUP_BUDGET_MS || 180)
+);
 const FACTION_ECONOMY_PLAN_INTERVAL_HOURS = 1;
 const RETAIL_MARKET_BOOTSTRAP_VERSION = 2;
 const MAX_PRODUCTION_QUEUE_ROWS = 8;
@@ -2751,21 +2758,37 @@ function createWastelandSimulation(options = {}) {
     return candidates[0]?.row?.id || 'settlement';
   }
 
-  function archiveWorldTask(task = null) {
-    const archived = normalizeWorldTask(task, state.worldHour);
-    if (!archived || archived.status === 'active') return false;
+  // Архивирует сразу пачку задач. Раньше каждая завершённая задача гоняла
+  // normalizeWorldOperation дважды по всей истории из 400 записей, поэтому
+  // компактация одного шага симуляции стоила около 140 мс на живом состоянии и
+  // давала основную долю времени тика. Пакетная версия нормализует запись один
+  // раз за компактацию: те же 140 мс превращаются в 3.
+  function archiveWorldTasks(tasks = []) {
+    const archivedRows = [];
+    const archivedIds = new Set();
+    for (const task of Array.isArray(tasks) ? tasks : [tasks]) {
+      const archived = normalizeWorldTask(task, state.worldHour);
+      if (!archived || archived.status === 'active') continue;
+      archivedRows.push(archived);
+      archivedIds.add(String(archived.id || ''));
+    }
+    if (!archivedRows.length) return false;
     const historicalTasks = [
-      archived,
+      ...archivedRows,
       ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
-        .filter(row => row && String(row.id || '') !== archived.id)
+        .filter(row => row && !archivedIds.has(String(row.id || '')))
     ];
-    const liveOperationTasks = historicalTasks
-      .filter(row => normalizeWorldOperation(row?.details?.operation || {}, state.worldHour)?.status === 'active')
-      .sort((a, b) => Number(b.details?.operation?.updatedHour || b.completedHour || 0)
-        - Number(a.details?.operation?.updatedHour || a.completedHour || 0));
-    const completedTasks = historicalTasks
-      .filter(row => normalizeWorldOperation(row?.details?.operation || {}, state.worldHour)?.status !== 'active')
-      .sort((a, b) => Number(b.completedHour || b.createdHour || 0) - Number(a.completedHour || a.createdHour || 0));
+    const liveOperationTasks = [];
+    const completedTasks = [];
+    for (const row of historicalTasks) {
+      const operation = normalizeWorldOperation(row?.details?.operation || {}, state.worldHour);
+      if (operation?.status === 'active') liveOperationTasks.push(row);
+      else completedTasks.push(row);
+    }
+    liveOperationTasks.sort((a, b) => Number(b.details?.operation?.updatedHour || b.completedHour || 0)
+      - Number(a.details?.operation?.updatedHour || a.completedHour || 0));
+    completedTasks.sort((a, b) => Number(b.completedHour || b.createdHour || 0)
+      - Number(a.completedHour || a.createdHour || 0));
     state.worldTaskHistory = [
       ...liveOperationTasks,
       ...completedTasks.slice(0, Math.max(0, MAX_WORLD_TASK_HISTORY_COUNT - liveOperationTasks.length))
@@ -2774,17 +2797,19 @@ function createWastelandSimulation(options = {}) {
     return true;
   }
 
+  function archiveWorldTask(task = null) {
+    return archiveWorldTasks([task]);
+  }
+
   function compactWorldTasks() {
     const active = [];
     const finished = [];
     for (const task of Array.isArray(state.worldTasks) ? state.worldTasks : []) {
       if (!task) continue;
       if (task.status === 'active') active.push(task);
-      else {
-        archiveWorldTask(task);
-        finished.push(task);
-      }
+      else finished.push(task);
     }
+    archiveWorldTasks(finished);
     const finishedLimit = Math.max(0, MAX_WORLD_TASK_COUNT - active.length);
     state.worldTasks = [...active, ...finished.slice(0, finishedLimit)];
   }
@@ -11801,14 +11826,33 @@ function createWastelandSimulation(options = {}) {
     if (hours <= 0.001 && !opts.force) return false;
     const requestedHours = Math.max(0, Number(hours || 0));
     const totalHours = Math.min(requestedHours, WORLD_SIM_MAX_STEP_HOURS * WORLD_SIM_MAX_CATCHUP_STEPS);
-    const deferredHours = Math.max(0, requestedHours - totalHours);
-    state.lastTickAt = explicitHours || deferredHours <= 0
-      ? now
-      : Number(now || Date.now()) - deferredHours / 24 * gameDayRealMs;
     const rawSteps = Math.max(1, Math.ceil(totalHours / WORLD_SIM_MAX_STEP_HOURS));
     const steps = Math.min(WORLD_SIM_MAX_CATCHUP_STEPS, rawSteps);
     const stepHours = totalHours / steps;
-    for (let i = 0; i < steps; i += 1) tickWorldSimStep(stepHours);
+    // Догон после простоя раскладывается по тикам, а не выполняется одним куском.
+    // Раньше 360 шагов подряд занимали до двух минут, и всё это время сокеты,
+    // движение и бой стояли: замер /health показывал wastelandTickMs 112 340.
+    // Остаток часов переносится тем же механизмом, что и превышение лимита шагов.
+    let executedSteps = 0;
+    for (let i = 0; i < steps; i += 1) {
+      tickWorldSimStep(stepHours);
+      executedSteps += 1;
+      // Явный вызов с opts.hours (проверки, детерминированные прогоны) обязан
+      // отработать целиком: его нельзя прерывать по времени.
+      if (explicitHours || executedSteps >= steps) continue;
+      // Останавливаемся до шага, который не уложится в бюджет, а не после него:
+      // иначе один шаг ценой в сотню миллисекунд каждый раз перебирал потолок.
+      const elapsedMs2 = Date.now() - tickStartedAt;
+      const averageStepMs = elapsedMs2 / executedSteps;
+      if (elapsedMs2 + averageStepMs > WORLD_SIM_CATCHUP_BUDGET_MS) break;
+    }
+    // Часы считаются по фактически выполненным шагам: недоигранное вернётся
+    // следующим тиком через сдвиг lastTickAt назад.
+    const simulatedHours = stepHours * executedSteps;
+    const deferredHours = Math.max(0, requestedHours - simulatedHours);
+    state.lastTickAt = explicitHours || deferredHours <= 0
+      ? now
+      : Number(now || Date.now()) - deferredHours / 24 * gameDayRealMs;
     const lifeRows = Object.values(state.sites || {})
       .map(site => site?.settlementLife)
       .filter(Boolean);
@@ -11820,8 +11864,11 @@ function createWastelandSimulation(options = {}) {
       activeRefugeeGroups: Object.keys(state.refugeeFlows?.active || {}).length,
       arrivedRefugeeGroups: Array.isArray(state.refugeeFlows?.history) ? state.refugeeFlows.history.length : 0,
       activeCargoTransactions: Object.values(state.cargoLedger || {}).filter(row => row?.status === 'in_transit').length,
-      catchupSteps: steps,
-      simulatedHours: Number(totalHours.toFixed(2)),
+      catchupSteps: executedSteps,
+      // Планировалось шагов против фактически выполненных: разница показывает,
+      // что догон продолжится следующими тиками, а не завис.
+      plannedCatchupSteps: steps,
+      simulatedHours: Number(simulatedHours.toFixed(2)),
       deferredHours: Number(deferredHours.toFixed(2)),
       tickDurationMs: Math.max(0, Date.now() - tickStartedAt)
     };

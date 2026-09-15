@@ -356,8 +356,12 @@ namespace RealmOfAshes.Game
             PanelTitleRow(panel, "Вход", "не выполнен вход", out _, 110f);
             TextInput(panel, 140f, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v);
             TextInput(panel, 184f, "Пароль", Bootstrap.AuthPassword, true, v => Bootstrap.AuthPassword = v);
-            // Сервер — у web он задан адресом страницы; у Unity это поле формы.
+            // В браузере адрес берётся из адреса страницы, поэтому поле там только
+            // технический шум и лишний способ случайно сломать вход. В остальных
+            // сборках оно нужно: сервер задаётся вручную.
+#if !UNITY_WEBGL || UNITY_EDITOR
             TextInput(panel, 228f, "Сервер (http://host:port)", Bootstrap.AuthServerUrl, false, v => Bootstrap.AuthServerUrl = v);
+#endif
 
             ActionButton(panel, "Войти", 12f, 276f, 120f, false, () => Bootstrap.AuthSubmitLogin());
             ActionButton(panel, "Зарегистрироваться", 140f, 276f, 180f, true, () => Bootstrap.AuthShowPanel("register"));

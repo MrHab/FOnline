@@ -37,7 +37,7 @@ const DEFAULT_RULES = Object.freeze({
   durationChoicesMs: Object.freeze([6 * HOUR_MS, 24 * HOUR_MS, 72 * HOUR_MS, 168 * HOUR_MS]),
   listingLifetimeMs: 24 * HOUR_MS,
   maxOrdersPerTrader: 12,
-  maxOrdersPerFaction: 300,
+  maxOrders: 600,
   // Налог берётся с состоявшейся продажи, сбор — за место в книге.
   taxPct: 0.05,
   setupFeePct: 0.015,
@@ -79,7 +79,7 @@ function normalizeMarketRules(input = {}) {
       ? listingLifetimeMs
       : durationChoicesMs[durationChoicesMs.length - 1],
     maxOrdersPerTrader: Math.max(1, Math.floor(Number(src.maxOrdersPerTrader || src.maxListingsPerSeller || DEFAULT_RULES.maxOrdersPerTrader))),
-    maxOrdersPerFaction: Math.max(1, Math.floor(Number(src.maxOrdersPerFaction || src.maxListingsPerFaction || DEFAULT_RULES.maxOrdersPerFaction))),
+    maxOrders: Math.max(1, Math.floor(Number(src.maxOrders || src.maxOrdersPerFaction || src.maxListingsPerFaction || DEFAULT_RULES.maxOrders))),
     // feePct — имя прежнего сбора; авторские данные с ним продолжают работать.
     taxPct: clamp(Number(src.taxPct ?? src.feePct ?? DEFAULT_RULES.taxPct), 0, 0.5),
     setupFeePct: clamp(Number(src.setupFeePct ?? DEFAULT_RULES.setupFeePct), 0, 0.2),
@@ -97,7 +97,6 @@ function sanitizeRecords(records = []) {
 
 function sanitizeOrder(input = {}) {
   const id = cleanId(input?.id, 64);
-  const factionId = cleanId(input?.factionId, 32);
   const itemId = cleanId(input?.itemId, 64);
   const ownerCharacterId = cleanId(input?.ownerCharacterId || input?.sellerCharacterId, 96);
   const side = input?.side === 'buy' ? 'buy' : 'sell';
@@ -105,12 +104,11 @@ function sanitizeOrder(input = {}) {
   // Лоты прежнего аукциона знали цену выкупа или стартовую — обе становятся
   // ценой ордера на продажу.
   const price = Math.max(0, Math.floor(Number(input?.price ?? input?.buyoutPrice ?? input?.startPrice ?? 0)));
-  if (!id || !factionId || !itemId || !ownerCharacterId || qty <= 0 || price <= 0) return null;
+  if (!id || !itemId || !ownerCharacterId || qty <= 0 || price <= 0) return null;
   const createdAt = Math.max(0, Math.floor(Number(input?.createdAt || 0)));
   const expiresAt = Math.max(0, Math.floor(Number(input?.expiresAt || 0)));
   return {
     id,
-    factionId,
     side,
     itemId,
     category: cleanCategory(input?.category),
@@ -145,74 +143,104 @@ function sanitizeShelf(input = {}) {
   };
 }
 
+/**
+ * Книга одна на всю пустошь: ордер, выставленный у аукционера одной столицы,
+ * виден и исполняется у любого другого. Прежние хранилища делили её по
+ * фракциям — при переезде все ордера, полки и счётчик сливаются в общую книгу,
+ * поэтому ничьи марки и товар не теряются.
+ */
 function normalizeMarketStore(input = {}) {
   const src = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  const factions = {};
-  for (const [factionId, raw] of Object.entries(src.factions && typeof src.factions === 'object' ? src.factions : {})) {
-    const id = cleanId(factionId, 32);
-    if (!id || !raw || typeof raw !== 'object') continue;
-    const orders = {};
+  const orders = {};
+  const shelves = {};
+  let counter = Math.max(0, Math.floor(Number(src.counter || 0)));
+
+  const addOrder = (row, orderId, side = null) => {
+    const clean = sanitizeOrder({ ...row, id: row?.id || orderId, ...(side ? { side } : {}) });
+    if (clean) orders[clean.id] = clean;
+    return clean;
+  };
+  const addShelf = (characterId, shelf) => {
+    const key = cleanId(characterId, 96);
+    if (!key) return;
+    const clean = sanitizeShelf(shelf);
+    if (!shelves[key]) { shelves[key] = clean; return; }
+    // Один и тот же персонаж мог держать полку в нескольких фракциях.
+    shelves[key].silver += clean.silver;
+    shelves[key].sales += clean.sales;
+    shelves[key].items = shelves[key].items.concat(clean.items);
+  };
+
+  for (const [orderId, row] of Object.entries(src.orders && typeof src.orders === 'object' ? src.orders : {})) {
+    addOrder(row, orderId);
+  }
+  for (const [characterId, shelf] of Object.entries(src.shelves && typeof src.shelves === 'object' ? src.shelves : {})) {
+    addShelf(characterId, shelf);
+  }
+
+  // Переезд с фракционных книг: ордера и полки сливаются, лоты самого первого
+  // аукциона становятся ордерами на продажу, а марки непобедившей ставки
+  // возвращаются претенденту на полку.
+  for (const raw of Object.values(src.factions && typeof src.factions === 'object' ? src.factions : {})) {
+    if (!raw || typeof raw !== 'object') continue;
+    counter = Math.max(counter, Math.floor(Number(raw.counter || 0)));
     for (const [orderId, row] of Object.entries(raw.orders && typeof raw.orders === 'object' ? raw.orders : {})) {
-      const clean = sanitizeOrder({ ...row, id: row?.id || orderId, factionId: id });
-      if (clean) orders[clean.id] = clean;
+      addOrder(row, orderId);
     }
-    const shelves = {};
     for (const [characterId, shelf] of Object.entries(raw.shelves && typeof raw.shelves === 'object' ? raw.shelves : {})) {
-      const key = cleanId(characterId, 96);
-      if (key) shelves[key] = sanitizeShelf(shelf);
+      addShelf(characterId, shelf);
     }
-    // Лоты прежнего аукциона переезжают в книгу ордерами на продажу, а марки
-    // непобедившей ставки возвращаются претенденту на полку.
     for (const [listingId, row] of Object.entries(raw.listings && typeof raw.listings === 'object' ? raw.listings : {})) {
-      const clean = sanitizeOrder({ ...row, id: row?.id || listingId, factionId: id, side: 'sell' });
-      if (clean) orders[clean.id] = clean;
+      addOrder(row, listingId, 'sell');
       const bidder = cleanId(row?.bidderCharacterId, 96);
       const bid = Math.max(0, Math.floor(Number(row?.bidAmount || 0)));
       if (!bidder || bid <= 0) continue;
       if (!shelves[bidder]) shelves[bidder] = sanitizeShelf({});
       shelves[bidder].silver += bid;
     }
-    factions[id] = { orders, shelves, counter: Math.max(0, Math.floor(Number(raw.counter || 0))) };
   }
-  return { version: STORE_VERSION, factions };
+
+  // Счётчик не должен выдать id уже существующего ордера после слияния.
+  for (const id of Object.keys(orders)) {
+    const tail = Number(String(id).split('_').pop());
+    if (Number.isFinite(tail)) counter = Math.max(counter, tail);
+  }
+  return { version: STORE_VERSION, orders, shelves, counter };
 }
 
-function ensureFaction(store = {}, factionId = '') {
-  if (!store.factions || typeof store.factions !== 'object') store.factions = {};
-  const id = cleanId(factionId, 32);
-  if (!store.factions[id]) store.factions[id] = { orders: {}, shelves: {}, counter: 0 };
-  const faction = store.factions[id];
-  if (!faction.orders || typeof faction.orders !== 'object') faction.orders = {};
-  if (!faction.shelves || typeof faction.shelves !== 'object') faction.shelves = {};
-  return faction;
+function ensureBook(store = {}) {
+  if (!store.orders || typeof store.orders !== 'object') store.orders = {};
+  if (!store.shelves || typeof store.shelves !== 'object') store.shelves = {};
+  if (!Number.isFinite(Number(store.counter))) store.counter = 0;
+  return store;
 }
 
-function ensureShelf(store = {}, factionId = '', characterId = '') {
-  const faction = ensureFaction(store, factionId);
+function ensureShelf(store = {}, characterId = '') {
+  const book = ensureBook(store);
   const key = cleanId(characterId, 96);
-  if (!faction.shelves[key]) faction.shelves[key] = sanitizeShelf({});
-  return faction.shelves[key];
+  if (!book.shelves[key]) book.shelves[key] = sanitizeShelf({});
+  return book.shelves[key];
 }
 
-function activeOrders(store = {}, factionId = '', now = Date.now()) {
-  const faction = store?.factions?.[cleanId(factionId, 32)];
-  if (!faction) return [];
-  return Object.values(faction.orders)
+function activeOrders(store = {}, now = Date.now()) {
+  const orders = store?.orders;
+  if (!orders) return [];
+  return Object.values(orders)
     .filter(row => row.expiresAt > Number(now) && row.qty > 0)
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
 // Встречная сторона книги по предмету: продажи от дешёвых, выкупы от дорогих,
 // при равной цене первым стоит тот, кто встал в книгу раньше.
-function bookSide(store = {}, factionId = '', itemId = '', side = 'sell', now = Date.now()) {
+function bookSide(store = {}, itemId = '', side = 'sell', now = Date.now()) {
   const wanted = cleanId(itemId, 64);
-  const rows = activeOrders(store, factionId, now).filter(row => row.itemId === wanted && row.side === side);
+  const rows = activeOrders(store, now).filter(row => row.itemId === wanted && row.side === side);
   rows.sort((a, b) => (side === 'sell' ? a.price - b.price : b.price - a.price) || a.createdAt - b.createdAt);
   return rows;
 }
 
-function bestPrice(store = {}, factionId = '', itemId = '', side = 'sell', now = Date.now()) {
-  const rows = bookSide(store, factionId, itemId, side, now);
+function bestPrice(store = {}, itemId = '', side = 'sell', now = Date.now()) {
+  const rows = bookSide(store, itemId, side, now);
   return rows.length ? rows[0].price : 0;
 }
 
@@ -224,37 +252,36 @@ function saleTax(value = 0, rules = DEFAULT_RULES) {
   return Math.floor(Math.max(0, Math.floor(Number(value || 0))) * rules.taxPct);
 }
 
-function ordersOf(store = {}, factionId = '', characterId = '', now = Date.now()) {
+function ordersOf(store = {}, characterId = '', now = Date.now()) {
   const owner = cleanId(characterId, 96);
-  return activeOrders(store, factionId, now).filter(row => row.ownerCharacterId === owner);
+  return activeOrders(store, now).filter(row => row.ownerCharacterId === owner);
 }
 
 function validateOrderRequest(store, input = {}, rules = DEFAULT_RULES, now = Date.now()) {
-  const factionId = cleanId(input.factionId, 32);
   const ownerCharacterId = cleanId(input.ownerCharacterId, 96);
   const itemId = cleanId(input.itemId, 64);
   const qty = Math.floor(Number(input.qty || 0));
   const price = Math.floor(Number(input.price || 0));
   const durationMs = Math.floor(Number(input.durationMs || rules.listingLifetimeMs));
-  if (!factionId || !ownerCharacterId) return { ok: false, error: 'Рынок открыт только членам фракции.' };
+  if (!ownerCharacterId) return { ok: false, error: 'Торговец не опознан.' };
   if (!itemId || qty <= 0) return { ok: false, error: 'Выберите предмет и количество.' };
   if (qty > rules.maxQtyPerOrder) return { ok: false, error: `Не больше ${rules.maxQtyPerOrder} в одном ордере.` };
   if (!Number.isFinite(price) || price < rules.minPrice || price > rules.maxPrice) {
     return { ok: false, error: `Цена за штуку от ${rules.minPrice} до ${rules.maxPrice} марок.` };
   }
   if (!rules.durationChoicesMs.includes(durationMs)) return { ok: false, error: 'Такого срока ордера нет.' };
-  if (ordersOf(store, factionId, ownerCharacterId, now).length >= rules.maxOrdersPerTrader) {
+  if (ordersOf(store, ownerCharacterId, now).length >= rules.maxOrdersPerTrader) {
     return { ok: false, error: `У вас уже ${rules.maxOrdersPerTrader} ордеров.` };
   }
-  if (activeOrders(store, factionId, now).length >= rules.maxOrdersPerFaction) {
-    return { ok: false, error: 'Книга ордеров фракции переполнена.' };
+  if (activeOrders(store, now).length >= rules.maxOrders) {
+    return { ok: false, error: 'Книга ордеров переполнена.' };
   }
-  return { ok: true, factionId, ownerCharacterId, itemId, qty, price, durationMs };
+  return { ok: true, ownerCharacterId, itemId, qty, price, durationMs };
 }
 
-function newOrderId(faction = {}, factionId = '', side = 'sell') {
-  faction.counter += 1;
-  return `${side === 'buy' ? 'buy' : 'lot'}_${factionId}_${faction.counter}`;
+function newOrderId(book = {}, side = 'sell') {
+  book.counter = Math.max(0, Math.floor(Number(book.counter || 0))) + 1;
+  return `${side === 'buy' ? 'buy' : 'lot'}_${book.counter}`;
 }
 
 // Ордер на продажу. Предметы уже сняты сервером с продавца; сбор за размещение
@@ -262,41 +289,40 @@ function newOrderId(faction = {}, factionId = '', side = 'sell') {
 function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date.now()) {
   const check = validateOrderRequest(store, input, rules, now);
   if (!check.ok) return check;
-  const { factionId, ownerCharacterId, itemId, qty, price, durationMs } = check;
+  const { ownerCharacterId, itemId, qty, price, durationMs } = check;
   const records = sanitizeRecords(input.records);
   if (records.length && qty !== 1) {
     return { ok: false, error: 'Предмет с собственным состоянием выставляется по одному.' };
   }
-  const faction = ensureFaction(store, factionId);
+  const book = ensureBook(store);
 
   const fills = [];
   let remaining = qty;
   let proceeds = 0;
   let tax = 0;
-  for (const buy of bookSide(store, factionId, itemId, 'buy', now)) {
+  for (const buy of bookSide(store, itemId, 'buy', now)) {
     if (remaining <= 0 || buy.price < price) break;
     if (buy.ownerCharacterId === ownerCharacterId) continue;
     const take = Math.min(remaining, buy.qty);
     const value = take * buy.price;
     const fillTax = saleTax(value, rules);
-    const buyerShelf = ensureShelf(store, factionId, buy.ownerCharacterId);
+    const buyerShelf = ensureShelf(store, buy.ownerCharacterId);
     buyerShelf.items.push({ itemId, qty: take, records, reason: 'bought', at: Number(now) });
     buy.qty -= take;
     buy.filled += take;
     buy.escrow = Math.max(0, buy.escrow - value);
-    if (buy.qty <= 0) delete faction.orders[buy.id];
+    if (buy.qty <= 0) delete book.orders[buy.id];
     remaining -= take;
     proceeds += value - fillTax;
     tax += fillTax;
     fills.push({ orderId: buy.id, buyerCharacterId: buy.ownerCharacterId, qty: take, price: buy.price, tax: fillTax });
   }
-  if (fills.length) ensureShelf(store, factionId, ownerCharacterId).sales += fills.length;
+  if (fills.length) ensureShelf(store, ownerCharacterId).sales += fills.length;
 
   let order = null;
   if (remaining > 0) {
     order = sanitizeOrder({
-      id: newOrderId(faction, factionId, 'sell'),
-      factionId,
+      id: newOrderId(book, 'sell'),
       side: 'sell',
       itemId,
       category: input.category,
@@ -310,7 +336,7 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
       expiresAt: Number(now) + durationMs
     });
     if (!order) return { ok: false, error: 'Ордер не удалось создать.' };
-    faction.orders[order.id] = order;
+    book.orders[order.id] = order;
   }
   return {
     ok: true,
@@ -329,26 +355,26 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
 function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date.now()) {
   const check = validateOrderRequest(store, input, rules, now);
   if (!check.ok) return check;
-  const { factionId, ownerCharacterId, itemId, qty, price, durationMs } = check;
-  const faction = ensureFaction(store, factionId);
+  const { ownerCharacterId, itemId, qty, price, durationMs } = check;
+  const book = ensureBook(store);
 
   const fills = [];
   const bought = [];
   let remaining = qty;
   let spent = 0;
-  for (const sell of bookSide(store, factionId, itemId, 'sell', now)) {
+  for (const sell of bookSide(store, itemId, 'sell', now)) {
     if (remaining <= 0 || sell.price > price) break;
     if (sell.ownerCharacterId === ownerCharacterId) continue;
     const take = Math.min(remaining, sell.qty);
     const value = take * sell.price;
     const fillTax = saleTax(value, rules);
-    const sellerShelf = ensureShelf(store, factionId, sell.ownerCharacterId);
+    const sellerShelf = ensureShelf(store, sell.ownerCharacterId);
     sellerShelf.silver += value - fillTax;
     sellerShelf.sales += 1;
     sell.qty -= take;
     sell.filled += take;
     const records = sell.qty <= 0 ? sell.records : [];
-    if (sell.qty <= 0) delete faction.orders[sell.id];
+    if (sell.qty <= 0) delete book.orders[sell.id];
     remaining -= take;
     spent += value;
     bought.push({ itemId, qty: take, records, price: sell.price });
@@ -360,8 +386,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
   if (remaining > 0) {
     escrow = remaining * price;
     order = sanitizeOrder({
-      id: newOrderId(faction, factionId, 'buy'),
-      factionId,
+      id: newOrderId(book, 'buy'),
       side: 'buy',
       itemId,
       category: input.category,
@@ -375,7 +400,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
       expiresAt: Number(now) + durationMs
     });
     if (!order) return { ok: false, error: 'Ордер не удалось создать.' };
-    faction.orders[order.id] = order;
+    book.orders[order.id] = order;
   }
   return {
     ok: true,
@@ -392,9 +417,8 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
 
 // «Купить сейчас»: снять товар с конкретного ордера на продажу. Покупатель
 // платит цену ордера, продавцу на полку ложится цена минус налог.
-function takeSellOrder(store = {}, factionId = '', orderId = '', buyerCharacterId = '', qty = 0, rules = DEFAULT_RULES, now = Date.now()) {
-  const faction = store?.factions?.[cleanId(factionId, 32)];
-  const order = faction?.orders?.[cleanId(orderId, 64)];
+function takeSellOrder(store = {}, orderId = '', buyerCharacterId = '', qty = 0, rules = DEFAULT_RULES, now = Date.now()) {
+  const order = store?.orders?.[cleanId(orderId, 64)];
   const buyer = cleanId(buyerCharacterId, 96);
   if (!order || order.side !== 'sell') return { ok: false, error: 'Ордер уже снят.' };
   if (order.expiresAt <= Number(now)) return { ok: false, error: 'Срок ордера истёк.' };
@@ -402,21 +426,20 @@ function takeSellOrder(store = {}, factionId = '', orderId = '', buyerCharacterI
   const take = Math.max(1, Math.min(Math.floor(Number(qty || 0)) || order.qty, order.qty));
   const cost = take * order.price;
   const tax = saleTax(cost, rules);
-  const sellerShelf = ensureShelf(store, factionId, order.ownerCharacterId);
+  const sellerShelf = ensureShelf(store, order.ownerCharacterId);
   sellerShelf.silver += cost - tax;
   sellerShelf.sales += 1;
   order.qty -= take;
   order.filled += take;
   const records = order.qty <= 0 ? order.records : [];
-  if (order.qty <= 0) delete faction.orders[order.id];
+  if (order.qty <= 0) delete store.orders[order.id];
   return { ok: true, order, qty: take, price: order.price, cost, tax, payout: cost - tax, records };
 }
 
 // «Продать сейчас»: отдать товар в конкретный ордер на выкуп. Продавец получает
 // цену ордера минус налог, товар уходит покупателю на полку.
-function takeBuyOrder(store = {}, factionId = '', orderId = '', sellerCharacterId = '', qty = 0, records = [], rules = DEFAULT_RULES, now = Date.now()) {
-  const faction = store?.factions?.[cleanId(factionId, 32)];
-  const order = faction?.orders?.[cleanId(orderId, 64)];
+function takeBuyOrder(store = {}, orderId = '', sellerCharacterId = '', qty = 0, records = [], rules = DEFAULT_RULES, now = Date.now()) {
+  const order = store?.orders?.[cleanId(orderId, 64)];
   const seller = cleanId(sellerCharacterId, 96);
   if (!order || order.side !== 'buy') return { ok: false, error: 'Ордер уже снят.' };
   if (order.expiresAt <= Number(now)) return { ok: false, error: 'Срок ордера истёк.' };
@@ -424,25 +447,24 @@ function takeBuyOrder(store = {}, factionId = '', orderId = '', sellerCharacterI
   const take = Math.max(1, Math.min(Math.floor(Number(qty || 0)) || order.qty, order.qty));
   const value = take * order.price;
   const tax = saleTax(value, rules);
-  const buyerShelf = ensureShelf(store, factionId, order.ownerCharacterId);
+  const buyerShelf = ensureShelf(store, order.ownerCharacterId);
   buyerShelf.items.push({ itemId: order.itemId, qty: take, records: sanitizeRecords(records), reason: 'bought', at: Number(now) });
   order.qty -= take;
   order.filled += take;
   order.escrow = Math.max(0, order.escrow - value);
-  if (order.qty <= 0) delete faction.orders[order.id];
-  ensureShelf(store, factionId, seller).sales += 1;
+  if (order.qty <= 0) delete store.orders[order.id];
+  ensureShelf(store, seller).sales += 1;
   return { ok: true, order, qty: take, price: order.price, value, tax, proceeds: value - tax };
 }
 
 // Отмена: ордер на продажу возвращает товар, ордер на выкуп — удержанные марки.
 // Сбор за размещение не возвращается.
-function cancelOrder(store = {}, factionId = '', orderId = '', ownerCharacterId = '', now = Date.now()) {
-  const faction = store?.factions?.[cleanId(factionId, 32)];
-  const order = faction?.orders?.[cleanId(orderId, 64)];
+function cancelOrder(store = {}, orderId = '', ownerCharacterId = '', now = Date.now()) {
+  const order = store?.orders?.[cleanId(orderId, 64)];
   if (!order) return { ok: false, error: 'Ордер уже снят.' };
   if (order.ownerCharacterId !== cleanId(ownerCharacterId, 96)) return { ok: false, error: 'Это не ваш ордер.' };
-  delete faction.orders[order.id];
-  const shelf = ensureShelf(store, factionId, order.ownerCharacterId);
+  delete store.orders[order.id];
+  const shelf = ensureShelf(store, order.ownerCharacterId);
   if (order.side === 'buy') shelf.silver += order.escrow;
   else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'cancelled', at: Number(now) });
   return { ok: true, order };
@@ -452,23 +474,21 @@ function cancelOrder(store = {}, factionId = '', orderId = '', ownerCharacterId 
 // на полку. Вызывается по тику.
 function expireOrders(store = {}, rules = DEFAULT_RULES, now = Date.now()) {
   const resolved = [];
-  for (const [factionId, faction] of Object.entries(store?.factions || {})) {
-    for (const order of Object.values(faction.orders || {})) {
-      if (order.expiresAt > Number(now)) continue;
-      delete faction.orders[order.id];
-      const shelf = ensureShelf(store, factionId, order.ownerCharacterId);
-      if (order.side === 'buy') shelf.silver += order.escrow;
-      else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'expired', at: Number(now) });
-      resolved.push({ ...order, resolution: 'expired' });
-    }
+  for (const order of Object.values(store?.orders || {})) {
+    if (order.expiresAt > Number(now)) continue;
+    delete store.orders[order.id];
+    const shelf = ensureShelf(store, order.ownerCharacterId);
+    if (order.side === 'buy') shelf.silver += order.escrow;
+    else shelf.items.push({ itemId: order.itemId, qty: order.qty, records: order.records, reason: 'expired', at: Number(now) });
+    resolved.push({ ...order, resolution: 'expired' });
   }
   return resolved;
 }
 
 // Положить на полку то, что не поместилось в рюкзак покупателя прямо сейчас:
 // купленное по ордеру не может пропасть из-за веса.
-function creditShelfItems(store = {}, factionId = '', characterId = '', rows = [], now = Date.now()) {
-  const shelf = ensureShelf(store, factionId, characterId);
+function creditShelfItems(store = {}, characterId = '', rows = [], now = Date.now()) {
+  const shelf = ensureShelf(store, characterId);
   for (const row of Array.isArray(rows) ? rows : []) {
     const itemId = cleanId(row?.itemId, 64);
     const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
@@ -486,13 +506,13 @@ function creditShelfItems(store = {}, factionId = '', characterId = '', rows = [
 
 // Забрать полку целиком: сервер применяет rows/silver к инвентарю и вызывает
 // commitShelfClaim только после успешного зачисления.
-function shelfFor(store = {}, factionId = '', characterId = '') {
-  const shelf = store?.factions?.[cleanId(factionId, 32)]?.shelves?.[cleanId(characterId, 96)];
+function shelfFor(store = {}, characterId = '') {
+  const shelf = store?.shelves?.[cleanId(characterId, 96)];
   return shelf ? sanitizeShelf(shelf) : sanitizeShelf({});
 }
 
-function commitShelfClaim(store = {}, factionId = '', characterId = '', claimed = {}) {
-  const shelf = ensureShelf(store, factionId, characterId);
+function commitShelfClaim(store = {}, characterId = '', claimed = {}) {
+  const shelf = ensureShelf(store, characterId);
   shelf.silver = Math.max(0, shelf.silver - Math.max(0, Math.floor(Number(claimed.silver || 0))));
   const claimedItems = Array.isArray(claimed.items) ? claimed.items : [];
   if (claimedItems.length) {
@@ -532,7 +552,7 @@ function publicOrder(order = {}, now = Date.now(), viewerCharacterId = '', proje
     filled: order.filled,
     price: order.price,
     total: order.qty * order.price,
-    ownerName: order.ownerName || 'Член фракции',
+    ownerName: order.ownerName || 'Торговец',
     mine: order.ownerCharacterId === cleanId(viewerCharacterId, 96),
     remainingSeconds: Math.max(0, Math.round((Number(order.expiresAt) - Number(now)) / 1000)),
     durationHours: Math.max(1, Math.round(Number(order.durationMs || 0) / HOUR_MS)),
@@ -565,16 +585,17 @@ function marketItems(orders = []) {
   return [...rows.values()].sort((a, b) => b.sellQty + b.buyQty - (a.sellQty + a.buyQty));
 }
 
-function publicMarket(store = {}, factionId = '', viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now(), options = {}) {
-  const shelf = shelfFor(store, factionId, viewerCharacterId);
+function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES, now = Date.now(), options = {}) {
+  const shelf = shelfFor(store, viewerCharacterId);
   const projectArtifact = typeof options?.projectArtifact === 'function' ? options.projectArtifact : null;
-  const orders = activeOrders(store, factionId, now)
+  const orders = activeOrders(store, now)
     .map(row => publicOrder(row, now, viewerCharacterId, projectArtifact));
   const items = marketItems(orders);
   const counts = new Map();
   for (const row of items) counts.set(row.category, (counts.get(row.category) || 0) + 1);
   return {
-    factionId: cleanId(factionId, 32),
+    // Книга одна на всю пустошь: где бы ни стоял аукционер, ордера те же.
+    marketId: 'wasteland',
     taxPct: rules.taxPct,
     setupFeePct: rules.setupFeePct,
     listingLifetimeHours: Math.round(rules.listingLifetimeMs / HOUR_MS),

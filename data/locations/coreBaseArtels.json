@@ -37,18 +37,18 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromCore": {
     "tx": 19,
@@ -103,14 +103,14 @@
       "model": "wastelandSettler",
       "name": "Регистратор фракции",
       "position": {
-        "x": -12.0,
-        "y": 0.0,
-        "z": 1.0
+        "x": -12,
+        "y": 0,
+        "z": 1
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -142,14 +142,14 @@
       "model": "wastelandSettler",
       "name": "Аукционист",
       "position": {
-        "x": -2.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": -2,
+        "y": 0,
+        "z": 4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -181,14 +181,14 @@
       "model": "wastelandSettler",
       "name": "Медик базы",
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": 6,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -220,14 +220,14 @@
       "model": "traderNpc",
       "name": "Снабженец базы",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": 8,
+        "y": 0,
+        "z": 4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -263,14 +263,14 @@
       "model": "wastelandSettler",
       "name": "Исследователь аномалий",
       "position": {
-        "x": 18.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": 18,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -302,14 +302,14 @@
       "model": "caravanGuard",
       "name": "Артельный дозорный",
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -27.0
+        "x": -6,
+        "y": 0,
+        "z": -27
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.14,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -341,14 +341,14 @@
       "model": "caravanGuard",
       "name": "Артельный дозорный",
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": -27.0
+        "x": 6,
+        "y": 0,
+        "z": -27
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.14,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -380,14 +380,14 @@
       "model": "caravanGuard",
       "name": "Артельный дозорный",
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": -6,
+        "y": 0,
+        "z": 22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -419,14 +419,14 @@
       "model": "caravanGuard",
       "name": "Артельный дозорный",
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": 6,
+        "y": 0,
+        "z": 22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -458,19 +458,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -26.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -26,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -494,19 +494,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -24.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -24,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -530,19 +530,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -22.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -22,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -566,19 +566,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -20.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -20,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -602,19 +602,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -18.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -18,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -638,19 +638,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -16.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -16,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -674,19 +674,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -14,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -710,19 +710,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -12.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -12,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -746,19 +746,19 @@
       "model": "cotBed",
       "name": "Койка казармы",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -22.0
+        "x": -10,
+        "y": 0,
+        "z": -22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -782,19 +782,19 @@
       "model": "wastelandShack",
       "name": "Штаб: Артельный узел",
       "position": {
-        "x": -12.0,
-        "y": 0.0,
-        "z": 6.0
+        "x": -12,
+        "y": 0,
+        "z": 6
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 2.0,
-        "y": 2.0,
-        "z": 2.0
+        "x": 2,
+        "y": 2,
+        "z": 2
       },
       "collision": "none",
       "vision": {
@@ -818,19 +818,19 @@
       "model": "field_clinic",
       "name": "coreBaseArtels-keys-clinic EDITABLE",
       "position": {
-        "x": 13.0,
-        "y": 0.0,
-        "z": -11.0
+        "x": 13,
+        "y": 0,
+        "z": -11
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -854,19 +854,19 @@
       "model": "community_yard",
       "name": "coreBaseArtels-keys-life EDITABLE",
       "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": 10,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -877,8 +877,8 @@
         "lived-in"
       ],
       "footprint": {
-        "x": 10.0,
-        "z": 9.0
+        "x": 10,
+        "z": 9
       },
       "vision": {
         "blocks": false
@@ -891,19 +891,19 @@
       "model": "market_canopy",
       "name": "coreBaseArtels-keys-market EDITABLE",
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": -6,
+        "y": 0,
+        "z": 4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -927,19 +927,19 @@
       "model": "rail_bridge",
       "name": "coreBaseArtels-keys-rail-bridge EDITABLE",
       "position": {
-        "x": 22.0,
-        "y": 0.0,
-        "z": 18.0
+        "x": 22,
+        "y": 0,
+        "z": 18
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -949,8 +949,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -963,19 +963,19 @@
       "model": "water_tower",
       "name": "coreBaseArtels-keys-water-tower EDITABLE",
       "position": {
-        "x": -23.0,
-        "y": 0.0,
-        "z": 17.0
+        "x": -23,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -985,8 +985,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -999,19 +999,19 @@
       "model": "modular_workshop",
       "name": "coreBaseArtels-keys-workshops EDITABLE",
       "position": {
-        "x": -18.0,
-        "y": 0.0,
-        "z": -12.0
+        "x": -18,
+        "y": 0,
+        "z": -12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1021,8 +1021,8 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1035,19 +1035,19 @@
       "model": "metro-gate",
       "name": "Landmark metro-gate EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1055,8 +1055,8 @@
         "metro-gate"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1069,14 +1069,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 22.0,
+        "x": 22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1090,8 +1090,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1109,14 +1109,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.199,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1125,8 +1125,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1144,14 +1144,14 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.942,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1160,8 +1160,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1179,14 +1179,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1195,8 +1195,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1214,14 +1214,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.969,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1230,8 +1230,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1249,9 +1249,9 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1265,8 +1265,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1279,19 +1279,19 @@
       "model": "industrial_module",
       "name": "Module 06",
       "position": {
-        "x": -22.0,
+        "x": -22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.712,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1300,8 +1300,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1319,14 +1319,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1335,8 +1335,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1354,14 +1354,14 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.456,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1370,8 +1370,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1389,9 +1389,9 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1405,8 +1405,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1419,19 +1419,19 @@
       "model": "clean_soil",
       "name": "coreBaseArtels-region-field-0 EDITABLE",
       "position": {
-        "x": -29.0,
+        "x": -29,
         "y": 0.02,
-        "z": -29.0
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1454,19 +1454,19 @@
       "model": "clean_soil",
       "name": "coreBaseArtels-region-field-1 EDITABLE",
       "position": {
-        "x": -11.0,
+        "x": -11,
         "y": 0.02,
-        "z": -29.0
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1489,19 +1489,19 @@
       "model": "clean_soil",
       "name": "coreBaseArtels-region-field-2 EDITABLE",
       "position": {
-        "x": 7.0,
+        "x": 7,
         "y": 0.02,
-        "z": -29.0
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1524,19 +1524,19 @@
       "model": "clean_soil",
       "name": "coreBaseArtels-region-field-3 EDITABLE",
       "position": {
-        "x": 25.0,
+        "x": 25,
         "y": 0.02,
-        "z": -29.0
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1559,19 +1559,19 @@
       "model": "irrigation",
       "name": "coreBaseArtels-region-irrigation EDITABLE",
       "position": {
-        "x": -31.0,
+        "x": -31,
         "y": -0.03,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1594,19 +1594,19 @@
       "model": "shelterbelt_tree",
       "name": "coreBaseArtels-region-shelterbelt-0 EDITABLE",
       "position": {
-        "x": -26.0,
-        "y": 0.0,
-        "z": 30.0
+        "x": -26,
+        "y": 0,
+        "z": 30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1629,19 +1629,19 @@
       "model": "shelterbelt_tree",
       "name": "coreBaseArtels-region-shelterbelt-1 EDITABLE",
       "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": 30.0
+        "x": -14,
+        "y": 0,
+        "z": 30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1664,19 +1664,19 @@
       "model": "shelterbelt_tree",
       "name": "coreBaseArtels-region-shelterbelt-2 EDITABLE",
       "position": {
-        "x": -2.0,
-        "y": 0.0,
-        "z": 30.0
+        "x": -2,
+        "y": 0,
+        "z": 30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1699,19 +1699,19 @@
       "model": "shelterbelt_tree",
       "name": "coreBaseArtels-region-shelterbelt-3 EDITABLE",
       "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": 30.0
+        "x": 10,
+        "y": 0,
+        "z": 30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1734,19 +1734,19 @@
       "model": "shelterbelt_tree",
       "name": "coreBaseArtels-region-shelterbelt-4 EDITABLE",
       "position": {
-        "x": 22.0,
-        "y": 0.0,
-        "z": 30.0
+        "x": 22,
+        "y": 0,
+        "z": 30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1769,19 +1769,19 @@
       "model": "welded_yard",
       "name": "coreBaseArtels-settlement-ring EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1790,8 +1790,8 @@
         "editable-perimeter"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1804,19 +1804,19 @@
       "model": "utilityPole",
       "name": "Входной пилон",
       "position": {
-        "x": -4.0,
-        "y": 0.0,
-        "z": -30.0
+        "x": -4,
+        "y": 0,
+        "z": -30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -1838,19 +1838,19 @@
       "model": "utilityPole",
       "name": "Входной пилон",
       "position": {
-        "x": 4.0,
-        "y": 0.0,
-        "z": -30.0
+        "x": 4,
+        "y": 0,
+        "z": -30
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -1872,14 +1872,14 @@
       "model": "workshopBench",
       "name": "Терминал стабилизации артефактов",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": -8.0
+        "x": 14,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.2,
@@ -1915,14 +1915,14 @@
       "model": "cargoStack",
       "name": "Вагон метро — в Сердцевину",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 26.0
+        "x": 0,
+        "y": 0,
+        "z": 26
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 2.6,
@@ -1957,19 +1957,19 @@
       "model": "concreteWall",
       "name": "Зал платформы метро",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 18.0
+        "x": 0,
+        "y": 0,
+        "z": 18
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 5.0,
+        "x": 5,
         "y": 1.4,
-        "z": 1.0
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -1992,19 +1992,19 @@
       "model": "concreteWall",
       "name": "Восточный периметр",
       "position": {
-        "x": 34.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 34,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 8.0
+        "x": 1,
+        "y": 1,
+        "z": 8
       },
       "collision": "none",
       "vision": {
@@ -2027,19 +2027,19 @@
       "model": "concreteWall",
       "name": "Северный периметр",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 34.0
+        "x": 0,
+        "y": 0,
+        "z": 34
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 8.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 8,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -2062,19 +2062,19 @@
       "model": "concreteWall",
       "name": "Южный периметр",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": -34.0
+        "x": 0,
+        "y": 0,
+        "z": -34
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 8.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 8,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -2097,19 +2097,19 @@
       "model": "concreteWall",
       "name": "Западный периметр",
       "position": {
-        "x": -34.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": -34,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 8.0
+        "x": 1,
+        "y": 1,
+        "z": 8
       },
       "collision": "none",
       "vision": {
@@ -2132,14 +2132,14 @@
       "model": "storageLeanTo",
       "name": "Личное хранилище",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": 14,
+        "y": 0,
+        "z": 4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.4,
@@ -2176,14 +2176,14 @@
       "model": "watchPost",
       "name": "Пост охраны Восток",
       "position": {
-        "x": 26.0,
-        "y": 0.0,
-        "z": -26.0
+        "x": 26,
+        "y": 0,
+        "z": -26
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.1,
@@ -2210,14 +2210,14 @@
       "model": "watchPost",
       "name": "Пост охраны Запад",
       "position": {
-        "x": -26.0,
-        "y": 0.0,
-        "z": -26.0
+        "x": -26,
+        "y": 0,
+        "z": -26
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.1,
@@ -2235,6 +2235,45 @@
       "footprint": {
         "x": 1.188,
         "z": 1.188
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair",
+        "territoryFactionId": "free_artels"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -2256,7 +2295,7 @@
   "macroRegion": "middle_vein",
   "kromkaVisualProfile": "territory-base-free_artels-v1",
   "ambientProfile": "guarded-metro-yard",
-  "anomalyDensity": 0.0,
+  "anomalyDensity": 0,
   "unityScene": "Assets/Scenes/Kromka/Locations/coreBaseArtels.unity",
   "unitySpawns": [
     {
@@ -2265,35 +2304,35 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -2.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": -2,
+        "y": 0,
+        "z": 4
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "core-base-free_artels-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "coreBaseArtels-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "guard_gate_a",
@@ -2301,9 +2340,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -27.0
+        "x": -6,
+        "y": 0,
+        "z": -27
       },
       "rotationY": 3.14
     },
@@ -2313,9 +2352,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": -27.0
+        "x": 6,
+        "y": 0,
+        "z": -27
       },
       "rotationY": 3.14
     },
@@ -2325,11 +2364,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": -6,
+        "y": 0,
+        "z": 22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "guard_metro_b",
@@ -2337,11 +2376,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": 6,
+        "y": 0,
+        "z": 22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "medic",
@@ -2349,11 +2388,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": 6,
+        "y": 0,
+        "z": -14
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "registrar",
@@ -2361,11 +2400,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -12.0,
-        "y": 0.0,
-        "z": 1.0
+        "x": -12,
+        "y": 0,
+        "z": 1
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "researcher",
@@ -2373,11 +2412,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 18.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": 18,
+        "y": 0,
+        "z": -10
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "trader",
@@ -2385,43 +2424,43 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": 8,
+        "y": 0,
+        "z": 4
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ],
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   }
 }

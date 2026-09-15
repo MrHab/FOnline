@@ -26,26 +26,26 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "worldZones": [
     {
@@ -173,14 +173,14 @@
       "name": "Грач-Жестянщик",
       "url": "/assets/models/wasteland/trader_npc.glb",
       "position": {
-        "x": -5.0,
-        "y": 0.0,
-        "z": 1.0
+        "x": -5,
+        "y": 0,
+        "z": 1
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -236,20 +236,21 @@
     {
       "id": "capital_station_scrap_union_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Патронный станок",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -293,20 +294,21 @@
     {
       "id": "capital_station_scrap_union_chem_station",
       "model": "craftStationChem",
-      "name": "Химический стол",      "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Химический стол",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -350,20 +352,21 @@
     {
       "id": "capital_station_scrap_union_energy_bench",
       "model": "craftStationEnergy",
-      "name": "Энергетический стенд",      "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Энергетический стенд",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -407,20 +410,21 @@
     {
       "id": "capital_station_scrap_union_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Ремонтный верстак",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -464,20 +468,21 @@
     {
       "id": "capital_station_scrap_union_tool_bench",
       "model": "craftStationTools",
-      "name": "Инструментальный верстак",      "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Инструментальный верстак",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -521,20 +526,21 @@
     {
       "id": "capital_station_scrap_union_weapon_bench",
       "model": "craftStationWeapon",
-      "name": "Оружейный верстак",      "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Оружейный верстак",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -580,19 +586,19 @@
       "model": "storageChest",
       "name": "Хранилище Вольных артелей",
       "position": {
-        "x": -5.0,
-        "y": 0.0,
-        "z": 11.0
+        "x": -5,
+        "y": 0,
+        "z": 11
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -622,20 +628,21 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
-        "x": 11.0,
-        "y": 0.0,
-        "z": -14.0
+      "name": "Место отдыха",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.35,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -666,19 +673,19 @@
       "model": "modular_workshop",
       "name": "scrapTown-artel-shops EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": -12.0
+        "x": 0,
+        "y": 0,
+        "z": -12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -688,8 +695,8 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -702,19 +709,19 @@
       "model": "market_canopy",
       "name": "scrapTown-artel-vote-yard EDITABLE",
       "position": {
-        "x": 17.0,
-        "y": 0.0,
-        "z": -12.0
+        "x": 17,
+        "y": 0,
+        "z": -12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -738,19 +745,19 @@
       "model": "blast_furnace",
       "name": "scrapTown-blast-furnace EDITABLE",
       "position": {
-        "x": -18.0,
-        "y": 0.0,
-        "z": 13.0
+        "x": -18,
+        "y": 0,
+        "z": 13
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -760,8 +767,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -775,13 +782,13 @@
       "name": "scrapTown-dressing-functional-01",
       "position": {
         "x": 12.687,
-        "y": 0.0,
+        "y": 0,
         "z": 2.836
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.351,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -810,13 +817,13 @@
       "name": "scrapTown-dressing-functional-02",
       "position": {
         "x": 10.713,
-        "y": 0.0,
+        "y": 0,
         "z": 12.152
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.723,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -845,13 +852,13 @@
       "name": "scrapTown-dressing-functional-03",
       "position": {
         "x": 1.826,
-        "y": 0.0,
+        "y": 0,
         "z": 19.314
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.094,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -880,13 +887,13 @@
       "name": "scrapTown-dressing-functional-04",
       "position": {
         "x": -6.618,
-        "y": 0.0,
+        "y": 0,
         "z": 11.19
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.749,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -915,13 +922,13 @@
       "name": "scrapTown-dressing-functional-05",
       "position": {
         "x": -14.868,
-        "y": 0.0,
+        "y": 0,
         "z": 6.434
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.121,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -950,13 +957,13 @@
       "name": "scrapTown-dressing-functional-06",
       "position": {
         "x": -18.933,
-        "y": 0.0,
+        "y": 0,
         "z": -4.232
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.492,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -985,13 +992,13 @@
       "name": "scrapTown-dressing-functional-07",
       "position": {
         "x": -8.597,
-        "y": 0.0,
+        "y": 0,
         "z": -9.751
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.864,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -1020,13 +1027,13 @@
       "name": "scrapTown-dressing-functional-08",
       "position": {
         "x": -1.525,
-        "y": 0.0,
+        "y": 0,
         "z": -16.128
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.236,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -1055,13 +1062,13 @@
       "name": "scrapTown-dressing-functional-09",
       "position": {
         "x": 9.875,
-        "y": 0.0,
+        "y": 0,
         "z": -16.698
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.608,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -1090,13 +1097,13 @@
       "name": "scrapTown-dressing-functional-10",
       "position": {
         "x": 11.931,
-        "y": 0.0,
+        "y": 0,
         "z": -5.163
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.979,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -1125,13 +1132,13 @@
       "name": "scrapTown-dressing-region-01",
       "position": {
         "x": -9.612,
-        "y": 0.0,
+        "y": 0,
         "z": 21.001
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.113,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1160,13 +1167,13 @@
       "name": "scrapTown-dressing-region-02",
       "position": {
         "x": -9.686,
-        "y": 0.0,
+        "y": 0,
         "z": 21.12
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.168,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1195,13 +1202,13 @@
       "name": "scrapTown-dressing-region-03",
       "position": {
         "x": -9.676,
-        "y": 0.0,
+        "y": 0,
         "z": 21.124
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.168,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1230,13 +1237,13 @@
       "name": "scrapTown-dressing-region-04",
       "position": {
         "x": -10.842,
-        "y": 0.0,
+        "y": 0,
         "z": 20.555
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.243,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1265,13 +1272,13 @@
       "name": "scrapTown-dressing-region-05",
       "position": {
         "x": -10.904,
-        "y": 0.0,
+        "y": 0,
         "z": 20.68
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.242,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1300,13 +1307,13 @@
       "name": "scrapTown-dressing-region-06",
       "position": {
         "x": -10.889,
-        "y": 0.0,
+        "y": 0,
         "z": 20.69
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.294,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1335,13 +1342,13 @@
       "name": "scrapTown-dressing-region-07",
       "position": {
         "x": -10.936,
-        "y": 0.0,
+        "y": 0,
         "z": 20.665
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.295,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1370,13 +1377,13 @@
       "name": "scrapTown-dressing-region-08",
       "position": {
         "x": -12.127,
-        "y": 0.0,
+        "y": 0,
         "z": 20.154
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.351,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1405,13 +1412,13 @@
       "name": "scrapTown-dressing-region-09",
       "position": {
         "x": -12.13,
-        "y": 0.0,
+        "y": 0,
         "z": 20.153
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.35,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.992,
@@ -1440,13 +1447,13 @@
       "name": "scrapTown-dressing-region-10",
       "position": {
         "x": -12.096,
-        "y": 0.0,
+        "y": 0,
         "z": 20.172
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.426,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1475,13 +1482,13 @@
       "name": "scrapTown-dressing-region-11",
       "position": {
         "x": -13.231,
-        "y": 0.0,
+        "y": 0,
         "z": 19.444
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.427,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1510,13 +1517,13 @@
       "name": "scrapTown-dressing-region-12",
       "position": {
         "x": -13.325,
-        "y": 0.0,
+        "y": 0,
         "z": 19.614
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.482,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1545,13 +1552,13 @@
       "name": "scrapTown-dressing-region-13",
       "position": {
         "x": -13.333,
-        "y": 0.0,
+        "y": 0,
         "z": 19.607
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.482,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1580,13 +1587,13 @@
       "name": "scrapTown-dressing-region-14",
       "position": {
         "x": -14.773,
-        "y": 0.0,
+        "y": 0,
         "z": 18.545
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.829,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1615,13 +1622,13 @@
       "name": "scrapTown-dressing-region-15",
       "position": {
         "x": -14.848,
-        "y": 0.0,
+        "y": 0,
         "z": 18.656
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.829,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.998,
@@ -1649,19 +1656,19 @@
       "model": "gantry_crane",
       "name": "scrapTown-gantry-crane EDITABLE",
       "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": 12.0
+        "x": 16,
+        "y": 0,
+        "z": 12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1685,19 +1692,19 @@
       "model": "blast-furnace",
       "name": "Landmark blast-furnace EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1705,8 +1712,8 @@
         "blast-furnace"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1719,14 +1726,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 22.0,
+        "x": 22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1740,8 +1747,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1759,14 +1766,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.199,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1775,8 +1782,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1794,14 +1801,14 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.942,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1810,8 +1817,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1829,14 +1836,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1845,8 +1852,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1864,14 +1871,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.969,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1880,8 +1887,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1899,9 +1906,9 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1915,8 +1922,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1929,19 +1936,19 @@
       "model": "industrial_module",
       "name": "Module 06",
       "position": {
-        "x": -22.0,
+        "x": -22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.712,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1950,8 +1957,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1969,14 +1976,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1985,8 +1992,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2004,14 +2011,14 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.456,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -2020,8 +2027,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2039,9 +2046,9 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -2055,8 +2062,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2069,19 +2076,19 @@
       "model": "railway",
       "name": "scrapTown-region-rail EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.05,
-        "z": -27.0
+        "z": -27
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2090,7 +2097,7 @@
         "transport"
       ],
       "footprint": {
-        "x": 2.0,
+        "x": 2,
         "z": 58.182
       },
       "vision": {
@@ -2104,19 +2111,19 @@
       "model": "terrain_mound",
       "name": "scrapTown-region-slag-0 EDITABLE",
       "position": {
-        "x": -27.0,
-        "y": 0.0,
-        "z": 28.0
+        "x": -27,
+        "y": 0,
+        "z": 28
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -2125,8 +2132,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2139,19 +2146,19 @@
       "model": "terrain_mound",
       "name": "scrapTown-region-slag-1 EDITABLE",
       "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": 24.0
+        "x": -9,
+        "y": 0,
+        "z": 24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -2160,8 +2167,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2174,19 +2181,19 @@
       "model": "terrain_mound",
       "name": "scrapTown-region-slag-2 EDITABLE",
       "position": {
-        "x": 9.0,
-        "y": 0.0,
-        "z": 28.0
+        "x": 9,
+        "y": 0,
+        "z": 28
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -2195,8 +2202,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2209,19 +2216,19 @@
       "model": "terrain_mound",
       "name": "scrapTown-region-slag-3 EDITABLE",
       "position": {
-        "x": 27.0,
-        "y": 0.0,
-        "z": 24.0
+        "x": 27,
+        "y": 0,
+        "z": 24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -2230,8 +2237,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2242,20 +2249,21 @@
     {
       "id": "scrapTown_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -16.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -16
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2285,20 +2293,21 @@
     {
       "id": "scrapTown_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": -16.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": -16
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.142,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2328,20 +2337,21 @@
     {
       "id": "scrapTown_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 12.0,
-        "y": 0.0,
-        "z": -16.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": -16
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2371,20 +2381,21 @@
     {
       "id": "scrapTown_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": -16.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -16
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.142,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2414,20 +2425,21 @@
     {
       "id": "scrapTown_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -14.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2457,20 +2469,21 @@
     {
       "id": "scrapTown_cot_06",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": -14.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.142,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2500,20 +2513,21 @@
     {
       "id": "scrapTown_cot_07",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 12.0,
-        "y": 0.0,
-        "z": -14.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2543,20 +2557,21 @@
     {
       "id": "scrapTown_cot_08",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": -14.0
+      "name": "Койка НПС",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.142,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2582,6 +2597,123 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction",
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик поселения",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic",
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": -18
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "free_artels",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair",
+        "territoryFactionId": "free_artels"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "updatedAt": "2026-07-12T01:43:36.127Z",
@@ -2595,51 +2727,51 @@
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "razdolye-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "scrapTown-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "scrap_gratch",
@@ -2647,11 +2779,11 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -5.0,
-        "y": 0.0,
-        "z": 1.0
+        "x": -5,
+        "y": 0,
+        "z": 1
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

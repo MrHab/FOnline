@@ -76,6 +76,12 @@ const getJson = route => new Promise((resolve, reject) => {
   mercenary.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
   mercenary.globalMap = { onWorldMap: true, playerX: 190, playerY: 156 };
 
+  // Член «Управы» на глобальной карте у самого узла Сердцевины: его маршрут
+  // проверяет, что ворота срабатывают и без точного попадания в узел.
+  const courier = stateFor('harvest');
+  courier.territoryFaction = membership('uprava');
+  courier.globalMap = { onWorldMap: true, playerX: 190, playerY: 162 };
+
   // Член «Управы» внутри установки «Объекта Ноль».
   const raider = stateFor('progression');
   raider.currentLocationId = 'coreLabCenterReactor';
@@ -154,6 +160,23 @@ const getJson = route => new Promise((resolve, reject) => {
   const entered = await request(accounts.untargeted, 'changeLocation',
     { locationId: 'coreBaseContour', entryKey: 'entryFromWorld' });
   assert.equal(entered.locationId, 'coreBaseContour', 'The traveller really lands on the faction base.');
+  // Маршрут к Сердцевине, завершившийся точкой рядом с узлом, тоже открывает
+  // ворота: игрок не должен «доехать и ничего не получить».
+  await h.connectAndJoin(accounts.harvest);
+  await request(accounts.harvest, 'globalTravelStart',
+    { targetLocationId: 'coreZone', worldPoint: { x: 196, y: 156 } });
+  const nearGate = await (async () => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const response = await h.socketAck(accounts.harvest.socket, 'globalTravelArrive',
+        { targetLocationId: 'coreZone', worldPoint: { x: 196, y: 156 } });
+      if (!/ещё нужно дойти/.test(response.error || '')) return response;
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+    throw new Error('the traveller never reached the point near the territory node');
+  })();
+  assert.equal(nearGate.ok, true, 'Arriving near the node still opens the gate: ' + JSON.stringify(nearGate).slice(0, 300));
+  assert.equal(nearGate.targetLocationId, 'coreBaseUprava',
+    'A route aimed at the territory routes to the base even when the arrival degrades to a map point.');
   const switchAtGate = await h.socketAck(accounts.untargeted.socket, 'territoryFactionAction',
     { action: 'join', factionId: 'uprava', requestId: 'gate-contract-2' });
   assert(!switchAtGate.ok && /регистратора/.test(switchAtGate.error || ''),

@@ -47,6 +47,9 @@ namespace RealmOfAshes.World
         [JsonProperty("macroRegion")] public string MacroRegion;
         [JsonProperty("visualProfile")] public string VisualProfile;
         [JsonProperty("worldRevision")] public string WorldRevision;
+        // Скрытая метка: сервер такие узлы клиенту не отдаёт, но карта из кэша
+        // или прежней сборки может их содержать — рисовать их нельзя.
+        [JsonProperty("hidden")] public bool Hidden;
 
         public string EffectiveLocationId
         {

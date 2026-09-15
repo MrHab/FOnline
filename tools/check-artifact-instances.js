@@ -231,9 +231,11 @@ assert.deepEqual(calculateArtifactEffects(duplicate, catalog).artifactRecordIds,
   assert.equal(effects.caps.regenHpPerSecond, catalog.rules.maxRegenHpPerSecond);
   assert.equal(effects.caps.resistancePct, catalog.rules.maxResistancePct);
   assert.equal(effects.caps.secondarySimilarEffectMultiplier, catalog.rules.secondarySimilarEffectMultiplier);
-  const panel = read('unity-client/Assets/Scripts/Game/RoaKromkaShiftAndDetector.cs');
-  for (const token of ['public static string FormatEffects(JObject effects)', 'CapPercent(caps,', 'SecondaryRuleLine(caps)'])
-    assert(panel.includes(token), `The belt panel must show the ceilings: ${token}`);
+  // Итог пояса с потолками виден в подсказке самого пояса в ПУТНИКе:
+  // постоянной панели детектора в клиенте нет.
+  const pipboy = read('unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs');
+  for (const token of ['public static string BeltTotalsLine(JObject effects)', 'caps?["speedPct"]', 'caps?["carryKg"]'])
+    assert(pipboy.includes(token), `The belt tooltip must show the ceilings: ${token}`);
 }
 
 // --- серверные контракты ------------------------------------------------------

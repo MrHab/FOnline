@@ -38,7 +38,13 @@ const server = source('server.js');
 for (const token of ['createKromkaStateStore', 'KROMKA_STATE_STORE.recover()', 'publicKromkaOperationsMetrics', 'worldRevision: \'kromka-1\'']) {
   assert(server.includes(token), `server release contract is missing ${token}`);
 }
-const artifactUi = source('unity-client', 'Assets', 'Scripts', 'Game', 'RoaKromkaShiftAndDetector.cs');
-for (const token of ['stabilizeArtifact', 'artifactLoadoutAction', 'УСТАНОВИТЬ', 'СНЯТЬ С ПОЯСА']) assert(artifactUi.includes(token), `artifact UI is missing ${token}`);
+// Стабилизация и пояс живут в ПУТНИКе: отдельной панели детектора в клиенте
+// нет, её мёртвые поля убраны.
+const artifactNet = source('unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
+for (const token of ['stabilizeArtifact', 'artifactLoadoutAction'])
+  assert(artifactNet.includes(token), `artifact actions are missing ${token}`);
+const artifactUi = source('unity-client', 'Assets', 'Scripts', 'Game', 'RoaPipboyCanvas.cs');
+for (const token of ['Установить на пояс', 'Снять с пояса', 'Стабилизировать ('])
+  assert(artifactUi.includes(token), `artifact UI is missing ${token}`);
 
 console.log('Kromka release check passed: private/player bases, public clan war, save migration, operations and artifact controls.');

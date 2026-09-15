@@ -104,7 +104,9 @@ for (const token of [
   'function serverTerritoryFactionShares(',
   'function publicGlobalMap(',
   'map: publicGlobalMap(GLOBAL_MAP)',
-  "hidden: node?.hidden === true",
+  // Поле пишется только у скрытых узлов: перезапуск сервера не должен
+  // проставлять `hidden: false` каждой точке авторской карты.
+  "...(node?.hidden === true ? { hidden: true } : {}),",
   'if (!stayOnWorldMap && serverIsTerritoryGateLocation(targetLocationId)) {',
   'contractRequired: true,',
   "resolution.entryKey = 'entryFromWorld';",

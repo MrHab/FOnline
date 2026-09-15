@@ -48,6 +48,15 @@ namespace RealmOfAshes.EditorTools
                 && RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 0).Contains("ТАЙНИК ОТКРЫТ"),
                 "Warning and open chest are announced");
             Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "otherRoom", 0) == string.Empty, "Events of other rooms are hidden");
+            // Вскрытие тайника: кнопка показывает долю канала и паузу при чужих.
+            Require(RoaWorldEventsPresentation.ChestButtonLabel(null) == "ВСКРЫТЬ ТАЙНИК",
+                "Without an active channel the button offers to start it");
+            var opening = JObject.Parse(@"{'characterId':'char-a','progressMs':4000,'channelMs':8000,'contested':false}");
+            Require(RoaWorldEventsPresentation.ChestButtonLabel(opening) == "ВСКРЫТИЕ 50%",
+                "The button shows the share of the channel: " + RoaWorldEventsPresentation.ChestButtonLabel(opening));
+            opening["contested"] = true;
+            Require(RoaWorldEventsPresentation.ChestButtonLabel(opening).Contains("ОСПАРИВАЕТСЯ"),
+                "A contested channel is announced on the button");
             publicEvent["rejoinInSeconds"] = 70;
             Require(RoaWorldEventsPresentation.DescribePublicEvent(publicEvent, "randomAshGrove#pubev_1", 10).Contains("через 60 с"), "Death rejoin delay is shown");
 

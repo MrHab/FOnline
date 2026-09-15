@@ -207,6 +207,8 @@ const {
   worldBossHazards
 } = require('./src/server/world-boss');
 const {
+  beginChestOpening,
+  cancelChestOpening,
   claimPublicEventChest,
   normalizePublicEventCatalog,
   normalizePublicEventStore,
@@ -214,6 +216,7 @@ const {
   notePublicEventCleared,
   publicEvent: publicPublicEvent,
   publicEventBossDefeated,
+  tickChestOpening,
   publicEventChestOpen,
   publicEventEntryError,
   publicEventZone,
@@ -1154,7 +1157,9 @@ function normalizeGlobalMapConfig(raw = {}) {
       // Скрытый узел остаётся точкой мира для сервера (выход из локации, сайты
       // симуляции), но не уходит клиентам и не рисуется на карте: так базы
       // фракций перестали быть отдельными метками после ввода контракта.
-      hidden: node?.hidden === true,
+      // Поле пишется только у скрытых узлов, чтобы перезапуск сервера не
+      // засорял авторскую карту `hidden: false` у каждой точки.
+      ...(node?.hidden === true ? { hidden: true } : {}),
       danger: clamp(Number(node?.danger || 0), 0, 10),
       model: String(node?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       modelScale: clamp(Number(node?.modelScale || 1), 0.4, 4),
@@ -19512,6 +19517,44 @@ function serverPublicEventChestContainer(room, event) {
   return room.containers.get(id) || null;
 }
 
+/**
+ * Шаг вскрытия тайника в комнате: прогресс идёт, пока держащий канал стоит у
+ * сундука и рядом нет чужих. Свои по группе прогресс не останавливают; смерть
+ * и уход сбрасывают его.
+ */
+function serverAdvanceChestOpening(room, event, now = Date.now()) {
+  const rules = KROMKA_PUBLIC_EVENT_CATALOG.rules;
+  const opening = event?.chest?.opening;
+  const container = serverPublicEventChestContainer(room, event);
+  if (!opening?.characterId || !container) {
+    return cancelChestOpening(event, opening?.characterId || '', 'noChest');
+  }
+  const opener = [...livePlayersInRoom(room)].find(p => String(p?.characterId || '') === opening.characterId);
+  const present = !!opener && !opener.dead && Number(opener.hp || 0) > 0
+    && Math.hypot(Number(opener.x || 0) - Number(container.x || 0), Number(opener.z || 0) - Number(container.z || 0))
+      <= Number(rules.chestChannelRangeM || 2.5);
+  const contested = present && [...livePlayersInRoom(room)].some(other => {
+    if (!other || other === opener || other.dead || Number(other.hp || 0) <= 0) return false;
+    if (serverPlayersAllied(opener, other)) return false;
+    return Math.hypot(Number(other.x || 0) - Number(container.x || 0), Number(other.z || 0) - Number(container.z || 0))
+      <= Number(rules.chestContestRangeM || 14);
+  });
+  const step = tickChestOpening(event, { present, contested }, rules, now);
+  if (step.changed || step.cancelled) {
+    serverEmitPublicEventState(event, {
+      chestOpening: {
+        characterId: step.cancelled ? '' : opening.characterId,
+        name: step.cancelled ? '' : String(opening.name || ''),
+        progressMs: step.cancelled ? 0 : Number(step.progressMs || 0),
+        channelMs: Number(rules.chestChannelMs || 0),
+        contested: step.contested === true,
+        done: step.done === true
+      }
+    }, now);
+  }
+  return step.changed || step.cancelled === true;
+}
+
 // Спорный сундук появляется в момент зачистки и открывается через 45–60 с.
 function serverSpawnPublicEventChest(room, event, now = Date.now()) {
   if (!room || !event || serverPublicEventChestContainer(room, event)) return null;
@@ -19566,7 +19609,7 @@ function serverPublicEventChestError(room, container, player, now = Date.now()) 
   if (!container?.publicEventId) return '';
   const event = serverPublicEventById(container.publicEventId);
   if (!event) return 'Событие уже завершилось.';
-  const claim = claimPublicEventChest(event, player?.characterId || '', now);
+  const claim = claimPublicEventChest(event, player?.characterId || '', now, KROMKA_PUBLIC_EVENT_CATALOG.rules);
   if (!claim.ok) return claim.error;
   scheduleServerPublicEventPersist();
   serverEmitPublicEventState(event, { chestClaimedBy: String(player?.name || '') }, now);
@@ -19626,6 +19669,13 @@ function serverPublicEventHostilesAlive(room) {
 function serverNotePublicEventDeath(room, player, now = Date.now()) {
   const event = serverPublicEventForRoom(room);
   if (!event || !player?.characterId) return 0;
+  // Смерть обрывает вскрытие: спецификация прямо запрещает довести текущее
+  // вскрытие после гибели.
+  if (cancelChestOpening(event, player.characterId, 'death')) {
+    serverEmitPublicEventState(event, {
+      chestOpening: { characterId: '', progressMs: 0, channelMs: Number(KROMKA_PUBLIC_EVENT_CATALOG.rules.chestChannelMs || 0) }
+    }, now);
+  }
   const until = recordPublicEventDeath(event, player.characterId, KROMKA_PUBLIC_EVENT_CATALOG.rules, now, room?.rng || Math.random);
   scheduleServerPublicEventPersist();
   io.to(player.id).emit('publicEventState', serverPublicEventPayload(event, now, { death: true, rejoinInSeconds: Math.ceil((until - now) / 1000) }));
@@ -19687,6 +19737,7 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
     // Награда переживает перезапуск: у зачищенного и никем не забранного
     // события сундук создаётся заново, как только комната снова существует.
     if (room && event.cleared && !event.chest.claimedBy) serverSpawnPublicEventChest(room, event, now);
+    if (room && event.chest.opening?.characterId && serverAdvanceChestOpening(room, event, now)) changed = true;
     if (room && event.cleared && !event.chest.announced && publicEventChestOpen(event, now)) {
       event.chest.announced = true;
       changed = true;
@@ -26694,6 +26745,53 @@ io.on('connection', (socket) => {
 
   // PvE-область: снимок личной встречи и «Искать следы». Следы можно искать
   // только живым и только в своей (или групповой) комнате области.
+  // Вскрытие тайника публичного события: канал начинает и отменяет игрок,
+  // прогресс считает сервер по присутствию у сундука и чужим рядом.
+  socket.on('publicEventAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || !p.roomId || p.onGlobalMap || p.dead) return fail('Игрок недоступен.');
+    const room = rooms.get(p.roomId);
+    const event = room ? serverPublicEventForRoom(room) : null;
+    if (!room || !event) return fail('Здесь нет публичного события.');
+    const now = Date.now();
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const rules = KROMKA_PUBLIC_EVENT_CATALOG.rules;
+    const state = () => ({
+      ok: true,
+      event: serverPublicEventPayload(event, now),
+      opening: {
+        characterId: String(event.chest.opening?.characterId || ''),
+        name: String(event.chest.opening?.name || ''),
+        progressMs: Number(event.chest.opening?.progressMs || 0),
+        channelMs: Number(rules.chestChannelMs || 0),
+        contested: event.chest.opening?.contested === true
+      }
+    });
+    if (action === 'state') {
+      if (typeof ack === 'function') ack(state());
+      return;
+    }
+    if (action === 'cancel') {
+      if (cancelChestOpening(event, p.characterId || '', 'player')) {
+        scheduleServerPublicEventPersist();
+        serverEmitPublicEventState(event, { chestOpening: { characterId: '', progressMs: 0, channelMs: Number(rules.chestChannelMs || 0) } }, now);
+      }
+      if (typeof ack === 'function') ack(state());
+      return;
+    }
+    if (action !== 'open') return fail('Неизвестное действие события.');
+    const container = serverPublicEventChestContainer(room, event);
+    if (!container) return fail('Тайник ещё не появился.');
+    const distance = Math.hypot(Number(p.x || 0) - Number(container.x || 0), Number(p.z || 0) - Number(container.z || 0));
+    if (distance > Number(rules.chestChannelRangeM || 2.5)) return fail('Подойдите к тайнику вплотную.');
+    const started = beginChestOpening(event, p, rules, now);
+    if (!started.ok) return fail(started.error);
+    scheduleServerPublicEventPersist();
+    serverAdvanceChestOpening(room, event, now);
+    if (typeof ack === 'function') ack(state());
+  });
+
   socket.on('pveAreaAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };

@@ -9,6 +9,9 @@
     "minLifetimeMs": 1800000,
     "maxLifetimeMs": 2700000,
     "expiryWarningMs": 300000,
+    "chestChannelMs": 8000,
+    "chestChannelRangeM": 2.5,
+    "chestContestRangeM": 14,
     "chestOpenDelayMs": [45000, 60000],
     "deathRejoinDelayMs": [60000, 90000],
     "zoneRadius": 9

@@ -155,6 +155,7 @@ const {
 } = require('./src/server/artifact-instances');
 const {
   claimBirth: claimArtifactBirth,
+  birthChance: artifactBirthChance,
   currentEmissionId: artifactEmissionId,
   lastEmissionEndAt: artifactEmissionEndAt,
   liveBirths: liveArtifactBirths,
@@ -18439,9 +18440,24 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     Math.max(0, Math.floor(Number(clanBenefits.earlyShiftForecastMinutes || 0) * 60))
   );
   const earlyWarningAt = Number(shift.nextShiftAt || 0) - Number(KROMKA_SHIFT_CYCLE.warningMs || 0) - warningLeadSeconds * 1000;
+  // Окно повышенного рождения после выброса: поля «разбужены», пока шанс выше
+  // базового. Раньше это окно жило только на сервере, и игрок не знал, что
+  // именно сейчас стоит обходить аномалии с детектором.
+  const birthRules = KROMKA_ARTIFACT_CATALOG.births || {};
+  const emissionEndAt = artifactEmissionEndAt(KROMKA_SHIFT_CYCLE, now);
+  const birthDecayMs = Math.max(0, Math.floor(Number(birthRules.decayMs || 1800000)));
+  const excitedUntil = emissionEndAt > 0 ? emissionEndAt + birthDecayMs : 0;
+  const fieldsExcited = excitedUntil > 0 && now < excitedUntil;
+  const baseChance = Math.max(0, Number(birthRules.baseChance || 0));
+  const chance = artifactBirthChance(now, emissionEndAt, birthRules);
   return {
     ...shift,
     warningLeadSeconds,
+    // Поля после выброса: сколько осталось повышенного шанса и во сколько раз
+    // он сейчас выше обычного.
+    fieldsExcited,
+    fieldsExcitedSeconds: fieldsExcited ? Math.max(0, Math.round((excitedUntil - now) / 1000)) : 0,
+    fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,
     earlyWarning: warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt,
     nearestShelterHint: residentBonuses.nearestShelterHint === true,
     resourceMarksPerShift: Math.max(0, Math.floor(Number(residentBonuses.resourceMarksPerShift || 0))),

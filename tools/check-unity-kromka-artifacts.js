@@ -26,4 +26,18 @@ assert(inventoryCanvas.includes('{ "weapon", "armor", "boots", "detector" }')
   'The visible inventory does not expose detector and artifact-belt equipment slots.');
 assert(socket.includes('OnArtifactState?.Invoke(payload)'), 'Artifact state must be routed from the socket.');
 
+// Окно повышенного рождения после выброса: сервер присылает остаток и во
+// сколько раз шанс выше, панель сдвига это показывает.
+const serverSource = read('server.js');
+for (const token of [
+  'fieldsExcited,',
+  'fieldsExcitedSeconds: fieldsExcited ? Math.max(0, Math.round((excitedUntil - now) / 1000)) : 0,',
+  'fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,'
+]) assert(serverSource.includes(token), `server.js must publish the excited fields window: ${token}`);
+for (const token of [
+  'public static string ShiftLine(JObject shift)',
+  'ПОЛЯ АКТИВНЫ: ещё ',
+  'shift["fieldsChanceMultiplier"]'
+]) assert(detector.includes(token), `The shift panel must show the excited fields: ${token}`);
+
 console.log('Unity Kromka artifacts OK: inventory slots visible, permanent detector/artifact HUD absent.');

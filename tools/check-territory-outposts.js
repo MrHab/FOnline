@@ -215,4 +215,16 @@ for (const needle of [
 assert(!serverSource.includes("modelKey: 'caravanGuard',"), 'The squad model must not stay hardcoded in server.js.');
 assert(serverSource.includes('const squadOf = actor =>'), 'The room sync must tell the garrison from a retiring column.');
 
+// Игрок должен понимать разницу между базой и аванпостом словами, а не
+// догадываться по процентам захвата.
+{
+  const presentation = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWorldEventsPresentation.cs'), 'utf8');
+  for (const token of [
+    'public static string OutpostVersusBaseLabel()',
+    'захватывается присутствием',
+    'База фракции не захватывается',
+    'Append(OutpostVersusBaseLabel())'
+  ]) assert(presentation.includes(token), `The outpost panel must explain the difference from a base: ${token}`);
+}
+
 console.log('Territory outposts OK: 20-minute lock boundary, single opening, contest/decay rules, one garrison per owner change, restart safety and public snapshot.');

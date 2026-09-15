@@ -235,6 +235,7 @@ namespace RealmOfAshes.Game
             var sb = new StringBuilder("АВАНПОСТЫ");
             string captureRules = CaptureRulesLabel(territory["rules"] as JObject);
             if (!string.IsNullOrEmpty(captureRules)) sb.Append(" · ").Append(captureRules);
+            sb.Append("\n").Append(OutpostVersusBaseLabel());
             foreach (JToken token in outposts)
             {
                 JObject row = token as JObject;
@@ -266,6 +267,19 @@ namespace RealmOfAshes.Game
         /// Правила захвата для панели: длительность удержания, остановка при
         /// оспаривании и скорость отката. Значения приходят с сервера.
         /// </summary>
+        /// <summary>
+        /// Чем аванпост отличается от базы. Без этой строки игрок видел только
+        /// проценты захвата и не понимал, что база — незахватываемый участок
+        /// со службами, а здесь нет ни хранилища, ни сервисов, и смерть стоит
+        /// рюкзака.
+        /// </summary>
+        public static string OutpostVersusBaseLabel()
+        {
+            return "Аванпост — полевой объект: захватывается присутствием, служб и хранилища здесь нет, "
+                + "смерть стоит рюкзака. База фракции не захватывается: там регистратор, медик, аукционер, "
+                + "исследователь и хранилище, и PvP отключён.";
+        }
+
         public static string CaptureRulesLabel(JObject rules)
         {
             if (rules == null) return string.Empty;

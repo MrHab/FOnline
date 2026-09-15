@@ -173,6 +173,28 @@ namespace RealmOfAshes.EditorTools
             Require(!RoaKromkaShiftAndDetector.FormatEffects(noCaps).Contains("предел"),
                 "Without caps from the server the panel stays as it was");
 
+            // Панель сдвига: окно повышенного рождения после выброса названо
+            // прямо, вместе с остатком времени и множителем находок.
+            var quietShift = JObject.Parse(@"{'phase':'calm','remainingMs':0,'strength':1,'fieldsExcited':false}");
+            Require(RoaKromkaShiftAndDetector.ShiftLine(quietShift) == string.Empty, "A quiet world shows no shift line");
+            var excitedShift = JObject.Parse(@"{'phase':'calm','remainingMs':0,'strength':1,'fieldsExcited':true,
+                'fieldsExcitedSeconds':900,'fieldsChanceMultiplier':5.5}");
+            string excitedLine = RoaKromkaShiftAndDetector.ShiftLine(excitedShift);
+            Require(excitedLine.Contains("ПОЛЯ АКТИВНЫ: ещё 15 мин"), "The excited window is counted down: " + excitedLine);
+            Require(excitedLine.Contains("находки ×5.5") || excitedLine.Contains("находки ×5,5"),
+                "The line says how much richer the fields are: " + excitedLine);
+            var activeShift = JObject.Parse(@"{'phase':'active','remainingMs':45000,'strength':3,'sheltered':false,'fieldsExcited':false}");
+            string activeLine = RoaKromkaShiftAndDetector.ShiftLine(activeShift);
+            Require(activeLine.Contains("СДВИГ ИДЁТ") && activeLine.Contains("сила 3") && activeLine.Contains("ИЩИТЕ УКРЫТИЕ"),
+                "An active shift keeps its old line: " + activeLine);
+
+            // Аванпост и база объясняются словами, а не только процентами.
+            string outpostRules = RoaWorldEventsPresentation.OutpostVersusBaseLabel();
+            Require(outpostRules.Contains("захватывается присутствием") && outpostRules.Contains("хранилища здесь нет"),
+                "The panel explains what an outpost is: " + outpostRules);
+            Require(outpostRules.Contains("База фракции не захватывается") && outpostRules.Contains("PvP отключён"),
+                "The panel explains how a base differs: " + outpostRules);
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);
@@ -222,7 +244,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows and belt caps, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, list rows, belt caps, excited fields and the outpost/base difference, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

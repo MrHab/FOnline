@@ -201,6 +201,10 @@ const {
   takeSellOrder: marketTakeSellOrder
 } = require('./src/server/faction-market');
 const {
+  ENCODING_HEAD_BYTES: UNITY_ENCODING_HEAD_BYTES,
+  unityDeliveryHeaders
+} = require('./src/server/webgl-delivery');
+const {
   applyPersistedBossState,
   bossDamageMultiplier,
   bossRewardPending,
@@ -1987,24 +1991,55 @@ app.use('/assets/models-lite', (req, res, next) => {
   return app._router.handle(req, res, next);
 });
 
+// Кодек предсжатого файла сборки читается из первых байтов один раз на файл:
+// имя .unityweb его не содержит, а открывать 280-мегабайтный .data на каждый
+// запрос незачем. Ключ кеша включает время правки — пересборка не читается
+// старым ответом.
+const unityBuildEncodingHeads = new Map();
+
+function serverUnityBuildEncodingHead(filePath = '', stat = null) {
+  const key = `${filePath}:${stat?.mtimeMs || 0}:${stat?.size || 0}`;
+  if (unityBuildEncodingHeads.has(key)) return unityBuildEncodingHeads.get(key);
+  let head = null;
+  let handle = null;
+  try {
+    handle = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(UNITY_ENCODING_HEAD_BYTES);
+    const read = fs.readSync(handle, buffer, 0, UNITY_ENCODING_HEAD_BYTES, 0);
+    if (read >= UNITY_ENCODING_HEAD_BYTES) head = buffer;
+  } catch (error) {
+    head = null;
+  } finally {
+    if (handle !== null) { try { fs.closeSync(handle); } catch (error) { /* дескриптор уже закрыт */ } }
+  }
+  if (unityBuildEncodingHeads.size > 256) unityBuildEncodingHeads.clear();
+  unityBuildEncodingHeads.set(key, head);
+  return head;
+}
+
 // Клиент вынесен в public/index.html, CSS и JS лежат в public/css и public/js.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   lastModified: true,
-  setHeaders(res) {
+  setHeaders(res, filePath, stat) {
     const requestPath = String(res.req?.path || '');
     const versioned = /[?&]v=/.test(String(res.req?.originalUrl || ''));
-    // Unity WebGL-сборка в public/unity/: предсжатые файлы отдаются с Content-Encoding,
-    // чтобы браузер распаковывал их сам (иначе загрузчик Unity делает это в JS, медленнее).
+    // Unity WebGL-сборка в public/unity/: предсжатые файлы отдаются как есть, а
+    // браузеру объявляется кодек, чтобы он распаковывал их сам (иначе это
+    // делает загрузчик Unity на JS — на большом .data разница в минуты).
     if (requestPath.startsWith('/unity/')) {
       // Файлы сборки названы хэшами содержимого — можно кешировать навсегда.
       const immutableBuild = requestPath.startsWith('/unity/Build/');
-      if (requestPath.endsWith('.br')) res.setHeader('Content-Encoding', 'br');
-      else if (requestPath.endsWith('.gz')) res.setHeader('Content-Encoding', 'gzip');
-      // .unityweb (decompressionFallback) — без Content-Encoding: формат распознаёт и распаковывает загрузчик Unity.
-      if (/\.wasm(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/wasm');
-      else if (/\.js(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/javascript');
-      else if (/\.data(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/octet-stream');
+      const delivery = unityDeliveryHeaders(
+        requestPath,
+        requestPath.endsWith('.unityweb') ? serverUnityBuildEncodingHead(filePath, stat) : null,
+        res.req?.headers || {}
+      );
+      if (delivery.contentType) res.setHeader('Content-Type', delivery.contentType);
+      // Ответ зависит от Accept-Encoding: без Vary промежуточный кеш отдал бы
+      // сжатое тело клиенту, который его не развернёт.
+      if (delivery.vary) res.setHeader('Vary', 'Accept-Encoding');
+      if (delivery.encoding) res.setHeader('Content-Encoding', delivery.encoding);
       if (immutableBuild) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); return; }
     }
     if (requestPath === '/' || requestPath === '/unity' || requestPath === '/unity/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {

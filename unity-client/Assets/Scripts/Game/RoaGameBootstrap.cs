@@ -375,6 +375,7 @@ namespace RealmOfAshes.Game
             if (HudCanvas == null) HudCanvas = gameObject.AddComponent<RoaHudCanvas>();
             HudCanvas.Configure(Hud, Quickbar, Minimap, Combat, MobileControls, GlobalMap);
             HudCanvas.SetInteraction(Interaction);
+            HudCanvas.SetArtifactSource(ShiftAndDetector);
 
             // Терминал PIP-ASH: инвентарь и Pip-Boy в структуре web. Старые
             // IMGUI-окна выключаются флагом CanvasDriven — данные и серверные

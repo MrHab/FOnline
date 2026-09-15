@@ -286,6 +286,7 @@ namespace RealmOfAshes.Game
         private Text _logText;
         private Text _systemText;
         private RoaInteraction _interaction;
+        private RoaKromkaShiftAndDetector _artifacts;
         private readonly System.Collections.Generic.List<string> _systemLines = new System.Collections.Generic.List<string>();
         private string _lastCombatLine = string.Empty;
         private float _combatLogUntil;
@@ -298,6 +299,16 @@ namespace RealmOfAshes.Game
         {
             _interaction = interaction;
             if (interaction != null) interaction.HintCanvasDriven = true;
+        }
+
+        /// <summary>
+        /// Источник подсказки подбора артефакта. Постоянной панели детектора в
+        /// клиенте нет, поэтому предварительное определение находки (тир у Mk2,
+        /// вид у Mk3) показывается той же строкой, что и обычное взаимодействие.
+        /// </summary>
+        public void SetArtifactSource(RoaKromkaShiftAndDetector artifacts)
+        {
+            _artifacts = artifacts;
         }
 
         /// <summary>Appends visible HUD panel bounds in top-left screen-space coordinates.</summary>

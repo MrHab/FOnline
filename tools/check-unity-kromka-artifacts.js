@@ -43,6 +43,19 @@ for (const token of [
 // Предварительное определение находки: сервер шлёт тир (Mk2) и вид (Mk3) в
 // самом сигнале, панель детектора обязана их показывать — решение «идти или
 // нет» принимается до подбора.
+// Постоянной панели детектора в клиенте нет, поэтому предварительное
+// определение находки живёт в подсказке подбора — той строке, которой находку
+// и поднимают.
+for (const token of [
+  'public static string PickupHintText(string key, int tier, string tierColor, string displayName)',
+  'public string PickupHint'
+]) assert(detector.includes(token), `The detector must offer a pickup hint: ${token}`);
+const hudPrompt = read('unity-client/Assets/Scripts/Game/RoaHudInteractionPrompt.cs');
+assert(hudPrompt.includes('string pickup = _artifacts.PickupHint;'),
+  'The HUD prompt must prefer the find under the feet.');
+assert(read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs').includes('HudCanvas.SetArtifactSource(ShiftAndDetector);'),
+  'The bootstrap must give the HUD its artifact source.');
+
 for (const token of [
   'public static string DetectorReadout(bool hasDetector, float signal, int tier, string tierColor, string displayName)',
   'RoaGearData.TierShortLabel(tier)',

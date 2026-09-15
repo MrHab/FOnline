@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
@@ -261,25 +262,57 @@ namespace RealmOfAshes.Game
             UpdateDetectorUi();
         }
 
+        /// <summary>
+        /// Строка панели сдвига. После выброса поля какое-то время рождают
+        /// артефакты чаще обычного — сервер присылает и остаток окна, и во
+        /// сколько раз сейчас выше шанс; без этого игрок не знал, что именно
+        /// сейчас стоит обходить аномалии с детектором.
+        /// </summary>
+        public static string ShiftLine(JObject shift)
+        {
+            if (shift == null) return string.Empty;
+            string phase = shift["phase"]?.ToString() ?? "calm";
+            bool excited = shift["fieldsExcited"]?.Value<bool>() == true;
+            if (phase == "calm" && !excited) return string.Empty;
+            bool sheltered = shift["sheltered"]?.Value<bool>() == true;
+            long remainingMs = shift["remainingMs"]?.Value<long>() ?? 0;
+            int strength = shift["strength"]?.Value<int>() ?? 1;
+            var sb = new StringBuilder();
+            if (phase != "calm")
+            {
+                string title = phase == "warning" ? "СДВИГ ПРИБЛИЖАЕТСЯ"
+                    : phase == "active" ? "СДВИГ ИДЁТ"
+                    : "СВЕЖИЕ ПЯТНА";
+                sb.Append(title).Append("  •  сила ").Append(strength).Append("  •  ")
+                  .Append(Mathf.CeilToInt(remainingMs / 1000f)).Append(" с");
+                if (sheltered) sb.Append("  •  УКРЫТИЕ");
+                else if (phase == "active") sb.Append("  •  ИЩИТЕ УКРЫТИЕ");
+            }
+            if (excited)
+            {
+                if (sb.Length > 0) sb.Append("  •  ");
+                int minutes = Mathf.Max(1, Mathf.CeilToInt((shift["fieldsExcitedSeconds"]?.Value<int>() ?? 0) / 60f));
+                sb.Append("ПОЛЯ АКТИВНЫ: ещё ").Append(minutes).Append(" мин");
+                float multiplier = shift["fieldsChanceMultiplier"]?.Value<float>() ?? 0f;
+                if (multiplier > 1.05f) sb.Append(" (находки ×").Append(multiplier.ToString("0.#")).Append(')');
+            }
+            return sb.ToString();
+        }
+
         private void ApplyShift(JObject shift)
         {
             if (shift == null) return;
             string previous = _shiftPhase;
             _shiftPhase = shift["phase"]?.ToString() ?? "calm";
             _sheltered = shift["sheltered"]?.Value<bool>() == true;
-            long remainingMs = shift["remainingMs"]?.Value<long>() ?? 0;
-            int strength = shift["strength"]?.Value<int>() ?? 1;
             if (_shiftPanel != null)
             {
-                bool visible = _shiftPhase != "calm";
+                string line = ShiftLine(shift);
+                bool visible = !string.IsNullOrEmpty(line);
                 _shiftPanel.gameObject.SetActive(visible);
                 if (visible)
                 {
-                    string title = _shiftPhase == "warning" ? "СДВИГ ПРИБЛИЖАЕТСЯ"
-                        : _shiftPhase == "active" ? "СДВИГ ИДЁТ"
-                        : "СВЕЖИЕ ПЯТНА";
-                    _shiftText.text = $"{title}  •  сила {strength}  •  {Mathf.CeilToInt(remainingMs / 1000f)} с"
-                        + (_sheltered ? "  •  УКРЫТИЕ" : (_shiftPhase == "active" ? "  •  ИЩИТЕ УКРЫТИЕ" : string.Empty));
+                    _shiftText.text = line;
                     _shiftPanel.color = _shiftPhase == "active"
                         ? new Color(0.48f, 0.08f, 0.12f, 0.92f)
                         : new Color(0.42f, 0.28f, 0.08f, 0.9f);

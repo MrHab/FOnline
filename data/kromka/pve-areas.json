@@ -15,6 +15,9 @@
   "areas": [
     {
       "id": "antHive",
+      "radiusPoints": 28,
+      "dangerBand": 2,
+      "lootCategories": ["хитин и железы пыльников", "обломки кабелей", "ремесленный лом"],
       "locationId": "antHive",
       "displayName": "Колония Пыльников",
       "tracksLabel": "Искать следы",
@@ -26,6 +29,9 @@
     },
     {
       "id": "geckoCanyon",
+      "radiusPoints": 30,
+      "dangerBand": 3,
+      "lootCategories": ["шкуры и мясо гари", "слуховые железы", "дорожный хлам"],
       "locationId": "geckoCanyon",
       "displayName": "Каньон Гари",
       "tracksLabel": "Искать следы",
@@ -37,6 +43,9 @@
     },
     {
       "id": "mutantCrater",
+      "radiusPoints": 32,
+      "dangerBand": 4,
+      "lootCategories": ["медицинские реагенты", "ткани складней", "бетонная арматура"],
       "locationId": "mutantCrater",
       "displayName": "Кратер Складней",
       "tracksLabel": "Искать следы",
@@ -48,6 +57,9 @@
     },
     {
       "id": "radscorpionNest",
+      "radiusPoints": 26,
+      "dangerBand": 5,
+      "lootCategories": ["яд и панцирь рыхляков", "кладки гнезда", "обломки стены"],
       "locationId": "radscorpionNest",
       "displayName": "Гнездо Рыхляков",
       "tracksLabel": "Искать следы",
@@ -59,6 +71,9 @@
     },
     {
       "id": "oldDepot",
+      "radiusPoints": 24,
+      "dangerBand": 1,
+      "lootCategories": ["боеприпасы и запчасти", "снаряжение налётчиков", "складская тара"],
       "locationId": "oldDepot",
       "displayName": "Старое депо",
       "tracksLabel": "Искать следы",

@@ -173,6 +173,7 @@ const {
   initialPacks: pveInitialPacks,
   normalizePveAreaCatalog,
   notePveAlive,
+  publicPveAreaCatalog,
   publicPveRoomState,
   pveAreaForLocation,
   pveOwnerKey,
@@ -2085,6 +2086,14 @@ function invalidateGlobalMapResponseCache() {
  * остаются точками мира на сервере, но метками на карте больше не являются —
  * попасть туда можно только по контракту через узел Сердцевины.
  */
+/** Точка узла глобальной карты по локации: центр области для клиента. */
+function serverGlobalMapPointForLocation(locationId = '') {
+  const id = normalizeLocationId(locationId);
+  const node = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])
+    .find(row => normalizeLocationId(row?.locationId || row?.id || '') === id);
+  return node ? { x: Number(node.x || 0), y: Number(node.y || 0) } : null;
+}
+
 function publicGlobalMap(map = null) {
   const src = map && typeof map === 'object' ? map : {};
   const nodes = (Array.isArray(src.nodes) ? src.nodes : []).filter(node => node?.hidden !== true);
@@ -2154,7 +2163,10 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     sim: WASTELAND_SIM.publicState(),
     factions: publicKromkaFactionCatalog(),
     territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
-    publicEvents: publicPublicEvents(serverPublicEventStore(), now)
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now),
+    // Постоянные PvE-области: границы, опасность, обитатели и категории добычи
+    // известны игроку до входа — карта рисует контур, а не безымянный узел.
+    pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation)
   }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {

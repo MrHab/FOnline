@@ -1,5 +1,7 @@
 'use strict';
 
+const { normalizeScenarioState, normalizeScenarioTemplate } = require('./public-event-scenarios');
+
 // Временные публичные события пустоши: логова мутантов и базы налётчиков.
 // Одно событие = одна общая комната шаблонной локации, зона на глобальной
 // карте, ограниченное время жизни с предупреждением, спорный сундук после
@@ -89,6 +91,9 @@ function normalizeTemplate(input = {}) {
     encounterId,
     danger: clamp(Math.floor(Number(input?.danger ?? 3)), 1, 5),
     boss,
+    // Механики сценария: опоры (генератор щита, рация, гнёзда), обозначенный
+    // удар и опасная земля. Без них событие было бы обычной пачкой врагов.
+    mechanics: normalizeScenarioTemplate(input?.mechanics),
     weight: Math.max(0, Number(input?.weight || 1)),
     chest: {
       name: String(chest.name || 'Тайник события').slice(0, 96),
@@ -165,6 +170,7 @@ function sanitizeEvent(input = {}) {
       }
     },
     deaths,
+    scenario: normalizeScenarioState(input?.scenario, null),
     visits: Math.max(0, Math.floor(Number(input?.visits || 0)))
   };
 }

@@ -290,6 +290,39 @@ namespace RealmOfAshes.Game
             return string.Join(", ", parts);
         }
 
+        /// <summary>
+        /// Механики сценария в строке события: какие опоры ещё целы, защищён ли
+        /// главарь и сколько осталось до обозначенного удара.
+        /// </summary>
+        public static string ScenarioLine(JObject scenario)
+        {
+            if (scenario == null) return string.Empty;
+            var parts = new List<string>();
+            var intact = new List<string>();
+            foreach (JToken token in scenario["supports"] as JArray ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row == null || row["alive"]?.Value<bool>() != true) continue;
+                intact.Add(row["displayName"]?.ToString() ?? "опора");
+            }
+            if (intact.Count > 0) parts.Add("цело: " + string.Join(", ", intact));
+            if (scenario["shielded"]?.Value<bool>() == true) parts.Add("ГЛАВАРЬ ПОД ЩИТОМ");
+            JObject strike = scenario["strike"] as JObject;
+            if (strike != null)
+            {
+                string name = strike["displayName"]?.ToString() ?? "удар";
+                if (strike["telegraph"]?.Value<bool>() == true) parts.Add(name.ToUpperInvariant() + "!");
+                else
+                {
+                    int inSeconds = strike["inSeconds"]?.Value<int>() ?? 0;
+                    if (inSeconds > 0) parts.Add(name + " через " + inSeconds + " с");
+                }
+            }
+            int hazards = (scenario["hazards"] as JArray)?.Count ?? 0;
+            if (hazards > 0) parts.Add("опасная земля: " + hazards);
+            return parts.Count > 0 ? "\n" + string.Join(" · ", parts) : string.Empty;
+        }
+
         public static string FactionLabel(JObject factionNames, string factionId)
         {
             if (string.IsNullOrEmpty(factionId)) return string.Empty;
@@ -323,6 +356,8 @@ namespace RealmOfAshes.Game
             {
                 sb.Append(boss["killed"]?.Value<bool>() == true ? " · " + bossName + ": повержен" : " · цель: " + bossName);
             }
+            string scenario = ScenarioLine(payload["scenario"] as JObject);
+            if (!string.IsNullOrEmpty(scenario)) sb.Append(scenario);
             if (payload["warning"]?.Value<bool>() == true) sb.Append(" · СКОРО ЗАКРОЕТСЯ");
             if (payload["cleared"]?.Value<bool>() == true)
             {

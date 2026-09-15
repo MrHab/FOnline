@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -258,12 +259,37 @@ namespace RealmOfAshes.Game
                     if (string.IsNullOrEmpty(id) || qty <= 0) continue;
                     any = true;
                     string captured = id;
-                    AddItemRow(_leftList, RoaItemData.Name(RoaInteraction.TradeBaseId(id)) + "   —   x" + qty,
+                    AddItemRow(_leftList, RoaItemData.Name(RoaInteraction.TradeBaseId(id)) + "   —   x" + qty
+                        + ArtifactRowSuffix(RoaInteraction.ArtifactForRuntimeId(Interaction.LootRuntimeRecords, id)),
                         () => Interaction.LootRequest(captured, qty, qty));
                     RoaItemPopups.Bind(_rows[_rows.Count - 1], RoaInteraction.TradeBaseId(id));
                 }
             }
             if (!any) AddInfoRow(_leftList, "Пусто.");
+        }
+
+        /// <summary>
+        /// Хвост строки списка для артефакта: тир в цвете шкалы экипировки и
+        /// состояние. Сырой экземпляр так и называется — свойства до
+        /// стабилизации скрыты и на складе, и в контейнере.
+        /// </summary>
+        public static string ArtifactRowSuffix(JObject artifact)
+        {
+            if (artifact == null) return string.Empty;
+            var sb = new StringBuilder();
+            int tier = artifact["tier"]?.Value<int>() ?? 0;
+            if (tier > 0)
+            {
+                string label = artifact["tierShort"]?.ToString();
+                if (string.IsNullOrEmpty(label)) label = RoaGearData.TierShortLabel(tier);
+                string name = artifact["tierName"]?.ToString();
+                if (!string.IsNullOrEmpty(name)) label += " " + name;
+                sb.Append(" · <color=#").Append(ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier)))
+                  .Append('>').Append(label).Append("</color>");
+            }
+            bool stable = artifact["stabilized"]?.ToObject<bool>() == true && artifact["hot"]?.ToObject<bool>() != true;
+            sb.Append(" · ").Append(stable ? "стабилизирован" : "сырой");
+            return sb.ToString();
         }
 
         private void FillList(RectTransform list, JArray rows, bool skipCaps, System.Action<string> onClick)
@@ -280,8 +306,11 @@ namespace RealmOfAshes.Game
                     if (skipCaps && (baseId == "silver" || baseId == "fists")) continue;
                     any = true;
                     string captured = runtimeId;
+                    JObject artifact = RoaInteraction.ArtifactForRuntimeId(
+                        skipCaps ? Interaction.InventoryRuntimeRecords : Interaction.StorageRuntimeRecords, runtimeId);
                     AddItemRow(list, RoaItemData.Name(baseId) + "   —   x" + qty
-                        + " · " + (RoaItemData.Weight(baseId) * qty).ToString("0.0") + " кг",
+                        + " · " + (RoaItemData.Weight(baseId) * qty).ToString("0.0") + " кг"
+                        + ArtifactRowSuffix(artifact),
                         () => onClick(captured));
                 }
             }

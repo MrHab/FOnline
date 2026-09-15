@@ -52,6 +52,7 @@ namespace RealmOfAshes.Game
 
         private GameObject _root;
         private RectTransform _card;
+        private RectTransform _canvasRect;
         private Text _title;
         private Text _subtitle;
         private Text _note;
@@ -83,6 +84,7 @@ namespace RealmOfAshes.Game
 
             EnsureBuilt();
             if (!_root.activeSelf) _root.SetActive(true);
+            FitCardToViewport();
 
             string step = Bootstrap.AuthStep;
             int characters = Bootstrap.AuthCharacters.Count * 100000
@@ -137,6 +139,7 @@ namespace RealmOfAshes.Game
             canvas.sortingOrder = 60; // z-index 300 в web — выше всех игровых окон
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             RoaUiScale.Apply(scaler);
+            _canvasRect = (RectTransform)canvasGo.transform;
 
             _root = new GameObject("CharacterScreen", typeof(RectTransform));
             var rootRect = (RectTransform)_root.transform;
@@ -195,6 +198,22 @@ namespace RealmOfAshes.Game
                 default: BuildLogin(); break;
             }
             if (_inputs.Count > 0) _inputs[0].ActivateInputField();
+        }
+
+        /// <summary>
+        /// Ужимает карточку под экран. Редактор персонажа занимает 962 единицы при
+        /// референсе канвы 810 на ПК и 720 на телефоне, поэтому ряд «Создать и начать»
+        /// уезжал за нижний край и до кнопки нельзя было добраться.
+        /// </summary>
+        private void FitCardToViewport()
+        {
+            if (_card == null || _canvasRect == null) return;
+            Rect viewport = _canvasRect.rect;
+            if (viewport.width <= 1f || viewport.height <= 1f) return;
+            Vector2 size = _card.sizeDelta;
+            if (size.x <= 1f || size.y <= 1f) return;
+            float fit = Mathf.Min(1f, (viewport.width - 24f) / size.x, (viewport.height - 24f) / size.y);
+            _card.localScale = Vector3.one * Mathf.Max(0.35f, fit);
         }
 
         private RectTransform Panel(string name, float height)

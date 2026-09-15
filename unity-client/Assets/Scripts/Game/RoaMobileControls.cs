@@ -24,6 +24,8 @@ namespace RealmOfAshes.Game
         private RoaInteraction _interaction;
         private RoaInventory _inventory;
         private RoaPipboy _pipboy;
+        private RoaPipboyCanvas _terminal;
+        private RoaKromkaShiftAndDetector _artifacts;
         private RoaEnemies _enemies;
         private RoaGlobalMap _globalMap;
         private RoaGroundItems _groundItems;
@@ -63,8 +65,15 @@ namespace RealmOfAshes.Game
             get { return _player != null && _player.gameObject.activeInHierarchy; }
         }
         public bool PanelOpen { get { return IsPanelOpen(); } }
-        public bool PipboyOpen { get { return _pipboy != null && _pipboy.IsOpen; } }
-        public bool InventoryOpen { get { return _inventory != null && _inventory.IsOpen; } }
+        public bool PipboyOpen { get { return TerminalOpen || (_pipboy != null && _pipboy.IsOpen); } }
+        public bool InventoryOpen
+        {
+            get
+            {
+                if (TerminalOnPage(RoaPipboyCanvas.Page.Items)) return true;
+                return _inventory != null && _inventory.IsOpen;
+            }
+        }
         public bool TargetSelected { get { return !string.IsNullOrEmpty(_selectedId); } }
         public bool Crouching { get { return _crouching; } }
         public string CurrentFireMode
@@ -86,6 +95,17 @@ namespace RealmOfAshes.Game
             _globalMap = globalMap;
             _groundItems = groundItems;
             ApplyMode();
+        }
+
+        /// <summary>
+        /// Терминал ПУТНИК, который реально рисуется в игре. Кнопки сумки, ПУТНИКа и
+        /// игрока обязаны открывать именно его: старые IMGUI-панели в бою отключены
+        /// флагом CanvasDriven, поэтому их открытие гасило HUD, движение и сам слой
+        /// сенсорных кнопок, не показав ни одного окна.
+        /// </summary>
+        public void SetTerminal(RoaPipboyCanvas terminal)
+        {
+            _terminal = terminal;
         }
 
         public void SetPlayer(RoaPlayerController player)
@@ -171,11 +191,46 @@ namespace RealmOfAshes.Game
             if (!ControlsEnabled) ResetJoystick();
         }
 
+        private bool TerminalOpen
+        {
+            get { return _terminal != null && _terminal.IsOpen; }
+        }
+
+        private bool TerminalOnPage(RoaPipboyCanvas.Page page)
+        {
+            return TerminalOpen && _terminal.ActivePage == page;
+        }
+
+        /// <summary>Открыт диалог, торговля или другое окно взаимодействия с миром.</summary>
+        private bool DialogueOpen()
+        {
+            return _interaction != null && _interaction.IsPanelOpen;
+        }
+
         private bool IsPanelOpen()
         {
-            return (_interaction != null && _interaction.IsPanelOpen)
+            return DialogueOpen() || TerminalOpen
                 || (_inventory != null && _inventory.IsOpen)
                 || (_pipboy != null && _pipboy.IsOpen);
+        }
+
+        /// <summary>
+        /// Открывает или закрывает страницу ПУТНИКа. Старые панели используются только
+        /// как запасной путь редакторских проб: если они переведены на канву и рисовать
+        /// ничего не будут, лучше не делать ничего, чем запереть игрока в пустом экране.
+        /// </summary>
+        private void ToggleTerminalPage(RoaPipboyCanvas.Page page, Action legacyFallback,
+                                        bool legacyDraws)
+        {
+            if (_terminal != null)
+            {
+                if (_inventory != null && _inventory.IsOpen) _inventory.Toggle();
+                if (_pipboy != null && _pipboy.IsOpen) _pipboy.Toggle();
+                _terminal.TogglePage(page);
+                return;
+            }
+
+            if (legacyDraws) legacyFallback?.Invoke();
         }
 
         private void ReadJoystickTouches()
@@ -376,16 +431,22 @@ namespace RealmOfAshes.Game
 
         public void TriggerInventory()
         {
-            if (InputSuppressed) return;
-            if (_pipboy != null && _pipboy.IsOpen) _pipboy.Toggle();
-            _inventory?.Toggle();
+            if (InputSuppressed || DialogueOpen()) return;
+            ToggleTerminalPage(RoaPipboyCanvas.Page.Items, () =>
+            {
+                if (_pipboy != null && _pipboy.IsOpen) _pipboy.Toggle();
+                _inventory?.Toggle();
+            }, _inventory != null && !_inventory.CanvasDriven);
         }
 
         public void TriggerPipboy()
         {
-            if (InputSuppressed) return;
-            if (_inventory != null && _inventory.IsOpen) _inventory.Toggle();
-            _pipboy?.Toggle();
+            if (InputSuppressed || DialogueOpen()) return;
+            ToggleTerminalPage(RoaPipboyCanvas.Page.Status, () =>
+            {
+                if (_inventory != null && _inventory.IsOpen) _inventory.Toggle();
+                _pipboy?.Toggle();
+            }, _pipboy != null && !_pipboy.CanvasDriven);
         }
 
         public void TriggerMap()
@@ -418,7 +479,9 @@ namespace RealmOfAshes.Game
 
         public void TriggerPlayerPanel()
         {
-            if (!InputSuppressed && !IsPanelOpen()) _pipboy?.OpenSocial();
+            if (InputSuppressed || DialogueOpen()) return;
+            ToggleTerminalPage(RoaPipboyCanvas.Page.Friends, () => _pipboy?.OpenSocial(),
+                               _pipboy != null && !_pipboy.CanvasDriven);
         }
 
         public void TriggerPlayerOrPing()
@@ -433,8 +496,17 @@ namespace RealmOfAshes.Game
         {
             if (InputSuppressed || IsPanelOpen()) return;
             _interaction?.TriggerInteract();
-            if (_interaction == null || !_interaction.BlocksGroundPickup)
-                _groundItems?.RequestPickupNearest();
+            if (_interaction != null && _interaction.BlocksGroundPickup) return;
+            // Проявленный артефакт подбирается той же кнопкой: на телефоне клавиши G,
+            // на которой висел единственный путь подбора, просто нет.
+            if (_artifacts != null && _artifacts.TryPickupRevealedArtifact()) return;
+            _groundItems?.RequestPickupNearest();
+        }
+
+        /// <summary>Детектор и подбор артефактов; связывается в RoaGameBootstrap.</summary>
+        public void SetArtifacts(RoaKromkaShiftAndDetector artifacts)
+        {
+            _artifacts = artifacts;
         }
 
         private void DrawJoystick()

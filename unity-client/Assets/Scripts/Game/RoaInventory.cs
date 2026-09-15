@@ -299,9 +299,32 @@ namespace RealmOfAshes.Game
             _carryCapacity = RoaItemData.CarryCapacity(strength, backpackEquipped) + artifactCarry;
         }
 
-        /// <summary>Первый слот, куда подходит предмет.</summary>
+        /// <summary>
+        /// Первый слот, куда подходит предмет. Источник правды — серверный каталог
+        /// (compatibleSlots): списки ниже остались лишь запасным вариантом до его
+        /// загрузки. Раньше они были единственным источником и успели отстать, из-за
+        /// чего скрафченные револьвер, обрез и пистолет-пулемёт нельзя было взять в руки.
+        /// </summary>
         public static string SlotFor(string itemId)
         {
+            if (RoaItemData.Contains(itemId))
+            {
+                // Повторяем правило сервера (serverCatalogItemIdsForSlot): слот берётся
+                // из поля slot, и только вторая рука смотрит на compatibleSlots. Иначе
+                // артефакт со слотом artifact предлагался бы как пояс и получал отказ.
+                string catalogSlot = RoaItemData.Slot(itemId);
+                foreach (string slot in SlotOrder)
+                {
+                    if (slot == "offhand")
+                    {
+                        if (Array.IndexOf(RoaItemData.CompatibleSlots(itemId), slot) >= 0) return slot;
+                        continue;
+                    }
+                    if (!string.IsNullOrEmpty(catalogSlot) && catalogSlot == slot) return slot;
+                }
+                return null;
+            }
+
             foreach (string slot in SlotOrder)
             {
                 HashSet<string> allowed;
@@ -820,7 +843,17 @@ namespace RealmOfAshes.Game
             return result;
         }
         public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
-        public bool IsFirearmItem(string itemOrRuntimeId) { return Firearms.Contains(BaseId(itemOrRuntimeId)); }
+        /// <summary>
+        /// Огнестрел определяется наличием типа патронов в каталоге: у ножа, кулаков
+        /// и инструментов его нет. Список ниже работает, пока каталог не загружен.
+        /// </summary>
+        public bool IsFirearmItem(string itemOrRuntimeId)
+        {
+            string baseId = BaseId(itemOrRuntimeId);
+            if (RoaItemData.Contains(baseId))
+                return !string.IsNullOrEmpty(RoaItemData.AmmoType(baseId));
+            return Firearms.Contains(baseId);
+        }
         public bool IsMedical(string itemOrRuntimeId) { return MedicalItems.Contains(BaseId(itemOrRuntimeId)); }
         public float ConditionPercent(string itemOrRuntimeId) { return ItemCondition(itemOrRuntimeId); }
         /// <summary>repair / unload / salvage — inventoryItemAction сервера.</summary>

@@ -1056,8 +1056,11 @@ namespace RealmOfAshes.Game
                         "ВОССТАНАВЛИВАЕМ СВЯЗЬ", "Подключение к серверу · попытка " + attempt);
                 case RoaSocketClient.ConnectionPhase.Connected:
                 case RoaSocketClient.ConnectionPhase.Joining:
+                    // Пока сервер держит прошлую сессию, вход повторяется по таймеру.
+                    // Причину и обратный отсчёт кладёт сюда RoaSocketClient.
                     return new ConnectionBannerState(ConnectionBannerKind.Synchronizing,
-                        "СИНХРОНИЗИРУЕМ МИР", "Сервер отвечает · восстанавливаем персонажа");
+                        "СИНХРОНИЗИРУЕМ МИР", string.IsNullOrWhiteSpace(lastError)
+                            ? "Сервер отвечает · восстанавливаем персонажа" : lastError.Trim());
                 case RoaSocketClient.ConnectionPhase.Rejected:
                     return new ConnectionBannerState(ConnectionBannerKind.Rejected,
                         "СЕССИЯ ОТКЛОНЕНА", string.IsNullOrWhiteSpace(lastError)

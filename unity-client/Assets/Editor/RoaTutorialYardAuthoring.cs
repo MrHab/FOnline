@@ -90,7 +90,20 @@ namespace RealmOfAshes.EditorTools
             const string folder = "Assets/Art/Kromka/Materials";
             string path = folder + "/" + name + ".mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null) return material;
+            if (material != null)
+            {
+                // Материал уже существует: возвращаем его к объявленному здесь цвету.
+                // Раньше он просто отдавался как есть, поэтому случайная перекраска
+                // ассета оставалась навсегда — так земля учебного двора и стала синей,
+                // хотя авторский цвет всё это время был серо-оливковым.
+                if (material.color != color)
+                {
+                    material.color = color;
+                    EditorUtility.SetDirty(material);
+                    AssetDatabase.SaveAssetIfDirty(material);
+                }
+                return material;
+            }
             material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name, color = color };
             material.SetFloat("_Smoothness", .05f);
             AssetDatabase.CreateAsset(material, path);

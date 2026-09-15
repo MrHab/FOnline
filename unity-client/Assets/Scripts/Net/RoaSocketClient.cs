@@ -218,6 +218,12 @@ namespace RealmOfAshes.Net
         private bool _reconnectScheduled;
         private float _reconnectAt;
         private int _reconnectAttempt;
+        private bool _rejoinScheduled;
+        private float _rejoinAt;
+        private int _rejoinAttempt;
+        // Прошлый сокет отпускает сервер по ping-таймауту socket.io (около 45 с),
+        // поэтому пяти попыток с ростом паузы хватает, чтобы перекрыть это окно.
+        private const int MaxTemporaryRejoinAttempts = 5;
         private bool _shuttingDown;
         private bool _connectFailureLogged;
 
@@ -286,6 +292,8 @@ namespace RealmOfAshes.Net
             _shuttingDown = false;
             _reconnectAttempt = 0;
             _reconnectScheduled = false;
+            _rejoinAttempt = 0;
+            _rejoinScheduled = false;
             _connectFailureLogged = false;
             LastError = string.Empty;
 
@@ -373,9 +381,12 @@ namespace RealmOfAshes.Net
             _connection.On("sessionRejected", args => _mainThread.Enqueue(() =>
             {
                 var rejected = First<SessionRejected>(args);
+                _joinPending = false;
+                // rejectJoin шлёт и ack, и это событие. Временный отказ обрабатывает
+                // ветка ack: здесь достаточно не уводить сессию в окончательный отказ.
+                if (ScheduleRejoinIfTemporary(rejected?.Code)) return;
                 Phase = ConnectionPhase.Rejected;
                 LastError = rejected?.Error ?? "Сессия отклонена сервером.";
-                _joinPending = false;
                 OnRejected?.Invoke(LastError);
             }));
 
@@ -848,12 +859,15 @@ namespace RealmOfAshes.Net
                 var ack = First<JoinAck>(args);
                 if (ack == null || !ack.Ok)
                 {
+                    if (ScheduleRejoinIfTemporary(ack?.Code)) return;
                     _reconnectScheduled = false;
                     Phase = ConnectionPhase.Rejected;
                     LastError = ack?.Error ?? "Сервер отклонил вход в игру.";
                     OnRejected?.Invoke(LastError);
                     return;
                 }
+                _rejoinAttempt = 0;
+                _rejoinScheduled = false;
 
                 Session = ack;
                 Phase = ConnectionPhase.Joined;
@@ -873,6 +887,40 @@ namespace RealmOfAshes.Net
                 _newTraits = null;
                 OnJoined?.Invoke(ack);
             }));
+        }
+
+        /// <summary>
+        /// Отказ временный: прошлый сокет игрока ещё числится живым, пока socket.io не
+        /// словит ping-таймаут. Сервер сам помечает такие отказы и ждёт повтора.
+        /// </summary>
+        public static bool IsTemporaryJoinRejection(string code)
+        {
+            return code == "session-busy" || code == "character-busy";
+        }
+
+        public static float RejoinDelaySeconds(int attempt)
+        {
+            return Mathf.Min(16f, Mathf.Pow(2f, Mathf.Clamp(attempt, 1, 4)));
+        }
+
+        /// <summary>
+        /// Повторяет вход по тому же живому сокету. Переподключать транспорт не нужно:
+        /// отклонён join, а не соединение. Без этого смена сети на телефоне уводила
+        /// игрока на экран «аккаунт уже в игре» без единой попытки повтора.
+        /// </summary>
+        private bool ScheduleRejoinIfTemporary(string code)
+        {
+            if (_shuttingDown || !IsTemporaryJoinRejection(code)) return false;
+            if (_rejoinAttempt >= MaxTemporaryRejoinAttempts) return false;
+
+            _rejoinAttempt++;
+            float delay = RejoinDelaySeconds(_rejoinAttempt);
+            _rejoinAt = Time.realtimeSinceStartup + delay;
+            _rejoinScheduled = true;
+            Phase = ConnectionPhase.Connected;
+            LastError = "Прошлая сессия ещё закрывается. Повтор входа через "
+                + delay.ToString("0") + " с.";
+            return true;
         }
 
         private void ScheduleReconnect()
@@ -1316,6 +1364,12 @@ namespace RealmOfAshes.Net
             if (_reconnectScheduled && Phase == ConnectionPhase.Disconnected
                 && Time.realtimeSinceStartup >= _reconnectAt)
                 BeginTransportConnection();
+
+            if (_rejoinScheduled && Time.realtimeSinceStartup >= _rejoinAt)
+            {
+                _rejoinScheduled = false;
+                if (_connection != null && Phase == ConnectionPhase.Connected) SendJoin();
+            }
 
             if (_joinPending && Time.realtimeSinceStartup > _joinDeadline)
             {

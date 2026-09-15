@@ -136,6 +136,8 @@ namespace RealmOfAshes.Net
     {
         [JsonProperty("ok")] public bool Ok;
         [JsonProperty("error")] public string Error;
+        /// <summary>Машинный код отказа: session-busy и character-busy временные.</summary>
+        [JsonProperty("code")] public string Code;
         [JsonProperty("alreadyJoined")] public bool AlreadyJoined;
         [JsonProperty("id")] public string Id;
         [JsonProperty("roomId")] public string RoomId;
@@ -239,6 +241,8 @@ namespace RealmOfAshes.Net
     {
         [JsonProperty("error")] public string Error;
         [JsonProperty("reason")] public string Reason;
+        /// <summary>Тот же код, что и в ack join: rejectJoin шлёт оба канала.</summary>
+        [JsonProperty("code")] public string Code;
     }
 
     #endregion

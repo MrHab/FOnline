@@ -46,7 +46,27 @@ namespace RealmOfAshes.Game
                 {
                     body += "\nВернитесь к заказчику, чтобы принять решение.";
                 }
-                AddTextCard(_questRows, _questsList, status.ToUpperInvariant() + "  " + (quest["title"]?.ToString() ?? id), body);
+                AddTextCard(_questRows, _questsList,
+                    KromkaQuestStatusLabel(status) + "  " + (quest["title"]?.ToString() ?? id), body);
+            }
+        }
+
+        /// <summary>
+        /// Статус задания по-русски. Раньше карточка печатала сырой ключ сервера, и
+        /// игрок читал AVAILABLE, LOCKED и TURNIN в русском журнале.
+        /// </summary>
+        public static string KromkaQuestStatusLabel(string status)
+        {
+            switch (status)
+            {
+                case "available": return "ДОСТУПНО";
+                case "active": return "В РАБОТЕ";
+                case "choice": return "РЕШЕНИЕ";
+                case "turnin": return "К СДАЧЕ";
+                case "completed": return "ЗАВЕРШЕНО";
+                case "locked": return "ЗАКРЫТО";
+                case "failed": return "ПРОВАЛЕНО";
+                default: return (status ?? string.Empty).ToUpperInvariant();
             }
         }
 

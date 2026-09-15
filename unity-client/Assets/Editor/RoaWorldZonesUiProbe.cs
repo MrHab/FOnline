@@ -141,6 +141,21 @@ namespace RealmOfAshes.EditorTools
             Require(!RoaInteraction.TransitionNeedsConfirmation(null, string.Empty), "Without rules the transition works as before");
             Require(RoaInteraction.TransitionZoneWarning(null, "Выход") == string.Empty, "Without rules there is no warning");
 
+            // Артефакт в списке склада или контейнера: тир в цвете шкалы
+            // экипировки и состояние, свойства сырого по-прежнему скрыты.
+            var storageRecords = JArray.Parse(@"[{'id':'rt_1','baseId':'artifactSpring','artifact':{'id':'a1','typeId':'spring','tier':4,
+                'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true}}]");
+            JObject rowArtifact = RoaInteraction.ArtifactForRuntimeId(storageRecords, "rt_1");
+            Require(rowArtifact != null, "The row finds its instance record by runtime id");
+            Require(RoaInteraction.ArtifactForRuntimeId(storageRecords, "rt_2") == null, "A foreign runtime id finds nothing");
+            string rowSuffix = RoaLootCanvas.ArtifactRowSuffix(rowArtifact);
+            string rowTier = ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(4));
+            Require(rowSuffix.Contains("<color=#" + rowTier + ">Т4 Чистый</color>"), "The row tints the tier with the shared scale: " + rowSuffix);
+            Require(rowSuffix.Contains("сырой"), "A raw instance is named raw in the list: " + rowSuffix);
+            rowArtifact["stabilized"] = true; rowArtifact["hot"] = false;
+            Require(RoaLootCanvas.ArtifactRowSuffix(rowArtifact).Contains("стабилизирован"), "A stabilized instance says so");
+            Require(RoaLootCanvas.ArtifactRowSuffix(null) == string.Empty, "An ordinary item keeps its plain row");
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);
@@ -190,7 +205,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, transition zone warnings, artifact tier cards and list rows, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

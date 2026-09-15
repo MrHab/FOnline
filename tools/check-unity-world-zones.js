@@ -65,6 +65,23 @@ for (const token of [
   '["targetZoneRules"] = transition.TargetZoneRules != null',
   'if (TransitionNeedsConfirmation(targetRules, _acknowledgedZoneMode)'
 ]) assert(interaction.includes(token), `RoaInteraction must warn about the zone behind a transition: ${token}`);
+// Артефакт в списке склада и контейнера показывает тир и состояние — раньше
+// строка была обычной «предмет × количество».
+const lootCanvas = read('unity-client/Assets/Scripts/Game/RoaLootCanvas.cs');
+for (const token of [
+  'public static string ArtifactRowSuffix(JObject artifact)',
+  'RoaGearData.TierTint(tier)',
+  'stable ? "стабилизирован" : "сырой"',
+  'RoaInteraction.ArtifactForRuntimeId('
+]) assert(lootCanvas.includes(token), `RoaLootCanvas must show the artifact state in a row: ${token}`);
+for (const token of [
+  'public static JObject ArtifactForRuntimeId(JArray records, string runtimeId)',
+  'public JArray StorageRuntimeRecords',
+  'public JArray InventoryRuntimeRecords'
+]) assert(interaction.includes(token), `RoaInteraction must expose instance records to the list: ${token}`);
+assert(read('server.js').includes('storageWeaponRuntime: storageFaction ? serverFactionStorageWeaponRuntimeSnapshot(p, storageFaction) : [],'),
+  'The server must send the faction storage instance records with the public artifact projection.');
+
 const locationModel = read('unity-client/Assets/Scripts/World/RoaLocationData.cs');
 for (const token of ['[JsonProperty("targetPvpMode")] public string TargetPvpMode;',
   '[JsonProperty("targetZoneRules")] public JObject TargetZoneRules;'])

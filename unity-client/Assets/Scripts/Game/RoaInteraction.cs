@@ -1063,8 +1063,28 @@ namespace RealmOfAshes.Game
         public bool LootLocked { get { return _active?["locked"]?.ToObject<bool>() == true; } }
         public bool LootTerminalLocked { get { return _active?["terminalLocked"]?.ToObject<bool>() == true; } }
         public JArray LootRows { get { return _active?["loot"] as JArray; } }
+
+        /// <summary>Записи экземпляров в открытом контейнере или трупе, если сервер их прислал.</summary>
+        public JArray LootRuntimeRecords { get { return _active?["itemRuntimeRecords"] as JArray; } }
         public JArray StorageRows { get { return _self?["storage"] as JArray; } }
         public JArray InventoryRows { get { return _self?["inventory"] as JArray; } }
+
+        /// <summary>Записи экземпляров на складе фракции и в рюкзаке: в них лежит состояние артефакта.</summary>
+        public JArray StorageRuntimeRecords { get { return _self?["storageWeaponRuntime"] as JArray; } }
+        public JArray InventoryRuntimeRecords { get { return _self?["weaponInventoryRuntime"] as JArray; } }
+
+        /// <summary>Запись артефакта для строки списка: ищется по runtime-id предмета.</summary>
+        public static JObject ArtifactForRuntimeId(JArray records, string runtimeId)
+        {
+            if (records == null || string.IsNullOrEmpty(runtimeId)) return null;
+            foreach (JToken token in records)
+            {
+                JObject row = token as JObject;
+                if (row == null || row["id"]?.ToString() != runtimeId) continue;
+                return row["artifact"] as JObject;
+            }
+            return null;
+        }
         public string LootTitle { get { return PanelTitle(); } }
         public string LootStatus { get { return Time.unscaledTime <= _statusUntil ? _status : string.Empty; } }
 

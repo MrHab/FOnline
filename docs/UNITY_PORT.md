@@ -1661,9 +1661,9 @@ rAF до ~1 Гц (`document.hidden = true`) — мерить только в в�
 - **Сборка 20 → 12,6 МБ**: стрипинг движка и managed-кода (Medium) с
   `Assets/link.xml` (PhysicsModule, UI, IMGUI, Animation, TextRendering,
   UnityWebRequest*, Newtonsoft, glTFast, Assembly-CSharp — то, что добавляется
-  из кода или читается рефлексией), Brotli + fallback (файлы `.unityweb` без
-  `Content-Encoding`: по http браузер br не примет, распаковывает загрузчик;
-  на https можно отключить fallback и отдавать `.br` нативно), отключён сплэш
+  из кода или читается рефлексией), Brotli + fallback (файлы `.unityweb`
+  отдаются с `Content-Encoding: br` тому, кто brotli принимает — по http
+  браузер его не заявляет, и там распаковывает загрузчик), отключён сплэш
   Unity (2,7 МБ логотипа), Noto Sans ужат до кириллицы/латиницы (2 МБ → 72 КБ,
   fontTools: статический экземпляр wght 400 + subset).
 - **Модели 145 → 79,5 МБ** (`npm run build:models-lite` → `tools/optimize-glb.js`):
@@ -1703,7 +1703,10 @@ rAF до ~1 Гц (`document.hidden = true`) — мерить только в в�
 для VPS, где статику раздаёт Nginx):
 - `/` → `public/unity/index.html` (если сборки нет — прежний клиент, чтобы dev и CI
   работали без Unity); `/legacy/` → `public/index.html`;
-- `/unity/Build/*` — immutable (имена-хэши), `.unityweb` без `Content-Encoding`;
+- `/unity/Build/*` — immutable (имена-хэши); `.unityweb` отдаётся с
+  `Content-Encoding: br` и `Vary: Accept-Encoding` тому клиенту, который brotli
+  принимает (`npm run check:webgl-delivery` проверяет и Node, и конфиг Nginx);
+  несжатый `loader.js` — без кодека;
 - `/assets/models-lite/*` → облегчённые GLB с фолбэком на `/assets/models/*`.
 
 Шаги выкладки на VPS после `git pull`:

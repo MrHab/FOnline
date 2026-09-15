@@ -209,9 +209,13 @@ simulation tick. Production Nginx сжимает `application/json` через g
 
 Для `/unity/*`:
 
-- предсжатые `.br`/`.gz` отдаются с `Content-Encoding`, чтобы браузер
-  распаковывал их сам; `.unityweb` (decompression fallback) — без
-  `Content-Encoding`;
+- предсжатые файлы отдаются как есть, а браузеру объявляется кодек, чтобы
+  распаковывал он, а не загрузчик Unity на JavaScript. У `.br`/`.gz` кодек
+  виден в имени; у `.unityweb` Unity его не пишет, поэтому он определяется по
+  первым байтам файла (`src/server/webgl-delivery.js`). Заголовок ставится
+  только клиенту, который такой кодек принимает, ответ помечается
+  `Vary: Accept-Encoding`, а на частичный запрос (`Range`) кодек не
+  объявляется — такой ответ развернёт загрузчик;
 - `/unity/Build/*` — `immutable` (имена файлов — хэши содержимого);
 - `/unity/` и `index.html` — `no-cache`.
 

@@ -412,6 +412,38 @@ namespace RealmOfAshes.Game
             }
         }
 
+        /// <summary>
+        /// Подсказка подбора для HUD: что именно лежит под ногами. Mk2 называет
+        /// тир, Mk3 — ещё и вид; Mk1 говорит только «находка». Постоянной
+        /// панели детектора в клиенте нет, поэтому предварительное определение
+        /// игрок видит здесь — в той же строке, которой поднимает находку.
+        /// </summary>
+        public string PickupHint
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_nearestRevealedId) || !_views.ContainsKey(_nearestRevealedId)) return string.Empty;
+                ArtifactView view = _views[_nearestRevealedId];
+                return PickupHintText("G", view.Tier, view.TierColor, view.DisplayName);
+            }
+        }
+
+        /// <summary>Строка подсказки подбора: «G — забрать: Жила · Т4».</summary>
+        public static string PickupHintText(string key, int tier, string tierColor, string displayName)
+        {
+            var sb = new StringBuilder(string.IsNullOrEmpty(key) ? "G" : key).Append(" — забрать");
+            if (!string.IsNullOrEmpty(displayName)) sb.Append(": ").Append(displayName);
+            else sb.Append(" находку");
+            if (tier >= 1 && tier <= 5)
+            {
+                string hex = string.IsNullOrEmpty(tierColor)
+                    ? ColorUtility.ToHtmlStringRGB(RoaGearData.TierTint(tier))
+                    : tierColor.TrimStart('#');
+                sb.Append(" · <color=#").Append(hex).Append('>').Append(RoaGearData.TierShortLabel(tier)).Append("</color>");
+            }
+            return sb.ToString();
+        }
+
         /// <summary>Рядом лежит проявленный артефакт, который можно поднять.</summary>
         public bool HasRevealedArtifactInRange
         {

@@ -95,6 +95,13 @@ namespace RealmOfAshes.Game
         {
             if (_interactionPrompt == null || _interactionPromptGroup == null) return;
             string hint = _interaction != null ? (_interaction.InteractionHint ?? string.Empty) : string.Empty;
+            // Находка под ногами важнее обычного взаимодействия: её и поднимают
+            // той же клавишей, и только здесь видно, что именно нашлось.
+            if (_artifacts != null)
+            {
+                string pickup = _artifacts.PickupHint;
+                if (!string.IsNullOrEmpty(pickup)) hint = pickup;
+            }
             bool show = worldHud && !string.IsNullOrWhiteSpace(hint);
             if (show)
             {

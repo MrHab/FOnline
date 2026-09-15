@@ -206,6 +206,20 @@ namespace RealmOfAshes.EditorTools
             Require(mk2.Contains("<color=#efd078>" + RoaGearData.TierShortLabel(3) + "</color>"),
                 "Mk2 names the tier in the shared colour: " + mk2);
             Require(!mk2.Contains("Жила"), "Mk2 does not name the kind");
+            // Подсказка подбора: строкой, которой находку и поднимают, видно,
+            // что именно лежит под ногами.
+            string hintMk1 = RoaKromkaShiftAndDetector.PickupHintText("G", 0, null, null);
+            Require(hintMk1 == "G — забрать находку", "Mk1 offers to take the find without naming it: " + hintMk1);
+            string hintMk2 = RoaKromkaShiftAndDetector.PickupHintText("G", 3, "#efd078", null);
+            Require(hintMk2.Contains("забрать находку") && hintMk2.Contains("<color=#efd078>"),
+                "Mk2 names the tier in the pickup hint: " + hintMk2);
+            string hintMk3 = RoaKromkaShiftAndDetector.PickupHintText("G", 4, "", "Жила");
+            Require(hintMk3.Contains("забрать: Жила") && hintMk3.Contains(RoaGearData.TierShortLabel(4)),
+                "Mk3 names the find and its tier in the pickup hint: " + hintMk3);
+            RoaHudCanvas.FormatInteractionPrompt(hintMk3, false, out string pickupKey, out string pickupAction);
+            Require(pickupKey == "G" && pickupAction.Contains("Жила"),
+                "The HUD prompt splits the pickup hint into a key and an action: " + pickupKey + " / " + pickupAction);
+
             string mk3 = RoaKromkaShiftAndDetector.DetectorReadout(true, 0.9f, 4, "", "Жила");
             Require(mk3.Contains("Жила") && mk3.Contains(RoaGearData.TierShortLabel(4)),
                 "Mk3 names both the tier and the kind before pickup: " + mk3);

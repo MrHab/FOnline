@@ -102,6 +102,19 @@ namespace RealmOfAshes.EditorTools
             string pveText = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
             Require(pveText.Contains("личная встреча") && pveText.Contains("PvP отключён") && pveText.Contains("Врагов рядом: 3") && pveText.Contains("новая группа"),
                 "PvE area line shows personal mode, enemies and last result");
+            // Встречи приходят к идущему: остаток пути назван прямо, иначе
+            // тишина в области выглядит поломкой.
+            pve["distanceToRollM"] = 40;
+            string walking = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
+            Require(walking.Contains("идти ещё 40 м"), "The area says how far the party still has to walk: " + walking);
+            pve["calmSeconds"] = 30;
+            Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0).Contains("идти ещё"),
+                "During the calm after a clear the walk counter stays quiet");
+            pve["calmSeconds"] = 0;
+            pve["distanceToRollM"] = 0;
+            Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0).Contains("идти ещё"),
+                "A party that has walked its share is not nagged");
+
             Require(RoaWorldEventsPresentation.Clock(754) == "12:34", "Clock formatting");
 
             // Постоянная PvE-область на карте: название, опасность, обитатели и

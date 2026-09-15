@@ -789,7 +789,8 @@
       "note": "Узел Управы. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-uprava-v1",
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "hidden": true
     },
     {
       "id": "coreBaseArtels",
@@ -808,7 +809,8 @@
       "note": "Артельный узел. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-free_artels-v1",
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "hidden": true
     },
     {
       "id": "coreBaseContour",
@@ -827,7 +829,8 @@
       "note": "Узел Контура. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-contour-v1",
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "hidden": true
     },
     {
       "id": "coreBaseLeague",
@@ -846,7 +849,8 @@
       "note": "Узел Лиги. metro-gate, faction-yard.",
       "macroRegion": "middle_vein",
       "visualProfile": "territory-base-tract_league-v1",
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "hidden": true
     }
   ],
   "infrastructure": [

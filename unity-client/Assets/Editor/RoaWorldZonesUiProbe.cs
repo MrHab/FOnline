@@ -76,6 +76,23 @@ namespace RealmOfAshes.EditorTools
             Require(preview.Contains("скорость +6%") && preview.Contains("груз (кг) -4") && preview.Contains("сопр. ballistic +12%"), "Preview delta lists changed stats");
             Require(RoaPipboyCanvas.ArtifactPreviewLabel(JObject.Parse(@"{'delta':{}}")) == "Характеристики не изменятся.", "Empty delta is explained");
 
+            // Окно контракта у ворот Сердцевины: доли фракций, выбранная строка
+            // и причина отказа. Числа форматируются инвариантной культурой.
+            var contract = JObject.Parse(@"{'displayName':'Сердцевина','signedCharacters':12,'characters':30,'canSign':true,'factions':[
+                {'factionId':'uprava','displayName':'Управа','baseDisplayName':'Узел Управы','characters':8,'sharePct':66.7,'canSign':true,'reason':''},
+                {'factionId':'contour','displayName':'Контур','baseDisplayName':'Узел Контура','characters':4,'sharePct':33.3,'canSign':false,'reason':'Смена фракции пока закрыта.'}]}");
+            string intro = RoaGlobalMapCanvas.ContractIntroText(contract);
+            Require(intro.Contains("Сердцевина") && intro.Contains("12"), "Contract window explains the territory and how many signed");
+            Require(RoaGlobalMapCanvas.ContractIntroText(JObject.Parse(@"{'signedCharacters':0}")).Contains("не подписал никто"),
+                "An empty territory says so instead of showing zeroes");
+            string upravaRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][0], true);
+            Require(upravaRow.Contains("Управа") && upravaRow.Contains("66.7%") && upravaRow.Contains("8 чел.") && upravaRow.Contains("Узел Управы"),
+                "Faction row shows the share, the people and the base: " + upravaRow);
+            Require(upravaRow.StartsWith("> "), "The selected faction is marked in the row");
+            string contourRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][1], false);
+            Require(contourRow.Contains("33.3%") && contourRow.Contains("Смена фракции пока закрыта."),
+                "A faction that cannot be signed explains why: " + contourRow);
+
             var go = new GameObject("WorldEventsProbe");
             try
             {
@@ -84,7 +101,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE lines, artifact tier cards and preview deltas.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE lines, artifact tier cards, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

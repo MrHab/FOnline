@@ -69,6 +69,9 @@ const nodes = seed.locations.map(position => {
     locationId: location.id,
     capital: factionByCapital.has(location.id),
     capitalFaction: factionByCapital.get(location.id) || '',
+    // Базы фракций Сердцевины остаются точками мира, но метками карты не
+    // являются: вход на территорию один — узел Сердцевины с контрактом.
+    hidden: location.territory?.role === 'base',
     danger: region?.dangerBand || 1,
     model: nodeModel(location.locationType),
     modelScale: location.locationType === 'faction_capital' ? 1.25 : 1,

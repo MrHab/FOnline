@@ -65,5 +65,7 @@ assert(audit.includes('typeof(RoaWorldZonesUiProbe)'), 'The world zones UI probe
 const probe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');
 assert(probe.includes('RoaWorldEventsPresentation.DescribeOutposts') && probe.includes('RoaPipboyCanvas.ArtifactCardSummary'),
   'The probe must cover outposts and artifact cards.');
+assert(probe.includes('RoaGlobalMapCanvas.ContractRowText') && probe.includes('RoaGlobalMapCanvas.ContractIntroText'),
+  'The probe must cover the faction contract window at the territory gate.');
 
 console.log('Unity world zones UI OK: world events HUD, tier-tinted artifact cards with preview and salvage, base service dialogues, net wrappers and audit probe.');

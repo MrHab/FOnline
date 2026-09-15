@@ -345,6 +345,17 @@ namespace RealmOfAshes.Game
         public bool LocationEntryPending { get { return _locationEntryPending; } }
         public bool FullLootConfirmationPending { get { return _fullLootConfirmationPending; } }
         public JObject PendingZoneRules { get { return _pendingZoneRules; } }
+
+        // --- Контракт с фракцией на входе в Сердцевину ---
+        // Сервер отвечает на прибытие к узлу территории отказом с полем
+        // contractRequired и предложением: долями фракций и причинами отказа.
+        // Канва показывает окно, игрок выбирает фракцию и подписывает контракт;
+        // после этого прибытие запрашивается заново и заводит на базу фракции.
+        public bool TerritoryContractPending { get { return _territoryContractPending; } }
+        public bool TerritoryContractSigning { get { return _territoryContractSigning; } }
+        public JObject TerritoryContract { get { return _territoryContract; } }
+        public string TerritoryContractFactionId { get { return _territoryContractFactionId; } }
+        public string TerritoryContractError { get { return _territoryContractError; } }
         public bool ContactDecisionPending { get { return _contactDecisionPending; } }
         public bool HasPendingContact { get { return _pendingContact != null; } }
         public string PendingContactName { get { return _pendingContact?.Name ?? "Событие пустоши"; } }
@@ -721,6 +732,11 @@ namespace RealmOfAshes.Game
         private JObject _pendingZoneRules;
         private string _acknowledgedZoneMode = string.Empty;
         private bool _fullLootConfirmationPending;
+        private JObject _territoryContract;
+        private bool _territoryContractPending;
+        private bool _territoryContractSigning;
+        private string _territoryContractFactionId = string.Empty;
+        private string _territoryContractError = string.Empty;
         private string _pendingArrivalKey = string.Empty;
         private int _locationEntryAttempts;
         private float _locationEntryRetryAt;
@@ -3983,7 +3999,9 @@ namespace RealmOfAshes.Game
 
         private void RequestArrival()
         {
-            if (Socket == null || _arrivalPending || _locationEntryPending) return;
+            // Пока открыт контракт с фракцией, повторять прибытие бесполезно:
+            // сервер снова вернёт то же предложение.
+            if (Socket == null || _arrivalPending || _locationEntryPending || _territoryContractPending) return;
             _arrivalPending = true;
             StatusText = "Сервер подтверждает прибытие...";
             string targetLocationId = _selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId)
@@ -4003,6 +4021,14 @@ namespace RealmOfAshes.Game
                 {
                     JObject corrected = ack?["worldPoint"] as JObject;
                     if (corrected != null) _playerPoint = ReadObjectPoint(corrected, _playerPoint);
+                    // Ворота Сердцевины: без подписанного контракта сервер
+                    // возвращает предложение выбрать фракцию. Повторять
+                    // прибытие бессмысленно, пока игрок не подписал контракт.
+                    if (ack?["contractRequired"]?.ToObject<bool>() == true)
+                    {
+                        OpenTerritoryContract(ack["contract"] as JObject, AckError(ack, "Нужен контракт с фракцией."));
+                        return;
+                    }
                     StatusText = AckError(ack, "Сервер не подтвердил прибытие.");
                     _arrivalRetryAt = Time.realtimeSinceStartup + 1.5f;
                     if (_contactArrival)
@@ -4161,6 +4187,122 @@ namespace RealmOfAshes.Game
             _pendingZoneRules = null;
             _locationEntryPending = false;
             StatusText = "Вход отменён. Вы остались на глобальной карте.";
+        }
+
+        /// <summary>
+        /// Открыть окно контракта с фракцией. Предложение присылает сервер:
+        /// доли фракций среди персонажей, база каждой и причина отказа.
+        /// </summary>
+        private void OpenTerritoryContract(JObject contract, string reason)
+        {
+            _territoryContract = contract != null ? (JObject)contract.DeepClone() : null;
+            _territoryContractPending = true;
+            _territoryContractSigning = false;
+            _territoryContractError = string.Empty;
+            _arrivalRetryAt = 0f;
+            if (string.IsNullOrEmpty(_territoryContractFactionId)
+                || FindContractFaction(_territoryContractFactionId) == null)
+            {
+                _territoryContractFactionId = FirstSignableContractFactionId();
+            }
+            StatusText = string.IsNullOrWhiteSpace(reason)
+                ? "Сердцевина пускает только по контракту с фракцией."
+                : reason;
+        }
+
+        public void SelectTerritoryContractFaction(string factionId)
+        {
+            if (!_territoryContractPending || string.IsNullOrEmpty(factionId)) return;
+            if (FindContractFaction(factionId) == null) return;
+            _territoryContractFactionId = factionId;
+            _territoryContractError = string.Empty;
+        }
+
+        /// <summary>
+        /// Подписать контракт. Сервер проверяет, что игрок стоит у ворот
+        /// Сердцевины, заводит в фракцию его и спутников без контракта, после
+        /// чего клиент повторяет запрос прибытия — уже на базу фракции.
+        /// </summary>
+        public void SignTerritoryContract()
+        {
+            if (!_territoryContractPending || _territoryContractSigning || Socket == null) return;
+            string factionId = _territoryContractFactionId;
+            if (string.IsNullOrEmpty(factionId))
+            {
+                _territoryContractError = "Выберите фракцию.";
+                return;
+            }
+            _territoryContractSigning = true;
+            _territoryContractError = string.Empty;
+            StatusText = "Подписываем контракт...";
+            if (!RoaTerritoryNet.JoinFaction(Socket, factionId, ack =>
+            {
+                _territoryContractSigning = false;
+                if (!AckOk(ack))
+                {
+                    _territoryContractError = AckError(ack, "Сервер отклонил контракт.");
+                    JObject refreshed = ack?["contract"] as JObject;
+                    if (refreshed != null) _territoryContract = (JObject)refreshed.DeepClone();
+                    StatusText = _territoryContractError;
+                    return;
+                }
+                _territoryContractPending = false;
+                _territoryContract = null;
+                string signed = ack?["factionId"]?.ToString() ?? factionId;
+                StatusText = "Контракт подписан: " + signed + ". Прибытие на базу фракции...";
+                _arrivalRetryAt = 0f;
+                RequestArrival();
+            }))
+            {
+                _territoryContractSigning = false;
+                _territoryContractError = "Нет связи с сервером.";
+            }
+        }
+
+        public void CancelTerritoryContract()
+        {
+            if (!_territoryContractPending) return;
+            _territoryContractPending = false;
+            _territoryContractSigning = false;
+            _territoryContract = null;
+            _territoryContractError = string.Empty;
+            // Маршрут останавливается: иначе цикл прибытия снова упрётся в
+            // ворота и откроет то же окно.
+            CancelTravel();
+            ClearTravel();
+            StatusText = "Контракт не подписан. Вы остались на глобальной карте.";
+        }
+
+        public JArray TerritoryContractFactions
+        {
+            get { return _territoryContract?["factions"] as JArray; }
+        }
+
+        private JObject FindContractFaction(string factionId)
+        {
+            JArray rows = TerritoryContractFactions;
+            if (rows == null || string.IsNullOrEmpty(factionId)) return null;
+            foreach (JToken row in rows)
+            {
+                JObject item = row as JObject;
+                if (item != null && string.Equals(item["factionId"]?.ToString(), factionId, StringComparison.Ordinal)) return item;
+            }
+            return null;
+        }
+
+        private string FirstSignableContractFactionId()
+        {
+            JArray rows = TerritoryContractFactions;
+            if (rows == null) return string.Empty;
+            foreach (JToken row in rows)
+            {
+                JObject item = row as JObject;
+                if (item == null) continue;
+                if (item["canSign"]?.ToObject<bool>() == true) return item["factionId"]?.ToString() ?? string.Empty;
+            }
+            // Лидер с контрактом набирает спутников в собственную фракцию:
+            // выбирать ему нечего, поэтому подставляем её.
+            return _territoryContract?["factionId"]?.ToString() ?? string.Empty;
         }
 
         /// <summary>

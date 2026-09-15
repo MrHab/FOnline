@@ -18,6 +18,16 @@ namespace RealmOfAshes.Game
             return Send(socket, "territoryFactionAction", new Dictionary<string, object> { ["action"] = "state" }, completed);
         }
 
+        /// <summary>
+        /// Предложение контракта у ворот Сердцевины: доли фракций среди
+        /// персонажей, база каждой и причина отказа. Сервер присылает то же
+        /// предложение в отказе на прибытие к воротам.
+        /// </summary>
+        public static bool RequestContractOffer(RoaSocketClient socket, Action<JObject> completed)
+        {
+            return Send(socket, "territoryFactionAction", new Dictionary<string, object> { ["action"] = "offer" }, completed);
+        }
+
         public static bool JoinFaction(RoaSocketClient socket, string factionId, Action<JObject> completed)
         {
             return Send(socket, "territoryFactionAction", new Dictionary<string, object>

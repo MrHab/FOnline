@@ -499,20 +499,50 @@ namespace RealmOfAshes.Game
             // no permanent detector bar or artifact button covers gameplay.
         }
 
-        private static string FormatEffects(JObject effects)
+        /// <summary>
+        /// Итог эффектов пояса. У показателей с потолком он назван рядом:
+        /// иначе непонятно, почему четвёртая «Пружина» уже ничего не даёт.
+        /// Одинаковая польза складывается с уменьшением, штрафы — полностью;
+        /// это тоже сказано прямо.
+        /// </summary>
+        public static string FormatEffects(JObject effects)
         {
             if (effects == null) return "ПОЯС-КОНТЕЙНЕР\nНет активных артефактов.";
             int count = (effects["artifactTypeIds"] as JArray)?.Count ?? 0;
             if (count == 0) return "ПОЯС-КОНТЕЙНЕР\nНет активных артефактов.\n\nСтабилизируйте находку и установите её на пояс.";
+            JObject caps = effects["caps"] as JObject;
             return "ИТОГ ЭФФЕКТОВ\n"
                 + $"Артефактов: {count}\n"
-                + $"Скорость: {Percent(effects, "speedPct")}\n"
+                + $"Скорость: {Percent(effects, "speedPct")}{CapPercent(caps, "speedPct", Value(effects, "speedPct"))}\n"
                 + $"Восстановление ОД: {Percent(effects, "apRegenPct")}\n"
-                + $"Груз: {Signed(Value(effects, "carryKg"))} кг\n"
+                + $"Груз: {Signed(Value(effects, "carryKg"))} кг{CapValue(caps, "carryKg", Value(effects, "carryKg"), " кг")}\n"
                 + $"Макс. здоровье: {Signed(Value(effects, "maxHpFlat"))}\n"
-                + $"Регенерация: {Value(effects, "regenHpPerSecond"):0.0} HP/с\n"
+                + $"Регенерация: {Value(effects, "regenHpPerSecond"):0.0} HP/с{CapValue(caps, "regenHpPerSecond", Value(effects, "regenHpPerSecond"), " HP/с")}\n"
                 + $"Ближний урон: {Percent(effects, "meleeDamagePct")}\n\n"
+                + SecondaryRuleLine(caps)
                 + "Бонусы и штрафы уже учтены сервером.";
+        }
+
+        /// <summary>Потолок показателя: «(предел +18%)» или «(предел достигнут)».</summary>
+        private static string CapPercent(JObject caps, string key, float value)
+        {
+            float cap = caps?[key]?.Value<float>() ?? 0f;
+            if (cap <= 0f) return string.Empty;
+            return value >= cap - 0.0005f ? " (предел достигнут)" : " (предел " + Signed(cap * 100f) + "%)";
+        }
+
+        private static string CapValue(JObject caps, string key, float value, string unit)
+        {
+            float cap = caps?[key]?.Value<float>() ?? 0f;
+            if (cap <= 0f) return string.Empty;
+            return value >= cap - 0.0005f ? " (предел достигнут)" : " (предел " + Signed(cap) + unit + ")";
+        }
+
+        private static string SecondaryRuleLine(JObject caps)
+        {
+            float secondary = caps?["secondarySimilarEffectMultiplier"]?.Value<float>() ?? 0f;
+            if (secondary <= 0f) return string.Empty;
+            return "Одинаковая польза от второго и дальше — " + Mathf.RoundToInt(secondary * 100f) + "%, штрафы — полностью.\n";
         }
 
         private static string ArtifactDisplayName(string typeId)

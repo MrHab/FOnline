@@ -109,6 +109,38 @@
     "z": -63,
     "rotationY": -0.78539816339744828
   },
+  "entryFromLabSproutVent": {
+    "tx": 117,
+    "tz": 121,
+    "x": 74.0,
+    "y": 0.1,
+    "z": 82.0,
+    "rotationY": -2.407431657595764
+  },
+  "entryFromLabCircuitVent": {
+    "tx": 45,
+    "tz": 121,
+    "x": -70.0,
+    "y": 0.1,
+    "z": 82.0,
+    "rotationY": 2.4349784511814887
+  },
+  "entryFromLabAlloyVent": {
+    "tx": 39,
+    "tz": 45,
+    "x": -82.0,
+    "y": 0.1,
+    "z": -70.0,
+    "rotationY": 0.8641821243865921
+  },
+  "entryFromLabSpectrumVent": {
+    "tx": 122,
+    "tz": 50,
+    "x": 84.0,
+    "y": 0.1,
+    "z": -60.0,
+    "rotationY": -0.9505468408120752
+  },
   "entryFromLabCenter": {
     "tx": 80,
     "tz": 73,

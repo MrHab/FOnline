@@ -280,6 +280,10 @@ function zoneDefinition() {
       ...point(e.x - dirX * 6, e.z - dirZ * 6, width, depth), radius: 3
     });
     entries[lab.entryKey] = point(e.x - dirX * 9, e.z - dirZ * 9, width, depth, { rotationY: Math.atan2(-dirX, -dirZ) });
+    // Аварийный шлюз выводит не к гермодвери, а к вентиляционной шахте у
+    // корпуса: обратный путь из лаборатории всегда есть, и он другой.
+    const vent = lab.ventExit;
+    entries[lab.ventEntryKey] = point(vent.x, vent.z, width, depth, { rotationY: Math.atan2(-vent.x, -vent.z) });
   });
 
   const c = territory.centralLab;
@@ -395,13 +399,16 @@ function labDefinition(lab, index) {
     prop('node_b', theme === 'bio' ? 'Питательный узел' : theme === 'energy' ? 'Распределительный щит' : theme === 'materials' ? 'Клапан давления' : 'Импульсный излучатель', 'utility_pole.glb', 10, 22, 1.2, ['lab', 'mechanic-node', theme], {
       fields: { interactive: { kind: 'labNode', role: 'mechanic', labId: lab.id, nodeId: 'node_b', theme } }
     }),
+    prop('vent_shaft', 'Аварийный шлюз', 'cargo_stack.glb', -18, 28, { x: 1.4, y: 1.6, z: 1 }, ['lab', 'lab-door', theme], {
+      fields: { interactive: { kind: 'transition', role: 'labDoor', to: territory.zoneLocationId } }
+    }),
     prop('landmark', lab.displayName, theme === 'energy' ? 'relay_antenna.glb' : theme === 'bio' ? 'water_tank.glb' : 'cargo_stack.glb', 0, 26, 1.8, ['lab', 'landmark', theme])
   ];
   themeEnemies.forEach(([kind, x, z], k) => objects.push(mutant(`${theme}_guardian_${k + 1}`, kind, x, z)));
   return {
     schema: 'realm.location.v1', version: 1, id: lab.id, name: lab.displayName,
     seed: 2026091520 + index, safe: false, pvpMode: territory.zone.pvpMode, kind: 'territoryLab', respawnAllowed: false,
-    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true,
+    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true, noGlobalMapEntry: true,
     territoryId: territory.id, territoryRole: 'lab', factionAccess: 'territory',
     lab: { id: lab.id, theme, summary: lab.summary, rewardComponents: lab.rewardComponents, innerGateContainerId: 'inner_vault' },
     ground: { preset: 'concreteFloor', label: lab.displayName },
@@ -410,7 +417,8 @@ function labDefinition(lab, index) {
     entryFromWorld: point(0, -30, width, depth),
     entryFromCore: point(0, -30, width, depth),
     transitions: [
-      { id: 'exit_to_core', type: 'location', label: 'Выход в Сердцевину', to: territory.zoneLocationId, entryKey: lab.entryKey, ...point(0, -34, width, depth), radius: 3 }
+      { id: 'exit_to_core', type: 'location', label: 'Выход в Сердцевину', to: territory.zoneLocationId, entryKey: lab.entryKey, ...point(0, -34, width, depth), radius: 3 },
+      { id: 'vent_to_core', type: 'location', label: 'Аварийный шлюз — в Сердцевину', to: territory.zoneLocationId, entryKey: lab.ventEntryKey, ...point(-18, 30, width, depth), radius: 3 }
     ],
     worldZones: [],
     containers: [
@@ -487,7 +495,7 @@ function centralLevelDefinition(level, index) {
   return {
     schema: 'realm.location.v1', version: 1, id: level.id, name: level.displayName,
     seed: 2026091530 + index, safe: false, pvpMode: territory.zone.pvpMode, kind: 'territoryLab', respawnAllowed: false,
-    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true,
+    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true, noGlobalMapEntry: true,
     territoryId: territory.id, territoryRole: 'centralLab', factionAccess: 'territory',
     lab: { id: c.id, level: level.role, levelIndex: index, worldBoss: level.role === 'reactor' ? c.worldBoss : null },
     ground: { preset: 'concreteFloor', label: level.displayName },

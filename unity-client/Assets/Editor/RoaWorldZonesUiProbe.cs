@@ -106,6 +106,26 @@ namespace RealmOfAshes.EditorTools
             Require(areaLine.Contains("встреча личная"), "Area summary explains that the encounter is personal");
             Require(RoaGlobalMap.PveAreaLabel(null) == string.Empty, "Without an area the summary stays empty");
 
+            // Зал боковой лаборатории: шкала угрозы, объявленный удар и
+            // готовность узлов на стенах.
+            var lab = JObject.Parse(@"{'roomId':'coreLabCircuit','meterLabel':'Перегрузка','meter':0.62,
+                'hazardName':'Разряд по залу','telegraph':false,'telegraphInSeconds':0,'guardShielded':true,
+                'nodes':[{'id':'node_a','displayName':'Распределительный щит','readyInSeconds':0},
+                         {'id':'node_b','displayName':'Распределительный щит','readyInSeconds':12}]}");
+            string labText = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
+            Require(labText.Contains("ПЕРЕГРУЗКА: 62%"), "The hall shows its meter: " + labText);
+            Require(labText.Contains("МАШИНА ПОД ПИТАНИЕМ"), "A shielded guard machine is announced: " + labText);
+            Require(labText.Contains("Распределительный щит (12 с)"), "A recharging node shows its timer: " + labText);
+            lab["telegraph"] = true; lab["telegraphInSeconds"] = 3;
+            string labStrike = RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit");
+            Require(labStrike.Contains("РАЗРЯД ПО ЗАЛУ!") && labStrike.Contains("3 с"), "The announced strike is counted down: " + labStrike);
+            lab["telegraph"] = false;
+            lab["nodes"][1]["readyInSeconds"] = 0;
+            Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabCircuit").Contains("Распределительный щит ×2"),
+                "Identical ready nodes collapse into one row");
+            Require(RoaWorldEventsPresentation.DescribeLabHall(lab, "coreLabAlloy") == string.Empty, "Another hall's state is not shown");
+            Require(RoaWorldEventsPresentation.DescribeLabHall(null, "coreLabCircuit") == string.Empty, "Without a hall the line stays empty");
+
             var record = JObject.Parse(@"{'id':'r1','typeId':'spring','itemId':'artifactSpring','tier':4,'tierShort':'Т4','tierName':'Чистый','stabilized':false,'hot':true,
                 'stabilizationCost':{'silver':320,'items':[{'id':'stabilizerCatalyst','qty':2},{'id':'circuitModule','qty':1}]},'salvageYields':[{'id':'stabilizerCatalyst','qty':1}]}");
             string raw = RoaPipboyCanvas.ArtifactCardSummary(record, 1);
@@ -155,7 +175,7 @@ namespace RealmOfAshes.EditorTools
                 Require(go.GetComponentInChildren<Canvas>(true) != null, "World events presentation builds its canvas without a socket");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
-            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE lines, artifact tier cards, preview deltas and the faction contract window.");
+            Debug.Log("[WORLD ZONES UI] OK: zone banners, outpost/event/boss/PvE/lab-hall lines, artifact tier cards, preview deltas and the faction contract window.");
         }
 
         private static void Require(bool condition, string message)

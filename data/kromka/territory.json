@@ -166,11 +166,46 @@
         "z": 72
       },
       "entryKey": "entryFromLabSprout",
+      "ventEntryKey": "entryFromLabSproutVent",
+      "ventExit": {
+        "x": 74,
+        "z": 82
+      },
       "rewardComponents": [
         "bioReagent",
         "medicine",
         "chemicals"
-      ]
+      ],
+      "mechanics": {
+        "meterLabel": "Споры",
+        "hazard": {
+          "kind": "spores",
+          "displayName": "Заражённая секция",
+          "buildMs": 45000,
+          "telegraphMs": 4000,
+          "damage": 14,
+          "radius": 6,
+          "distance": 9,
+          "sectors": 4,
+          "active": 2
+        },
+        "nodes": [
+          {
+            "id": "node_a",
+            "displayName": "Питательный узел",
+            "action": "vent",
+            "relief": 0.8,
+            "cooldownMs": 30000
+          },
+          {
+            "id": "node_b",
+            "displayName": "Питательный узел",
+            "action": "vent",
+            "relief": 0.8,
+            "cooldownMs": 30000
+          }
+        ]
+      }
     },
     {
       "id": "coreLabCircuit",
@@ -182,10 +217,53 @@
         "z": 72
       },
       "entryKey": "entryFromLabCircuit",
+      "ventEntryKey": "entryFromLabCircuitVent",
+      "ventExit": {
+        "x": -70,
+        "z": 82
+      },
       "rewardComponents": [
         "circuitModule",
         "electronics"
-      ]
+      ],
+      "mechanics": {
+        "meterLabel": "Перегрузка",
+        "hazard": {
+          "kind": "discharge",
+          "displayName": "Разряд по залу",
+          "buildMs": 38000,
+          "telegraphMs": 3000,
+          "damage": 18,
+          "radius": 7,
+          "distance": 8,
+          "sectors": 4,
+          "active": 2
+        },
+        "nodes": [
+          {
+            "id": "node_a",
+            "displayName": "Распределительный щит",
+            "action": "power",
+            "relief": 0.75,
+            "cooldownMs": 30000,
+            "effectMs": 20000
+          },
+          {
+            "id": "node_b",
+            "displayName": "Распределительный щит",
+            "action": "power",
+            "relief": 0.75,
+            "cooldownMs": 30000,
+            "effectMs": 20000
+          }
+        ],
+        "guard": {
+          "displayName": "Охранная машина",
+          "modelKey": "craftStationEnergy",
+          "hp": 420,
+          "shieldAboveMeter": 0.5
+        }
+      }
     },
     {
       "id": "coreLabAlloy",
@@ -197,11 +275,50 @@
         "z": -72
       },
       "entryKey": "entryFromLabAlloy",
+      "ventEntryKey": "entryFromLabAlloyVent",
+      "ventExit": {
+        "x": -82,
+        "z": -70
+      },
       "rewardComponents": [
         "alloyPlate",
         "scrap",
         "ore"
-      ]
+      ],
+      "mechanics": {
+        "meterLabel": "Нагрев",
+        "hazard": {
+          "kind": "heat",
+          "displayName": "Выброс давления",
+          "buildMs": 42000,
+          "telegraphMs": 3500,
+          "damage": 16,
+          "radius": 8,
+          "distance": 7,
+          "sectors": 3,
+          "active": 2
+        },
+        "nodes": [
+          {
+            "id": "node_a",
+            "displayName": "Клапан давления",
+            "action": "cool",
+            "relief": 0.8,
+            "cooldownMs": 28000
+          },
+          {
+            "id": "node_b",
+            "displayName": "Клапан давления",
+            "action": "cool",
+            "relief": 0.8,
+            "cooldownMs": 28000
+          }
+        ],
+        "overheat": {
+          "aboveMeter": 0.6,
+          "damageBonus": 0.35
+        }
+      }
     },
     {
       "id": "coreLabSpectrum",
@@ -213,10 +330,47 @@
         "z": -72
       },
       "entryKey": "entryFromLabSpectrum",
+      "ventEntryKey": "entryFromLabSpectrumVent",
+      "ventExit": {
+        "x": 84,
+        "z": -60
+      },
       "rewardComponents": [
         "spectrumSample",
         "stabilizerCatalyst"
-      ]
+      ],
+      "mechanics": {
+        "meterLabel": "Импульс",
+        "hazard": {
+          "kind": "pulse",
+          "displayName": "Импульсная последовательность",
+          "buildMs": 30000,
+          "telegraphMs": 3000,
+          "damage": 15,
+          "radius": 6,
+          "distance": 10,
+          "sectors": 6,
+          "active": 3
+        },
+        "nodes": [
+          {
+            "id": "node_a",
+            "displayName": "Импульсный излучатель",
+            "action": "shift",
+            "relief": 0.5,
+            "cooldownMs": 20000,
+            "effectMs": 12000
+          },
+          {
+            "id": "node_b",
+            "displayName": "Импульсный излучатель",
+            "action": "shift",
+            "relief": 0.5,
+            "cooldownMs": 20000,
+            "effectMs": 12000
+          }
+        ]
+      }
     }
   ],
   "centralLab": {

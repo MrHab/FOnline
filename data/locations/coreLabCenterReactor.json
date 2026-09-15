@@ -13,6 +13,7 @@
   "noRespawn": true,
   "allowGlobalMapExit": false,
   "noGlobalMap": true,
+  "noGlobalMapEntry": true,
   "territoryId": "core",
   "territoryRole": "centralLab",
   "factionAccess": "territory",

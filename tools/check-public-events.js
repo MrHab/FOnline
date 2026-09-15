@@ -141,4 +141,37 @@ for (const needle of [
 const socketClient = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 assert(socketClient.includes('_connection.On("publicEventState"') && socketClient.includes('OnPublicEventState?.Invoke(payload)'), 'Unity must route publicEventState.');
 
+// --- мини-босс сценария и сохранение награды ------------------------------------
+// Спецификация требует мини-босса в цикле события и однократной выдачи награды,
+// которая не пропадает при перезапуске.
+for (const template of catalog.templates) {
+  assert(template.boss && template.boss.displayName, `${template.id}: the scenario declares a mini boss`);
+  assert(template.danger >= 1 && template.danger <= 5, `${template.id}: the scenario declares its danger`);
+}
+const bossEvent = events.createPublicEvent(catalog.byId.raider_base, { now: t0, rules, random: () => 0.5, point: { x: 40, y: 40 } });
+assert.equal(bossEvent.danger, catalog.byId.raider_base.danger, 'The event carries the danger of its scenario.');
+assert.equal(events.publicEventBossDefeated(bossEvent, catalog.byId.raider_base), false,
+  'While the boss is alive the event is not cleared.');
+assert(events.notePublicEventBoss(bossEvent, { spawned: true }), 'The boss appears once.');
+assert(!events.notePublicEventBoss(bossEvent, { spawned: true }), 'The boss never doubles.');
+assert(events.notePublicEventBoss(bossEvent, { killedAt: t0 + 1000 }));
+assert.equal(events.publicEventBossDefeated(bossEvent, catalog.byId.raider_base), true, 'A dead boss opens the way to the reward.');
+const bossView = events.publicEvent(bossEvent, t0 + 2000, rules, { bossName: catalog.byId.raider_base.boss.displayName });
+assert.equal(bossView.boss.displayName, 'Главарь налётчиков', 'Players see who to hunt.');
+assert.equal(bossView.boss.killed, true);
+assert.equal(bossView.danger, catalog.byId.raider_base.danger);
+// Сундук и состояние босса переживают перезапуск.
+bossEvent.chest.announced = true;
+const restoredStore = events.normalizePublicEventStore({ version: 1, events: { [bossEvent.id]: bossEvent } });
+const restoredEvent = restoredStore.events[bossEvent.id];
+assert.equal(restoredEvent.boss.killedAt, t0 + 1000, 'The defeated boss stays defeated after a restart.');
+assert.equal(restoredEvent.chest.announced, true, 'An announced chest is not announced twice after a restart.');
+const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+for (const needle of [
+  'function serverEnsurePublicEventBoss(',
+  'publicEventBossDefeated(event, template)',
+  "if (room && event.cleared && !event.chest.claimedBy) serverSpawnPublicEventChest(room, event, now);"
+]) assert(serverSource.includes(needle), `server.js must run the scenario boss and restore the reward: ${needle}`);
+assert(!serverSource.includes('event.chestAnnounced'), 'The announcement flag must live in the persisted event.');
+
 console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);

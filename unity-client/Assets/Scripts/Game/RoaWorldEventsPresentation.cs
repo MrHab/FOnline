@@ -272,6 +272,15 @@ namespace RealmOfAshes.Game
             int remaining = Math.Max(0, (payload["remainingSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);
             string name = payload["displayName"]?.ToString() ?? "Событие";
             var sb = new StringBuilder(name.ToUpperInvariant()).Append(" · ").Append(Clock(remaining));
+            int danger = payload["danger"]?.Value<int>() ?? 0;
+            if (danger > 0) sb.Append(" · опасность ").Append(danger);
+            // Мини-босс сценария: пока он жив, событие не зачищено и тайник закрыт.
+            JObject boss = payload["boss"] as JObject;
+            string bossName = boss?["displayName"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(bossName))
+            {
+                sb.Append(boss["killed"]?.Value<bool>() == true ? " · " + bossName + ": повержен" : " · цель: " + bossName);
+            }
             if (payload["warning"]?.Value<bool>() == true) sb.Append(" · СКОРО ЗАКРОЕТСЯ");
             if (payload["cleared"]?.Value<bool>() == true)
             {

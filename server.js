@@ -209,8 +209,10 @@ const {
   claimPublicEventChest,
   normalizePublicEventCatalog,
   normalizePublicEventStore,
+  notePublicEventBoss,
   notePublicEventCleared,
   publicEvent: publicPublicEvent,
+  publicEventBossDefeated,
   publicEventChestOpen,
   publicEventEntryError,
   publicEventZone,
@@ -2163,7 +2165,7 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     sim: WASTELAND_SIM.publicState(),
     factions: publicKromkaFactionCatalog(),
     territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
-    publicEvents: publicPublicEvents(serverPublicEventStore(), now),
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now, KROMKA_PUBLIC_EVENT_CATALOG),
     // Постоянные PvE-области: границы, опасность, обитатели и категории добычи
     // известны игроку до входа — карта рисует контур, а не безымянный узел.
     pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation)
@@ -19460,7 +19462,13 @@ function serverSyncPublicEventZone(event) {
 }
 
 function serverPublicEventPayload(event, now = Date.now(), extra = {}) {
-  return { ...publicPublicEvent(event, now), ...extra, t: now };
+  // Имя мини-босса берётся из шаблона сценария: игрок видит, кого искать.
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  return {
+    ...publicPublicEvent(event, now, KROMKA_PUBLIC_EVENT_CATALOG.rules, { bossName: template?.boss?.displayName || '' }),
+    ...extra,
+    t: now
+  };
 }
 
 function serverEmitPublicEventState(event, extra = {}, now = Date.now()) {
@@ -19539,6 +19547,47 @@ function serverPublicEventChestError(room, container, player, now = Date.now()) 
   return '';
 }
 
+/**
+ * Мини-босс события: главарь налётчиков или матка логова. Появляется один раз
+ * на событие, считается обычным враждебным актором и обязателен для зачистки —
+ * без его гибели награда не открывается.
+ */
+function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
+  const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event?.templateId];
+  if (!room || !event || !template?.boss) return false;
+  if (Number(event.boss?.killedAt || 0) > 0) return false;
+  const existing = [...(room.enemies?.values?.() || [])].find(enemy => enemy?.publicEventBossId === event.id);
+  if (existing) {
+    if (!existing.dead) return false;
+    // Босс убит: событие можно зачищать, награда откроется по таймеру.
+    return notePublicEventBoss(event, { killedAt: now });
+  }
+  if (event.boss?.spawned === true) return false;
+  ensureRoomWorld(room);
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const spot = findRoomSafeSpawnTile(room, center.tx, center.tz,
+    { maxRadius: 8, radius: 0.8, minEnemyDistance: 1.2, minPlayerDistance: 10 }) || center;
+  const boss = spawnEncounterActor(room, spot.tx, spot.tz, {
+    faction: template.kind === 'raiderBase' ? 'raiders' : 'monsters',
+    role: 'monster',
+    species: template.boss.species,
+    modelKey: template.boss.modelKey,
+    hostileToPlayer: true,
+    name: template.boss.displayName,
+    canDialogue: false
+  });
+  if (!boss) return false;
+  boss.publicEventBossId = event.id;
+  boss.eliteRank = 'boss';
+  const multiplier = Math.max(1, Number(template.boss.hpMultiplier || 2));
+  boss.maxHp = Math.round(Number(boss.maxHp || boss.hp || 60) * multiplier);
+  boss.hp = boss.maxHp;
+  boss.atk = Math.round(Number(boss.atk || 8) * Math.min(2, multiplier));
+  room.structureDirty = true;
+  return notePublicEventBoss(event, { spawned: true });
+}
+
 function serverPublicEventHostilesAlive(room) {
   let count = 0;
   for (const enemy of room?.enemies?.values?.() || []) {
@@ -19597,15 +19646,24 @@ function serverTickPublicEvents(now = Date.now(), options = {}) {
   for (const event of Object.values(store.events)) {
     if (event.status === 'expired') continue;
     const room = rooms.get(String(event.roomId || ''));
-    if (room && room.encounterSetupDone && !event.cleared && serverPublicEventHostilesAlive(room) === 0) {
+    const template = KROMKA_PUBLIC_EVENT_CATALOG.byId[event.templateId];
+    if (room && room.encounterSetupDone && !event.cleared) {
+      if (serverEnsurePublicEventBoss(room, event, now)) changed = true;
+    }
+    if (room && room.encounterSetupDone && !event.cleared
+      && serverPublicEventHostilesAlive(room) === 0 && publicEventBossDefeated(event, template)) {
       if (notePublicEventCleared(event, rules, now, room.rng || random)) {
         serverSpawnPublicEventChest(room, event, now);
         serverEmitPublicEventState(event, { cleared: true }, now);
         changed = true;
       }
     }
-    if (room && event.cleared && !event.chestAnnounced && publicEventChestOpen(event, now)) {
-      event.chestAnnounced = true;
+    // Награда переживает перезапуск: у зачищенного и никем не забранного
+    // события сундук создаётся заново, как только комната снова существует.
+    if (room && event.cleared && !event.chest.claimedBy) serverSpawnPublicEventChest(room, event, now);
+    if (room && event.cleared && !event.chest.announced && publicEventChestOpen(event, now)) {
+      event.chest.announced = true;
+      changed = true;
       serverEmitPublicEventState(event, { chestOpen: true }, now);
     }
     const transition = tickPublicEvent(event, rules, now);

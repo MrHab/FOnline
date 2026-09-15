@@ -172,12 +172,28 @@ function tickScenario(state = {}, template = null, options = {}, now = Date.now(
 }
 
 /** Снимок сценария для клиента: что ещё цело и когда прилетит удар. */
+/**
+ * Сторона света для опоры: к цели ведёт не один коридор, и игрок должен
+ * заранее знать, с какой стороны стоит генератор, а с какой — гнездо, чтобы
+ * выбрать подход, а не идти в лоб.
+ */
+function supportSide(x = 0, z = 0) {
+  const dx = Number(x || 0);
+  const dz = Number(z || 0);
+  if (Math.abs(dx) < 1 && Math.abs(dz) < 1) return 'в центре';
+  const vertical = Math.abs(dz) >= Math.abs(dx) * 0.5 ? (dz >= 0 ? 'север' : 'юг') : '';
+  const horizontal = Math.abs(dx) >= Math.abs(dz) * 0.5 ? (dx >= 0 ? 'восток' : 'запад') : '';
+  if (vertical && horizontal) return `${vertical}о-${horizontal}`;
+  return vertical || horizontal;
+}
+
 function publicScenario(state = {}, template = null, center = { x: 0, z: 0 }, now = Date.now()) {
   if (!template) return null;
   const supports = (template.supports || []).map(row => ({
     id: row.id,
     kind: row.kind,
     displayName: row.displayName,
+    side: supportSide(row.x, row.z),
     alive: supportAlive(state, row.id)
   }));
   const strike = template.strike ? {
@@ -199,6 +215,7 @@ function publicScenario(state = {}, template = null, center = { x: 0, z: 0 }, no
 
 module.exports = {
   noteSupportDestroyed,
+  supportSide,
   normalizeScenarioState,
   normalizeScenarioTemplate,
   publicScenario,

@@ -90,7 +90,8 @@
       "id": "gari_den",
       "mechanics": {
         "supports": [
-          { "id": "den_nest", "kind": "reinforcement", "displayName": "Логовище", "modelKey": "scrapHeap", "hp": 180, "x": -6, "z": 6, "intervalMs": 24000, "maxAlive": 4, "squad": 1 }
+          { "id": "den_nest", "kind": "reinforcement", "displayName": "Логовище", "modelKey": "scrapHeap", "hp": 180, "x": -6, "z": 6, "intervalMs": 24000, "maxAlive": 4, "squad": 1 },
+          { "id": "den_burrow", "kind": "reinforcement", "displayName": "Нора выводка", "modelKey": "scrapHeap", "hp": 160, "x": 7, "z": -5, "intervalMs": 26000, "maxAlive": 3, "squad": 1 }
         ],
         "strike": { "kind": "dash", "displayName": "Рывок вожака", "intervalMs": 16000, "telegraphMs": 2000, "radius": 3, "damage": 20 },
         "hazards": { "count": 1, "radius": 4, "distance": 8, "damage": 10, "displayName": "Выжженная земля" }
@@ -123,7 +124,8 @@
       "id": "scorpion_pit",
       "mechanics": {
         "supports": [
-          { "id": "pit_nest", "kind": "reinforcement", "displayName": "Кладка", "modelKey": "oreOutcrop", "hp": 200, "x": 0, "z": -8, "intervalMs": 20000, "maxAlive": 6, "squad": 2 }
+          { "id": "pit_nest", "kind": "reinforcement", "displayName": "Кладка", "modelKey": "oreOutcrop", "hp": 200, "x": 0, "z": -8, "intervalMs": 20000, "maxAlive": 6, "squad": 2 },
+          { "id": "pit_tunnel", "kind": "reinforcement", "displayName": "Боковой ход", "modelKey": "oreOutcrop", "hp": 170, "x": -8, "z": 5, "intervalMs": 24000, "maxAlive": 4, "squad": 1 }
         ],
         "strike": { "kind": "dash", "displayName": "Рывок матки", "intervalMs": 14000, "telegraphMs": 2000, "radius": 3, "damage": 24 },
         "hazards": { "count": 2, "radius": 4, "distance": 10, "damage": 14, "displayName": "Ядовитая земля" }

@@ -325,7 +325,11 @@ namespace RealmOfAshes.Game
             {
                 JObject row = token as JObject;
                 if (row == null || row["alive"]?.Value<bool>() != true) continue;
-                intact.Add(row["displayName"]?.ToString() ?? "опора");
+                // Сторона опоры важна: к цели ведёт не один коридор, и отряд
+                // выбирает, с какой стороны заходить.
+                string side = row["side"]?.ToString();
+                string name = row["displayName"]?.ToString() ?? "опора";
+                intact.Add(string.IsNullOrEmpty(side) ? name : name + " (" + side + ")");
             }
             if (intact.Count > 0) parts.Add("цело: " + string.Join(", ", intact));
             if (scenario["shielded"]?.Value<bool>() == true) parts.Add("ГЛАВАРЬ ПОД ЩИТОМ");

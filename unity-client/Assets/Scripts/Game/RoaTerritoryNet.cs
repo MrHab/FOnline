@@ -73,6 +73,34 @@ namespace RealmOfAshes.Game
             }, completed);
         }
 
+        /// <summary>Ремонтник столицы: список изношенного и цена за каждую починку.</summary>
+        public static bool RequestRepairState(RoaSocketClient socket, Action<JObject> completed)
+        {
+            return Send(socket, "baseServiceAction", new Dictionary<string, object>
+            {
+                ["service"] = "repair",
+                ["action"] = "state"
+            }, completed);
+        }
+
+        /// <summary>
+        /// Починка за марки: пустой itemId чинит всё сразу, экземпляр оружия
+        /// выбирается своим runtime-id.
+        /// </summary>
+        public static bool UseRepairman(RoaSocketClient socket, string itemId, string itemRuntimeId, Action<JObject> completed)
+        {
+            bool all = string.IsNullOrEmpty(itemId) && string.IsNullOrEmpty(itemRuntimeId);
+            var payload = new Dictionary<string, object>
+            {
+                ["service"] = "repair",
+                ["action"] = all ? "repairAll" : "repair",
+                ["requestId"] = NewRequestId(all ? "repair-all" : "repair-one")
+            };
+            if (!string.IsNullOrEmpty(itemId)) payload["itemId"] = itemId;
+            if (!string.IsNullOrEmpty(itemRuntimeId)) payload["itemRuntimeId"] = itemRuntimeId;
+            return Send(socket, "baseServiceAction", payload, completed);
+        }
+
         private static bool Send(RoaSocketClient socket, string eventName, Dictionary<string, object> payload, Action<JObject> completed)
         {
             if (socket == null || socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return false;

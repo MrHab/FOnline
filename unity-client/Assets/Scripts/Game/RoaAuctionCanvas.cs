@@ -447,8 +447,8 @@ namespace RealmOfAshes.Game
         {
             if (_root == null || !_root.activeSelf) return;
 
-            string factionId = _state?["factionId"]?.ToString() ?? string.Empty;
-            _title.text = "РЫНОК" + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + factionId.ToUpperInvariant());
+            // Книга одна на всю пустошь: у любого аукционера видны те же ордера.
+            _title.text = "РЫНОК ПУСТОШИ";
             _terms.text = "Налог с продажи " + Mathf.RoundToInt(TaxPct * 100f) + "% · сбор за ордер "
                 + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
             _status.text = string.IsNullOrEmpty(_note)

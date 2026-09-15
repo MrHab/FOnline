@@ -743,7 +743,8 @@ namespace RealmOfAshes.Game
             if (!visible) return;
             JObject rules = Map.PendingZoneRules;
             if (_zoneRulesTitle != null) _zoneRulesTitle.text = ZoneRulesTitle(rules);
-            if (_zoneRulesText != null) _zoneRulesText.text = ZoneRulesDescription(rules);
+            if (_zoneRulesText != null)
+                _zoneRulesText.text = ZoneRulesDescription(rules, Map != null ? Map.SelectedEventBriefing() : string.Empty);
             _fullLootModal.transform.SetAsLastSibling();
         }
 
@@ -758,7 +759,7 @@ namespace RealmOfAshes.Game
         /// Текст правил зоны до входа. Сервер присылает `zoneRules` вместе с
         /// прибытием; без него показывается правило частичной потери.
         /// </summary>
-        public static string ZoneRulesDescription(JObject rules)
+        public static string ZoneRulesDescription(JObject rules, string note = "")
         {
             string label = rules?["label"]?.ToString();
             string pvp = rules?["pvpLabel"]?.ToString();
@@ -779,6 +780,9 @@ namespace RealmOfAshes.Game
             builder.Append(loss);
             if (!string.IsNullOrWhiteSpace(access) && access != "Вход открыт всем.")
                 builder.Append('\n').Append(access);
+            // Вводная события: она объясняет, за что там дерутся, и читать её
+            // имеет смысл именно здесь — перед входом, а не после.
+            if (!string.IsNullOrWhiteSpace(note)) builder.Append('\n').Append(note.Trim());
             return builder.ToString().Trim();
         }
 
@@ -1316,9 +1320,15 @@ namespace RealmOfAshes.Game
             {
                 GlobalMapNode playerNode = Map.PlayerNode;
                 _route.text = Map.SelectedTitle;
-                _routeMeta.text = same
+                // Что ждёт в цели: временное событие со своим остатком (ехать к
+                // логову, которое закроется раньше прибытия, незачем) или
+                // постоянная область с её опасностью.
+                string eventMeta = Map.SelectedEventMeta();
+                if (string.IsNullOrEmpty(eventMeta)) eventMeta = Map.SelectedAreaMeta();
+                _routeMeta.text = (same
                     ? (playerNode != null ? "Вы в зоне · " + Map.NodeTitle(playerNode) : "Текущая точка пустоши")
-                    : Map.DistanceKm(player, selected).ToString("0.0") + " км · риск " + risk;
+                    : Map.DistanceKm(player, selected).ToString("0.0") + " км · риск " + risk)
+                    + (string.IsNullOrEmpty(eventMeta) ? string.Empty : " · " + eventMeta);
                 _routeHint.text = same
                     ? "Кликните по этой точке, чтобы войти в локацию."
                     : "Клик строит маршрут сразу. Цель можно изменить в любой момент.";

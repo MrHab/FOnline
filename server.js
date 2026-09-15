@@ -3900,8 +3900,11 @@ savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
 savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
 // Мировые боссы: поражение и срок перерождения переживают перезапуск.
 if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object' || Array.isArray(savesDb.worldBosses)) savesDb.worldBosses = {};
-// Рынок фракций: книга ордеров и полки торговцев переживают перезапуск.
-savesDb.factionAuctions = normalizeMarketStore(savesDb.factionAuctions);
+// Рынок пустоши: книга ордеров и полки торговцев переживают перезапуск. Книга
+// одна на всех аукционеров; прежние фракционные книги вливаются в неё при
+// первом чтении, поэтому старое сохранение не теряет ни ордеров, ни полок.
+savesDb.market = normalizeMarketStore(savesDb.market || savesDb.factionAuctions);
+delete savesDb.factionAuctions;
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
@@ -19214,8 +19217,8 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 // возвраты — на полке торговца у аукционера.
 // ---------------------------------------------------------------------------
 function serverAuctionStore() {
-  if (!savesDb.factionAuctions || typeof savesDb.factionAuctions !== 'object') savesDb.factionAuctions = normalizeMarketStore(null);
-  return savesDb.factionAuctions;
+  if (!savesDb.market || typeof savesDb.market !== 'object') savesDb.market = normalizeMarketStore(null);
+  return savesDb.market;
 }
 
 function serverTickAuctions(now = Date.now()) {
@@ -19235,10 +19238,94 @@ function serverMarketItemIsFungible(itemId = '') {
   return item.conditionMode === 'none' && item.category !== 'artifacts';
 }
 
+// ---------------------------------------------------------------------------
+// Ремонтник столицы: чинит за марки то, на что в поле нужен ремкомплект или
+// руда с древесиной. Верстак остаётся дешевле — там платят материалами и
+// навыком, здесь платят деньгами и получают сразу сто процентов.
+// ---------------------------------------------------------------------------
+const SERVER_REPAIRMAN_PRICE_PCT = 0.45;
+const SERVER_REPAIRMAN_MIN_PRICE = 5;
+
+function serverRepairmanPrice(itemId = '', condition = 100) {
+  const missing = Math.max(0, 100 - Number(condition || 0));
+  if (missing <= 0.005) return 0;
+  const basePrice = Math.max(1, Number(KROMKA_ITEM_INDEXES.basePrices[serverBaseItemId(itemId)] || 1));
+  return Math.max(SERVER_REPAIRMAN_MIN_PRICE, Math.ceil(basePrice * (missing / 100) * SERVER_REPAIRMAN_PRICE_PCT));
+}
+
+/**
+ * Что ремонтник видит в рюкзаке: экземпляры оружия отдельно, у остального
+ * состояние общее на базовый предмет. Ключ `runtimeId` пустой означает «чинить
+ * базовый предмет», иначе чинится конкретный экземпляр.
+ */
+function serverRepairmanTargets(p = {}) {
+  const rows = [];
+  const seenRuntime = new Set();
+  for (const row of serverWeaponInventoryRuntimeSnapshot(p)) {
+    const condition = Number(row.condition ?? 100);
+    seenRuntime.add(row.baseId);
+    if (condition >= 99.995) continue;
+    rows.push({
+      itemId: row.baseId, runtimeId: String(row.id || ''), condition: Number(condition.toFixed(2)),
+      cost: serverRepairmanPrice(row.baseId, condition)
+    });
+  }
+  for (const { itemKey, baseId } of serverEquippedWeaponRuntimeEntries(p)) {
+    if (!itemKey || !baseId) continue;
+    const combat = serverEnsureCombatState(p);
+    const condition = Number(combat.weapons?.[itemKey]?.condition ?? serverPlayerItemCondition(p, baseId) ?? 100);
+    seenRuntime.add(baseId);
+    if (condition >= 99.995) continue;
+    rows.push({
+      itemId: baseId, runtimeId: String(itemKey), condition: Number(condition.toFixed(2)),
+      cost: serverRepairmanPrice(baseId, condition), equipped: true
+    });
+  }
+  for (const entry of Array.isArray(p.inventory) ? p.inventory : []) {
+    const id = serverBaseItemId(entry?.id || '');
+    if (!id || !SERVER_REPAIRABLE_ITEM_IDS.has(id) || seenRuntime.has(id)) continue;
+    const condition = Number(serverPlayerItemCondition(p, id) ?? 100);
+    if (condition >= 99.995) continue;
+    rows.push({ itemId: id, runtimeId: '', condition: Number(condition.toFixed(2)), cost: serverRepairmanPrice(id, condition) });
+  }
+  rows.sort((a, b) => a.condition - b.condition || a.itemId.localeCompare(b.itemId));
+  return rows;
+}
+
+function serverRepairmanRepair(p = {}, data = {}) {
+  const targets = serverRepairmanTargets(p);
+  if (!targets.length) return { ok: false, error: 'Чинить нечего: всё снаряжение целое.' };
+  const runtimeId = String(data.itemRuntimeId || '').slice(0, 96);
+  const itemId = serverBaseItemId(data.itemId || '');
+  const all = String(data.action || '') === 'repairAll';
+  const chosen = all
+    ? targets
+    : targets.filter(row => (runtimeId ? row.runtimeId === runtimeId : row.itemId === itemId && !row.runtimeId)
+      || (!runtimeId && !itemId));
+  const queue = all ? targets : chosen.slice(0, 1);
+  if (!queue.length) return { ok: false, error: 'Этот предмет не нуждается в ремонте.' };
+  const cost = queue.reduce((sum, row) => sum + row.cost, 0);
+  if (serverInventoryQty(p.inventory, 'silver') < cost) return { ok: false, error: `Не хватает марок: нужно ${cost}.` };
+  serverInventoryRemove(p, 'silver', cost);
+  const combat = serverEnsureCombatState(p);
+  const repaired = [];
+  for (const row of queue) {
+    if (row.runtimeId && combat.weapons?.[row.runtimeId]) {
+      combat.weapons[row.runtimeId].condition = 100;
+      combat.weapons[row.runtimeId].updatedAt = Date.now();
+    } else {
+      serverSetPlayerItemCondition(p, row.itemId, 100);
+    }
+    repaired.push({ itemId: row.itemId, runtimeId: row.runtimeId, from: row.condition });
+  }
+  sanitizeCarrySnapshot(p);
+  return { ok: true, action: all ? 'repairAll' : 'repair', cost, repaired };
+}
+
 // Полка забирается целиком в пределах переносимого веса и предела стаков.
-function serverClaimAuctionShelf(p, factionId, data = {}, now = Date.now()) {
+function serverClaimAuctionShelf(p, data = {}, now = Date.now()) {
   const store = serverAuctionStore();
-  const shelf = marketShelfFor(store, factionId, p.characterId);
+  const shelf = marketShelfFor(store, p.characterId);
   if (shelf.silver <= 0 && !shelf.items.length) return { ok: false, error: 'Полка пуста.' };
   const requested = [];
   if (shelf.silver > 0) requested.push({ id: 'silver', qty: shelf.silver });
@@ -19260,7 +19347,7 @@ function serverClaimAuctionShelf(p, factionId, data = {}, now = Date.now()) {
     serverInventoryAdd(p, row.itemId, row.qty);
     if (row.records.length) serverRestoreWeaponRuntimeRecords(p, row.records);
   }
-  marketCommitShelfClaim(store, factionId, p.characterId, { silver: claimedSilver, items: claimedItems });
+  marketCommitShelfClaim(store, p.characterId, { silver: claimedSilver, items: claimedItems });
   sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
   return { ok: true, claimedSilver, claimedItems: claimedItems.map(row => ({ itemId: row.itemId, qty: row.qty })), partial: claimedSilver < shelf.silver || claimedItems.length < shelf.items.length };
 }
@@ -27254,17 +27341,17 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    const factionId = serverPlayerTerritoryFactionId(p);
-    if (!factionId) return fail('Аукцион доступен только членам фракции Сердцевины.');
     const room = rooms.get(p.roomId);
     const loc = room ? roomLocation(room) : null;
-    if (!loc || loc.safe !== true) return fail('Аукцион работает только на защищённой базе.');
+    // Книга одна на всю пустошь, а торгует ею любой аукционер: членство во
+    // фракции больше ничего не решает, важны защищённая столица и сам аукционер.
+    if (!loc || loc.safe !== true) return fail('Рынок работает только в защищённом поселении.');
     if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');
     const now = Date.now();
     const store = serverAuctionStore();
     marketExpireOrders(store, KROMKA_AUCTION_RULES, now);
     const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
-    const auctionState = () => publicMarket(store, factionId, p.characterId, KROMKA_AUCTION_RULES, now, {
+    const auctionState = () => publicMarket(store, p.characterId, KROMKA_AUCTION_RULES, now, {
       // Состояние артефакта видно до покупки; скрытые свойства сырого
       // экземпляра публичная проекция по-прежнему не отдаёт.
       projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)
@@ -27303,7 +27390,7 @@ io.on('connection', (socket) => {
       serverInventoryRemove(p, itemId, qty);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
       const placed = marketPlaceSellOrder(store, {
-        factionId, ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs, records,
+        ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs, records,
         // Категория ордера — собственная категория предмета из каталога сервера.
         category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc'
       }, KROMKA_AUCTION_RULES, now);
@@ -27339,7 +27426,7 @@ io.on('connection', (socket) => {
       const reserve = qty * price + setupFee;
       if (serverInventoryQty(p.inventory, 'silver') < reserve) return fail(`Нужно ${reserve} марок: ордер и сбор.`);
       const placed = marketPlaceBuyOrder(store, {
-        factionId, ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs,
+        ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs,
         category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc'
       }, KROMKA_AUCTION_RULES, now);
       if (!placed.ok) return fail(placed.error);
@@ -27355,7 +27442,7 @@ io.on('connection', (socket) => {
           if (bought.records?.length) serverRestoreWeaponRuntimeRecords(p, bought.records);
         }
         if (fits < bought.qty) {
-          marketCreditShelfItems(store, factionId, p.characterId,
+          marketCreditShelfItems(store, p.characterId,
             [{ itemId: bought.itemId, qty: bought.qty - fits, records: fits > 0 ? [] : bought.records, reason: 'bought' }], now);
           shelved += bought.qty - fits;
         }
@@ -27368,7 +27455,7 @@ io.on('connection', (socket) => {
       };
     } else if (action === 'buyNow') {
       // Мгновенная покупка с конкретного ордера на продажу.
-      const order = store.factions?.[factionId]?.orders?.[orderId];
+      const order = store.orders?.[orderId];
       if (!order || order.side !== 'sell') return fail('Ордер уже снят.');
       const want = Math.max(0, Math.floor(Number(data.qty || 0)));
       const take = Math.max(1, Math.min(want > 0 ? want : order.qty, order.qty));
@@ -27376,7 +27463,7 @@ io.on('connection', (socket) => {
       if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
       const carryCheck = serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
       if (!carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take)) return fail('Нет места или грузоподъёмности для покупки.');
-      const bought = marketTakeSellOrder(store, factionId, orderId, p.characterId, take, KROMKA_AUCTION_RULES, now);
+      const bought = marketTakeSellOrder(store, orderId, p.characterId, take, KROMKA_AUCTION_RULES, now);
       if (!bought.ok) return fail(bought.error);
       serverInventoryRemove(p, 'silver', bought.cost);
       serverInventoryAdd(p, bought.order.itemId, bought.qty);
@@ -27388,7 +27475,7 @@ io.on('connection', (socket) => {
       };
     } else if (action === 'sellNow') {
       // Мгновенная продажа в конкретный ордер на выкуп.
-      const order = store.factions?.[factionId]?.orders?.[orderId];
+      const order = store.orders?.[orderId];
       if (!order || order.side !== 'buy') return fail('Ордер уже снят.');
       const itemId = order.itemId;
       if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя продать.');
@@ -27401,7 +27488,7 @@ io.on('connection', (socket) => {
       const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
       serverInventoryRemove(p, itemId, take);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
-      const sold = marketTakeBuyOrder(store, factionId, orderId, p.characterId, take, records, KROMKA_AUCTION_RULES, now);
+      const sold = marketTakeBuyOrder(store, orderId, p.characterId, take, records, KROMKA_AUCTION_RULES, now);
       if (!sold.ok) {
         serverInventoryAdd(p, itemId, take);
         serverRestoreWeaponRuntimeRecords(p, records);
@@ -27415,11 +27502,11 @@ io.on('connection', (socket) => {
         proceeds: sold.proceeds, tax: sold.tax
       };
     } else if (action === 'cancel') {
-      const cancelled = marketCancelOrder(store, factionId, orderId, p.characterId, now);
+      const cancelled = marketCancelOrder(store, orderId, p.characterId, now);
       if (!cancelled.ok) return fail(cancelled.error);
       payload = { ok: true, action, orderId, side: cancelled.order.side };
     } else {
-      const claimed = serverClaimAuctionShelf(p, factionId, data, now);
+      const claimed = serverClaimAuctionShelf(p, data, now);
       if (!claimed.ok) return fail(claimed.error);
       payload = { ok: true, action, ...claimed };
     }
@@ -29250,21 +29337,61 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Сервисы постоянной базы: медик лечит и снимает травмы за марки. Работает
-  // только рядом с медиком на защищённой базе, поэтому не прерывает бой.
+  // Сервисы поселения: медик лечит и снимает травмы, ремонтник восстанавливает
+  // снаряжение — оба за марки и оба только рядом с собой в защищённом
+  // поселении, поэтому ни один не прерывает бой.
   socket.on('baseServiceAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const service = String(data.service || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
     const action = String(data.action || '').replace(/[^a-zA-Z]/g, '').slice(0, 16);
-    if (service !== 'medic') return fail('Неизвестный сервис базы.');
+    if (service !== 'medic' && service !== 'repair') return fail('Неизвестный сервис поселения.');
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
     const loc = roomLocation(room);
-    if (loc.safe !== true) return fail('Медик работает только на защищённой базе.');
-    const medic = serverNearbyServiceActor(p, 'medic');
-    if (!medic) return fail('Медик базы должен быть рядом.');
+    if (loc.safe !== true) {
+      return fail(service === 'repair'
+        ? 'Ремонтник работает только в защищённом поселении.'
+        : 'Медик работает только в защищённом поселении.');
+    }
+    if (!serverNearbyServiceActor(p, service)) {
+      return fail(service === 'repair' ? 'Ремонтник должен быть рядом.' : 'Медик должен быть рядом.');
+    }
+    if (service === 'repair') {
+      if (action === 'state') {
+        const targets = serverRepairmanTargets(p);
+        if (typeof ack === 'function') ack({
+          ok: true, service, targets,
+          totalCost: targets.reduce((sum, row) => sum + row.cost, 0),
+          silver: serverInventoryQty(p.inventory, 'silver')
+        });
+        return;
+      }
+      if (action !== 'repair' && action !== 'repairAll') return fail('Неизвестное действие ремонтника.');
+      const repairTransaction = beginCriticalAction(p, 'baseServiceAction', data,
+        ['service', 'action', 'itemId', 'itemRuntimeId']);
+      if (!repairTransaction.ok) return fail(repairTransaction.error);
+      if (repairTransaction.replay) {
+        if (typeof ack === 'function') ack({ ...repairTransaction.result, self: publicAuthoritativePlayerState(p) });
+        return;
+      }
+      const done = serverRepairmanRepair(p, { ...data, action });
+      if (!done.ok) return fail(done.error);
+      const repairPayload = { ok: true, service, ...done };
+      commitCriticalAction(p, repairTransaction, repairPayload);
+      persistActivePlayerState(p);
+      emitAuthoritativePlayerState(p, { reason: 'baseService' });
+      if (typeof ack === 'function') {
+        ack({
+          ...repairPayload,
+          targets: serverRepairmanTargets(p),
+          inventory: syncServerInventorySnapshot(p),
+          self: publicAuthoritativePlayerState(p)
+        });
+      }
+      return;
+    }
     if (action === 'state') {
       serverApplyDerivedVitals(p);
       const missing = Math.max(0, Math.round(Number(p.maxHp || 0) - Number(p.hp || 0)));

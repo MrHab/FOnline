@@ -99,8 +99,14 @@ namespace RealmOfAshes.EditorTools
             boss["phase"] = "vulnerable"; boss["vulnerableSeconds"] = 30; boss["pulseTelegraph"] = true;
             string vulnerable = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
             Require(vulnerable.Contains("уязвим ещё 30 с") && vulnerable.Contains("ИМПУЛЬС!"), "Vulnerability window and telegraph are announced");
-            boss["phase"] = "defeated"; boss["respawnInSeconds"] = 5400;
-            Require(RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0).Contains("90:00"), "Defeated boss shows the respawn timer");
+            boss["phase"] = "defeated"; boss["respawnInSeconds"] = 5400; boss["rewardOpen"] = true;
+            string defeated = RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0);
+            Require(defeated.Contains("90:00"), "Defeated boss shows the respawn timer");
+            // Победа открывает сейфы установки, возвращение их запирает.
+            Require(defeated.Contains("сейфы установки открыты"), "The defeated boss says the reward is open: " + defeated);
+            boss["rewardOpen"] = false;
+            Require(!RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0).Contains("сейфы"),
+                "A taken reward is not promised twice");
 
             var pve = JObject.Parse(@"{'roomId':'antHive#pve_char','displayName':'Колония Пыльников','alive':3,'calmSeconds':0,'tracksReadyInSeconds':0,'tracksLabel':'Искать следы','lastResultLabel':'Слышно движение: появилась новая группа.'}");
             string pveText = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
@@ -140,6 +146,28 @@ namespace RealmOfAshes.EditorTools
             Require(areaLine.Contains("добыча: хитин и железы пыльников"), "Area summary lists loot categories: " + areaLine);
             Require(areaLine.Contains("встреча личная"), "Area summary explains that the encounter is personal");
             Require(RoaGlobalMap.PveAreaLabel(null) == string.Empty, "Without an area the summary stays empty");
+
+            // Временное событие под целью маршрута: имя и остаток времени.
+            var mapEvent = JObject.Parse(@"{'displayName':'Логово Гари','remainingSeconds':1471,'warning':false,
+                'status':'active','x':10,'y':10,'radius':9}");
+            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31",
+                "The map names the event and how long it lasts: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
+            mapEvent["warning"] = true;
+            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31!",
+                "A closing event warns on the map: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
+            Require(RoaGlobalMap.PublicEventMetaLabel(null) == string.Empty, "Without an event the target line is unchanged");
+            Require(RoaGlobalMap.PveAreaMetaLabel(area) == "Колония Пыльников · опасность 2",
+                "The target line names the area and its danger: " + RoaGlobalMap.PveAreaMetaLabel(area));
+            Require(RoaGlobalMap.PveAreaMetaLabel(null) == string.Empty, "Outside an area the target line is unchanged");
+            // Вводная сценария объясняет, за что там дерутся, и читается перед
+            // входом — в окне правил зоны.
+            var eventRules = JObject.Parse(@"{'mode':'pvpEvent','label':'Событие','lossLabel':'Вещи сохраняются.',
+                'pvpLabel':'PvP разрешено.','confirmBeforeEntry':true}");
+            string briefed = RoaGlobalMapCanvas.ZoneRulesDescription(eventRules, "Стая гари засела в меловой чаше.");
+            Require(briefed.Contains("Стая гари засела в меловой чаше."),
+                "The zone rules window carries the briefing of the event: " + briefed);
+            Require(!RoaGlobalMapCanvas.ZoneRulesDescription(eventRules).Contains("чаше"),
+                "Without a briefing the window is unchanged");
 
             // Зал боковой лаборатории: шкала угрозы, объявленный удар и
             // готовность узлов на стенах.

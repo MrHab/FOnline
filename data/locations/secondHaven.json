@@ -26,32 +26,33 @@
   "spawn": {
     "tx": 18,
     "tz": 7,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 18,
     "tz": 7,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "objects": [
     {
       "id": "east_shell",
       "model": "wastelandShack",
-      "name": "Восточный жилой блок",      "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": 5.0
+      "name": "Восточный жилой блок",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 5
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.5,
@@ -77,20 +78,21 @@
     {
       "id": "entry_left",
       "model": "utilityPole",
-      "name": "Входной пилон",      "position": {
-        "x": -5.0,
-        "y": 0.0,
-        "z": -24.0
+      "name": "Входной пилон",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": -24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -110,20 +112,21 @@
     {
       "id": "entry_right",
       "model": "utilityPole",
-      "name": "Входной пилон",      "position": {
-        "x": 5.0,
-        "y": 0.0,
-        "z": -24.0
+      "name": "Входной пилон",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": -24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "vision": {
@@ -143,15 +146,16 @@
     {
       "id": "home_a",
       "model": "wastelandShack",
-      "name": "Жилой блок А",      "position": {
-        "x": -11.0,
-        "y": 0.0,
-        "z": 16.0
+      "name": "Жилой блок А",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 16
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.2,
@@ -176,15 +180,16 @@
     {
       "id": "home_b",
       "model": "wastelandShack",
-      "name": "Жилой блок Б",      "position": {
-        "x": 11.0,
-        "y": 0.0,
-        "z": 16.0
+      "name": "Жилой блок Б",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 16
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.2,
@@ -209,15 +214,16 @@
     {
       "id": "landmark",
       "model": "relayAntenna",
-      "name": "Меловой двор",      "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 12.0
+      "name": "Меловой двор",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 2.2,
@@ -244,15 +250,16 @@
     {
       "id": "records",
       "model": "storageLeanTo",
-      "name": "Доска пайков",      "position": {
-        "x": 7.0,
-        "y": 0.0,
-        "z": -3.0
+      "name": "Доска пайков",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.25,
@@ -281,13 +288,13 @@
       "name": "secondHaven-dressing-functional-01",
       "position": {
         "x": 12.687,
-        "y": 0.0,
+        "y": 0,
         "z": 2.836
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.351,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -316,13 +323,13 @@
       "name": "secondHaven-dressing-functional-02",
       "position": {
         "x": 10.713,
-        "y": 0.0,
+        "y": 0,
         "z": 12.152
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.723,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -351,13 +358,13 @@
       "name": "secondHaven-dressing-functional-03",
       "position": {
         "x": 1.826,
-        "y": 0.0,
+        "y": 0,
         "z": 19.314
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.094,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -386,13 +393,13 @@
       "name": "secondHaven-dressing-functional-04",
       "position": {
         "x": -6.618,
-        "y": 0.0,
+        "y": 0,
         "z": 11.19
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.749,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -421,13 +428,13 @@
       "name": "secondHaven-dressing-functional-05",
       "position": {
         "x": -14.868,
-        "y": 0.0,
+        "y": 0,
         "z": 6.434
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.121,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -456,13 +463,13 @@
       "name": "secondHaven-dressing-functional-06",
       "position": {
         "x": -18.933,
-        "y": 0.0,
+        "y": 0,
         "z": -4.232
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.492,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -491,13 +498,13 @@
       "name": "secondHaven-dressing-functional-07",
       "position": {
         "x": -8.597,
-        "y": 0.0,
+        "y": 0,
         "z": -9.751
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.864,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -526,13 +533,13 @@
       "name": "secondHaven-dressing-functional-08",
       "position": {
         "x": -1.525,
-        "y": 0.0,
+        "y": 0,
         "z": -16.128
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.236,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -561,13 +568,13 @@
       "name": "secondHaven-dressing-functional-09",
       "position": {
         "x": 9.875,
-        "y": 0.0,
+        "y": 0,
         "z": -16.698
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.608,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -596,13 +603,13 @@
       "name": "secondHaven-dressing-functional-10",
       "position": {
         "x": 11.931,
-        "y": 0.0,
+        "y": 0,
         "z": -5.163
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.979,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -631,13 +638,13 @@
       "name": "secondHaven-dressing-region-01",
       "position": {
         "x": 31.831,
-        "y": 0.0,
+        "y": 0,
         "z": -9.627
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.882,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -666,13 +673,13 @@
       "name": "secondHaven-dressing-region-02",
       "position": {
         "x": 31.707,
-        "y": 0.0,
+        "y": 0,
         "z": -9.574
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.807,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -701,13 +708,13 @@
       "name": "secondHaven-dressing-region-03",
       "position": {
         "x": 31.704,
-        "y": 0.0,
+        "y": 0,
         "z": -9.578
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.808,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -736,13 +743,13 @@
       "name": "secondHaven-dressing-region-04",
       "position": {
         "x": 31.167,
-        "y": 0.0,
+        "y": 0,
         "z": -11.201
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.751,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -771,13 +778,13 @@
       "name": "secondHaven-dressing-region-05",
       "position": {
         "x": 31.031,
-        "y": 0.0,
+        "y": 0,
         "z": -11.168
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.75,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -806,13 +813,13 @@
       "name": "secondHaven-dressing-region-06",
       "position": {
         "x": 31.024,
-        "y": 0.0,
+        "y": 0,
         "z": -11.181
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.695,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -841,13 +848,13 @@
       "name": "secondHaven-dressing-region-07",
       "position": {
         "x": 31.02,
-        "y": 0.0,
+        "y": 0,
         "z": -11.195
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.695,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -876,13 +883,13 @@
       "name": "secondHaven-dressing-region-08",
       "position": {
         "x": 30.19,
-        "y": 0.0,
+        "y": 0,
         "z": -12.789
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.639,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -911,13 +918,13 @@
       "name": "secondHaven-dressing-region-09",
       "position": {
         "x": 30.181,
-        "y": 0.0,
+        "y": 0,
         "z": -12.812
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.64,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.233,
@@ -946,13 +953,13 @@
       "name": "secondHaven-dressing-region-10",
       "position": {
         "x": 30.173,
-        "y": 0.0,
+        "y": 0,
         "z": -12.835
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.264,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -981,13 +988,13 @@
       "name": "secondHaven-dressing-region-11",
       "position": {
         "x": 29.132,
-        "y": 0.0,
+        "y": 0,
         "z": -15.036
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.263,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -1016,13 +1023,13 @@
       "name": "secondHaven-dressing-region-12",
       "position": {
         "x": 29.019,
-        "y": 0.0,
+        "y": 0,
         "z": -14.95
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.207,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -1051,13 +1058,13 @@
       "name": "secondHaven-dressing-region-13",
       "position": {
         "x": 29.021,
-        "y": 0.0,
+        "y": 0,
         "z": -14.945
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.208,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -1086,13 +1093,13 @@
       "name": "secondHaven-dressing-region-14",
       "position": {
         "x": 28.13,
-        "y": 0.0,
+        "y": 0,
         "z": -16.569
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.961,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -1121,13 +1128,13 @@
       "name": "secondHaven-dressing-region-15",
       "position": {
         "x": 28.002,
-        "y": 0.0,
+        "y": 0,
         "z": -16.499
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.96,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.839,
@@ -1155,19 +1162,19 @@
       "model": "market_canopy",
       "name": "secondHaven-filter-canopy EDITABLE",
       "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": 5.0
+        "x": 16,
+        "y": 0,
+        "z": 5
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1191,19 +1198,19 @@
       "model": "quarry-houses",
       "name": "Landmark quarry-houses EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1211,8 +1218,8 @@
         "quarry-houses"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1225,14 +1232,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 22.0,
+        "x": 22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1246,8 +1253,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1265,14 +1272,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.199,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1281,8 +1288,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1300,14 +1307,14 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.942,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1316,8 +1323,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1335,14 +1342,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1351,8 +1358,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1370,14 +1377,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.969,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1386,8 +1393,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1405,9 +1412,9 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1421,8 +1428,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1435,19 +1442,19 @@
       "model": "industrial_module",
       "name": "Module 06",
       "position": {
-        "x": -22.0,
+        "x": -22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.712,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1456,8 +1463,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1475,14 +1482,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1491,8 +1498,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1510,14 +1517,14 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.456,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1526,8 +1533,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1545,9 +1552,9 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1561,8 +1568,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1575,19 +1582,19 @@
       "model": "quarry_housing",
       "name": "secondHaven-quarry-homes EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 5.0
+        "x": -10,
+        "y": 0,
+        "z": 5
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1597,8 +1604,8 @@
         "crowded"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1611,19 +1618,19 @@
       "model": "terrain_mound",
       "name": "secondHaven-region-chalk-cliff-0 EDITABLE",
       "position": {
-        "x": -30.0,
-        "y": 0.0,
-        "z": 29.0
+        "x": -30,
+        "y": 0,
+        "z": 29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1632,8 +1639,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1646,19 +1653,19 @@
       "model": "terrain_mound",
       "name": "secondHaven-region-chalk-cliff-1 EDITABLE",
       "position": {
-        "x": -15.0,
-        "y": 0.0,
-        "z": 29.0
+        "x": -15,
+        "y": 0,
+        "z": 29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1667,8 +1674,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1681,19 +1688,19 @@
       "model": "terrain_mound",
       "name": "secondHaven-region-chalk-cliff-2 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 29.0
+        "x": 0,
+        "y": 0,
+        "z": 29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1702,8 +1709,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1716,19 +1723,19 @@
       "model": "terrain_mound",
       "name": "secondHaven-region-chalk-cliff-3 EDITABLE",
       "position": {
-        "x": 15.0,
-        "y": 0.0,
-        "z": 29.0
+        "x": 15,
+        "y": 0,
+        "z": 29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1737,8 +1744,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1751,19 +1758,19 @@
       "model": "terrain_mound",
       "name": "secondHaven-region-chalk-cliff-4 EDITABLE",
       "position": {
-        "x": 30.0,
-        "y": 0.0,
-        "z": 29.0
+        "x": 30,
+        "y": 0,
+        "z": 29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1772,8 +1779,8 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1786,19 +1793,19 @@
       "model": "ring_structure",
       "name": "secondHaven-region-karst-window EDITABLE",
       "position": {
-        "x": 27.0,
+        "x": 27,
         "y": 0.02,
-        "z": -24.0
+        "z": -24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1807,8 +1814,8 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 10.0,
-        "z": 10.0
+        "x": 10,
+        "z": 10
       },
       "vision": {
         "blocks": false
@@ -1821,19 +1828,19 @@
       "model": "field_clinic",
       "name": "secondHaven-seconds-clinic EDITABLE",
       "position": {
-        "x": 4.0,
-        "y": 0.0,
-        "z": -15.0
+        "x": 4,
+        "y": 0,
+        "z": -15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1855,15 +1862,16 @@
     {
       "id": "service",
       "model": "waterTank",
-      "name": "Общий фильтр",      "position": {
-        "x": -7.0,
-        "y": 0.0,
-        "z": -3.0
+      "name": "Общий фильтр",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.25,
@@ -1889,15 +1897,16 @@
     {
       "id": "watch_a",
       "model": "watchPost",
-      "name": "Пост А",      "position": {
-        "x": -18.0,
-        "y": 0.0,
-        "z": -15.0
+      "name": "Пост А",
+      "position": {
+        "x": -18,
+        "y": 0,
+        "z": -15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.1,
@@ -1922,15 +1931,16 @@
     {
       "id": "watch_b",
       "model": "watchPost",
-      "name": "Пост Б",      "position": {
-        "x": 18.0,
-        "y": 0.0,
-        "z": -15.0
+      "name": "Пост Б",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.1,
@@ -1955,15 +1965,16 @@
     {
       "id": "west_shell",
       "model": "wastelandShack",
-      "name": "Западный жилой блок",      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": 5.0
+      "name": "Западный жилой блок",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 5
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1.5,
@@ -1982,6 +1993,123 @@
       "footprint": {
         "x": 7.05,
         "z": 5.733
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "seconds",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction",
+        "territoryFactionId": "seconds"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик поселения",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "seconds",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic",
+        "territoryFactionId": "seconds"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "seconds",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair",
+        "territoryFactionId": "seconds"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
@@ -2006,59 +2134,59 @@
   "respawn": {
     "tx": 18,
     "tz": 7,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 18,
     "tz": 7,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 18,
     "tz": 7,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 16,
     "tz": 8,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "chalk-yard-upper-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "secondHaven-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

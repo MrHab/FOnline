@@ -322,6 +322,7 @@ namespace RealmOfAshes.Game
             switch (service)
             {
                 case "medic": AddMedicOptions(); break;
+                case "repair": AddRepairmanOptions(); break;
                 case "registrar": AddRegistrarOptions(); break;
                 // "auction" сюда не доходит: аукционер открывает RoaAuctionCanvas.
                 case "artifactLab": AddArtifactLabOptions(); break;
@@ -341,6 +342,7 @@ namespace RealmOfAshes.Game
                 _refreshAt = 0f;
             };
             bool sent = service == "medic" ? RoaTerritoryNet.RequestMedicState(Interaction.Socket, completed)
+                : service == "repair" ? RoaTerritoryNet.RequestRepairState(Interaction.Socket, completed)
                 : service == "registrar" ? RoaTerritoryNet.RequestMembershipState(Interaction.Socket, completed)
                 : false;
             if (!sent) _servicePending = false;
@@ -368,6 +370,58 @@ namespace RealmOfAshes.Game
             string body = missing > 0 ? "Не хватает здоровья: " + missing : "Здоровье полное.";
             body += injuries > 0 ? "\nТравм: " + injuries : "\nТравм нет.";
             AddCard("Лечение за марки", body, actions);
+        }
+
+        /// <summary>
+        /// Ремонтник столицы: чинит за марки то, на что в поле нужен ремкомплект
+        /// или руда с древесиной. Список изношенного и цены считает сервер.
+        /// </summary>
+        private void AddRepairmanOptions()
+        {
+            AddHeading("РЕМОНТНИК");
+            if (_serviceState == null)
+            {
+                AddCard("Осмотр снаряжения", _servicePending ? "Ремонтник смотрит снаряжение…" : "Нет данных.", null);
+                return;
+            }
+            JArray targets = _serviceState["targets"] as JArray ?? new JArray();
+            int totalCost = _serviceState["totalCost"]?.Value<int>() ?? 0;
+            int silver = _serviceState["silver"]?.Value<int>() ?? 0;
+            if (targets.Count == 0)
+            {
+                AddCard("Снаряжение целое", "Чинить нечего: износ нигде не заметен.\nВ поле дешевле верстак — там платят материалами, здесь марками и сразу до ста процентов.", null);
+                return;
+            }
+
+            var allActions = new List<(string, System.Action)>();
+            if (targets.Count > 1 && totalCost > 0)
+            {
+                allActions.Add(("Починить всё за " + totalCost, () =>
+                    RoaTerritoryNet.UseRepairman(Interaction.Socket, string.Empty, string.Empty, AfterServiceAction)));
+            }
+            AddCard("Изношено предметов: " + targets.Count,
+                "У вас " + silver + " марок." + (totalCost > silver ? "\nНа всё сразу не хватит — чините по одному." : string.Empty),
+                allActions);
+
+            int shown = 0;
+            foreach (JToken token in targets)
+            {
+                JObject row = token as JObject;
+                if (row == null || shown >= 8) continue;
+                shown += 1;
+                string itemId = row["itemId"]?.ToString() ?? string.Empty;
+                string runtimeId = row["runtimeId"]?.ToString() ?? string.Empty;
+                int cost = row["cost"]?.Value<int>() ?? 0;
+                float condition = row["condition"]?.Value<float>() ?? 100f;
+                var actions = new List<(string, System.Action)>
+                {
+                    ("Починить за " + cost, () =>
+                        RoaTerritoryNet.UseRepairman(Interaction.Socket, itemId, runtimeId, AfterServiceAction))
+                };
+                AddCard(RoaItemData.Name(itemId) + " — " + Mathf.RoundToInt(condition) + "%",
+                    (row["equipped"]?.Value<bool>() == true ? "Надето. " : string.Empty)
+                    + "Ремонт вернёт сто процентов.", actions);
+            }
         }
 
         private void AddRegistrarOptions()

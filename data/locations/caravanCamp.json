@@ -28,52 +28,52 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "exit": {
     "tx": 19,
     "tz": 3,
     "to": "wasteland",
     "label": "Дороги пустоши",
-    "x": 1.0,
-    "y": 0.0,
-    "z": -31.0,
-    "rotationY": 0.0
+    "x": 1,
+    "y": 0,
+    "z": -31,
+    "rotationY": 0
   },
   "transitions": [],
   "worldZones": [],
@@ -87,14 +87,14 @@
       "name": "Караванщица Сайла",
       "url": "/assets/models/wasteland/trader_npc.glb",
       "position": {
-        "x": -7.0,
-        "y": 0.0,
-        "z": 3.0
+        "x": -7,
+        "y": 0,
+        "z": 3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 1,
@@ -152,20 +152,21 @@
     {
       "id": "capital_station_caravans_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Патронный станок",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -184,7 +185,7 @@
             "y": 0,
             "z": -6
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -223,20 +224,21 @@
     {
       "id": "capital_station_caravans_chem_station",
       "model": "craftStationChem",
-      "name": "Химический стол",      "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Химический стол",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -255,7 +257,7 @@
             "y": 0,
             "z": -2
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -294,20 +296,21 @@
     {
       "id": "capital_station_caravans_energy_bench",
       "model": "craftStationEnergy",
-      "name": "Энергетический стенд",      "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Энергетический стенд",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -326,7 +329,7 @@
             "y": 0,
             "z": -2
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -365,20 +368,21 @@
     {
       "id": "capital_station_caravans_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": -4.0
+      "name": "Ремонтный верстак",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -397,7 +401,7 @@
             "y": 0,
             "z": -2
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -436,20 +440,21 @@
     {
       "id": "capital_station_caravans_tool_bench",
       "model": "craftStationTools",
-      "name": "Инструментальный верстак",      "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Инструментальный верстак",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -468,7 +473,7 @@
             "y": 0,
             "z": -6
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -507,20 +512,21 @@
     {
       "id": "capital_station_caravans_weapon_bench",
       "model": "craftStationWeapon",
-      "name": "Оружейный верстак",      "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -8.0
+      "name": "Оружейный верстак",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -539,7 +545,7 @@
             "y": 0,
             "z": -6
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "work"
         }
       ],
@@ -578,20 +584,21 @@
     {
       "id": "capital_storage_caravans",
       "model": "storageChest",
-      "name": "Хранилище вольных караванов",      "position": {
-        "x": -5.0,
-        "y": 0.0,
-        "z": 11.0
+      "name": "Хранилище вольных караванов",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": 11
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -623,19 +630,19 @@
       "model": "warehouse",
       "name": "caravanCamp-cargo-warehouse EDITABLE",
       "position": {
-        "x": 21.0,
-        "y": 0.0,
-        "z": 7.0
+        "x": 21,
+        "y": 0,
+        "z": 7
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -645,8 +652,8 @@
         "loot-space"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -660,13 +667,13 @@
       "name": "caravanCamp-dressing-functional-01",
       "position": {
         "x": 12.614,
-        "y": 0.0,
+        "y": 0,
         "z": 3.145
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.326,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -695,13 +702,13 @@
       "name": "caravanCamp-dressing-functional-02",
       "position": {
         "x": 9.522,
-        "y": 0.0,
+        "y": 0,
         "z": 13.106
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.628,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -730,13 +737,13 @@
       "name": "caravanCamp-dressing-functional-03",
       "position": {
         "x": -1.353,
-        "y": 0.0,
+        "y": 0,
         "z": 19.353
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.213,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -765,13 +772,13 @@
       "name": "caravanCamp-dressing-functional-04",
       "position": {
         "x": -9.031,
-        "y": 0.0,
+        "y": 0,
         "z": 9.351
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.515,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -800,13 +807,13 @@
       "name": "caravanCamp-dressing-functional-05",
       "position": {
         "x": -16.111,
-        "y": 0.0,
+        "y": 0,
         "z": 1.693
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.817,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -835,13 +842,13 @@
       "name": "caravanCamp-dressing-functional-06",
       "position": {
         "x": -16.083,
-        "y": 0.0,
+        "y": 0,
         "z": -10.848
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.119,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -870,13 +877,13 @@
       "name": "caravanCamp-dressing-functional-07",
       "position": {
         "x": -3.583,
-        "y": 0.0,
+        "y": 0,
         "z": -12.496
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.421,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -905,13 +912,13 @@
       "name": "caravanCamp-dressing-functional-08",
       "position": {
         "x": 6.589,
-        "y": 0.0,
+        "y": 0,
         "z": -14.799
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.723,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -940,13 +947,13 @@
       "name": "caravanCamp-dressing-functional-09",
       "position": {
         "x": 17.437,
-        "y": 0.0,
+        "y": 0,
         "z": -8.504
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.025,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -975,13 +982,13 @@
       "name": "caravanCamp-dressing-region-01",
       "position": {
         "x": -19.823,
-        "y": 0.0,
+        "y": 0,
         "z": 14.253
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.392,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1010,13 +1017,13 @@
       "name": "caravanCamp-dressing-region-02",
       "position": {
         "x": -19.455,
-        "y": 0.0,
+        "y": 0,
         "z": 13.966
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.705,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1045,13 +1052,13 @@
       "name": "caravanCamp-dressing-region-03",
       "position": {
         "x": -19.458,
-        "y": 0.0,
+        "y": 0,
         "z": 13.964
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.706,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1080,13 +1087,13 @@
       "name": "caravanCamp-dressing-region-04",
       "position": {
         "x": -16.585,
-        "y": 0.0,
+        "y": 0,
         "z": 17.272
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.762,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1115,13 +1122,13 @@
       "name": "caravanCamp-dressing-region-05",
       "position": {
         "x": -16.693,
-        "y": 0.0,
+        "y": 0,
         "z": 17.369
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.761,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1150,13 +1157,13 @@
       "name": "caravanCamp-dressing-region-06",
       "position": {
         "x": -16.702,
-        "y": 0.0,
+        "y": 0,
         "z": 17.363
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.575,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1185,13 +1192,13 @@
       "name": "caravanCamp-dressing-region-07",
       "position": {
         "x": -16.667,
-        "y": 0.0,
+        "y": 0,
         "z": 17.395
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.574,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.012,
@@ -1220,13 +1227,13 @@
       "name": "caravanCamp-dressing-region-08",
       "position": {
         "x": -18.211,
-        "y": 0.0,
+        "y": 0,
         "z": 16.966
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.63,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1255,13 +1262,13 @@
       "name": "caravanCamp-dressing-region-09",
       "position": {
         "x": -18.224,
-        "y": 0.0,
+        "y": 0,
         "z": 16.952
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.629,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.013,
@@ -1290,13 +1297,13 @@
       "name": "caravanCamp-dressing-region-10",
       "position": {
         "x": -18.197,
-        "y": 0.0,
+        "y": 0,
         "z": 16.983
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.966,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1325,13 +1332,13 @@
       "name": "caravanCamp-dressing-region-11",
       "position": {
         "x": -22.561,
-        "y": 0.0,
+        "y": 0,
         "z": 10.505
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.965,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1360,13 +1367,13 @@
       "name": "caravanCamp-dressing-region-12",
       "position": {
         "x": -22.698,
-        "y": 0.0,
+        "y": 0,
         "z": 10.557
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.022,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1395,13 +1402,13 @@
       "name": "caravanCamp-dressing-region-13",
       "position": {
         "x": -22.694,
-        "y": 0.0,
+        "y": 0,
         "z": 10.559
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.023,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1430,13 +1437,13 @@
       "name": "caravanCamp-dressing-region-14",
       "position": {
         "x": -23.245,
-        "y": 0.0,
+        "y": 0,
         "z": 9.283
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.299,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1465,13 +1472,13 @@
       "name": "caravanCamp-dressing-region-15",
       "position": {
         "x": -22.806,
-        "y": 0.0,
+        "y": 0,
         "z": 9.103
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.299,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.964,
@@ -1499,19 +1506,19 @@
       "model": "route-pylon",
       "name": "Landmark route-pylon EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1519,8 +1526,8 @@
         "route-pylon"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1533,14 +1540,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 22.0,
+        "x": 22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1554,8 +1561,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1573,14 +1580,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.199,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1589,8 +1596,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1608,14 +1615,14 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.942,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1624,8 +1631,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1643,14 +1650,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1659,8 +1666,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1678,14 +1685,14 @@
         "z": 20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.969,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1694,8 +1701,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1713,9 +1720,9 @@
         "z": 12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1729,8 +1736,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1743,19 +1750,19 @@
       "model": "industrial_module",
       "name": "Module 06",
       "position": {
-        "x": -22.0,
+        "x": -22,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.712,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1764,8 +1771,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1783,14 +1790,14 @@
         "z": -12.931
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1799,8 +1806,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1818,14 +1825,14 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.456,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1834,8 +1841,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1853,9 +1860,9 @@
         "z": -20.923
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1869,8 +1876,8 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -1883,19 +1890,19 @@
       "model": "concrete_culvert",
       "name": "caravanCamp-region-culvert-east EDITABLE",
       "position": {
-        "x": 6.0,
-        "y": 0.0,
-        "z": -20.0
+        "x": 6,
+        "y": 0,
+        "z": -20
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1918,19 +1925,19 @@
       "model": "concrete_culvert",
       "name": "caravanCamp-region-culvert-west EDITABLE",
       "position": {
-        "x": -6.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": -6,
+        "y": 0,
+        "z": 22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1953,19 +1960,19 @@
       "model": "raised_road",
       "name": "caravanCamp-region-raised-tract EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.24,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1988,19 +1995,19 @@
       "model": "market_canopy",
       "name": "caravanCamp-route-market EDITABLE",
       "position": {
-        "x": -22.0,
-        "y": 0.0,
-        "z": 4.0
+        "x": -22,
+        "y": 0,
+        "z": 4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -2024,19 +2031,19 @@
       "model": "route_pylon",
       "name": "caravanCamp-route-pylon EDITABLE",
       "position": {
-        "x": -20.0,
-        "y": 0.0,
-        "z": -20.0
+        "x": -20,
+        "y": 0,
+        "z": -20
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -2060,19 +2067,19 @@
       "model": "caravan_lane",
       "name": "caravanCamp-traffic-lane-0 EDITABLE",
       "position": {
-        "x": -12.0,
+        "x": -12,
         "y": 0.03,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2095,19 +2102,19 @@
       "model": "caravan_lane",
       "name": "caravanCamp-traffic-lane-1 EDITABLE",
       "position": {
-        "x": -6.0,
+        "x": -6,
         "y": 0.03,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2130,19 +2137,19 @@
       "model": "caravan_lane",
       "name": "caravanCamp-traffic-lane-2 EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.03,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2165,19 +2172,19 @@
       "model": "caravan_lane",
       "name": "caravanCamp-traffic-lane-3 EDITABLE",
       "position": {
-        "x": 6.0,
+        "x": 6,
         "y": 0.03,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2200,19 +2207,19 @@
       "model": "caravan_lane",
       "name": "caravanCamp-traffic-lane-4 EDITABLE",
       "position": {
-        "x": 12.0,
+        "x": 12,
         "y": 0.03,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -2235,19 +2242,19 @@
       "model": "modular_workshop",
       "name": "caravanCamp-wagon-repair EDITABLE",
       "position": {
-        "x": 20.0,
-        "y": 0.0,
-        "z": -16.0
+        "x": 20,
+        "y": 0,
+        "z": -16
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -2257,8 +2264,8 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1,
+        "z": 1
       },
       "vision": {
         "blocks": true
@@ -2269,20 +2276,21 @@
     {
       "id": "caravan_camp_barrel_1",
       "model": "rustBarrel",
-      "name": "Ржавая бочка",      "position": {
-        "x": 9.0,
-        "y": 0.0,
-        "z": 15.0
+      "name": "Ржавая бочка",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [],
@@ -2314,20 +2322,21 @@
     {
       "id": "caravan_camp_cargo_1",
       "model": "cargoStack",
-      "name": "Караванный штабель",      "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": 19.0
+      "name": "Караванный штабель",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": 19
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [],
@@ -2359,20 +2368,21 @@
     {
       "id": "caravan_camp_cargo_2",
       "model": "cargoStack",
-      "name": "Тюки с товаром",      "position": {
-        "x": 11.0,
-        "y": 0.0,
-        "z": 15.0
+      "name": "Тюки с товаром",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 15
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.785,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [],
@@ -2404,20 +2414,21 @@
     {
       "id": "caravan_camp_cot_1",
       "model": "cotBed",
-      "name": "Койка обозника",      "position": {
-        "x": -15.0,
-        "y": 0.0,
-        "z": 13.0
+      "name": "Койка обозника",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 13
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2455,20 +2466,21 @@
     {
       "id": "caravan_camp_cot_2",
       "model": "cotBed",
-      "name": "Койка обозника",      "position": {
-        "x": -11.0,
-        "y": 0.0,
-        "z": 13.0
+      "name": "Койка обозника",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 13
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2506,20 +2518,21 @@
     {
       "id": "caravan_camp_cot_3",
       "model": "cotBed",
-      "name": "Койка обозника",      "position": {
-        "x": -7.0,
-        "y": 0.0,
-        "z": 13.0
+      "name": "Койка обозника",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 13
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2557,20 +2570,21 @@
     {
       "id": "caravan_camp_cot_4",
       "model": "cotBed",
-      "name": "Койка обозника",      "position": {
-        "x": -3.0,
-        "y": 0.0,
-        "z": 13.0
+      "name": "Койка обозника",
+      "position": {
+        "x": -3,
+        "y": 0,
+        "z": 13
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2608,20 +2622,21 @@
     {
       "id": "caravan_camp_cot_5",
       "model": "cotBed",
-      "name": "Койка охранника",      "position": {
-        "x": -15.0,
-        "y": 0.0,
-        "z": 17.0
+      "name": "Койка охранника",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2659,20 +2674,21 @@
     {
       "id": "caravan_camp_cot_6",
       "model": "cotBed",
-      "name": "Койка охранника",      "position": {
-        "x": -11.0,
-        "y": 0.0,
-        "z": 17.0
+      "name": "Койка охранника",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2710,20 +2726,21 @@
     {
       "id": "caravan_camp_cot_7",
       "model": "cotBed",
-      "name": "Койка охранника",      "position": {
-        "x": -7.0,
-        "y": 0.0,
-        "z": 17.0
+      "name": "Койка охранника",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2761,20 +2778,21 @@
     {
       "id": "caravan_camp_cot_8",
       "model": "cotBed",
-      "name": "Койка торговца",      "position": {
-        "x": -3.0,
-        "y": 0.0,
-        "z": 17.0
+      "name": "Койка торговца",
+      "position": {
+        "x": -3,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2824,20 +2842,21 @@
     {
       "id": "caravan_camp_tires_1",
       "model": "tireStack",
-      "name": "Покрышки",      "position": {
-        "x": 13.0,
-        "y": 0.0,
-        "z": 17.0
+      "name": "Покрышки",
+      "position": {
+        "x": 13,
+        "y": 0,
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [],
@@ -2855,20 +2874,21 @@
     {
       "id": "caravan_camp_wreck_1",
       "model": "carWreck",
-      "name": "Остов фургона",      "position": {
-        "x": 9.0,
-        "y": 0.0,
-        "z": 2.0
+      "name": "Остов фургона",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 2
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [],
@@ -2882,7 +2902,7 @@
             "y": 0,
             "z": -1
           },
-          "rotationY": 3.1415926535897931,
+          "rotationY": 3.141592653589793,
           "visualAction": "guard"
         }
       ],
@@ -2900,20 +2920,21 @@
     {
       "id": "caravan_sayla_cot",
       "model": "cotBed",
-      "name": "Койка Сайлы",      "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": 7.0
+      "name": "Койка Сайлы",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": 7
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "bed",
@@ -2948,6 +2969,123 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик поселения",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "updatedAt": "2026-08-10T00:00:00Z",
@@ -2961,23 +3099,23 @@
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "caravanCamp-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "caravan_sayla",
@@ -2985,35 +3123,35 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -7.0,
-        "y": 0.0,
-        "z": 3.0
+        "x": -7,
+        "y": 0,
+        "z": 3
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "crossroads-yard",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "primary-exit",
       "kind": "Exit",
       "targetLocationId": "wasteland",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": 1.0,
-        "y": 0.0,
-        "z": -31.0
+        "x": 1,
+        "y": 0,
+        "z": -31
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

@@ -5416,6 +5416,80 @@ namespace RealmOfAshes.Game
             return PveAreaLabel(area);
         }
 
+        /// <summary>
+        /// Временное событие под выбранной точкой: имя и остаток времени.
+        /// Маркер называет только имя, а ехать к логову, которое закроется
+        /// раньше, чем отряд доедет, — потерянный путь.
+        /// </summary>
+        public string SelectedEventMeta()
+        {
+            return PublicEventMetaLabel(PublicEventAt(_selectedPoint));
+        }
+
+        /// <summary>
+        /// Авторская вводная события под выбранной точкой: за что там дерутся.
+        /// Сервер шлёт её с самим событием, но показать было негде.
+        /// </summary>
+        /// <summary>
+        /// Постоянная область под выбранной точкой в короткой форме: имя и
+        /// опасность. Полная сводка с обитателями и добычей не помещается в
+        /// строку цели, а вот принадлежность точки области — решающая.
+        /// </summary>
+        public string SelectedAreaMeta()
+        {
+            return PveAreaMetaLabel(PveAreaAt(_selectedPoint));
+        }
+
+        /// <summary>Короткая строка области для карты. Чистая функция — её проверяет проба.</summary>
+        public static string PveAreaMetaLabel(JObject area)
+        {
+            if (area == null) return string.Empty;
+            string name = area["displayName"]?.ToString();
+            if (string.IsNullOrWhiteSpace(name)) name = "угодья";
+            int danger = area["danger"]?.Value<int>() ?? 0;
+            return danger > 0 ? name + " · опасность " + danger : name;
+        }
+
+        public string SelectedEventBriefing()
+        {
+            string text = PublicEventAt(_selectedPoint)?["text"]?.ToString();
+            return string.IsNullOrWhiteSpace(text) ? string.Empty : text.Trim();
+        }
+
+        public JObject PublicEventAt(GlobalMapPoint point)
+        {
+            JArray events = _wasteland?["publicEvents"] as JArray;
+            if (events == null || point == null) return null;
+            JObject best = null;
+            float bestDistance = float.MaxValue;
+            foreach (JToken token in events)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                if (string.Equals(row["status"]?.ToString(), "expired", StringComparison.OrdinalIgnoreCase)) continue;
+                float radius = Mathf.Clamp(Float(row["radius"], 9f), 2f, 40f);
+                float dx = Float(row["x"], 0f) - point.X;
+                float dy = Float(row["y"], 0f) - point.Y;
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                if (distance > radius || distance >= bestDistance) continue;
+                bestDistance = distance;
+                best = row;
+            }
+            return best;
+        }
+
+        /// <summary>Строка события для карты. Чистая функция — её проверяет проба.</summary>
+        public static string PublicEventMetaLabel(JObject row)
+        {
+            if (row == null) return string.Empty;
+            string name = row["displayName"]?.ToString();
+            if (string.IsNullOrWhiteSpace(name)) name = "событие";
+            // Строка цели одна и узкая, поэтому предупреждение — восклицательный
+            // знак при часах, а не вторая фраза: длиннее она не помещается.
+            string line = name + " " + RoaWorldEventsPresentation.Clock(row["remainingSeconds"]?.ToObject<int>() ?? 0);
+            return row["warning"]?.ToObject<bool>() == true ? line + "!" : line;
+        }
+
         public JObject PveAreaAt(GlobalMapPoint point)
         {
             JArray areas = _wasteland?["pveAreas"] as JArray;

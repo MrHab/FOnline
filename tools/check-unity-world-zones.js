@@ -156,7 +156,7 @@ for (const token of [
   'MenuItem("Realm of Ashes/Probe/Mobile layout")',
   'RoaWorldEventsPresentation.PanelSize(mobile)',
   'RoaWorldEventsPresentation.PanelFontSize(mobile)',
-  'RoaGlobalMapCanvas.ZoneRulesDescription(rules)',
+  'RoaGlobalMapCanvas.ZoneRulesDescription(rules, Briefing)',
   'public static Vector2 CanvasSize(Vector2 screen, Vector2 reference)'
 ]) assert(mobileProbe.includes(token), `The mobile layout probe must measure the real panels: ${token}`);
 assert(read('unity-client/Assets/Editor/RoaClientAuditRunner.cs').includes('typeof(RoaMobileLayoutProbe),'),

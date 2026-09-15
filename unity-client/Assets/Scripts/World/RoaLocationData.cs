@@ -165,6 +165,12 @@ namespace RealmOfAshes.World
         [JsonProperty("tx")] public int Tx;
         [JsonProperty("tz")] public int Tz;
         [JsonProperty("radius")] public float Radius;
+
+        /// <summary>Режим зоны за переходом: сервер присылает его вместе с переходом.</summary>
+        [JsonProperty("targetPvpMode")] public string TargetPvpMode;
+
+        /// <summary>Полные правила зоны за переходом (потери, PvP, доступ).</summary>
+        [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
     }
 
     public sealed class Vec3

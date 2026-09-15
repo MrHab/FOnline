@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using RealmOfAshes.World;
@@ -135,6 +136,12 @@ namespace RealmOfAshes.Game
         private bool _worldRequestPending;
         private bool _tradePending;
         private bool _transitionPending;
+
+        /// <summary>Окно подтверждения перехода со сменой правил зоны.</summary>
+        private const float ZoneWarningWindowSeconds = 6f;
+        private string _zoneWarningTarget = string.Empty;
+        private float _zoneWarningUntil;
+        private string _acknowledgedZoneMode = string.Empty;
         private Material _transitionMaterial;
         private QuantityKind _quantityKind;
         private string _quantityItemId = string.Empty;
@@ -1214,7 +1221,11 @@ namespace RealmOfAshes.Game
                     ["name"] = string.IsNullOrEmpty(transition.Label) ? "Переход" : transition.Label,
                     ["to"] = transition.To,
                     ["entryKey"] = transition.EntryKey ?? string.Empty,
-                    ["locationId"] = _locationId
+                    ["locationId"] = _locationId,
+                    ["targetPvpMode"] = transition.TargetPvpMode ?? string.Empty,
+                    ["targetZoneRules"] = transition.TargetZoneRules != null
+                        ? (JToken)transition.TargetZoneRules.DeepClone()
+                        : JValue.CreateNull()
                 }
             };
             target.Marker = CreateTransitionMarker(position);
@@ -1828,11 +1839,54 @@ namespace RealmOfAshes.Game
             else OpenNpc(_candidate);
         }
 
+        /// <summary>
+        /// Правила зоны за переходом: первое нажатие показывает их, второе в
+        /// течение окна подтверждает вход. Так смена режима (мирная база →
+        /// Сердцевина → лаборатория) не случается молча, как это было при
+        /// переходе через платформу метро.
+        /// </summary>
+        public static string TransitionZoneWarning(JObject rules, string label)
+        {
+            if (rules == null) return string.Empty;
+            var sb = new StringBuilder(string.IsNullOrEmpty(label) ? "Переход" : label).Append(": ");
+            sb.Append(rules["label"]?.ToString() ?? "правила зоны");
+            string loss = rules["lossLabel"]?.ToString();
+            if (!string.IsNullOrEmpty(loss)) sb.Append(". ").Append(loss);
+            string pvp = rules["pvpLabel"]?.ToString();
+            if (!string.IsNullOrEmpty(pvp)) sb.Append(' ').Append(pvp);
+            sb.Append(" Нажмите ещё раз, чтобы войти.");
+            return sb.ToString();
+        }
+
+        public static bool TransitionNeedsConfirmation(JObject rules, string acknowledgedMode)
+        {
+            if (rules == null) return false;
+            string mode = rules["mode"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(mode)) return false;
+            if (string.Equals(mode, acknowledgedMode, StringComparison.OrdinalIgnoreCase)) return false;
+            JToken flag = rules["confirmBeforeEntry"];
+            if (flag != null && flag.Type == JTokenType.Boolean) return flag.ToObject<bool>();
+            return !string.Equals(rules["loss"]?.ToString() ?? "none", "none", StringComparison.OrdinalIgnoreCase);
+        }
+
         private void UseLocationTransition(JObject transition)
         {
             if (_transitionPending || transition == null || Socket == null) return;
             string target = transition["to"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(target)) return;
+
+            JObject targetRules = transition["targetZoneRules"] as JObject;
+            if (TransitionNeedsConfirmation(targetRules, _acknowledgedZoneMode)
+                && (_zoneWarningTarget != target || Time.realtimeSinceStartup > _zoneWarningUntil))
+            {
+                _zoneWarningTarget = target;
+                _zoneWarningUntil = Time.realtimeSinceStartup + ZoneWarningWindowSeconds;
+                Show(TransitionZoneWarning(targetRules, transition["name"]?.ToString()), ZoneWarningWindowSeconds);
+                return;
+            }
+            _zoneWarningTarget = string.Empty;
+            _zoneWarningUntil = 0f;
+            if (targetRules != null) _acknowledgedZoneMode = targetRules["mode"]?.ToString() ?? _acknowledgedZoneMode;
             string entryKey = transition["entryKey"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(entryKey))
                 entryKey = target == "settlement" ? "entryFromWasteland" : "entryFromSettlement";

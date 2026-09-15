@@ -74,6 +74,11 @@ namespace RealmOfAshes.EditorTools
                 ["startedAt"] = System.DateTime.UtcNow.ToString("O"), ["result"] = "RUNNING",
                 ["compression"] = compression.ToString(),
                 ["clientSourceHash"] = ClientSourceFingerprint(),
+                // Текстуры окружения без предела размера ложатся в player data
+                // несжатыми: в чеке видно, держится ли бюджет (меню
+                // «Кромка → Авторинг → Бюджет текстур WebGL» приводит к нему).
+                ["textureBudget"] = RoaWebGlTextureBudget.MaxTextureSize,
+                ["texturesOverBudget"] = RoaWebGlTextureBudget.OverBudgetCount(),
                 ["items"] = RoaItemModelCatalog.CatalogVersion,
                 ["equipment"] = RoaEquipmentModelCatalog.CatalogVersion,
                 ["suits"] = RoaSuitModelCatalog.CatalogVersion,

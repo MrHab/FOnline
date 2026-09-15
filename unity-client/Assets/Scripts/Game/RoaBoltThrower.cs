@@ -165,7 +165,10 @@ namespace RealmOfAshes.Game
             GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             projectile.name = magnetic ? "MagneticBolt_Projectile" : "Bolt_Projectile";
             projectile.transform.SetParent(transform, false);
-            projectile.transform.localScale = new Vector3(0.035f, 0.16f, 0.035f);
+            // Болт был 3,5 см в поперечнике при камере сверху: около одного пикселя,
+            // и полёт не читался вовсе. Остальные боевые эффекты живут в масштабе
+            // 0,13–0,28, поэтому щуп приведён к тому же языку: примерно 9 см на 50 см.
+            projectile.transform.localScale = new Vector3(0.09f, 0.25f, 0.09f);
             projectile.transform.position = from;
             RemoveCollider(projectile);
             Renderer renderer = projectile.GetComponent<Renderer>();
@@ -177,8 +180,8 @@ namespace RealmOfAshes.Game
             }
 
             var trail = projectile.AddComponent<TrailRenderer>();
-            trail.time = 0.24f;
-            trail.startWidth = magnetic ? 0.075f : 0.045f;
+            trail.time = 0.3f;
+            trail.startWidth = magnetic ? 0.15f : 0.11f;
             trail.endWidth = 0f;
             trail.sharedMaterial = _material;
             trail.startColor = magnetic ? new Color(0.35f, 0.86f, 1f, 0.9f)
@@ -214,7 +217,7 @@ namespace RealmOfAshes.Game
             var pulseObject = new GameObject(hit ? "AnomalyDischargePulse" : "BoltImpactPulse");
             pulseObject.transform.SetParent(transform, false);
             pulseObject.transform.position = position + Vector3.up * 0.08f;
-            LineRenderer ring = CreateLine(pulseObject.transform, "ImpactRing", true, 32, hit ? 0.09f : 0.045f);
+            LineRenderer ring = CreateLine(pulseObject.transform, "ImpactRing", true, 32, hit ? 0.09f : 0.085f);
             for (int index = 0; index < ring.positionCount; index++)
             {
                 float angle = index / (float)ring.positionCount * Mathf.PI * 2f;
@@ -225,7 +228,8 @@ namespace RealmOfAshes.Game
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / 0.45f);
-                pulseObject.transform.localScale = Vector3.one * Mathf.Lerp(0.08f, hit ? 2.4f : 0.65f, t);
+                // Кольцо промаха тоже было почти невидимым: 65 см тонкой линией.
+                pulseObject.transform.localScale = Vector3.one * Mathf.Lerp(0.08f, hit ? 2.4f : 0.95f, t);
                 Color color = hit ? new Color(0.48f, 0.91f, 1f, 1f - t)
                     : new Color(0.82f, 0.78f, 0.58f, 1f - t);
                 ring.startColor = ring.endColor = color;
@@ -241,7 +245,12 @@ namespace RealmOfAshes.Game
             Vector3 pointer = Input.mousePosition;
             if (Input.touchCount > 0) pointer = Input.GetTouch(0).position;
             Ray ray = _camera.ScreenPointToRay(pointer);
-            RaycastHit[] hits = Physics.RaycastAll(ray, 160f, ~0, QueryTriggerInteraction.Ignore);
+            // Маска «всё» ловила и служебные объёмы движения: RoaLocalTerrain кладёт
+            // их на слой 2 именно затем, чтобы они не участвовали в лучах, иначе точка
+            // броска садилась на невидимую коробку у дерева или камня вместо земли.
+            // DefaultRaycastLayers исключает этот слой — так же, как линия огня.
+            RaycastHit[] hits = Physics.RaycastAll(ray, 160f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             if (hits.Length > 0)
             {
                 System.Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));

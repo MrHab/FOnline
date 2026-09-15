@@ -1204,7 +1204,9 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (ack["protected"]?.ToObject<bool>() == true) return;
+            // Выстрел приняли, ОД и патрон списаны, а урона нет: сервер
+            // называет правило, и без этой строки отказ выглядит промахом.
+            if (ack["protected"]?.ToObject<bool>() == true) { LogProtected(ack); return; }
 
             if (!hit)
             {
@@ -1280,7 +1282,7 @@ namespace RealmOfAshes.Game
             }
 
             bool hit = ack["hit"]?.ToObject<bool>() ?? false;
-            if (ack["protected"]?.ToObject<bool>() == true) return;
+            if (ack["protected"]?.ToObject<bool>() == true) { LogProtected(ack); return; }
             if (!hit)
             {
                 string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
@@ -1607,6 +1609,22 @@ namespace RealmOfAshes.Game
                 Audio?.PlayReload(ActiveWeapon());
                 AddLog("Перезарядка: +" + take + " патр., -" + apCost.ToString("0.#") + " ОД");
             });
+        }
+
+        /// <summary>
+        /// Причина, по которой принятый выстрел не нанёс урона. Сервер знает
+        /// правило и теперь его называет; без имени правила отказ неотличим
+        /// от промаха, а ОД и патрон уже потрачены.
+        /// </summary>
+        public static string ProtectedReason(JObject ack)
+        {
+            string reason = ack?["protectedReason"]?.ToString();
+            return string.IsNullOrWhiteSpace(reason) ? "Цель под защитой: урона нет." : reason;
+        }
+
+        private void LogProtected(JObject ack)
+        {
+            AddLog(ProtectedReason(ack));
         }
 
         private void AddLog(string line)

@@ -93,6 +93,17 @@ for (const token of [
 ]) assert(lootCanvas.includes(token), `RoaLootCanvas must show the security line: ${token}`);
 assert(read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs').includes('RoaInteraction.SecurityLine(safe, false, 1000L)'),
   'The editor probe must check the security line of a locked safe.');
+
+// Правила PvP Сердцевины гасят урон, но выстрел проходит и тратит ОД с патроном:
+// сервер называет правило, клиент обязан его показать, иначе это выглядит промахом.
+const combatSource = read('unity-client/Assets/Scripts/Game/RoaCombat.cs');
+for (const token of [
+  'public static string ProtectedReason(JObject ack)',
+  'ack?["protectedReason"]',
+  '{ LogProtected(ack); return; }'
+]) assert(combatSource.includes(token), `RoaCombat must explain a shot the rules stopped: ${token}`);
+assert(read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs').includes('RoaCombat.ProtectedReason('),
+  'The editor probe must check the explanation of a stopped shot.');
 for (const token of [
   'public static JObject ArtifactForRuntimeId(JArray records, string runtimeId)',
   'public JArray StorageRuntimeRecords',

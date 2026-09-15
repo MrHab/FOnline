@@ -222,6 +222,13 @@ namespace RealmOfAshes.EditorTools
                 "A jammed lock says how long the wait is");
             Require(RoaInteraction.SecurityLine(null, false, 0L) == string.Empty, "Without a container there is no security line");
 
+            // Принятый выстрел без урона называет правило: с платформы фракции
+            // не стреляют, своих не бьют, цель вне боя на своей платформе.
+            Require(RoaCombat.ProtectedReason(JObject.Parse(@"{'protectedReason':'С платформы фракции не стреляют.'}"))
+                == "С платформы фракции не стреляют.", "The named rule reaches the combat log");
+            Require(RoaCombat.ProtectedReason(JObject.Parse("{}")).Length > 0,
+                "Even an unnamed rule is not silence: the shot did not miss");
+
             // Итог эффектов пояса: рядом с показателем назван его потолок,
             // а на самом потолке так и сказано.
             var beltEffects = JObject.Parse(@"{'artifactTypeIds':['spring','vein'],'speedPct':0.09,'apRegenPct':0.12,'carryKg':8,

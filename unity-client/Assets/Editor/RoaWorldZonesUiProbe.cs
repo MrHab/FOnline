@@ -118,6 +118,13 @@ namespace RealmOfAshes.EditorTools
             pve["distanceToRollM"] = 0;
             Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0).Contains("идти ещё"),
                 "A party that has walked its share is not nagged");
+            // Проверке нужен и путь, и выдержанный интервал: прошедший свою
+            // долю отряд должен знать, чего он ждёт.
+            pve["nextRollInSeconds"] = 12;
+            string waiting = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
+            Require(waiting.Contains("проверка через 12 с"), "The area says what the party is waiting for: " + waiting);
+            Require(!RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 12).Contains("проверка через"),
+                "The countdown runs out with the local clock");
 
             Require(RoaWorldEventsPresentation.Clock(754) == "12:34", "Clock formatting");
 
@@ -221,6 +228,13 @@ namespace RealmOfAshes.EditorTools
             Require(RoaInteraction.SecurityLine(safe, false, 1000L).Contains("Ещё 12 с до новой попытки"),
                 "A jammed lock says how long the wait is");
             Require(RoaInteraction.SecurityLine(null, false, 0L) == string.Empty, "Without a container there is no security line");
+
+            // Принятый выстрел без урона называет правило: с платформы фракции
+            // не стреляют, своих не бьют, цель вне боя на своей платформе.
+            Require(RoaCombat.ProtectedReason(JObject.Parse(@"{'protectedReason':'С платформы фракции не стреляют.'}"))
+                == "С платформы фракции не стреляют.", "The named rule reaches the combat log");
+            Require(RoaCombat.ProtectedReason(JObject.Parse("{}")).Length > 0,
+                "Even an unnamed rule is not silence: the shot did not miss");
 
             // Итог эффектов пояса: рядом с показателем назван его потолок,
             // а на самом потолке так и сказано.

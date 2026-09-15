@@ -4884,9 +4884,39 @@ function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
     && !serverTerritoryPvpBlock(attacker, target, room, now);
 }
 
-function serverProtectedAttackAck(player, spend, weapon, targetState = {}) {
+/**
+ * Почему выстрел не нанёс урона. Правило сервер знает и так, но раньше
+ * оставлял его себе: игрок тратил ОД и патрон, видел, что ничего не произошло,
+ * и не понимал, запрет это или промах.
+ */
+function serverPvpBlockLabel(attacker = {}, target = {}, room = null, now = Date.now()) {
+  if (!locationAllowsPvp(roomLocation(room))) return 'Здесь по игрокам не стреляют: мирная зона.';
+  if (serverPlayersAllied(attacker, target)) return 'Это свой: по союзникам огонь не ведётся.';
+  if (serverPlayerHasProtectedClanRally(target, room, now)) return 'Цель под защитой сбора клана.';
+  switch (serverTerritoryPvpBlock(attacker, target, room, now)) {
+    case 'sameFaction': return 'Контракт один на двоих: своих в Сердцевине не бьют.';
+    case 'attackerOnPlatform': return 'С платформы фракции не стреляют.';
+    case 'targetProtected': return 'Цель стоит на платформе своей фракции и вне боя: она защищена.';
+    default: return '';
+  }
+}
+
+/** То же для NPC: неприкосновенные новичковые, союзная фракция и свой отряд. */
+function serverNpcBlockLabel(player = {}, enemy = null, room = null) {
+  if (!enemy || enemy.dead) return '';
+  if (!roomAllowsNpcCombat(room)) return 'Здесь драться нельзя.';
+  if (serverNpcIsKromkaOnboardingProtected(enemy)) return 'Этого трогать нельзя: он под защитой Кромки.';
+  if (!serverActorHostileToPlayer(enemy, player)) return 'Это не враг: он не станет отвечать.';
+  if (serverCombatFactionsAllied(
+    serverWorldFactionKey(player.worldFactionId || player.factionId || ''), enemy.faction
+  )) return 'Это союзная фракция.';
+  return 'Это свой в отряде.';
+}
+
+function serverProtectedAttackAck(player, spend, weapon, targetState = {}, protectedReason = '') {
   return {
-    ok: true, protected: true, hit: false, hits: [], damage: 0, killed: false,
+    ok: true, protected: true, protectedReason: String(protectedReason || ''),
+    hit: false, hits: [], damage: 0, killed: false,
     weapon: weapon.id, mode: spend.mode, fallback: !!spend.fallback,
     combat: spend.combat, combats: spend.combats,
     self: publicAuthoritativePlayerState(player), ...targetState
@@ -29946,7 +29976,8 @@ io.on('connection', (socket) => {
     // The shot is valid and spent normally; protected targets receive no damage,
     // stagger, injuries or faction provocation, including multi-target attacks.
     if (!serverPlayerCanDamageNpc(p, enemy, room)) {
-      if (typeof ack === 'function') ack(serverProtectedAttackAck(p, spend, weapon, { enemy: publicEnemy(enemy, p) }));
+      if (typeof ack === 'function') ack(serverProtectedAttackAck(p, spend, weapon, { enemy: publicEnemy(enemy, p) },
+        serverNpcBlockLabel(p, enemy, room)));
       return;
     }
 
@@ -30116,7 +30147,8 @@ io.on('connection', (socket) => {
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(attacker, ENEMY_HEARING_SHOT_RANGE * Math.max(...spend.entries.map(entry => Number(entry.weapon.modNoiseMul || 1)))), socket.id, weapon.ammoType ? 'combat' : 'melee');
     if (!serverPlayerCanDamagePlayer(attacker, target, room, now)) {
-      if (typeof ack === 'function') ack(serverProtectedAttackAck(attacker, spend, weapon, { target: publicPlayer(target) }));
+      if (typeof ack === 'function') ack(serverProtectedAttackAck(attacker, spend, weapon, { target: publicPlayer(target) },
+        serverPvpBlockLabel(attacker, target, room, now)));
       return;
     }
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;

@@ -101,6 +101,8 @@ function fixture(mode = 'pvp') {
     'serverFactionKey', 'serverWorldFactionKey', 'serverCombatFactionGroup', 'serverFactionRelation',
     'serverFactionsHostile', 'serverActorHostileToPlayer', 'serverCombatFactionsAllied', 'serverPlayersAllied',
     'serverPlayerCanDamageNpc', 'serverPlayerCanDamagePlayer', 'serverProtectedAttackAck',
+    // Названия правил: принятый выстрел без урона обязан объяснить себя.
+    'serverPvpBlockLabel', 'serverNpcBlockLabel',
     // Учёт попаданий по токену, безопасное чтение здоровья и лимит косметических
     // событий: обработчики боя зовут их напрямую, заглушки здесь не годятся.
     'serverMarkAttackTargetHit', 'serverCurrentHp', 'serverAllowCosmeticRelay'
@@ -131,6 +133,8 @@ for (const mode of ['peaceful', 'pvp', 'pvpFullDrop']) {
     setup();
     const result = f.attack('playerHit');
     assert(result.ok && result.protected && result.damage === 0, `${mode} ${kind}: shot must be accepted without damage`);
+    assert(typeof result.protectedReason === 'string' && result.protectedReason.length > 0,
+      `${mode} ${kind}: a blocked shot must name the rule that stopped it`);
     assert.equal(f.target.hp, 100);
     assert.equal(f.target.lastServerDamageAt, undefined);
   }
@@ -138,6 +142,8 @@ for (const mode of ['peaceful', 'pvp', 'pvpFullDrop']) {
     f.weapon.id = weaponId;
     const result = f.attack('enemyHit', { multiTarget: weaponId === 'shotgun' || weaponId === 'flamethrower' });
     assert(result.ok && result.protected && result.damage === 0, `${mode} ${weaponId}: friendly NPC must be protected`);
+    assert(typeof result.protectedReason === 'string' && result.protectedReason.length > 0,
+      `${mode} ${weaponId}: a protected NPC must be explained, not silently unhurt`);
     assert.equal(f.enemy.hp, 100);
     assert.equal(f.enemy.hostileToPlayer, false);
   }
@@ -197,6 +203,29 @@ for (const capital of ['settlement', 'scrapTown', 'relayStation', 'caravanCamp',
   f.p.attachment = { party: { id: 'escort', playerMembers: [] } };
   f.enemy.onsitePartyId = 'escort';
   assert(!f.context.serverPlayerCanDamageNpc(f.p, f.enemy, f.room), 'Escorted party NPCs must be protected');
+}
+
+// --- правила Сердцевины называются словами ------------------------------------
+// Выстрел приняли, ОД и патрон списаны, урона нет: без имени правила это
+// неотличимо от промаха, а правило сервер знает и так.
+{
+  const f = fixture('pvpFullDrop');
+  const now = Date.now();
+  for (const [block, needle] of [
+    ['sameFaction', 'своих'],
+    ['attackerOnPlatform', 'с платформы'],
+    ['targetProtected', 'на платформе']
+  ]) {
+    f.context.serverTerritoryPvpBlock = () => block;
+    const label = f.context.serverPvpBlockLabel(f.p, f.target, f.room, now);
+    assert(label.toLowerCase().includes(needle), `${block} must be named for the player: ${label}`);
+  }
+  f.context.serverTerritoryPvpBlock = () => '';
+  assert.equal(f.context.serverPvpBlockLabel(f.p, f.target, f.room, now), '',
+    'Without a rule there is nothing to explain');
+  const peaceful = fixture('peaceful');
+  assert(peaceful.context.serverPvpBlockLabel(peaceful.p, peaceful.target, peaceful.room, now).includes('мирная зона'),
+    'A peaceful zone names itself');
 }
 
 console.log('Friendly fire OK: peaceful/capital shooting, normal spending, ally protection for direct/cone/blast attacks, hostile splash damage and no protected-target side effects.');

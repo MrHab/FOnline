@@ -39,6 +39,8 @@ namespace RealmOfAshes.World
         private Scene _unityLocationScene;
         private GameObject _unityLocationRoot;
         private AsyncOperation _unitySceneUnload;
+        private RoaSceneEnvironment _bootstrapEnvironment;
+        private bool _bootstrapEnvironmentCaptured;
 
         public LocationDefinition Current { get; private set; }
         public Renderer CurrentGroundRenderer { get; private set; }
@@ -182,6 +184,7 @@ namespace RealmOfAshes.World
                         _unityLocationRoot = unityScene.gameObject;
                         unityScene.RebuildIndex();
                         CurrentGroundRenderer = unityScene.GroundRenderer;
+                        AdoptAuthoredEnvironment(_unityLocationScene);
                     }
                     else
                     {
@@ -284,8 +287,61 @@ namespace RealmOfAshes.World
             return null;
         }
 
+        /// <summary>
+        /// Переносит освещение авторской сцены на активную.
+        ///
+        /// Локации грузятся аддитивно, а Unity при аддитивной загрузке берёт
+        /// окружение активной сцены, а не загруженной. Поэтому туман и ambient,
+        /// прописанные в каждой из 57 локаций, до игрока не доходили: весь мир
+        /// освещался холодным градиентом сцены-бутстрапа, из-за чего земля
+        /// уходила в синеву (градиент светит цветом неба вверх-смотрящим
+        /// поверхностям), а авторский пыльный туман не включался нигде.
+        ///
+        /// RenderSettings читает и пишет настройки ТЕКУЩЕЙ активной сцены, так что
+        /// авторские значения снимаются коротким переключением активной сцены и
+        /// тут же применяются к бутстрапу. Активной локация не остаётся: иначе в
+        /// неё начали бы попадать создаваемые в рантайме объекты и умирать вместе
+        /// с ней при переходе.
+        /// </summary>
+        private void AdoptAuthoredEnvironment(Scene authored)
+        {
+            if (!authored.IsValid() || !authored.isLoaded) return;
+            Scene active = SceneManager.GetActiveScene();
+            if (!active.IsValid() || active == authored) return;
+
+            if (!_bootstrapEnvironmentCaptured)
+            {
+                _bootstrapEnvironment = RoaSceneEnvironment.Capture();
+                _bootstrapEnvironmentCaptured = true;
+            }
+
+            RoaSceneEnvironment authoredEnvironment;
+            if (!SceneManager.SetActiveScene(authored)) return;
+            try
+            {
+                authoredEnvironment = RoaSceneEnvironment.Capture();
+            }
+            finally
+            {
+                SceneManager.SetActiveScene(active);
+            }
+
+            authoredEnvironment.Apply();
+            Debug.Log("[ROA] Окружение локации: туман " + (authoredEnvironment.FogEnabled ? "включён" : "выключен")
+                + ", ambient " + authoredEnvironment.AmbientMode
+                + ", небо " + ColorUtility.ToHtmlStringRGB(authoredEnvironment.AmbientSky));
+        }
+
+        /// <summary>Возвращает освещение бутстрапа, когда авторская сцена уходит.</summary>
+        private void RestoreBootstrapEnvironment()
+        {
+            if (!_bootstrapEnvironmentCaptured) return;
+            _bootstrapEnvironment.Apply();
+        }
+
         private void ReleaseUnityLocationScene()
         {
+            if (_unityLocationRoot != null) RestoreBootstrapEnvironment();
             if (_unityLocationRoot != null) _unityLocationRoot.SetActive(false);
             _unityLocationRoot = null;
             if (_unityLocationScene.IsValid() && _unityLocationScene.isLoaded)

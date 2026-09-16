@@ -49,4 +49,42 @@ for (const marker of [
   assert(probe.includes(marker), 'Unity lighting visual regression probe is missing: ' + marker);
 }
 
-console.log('Unity lighting OK: ACES, bounded desktop/mobile exposure and three visually distinct local-world profiles');
+// --- авторское окружение локации обязано доезжать до игрока -------------------
+// Локации грузятся аддитивно, а Unity при аддитивной загрузке берёт окружение
+// АКТИВНОЙ сцены. Поэтому туман и ambient, прописанные в каждой локации, молча
+// выбрасывались: весь мир освещался холодным градиентом сцены-бутстрапа, из-за
+// чего земля уходила в синеву — градиент светит цветом неба вверх-смотрящим
+// поверхностям, а вертикальные брали тёплый цвет экватора.
+const loader = read(path.join('unity-client', 'Assets', 'Scripts', 'World', 'RoaLocationLoader.cs'));
+const environment = read(path.join('unity-client', 'Assets', 'Scripts', 'World', 'RoaSceneEnvironment.cs'));
+
+assert(loader.includes('AdoptAuthoredEnvironment(_unityLocationScene);'),
+  'загрузчик не переносит окружение авторской сцены — туман и ambient локации снова выброшены');
+assert(loader.includes('RestoreBootstrapEnvironment();'),
+  'окружение бутстрапа не восстанавливается при выгрузке локации');
+assert(/SetActiveScene\(authored\)[\s\S]{0,400}SetActiveScene\(active\)/.test(loader),
+  'авторская сцена должна становиться активной лишь на время снятия настроек и возвращать активной прежнюю');
+
+for (const field of ['ambientMode', 'ambientSkyColor', 'ambientEquatorColor', 'ambientGroundColor',
+  'ambientIntensity', 'fog', 'fogColor', 'fogMode', 'fogDensity']) {
+  assert(environment.includes('RenderSettings.' + field),
+    `снимок окружения не переносит RenderSettings.${field}`);
+}
+
+// Данные: локации действительно авторизуют собственное окружение, иначе перенос
+// был бы бессмыслен, а бутстрап действительно отличается от них.
+const locationScenes = fs.readdirSync(path.join(root, 'unity-client/Assets/Scenes/Kromka/Locations'))
+  .filter(name => name.endsWith('.unity'));
+let authoredFog = 0;
+for (const name of locationScenes) {
+  const head = read(path.join('unity-client/Assets/Scenes/Kromka/Locations', name)).slice(0, 4000);
+  if (/m_Fog: 1/.test(head)) authoredFog += 1;
+}
+assert(authoredFog >= locationScenes.length,
+  `туман авторизован лишь в ${authoredFog} из ${locationScenes.length} локаций`);
+const bootstrapHead = read(path.join('unity-client', 'Assets', 'Scenes', 'Wasteland.unity')).slice(0, 4000);
+assert(/m_Fog: 0/.test(bootstrapHead),
+  'бутстрап больше не отличается туманом от локаций — проверка перестала что-либо значить');
+
+console.log('Unity lighting OK: ACES, bounded desktop/mobile exposure, three visually distinct local-world profiles '
+  + `and the authored environment of all ${locationScenes.length} locations now reaches the player instead of the bootstrap gradient`);

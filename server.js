@@ -26568,6 +26568,12 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
       if (eventError) return fail(`${member.name || 'Участник группы'}: ${eventError}`);
     }
   }
+  // Группа путешествия входит в PvE-область одной личной комнатой лидера:
+  // билет выдаёт сервер, поэтому проверка владельца на входе его пропустит.
+  // Считается до payload: он тоже называет эту комнату.
+  const pveArrivalRoomId = !stayOnWorldMap && LOCATIONS[targetLocationId]?.pveArea === true
+    ? serverResolvePveRoomId(leader, targetLocationId, '')
+    : '';
   const payload = {
     leaderId: socket.id,
     leaderName: leader.name || session.leaderName || 'Игрок',
@@ -26588,11 +26594,6 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
 
   session.terminating = true;
   const arrivingMembers = [];
-  // Группа путешествия входит в PvE-область одной личной комнатой лидера:
-  // билет выдаёт сервер, поэтому проверка владельца на входе его пропустит.
-  const pveArrivalRoomId = !stayOnWorldMap && LOCATIONS[targetLocationId]?.pveArea === true
-    ? serverResolvePveRoomId(leader, targetLocationId, '')
-    : '';
   if (pveArrivalRoomId) {
     const pveRoom = getOrCreateRoom(pveArrivalRoomId, targetLocationId);
     serverEnsurePveRoom(pveRoom, leader, now);

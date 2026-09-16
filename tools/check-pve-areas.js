@@ -268,6 +268,17 @@ for (const row of publicAreas) {
   assert.equal(pve.pveRoomOwner(`${row.locationId}#${row.worldZoneId}`, row.locationId), '',
     `${row.id}: the zone room id must never pass as a personal-room ticket`);
 }
+// Комната группы объявляется раньше всех, кто её называет. Это не придирка к
+// стилю: `const` в temporal dead zone роняет сервер прямо на прибытии отряда —
+// `node --check` такой файл разбирает молча, падает уже живой процесс.
+{
+  const declaredAt = server.indexOf('const pveArrivalRoomId =');
+  assert(declaredAt > 0, 'server.js must resolve the party room for a PvE arrival.');
+  for (const use of [...server.matchAll(/pveArrivalRoomId/g)].map(match => match.index)) {
+    assert(use >= declaredAt,
+      'pveArrivalRoomId is used before it is declared: the arrival handler would throw on the first party.');
+  }
+}
 // Билет прибытия обязан нести комнату группы, а не комнату зоны.
 assert(server.includes("roomId: pveArrivalRoomId || resolution.encounterRoomId || ''")
   && server.includes("encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || ''"),

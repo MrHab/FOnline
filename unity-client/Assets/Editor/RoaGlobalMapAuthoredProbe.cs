@@ -14,7 +14,7 @@ namespace RealmOfAshes.EditorTools
     /// <summary>Structural test for the prefab-only authored global map.</summary>
     public static class RoaGlobalMapAuthoredProbe
     {
-        private const int ExpectedLivePrefabKinds = 14;
+        private const int ExpectedLivePrefabKinds = 18;
 
         [MenuItem("Realm of Ashes/Проверки/Авторская глобальная карта")]
         public static void Run()
@@ -159,7 +159,8 @@ namespace RealmOfAshes.EditorTools
                 RoaGlobalMapPrefabKind[] kinds =
                     (RoaGlobalMapPrefabKind[])Enum.GetValues(typeof(RoaGlobalMapPrefabKind));
                 Require(kinds.Length == ExpectedLivePrefabKinds,
-                        "Ожидалось 14 типов live-prefab, найдено " + kinds.Length + ".");
+                        "Ожидалось " + ExpectedLivePrefabKinds + " типов live-prefab, найдено "
+                        + kinds.Length + ".");
 
                 temporary = new GameObject("GlobalMapProbe_LivePrefabs");
                 SceneManager.MoveGameObjectToScene(temporary, scene);

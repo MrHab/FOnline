@@ -114,6 +114,16 @@ namespace RealmOfAshes.Game
         private Text _hoverKind;
         private Text _hoverTitle;
         private Text _hoverMeta;
+        private const float HoverCardWidth = 360f;
+        private const int HoverFactRows = 3;
+        private const float HoverFactHeight = 17f;
+        private const int HoverRewardSlots = 4;
+        private const float HoverRewardSize = 28f;
+        private readonly List<Text> _hoverFacts = new List<Text>();
+        private Text _hoverRewardTitle;
+        private RectTransform _hoverRewardStrip;
+        private readonly List<RectTransform> _hoverRewardSlots = new List<RectTransform>();
+        private readonly List<RawImage> _hoverRewardIcons = new List<RawImage>();
         private GameObject _fullLootModal;
         private Text _zoneRulesTitle;
         private Text _zoneRulesText;
@@ -362,7 +372,7 @@ namespace RealmOfAshes.Game
 
             _hoverCard = Child("MapHoverCard", rootRect);
             Place(_hoverCard, 0f, 0f, 0f, 0f,
-                new Vector2(18f, 58f), new Vector2(344f, 134f));
+                new Vector2(18f, 58f), new Vector2(378f, 134f));
             _hoverCardBackground = _hoverCard.gameObject.AddComponent<Image>();
             _hoverCardBackground.color = new Color(0.018f, 0.045f, 0.028f, 0.96f);
             _hoverCardBackground.raycastTarget = false;
@@ -377,6 +387,43 @@ namespace RealmOfAshes.Game
                 FontStyle.Bold);
             Place(_hoverTitle.rectTransform, 0f, 1f, 1f, 1f,
                 new Vector2(10f, -45f), new Vector2(-10f, -22f));
+            // Строки карточки узла: цель, сложность, периоды активности и
+            // возможная награда. Пустое поле снимка не занимает строки — карта
+            // не показывает «Цель: —».
+            for (int i = 0; i < HoverFactRows; i++)
+            {
+                Text fact = Label("Fact" + i, _hoverCard, 11, TextAnchor.MiddleLeft, Mono);
+                Place(fact.rectTransform, 0f, 1f, 1f, 1f,
+                    new Vector2(10f, -62f - i * HoverFactHeight),
+                    new Vector2(-10f, -45f - i * HoverFactHeight));
+                _hoverFacts.Add(fact);
+            }
+            _hoverRewardTitle = Label("RewardTitle", _hoverCard, 10, TextAnchor.MiddleLeft, Kicker,
+                FontStyle.Bold);
+            Place(_hoverRewardTitle.rectTransform, 0f, 1f, 1f, 1f,
+                new Vector2(10f, -62f), new Vector2(-10f, -46f));
+            _hoverRewardStrip = Child("RewardStrip", _hoverCard);
+            Place(_hoverRewardStrip, 0f, 1f, 1f, 1f,
+                new Vector2(10f, -96f), new Vector2(-10f, -64f));
+            for (int i = 0; i < HoverRewardSlots; i++)
+            {
+                RectTransform slot = Child("Reward" + i, _hoverRewardStrip);
+                Place(slot, 0f, 0f, 0f, 1f,
+                    new Vector2(i * (HoverRewardSize + 4f), 0f),
+                    new Vector2(i * (HoverRewardSize + 4f) + HoverRewardSize, 0f));
+                var plate = slot.gameObject.AddComponent<Image>();
+                plate.color = new Color(0.10f, 0.12f, 0.08f, 0.9f);
+                plate.raycastTarget = false;
+                var frame = slot.gameObject.AddComponent<Outline>();
+                frame.effectColor = new Color(0.55f, 0.47f, 0.27f, 0.7f);
+                frame.effectDistance = new Vector2(1f, -1f);
+                RectTransform iconRect = Child("Icon", slot);
+                Stretch(iconRect, 3f);
+                var icon = iconRect.gameObject.AddComponent<RawImage>();
+                icon.raycastTarget = false;
+                _hoverRewardSlots.Add(slot);
+                _hoverRewardIcons.Add(icon);
+            }
             _hoverMeta = Label("Meta", _hoverCard, 11, TextAnchor.MiddleLeft, Mono);
             Place(_hoverMeta.rectTransform, 0f, 0f, 1f, 0f,
                 new Vector2(10f, 7f), new Vector2(-10f, 28f));
@@ -931,6 +978,74 @@ namespace RealmOfAshes.Game
             _hoverMeta.text = Map.HoverSummary;
             _hoverCardOutline.effectColor = new Color(accent.r, accent.g, accent.b, 0.82f);
             _hoverCardBackground.color = new Color(0.018f, 0.045f, 0.028f, 0.96f);
+            LayoutHoverFacts(Map.HoverCardRow);
+        }
+
+        /// <summary>
+        /// Раскладывает строки карточки по тому, что прислал сервер: цель,
+        /// сложность, периоды активности и полоса иконок возможной награды.
+        /// Пустые поля не занимают места, а карточка растёт вверх ровно на
+        /// столько, сколько строк набралось.
+        /// </summary>
+        private void LayoutHoverFacts(JObject row)
+        {
+            float top = 45f;
+            int used = 0;
+            foreach (string fact in HoverFactLines(row))
+            {
+                if (used >= _hoverFacts.Count) break;
+                Text line = _hoverFacts[used];
+                line.gameObject.SetActive(true);
+                line.text = fact;
+                Place(line.rectTransform, 0f, 1f, 1f, 1f,
+                    new Vector2(10f, -top - HoverFactHeight), new Vector2(-10f, -top));
+                top += HoverFactHeight;
+                used++;
+            }
+            for (int i = used; i < _hoverFacts.Count; i++) _hoverFacts[i].gameObject.SetActive(false);
+
+            List<string> rewards = RoaGlobalMap.CardRewardIds(row);
+            bool hasRewards = rewards.Count > 0;
+            _hoverRewardTitle.gameObject.SetActive(hasRewards);
+            _hoverRewardStrip.gameObject.SetActive(hasRewards);
+            if (hasRewards)
+            {
+                _hoverRewardTitle.text = "ВОЗМОЖНАЯ НАГРАДА";
+                Place(_hoverRewardTitle.rectTransform, 0f, 1f, 1f, 1f,
+                    new Vector2(10f, -top - 15f), new Vector2(-10f, -top));
+                top += 17f;
+                Place(_hoverRewardStrip, 0f, 1f, 1f, 1f,
+                    new Vector2(10f, -top - HoverRewardSize), new Vector2(-10f, -top));
+                top += HoverRewardSize + 2f;
+                for (int i = 0; i < _hoverRewardSlots.Count; i++)
+                {
+                    bool filled = i < rewards.Count;
+                    _hoverRewardSlots[i].gameObject.SetActive(filled);
+                    if (!filled) continue;
+                    Texture2D art = RoaItemCategories.Art(rewards[i]);
+                    _hoverRewardIcons[i].texture = art;
+                    _hoverRewardIcons[i].color = art != null ? Color.white : new Color(1f, 1f, 1f, 0f);
+                }
+            }
+
+            // Нижняя строка — расстояние и риск, поэтому высота считается от
+            // неё: карточка не должна наезжать на подсказку жестов.
+            float height = top + 34f;
+            _hoverCard.offsetMax = new Vector2(_hoverCard.offsetMin.x + HoverCardWidth,
+                _hoverCard.offsetMin.y + height);
+        }
+
+        /// <summary>Строки фактов карточки. Чистая функция — её проверяет проба.</summary>
+        public static List<string> HoverFactLines(JObject row)
+        {
+            var lines = new List<string>();
+            string objective = RoaGlobalMap.CardObjective(row);
+            if (!string.IsNullOrEmpty(objective)) lines.Add("Цель: " + objective);
+            string difficulty = RoaGlobalMap.CardDifficulty(row);
+            if (!string.IsNullOrEmpty(difficulty)) lines.Add("Сложность: " + difficulty);
+            string activity = RoaGlobalMap.CardActivity(row);
+            if (!string.IsNullOrEmpty(activity)) lines.Add("Периоды активности: " + activity);
+            return lines;
         }
 
         private void RefreshMapLabels()

@@ -23,7 +23,13 @@ namespace RealmOfAshes.World
         ActivityRecon,
         ActivityResource,
         ActivityDefense,
-        ActivityAssault
+        ActivityAssault,
+        // Области встреч: три нарисованных силуэта, между которыми выбирает
+        // авторское поле области, и шестиугольный знак узла с главарём.
+        ZoneAreaA,
+        ZoneAreaB,
+        ZoneAreaC,
+        BossBadge
     }
 
     [Serializable]

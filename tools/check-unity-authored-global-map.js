@@ -118,8 +118,8 @@ assert(landmarkAuthoring.includes('Seed = 20260902')
   && landmarkAuthoring.includes('ExpectedVisibleGroundY')
   && landmarkAuthoring.includes('EditorSceneManager.SaveScene('),
   'Landmark authoring cannot deterministically rebuild the Decor layer from MEP scenes');
-assert((scene.match(/\n  - Kind: /g) || []).length === 14,
-  'GlobalMapAuthored must serialize all 14 live-prefab catalogue slots');
+assert((scene.match(/\n  - Kind: /g) || []).length === 18,
+  'GlobalMapAuthored must serialize all 18 live-prefab catalogue slots');
 assert(!scene.includes('_routeLine:') && !scene.includes('LineRenderer:'),
   'GlobalMapAuthored still contains the retired generated route line');
 assert(scene.includes('m_Name: GlobalMapSun_AUTHORED')
@@ -280,7 +280,12 @@ const requiredPrefabs = [
   'GM_Activity_Recon.prefab',
   'GM_Activity_Resource.prefab',
   'GM_Activity_Defense.prefab',
-  'GM_Activity_Assault.prefab'
+  'GM_Activity_Assault.prefab',
+  // Области встреч: три силуэта угодий и шестиугольный знак узла с главарём.
+  'GM_ZoneArea_A.prefab',
+  'GM_ZoneArea_B.prefab',
+  'GM_ZoneArea_C.prefab',
+  'GM_BossBadge.prefab'
 ];
 for (const file of requiredPrefabs) {
   assert(fs.existsSync(path.join(prefabDir, file)), `Global-map prefab is missing: ${file}`);

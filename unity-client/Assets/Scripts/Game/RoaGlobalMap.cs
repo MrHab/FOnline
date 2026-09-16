@@ -42,6 +42,9 @@ namespace RealmOfAshes.Game
             public bool Sites;
             public bool Parties;
             public bool Threats;
+            // Угодья встреч читаются на всех ярусах: это крупные области, по
+            // которым игрок выбирает, куда идти, а не мелкие точки.
+            public bool EncounterZones;
             public float SiteBucket;
             public float PartyBucket;
             public float ThreatBucket;
@@ -134,6 +137,7 @@ namespace RealmOfAshes.Game
                         Sites = true,
                         Parties = true,
                         Threats = true,
+                        EncounterZones = true,
                         SiteBucket = 0f,
                         PartyBucket = 0f,
                         ThreatBucket = 0f,
@@ -154,6 +158,7 @@ namespace RealmOfAshes.Game
                         Sites = true,
                         Parties = true,
                         Threats = true,
+                        EncounterZones = true,
                         SiteBucket = 0f,
                         PartyBucket = 0f,
                         ThreatBucket = 0f,
@@ -174,6 +179,7 @@ namespace RealmOfAshes.Game
                         Sites = true,
                         Parties = true,
                         Threats = true,
+                        EncounterZones = true,
                         SiteBucket = 0f,
                         PartyBucket = 0f,
                         ThreatBucket = 0f,
@@ -231,6 +237,7 @@ namespace RealmOfAshes.Game
             Site,
             Party,
             Threat,
+            EncounterZone,
             Tracked
         }
 
@@ -315,6 +322,10 @@ namespace RealmOfAshes.Game
         public int SiteMarkerCount { get; private set; }
         public int SettlementStatusCount { get; private set; }
         public int ThreatMarkerCount { get; private set; }
+        /// <summary>Сколько угодий встреч очерчено на карте в этом снимке.</summary>
+        public int EncounterZoneCount { get; private set; }
+        /// <summary>Сколько узлов показали шестиугольный знак главаря.</summary>
+        public int BossBadgeCount { get; private set; }
         public int ActivityMarkerCount
         {
             get { return _activityOverlayLabels != null ? _activityOverlayLabels.Count : 0; }
@@ -383,12 +394,16 @@ namespace RealmOfAshes.Game
         public string WorldChangeKey { get { return BuildWorldChangeKey(); } }
         public string WorldChangeSummary { get { return BuildWorldChangeSummary(); } }
         public string SelectedRiskLabel { get { return BuildSelectedRiskLabel(); } }
-        public bool HoverPreviewActive { get { return _hoverDynamic != null || _hoverNode != null; } }
+        public bool HoverPreviewActive
+        {
+            get { return _hoverDynamic != null || _hoverNode != null || _hoverArea != null; }
+        }
         public string HoverTitle
         {
             get
             {
                 if (_hoverDynamic != null) return DynamicTargetTitle(_hoverDynamic);
+                if (_hoverArea != null) return _hoverArea["displayName"]?.ToString() ?? "Угодья";
                 return _hoverNode != null ? NodeTitle(_hoverNode) : string.Empty;
             }
         }
@@ -396,7 +411,10 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_hoverDynamic != null) return _hoverDynamic.Semantic;
+                if (_hoverDynamic != null)
+                    return string.IsNullOrWhiteSpace(_hoverDynamic.Data?["boss"]?["displayName"]?.ToString())
+                        ? _hoverDynamic.Semantic : "ГЛАВАРЬ";
+                if (_hoverArea != null) return "УГОДЬЯ";
                 return _hoverNode != null ? "ПОСЕЛЕНИЕ" : string.Empty;
             }
         }
@@ -404,15 +422,29 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_hoverDynamic != null) return _hoverDynamic.Accent;
+                if (_hoverDynamic != null)
+                    return string.IsNullOrWhiteSpace(_hoverDynamic.Data?["boss"]?["displayName"]?.ToString())
+                        ? _hoverDynamic.Accent : BossBadgeRim;
+                if (_hoverArea != null) return EncounterZoneColor(_hoverArea["danger"]?.Value<int>() ?? 3);
                 return _hoverNode != null ? new Color(0.94f, 0.82f, 0.47f, 1f) : Color.clear;
             }
+        }
+        /// <summary>
+        /// Строка снимка под курсором: по ней канва собирает карточку — цель,
+        /// сложность, периоды активности и возможную награду.
+        /// </summary>
+        public JObject HoverCardRow
+        {
+            get { return _hoverArea ?? _hoverDynamic?.Data; }
         }
         public string HoverSummary
         {
             get
             {
                 GlobalMapPoint point = _hoverDynamic?.Point
+                    ?? (_hoverArea != null
+                        ? new GlobalMapPoint { X = Float(_hoverArea["x"], 0f), Y = Float(_hoverArea["y"], 0f) }
+                        : null)
                     ?? (_hoverNode != null ? new GlobalMapPoint { X = _hoverNode.X, Y = _hoverNode.Y } : null);
                 if (point == null) return string.Empty;
                 float distance = DistanceKm(PlayerXY, new Vector2(point.X, point.Y));
@@ -675,6 +707,10 @@ namespace RealmOfAshes.Game
             public int Priority;
             public JObject Data;
         }
+
+        // Угодья наводятся не по точке, а по площади: курсор внутри контура
+        // открывает карточку области, если рядом нет более точной цели.
+        private JObject _hoverArea;
 
         private JObject _wasteland;
         private float _wastelandAppliedRealtime = -1f;
@@ -1275,6 +1311,8 @@ namespace RealmOfAshes.Game
             SiteMarkerCount = 0;
             SettlementStatusCount = 0;
             ThreatMarkerCount = 0;
+            EncounterZoneCount = 0;
+            BossBadgeCount = 0;
             _seenPartyActors.Clear();
 
             BuildFactionTerritories();
@@ -1435,8 +1473,8 @@ namespace RealmOfAshes.Game
                 }
             }
 
-            // Постоянные PvE-области: контур границ, чтобы игрок видел, где
-            // начинаются угодья обитателей, ещё до входа.
+            // Постоянные PvE-области: угодья обитателей очерчены на карте
+            // многоугольником, чтобы игрок видел их границы ещё до входа.
             JArray pveAreas = _wasteland["pveAreas"] as JArray;
             if (pveAreas != null)
             {
@@ -1447,9 +1485,27 @@ namespace RealmOfAshes.Game
                     float radius = Mathf.Clamp(Float(row["radiusPoints"], 24f), 4f, 80f);
                     var center = new GlobalMapPoint { X = Float(row["x"], 0f), Y = Float(row["y"], 0f) };
                     if (center.X <= 0f && center.Y <= 0f) continue;
-                    DrawWorldRing("PveArea:" + (row["id"]?.ToString() ?? string.Empty), center, radius,
-                                  new Color(0.55f, 0.82f, 0.45f, 0.26f),
-                                  0.08f, 0.1f, DynamicVisualLayer.Threat, false, 0);
+                    string areaId = row["id"]?.ToString() ?? string.Empty;
+                    int shape = row["shape"]?.Value<int>() ?? 0;
+                    if (shape > 0)
+                    {
+                        Color band = EncounterZoneColor(row["danger"]?.Value<int>() ?? 3);
+                        DrawEncounterZone("PveArea:" + areaId, center, radius, shape,
+                                          Float(row["shapeRotation"], 0f),
+                                          new Color(band.r, band.g, band.b, 0.16f),
+                                          new Color(band.r, band.g, band.b, 0.85f),
+                                          EncounterZonePriority);
+                        EncounterZoneCount++;
+                    }
+                    else
+                    {
+                        // Сервер без силуэта (старый снимок): область всё равно
+                        // обозначена, пусть и кольцом. Строку ищет
+                        // tools/check-pve-areas.js — это не мёртвый код.
+                        DrawWorldRing("PveArea:" + areaId, center, radius,
+                                      new Color(0.55f, 0.82f, 0.45f, 0.26f),
+                                      0.08f, 0.1f, DynamicVisualLayer.Threat, false, 0);
+                    }
                 }
             }
 
@@ -1479,10 +1535,23 @@ namespace RealmOfAshes.Game
                     target.Accent = MarkerSemanticColor("zone", kind, false, "active");
                     target.Priority = MarkerPresentationPriority("zone", kind, false, "active");
                     _dynamicTargets.Add(target);
-                    DrawWorldRing("PublicEvent:" + id, target.Point, target.Radius,
-                                  new Color(1f, 0.6f, 0.25f, 0.4f),
-                                  0.13f, 0.16f, DynamicVisualLayer.Threat, false,
-                                  target.Priority);
+                    // Узел события очерчен теми же угодьями, что и постоянная
+                    // область: силуэт берётся по идентификатору события, чтобы
+                    // два логова рядом не выглядели одной кляксой.
+                    Color eventBand = EncounterZoneColor(row["danger"]?.Value<int>() ?? 3);
+                    DrawEncounterZone("PublicEvent:" + id, target.Point, target.Radius,
+                                      EncounterZoneShapeFor(id), EncounterZoneRotationFor(id),
+                                      new Color(eventBand.r, eventBand.g, eventBand.b, 0.20f),
+                                      new Color(eventBand.r, eventBand.g, eventBand.b, 0.9f),
+                                      target.Priority);
+                    EncounterZoneCount++;
+                    // Мини-босс: шестиугольный знак в центре узла. Он и отличает
+                    // «здесь ждёт главарь» от обычных угодий.
+                    if (!string.IsNullOrWhiteSpace(row["boss"]?["displayName"]?.ToString()))
+                    {
+                        DrawBossBadge("PublicEventBoss:" + id, target.Point, target.Priority + 4);
+                        BossBadgeCount++;
+                    }
                     ThreatMarkerCount++;
                 }
             }
@@ -2012,6 +2081,125 @@ namespace RealmOfAshes.Game
             return Mathf.Clamp(radius, 18f, 58f);
         }
 
+        // ------------------------------------------------------------------
+        // Угодья встреч и знак главаря
+        //
+        // Область — не круг: карта ставит один из нарисованных силуэтов
+        // (GM_ZoneArea_A/B/C), поворачивает его на авторский угол и растягивает
+        // по радиусу области. Заливка и обводка красятся раздельно, но объект
+        // регистрируется один — иначе ярусный масштаб разнёс бы обводку и
+        // заливку в разные стороны.
+
+        private const float EncounterZoneHeight = 0.06f;
+        private const float BossBadgeHeight = 0.34f;
+        private const float BossBadgeRadiusPoints = 5.5f;
+        private const int EncounterZonePriority = 96;
+
+        /// <summary>Цвет угодий по полосе опасности: от янтарного к алому.</summary>
+        public static Color EncounterZoneColor(int dangerBand)
+        {
+            float t = Mathf.Clamp01((Mathf.Clamp(dangerBand, 1, 5) - 1) / 4f);
+            return Color.Lerp(new Color(0.93f, 0.71f, 0.28f), new Color(0.93f, 0.26f, 0.19f), t);
+        }
+
+        /// <summary>Устойчивый выбор силуэта для узла без авторского поля.</summary>
+        public static int EncounterZoneShapeFor(string id)
+        {
+            return (int)(StableHash(id) % (uint)Mathf.Max(1, RoaGlobalMapZoneShapes.Count)) + 1;
+        }
+
+        public static float EncounterZoneRotationFor(string id)
+        {
+            return StableHash(id + "#rotation") % 360u;
+        }
+
+        // FNV-1a: один и тот же узел получает один и тот же силуэт на любой
+        // машине и в любом запуске.
+        private static uint StableHash(string value)
+        {
+            uint hash = 2166136261u;
+            for (int i = 0; i < (value ?? string.Empty).Length; i++)
+            {
+                hash ^= value[i];
+                hash *= 16777619u;
+            }
+            return hash;
+        }
+
+        private static RoaGlobalMapPrefabKind EncounterZonePrefabKind(int shape)
+        {
+            switch (Mathf.Clamp(shape, 1, 3))
+            {
+                case 1: return RoaGlobalMapPrefabKind.ZoneAreaA;
+                case 2: return RoaGlobalMapPrefabKind.ZoneAreaB;
+                default: return RoaGlobalMapPrefabKind.ZoneAreaC;
+            }
+        }
+
+        /// <summary>
+        /// Ярусный масштаб, которым презентация раздувает уже размещённый
+        /// силуэт. Проверка попадания курсора умножает радиус на него же, иначе
+        /// нарисованная граница и кликабельная разошлись бы на дальнем ярусе.
+        /// </summary>
+        public static float EncounterZoneDetailScale(MapDetailTier tier)
+        {
+            return tier == MapDetailTier.Far ? 1.18f : (tier == MapDetailTier.Medium ? 1.08f : 1f);
+        }
+
+        /// <summary>
+        /// На сколько поднять плоский контур, чтобы холм внутри угодий не
+        /// разрезал его пополам. Рельеф опрашивается по кругу: карта берёт самую
+        /// высокую точку области и кладёт контур поверх неё.
+        /// </summary>
+        private float EncounterZoneLift(GlobalMapPoint center, float radiusPoints)
+        {
+            float ground = ReliefHeightAt(center.X, center.Y);
+            float highest = ground;
+            for (int i = 0; i < 12; i++)
+            {
+                float angle = i * (Mathf.PI * 2f / 12f);
+                float dx = Mathf.Cos(angle) * radiusPoints;
+                float dy = Mathf.Sin(angle) * radiusPoints;
+                highest = Mathf.Max(highest, ReliefHeightAt(center.X + dx, center.Y + dy));
+                highest = Mathf.Max(highest, ReliefHeightAt(center.X + dx * 0.6f, center.Y + dy * 0.6f));
+            }
+            return EncounterZoneHeight + Mathf.Max(0f, highest - ground);
+        }
+
+        private void DrawEncounterZone(string name, GlobalMapPoint center, float radiusPoints,
+                                       int shape, float rotationDegrees, Color fill, Color rim,
+                                       int priority)
+        {
+            GameObject go = InstantiateLivePrefab(EncounterZonePrefabKind(shape), name);
+            if (go == null) return;
+            float radiusWorld = Mathf.Max(0.05f, radiusPoints * MapWorldScale);
+            go.transform.localPosition = PointToWorld(center.X, center.Y,
+                EncounterZoneLift(center, radiusPoints));
+            go.transform.localRotation = Quaternion.Euler(0f, rotationDegrees, 0f);
+            go.transform.localScale = new Vector3(radiusWorld, 1f, radiusWorld);
+            TintLivePrefab(go, fill, "ZoneFill");
+            TintLivePrefab(go, rim, "ZoneRim");
+            RegisterDynamicVisual(go, DynamicVisualLayer.EncounterZone, center, false, priority);
+        }
+
+        private void DrawBossBadge(string name, GlobalMapPoint point, int priority)
+        {
+            GameObject go = InstantiateLivePrefab(RoaGlobalMapPrefabKind.BossBadge, name);
+            if (go == null) return;
+            float radiusWorld = BossBadgeRadiusPoints * MapWorldScale;
+            // Знак садится поверх угодий узла, а не в их толщу.
+            go.transform.localPosition = PointToWorld(point.X, point.Y,
+                EncounterZoneLift(point, BossBadgeRadiusPoints * 2f) + BossBadgeHeight);
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = new Vector3(radiusWorld, 1f, radiusWorld);
+            TintLivePrefab(go, BossBadgeFill, "BadgeFill");
+            TintLivePrefab(go, BossBadgeRim, "BadgeRim");
+            RegisterDynamicVisual(go, DynamicVisualLayer.Threat, point, false, priority);
+        }
+
+        public static readonly Color BossBadgeFill = new Color(0.96f, 0.76f, 0.22f, 0.92f);
+        public static readonly Color BossBadgeRim = new Color(1f, 0.89f, 0.47f, 1f);
+
         private void DrawWorldRing(string name, GlobalMapPoint point, float radiusPoints, Color color,
                                    float width = 0.13f, float height = 0.16f,
                                    DynamicVisualLayer layer = DynamicVisualLayer.Influence,
@@ -2133,6 +2321,11 @@ namespace RealmOfAshes.Game
                                 && (profile.ThreatBucket <= 0f
                                     || IsPresentationWinner(state, threatWinners,
                                         profile.ThreatBucket));
+                            break;
+                        case DynamicVisualLayer.EncounterZone:
+                            // Угодья живут в слое событий: фильтр «СОБЫТИЯ»
+                            // убирает их вместе с остальной активностью.
+                            visible = _showEvents && profile.EncounterZones;
                             break;
                         case DynamicVisualLayer.Tracked:
                             visible = true;
@@ -2914,12 +3107,14 @@ namespace RealmOfAshes.Game
             GlobalMapNode node = target == null ? NearestNode(point, NodeSnapRadiusPoints * 0.9f) : null;
             _hoverDynamic = target;
             _hoverNode = node;
+            _hoverArea = target == null && node == null ? PveAreaAtPolygon(point) : null;
         }
 
         private void ClearHoverPreview()
         {
             _hoverDynamic = null;
             _hoverNode = null;
+            _hoverArea = null;
         }
 
         private bool UpdateCameraOrbit()
@@ -4934,6 +5129,8 @@ namespace RealmOfAshes.Game
             SiteMarkerCount = 0;
             SettlementStatusCount = 0;
             ThreatMarkerCount = 0;
+            EncounterZoneCount = 0;
+            BossBadgeCount = 0;
         }
 
         private GameObject InstantiateLivePrefab(RoaGlobalMapPrefabKind kind, string objectName,
@@ -5492,6 +5689,109 @@ namespace RealmOfAshes.Game
             // знак при часах, а не вторая фраза: длиннее она не помещается.
             string line = name + " " + RoaWorldEventsPresentation.Clock(row["remainingSeconds"]?.ToObject<int>() ?? 0);
             return row["warning"]?.ToObject<bool>() == true ? line + "!" : line;
+        }
+
+        /// <summary>
+        /// Область под точкой по её настоящему контуру, а не по окружности.
+        /// Радиус домножается на ярусный масштаб, потому что презентация
+        /// раздувает уже размещённый силуэт: иначе курсор «проваливался» бы
+        /// сквозь нарисованную кромку на дальнем ярусе.
+        /// </summary>
+        public JObject PveAreaAtPolygon(GlobalMapPoint point)
+        {
+            JArray areas = _wasteland?["pveAreas"] as JArray;
+            if (areas == null || point == null) return null;
+            float detail = EncounterZoneDetailScale(CurrentDetailTier());
+            var probe = new Vector2(point.X, point.Y);
+            foreach (JToken token in areas)
+            {
+                JObject row = token as JObject;
+                int shape = row?["shape"]?.Value<int>() ?? 0;
+                if (shape <= 0) continue;
+                var center = new Vector2(Float(row["x"], 0f), Float(row["y"], 0f));
+                if (center.x <= 0f && center.y <= 0f) continue;
+                float radius = Mathf.Clamp(Float(row["radiusPoints"], 24f), 4f, 80f) * detail;
+                if (RoaGlobalMapZoneShapes.Contains(shape, Float(row["shapeRotation"], 0f),
+                        radius, center, probe))
+                    return row;
+            }
+            return null;
+        }
+
+        // ------------------------------------------------------------------
+        // Карточка узла: цель, сложность, периоды активности и возможная
+        // награда. Всё это авторские поля снимка — карта ничего не досочиняет,
+        // а пустое поле просто не показывает строку. Функции чистые: их
+        // проверяет проба без сцены и без сокета.
+
+        /// <summary>Полоса опасности словом — теми же словами, что и сервер.</summary>
+        public static string DangerBandLabel(int band)
+        {
+            switch (Mathf.Clamp(band, 1, 5))
+            {
+                case 1: return "низкая";
+                case 2: return "умеренная";
+                case 3: return "средняя";
+                case 4: return "высокая";
+                default: return "крайняя";
+            }
+        }
+
+        public static string CardObjective(JObject row)
+        {
+            string objective = row?["objective"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(objective)) return objective;
+            string boss = row?["boss"]?["displayName"]?.ToString();
+            return string.IsNullOrWhiteSpace(boss) ? string.Empty : "убить " + boss;
+        }
+
+        public static string CardDifficulty(JObject row)
+        {
+            string label = row?["dangerLabel"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(label)) return label;
+            int band = row?["danger"]?.Value<int>() ?? 0;
+            return band > 0 ? DangerBandLabel(band) : string.Empty;
+        }
+
+        /// <summary>
+        /// Периоды активности: постоянные угодья говорят «всегда», временный
+        /// узел — сколько ему осталось.
+        /// </summary>
+        public static string CardActivity(JObject row)
+        {
+            string activity = row?["activity"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(activity)) return activity;
+            int remaining = row?["remainingSeconds"]?.Value<int>() ?? 0;
+            if (remaining <= 0) return string.Empty;
+            return "ещё " + RoaWorldEventsPresentation.Clock(remaining)
+                + (row?["warning"]?.Value<bool>() == true ? " · скоро закроется" : string.Empty);
+        }
+
+        /// <summary>Идентификаторы награды — по ним канва берёт иконки предметов.</summary>
+        public static List<string> CardRewardIds(JObject row)
+        {
+            var ids = new List<string>();
+            foreach (JToken token in row?["rewardPreview"] as JArray ?? new JArray())
+            {
+                string id = token?["id"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(id) && !ids.Contains(id)) ids.Add(id);
+            }
+            return ids;
+        }
+
+        /// <summary>Награда словами: «Марки Тракта ×120 · Патроны 9mm ×40».</summary>
+        public static string CardRewardLine(JObject row)
+        {
+            var parts = new List<string>();
+            foreach (JToken token in row?["rewardPreview"] as JArray ?? new JArray())
+            {
+                string name = token?["name"]?.ToString();
+                if (string.IsNullOrWhiteSpace(name)) name = token?["id"]?.ToString();
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                int qty = token?["qty"]?.Value<int>() ?? 0;
+                parts.Add(qty > 1 ? name + " ×" + qty : name);
+            }
+            return string.Join(" · ", parts);
         }
 
         public JObject PveAreaAt(GlobalMapPoint point)

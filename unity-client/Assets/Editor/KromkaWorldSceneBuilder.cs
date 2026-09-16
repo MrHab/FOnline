@@ -853,6 +853,10 @@ namespace Kromka.EditorTools
                 case RoaGlobalMapPrefabKind.ActivityResource: return "Assets/Prefabs/GlobalMap/GM_Activity_Resource.prefab";
                 case RoaGlobalMapPrefabKind.ActivityDefense: return "Assets/Prefabs/GlobalMap/GM_Activity_Defense.prefab";
                 case RoaGlobalMapPrefabKind.ActivityAssault: return "Assets/Prefabs/GlobalMap/GM_Activity_Assault.prefab";
+                case RoaGlobalMapPrefabKind.ZoneAreaA: return "Assets/Prefabs/GlobalMap/GM_ZoneArea_A.prefab";
+                case RoaGlobalMapPrefabKind.ZoneAreaB: return "Assets/Prefabs/GlobalMap/GM_ZoneArea_B.prefab";
+                case RoaGlobalMapPrefabKind.ZoneAreaC: return "Assets/Prefabs/GlobalMap/GM_ZoneArea_C.prefab";
+                case RoaGlobalMapPrefabKind.BossBadge: return "Assets/Prefabs/GlobalMap/GM_BossBadge.prefab";
                 default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
             }
         }

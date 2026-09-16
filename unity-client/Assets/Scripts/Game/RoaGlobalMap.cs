@@ -3347,16 +3347,25 @@ namespace RealmOfAshes.Game
                 if (target == null || !target.CanEnter || target.Point == null) continue;
                 if (target.Kind != "party" && target.Kind != "zone") continue;
                 if (_ignoredRouteContacts.Contains(target.Kind + ":" + target.Id)) continue;
-                float touchRadius = Mathf.Max(2f, target.Radius) + 2.5f;
-                if (Distance(previousPoint, target.Point) <= touchRadius + 0.25f) continue;
                 float t;
-                float distance = PointSegmentDistance(target.Point, previousPoint, nextPoint, out t);
-                if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
-                // Угодья встречают того, кто вошёл в контур, а не всякого, кто
-                // прошёл в радиусе описанной окружности.
-                if (string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal)
-                    && !RouteEntersArea(PveAreaByLocation(target.LocationId), previousPoint, nextPoint))
-                    continue;
+                // Угодья живут по своему правилу: отряд встречают там, где он
+                // пересёк контур. Запас описанной окружности здесь не годится —
+                // он шире самих угодий, и шаг «вошёл в запас» гасил бы контакт
+                // до того, как маршрут дошёл до границы.
+                if (string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal))
+                {
+                    JObject area = PveAreaByLocation(target.LocationId);
+                    if (area == null || PointInsideArea(area, previousPoint)) continue;
+                    t = RouteEntryFraction(area, previousPoint, nextPoint);
+                    if (t < 0f || t >= bestT) continue;
+                }
+                else
+                {
+                    float touchRadius = Mathf.Max(2f, target.Radius) + 2.5f;
+                    if (Distance(previousPoint, target.Point) <= touchRadius + 0.25f) continue;
+                    float distance = PointSegmentDistance(target.Point, previousPoint, nextPoint, out t);
+                    if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
+                }
                 best = target;
                 bestT = t;
             }
@@ -5810,25 +5819,42 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Зашёл ли отрезок маршрута внутрь угодий. Контакт в пути обязан
-        /// срабатывать по нарисованному контуру, а не по описанной окружности:
-        /// иначе отряд встречали бы за десяток километров от границы.
+        /// Где отрезок маршрута вошёл в угодья: доля пути 0..1 или -1, если не
+        /// вошёл. Контакт в пути обязан срабатывать по нарисованному контуру, а
+        /// не по описанной окружности — иначе отряд встречали бы за десяток
+        /// километров от границы.
         /// </summary>
-        public static bool RouteEntersArea(JObject area, GlobalMapPoint from, GlobalMapPoint to)
+        public static float RouteEntryFraction(JObject area, GlobalMapPoint from, GlobalMapPoint to)
         {
             int shape = area?["shape"]?.Value<int>() ?? 0;
-            if (shape <= 0 || from == null || to == null) return false;
+            if (shape <= 0 || from == null || to == null) return -1f;
             var center = new Vector2(Float(area["x"], 0f), Float(area["y"], 0f));
             float radius = Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f);
             float rotation = Float(area["shapeRotation"], 0f);
-            const int samples = 8;
+            const int samples = 12;
             for (int i = 1; i <= samples; i++)
             {
                 float t = (float)i / samples;
                 var probe = new Vector2(Mathf.Lerp(from.X, to.X, t), Mathf.Lerp(from.Y, to.Y, t));
-                if (RoaGlobalMapZoneShapes.Contains(shape, rotation, radius, center, probe)) return true;
+                if (RoaGlobalMapZoneShapes.Contains(shape, rotation, radius, center, probe)) return t;
             }
-            return false;
+            return -1f;
+        }
+
+        public static bool RouteEntersArea(JObject area, GlobalMapPoint from, GlobalMapPoint to)
+        {
+            return RouteEntryFraction(area, from, to) >= 0f;
+        }
+
+        /// <summary>Стоит ли точка внутри контура этих угодий.</summary>
+        public static bool PointInsideArea(JObject area, GlobalMapPoint point)
+        {
+            int shape = area?["shape"]?.Value<int>() ?? 0;
+            if (shape <= 0 || point == null) return false;
+            return RoaGlobalMapZoneShapes.Contains(shape, Float(area["shapeRotation"], 0f),
+                Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f),
+                new Vector2(Float(area["x"], 0f), Float(area["y"], 0f)),
+                new Vector2(point.X, point.Y));
         }
 
         // ------------------------------------------------------------------

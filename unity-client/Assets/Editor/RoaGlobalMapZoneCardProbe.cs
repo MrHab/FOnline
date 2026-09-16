@@ -74,6 +74,17 @@ namespace RealmOfAshes.EditorTools
                 "Без силуэта путь не может войти в контур");
             Require(!RoaGlobalMap.RouteEntersArea(null, far, inside) && !RoaGlobalMap.RouteEntersArea(route, null, inside),
                 "Пустая область или пустой отрезок не ломают проверку");
+            // Доля пути нужна, чтобы из нескольких встреч на шаге выбралась
+            // ближняя: контакт обязан случиться там, где маршрут вошёл.
+            float entry = RoaGlobalMap.RouteEntryFraction(route, far, inside);
+            Require(entry > 0f && entry <= 1f, "Вход в угодья приходится на сам отрезок: " + entry);
+            Require(RoaGlobalMap.RouteEntryFraction(route, far, aside) < 0f,
+                "Маршрут мимо угодий доли входа не имеет");
+            // Отряд, уже стоящий внутри контура, не получает предложение снова:
+            // иначе карта звала бы войти туда, где отряд уже идёт.
+            Require(RoaGlobalMap.PointInsideArea(route, inside)
+                && !RoaGlobalMap.PointInsideArea(route, aside),
+                "Проверка «уже внутри» обязана различать центр угодий и точку мимо них");
 
             // --- ярусный масштаб ----------------------------------------
             Require(Mathf.Approximately(RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Near), 1f)

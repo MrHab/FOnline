@@ -185,6 +185,7 @@ namespace RealmOfAshes.World
                         unityScene.RebuildIndex();
                         CurrentGroundRenderer = unityScene.GroundRenderer;
                         AdoptAuthoredEnvironment(_unityLocationScene);
+                        PaintAuthoredGround(definition, authoritativeMap, unityScene.GroundRenderer);
                     }
                     else
                     {
@@ -285,6 +286,37 @@ namespace RealmOfAshes.World
                     return marker;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Красит землю авторской сцены запечённым альбедо.
+        ///
+        /// Авторская земля — куб размером с карту с плоским цветом региона: из 660
+        /// материалов, на которые ссылаются 57 локаций, текстура была ровно у
+        /// одного. При этом генератор поверхности в проекте написан и проверен, но
+        /// вызывался только там, где авторской сцены нет, — то есть ни в одной
+        /// боевой локации. Здесь он получает авторскую землю как холст и пишет по
+        /// ней тропы, воду, руду и рельеф по той же карте, что видит сервер.
+        ///
+        /// Геометрия, коллизии и обстановка остаются авторскими: трогается только
+        /// материал того рендерера, который сцена сама объявила землёй.
+        /// </summary>
+        private void PaintAuthoredGround(LocationDefinition definition, JArray authoritativeMap, Renderer groundRenderer)
+        {
+            if (groundRenderer == null)
+            {
+                Debug.LogWarning("[ROA] Авторская сцена '" + (definition?.Id ?? "?")
+                    + "' не объявила землю (GroundRenderer пуст) — покрасить нечего.");
+                return;
+            }
+            var surface = new GameObject("AuthoredGroundPainter");
+            surface.transform.SetParent(_currentRoot.transform, false);
+            _groundSurface = surface.AddComponent<RoaLocalTerrain>();
+            _groundSurface.InitializeAuthoredSurface(definition, authoritativeMap, groundRenderer);
+            Debug.Log("[ROA] Земля локации покрашена: сетка "
+                + _groundSurface.AuthoritativeMapWidth + "x" + _groundSurface.AuthoritativeMapDepth
+                + ", альбедо " + _groundSurface.AlbedoTextureSize + " px, пресет '"
+                + (definition.Ground?.Preset ?? string.Empty) + "'");
         }
 
         /// <summary>

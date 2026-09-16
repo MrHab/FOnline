@@ -30,6 +30,7 @@ namespace RealmOfAshes.World
         private int _textureSize;
         private float _visualWidth;
         private float _visualDepth;
+        private bool _authoredSurface;
         private int _mapSignature = int.MinValue;
         private GameObject _movementRoot;
         private RoaGroundDressing _groundDressing;
@@ -92,6 +93,49 @@ namespace RealmOfAshes.World
             ApplyMap(stateMap, true);
         }
 
+        /// <summary>
+        /// Красит землю авторской сцены вместо того, чтобы строить свою.
+        ///
+        /// У авторских локаций земля — это куб размером с карту с плоским цветом
+        /// региона и без единой текстуры, а весь этот генератор до сих пор
+        /// вызывался только там, где авторской сцены нет, то есть нигде. Здесь
+        /// берётся ровно покраска: запечённое по авторитетной карте альбедо с
+        /// тропами, водой и рудой плюс микродеталь. Геометрия, коллизии и
+        /// обстановка остаются авторскими — их сцена уже несёт сама.
+        ///
+        /// Границы текстуры совпадают с картой без запаса по краям: развёртка
+        /// верхней грани куба идёт 0..1 ровно по площадке, тогда как собственный
+        /// рельефный меш рисуется с полем вокруг.
+        /// </summary>
+        public void InitializeAuthoredSurface(LocationDefinition location, JArray stateMap, Renderer target)
+        {
+            if (target == null) return;
+            _location = location;
+            _authoredSurface = true;
+            _visualWidth = location != null ? location.WorldWidth : 76f;
+            _visualDepth = location != null ? location.WorldDepth : 76f;
+            _textureSize = AlbedoResolution(Application.isMobilePlatform);
+
+            // Материал — копия авторского: сохраняются шейдер и его настройки, а
+            // цвет уходит в белый, иначе URP помножил бы запечённое альбедо на
+            // заливку региона и погасил бы его.
+            Material source = target.sharedMaterial;
+            Shader shader = source != null
+                ? source.shader
+                : (Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            if (shader == null) return;
+            _material = source != null ? new Material(source) : new Material(shader);
+            _material.name = "AuthoredLocalGround:" + (location?.Id ?? "unknown");
+            SetMaterialColor(_material, Color.white);
+            if (_material.HasProperty("_Smoothness")) _material.SetFloat("_Smoothness", 0.015f);
+            if (_material.HasProperty("_Glossiness")) _material.SetFloat("_Glossiness", 0.015f);
+            target.sharedMaterial = _material;
+            GroundRenderer = target;
+
+            ApplyMicroDetail(_material, location != null ? location.Seed : 1L);
+            ApplyMap(stateMap, true);
+        }
+
         public static int AlbedoResolution(bool mobile)
         {
             return mobile ? 512 : 1024;
@@ -108,7 +152,7 @@ namespace RealmOfAshes.World
             AuthoritativeMapWidth = mapWidth;
             AuthoritativeMapDepth = mapDepth;
             PathConnectionCount = 0;
-            BuildTileMovementColliders(stateMap, mapWidth, mapDepth);
+            if (!_authoredSurface) BuildTileMovementColliders(stateMap, mapWidth, mapDepth);
             if (_groundDressing != null)
                 _groundDressing.Build(_location, stateMap, mapWidth, mapDepth, _visualWidth, _visualDepth);
 

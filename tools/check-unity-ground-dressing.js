@@ -143,4 +143,34 @@ assert(!/AddComponent<[^>]*Collider/.test(dressing)
 assert(audit.includes('typeof(RoaGroundDressingProbe)'),
   'Проба оформления земли не включена в общий Unity-аудит');
 
-console.log('Unity ground dressing check passed.');
+// --- земля авторских локаций обязана быть покрашена ---------------------------
+// Земля авторской сцены — куб размером с карту с плоским цветом региона: из 660
+// материалов, на которые ссылаются 57 локаций, текстура была ровно у одного.
+// Генератор поверхности при этом написан и проверен, но вызывался только там,
+// где авторской сцены нет, то есть ни в одной боевой локации.
+const loaderSource = read(path.join('unity-client', 'Assets', 'Scripts', 'World', 'RoaLocationLoader.cs'));
+const terrainSource = read(path.join('unity-client', 'Assets', 'Scripts', 'World', 'RoaLocalTerrain.cs'));
+
+assert(loaderSource.includes('PaintAuthoredGround(definition, authoritativeMap, unityScene.GroundRenderer);'),
+  'загрузчик не красит землю авторской сцены — она снова останется плоской заливкой');
+assert(terrainSource.includes('public void InitializeAuthoredSurface('),
+  'в генераторе поверхности нет режима покраски уже существующей земли');
+
+// Границы текстуры обязаны совпадать с картой: развёртка верхней грани куба идёт
+// 0..1 ровно по площадке, а собственный рельефный меш рисуется с полем вокруг,
+// и запас по краям сместил бы все тропы и воду.
+const authoredMode = terrainSource.slice(terrainSource.indexOf('public void InitializeAuthoredSurface('));
+const authoredBody = authoredMode.slice(0, authoredMode.indexOf('\n        public static int AlbedoResolution'));
+assert(/_visualWidth = location != null \? location\.WorldWidth/.test(authoredBody)
+  && /_visualDepth = location != null \? location\.WorldDepth/.test(authoredBody),
+  'покраска авторской земли обязана идти без запаса по краям, иначе карта тайлов ляжет со смещением');
+assert(!/edgeBorder/.test(authoredBody),
+  'в режиме покраски не должно быть поля вокруг площадки');
+assert(/SetMaterialColor\(_material, Color\.white\)/.test(authoredBody),
+  'цвет материала обязан уходить в белый, иначе заливка региона погасит запечённое альбедо');
+
+// Коллизии и обстановка остаются авторскими — сцена несёт их сама.
+assert(terrainSource.includes('if (!_authoredSurface) BuildTileMovementColliders('),
+  'в режиме покраски генератор не должен строить свои коллизии поверх авторских');
+
+console.log('Unity ground dressing check passed; the authored ground of every location is painted with the baked albedo instead of a flat region fill.');

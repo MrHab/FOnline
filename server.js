@@ -176,6 +176,7 @@ const {
   notePveAlive,
   notePveDistance,
   publicPveAreaCatalog,
+  pveAreaRewardIds,
   publicPveRoomState,
   pveAreaForLocation,
   pveOwnerKey,
@@ -2233,10 +2234,15 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     sim: WASTELAND_SIM.publicState(),
     factions: publicKromkaFactionCatalog(),
     territory: publicTerritoryState(serverTerritoryStore(), KROMKA_TERRITORY_CATALOG, now),
-    publicEvents: publicPublicEvents(serverPublicEventStore(), now, KROMKA_PUBLIC_EVENT_CATALOG),
+    publicEvents: publicPublicEvents(serverPublicEventStore(), now, KROMKA_PUBLIC_EVENT_CATALOG,
+      { itemName: serverItemDisplayName }),
     // Постоянные PvE-области: границы, опасность, обитатели и категории добычи
     // известны игроку до входа — карта рисует контур, а не безымянный узел.
-    pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation)
+    // Превью награды считается по тем же таблицам, по которым падает лут.
+    pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation, {
+      rewardIdsFor: serverPveAreaRewardIds,
+      itemName: serverItemDisplayName
+    })
   }), 'utf8');
   // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
@@ -5893,6 +5899,19 @@ const SERVER_LOOT_TABLES = normalizeServerLootTables(
 );
 const SERVER_CONTAINER_LOOT_TABLES = SERVER_LOOT_TABLES.containers;
 const SERVER_ENEMY_LOOT_TABLES = SERVER_LOOT_TABLES.enemies;
+
+// Название предмета для превью награды на глобальной карте. Карточка области
+// и узла главаря показывает то же имя, что и инвентарь.
+function serverItemDisplayName(itemId = '') {
+  return KROMKA_ITEM_INDEXES.byId[String(itemId || '')]?.name || String(itemId || '');
+}
+
+// Что обещает карточка постоянной области: предметы из таблиц добычи её же
+// обитателей. Ключ таблицы — идентификатор существа, иначе общая таблица.
+function serverPveAreaRewardIds(area = {}) {
+  return pveAreaRewardIds(area, SERVER_ENEMY_LOOT_TABLES,
+    key => (SERVER_ENEMY_LOOT_TABLES[String(key || '')] ? String(key) : 'basic'));
+}
 
 const SERVER_WEAPONS = {
   pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 1, fireRate: 0.48, apCost: 3, reloadApCost: 2 },

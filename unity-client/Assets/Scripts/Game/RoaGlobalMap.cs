@@ -1081,6 +1081,10 @@ namespace RealmOfAshes.Game
                     if (sim == null) throw new JsonException("В ответе нет поля sim.");
                     // Публичные события лежат рядом с sim: карта рисует их как зоны входа.
                     if (payload["publicEvents"] is JArray publicEventRows) sim["publicEvents"] = publicEventRows;
+                    // Постоянные PvE-области лежат там же. Без переноса карта
+                    // читала _wasteland["pveAreas"] как null и не рисовала ни
+                    // границ угодий, ни карточки области.
+                    if (payload["pveAreas"] is JArray pveAreaRows) sim["pveAreas"] = pveAreaRows;
                     ApplyWastelandSnapshot(sim, false);
                 }
                 catch (JsonException error)

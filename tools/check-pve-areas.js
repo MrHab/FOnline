@@ -166,7 +166,14 @@ const pointFor = locationId => {
   const node = mapNodes.find(row => row.locationId === locationId || row.id === locationId);
   return node ? { x: node.x, y: node.y } : null;
 };
-const publicAreas = pve.publicPveAreaCatalog(catalog, pointFor);
+const enemyLootTables = JSON.parse(read('data/loot-tables.json')).enemies;
+const itemNames = new Map(JSON.parse(read('data/kromka/items.json')).items.map(row => [row.id, row.name]));
+const areaRewardIds = (area, limit = 4) => pve.pveAreaRewardIds(area, enemyLootTables,
+  key => (enemyLootTables[String(key || '')] ? String(key) : 'basic'), limit);
+const publicAreas = pve.publicPveAreaCatalog(catalog, pointFor, {
+  rewardIdsFor: areaRewardIds,
+  itemName: id => itemNames.get(id) || id
+});
 assert.equal(publicAreas.length, catalog.areas.length, 'Every area reaches the client.');
 for (const row of publicAreas) {
   assert(row.x > 0 && row.y > 0, `${row.id}: the area has a centre on the world map`);
@@ -175,12 +182,37 @@ for (const row of publicAreas) {
   assert(row.inhabitants.length > 0, `${row.id}: the area names its inhabitants`);
   assert(row.lootCategories.length > 0, `${row.id}: the area names its loot categories`);
   assert.equal(row.personal, true, `${row.id}: the encounter is personal`);
+  // Карточка области на глобальной карте: силуэт, цель, периоды активности,
+  // слово опасности и превью награды. Карта ничего из этого не сочиняет.
+  assert(row.shape >= 1 && row.shape <= pve.PVE_AREA_SHAPES, `${row.id}: the area picks an authored silhouette`);
+  assert(row.shapeRotation >= 0 && row.shapeRotation < 360, `${row.id}: the silhouette has a rotation`);
+  assert(row.objective.length > 0, `${row.id}: the area names its objective`);
+  assert(row.activity.length > 0, `${row.id}: the area names when it is active`);
+  assert(row.dangerLabel.length > 0 && !/\d/.test(row.dangerLabel),
+    `${row.id}: the difficulty reaches the card as a word, not a number`);
+  assert(row.rewardPreview.length > 0, `${row.id}: the area previews what it can drop`);
+  // Обещание карточки обязано совпадать с дропом: каждый предмет превью лежит
+  // в таблице добычи одного из обитателей области.
+  const dropped = new Set(areaRewardIds(catalog.byLocation[row.locationId], 24));
+  for (const reward of row.rewardPreview) {
+    assert(dropped.has(reward.id), `${row.id}: the card promises ${reward.id}, which its inhabitants never drop`);
+    assert(itemNames.has(reward.id), `${row.id}: the reward ${reward.id} is not in the item catalog`);
+    assert(reward.name.length > 0, `${row.id}: the reward ${reward.id} reaches the card without a name`);
+  }
 }
-assert(server.includes('pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation)'),
+// Две области не должны выглядеть близнецами: силуэт и поворот различают их.
+const silhouettes = new Set(publicAreas.map(row => `${row.shape}:${row.shapeRotation}`));
+assert.equal(silhouettes.size, publicAreas.length, 'Every area gets its own silhouette on the map.');
+assert(server.includes('pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation, {')
+  && server.includes('rewardIdsFor: serverPveAreaRewardIds'),
   '/api/wasteland must publish the area catalog: without it the client cannot draw borders.');
 const clientMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAreaLabel(', 'PveAreaAt('])
   assert(clientMap.includes(token), `RoaGlobalMap must show the area: ${token}`);
+// Снимок пустоши обязан донести области до карты: без переноса рядом с sim
+// клиент рисует пустоту, а не контуры.
+assert(clientMap.includes('sim["pveAreas"] = pveAreaRows'),
+  'FetchWasteland must carry pveAreas into the snapshot the map draws from.');
 
 // --- обстоятельства встречи ------------------------------------------------------
 // Одна и та же область встречает по-разному: обычно стая бродит поодаль,

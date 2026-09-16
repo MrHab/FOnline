@@ -1,6 +1,9 @@
 'use strict';
 
 const { normalizeScenarioState, normalizeScenarioTemplate } = require('./public-event-scenarios');
+// Полоса опасности словом живёт в одном месте: узел события и постоянная
+// область обязаны называть «среднюю» одинаково.
+const { dangerBandLabel } = require('./pve-areas');
 
 // Временные публичные события пустоши: логова мутантов и базы налётчиков.
 // Одно событие = одна общая комната шаблонной локации, зона на глобальной
@@ -90,6 +93,10 @@ function normalizeTemplate(input = {}) {
     locationId,
     encounterId,
     danger: clamp(Math.floor(Number(input?.danger ?? 3)), 1, 5),
+    // Цель узла одной строкой: карта показывает её до входа, как и полосу
+    // опасности словом. Без главаря событие зачищается иначе, поэтому цель —
+    // авторская, а не собранная из имени босса.
+    objective: String(input?.objective || (bossRaw ? 'убить главаря' : 'зачистить событие')).slice(0, 64),
     boss,
     // Механики сценария: опоры (генератор щита, рация, гнёзда), обозначенный
     // удар и опасная земля. Без них событие было бы обычной пачкой врагов.
@@ -425,6 +432,23 @@ function publicEventEntryError(event = {}, characterId = '', now = Date.now()) {
   return '';
 }
 
+/**
+ * Превью награды узла: те же строки, что лежат в сундуке шаблона, не больше
+ * четырёх. Карта обещает ровно то, что откроется после зачистки.
+ */
+function publicEventRewardPreview(loot = [], itemName = null) {
+  return (Array.isArray(loot) ? loot : [])
+    .map(row => ({
+      id: cleanId(row?.id, 48),
+      qty: Math.max(0, Math.floor(Number(row?.qty || 0))),
+      name: typeof itemName === 'function'
+        ? String(itemName(cleanId(row?.id, 48)) || cleanId(row?.id, 48)).slice(0, 48)
+        : cleanId(row?.id, 48)
+    }))
+    .filter(row => row.id && row.qty > 0)
+    .slice(0, 4);
+}
+
 function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES, options = {}) {
   if (!event) return null;
   const remaining = Math.max(0, Number(event.expiresAt || 0) - Number(now));
@@ -446,6 +470,13 @@ function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES, option
     warning: event.status === 'warning',
     warningInSeconds: Math.max(0, Math.round((Number(event.warningAt || 0) - Number(now)) / 1000)),
     danger: Number(event.danger || 3),
+    // Карточка узла на глобальной карте: цель, полоса опасности словом и
+    // превью награды из того же сундука, который откроется после зачистки.
+    // Ключ намеренно не называется `chest` — сундук событию отдаёт сервер
+    // только внутри комнаты.
+    objective: String(options?.objective || ''),
+    dangerLabel: dangerBandLabel(event.danger),
+    rewardPreview: publicEventRewardPreview(options?.rewardLoot, options?.itemName),
     // Мини-босс сценария: имя и состояние видны участникам, пока он жив.
     boss: {
       displayName: String(options?.bossName || ''),
@@ -460,13 +491,17 @@ function publicEvent(event = {}, now = Date.now(), rules = DEFAULT_RULES, option
   };
 }
 
-function publicEvents(store = {}, now = Date.now(), catalog = null) {
+function publicEvents(store = {}, now = Date.now(), catalog = null, options = {}) {
   const byId = catalog?.byId && typeof catalog.byId === 'object' ? catalog.byId : {};
+  const itemName = typeof options?.itemName === 'function' ? options.itemName : null;
   return Object.values(store?.events || {})
     .filter(row => row && row.status !== 'expired')
     .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
     .map(row => publicEvent(row, now, catalog?.rules || DEFAULT_RULES, {
-      bossName: byId[row.templateId]?.boss?.displayName || ''
+      bossName: byId[row.templateId]?.boss?.displayName || '',
+      objective: byId[row.templateId]?.objective || '',
+      rewardLoot: byId[row.templateId]?.chest?.loot || [],
+      itemName
     }));
 }
 
@@ -538,6 +573,7 @@ module.exports = {
   pickTemplate,
   publicEvent,
   publicEventChestOpen,
+  publicEventRewardPreview,
   publicEventEntryError,
   publicEventRejoinBlockedMs,
   publicEventZone,

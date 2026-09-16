@@ -25,8 +25,20 @@ const DEFAULT_RULES = Object.freeze({
   mixedCompanionCount: 1
 });
 
+// Столько силуэтов области нарисовано в клиенте (`RoaGlobalMapZoneShapes`).
+// Номер контура — авторское поле области, а не догадка карты.
+const PVE_AREA_SHAPES = 3;
+
+// Полоса опасности словом. Карточка области на карте говорит «сложность:
+// высокая», а не «опасность 4»: цифра ничего не значит для игрока.
+const DANGER_BAND_LABELS = Object.freeze(['низкая', 'низкая', 'умеренная', 'средняя', 'высокая', 'крайняя']);
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value || 0)));
+}
+
+function dangerBandLabel(band = 1) {
+  return DANGER_BAND_LABELS[clamp(Math.floor(Number(band || 1)), 0, 5)] || 'средняя';
 }
 
 function cleanId(value = '', max = 64) {
@@ -93,6 +105,13 @@ function normalizePveAreaCatalog(raw = {}) {
       dangerBand: clamp(Math.floor(Number(input?.dangerBand ?? 1)), 1, 5),
       lootCategories: (Array.isArray(input?.lootCategories) ? input.lootCategories : [])
         .map(row => String(row || '').slice(0, 64)).filter(Boolean).slice(0, 6),
+      // Силуэт области на карте. Клиент не выдумывает форму: он берёт один из
+      // нарисованных контуров по номеру и поворачивает его на заданный угол,
+      // поэтому две соседние области не выглядят близнецами.
+      shape: clamp(Math.floor(Number(input?.shape ?? 1)), 1, PVE_AREA_SHAPES),
+      shapeRotation: ((Math.floor(Number(input?.shapeRotation ?? 0)) % 360) + 360) % 360,
+      objective: String(input?.objective || 'зачистить угодья').slice(0, 64),
+      activity: String(input?.activity || 'всегда').slice(0, 32),
       packs
     });
   }
@@ -106,13 +125,37 @@ function normalizePveAreaCatalog(raw = {}) {
 }
 
 /**
+ * Что область реально отдаёт: предметы из таблиц добычи её же обитателей.
+ * Карточка на карте обещает только это, поэтому обещание нельзя разойтись с
+ * дропом — список считается из тех же таблиц, по которым падает лут.
+ */
+function pveAreaRewardIds(area = {}, lootTables = {}, tierFor = null, limit = 4) {
+  const ids = [];
+  for (const pack of Array.isArray(area?.packs) ? area.packs : []) {
+    const creature = cleanId(pack?.creatureTypeId, 32);
+    const key = typeof tierFor === 'function' ? cleanId(tierFor(creature || pack?.typeName || ''), 48) : creature;
+    for (const row of Array.isArray(lootTables?.[key]) ? lootTables[key] : []) {
+      for (const candidate of Array.isArray(row?.oneOf) ? row.oneOf : [row?.id]) {
+        const id = cleanId(candidate, 48);
+        if (id && !ids.includes(id)) ids.push(id);
+      }
+    }
+  }
+  return ids.slice(0, Math.max(1, Math.floor(Number(limit || 4))));
+}
+
+/**
  * Каталог областей для клиента: название, границы, опасность, обитатели и
  * категории добычи. Точку центра сервер берёт из узла глобальной карты, потому
- * что координаты мира живут там.
+ * что координаты мира живут там. Силуэт, цель, периоды активности, слово
+ * опасности и превью награды едут рядом: карта ничего из этого не сочиняет.
  */
-function publicPveAreaCatalog(catalog = {}, pointForLocation = null) {
+function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {}) {
+  const rewardIdsFor = typeof options?.rewardIdsFor === 'function' ? options.rewardIdsFor : null;
+  const itemName = typeof options?.itemName === 'function' ? options.itemName : null;
   return (Array.isArray(catalog?.areas) ? catalog.areas : []).map(area => {
     const point = typeof pointForLocation === 'function' ? pointForLocation(area.locationId) : null;
+    const rewardIds = rewardIdsFor ? (rewardIdsFor(area) || []) : [];
     return {
       id: area.id,
       locationId: area.locationId,
@@ -120,10 +163,19 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null) {
       x: Number(point?.x ?? 0),
       y: Number(point?.y ?? 0),
       radiusPoints: area.radiusPoints,
+      shape: area.shape,
+      shapeRotation: area.shapeRotation,
       danger: area.dangerBand,
+      dangerLabel: dangerBandLabel(area.dangerBand),
+      objective: area.objective,
+      activity: area.activity,
       personal: true,
       inhabitants: area.packs.map(pack => String(pack.label || pack.typeName || pack.creatureTypeId || '')).filter(Boolean),
-      lootCategories: [...area.lootCategories]
+      lootCategories: [...area.lootCategories],
+      rewardPreview: rewardIds.slice(0, 4).map(id => ({
+        id: cleanId(id, 48),
+        name: itemName ? String(itemName(id) || id).slice(0, 48) : String(id)
+      })).filter(row => row.id)
     };
   });
 }
@@ -394,6 +446,9 @@ module.exports = {
   chooseCircumstance,
   notePveDistance,
   publicPveAreaCatalog,
+  dangerBandLabel,
+  pveAreaRewardIds,
+  PVE_AREA_SHAPES,
   DEFAULT_RULES,
   RESULT_LABELS,
   choosePack,

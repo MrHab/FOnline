@@ -28,6 +28,7 @@
         "hazards": { "count": 0 }
       },
       "danger": 3,
+      "objective": "убить Главаря налётчиков",
       "boss": {
         "id": "raider_leader",
         "displayName": "Главарь налётчиков",
@@ -63,6 +64,7 @@
         "hazards": { "count": 2, "radius": 4, "distance": 9, "damage": 12, "displayName": "Разъеденная земля" }
       },
       "danger": 4,
+      "objective": "убить Матку складней",
       "boss": {
         "id": "mutant_matriarch",
         "displayName": "Матка складней",
@@ -97,6 +99,7 @@
         "hazards": { "count": 1, "radius": 4, "distance": 8, "damage": 10, "displayName": "Выжженная земля" }
       },
       "danger": 3,
+      "objective": "убить Вожака Гари",
       "boss": {
         "id": "gari_alpha",
         "displayName": "Вожак Гари",
@@ -131,6 +134,7 @@
         "hazards": { "count": 2, "radius": 4, "distance": 10, "damage": 14, "displayName": "Ядовитая земля" }
       },
       "danger": 5,
+      "objective": "убить Матку рыхляков",
       "boss": {
         "id": "rykhlyak_queen",
         "displayName": "Матка рыхляков",

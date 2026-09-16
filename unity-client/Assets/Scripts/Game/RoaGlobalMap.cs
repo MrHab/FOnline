@@ -5888,35 +5888,58 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Где на отрезке угодья встречают отряд: доля пути 0..1 или -1. Встреча
-        /// выпадает на пересечении контура и потом за каждый отрезок, пройденный
-        /// внутри: столько, сколько объявила область (rearmPoints).
+        /// Где на отрезке угодья встречают отряд: доля пути 0..1 или -1. Сама
+        /// граница ничего не выкатывает — встреча выпадает шансом, пока отряд идёт
+        /// внутри контура: бросок encounterChance за каждые encounterStepPoints
+        /// пройденного там пути. Вышел из контура — накопленный путь сгорает.
         /// </summary>
         private float GroundsContactFraction(JObject area, string zoneId,
                                              GlobalMapPoint from, GlobalMapPoint to, float detailScale)
         {
             if (area == null || from == null || to == null) return -1f;
-            float entry = RouteEntryFraction(area, from, to, detailScale);
-            bool startedInside = PointInsideArea(area, from, detailScale);
-            if (!startedInside)
+            string key = zoneId ?? string.Empty;
+            if (!PointInsideArea(area, to, detailScale))
             {
-                // Вход в контур: счётчик обнуляется, встреча выпадает здесь же.
-                if (entry < 0f) return -1f;
-                _groundsWalked[zoneId ?? string.Empty] = 0f;
-                return entry;
-            }
-
-            float rearm = Mathf.Max(2f, Float(area["rearmPoints"], 14f));
-            float walked = 0f;
-            _groundsWalked.TryGetValue(zoneId ?? string.Empty, out walked);
-            walked += Distance(from, to);
-            if (walked < rearm)
-            {
-                _groundsWalked[zoneId ?? string.Empty] = walked;
+                _groundsWalked[key] = 0f;
                 return -1f;
             }
-            _groundsWalked[zoneId ?? string.Empty] = 0f;
-            return 1f;
+            _groundsWalked.TryGetValue(key, out float walked);
+            float fraction = GroundsChanceFraction(walked, Distance(from, to),
+                Float(area["encounterStepPoints"], 8f), Float(area["encounterChance"], 0.2f),
+                () => UnityEngine.Random.value, out float walkedAfter);
+            _groundsWalked[key] = walkedAfter;
+            return fraction;
+        }
+
+        /// <summary>
+        /// Бросок шанса встречи за отрезок пути внутри угодий. Путь копится между
+        /// кадрами: на каждые stepPoints приходится один бросок, поэтому частота
+        /// встреч зависит от пройденного, а не от числа кадров. Возвращает долю
+        /// отрезка, на которой сработал первый удачный бросок, или -1; после
+        /// встречи накопленный путь обнуляется. Чистая функция — её гоняет проба.
+        /// </summary>
+        public static float GroundsChanceFraction(float walkedBefore, float stepDistance,
+                                                  float stepPoints, float chance,
+                                                  Func<float> random, out float walkedAfter)
+        {
+            float step = Mathf.Max(0.5f, stepPoints);
+            float before = Mathf.Max(0f, walkedBefore);
+            float distance = Mathf.Max(0f, stepDistance);
+            float total = before + distance;
+            // Огромный шаг (скачок снимка) не должен выкатить десятки бросков.
+            // Допуск гасит накопленную покадровую погрешность: 400 кадров по 0.1
+            // дают 39.99998, и без него пятый бросок съезжал бы на кадр позже.
+            int rolls = Mathf.Min(16, Mathf.FloorToInt((total + 0.001f) / step));
+            walkedAfter = Mathf.Max(0f, total - rolls * step);
+            if (rolls <= 0 || chance <= 0f || random == null) return -1f;
+            for (int i = 0; i < rolls; i++)
+            {
+                if (random() >= Mathf.Clamp01(chance)) continue;
+                walkedAfter = 0f;
+                if (distance <= 0.0001f) return 1f;
+                return Mathf.Clamp01(((i + 1) * step - before) / distance);
+            }
+            return -1f;
         }
 
         /// <summary>Стоит ли точка внутри контура этих угодий.</summary>

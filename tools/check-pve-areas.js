@@ -28,9 +28,9 @@ assert.deepEqual(catalog.rules, {
   // Обстоятельства встречи: засада подводит стаю вплотную, смешанная приводит
   // соседа другого вида.
   ambushChance: 0.25, ambushMinPlayerDistance: 6, mixedChance: 0.25, mixedCompanionCount: 1,
-  // Перезарядка встречи внутри контура: столько пути отряд проходит по угодьям,
-  // прежде чем они выкатят следующую сцену.
-  contactRearmPoints: 14
+  // Встреча в угодьях — шанс за пройденный путь внутри контура, а не гарантия
+  // на границе: бросок за каждые 8 точек, 20% на бросок.
+  encounterStepPoints: 8, encounterChance: 0.2
 });
 // --- угодья выкатывают встречи, а не ведут в логово --------------------------------
 // Игрок ходит по угодьям и встречает разное: таблица сцен принадлежит области,
@@ -363,7 +363,7 @@ for (const needle of [
   'function serverEnsurePveAreaBoss(room, area, now = Date.now())'
 ]) assert(server.includes(needle), `server.js is missing the hunting-ground encounter contract: ${needle}`);
 // Клиент обязан продолжать выкатывать встречи, пока отряд идёт внутри контура.
-for (const token of ['private float GroundsContactFraction(', '_groundsWalked', 'rearmPoints'])
+for (const token of ['private float GroundsContactFraction(', '_groundsWalked', 'public static float GroundsChanceFraction('])
   assert(clientMap.includes(token), `RoaGlobalMap must keep offering encounters inside the grounds: ${token}`);
 
 // Билет прибытия обязан нести комнату группы, а не комнату зоны.
@@ -394,9 +394,22 @@ assert(contactBody.includes('EncounterZoneSemantic') && contactBody.includes('Gr
 const groundsAt = clientMap.indexOf('private float GroundsContactFraction(');
 assert(groundsAt > 0, 'RoaGlobalMap must keep the hunting-ground contact rule.');
 const groundsBody = clientMap.slice(groundsAt, groundsAt + 1400);
-assert(groundsBody.includes('RouteEntryFraction(') && groundsBody.includes('PointInsideArea(')
-  && groundsBody.includes('rearmPoints'),
-  'Hunting grounds must offer an encounter on the outline and again after walking inside it.');
+// Граница сама ничего не выкатывает: правило обязано бросать шанс за путь
+// внутри контура, а не звать на встречу при входе.
+assert(groundsBody.includes('PointInsideArea(') && groundsBody.includes('GroundsChanceFraction(')
+  && groundsBody.includes('encounterChance') && !groundsBody.includes('RouteEntryFraction('),
+  'Hunting grounds must roll a chance while walking inside, not fire on crossing the outline.');
+// Карта получает шанс от сервера, а не держит свои числа.
+for (const row of publicAreas) {
+  assert(row.encounterStepPoints === catalog.rules.encounterStepPoints
+    && row.encounterChance === catalog.rules.encounterChance,
+    `${row.id}: the map must receive the encounter chance from the server`);
+  assert(row.encounterChance > 0 && row.encounterChance < 1,
+    `${row.id}: an encounter on the grounds is a chance, neither never nor always`);
+}
+// Обойдённая встреча израсходована: следующий шанс выкатит другую сцену.
+assert(server.includes("if (decision !== 'enter' && session.groundsRolls?.[pending.id]) session.groundsRolls[pending.id].consumed = true;"),
+  'A declined hunting-ground encounter must be spent, or the next chance offers the same scene.');
 // Цель угодий не должна воровать клик и наведение у площадки в том же центре.
 assert(clientMap.includes('if (target.ContactOnly) continue;') && clientMap.includes('areaTarget.ContactOnly = true;'),
   'An area target exists for the route contact only.');

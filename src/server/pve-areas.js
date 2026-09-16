@@ -23,7 +23,8 @@ const DEFAULT_RULES = Object.freeze({
   ambushMinPlayerDistance: 6,
   mixedChance: 0.25,
   mixedCompanionCount: 1,
-  contactRearmPoints: 14
+  encounterStepPoints: 8,
+  encounterChance: 0.2
 });
 
 // Столько силуэтов области нарисовано в клиенте (`RoaGlobalMapZoneShapes`).
@@ -64,10 +65,12 @@ function normalizePveRules(input = {}) {
     maxAlive: Math.max(1, Math.floor(Number(src.maxAlive || DEFAULT_RULES.maxAlive))),
     spawnMinPlayerDistance: Math.max(2, Number(src.spawnMinPlayerDistance || DEFAULT_RULES.spawnMinPlayerDistance)),
     roomIdleResetMs: Math.max(10000, Math.floor(Number(src.roomIdleResetMs || DEFAULT_RULES.roomIdleResetMs))),
-    // Столько точек пути надо пройти внутри контура, прежде чем угодья выкатят
-    // следующую встречу: иначе одно пересечение давало бы одно предложение на
-    // весь маршрут, и цикл «зачистил — вышел — иду дальше» не замыкался бы.
-    contactRearmPoints: clamp(Number(src.contactRearmPoints ?? DEFAULT_RULES.contactRearmPoints), 4, 40),
+    // Встреча в угодьях — шанс, а не гарантия: за каждые encounterStepPoints
+    // точек пути внутри контура карта бросает encounterChance. Пересечение
+    // границы само по себе ничего не выкатывает. Бросок считается по пройденному
+    // пути, а не по кадрам, иначе частота встреч зависела бы от FPS.
+    encounterStepPoints: clamp(Number(src.encounterStepPoints ?? DEFAULT_RULES.encounterStepPoints), 2, 40),
+    encounterChance: clamp(Number(src.encounterChance ?? DEFAULT_RULES.encounterChance), 0, 1),
     distancePerRollM: Math.max(0, Number(src.distancePerRollM ?? DEFAULT_RULES.distancePerRollM)),
     ambushChance: clamp(Number(src.ambushChance ?? DEFAULT_RULES.ambushChance), 0, 1),
     ambushMinPlayerDistance: Math.max(2, Number(src.ambushMinPlayerDistance || DEFAULT_RULES.ambushMinPlayerDistance)),
@@ -250,10 +253,10 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
       // понимает, втянут ли его во встречу без спроса, по второму карта рисует
       // шестиугольник над именной локацией.
       wandererRequired: area.wandererRequired,
-      // Столько пути надо пройти внутри контура до следующей встречи: карта
-      // считает это сама, пока отряд идёт, — иначе одни угодья давали бы одно
-      // предложение за маршрут.
-      rearmPoints: Number(catalog?.rules?.contactRearmPoints ?? 14),
+      // Шанс встречи на отрезок пути внутри контура: карта бросает его сама,
+      // пока отряд идёт, а какая именно встреча выпала — решает сервер.
+      encounterStepPoints: Number(catalog?.rules?.encounterStepPoints ?? DEFAULT_RULES.encounterStepPoints),
+      encounterChance: Number(catalog?.rules?.encounterChance ?? DEFAULT_RULES.encounterChance),
       boss: area.boss ? { displayName: area.boss.displayName } : null,
       encounterCount: area.encounters.length,
       personal: false,

@@ -11,7 +11,8 @@
     "maxAlive": 8,
     "spawnMinPlayerDistance": 14,
     "roomIdleResetMs": 600000,
-    "contactRearmPoints": 14
+    "encounterStepPoints": 8,
+    "encounterChance": 0.2
   },
   "areas": [
     {

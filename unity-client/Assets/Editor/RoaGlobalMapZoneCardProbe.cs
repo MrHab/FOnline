@@ -95,6 +95,37 @@ namespace RealmOfAshes.EditorTools
                     RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Far)),
                 "На дальнем ярусе раздутая кромка накрывает ту же точку — путь считает по ней же");
 
+            // --- встреча в угодьях — шанс, а не гарантия ----------------
+            // Путь копится: на каждые 8 точек один бросок. Меньше шага — ни
+            // одного броска, сколько бы кадров ни прошло.
+            float after;
+            Require(RoaGlobalMap.GroundsChanceFraction(0f, 7.9f, 8f, 1f, () => 0f, out after) < 0f
+                && Mathf.Approximately(after, 7.9f),
+                "Меньше шага пути — броска нет, путь копится: " + after);
+            // Покадровые шаги дают тот же итог, что и один длинный: частота не
+            // зависит от FPS.
+            float walked = 0f;
+            int fired = 0;
+            for (int frame = 0; frame < 400; frame++)
+            {
+                if (RoaGlobalMap.GroundsChanceFraction(walked, 0.1f, 8f, 1f, () => 0f, out walked) >= 0f) fired++;
+            }
+            Require(fired == 5, "40 точек мелкими шагами — ровно пять бросков по 8, выпало " + fired);
+            // Неудачный бросок встречи не даёт, но путь не теряется.
+            Require(RoaGlobalMap.GroundsChanceFraction(6f, 4f, 8f, 0.2f, () => 0.9f, out after) < 0f
+                && Mathf.Approximately(after, 2f),
+                "Промах сохраняет остаток пути: " + after);
+            // Удачный бросок срабатывает там, где набран шаг, и обнуляет путь.
+            float hit = RoaGlobalMap.GroundsChanceFraction(6f, 4f, 8f, 0.2f, () => 0.1f, out after);
+            Require(Mathf.Approximately(hit, 0.5f) && after == 0f,
+                "Встреча выпадает на набранном шаге (доля 0.5) и обнуляет путь: " + hit + " / " + after);
+            // Нулевой шанс не даёт встреч никогда, скачок снимка — не лавину бросков.
+            Require(RoaGlobalMap.GroundsChanceFraction(0f, 1000f, 8f, 0f, () => 0f, out after) < 0f,
+                "Нулевой шанс — никогда");
+            int rolls = 0;
+            RoaGlobalMap.GroundsChanceFraction(0f, 1000f, 8f, 0.2f, () => { rolls++; return 0.99f; }, out after);
+            Require(rolls <= 16, "Скачок на 1000 точек не выкатывает больше 16 бросков: " + rolls);
+
             // --- ярусный масштаб ----------------------------------------
             Require(Mathf.Approximately(RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Near), 1f)
                 && RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Far) > 1f,
@@ -209,7 +240,7 @@ namespace RealmOfAshes.EditorTools
                     "Не найден префаб угодий: " + path);
             }
 
-            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение и путь по контуру с ярусным масштабом, "
+            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение и путь по контуру, шанс встречи за пройденный путь, "
                       + "карточка цели/сложности/активности/добычи и превью награды, префабы на месте.");
         }
 

@@ -26271,6 +26271,9 @@ function serverFinishGlobalTravelEncounterDecision(session = null, decision = 's
   session.startedAt = Number(session.startedAt || now) + pausedMs;
   session.arrivalAt = Number(session.arrivalAt || now) + pausedMs;
   session.pendingEncounter = null;
+  // Обойдённая встреча угодий израсходована: следующий шанс на том же пути
+  // выкатит другую сцену, а не предложит ту же самую снова.
+  if (decision !== 'enter' && session.groundsRolls?.[pending.id]) session.groundsRolls[pending.id].consumed = true;
   return {
     leaderId: session.leaderId,
     leaderName: session.leaderName,

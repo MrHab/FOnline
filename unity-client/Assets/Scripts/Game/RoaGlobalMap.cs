@@ -435,7 +435,22 @@ namespace RealmOfAshes.Game
         /// </summary>
         public JObject HoverCardRow
         {
-            get { return _hoverArea ?? _hoverDynamic?.Data; }
+            get { return _hoverArea ?? CardRow(_hoverDynamic?.Data); }
+        }
+
+        /// <summary>
+        /// Карточку наполняет только та строка, где есть авторские поля узла.
+        /// Обычная точка пустоши тоже носит поле `danger` для симуляции, и без
+        /// этого фильтра карта печатала бы ей «Сложность» на ровном месте.
+        /// </summary>
+        public static JObject CardRow(JObject row)
+        {
+            if (row == null) return null;
+            bool authored = !string.IsNullOrWhiteSpace(row["objective"]?.ToString())
+                || !string.IsNullOrWhiteSpace(row["activity"]?.ToString())
+                || !string.IsNullOrWhiteSpace(row["boss"]?["displayName"]?.ToString())
+                || row["rewardPreview"] is JArray;
+            return authored ? row : null;
         }
         public string HoverSummary
         {
@@ -1030,7 +1045,16 @@ namespace RealmOfAshes.Game
                 ? Math.Max(carriedAgeMs, serverAgeMs)
                 : serverAgeMs;
             _wastelandAppliedRealtime = appliedAt;
+            JObject previous = _wasteland;
             _wasteland = clone ? (JObject)state.DeepClone() : state;
+            // Симуляция, пришедшая толчком из подтверждённого действия, не
+            // несёт каталогов областей и событий: они лежат рядом с sim в ответе
+            // HTTP. Без переноса угодья гасли до следующего опроса.
+            foreach (string carried in new[] { "pveAreas", "publicEvents" })
+            {
+                if (_wasteland[carried] == null && previous?[carried] != null)
+                    _wasteland[carried] = previous[carried];
+            }
             _wasteland["sampleAgeMs"] = _wastelandSampleAgeMs;
             if (IsActive) RebuildDynamicWorld();
             return true;
@@ -1549,7 +1573,8 @@ namespace RealmOfAshes.Game
                     // «здесь ждёт главарь» от обычных угодий.
                     if (!string.IsNullOrWhiteSpace(row["boss"]?["displayName"]?.ToString()))
                     {
-                        DrawBossBadge("PublicEventBoss:" + id, target.Point, target.Priority + 4);
+                        DrawBossBadge("PublicEventBoss:" + id, target.Point, target.Radius,
+                                      target.Priority + 4);
                         BossBadgeCount++;
                     }
                     ThreatMarkerCount++;
@@ -2173,8 +2198,12 @@ namespace RealmOfAshes.Game
             GameObject go = InstantiateLivePrefab(EncounterZonePrefabKind(shape), name);
             if (go == null) return;
             float radiusWorld = Mathf.Max(0.05f, radiusPoints * MapWorldScale);
+            // Рельеф опрашивается по самому широкому состоянию силуэта: на
+            // дальнем ярусе презентация раздувает его, и холм на этой кромке
+            // разрезал бы контур.
             go.transform.localPosition = PointToWorld(center.X, center.Y,
-                EncounterZoneLift(center, radiusPoints));
+                EncounterZoneLift(center, radiusPoints
+                    * EncounterZoneDetailScale(MapDetailTier.Far)));
             go.transform.localRotation = Quaternion.Euler(0f, rotationDegrees, 0f);
             go.transform.localScale = new Vector3(radiusWorld, 1f, radiusWorld);
             TintLivePrefab(go, fill, "ZoneFill");
@@ -2182,14 +2211,16 @@ namespace RealmOfAshes.Game
             RegisterDynamicVisual(go, DynamicVisualLayer.EncounterZone, center, false, priority);
         }
 
-        private void DrawBossBadge(string name, GlobalMapPoint point, int priority)
+        private void DrawBossBadge(string name, GlobalMapPoint point, float zoneRadiusPoints,
+                                   int priority)
         {
             GameObject go = InstantiateLivePrefab(RoaGlobalMapPrefabKind.BossBadge, name);
             if (go == null) return;
             float radiusWorld = BossBadgeRadiusPoints * MapWorldScale;
-            // Знак садится поверх угодий узла, а не в их толщу.
+            // Знак садится на плоскость своих же угодий, а не в их толщу:
+            // подъём считается по радиусу зоны, поверх которой он лежит.
             go.transform.localPosition = PointToWorld(point.X, point.Y,
-                EncounterZoneLift(point, BossBadgeRadiusPoints * 2f) + BossBadgeHeight);
+                EncounterZoneLift(point, zoneRadiusPoints) + BossBadgeHeight);
             go.transform.localRotation = Quaternion.identity;
             go.transform.localScale = new Vector3(radiusWorld, 1f, radiusWorld);
             TintLivePrefab(go, BossBadgeFill, "BadgeFill");
@@ -3105,9 +3136,20 @@ namespace RealmOfAshes.Game
             DynamicTarget target = NearestDynamicTarget(point,
                 DynamicSnapRadiusPoints * 0.9f, true, true);
             GlobalMapNode node = target == null ? NearestNode(point, NodeSnapRadiusPoints * 0.9f) : null;
+            // Наведение живёт по тем же правилам, что и отрисовка: спрятанный
+            // фильтром «СОБЫТИЯ» силуэт не должен открывать карточку.
+            JObject area = target == null && _showEvents ? PveAreaAtPolygon(point) : null;
+            // Угодья стоят на собственном узле карты, и раньше этот узел
+            // перехватывал наведение в самом центре области: игрок видел
+            // «ПОСЕЛЕНИЕ» там, где ждал карточку угодий. Узел самой области
+            // уступает ей; чужой узел внутри контура — нет.
+            if (area != null && node != null
+                && string.Equals(node.EffectiveLocationId, area["locationId"]?.ToString(),
+                    StringComparison.OrdinalIgnoreCase))
+                node = null;
             _hoverDynamic = target;
             _hoverNode = node;
-            _hoverArea = target == null && node == null ? PveAreaAtPolygon(point) : null;
+            _hoverArea = node == null ? area : null;
         }
 
         private void ClearHoverPreview()
@@ -5710,7 +5752,10 @@ namespace RealmOfAshes.Game
                 if (shape <= 0) continue;
                 var center = new Vector2(Float(row["x"], 0f), Float(row["y"], 0f));
                 if (center.x <= 0f && center.y <= 0f) continue;
-                float radius = Mathf.Clamp(Float(row["radiusPoints"], 24f), 4f, 80f) * detail;
+                // Ярусный масштаб — как у нарисованного силуэта, плюс ширина
+                // обводки: яркая кромка обязана быть кликабельной.
+                float radius = Mathf.Clamp(Float(row["radiusPoints"], 24f), 4f, 80f)
+                    * detail * (1f + RoaGlobalMapZoneShapes.RimWidth);
                 if (RoaGlobalMapZoneShapes.Contains(shape, Float(row["shapeRotation"], 0f),
                         radius, center, probe))
                     return row;
@@ -5767,6 +5812,21 @@ namespace RealmOfAshes.Game
                 + (row?["warning"]?.Value<bool>() == true ? " · скоро закроется" : string.Empty);
         }
 
+        /// <summary>
+        /// Характерные категории добычи области: чем богата эта земля, если
+        /// в самой таблице дропа стоят одни трофеи.
+        /// </summary>
+        public static string CardLootCategories(JObject row)
+        {
+            var parts = new List<string>();
+            foreach (JToken token in row?["lootCategories"] as JArray ?? new JArray())
+            {
+                string label = token?.ToString();
+                if (!string.IsNullOrWhiteSpace(label)) parts.Add(label);
+            }
+            return string.Join(" · ", parts);
+        }
+
         /// <summary>Идентификаторы награды — по ним канва берёт иконки предметов.</summary>
         public static List<string> CardRewardIds(JObject row)
         {
@@ -5796,6 +5856,11 @@ namespace RealmOfAshes.Game
 
         public JObject PveAreaAt(GlobalMapPoint point)
         {
+            // Выбор точки и наведение обязаны видеть одну и ту же область:
+            // сводка в сайдбаре иначе называла угодья там, где карта их не
+            // рисует, и молчала у самой кромки.
+            JObject byContour = PveAreaAtPolygon(point);
+            if (byContour != null) return byContour;
             JArray areas = _wasteland?["pveAreas"] as JArray;
             if (areas == null || point == null) return null;
             JObject best = null;
@@ -5804,6 +5869,9 @@ namespace RealmOfAshes.Game
             {
                 JObject row = token as JObject;
                 if (row == null) continue;
+                // Область с силуэтом уже проверена по контуру выше; окружность
+                // осталась только для снимков сервера без силуэта.
+                if ((row["shape"]?.Value<int>() ?? 0) > 0) continue;
                 float radius = Float(row["radiusPoints"], 24f);
                 float dx = Float(row["x"], 0f) - point.X;
                 float dy = Float(row["y"], 0f) - point.Y;

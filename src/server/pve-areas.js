@@ -133,7 +133,9 @@ function pveAreaRewardIds(area = {}, lootTables = {}, tierFor = null, limit = 4)
   const ids = [];
   for (const pack of Array.isArray(area?.packs) ? area.packs : []) {
     const creature = cleanId(pack?.creatureTypeId, 32);
-    const key = typeof tierFor === 'function' ? cleanId(tierFor(creature || pack?.typeName || ''), 48) : creature;
+    // Полка добычи стаи резолвится так же, как в бою: по существу целиком, а
+    // не по одному идентификатору — стая может быть задана и именем типа.
+    const key = typeof tierFor === 'function' ? cleanId(tierFor(pack), 48) : creature;
     for (const row of Array.isArray(lootTables?.[key]) ? lootTables[key] : []) {
       for (const candidate of Array.isArray(row?.oneOf) ? row.oneOf : [row?.id]) {
         const id = cleanId(candidate, 48);

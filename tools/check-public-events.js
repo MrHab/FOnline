@@ -148,6 +148,42 @@ for (const needle of ['function upsertWorldZone(input = {})', 'function removeWo
 const projected = events.publicEvent(lair, clearAt + 45001);
 assert(!('deaths' in projected) && !('chest' in projected), 'Internal timers do not leak to clients.');
 
+// --- карточка узла на глобальной карте ---------------------------------------------
+// До входа карта показывает цель, полосу опасности словом и превью награды.
+// Превью обязано совпадать с сундуком собственного шаблона: иначе узел обещает
+// не то, что откроется после зачистки.
+{
+  const itemNames = new Map(JSON.parse(read('data/kromka/items.json')).items.map(row => [row.id, row.name]));
+  for (const template of catalog.templates) {
+    assert(template.objective.length > 0, `${template.id}: the node names its objective`);
+    if (template.boss) {
+      assert(/убить|повергнуть/i.test(template.objective),
+        `${template.id}: a node with a leader says the leader must fall, not "${template.objective}"`);
+    }
+  }
+  const carded = events.publicEvents(store, clearAt, catalog, { itemName: id => itemNames.get(id) || id });
+  assert(carded.length > 0, 'At least one live event is needed for the card assertions.');
+  for (const row of carded) {
+    const template = catalog.byId[row.templateId];
+    assert(row.objective === template.objective, `${row.id}: the card repeats the authored objective`);
+    assert(row.dangerLabel.length > 0 && !/\d/.test(row.dangerLabel),
+      `${row.id}: the difficulty reaches the card as a word, not a band number`);
+    assert(row.rewardPreview.length > 0 && row.rewardPreview.length <= 4,
+      `${row.id}: the card previews between one and four rewards`);
+    for (const reward of row.rewardPreview) {
+      const chestRow = template.chest.loot.find(loot => loot.id === reward.id);
+      assert(chestRow, `${row.id}: the card promises ${reward.id}, which is not in its own chest`);
+      assert(chestRow.qty === reward.qty, `${row.id}: the card promises the wrong amount of ${reward.id}`);
+      assert(reward.name === (itemNames.get(reward.id) || reward.id),
+        `${row.id}: the reward ${reward.id} reaches the card without its catalog name`);
+    }
+  }
+  // Без словаря предметов карточка остаётся живой: имя вырождается в id.
+  const bare = events.publicEvents(store, clearAt, catalog);
+  assert(bare[0].rewardPreview[0].name === bare[0].rewardPreview[0].id,
+    'Without an item index the reward falls back to its id, not to an empty name.');
+}
+
 // --- серверные крючки -------------------------------------------------------------
 const server = read('server.js');
 for (const needle of [

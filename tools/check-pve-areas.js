@@ -168,8 +168,26 @@ const pointFor = locationId => {
 };
 const enemyLootTables = JSON.parse(read('data/loot-tables.json')).enemies;
 const itemNames = new Map(JSON.parse(read('data/kromka/items.json')).items.map(row => [row.id, row.name]));
-const areaRewardIds = (area, limit = 4) => pve.pveAreaRewardIds(area, enemyLootTables,
-  key => (enemyLootTables[String(key || '')] ? String(key) : 'basic'), limit);
+const packLootTier = pack => {
+  const creature = String(pack?.creatureTypeId || '');
+  if (enemyLootTables[creature]) return creature;
+  // Стая, заданная именем типа, берёт полку типа: «Налётчик» роняет raider.
+  const byName = { 'Налётчик': 'raider' }[String(pack?.typeName || '')];
+  return byName && enemyLootTables[byName] ? byName : 'basic';
+};
+const areaRewardIds = (area, limit = 4) =>
+  pve.pveAreaRewardIds(area, enemyLootTables, packLootTier, limit);
+// Множество возможного дропа считается здесь заново, не через модуль: иначе
+// проверка сравнивала бы превью само с собой и пропустила бы регресс.
+const areaDropIds = area => {
+  const ids = new Set();
+  for (const pack of area?.packs || []) {
+    for (const row of enemyLootTables[packLootTier(pack)] || []) {
+      for (const id of Array.isArray(row.oneOf) ? row.oneOf : [row.id]) if (id) ids.add(id);
+    }
+  }
+  return ids;
+};
 const publicAreas = pve.publicPveAreaCatalog(catalog, pointFor, {
   rewardIdsFor: areaRewardIds,
   itemName: id => itemNames.get(id) || id
@@ -193,7 +211,7 @@ for (const row of publicAreas) {
   assert(row.rewardPreview.length > 0, `${row.id}: the area previews what it can drop`);
   // Обещание карточки обязано совпадать с дропом: каждый предмет превью лежит
   // в таблице добычи одного из обитателей области.
-  const dropped = new Set(areaRewardIds(catalog.byLocation[row.locationId], 24));
+  const dropped = areaDropIds(catalog.byLocation[row.locationId]);
   for (const reward of row.rewardPreview) {
     assert(dropped.has(reward.id), `${row.id}: the card promises ${reward.id}, which its inhabitants never drop`);
     assert(itemNames.has(reward.id), `${row.id}: the reward ${reward.id} is not in the item catalog`);

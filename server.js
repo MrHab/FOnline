@@ -5907,10 +5907,19 @@ function serverItemDisplayName(itemId = '') {
 }
 
 // Что обещает карточка постоянной области: предметы из таблиц добычи её же
-// обитателей. Ключ таблицы — идентификатор существа, иначе общая таблица.
+// обитателей. Полка выбирается тем же путём, что и в бою — через тип существа,
+// потому что стая задаётся либо идентификатором, либо именем типа, а полка
+// добычи живёт на типе.
+function serverPveAreaLootTier(pack = {}) {
+  const creatureTypeId = String(pack?.creatureTypeId || '');
+  const typeName = String(pack?.typeName || '');
+  const type = SERVER_ENEMY_TYPES.find(row => creatureTypeId && String(row.lootTier || '') === creatureTypeId)
+    || SERVER_ENEMY_TYPES.find(row => typeName && String(row.name || '') === typeName);
+  return normalizeEnemyLootTier(type || {});
+}
+
 function serverPveAreaRewardIds(area = {}) {
-  return pveAreaRewardIds(area, SERVER_ENEMY_LOOT_TABLES,
-    key => (SERVER_ENEMY_LOOT_TABLES[String(key || '')] ? String(key) : 'basic'));
+  return pveAreaRewardIds(area, SERVER_ENEMY_LOOT_TABLES, serverPveAreaLootTier);
 }
 
 const SERVER_WEAPONS = {

@@ -108,6 +108,11 @@ namespace RealmOfAshes.EditorTools
             finally
             {
                 UnityEngine.Object.DestroyImmediate(root);
+                // Проба входит только в чистую сцену (проверка выше), поэтому
+                // снятие флага изменений отбрасывает ровно её собственные
+                // временные объекты — и не оставляет сцену «грязной», иначе
+                // следующая сборка WebGL откажется идти.
+                EditorSceneManager.ClearSceneDirtiness(scene);
             }
         }
 

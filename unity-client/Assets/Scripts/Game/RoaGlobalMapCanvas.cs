@@ -115,7 +115,9 @@ namespace RealmOfAshes.Game
         private Text _hoverTitle;
         private Text _hoverMeta;
         private const float HoverCardWidth = 360f;
-        private const int HoverFactRows = 3;
+        private const int HoverFactRows = 4;
+        // Карточка шириной 360 при кегле 11 держит около полусотни знаков.
+        public const int HoverFactMaxChars = 52;
         private const float HoverFactHeight = 17f;
         private const int HoverRewardSlots = 4;
         private const float HoverRewardSize = 28f;
@@ -124,6 +126,8 @@ namespace RealmOfAshes.Game
         private RectTransform _hoverRewardStrip;
         private readonly List<RectTransform> _hoverRewardSlots = new List<RectTransform>();
         private readonly List<RawImage> _hoverRewardIcons = new List<RawImage>();
+        private Text _hoverRewardNames;
+        private string _hoverCardSignature = string.Empty;
         private GameObject _fullLootModal;
         private Text _zoneRulesTitle;
         private Text _zoneRulesText;
@@ -398,6 +402,7 @@ namespace RealmOfAshes.Game
                     new Vector2(-10f, -45f - i * HoverFactHeight));
                 _hoverFacts.Add(fact);
             }
+            _hoverRewardNames = Label("RewardNames", _hoverCard, 10, TextAnchor.MiddleLeft, Mono);
             _hoverRewardTitle = Label("RewardTitle", _hoverCard, 10, TextAnchor.MiddleLeft, Kicker,
                 FontStyle.Bold);
             Place(_hoverRewardTitle.rectTransform, 0f, 1f, 1f, 1f,
@@ -978,7 +983,14 @@ namespace RealmOfAshes.Game
             _hoverMeta.text = Map.HoverSummary;
             _hoverCardOutline.effectColor = new Color(accent.r, accent.g, accent.b, 0.82f);
             _hoverCardBackground.color = new Color(0.018f, 0.045f, 0.028f, 0.96f);
-            LayoutHoverFacts(Map.HoverCardRow);
+            // Карточка перекладывается только когда сменилась строка под
+            // курсором или её счётчик: раскладка каждый кадр мусорила списками.
+            JObject row = Map.HoverCardRow;
+            string signature = (row?["id"]?.ToString() ?? row?["displayName"]?.ToString() ?? string.Empty)
+                + "|" + RoaGlobalMap.CardActivity(row);
+            if (signature == _hoverCardSignature) return;
+            _hoverCardSignature = signature;
+            LayoutHoverFacts(row);
         }
 
         /// <summary>
@@ -1026,7 +1038,14 @@ namespace RealmOfAshes.Game
                     _hoverRewardIcons[i].texture = art;
                     _hoverRewardIcons[i].color = art != null ? Color.white : new Color(1f, 1f, 1f, 0f);
                 }
+                // Иконка предмета в проекте общая на категорию, поэтому под
+                // полосой идут имена: иначе три разных трофея выглядят одним.
+                _hoverRewardNames.text = RoaGlobalMap.CardRewardLine(row);
+                Place(_hoverRewardNames.rectTransform, 0f, 1f, 1f, 1f,
+                    new Vector2(10f, -top - 15f), new Vector2(-10f, -top));
+                top += 17f;
             }
+            _hoverRewardNames.gameObject.SetActive(hasRewards);
 
             // Нижняя строка — расстояние и риск, поэтому высота считается от
             // неё: карточка не должна наезжать на подсказку жестов.
@@ -1040,12 +1059,28 @@ namespace RealmOfAshes.Game
         {
             var lines = new List<string>();
             string objective = RoaGlobalMap.CardObjective(row);
-            if (!string.IsNullOrEmpty(objective)) lines.Add("Цель: " + objective);
+            if (!string.IsNullOrEmpty(objective)) lines.Add(HoverFactLine("Цель", objective));
             string difficulty = RoaGlobalMap.CardDifficulty(row);
-            if (!string.IsNullOrEmpty(difficulty)) lines.Add("Сложность: " + difficulty);
+            if (!string.IsNullOrEmpty(difficulty)) lines.Add(HoverFactLine("Сложность", difficulty));
             string activity = RoaGlobalMap.CardActivity(row);
-            if (!string.IsNullOrEmpty(activity)) lines.Add("Периоды активности: " + activity);
+            if (!string.IsNullOrEmpty(activity)) lines.Add(HoverFactLine("Периоды активности", activity));
+            // У постоянных угодий добыча — это категории, а не список вещей:
+            // одни трофеи в полосе иконок не объясняют, ради чего туда идти.
+            string loot = RoaGlobalMap.CardLootCategories(row);
+            if (!string.IsNullOrEmpty(loot)) lines.Add(HoverFactLine("Добыча", loot));
             return lines;
+        }
+
+        /// <summary>
+        /// Строка факта карточки. Текст не переносится, поэтому длинное поле
+        /// обрезается здесь, а не выезжает на карту за правый край.
+        /// </summary>
+        public static string HoverFactLine(string title, string value)
+        {
+            string line = title + ": " + value;
+            return line.Length <= HoverFactMaxChars
+                ? line
+                : line.Substring(0, HoverFactMaxChars - 1).TrimEnd() + "…";
         }
 
         private void RefreshMapLabels()

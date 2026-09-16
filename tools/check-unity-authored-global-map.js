@@ -120,6 +120,12 @@ assert(landmarkAuthoring.includes('Seed = 20260902')
   'Landmark authoring cannot deterministically rebuild the Decor layer from MEP scenes');
 assert((scene.match(/\n  - Kind: /g) || []).length === 18,
   'GlobalMapAuthored must serialize all 18 live-prefab catalogue slots');
+// Игра открывает не архивную сцену, а KromkaGlobalMap: её каталог обязан знать
+// те же типы, иначе карта в сборке молча не нарисует часть мира.
+const shippedScene = fs.readFileSync(path.join(unity, 'Assets', 'Scenes', 'Kromka',
+  'KromkaGlobalMap.unity'), 'utf8');
+assert((shippedScene.match(/\n  - Kind: /g) || []).length === 18,
+  'KromkaGlobalMap (the scene the build loads) must serialize all 18 live-prefab catalogue slots');
 assert(!scene.includes('_routeLine:') && !scene.includes('LineRenderer:'),
   'GlobalMapAuthored still contains the retired generated route line');
 assert(scene.includes('m_Name: GlobalMapSun_AUTHORED')

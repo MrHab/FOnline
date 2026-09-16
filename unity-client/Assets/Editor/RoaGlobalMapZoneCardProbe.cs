@@ -92,10 +92,11 @@ namespace RealmOfAshes.EditorTools
             Require(RoaGlobalMap.CardRewardLine(area) == "Трофей", "Награда области называется словом");
 
             List<string> areaLines = RoaGlobalMapCanvas.HoverFactLines(area);
-            Require(areaLines.Count == 3 && areaLines[0] == "Цель: зачистить колонию"
+            Require(areaLines.Count == 4 && areaLines[0] == "Цель: зачистить колонию"
                 && areaLines[1] == "Сложность: умеренная"
-                && areaLines[2] == "Периоды активности: всегда",
-                "Карточка области складывается в три строки: " + string.Join(" | ", areaLines));
+                && areaLines[2] == "Периоды активности: всегда"
+                && areaLines[3].StartsWith("Добыча: "),
+                "Карточка области складывается в четыре строки: " + string.Join(" | ", areaLines));
 
             // --- карточка узла с главарём -------------------------------
             var boss = JObject.Parse(@"{'id':'pubev_1','displayName':'База налётчиков','danger':3,
@@ -119,6 +120,29 @@ namespace RealmOfAshes.EditorTools
                 "Без полей снимка карточка не показывает пустых строк");
             Require(RoaGlobalMapCanvas.HoverFactLines(null).Count == 0,
                 "Без строки снимка карточка молчит");
+
+            // Обычная точка мира носит своё `danger` для симуляции — карточка
+            // не смеет печатать ей «Сложность».
+            var site = JObject.Parse("{'id':'klimAmmoWorks','displayName':'Патронный двор','danger':2,'type':'outpost'}");
+            Require(RoaGlobalMap.CardRow(site) == null,
+                "Строка обычной точки не наполняет карточку узла");
+            Require(RoaGlobalMap.CardRow(area) != null && RoaGlobalMap.CardRow(boss) != null,
+                "Строки угодий и узла с главарём карточку наполняют");
+
+            // Категории добычи объясняют, ради чего идти в угодья, когда в
+            // таблице дропа стоят одни трофеи.
+            Require(RoaGlobalMap.CardLootCategories(area) == "хитин и железы пыльников",
+                "Категории добычи области попадают в карточку: " + RoaGlobalMap.CardLootCategories(area));
+            Require(RoaGlobalMapCanvas.HoverFactLines(area).Count == 4,
+                "У области четыре строки: цель, сложность, активность и добыча");
+
+            // Длинная строка обрезается, а не выезжает за правый край карточки.
+            string longLine = RoaGlobalMapCanvas.HoverFactLine("Цель",
+                "зачистить очень длинное название угодий, которое не влезает в карточку");
+            Require(longLine.Length <= RoaGlobalMapCanvas.HoverFactMaxChars && longLine.EndsWith("…"),
+                "Длинный факт обрезан многоточием: " + longLine);
+            Require(RoaGlobalMapCanvas.HoverFactLine("Цель", "зачистить колонию") == "Цель: зачистить колонию",
+                "Короткий факт не трогается");
 
             // Цель узла без авторского поля собирается из имени главаря.
             var fallback = JObject.Parse("{'boss':{'displayName':'Матка складней'}}");

@@ -100,7 +100,10 @@ function normalizeAreaBoss(input = null) {
     id,
     displayName: String(input?.displayName || 'Главарь угодий').slice(0, 96),
     creatureTypeId: cleanId(input?.creatureTypeId, 32),
-    hpMultiplier: clamp(Number(input?.hpMultiplier || 2.4), 1, 8)
+    hpMultiplier: clamp(Number(input?.hpMultiplier || 2.4), 1, 8),
+    // Свита главаря: столько существ его же вида стоит рядом. Все одной
+    // стороны — в логове некому драться друг с другом на глазах у игрока.
+    escort: clamp(Math.floor(Number(input?.escort ?? 3)), 0, 6)
   };
 }
 
@@ -253,7 +256,9 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
       rearmPoints: Number(catalog?.rules?.contactRearmPoints ?? 14),
       boss: area.boss ? { displayName: area.boss.displayName } : null,
       encounterCount: area.encounters.length,
-      personal: true,
+      personal: false,
+      // Логово — общее: у главаря встречаются все, кто дошёл. Личными остались
+      // сцены встреч, которые угодья раздают на маршруте.
       inhabitants: area.packs.map(pack => String(pack.label || pack.typeName || pack.creatureTypeId || '')).filter(Boolean),
       lootCategories: [...area.lootCategories],
       rewardPreview: rewardIds.slice(0, 4).map(id => ({
@@ -308,6 +313,16 @@ function pveAreaForLocation(catalog = {}, locationId = '') {
 
 function pveOwnerKey(value = '') {
   return cleanId(value, 80);
+}
+
+/**
+ * Логово угодий — одно на всех. Случайные встречи раздаются личными сценами, а
+ * именное логово существует в единственном экземпляре: игроки встречаются там
+ * у одного и того же главаря.
+ */
+function pveLairRoomId(locationId = '') {
+  const loc = cleanId(locationId);
+  return loc ? `${loc}#lair`.slice(0, 96) : '';
 }
 
 function pveRoomId(locationId = '', ownerKey = '') {
@@ -538,7 +553,9 @@ function publicPveRoomState(state = null, area = null, rules = DEFAULT_RULES, no
     locationId: String(area.locationId || ''),
     displayName: String(area.displayName || ''),
     mode: 'pve',
-    personal: true,
+    // Комната логова одна на всех: «личная встреча» осталась снаружи, в сценах
+    // на маршруте.
+    personal: false,
     tracksLabel: String(area.tracksLabel || 'Искать следы'),
     alive: Math.max(0, Math.floor(Number(extra.aliveCount ?? state.lastAlive ?? 0))),
     maxAlive: rules.maxAlive,
@@ -588,6 +605,7 @@ module.exports = {
   pveAreaForLocation,
   pveOwnerKey,
   pveRoomAllowed,
+  pveLairRoomId,
   pveRoomId,
   pveRoomIdle,
   pveRoomOwner,

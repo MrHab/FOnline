@@ -182,6 +182,7 @@ const {
   wandererPassesArea,
   publicPveRoomState,
   pveAreaForLocation,
+  pveLairRoomId,
   pveOwnerKey,
   pveRoomAllowed,
   pveRoomId,
@@ -20678,14 +20679,10 @@ function serverPveOwnerKeyFor(player = {}) {
 function serverResolvePveRoomId(player = {}, locationId = '', requestedRoomId = '') {
   const area = serverPveAreaForLocation(locationId);
   if (!area) return '';
-  const ownKey = serverPveOwnerKeyFor(player);
-  const requested = sanitizeEncounterRoomId(requestedRoomId || '', locationId);
-  if (requested) {
-    const existing = rooms.get(requested);
-    const members = existing?.pveMembers instanceof Set ? existing.pveMembers : [];
-    if (pveRoomAllowed(requested, locationId, ownKey, members)) return requested;
-  }
-  return pveRoomId(locationId, ownKey);
+  // Логово угодий существует в единственном экземпляре: у главаря встречаются
+  // все, кто до него дошёл. Личные комнаты остались там, где им место — в
+  // случайных встречах, которые угодья раздают на маршруте.
+  return pveLairRoomId(locationId);
 }
 
 function serverEnsurePveRoom(room, player = null, now = Date.now()) {
@@ -20730,6 +20727,14 @@ function serverEnsurePveAreaBoss(room, area, now = Date.now()) {
   const killedAt = Number(state.killedAt || 0);
   if (killedAt > 0 && Number(now) - killedAt < SERVER_PVE_AREA_BOSS_RESPAWN_MS) return false;
   ensureRoomWorld(room);
+  // Логово принадлежит главарю: чужие обитатели сцены убираются в момент, когда
+  // он занимает место. Иначе игрок заставал в логове две чужие друг другу
+  // стороны, которые дрались между собой, а не с ним. Делается только при
+  // появлении главаря — начатый бой этим не тронуть.
+  for (const [id, enemy] of [...(room.enemies?.entries?.() || [])]) {
+    if (!enemy || enemy.pveAreaBossId === area.boss.id || enemy.pveAreaEscortOf === area.boss.id) continue;
+    roomEnemyDelete(room, id);
+  }
   const dims = roomTileDims(room);
   const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
   const spot = findRoomSafeSpawnTile(room, center.tx, center.tz,
@@ -20748,6 +20753,22 @@ function serverEnsurePveAreaBoss(room, area, now = Date.now()) {
   boss.maxHp = Math.round(Number(boss.maxHp || boss.hp || 60) * multiplier);
   boss.hp = boss.maxHp;
   boss.atk = Math.round(Number(boss.atk || 8) * Math.min(2, multiplier));
+  // Свита того же вида, что и главарь: одна сторона, никакой грызни внутри
+  // логова. Стоит рядом с ним, а не по всей сцене.
+  for (let i = 0; i < Math.max(0, Number(area.boss.escort || 0)); i += 1) {
+    const guardSpot = findRoomSafeSpawnTile(room, spot.tx, spot.tz,
+      { maxRadius: 4, radius: 0.8, minEnemyDistance: 1.1, minPlayerDistance: 8 });
+    if (!guardSpot) continue;
+    const guard = spawnEncounterActor(room, guardSpot.tx, guardSpot.tz, {
+      creatureTypeId: area.boss.creatureTypeId,
+      role: 'monster',
+      hostileToPlayer: true,
+      canDialogue: false
+    });
+    if (!guard) continue;
+    guard.pveAreaEscortOf = area.boss.id;
+    if (boss.faction) guard.faction = boss.faction;
+  }
   room.structureDirty = true;
   store[area.boss.id] = { killedAt: 0, spawnedAt: Number(now) };
   persistSaves();
@@ -20829,7 +20850,9 @@ function serverPveRoomEntered(room, player, now = Date.now()) {
   if (!area) return;
   const state = serverEnsurePveRoom(room, player, now);
   ensureRoomWorld(room);
-  for (const pack of pveInitialPacks(state, area, room.rng || Math.random)) serverSpawnPvePack(room, area, pack, now);
+  // В логове стоит главарь и его свита — и больше никто. Бродячие стаи и чужие
+  // стороны живут снаружи, в случайных встречах на маршруте: внутри им нечего
+  // делить между собой на глазах у игрока.
   serverEnsurePveAreaBoss(room, area, now);
   state.lastAlive = serverPveAliveCount(room);
 }
@@ -20899,10 +20922,14 @@ function serverTickPveRooms(now = Date.now(), options = {}) {
     // Пройденный отрядом путь по области: встречи приходят к идущему, поэтому
     // проверка ждёт не только часов, но и расстояния.
     serverNotePveTravel(room, occupants);
+    // Логово держит одного главаря со свитой и ничего больше не выкатывает:
+    // встречи угодий раздаются снаружи, на маршруте.
     serverEnsurePveAreaBoss(room, area, now);
     const alive = serverPveAliveCount(room);
     const cleared = notePveAlive(room.pveState, rules, alive, now);
-    const roll = rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });
+    const roll = area.boss
+      ? { rolled: false, spawn: null, reason: 'lair' }
+      : rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });
     if (roll.spawn) serverSpawnPvePack(room, area, roll.spawn, now);
     if (cleared || roll.rolled) {
       room.pveState.lastAlive = serverPveAliveCount(room);
@@ -28005,6 +28032,9 @@ io.on('connection', (socket) => {
       return;
     }
     if (action !== 'searchTracks') return fail('Неизвестное действие PvE-области.');
+    // В логове следов не ищут: там стоит главарь со свитой и больше никто.
+    // Искать встречи ходят по угодьям — снаружи, на маршруте.
+    if (area.boss) return fail('В логове искать нечего: главарь и так здесь. Встречи ищут в угодьях, на маршруте.');
     if (p.dead || p.downed || Number(p.hp || 0) <= 0) return fail('Сейчас нельзя искать следы.');
     const result = pveSearchTracks(state, area, KROMKA_PVE_AREA_CATALOG.rules, now, { random: room.rng || Math.random, aliveCount: serverPveAliveCount(room) });
     if (!result.ok) return fail(result.error || 'Следы недоступны.');

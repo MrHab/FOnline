@@ -104,6 +104,9 @@ assert.deepEqual(deathLootPolicy('pve'), { mode: 'pve', loss: 'none' });
 assert.equal(zoneRules('pve').pvp, false);
 
 // --- личные комнаты и владелец ----------------------------------------------------
+// Логово в единственном экземпляре: комната одна и та же для любого игрока.
+assert.equal(pve.pveLairRoomId('antHive'), 'antHive#lair');
+assert.equal(pve.pveLairRoomId('antHive'), pve.pveLairRoomId('antHive'));
 assert.equal(pve.pveRoomId('antHive', 'char-a'), 'antHive#pve_char-a');
 assert.equal(pve.pveRoomOwner('antHive#pve_char-a', 'antHive'), 'char-a');
 assert.equal(pve.pveRoomOwner('antHive#site_x', 'antHive'), '');
@@ -178,7 +181,9 @@ assert(crowded.ok && crowded.reason === 'crowded');
 // Публичный снимок без внутренних ключей.
 const snapshot = pve.publicPveRoomState(state, area, rules, clearAt + 2000 + rules.tracksCooldownMs * 2, { aliveCount: 1, members: 2 });
 assert.equal(snapshot.mode, 'pve');
-assert.equal(snapshot.personal, true);
+// Логово одно на всех: снимок комнаты обязан это говорить, иначе интерфейс
+// пообещает игроку личную встречу там, где он встретит других игроков.
+assert.equal(snapshot.personal, false);
 assert.equal(snapshot.members, 2);
 assert.equal(snapshot.tracksLabel, 'Искать следы');
 assert(snapshot.lastResultLabel.length > 0);
@@ -256,7 +261,7 @@ for (const row of publicAreas) {
   assert(row.danger >= 1 && row.danger <= 5, `${row.id}: the area declares its danger`);
   assert(row.inhabitants.length > 0, `${row.id}: the area names its inhabitants`);
   assert(row.lootCategories.length > 0, `${row.id}: the area names its loot categories`);
-  assert.equal(row.personal, true, `${row.id}: the encounter is personal`);
+  assert.equal(row.personal, false, `${row.id}: the lair is one room for everyone`);
   // Карточка области на глобальной карте: силуэт, цель, периоды активности,
   // слово опасности и превью награды. Карта ничего из этого не сочиняет.
   assert(row.shape >= 1 && row.shape <= pve.PVE_AREA_SHAPES, `${row.id}: the area picks an authored silhouette`);
@@ -332,6 +337,22 @@ for (const row of publicAreas) {
     assert(use >= declaredAt,
       'pveArrivalRoomId is used before it is declared: the arrival handler would throw on the first party.');
   }
+}
+assert(server.includes('return pveLairRoomId(locationId);'),
+  'A hunting-ground lair must resolve to one shared room, not a personal instance.');
+// Внутри логова стоит главарь со свитой и больше никто: ни стартовых стай, ни
+// плановых бросков — им место снаружи, в случайных встречах на маршруте.
+{
+  const enteredAt = server.indexOf('function serverPveRoomEntered(');
+  const enteredBody = server.slice(enteredAt, enteredAt + 800);
+  assert(enteredAt > 0 && enteredBody.includes('serverEnsurePveAreaBoss(')
+    && !enteredBody.includes('pveInitialPacks('),
+    'A lair must greet the player with its boss and escort, not with wandering packs.');
+  assert(server.includes("? { rolled: false, spawn: null, reason: 'lair' }"),
+    'A lair with a boss must not roll new packs on top of it.');
+  assert(server.includes('guard.pveAreaEscortOf = area.boss.id;')
+    && server.includes('if (boss.faction) guard.faction = boss.faction;'),
+    'The escort must share the boss faction, or the lair fights itself in front of the player.');
 }
 // Сервер обязан катить встречу на контакте и гасить бросок после входа.
 for (const needle of [
@@ -474,4 +495,4 @@ assert(pendingAt > 0 && clientMap.slice(pendingAt, pendingAt + 1200).includes('E
     'The map must carry a short label of the area under the target.');
 }
 
-console.log(`PvE areas OK: ${catalog.areas.length} persistent areas, personal rooms with owner checks, no PvP/no loss, timed encounter rolls, tracks and idle reset.`);
+console.log(`PvE areas OK: ${catalog.areas.length} hunting grounds, encounter tables with a wanderer check, one-shot scenes, one shared lair per ground with its boss and escort, no PvP/no loss.`);

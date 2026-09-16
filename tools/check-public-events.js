@@ -148,6 +148,29 @@ for (const needle of ['function upsertWorldZone(input = {})', 'function removeWo
 const projected = events.publicEvent(lair, clearAt + 45001);
 assert(!('deaths' in projected) && !('chest' in projected), 'Internal timers do not leak to clients.');
 
+// --- зачищенное событие не выгоняет за собственной наградой ------------------------
+// Главарь убит, сундук ещё не забран — истечение даёт отсрочку, но ровно одну.
+{
+  const graceRules = events.DEFAULT_RULES;
+  const cleared = { id: 'g1', status: 'active', expiresAt: 1000, warningAt: 900, cleared: true, chest: { claimedBy: '' } };
+  assert.equal(events.tickPublicEvent(cleared, graceRules, 1000).expired, false,
+    'A cleared event must not evict the party before it can take the reward.');
+  assert(cleared.expiresAt > 1000 && cleared.claimGraceGivenAt === 1000, 'The grace moves the deadline once.');
+  assert.equal(events.tickPublicEvent(cleared, graceRules, cleared.expiresAt).expired, true,
+    'The grace is given once, not forever.');
+  const claimed = { id: 'g2', status: 'active', expiresAt: 1000, warningAt: 900, cleared: true, chest: { claimedBy: 'char-a' } };
+  assert.equal(events.tickPublicEvent(claimed, graceRules, 1000).expired, true,
+    'A claimed reward needs no grace.');
+  const unfinished = { id: 'g3', status: 'active', expiresAt: 1000, warningAt: 900, cleared: false, chest: { claimedBy: '' } };
+  assert.equal(events.tickPublicEvent(unfinished, graceRules, 1000).expired, true,
+    'An unfinished event still expires on time.');
+  // Отсрочка обязана пережить сохранение, иначе перезапуск выдаст её заново.
+  const stored = events.normalizePublicEventStore({ events: { g4: {
+    id: 'g4', templateId: 'raider_base', locationId: 'randomRuinedRoad', cleared: true, claimGraceGivenAt: 777
+  } } });
+  assert.equal(stored.events.g4.claimGraceGivenAt, 777, 'The grace survives a save round trip.');
+}
+
 // --- карточка узла на глобальной карте ---------------------------------------------
 // До входа карта показывает цель, полосу опасности словом и превью награды.
 // Превью обязано совпадать с сундуком собственного шаблона: иначе узел обещает

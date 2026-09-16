@@ -152,6 +152,7 @@ function sanitizeEvent(input = {}) {
     expiredAt: Math.max(0, Math.floor(Number(input?.expiredAt || 0))),
     status,
     cleared: input?.cleared === true,
+    claimGraceGivenAt: Math.max(0, Math.floor(Number(input?.claimGraceGivenAt || 0))),
     clearedAt: Math.max(0, Math.floor(Number(input?.clearedAt || 0))),
     danger: clamp(Math.floor(Number(input?.danger ?? 3)), 1, 5),
     // Состояние мини-босса и уже объявленного сундука переживают перезапуск:
@@ -271,9 +272,22 @@ function spawnDuePublicEvents(store = {}, catalog = {}, now = Date.now(), option
 }
 
 // Жизненный цикл: предупреждение за expiryWarningMs, затем истечение.
+/**
+ * Отсрочка для зачищенного события: главарь убит, сундук ещё не забран — время
+ * жизни не должно выгонять отряд из собственной награды. Продлевается один раз
+ * и ненадолго.
+ */
+const CLEARED_CLAIM_GRACE_MS = 5 * 60 * 1000;
+
 function tickPublicEvent(event = {}, rules = DEFAULT_RULES, now = Date.now()) {
   const changes = { warned: false, expired: false };
   if (!event || event.status === 'expired') return changes;
+  if (event.cleared && !event.chest?.claimedBy && !event.claimGraceGivenAt
+      && Number(now) >= Number(event.expiresAt || 0)) {
+    event.claimGraceGivenAt = Number(now);
+    event.expiresAt = Number(now) + CLEARED_CLAIM_GRACE_MS;
+    event.warningAt = Number(event.expiresAt);
+  }
   if (event.status === 'active' && Number(now) >= Number(event.warningAt || 0)) {
     event.status = 'warning';
     changes.warned = true;

@@ -257,15 +257,18 @@ const getJson = route => new Promise((resolve, reject) => {
   await h.connectAndJoin(accounts.persistence);
   const roomA = accounts.cadence.join.roomId;
   const roomB = accounts.persistence.join.roomId;
-  assert(roomA.startsWith('antHive#pve_') && roomB.startsWith('antHive#pve_') && roomA !== roomB, 'Each solo visitor gets a personal PvE room.');
+  // Логово угодий в единственном экземпляре: двое вошедших порознь
+  // оказываются в одной комнате и видят одного и того же главаря.
+  assert.equal(roomA, 'antHive#lair', 'A hunting-ground lair is one shared room: ' + roomA);
+  assert.equal(roomA, roomB, 'Two visitors of the same lair meet each other, not their own copies.');
   assert.equal(accounts.cadence.join.worldState.pvpMode, 'pve');
-  assert.equal(accounts.cadence.join.worldState.pveArea.personal, true);
-  const tracks = await request(accounts.cadence, 'pveAreaAction', { action: 'searchTracks' });
-  assert(['tracked', 'noTracks', 'crowded'].includes(tracks.reason), 'Searching for tracks returns a server verdict.');
-  const tracksAgain = await h.socketAck(accounts.cadence.socket, 'pveAreaAction', { action: 'searchTracks' });
-  assert(!tracksAgain.ok && /Подождите/.test(tracksAgain.error), 'Tracks respect their cooldown.');
-  const forgedRoom = await h.socketAck(accounts.cadence.socket, 'changeLocation', { locationId: 'antHive', roomId: roomB });
-  assert(!forgedRoom.ok || forgedRoom.roomId !== roomB, 'A forged room id never enters someone else\'s personal room.');
+  assert.equal(accounts.cadence.join.worldState.pveArea.personal, false);
+  // В логове следы не ищут: главарь и так здесь, а встречи живут снаружи.
+  const tracks = await h.socketAck(accounts.cadence.socket, 'pveAreaAction', { action: 'searchTracks' });
+  assert(!tracks.ok && /логове/.test(tracks.error), 'A lair refuses the tracks hunt: ' + JSON.stringify(tracks));
+  // Подделанный roomId больше не уводит в чужую комнату: у логова она одна.
+  const forgedRoom = await h.socketAck(accounts.cadence.socket, 'changeLocation', { locationId: 'antHive', roomId: 'antHive#pve_someone_else' });
+  assert(!forgedRoom.ok || forgedRoom.roomId === 'antHive#lair', 'A forged room id never opens a room of its own.');
   // Область видна на карте до входа: границы, опасность, обитатели и добыча.
   const wastelandAreas = await getJson('/api/wasteland');
   const areaRows = wastelandAreas.json.pveAreas || [];
@@ -274,7 +277,16 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(hive && hive.radiusPoints > 0 && hive.x > 0 && hive.y > 0, 'The area carries its centre and borders.');
   assert(hive.danger >= 1 && hive.inhabitants.length > 0 && hive.lootCategories.length > 0,
     'The area names its danger, inhabitants and loot categories: ' + JSON.stringify(hive));
-  console.log('PASS personal PvE rooms, tracks and areas on the world map');
+  // В логове стоит главарь со свитой — и оба вошедших видят одних и тех же.
+  const lairEnemies = accounts.cadence.join.worldState.enemies || [];
+  assert(lairEnemies.some(row => String(row.name || '').includes('Пыльник-матка')),
+    'The lair must greet its visitors with the mini boss: ' + JSON.stringify(lairEnemies.map(r => r.name)).slice(0, 200));
+  assert(lairEnemies.length >= 2 && lairEnemies.length <= 6,
+    'A lair holds the boss and its escort, nothing else: ' + JSON.stringify(lairEnemies.map(r => [r.name, r.faction])));
+  const lairFactions = new Set(lairEnemies.map(row => String(row.faction || '')));
+  assert(lairFactions.size === 1,
+    'The lair must not fight itself in front of the player: ' + JSON.stringify([...lairFactions]));
+  console.log('PASS one shared lair with its boss and escort, tracks and areas on the world map');
 
   // --- аванпосты, публичные события, здоровье -------------------------------------------------
   const territory = await request(accounts.trade, 'requestTerritoryState', {});

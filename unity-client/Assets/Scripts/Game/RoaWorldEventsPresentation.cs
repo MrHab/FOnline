@@ -572,7 +572,11 @@ namespace RealmOfAshes.Game
         {
             if (payload == null || string.IsNullOrEmpty(roomId) || payload["roomId"]?.ToString() != roomId) return string.Empty;
             string name = payload["displayName"]?.ToString() ?? "PvE-область";
-            var sb = new StringBuilder(name.ToUpperInvariant()).Append(" · личная встреча · PvP отключён");
+            // Логово угодий — общая комната: у главаря встречаются все, кто
+            // дошёл. Личными остались случайные встречи на маршруте.
+            var sb = new StringBuilder(name.ToUpperInvariant())
+                .Append(payload["personal"]?.Value<bool>() == true ? " · личная встреча" : " · общее логово")
+                .Append(" · PvP отключён");
             int alive = payload["alive"]?.Value<int>() ?? 0;
             sb.Append("\nВрагов рядом: ").Append(alive);
             int calm = Math.Max(0, (payload["calmSeconds"]?.Value<int>() ?? 0) - elapsedSeconds);

@@ -399,6 +399,10 @@ namespace RealmOfAshes.Game
             if (MobileControls != null) MobileControls.SetTerminal(PipboyCanvas);
             if (Inventory != null) Inventory.CanvasDriven = true;
             if (Pipboy != null) Pipboy.CanvasDriven = true;
+            // Запрос лечения и приглашение к обмену открывают страницу «Друзья»
+            // канвы: прежний путь поднимал флаг выключенного IMGUI-окна, и игрок
+            // оставался без HUD и без окна, пока не нажмёт Esc.
+            if (Pipboy != null) Pipboy.OpenSocialCanvas = () => PipboyCanvas.Open(RoaPipboyCanvas.Page.Friends);
 
             // Бартер в web-виде: три колонки поверх той же серверной логики.
             var barter = GetComponent<RoaBarterCanvas>();

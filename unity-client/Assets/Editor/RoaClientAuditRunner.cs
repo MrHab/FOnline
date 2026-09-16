@@ -70,6 +70,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaBarterProbe),
             typeof(RoaGroundDressingProbe),
             typeof(RoaWorldZonesUiProbe),
+            typeof(RoaSocialRoutingProbe),
             typeof(RoaGlobalMapZoneCardProbe)
             ,typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
         };

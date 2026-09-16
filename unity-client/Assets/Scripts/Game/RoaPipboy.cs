@@ -73,10 +73,22 @@ namespace RealmOfAshes.Game
         private JObject _medicalConsentRequest;
         private JObject _playerTrade;
 
-        public bool IsOpen { get { return _open; } }
+        /// <summary>
+        /// Открыто ли IMGUI-окно. При живой канве оно не рисуется, поэтому и
+        /// открытым не считается: иначе поднятый флаг гасил HUD и замораживал
+        /// персонажа, не показав ни одного окна.
+        /// </summary>
+        public bool IsOpen { get { return _open && !CanvasDriven; } }
 
         /// <summary>Канва-версия окон включена: IMGUI-окно и своя клавиша молчат.</summary>
         public bool CanvasDriven { get; set; }
+
+        /// <summary>
+        /// Как открыть страницу «Друзья» живой канвы. Бутстрап подставляет сюда
+        /// RoaPipboyCanvas.Open: входящий запрос лечения и приглашение к обмену
+        /// должны показаться игроку в том окне, которое реально рисуется.
+        /// </summary>
+        public System.Action OpenSocialCanvas { get; set; }
 
         /// <summary>Авторитетное самосостояние для новых окон (только чтение).</summary>
         public JObject Self { get { return _self; } }
@@ -331,7 +343,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_open) return true;
+                if (IsOpen) return true;
                 if (!_stagingVisible) return false;
                 Vector3 mouse = Input.mousePosition;
                 return _stagingRect.Contains(new Vector2(mouse.x, Screen.height - mouse.y));
@@ -419,6 +431,11 @@ namespace RealmOfAshes.Game
 
         public void OpenSocial()
         {
+            if (CanvasDriven)
+            {
+                OpenSocialCanvas?.Invoke();
+                return;
+            }
             _tab = Tab.Social;
             _open = true;
         }
@@ -505,10 +522,14 @@ namespace RealmOfAshes.Game
         private void HandlePlayerTradeUpdated(JObject payload)
         {
             if (payload == null) return;
+            bool wasTrading = _playerTrade != null;
             _playerTrade = payload["state"] is JObject state ? (JObject)state.DeepClone() : null;
             string message = payload["message"]?.ToString();
             if (!string.IsNullOrEmpty(message)) _status = message;
-            if (_playerTrade != null) OpenSocial();
+            // Окно открывается, когда обмен появился. Дальше страница обновляется
+            // сама, и закрытый игроком терминал не распахивается на каждом
+            // изменении чужого предложения.
+            if (_playerTrade != null && !wasTrading) OpenSocial();
         }
 
         private void HandleMedicalConsentRequested(JObject payload)

@@ -54,4 +54,22 @@ for (const event of ['socialAction', 'socialStateAction', 'playerTradeAction']) 
   assert(at >= 0 && pipboy.slice(Math.max(0, at - 900), at + 250).includes('requestId'), `${event} needs a request id`);
 }
 
+// Входящий запрос лечения и приглашение к обмену обязаны открывать живую канву.
+// Прежний путь поднимал флаг выключенного IMGUI-окна: HUD гас, персонаж замирал,
+// а окна не было — выйти можно было только Esc, и 15-секундный запрос истекал.
+const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
+for (const token of [
+  'public System.Action OpenSocialCanvas { get; set; }',
+  'public bool IsOpen { get { return _open && !CanvasDriven; } }',
+  'OpenSocialCanvas?.Invoke();',
+  'if (_playerTrade != null && !wasTrading) OpenSocial();'
+]) assert(pipboy.includes(token), `ПУТНИК must route social prompts to the live canvas: ${token}`);
+assert(bootstrap.includes('Pipboy.OpenSocialCanvas = () => PipboyCanvas.Open(RoaPipboyCanvas.Page.Friends);'),
+  'the bootstrap must wire social prompts to the Friends page of the canvas');
+const socialProbe = read('unity-client/Assets/Editor/RoaSocialRoutingProbe.cs');
+assert(socialProbe.includes('"HandleMedicalConsentRequested"') && socialProbe.includes('"HandlePlayerTradeUpdated"'),
+  'the social routing probe must drive the real socket handlers');
+assert(read('unity-client/Assets/Editor/RoaClientAuditRunner.cs').includes('typeof(RoaSocialRoutingProbe)'),
+  'the social routing probe must run in the client audit');
+
 console.log('KRM-20 UI contract OK: versioned ПУТНИК, scoped rights, responsive UI and contextual artifacts');

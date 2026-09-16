@@ -1,0 +1,1411 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "coreMarket",
+  "name": "Рынок Ядра",
+  "seed": 2026091700,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "territoryHub",
+  "respawnAllowed": false,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "noRespawn": true,
+  "allowGlobalMapExit": false,
+  "noGlobalMap": true,
+  "noGlobalMapEntry": true,
+  "territoryId": "core",
+  "territoryRole": "marketHub",
+  "factionAccess": "territory",
+  "marketHub": {
+    "service": "blackMarket",
+    "description": "Нейтральный подземный рынок под Объектом Ноль. Скупщик берёт любое оружие и броню; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину."
+  },
+  "ground": {
+    "preset": "concreteFloor",
+    "label": "Рынок Ядра"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromCore": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0,
+    "y": 0.1,
+    "z": -26,
+    "rotationY": 0
+  },
+  "transitions": [
+    {
+      "id": "stairs_up",
+      "type": "location",
+      "label": "Подъём — Сердцевина",
+      "to": "coreZone",
+      "entryKey": "entryFromMarket",
+      "tx": 19,
+      "tz": 2,
+      "x": 0,
+      "y": 0.1,
+      "z": -34,
+      "rotationY": 0,
+      "radius": 3
+    }
+  ],
+  "worldZones": [],
+  "containers": [],
+  "objects": [
+    {
+      "id": "broker",
+      "model": "traderNpc",
+      "name": "Скупщик Ядра",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-blackMarket",
+        "merchant",
+        "trader",
+        "black-market"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "blackMarket",
+        "traderProfile": "blackMarket",
+        "tradeProfile": "blackMarket",
+        "dialogueProfile": "blackMarket"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_stairs_a",
+      "model": "caravanGuard",
+      "name": "Охрана рынка",
+      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_stairs_b",
+      "model": "caravanGuard",
+      "name": "Охрана рынка",
+      "position": {
+        "x": 4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_1",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_2",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_3",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-clinic",
+      "model": "field_clinic",
+      "name": "coreMarket-keys-clinic EDITABLE",
+      "position": {
+        "x": 13.0,
+        "y": 0.0,
+        "z": -11.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clinic",
+        "medical",
+        "warm-light"
+      ],
+      "footprint": {
+        "x": 13.5,
+        "z": 15.8
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-life",
+      "model": "community_yard",
+      "name": "coreMarket-keys-life EDITABLE",
+      "position": {
+        "x": 10.0,
+        "y": 0.0,
+        "z": 10.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "garden",
+        "laundry",
+        "kitchen",
+        "lived-in"
+      ],
+      "footprint": {
+        "x": 10.0,
+        "z": 9.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-market",
+      "model": "market_canopy",
+      "name": "coreMarket-keys-market EDITABLE",
+      "position": {
+        "x": -6.0,
+        "y": 0.0,
+        "z": 4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "canopy",
+        "trade",
+        "shelter"
+      ],
+      "footprint": {
+        "x": 6.5,
+        "z": 4.5
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-rail-bridge",
+      "model": "rail_bridge",
+      "name": "coreMarket-keys-rail-bridge EDITABLE",
+      "position": {
+        "x": 22.0,
+        "y": 0.0,
+        "z": 18.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "rail",
+        "bridge",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-water-tower",
+      "model": "water_tower",
+      "name": "coreMarket-keys-water-tower EDITABLE",
+      "position": {
+        "x": -23.0,
+        "y": 0.0,
+        "z": 17.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "water",
+        "tower",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-workshops",
+      "model": "modular_workshop",
+      "name": "coreMarket-keys-workshops EDITABLE",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -12.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-landmark",
+      "model": "buried-installation",
+      "name": "Landmark buried-installation EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "buried-installation"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.314,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.084,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-region-departure-rail",
+      "model": "railway",
+      "name": "coreMarket-region-departure-rail EDITABLE",
+      "position": {
+        "x": 25.0,
+        "y": 0.03,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.571,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "rail",
+        "transport"
+      ],
+      "footprint": {
+        "x": 61.818,
+        "z": 2.0
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-region-yard-fence",
+      "model": "wall",
+      "name": "coreMarket-region-yard-fence EDITABLE",
+      "position": {
+        "x": -34.0,
+        "y": 1.2,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "cover",
+      "tags": [
+        "wall",
+        "cover"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-settlement-ring",
+      "model": "welded_yard",
+      "name": "coreMarket-settlement-ring EDITABLE",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "post-industrial",
+        "editable-perimeter"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "crates_east",
+      "model": "cargoStack",
+      "name": "Ящики с бронёй",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "crates"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.127,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "crates_west",
+      "model": "cargoStack",
+      "name": "Ящики с оружием",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "crates"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.127,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lamp_east",
+      "model": "utilityPole",
+      "name": "Фонарь рынка",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -20.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "light"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lamp_west",
+      "model": "utilityPole",
+      "name": "Фонарь рынка",
+      "position": {
+        "x": -8.0,
+        "y": 0.0,
+        "z": -20.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "light"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "stairs_up",
+      "model": "cargoStack",
+      "name": "Подъём в Сердцевину",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -32.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "market-door"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "marketDoor",
+        "to": "coreZone"
+      },
+      "footprint": {
+        "x": 3.094,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "stall_east",
+      "model": "storageLeanTo",
+      "name": "Склад скупщика",
+      "position": {
+        "x": 12.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 1.4,
+        "z": 1.4
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "stall"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.803,
+        "z": 2.052
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "stall_west",
+      "model": "wastelandShack",
+      "name": "Прилавок скупщика",
+      "position": {
+        "x": -12.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "stall"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 4.029,
+        "z": 4.587
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "workbench",
+      "model": "workshopBench",
+      "name": "Верстак скупщика",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.2,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "bench"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 3.6,
+        "z": 1.68
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "anomalyFields": [],
+  "visualProfile": {
+    "id": "kromka-territory-market-v1",
+    "skyDay": "#3a3630",
+    "fogDay": "#4a443b",
+    "hemiSkyDay": "#a5a8a0",
+    "hemiGroundDay": "#241f1a",
+    "fillDay": "#9aa08e",
+    "sunDay": "#d6c797",
+    "rimDay": "#c9b98d"
+  },
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "off_map",
+  "kromkaVisualProfile": "territory-market-v1",
+  "ambientProfile": "buried-installation",
+  "anomalyDensity": 0.0,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreMarket.unity",
+  "unitySpawns": [
+    {
+      "id": "broker",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreMarket-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -26.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreMarket-stairs",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3.0,
+      "position": {
+        "x": -4.0,
+        "y": 0.1,
+        "z": -19.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "guard_stairs_a",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "guard_stairs_b",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotationY": 0.0
+    }
+  ],
+  "migrationArrival": {
+    "tx": 17,
+    "tz": 9,
+    "x": -4.0,
+    "y": 0.1,
+    "z": -19.0,
+    "rotationY": 0.0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 6,
+    "x": 0.0,
+    "y": 0.1,
+    "z": -26.0,
+    "rotationY": 0.0
+  }
+}

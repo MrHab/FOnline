@@ -1,9 +1,10 @@
 'use strict';
 
 const fs = require('node:fs');
+const { normalizeBlackMarketConfig } = require('./black-market');
 
 /**
- * Экономика v3 (библия 14.5, 16.5, KRM-21): какие части прежней живой пустоши
+ * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
  * ещё работают и числа лестницы зон. Все значения читаются из
  * `data/kromka/economy.json`; отсутствующее поле берёт значение по умолчанию,
  * поэтому старый файл не ломает сервер.
@@ -22,7 +23,9 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   // Снаряжение с трупов NPC; заменяется останками и Чёрным рынком.
   npcGearDrops: true,
   // Отряды NPC на глобальной карте; уходят вместе с опасными клетками.
-  visibleWorldParties: true
+  visibleWorldParties: true,
+  // Чёрный рынок в хабе Сердцевины: скупка снаряжения и добыча NPC с его склада.
+  blackMarket: true
 });
 
 const DEFAULT_ZONES = Object.freeze({
@@ -142,7 +145,8 @@ function normalizeWorldEconomy(input = {}) {
   return Object.freeze({
     worldModel: normalizeWorldModel(src.worldModel),
     zones: normalizeZones(src.zones),
-    npcRemnants: normalizeNpcRemnants(src.npcRemnants)
+    npcRemnants: normalizeNpcRemnants(src.npcRemnants),
+    blackMarket: normalizeBlackMarketConfig(src.blackMarket)
   });
 }
 

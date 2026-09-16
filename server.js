@@ -35,6 +35,18 @@ const {
   conditionIsBroken
 } = require('./src/server/world-economy');
 const {
+  BLACK_MARKET_VERSION,
+  normalizeBlackMarketState,
+  blackMarketUnitPrice,
+  quoteBlackMarketSale,
+  applyBlackMarketSale,
+  fundBlackMarket,
+  takeBlackMarketLoot,
+  decayBlackMarket,
+  blackMarketFatigueFactor,
+  publicBlackMarketState
+} = require('./src/server/black-market');
+const {
   ZONE_MODE_SET,
   ZONE_MODE_LABELS,
   normalizeZoneMode,
@@ -747,7 +759,7 @@ const LOOT_TABLES_FILE = path.join(DATA_DIR, 'loot-tables.json');
 const MODEL_COLLIDERS_FILE = path.join(__dirname, 'public', 'assets', 'models', 'wasteland', 'model-colliders.json');
 const SERVER_MODEL_COLLIDERS = loadModelColliderCatalog(MODEL_COLLIDERS_FILE);
 
-// Экономика v3 (KRM-21): какие части живой пустоши включены и числа лестницы зон.
+// Экономика v3 (KRM-22): какие части живой пустоши включены и числа лестницы зон.
 const WORLD_ECONOMY = loadWorldEconomy(path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));
 
 const ECONOMY_RULES = Object.freeze({
@@ -9995,6 +10007,163 @@ function serverNpcSetInventoryCaps(enemy = {}, caps = 0) {
   return serverNpcInventoryCaps(enemy);
 }
 
+// ===== Чёрный рынок (экономика v3, библия 14.5) =====
+// Состояние лежит в сохранении рядом с аукционами и пишется той же транзакцией,
+// что инвентарь продавца: сбой не создаёт ни марок, ни предметов.
+const SERVER_BLACK_MARKET_NORMALIZED = new WeakSet();
+
+function serverBlackMarketStore(now = Date.now()) {
+  if (!savesDb.blackMarket || !SERVER_BLACK_MARKET_NORMALIZED.has(savesDb.blackMarket)
+    || savesDb.blackMarket.version !== BLACK_MARKET_VERSION) {
+    savesDb.blackMarket = normalizeBlackMarketState(savesDb.blackMarket, WORLD_ECONOMY.blackMarket, now);
+    SERVER_BLACK_MARKET_NORMALIZED.add(savesDb.blackMarket);
+  }
+  return savesDb.blackMarket;
+}
+
+function serverBlackMarketItemPrice(itemId = '') {
+  return Math.max(0, Number(SERVER_ITEM_BASE_PRICES[serverBaseItemId(itemId)] || 0));
+}
+
+// Скупщик берёт только снаряжение: оружие и броню из каталога, без кулаков.
+function serverBlackMarketAccepts(itemId = '') {
+  const id = serverBaseItemId(itemId);
+  if (!id || id === 'fists') return false;
+  const category = String(KROMKA_ITEM_INDEXES.byId?.[id]?.category || '');
+  return WORLD_ECONOMY.blackMarket.categories.includes(category);
+}
+
+function serverIsBlackMarketActor(actor = null) {
+  return !!actor && WORLD_ECONOMY.worldModel.blackMarket
+    && String(actor.service || '') === WORLD_ECONOMY.blackMarket.service;
+}
+
+/**
+ * Витрина скупщика для окна обмена: полки нет, касса — казна рынка, а цена
+ * каждого предмета игрока посчитана сервером с учётом полосы и состояния.
+ */
+/**
+ * Пока NPC-торговцы работают, скупщик платит за целый предмет не больше доли
+ * базы, которая ниже их самой низкой цены продажи: иначе купленное у NPC
+ * выгодно сразу сдавать на Чёрный рынок.
+ */
+function serverBlackMarketCapShare() {
+  return WORLD_ECONOMY.worldModel.npcTraders ? WORLD_ECONOMY.blackMarket.npcResaleCapShare : 0;
+}
+
+function serverBlackMarketTradeMarket(player = null) {
+  const market = serverBlackMarketStore();
+  const config = WORLD_ECONOMY.blackMarket;
+  const capShare = serverBlackMarketCapShare();
+  const priceAt = (itemId, condition) => (condition < config.minCondition
+    ? 0
+    : blackMarketUnitPrice(market, config, serverBlackMarketItemPrice(itemId), condition, capShare));
+  // Цена по виду предмета и отдельно по экземпляру оружия: у каждого
+  // экземпляра своё состояние, и сломанный не должен запрещать продажу целого.
+  const sellPrices = {};
+  const sellPricesByItem = {};
+  const runtime = serverWeaponInventoryRuntimeSnapshot(player);
+  for (const row of sanitizeServerInventorySnapshot(player?.inventory || [], { includeEquipped: true })) {
+    if (!serverBlackMarketAccepts(row.id) || sellPrices[row.id] !== undefined) continue;
+    if (!SERVER_WEAPONS[row.id]?.ammoType) {
+      sellPrices[row.id] = priceAt(row.id, Number(serverPlayerItemCondition(player, row.id) ?? 100));
+      continue;
+    }
+    let best = 0;
+    for (const entry of runtime) {
+      if (serverBaseItemId(entry?.baseId || entry?.id || '') !== row.id || !entry?.id) continue;
+      const price = priceAt(row.id, Number(entry.condition ?? 100));
+      sellPricesByItem[entry.id] = price;
+      best = Math.max(best, price);
+    }
+    sellPrices[row.id] = best;
+  }
+  return {
+    stock: [],
+    caps: market.treasury,
+    buyInterests: config.categories.slice(),
+    blackMarket: publicBlackMarketState(market, config),
+    sellPrices,
+    sellPricesByItem
+  };
+}
+
+function performServerBlackMarketSale(room = null, actor = null, data = {}, player = null) {
+  if (!room || !actor || !player) return { ok: false, error: 'Скупщик недоступен.' };
+  const buys = serverTradeMachineRows(data.buys || data.buyRows || []);
+  const sells = serverTradeMachineRows(data.sells || data.sellRows || []);
+  if (buys.length) return { ok: false, error: 'Скупщик ничего не продаёт.' };
+  if (!sells.length) return { ok: false, error: 'Выберите вещи для продажи.' };
+  syncServerActionProgressionPlayer(player, data);
+  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
+  const runtimeRemovals = [];
+  const quoteRows = [];
+  for (const row of sells) {
+    if (!serverBlackMarketAccepts(row.id)) return { ok: false, error: 'Скупщик берёт только оружие и броню.' };
+    if (serverInventoryQty(nextInventory, row.id) < row.qty) return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.' };
+    const validation = serverValidateWeaponRuntimeRemoval(player, row, { releaseLoadedAmmo: true });
+    if (!validation.ok) return { ok: false, error: validation.error };
+    const records = SERVER_WEAPONS[row.id]?.ammoType ? serverCaptureWeaponRuntimeRecords(player, row, validation) : [];
+    const baseCondition = Number(serverPlayerItemCondition(player, row.id) ?? 100);
+    const conditions = Array.from({ length: row.qty }, (_, index) => Number(records[index]?.condition ?? baseCondition));
+    runtimeRemovals.push({ row, validation, artifactRecords: [] });
+    quoteRows.push({ id: row.id, qty: row.qty, conditions });
+  }
+  const market = serverBlackMarketStore();
+  const config = WORLD_ECONOMY.blackMarket;
+  const quote = quoteBlackMarketSale(market, config, quoteRows, serverBlackMarketItemPrice, serverBlackMarketAccepts, serverBlackMarketCapShare());
+  if (!quote.ok) return { ok: false, error: quote.error };
+  if (market.treasury < quote.total) return { ok: false, error: 'У скупщика сейчас не хватает марок. Загляните позже.' };
+  const nextSilver = serverInventoryQty(nextInventory, 'silver') + quote.total;
+  if (nextSilver > serverItemStackLimit('silver')) return { ok: false, error: 'В инвентаре достигнут предел марок.' };
+  const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
+  const inventoryResult = serverBuildTradeInventory(nextInventory, sells, [], unloadedAmmo, nextSilver);
+  if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error };
+  nextInventory = inventoryResult.inventory;
+  const weight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
+  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, nextInventory, runtimeRemovals);
+  if (weight > capacity + 0.0001) return { ok: false, error: `Перегруз: ${weight.toFixed(1)}/${capacity.toFixed(1)} кг.` };
+  const sale = applyBlackMarketSale(market, config, quote, serverBlackMarketItemPrice, Date.now());
+  if (!sale.ok) return { ok: false, error: sale.error };
+  player.inventory = nextInventory;
+  player.inventoryUpdatedAt = Date.now();
+  for (const removal of runtimeRemovals) serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
+  player.carry = { weight: Number(weight.toFixed(3)), capacity: Number(capacity.toFixed(3)), serverCapacity: Number(capacity.toFixed(3)), updatedAt: Date.now() };
+  persistActivePlayerState(player);
+  scheduleServerPublicEventPersist();
+  refreshRoomWorldState(room);
+  return {
+    ok: true,
+    net: -quote.total,
+    buyTotal: 0,
+    sellTotal: quote.total,
+    buys: [],
+    sells,
+    unloadedAmmo,
+    inventory: player.inventory,
+    carry: player.carry,
+    market: serverBlackMarketTradeMarket(player),
+    enemy: publicEnemy(actor),
+    self: publicAuthoritativePlayerState(player)
+  };
+}
+
+let serverBlackMarketDirty = false;
+
+function serverMarkBlackMarketDirty() {
+  serverBlackMarketDirty = true;
+}
+
+function serverTickBlackMarket(now = Date.now()) {
+  if (!WORLD_ECONOMY.worldModel.blackMarket) return 0;
+  const result = decayBlackMarket(serverBlackMarketStore(now), WORLD_ECONOMY.blackMarket, serverBlackMarketItemPrice, now);
+  if (result.destroyed > 0 || serverBlackMarketDirty) {
+    serverBlackMarketDirty = false;
+    scheduleServerPublicEventPersist();
+  }
+  return result.destroyed;
+}
+
 /**
  * Вид снаряжения NPC для останков (экономика v3): огнестрел, ближний бой или
  * носимая защита. Пустая строка — не снаряжение, такой предмет падает как есть.
@@ -10013,7 +10182,7 @@ function serverNpcGearKind(itemId = '') {
  * Труп NPC по правилам экономики v3, один раз на смерть: снаряжение не
  * падает, а превращается в детали и лом; марки умножаются на богатство зоны.
  */
-function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.random) {
+function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.random, enemy = null) {
   const mode = room ? locationPvpMode(roomLocation(room)) : 'peaceful';
   const kept = [];
   const gear = [];
@@ -10026,7 +10195,36 @@ function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.rando
   for (const row of kept) {
     if (row.id === 'silver' && multiplier !== 1) row.qty = rollQuantity(Number(row.qty || 0) * multiplier, random);
   }
-  const merged = new Map(kept.filter(row => Number(row.qty || 0) > 0).map(row => [row.id, row]));
+  if (WORLD_ECONOMY.worldModel.blackMarket) {
+    // Чёрный рынок платит не новыми марками: пятая часть марок трупа уходит в
+    // его казну, а со склада рынка NPC «роняет» скупленное у игроков снаряжение.
+    const market = serverBlackMarketStore();
+    const config = WORLD_ECONOMY.blackMarket;
+    for (const row of kept) {
+      if (row.id === 'silver') row.qty = fundBlackMarket(market, config, row.qty);
+    }
+    if (enemy && !WORLD_ECONOMY.worldModel.npcGearDrops) {
+      const tracker = room ? (room.blackMarketFatigue || (room.blackMarketFatigue = {})) : {};
+      const fatigue = blackMarketFatigueFactor(tracker, config, Date.now());
+      if (random() < config.dropChance) {
+        const budget = Math.max(config.minBudget, Number(enemy.xp || 0) * config.budgetPerXp) * multiplier * fatigue;
+        const loot = takeBlackMarketLoot(market, config, budget, serverBlackMarketItemPrice);
+        if (loot && SERVER_ITEM_IDS.has(loot.itemId)) {
+          kept.push({ id: loot.itemId, qty: 1 });
+          enemy.blackMarketLoot = { itemId: loot.itemId, condition: loot.condition };
+        }
+      }
+    }
+    // Смерти частые: казна и склад уходят на диск с минутным тиком рынка
+    // (и с любым другим сохранением), а не полной записью на каждый труп.
+    serverMarkBlackMarketDirty();
+  }
+  const merged = new Map();
+  for (const row of kept.filter(row => Number(row.qty || 0) > 0)) {
+    const existing = merged.get(row.id);
+    if (existing) existing.qty = Number(existing.qty || 0) + Number(row.qty || 0);
+    else merged.set(row.id, row);
+  }
   for (const remnant of npcRemnantRows(WORLD_ECONOMY, gear, random)) {
     if (!SERVER_ITEM_IDS.has(remnant.id)) continue;
     const existing = merged.get(remnant.id);
@@ -10051,13 +10249,36 @@ function serverPrepareNpcCorpseLoot(enemy = {}, room = null) {
   if (enemy.dead && !enemy.corpseEconomyApplied) {
     enemy.corpseEconomyApplied = true;
     const corpse = sanitizeServerInventorySnapshot(
-      serverApplyNpcCorpseEconomy(enemy.loot, room, room?.rng || Math.random),
+      serverApplyNpcCorpseEconomy(enemy.loot, room, room?.rng || Math.random, enemy),
       { includeEquipped: true }
     );
     enemy.loot = corpse.map(row => ({ ...row }));
     enemy.inventory = corpse.map(row => ({ ...row }));
   }
   return enemy.loot;
+}
+
+/**
+ * Предмет со склада Чёрного рынка сохраняет состояние, с которым его продали:
+ * огнестрел получает свою запись экземпляра, а броня и холодное оружие (их
+ * состояние общее на вид предмета) — только если такого у игрока нет ни в
+ * рюкзаке, ни на теле.
+ */
+function serverApplyBlackMarketLootCondition(player = null, enemy = null, taken = [], heldBefore = 0) {
+  const loot = enemy?.blackMarketLoot;
+  if (!player || !loot) return false;
+  const qty = taken
+    .filter(row => row.id === loot.itemId)
+    .reduce((sum, row) => sum + Number(row.qty || 0), 0);
+  if (qty <= 0) return false;
+  enemy.blackMarketLoot = null;
+  const condition = Number(loot.condition);
+  if (!Number.isFinite(condition)) return false;
+  if (SERVER_WEAPONS[loot.itemId]?.ammoType) {
+    return serverRestoreWeaponRuntimeRecords(player, [{ baseId: loot.itemId, loaded: 0, condition }]).length > 0;
+  }
+  if (Number(heldBefore || 0) > 0) return false;
+  return serverSetPlayerItemCondition(player, loot.itemId, condition) !== null;
 }
 
 function serverSkillPercent(p = {}, id = '') {
@@ -15347,6 +15568,7 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
 
 function performServerNpcTradeExchange(room = null, actor = null, data = {}, player = null) {
   if (!room || !actor || !player) return { ok: false, error: 'Торговец недоступен.' };
+  if (serverIsBlackMarketActor(actor)) return performServerBlackMarketSale(room, actor, data, player);
   const market = serverNpcTradeMarket(actor);
   const buys = serverTradeMachineRows(data.buys || data.buyRows || []);
   const sells = serverTradeMachineRows(data.sells || data.sellRows || []);
@@ -16408,7 +16630,8 @@ function spawnAuthoredLocationActors(room, loc) {
     const faction = authoredNpcDefaultFaction(row);
     const hostileToPlayer = authoredNpcDefaultHostility(row);
     const visual = authoredNpcVisual(row);
-    const trade = (role === 'merchant' || role === 'guard' || locationDefinitionObjectIsTrader(row))
+    const blackMarketBroker = String(entity.service || '') === WORLD_ECONOMY.blackMarket.service;
+    const trade = !blackMarketBroker && (role === 'merchant' || role === 'guard' || locationDefinitionObjectIsTrader(row))
       ? authoredNpcDefaultStock(role === 'npc' ? 'merchant' : role, faction, loc, entity, `${loc.id}:${row.id || `npc_${index + 1}`}`)
       : { stock: [], buyInterests: [], caps: 0 };
     const actor = spawnServerEnemy(room, {
@@ -31218,7 +31441,8 @@ io.on('connection', (socket) => {
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
 
     const enemy = publicEnemy(actor);
-    if (typeof ack === 'function') ack({ ok: true, enemy, market: serverNpcTradeMarket(actor), readOnly: true });
+    const market = serverIsBlackMarketActor(actor) ? serverBlackMarketTradeMarket(p) : serverNpcTradeMarket(actor);
+    if (typeof ack === 'function') ack({ ok: true, enemy, market, readOnly: true });
   });
 
   socket.on('npcTradeExchange', (data = {}, ack) => {
@@ -31238,7 +31462,7 @@ io.on('connection', (socket) => {
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');
     if (!serverInteractionHasLineOfSight(room, p, actor)) return fail('NPC находится за препятствием.');
     const result = performServerNpcTradeExchange(room, actor, data, p);
-    if (!result?.ok) return fail(result?.error || 'Сервер отклонил обмен.', { market: serverNpcTradeMarket(actor), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+    if (!result?.ok) return fail(result?.error || 'Сервер отклонил обмен.', { market: serverIsBlackMarketActor(actor) ? serverBlackMarketTradeMarket(p) : serverNpcTradeMarket(actor), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
     const playerResult = { ...result, enemy: publicEnemy(actor, p) };
     if (typeof ack === 'function') ack(playerResult);
     emitEnemyTradeUpdated(room, actor);
@@ -31391,7 +31615,9 @@ io.on('connection', (socket) => {
       enemy.looted = true;
       enemy.diedAt = Date.now() - 1000;
     }
+    const blackMarketHeld = enemy.blackMarketLoot ? serverOwnedItemQty(p, enemy.blackMarketLoot.itemId) : 0;
     taken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
+    serverApplyBlackMarketLootCondition(p, enemy, taken, blackMarketHeld);
     refreshRoomWorldState(room);
     const publicLootEnemy = publicEnemy(enemy);
     const now = Date.now();
@@ -32165,6 +32391,15 @@ setInterval(() => {
     serverTickAuctions(Date.now());
   } catch (error) {
     console.error('Auction tick failed:', error);
+  }
+}, 60000);
+
+// Чёрный рынок: цены полос возвращаются к норме, дешёвый склад тает.
+setInterval(() => {
+  try {
+    serverTickBlackMarket(Date.now());
+  } catch (error) {
+    console.error('Black market tick failed:', error);
   }
 }, 60000);
 

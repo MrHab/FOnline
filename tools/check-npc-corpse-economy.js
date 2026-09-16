@@ -18,6 +18,12 @@ const {
   rollQuantity,
   npcRemnantRows
 } = require('../src/server/world-economy');
+const {
+  normalizeBlackMarketState,
+  fundBlackMarket,
+  takeBlackMarketLoot,
+  blackMarketFatigueFactor
+} = require('../src/server/black-market');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -53,13 +59,22 @@ assert.equal(rollQuantity(0, () => 0), 0);
   assert.deepEqual(plain(rows), [{ id: 'weaponParts', qty: 1 }, { id: 'scrap', qty: 3 }]);
 }
 
-function sandbox(worldEconomy, mode) {
+const PRICES = { knife: 8, pistol: 40, leather: 30, boots: 12, rifle: 80 };
+
+function sandbox(worldEconomy, mode, options = {}) {
+  const market = normalizeBlackMarketState({ treasury: 0, stock: options.stock || {} }, worldEconomy.blackMarket, 0);
   const context = vm.createContext({
-    Map, Set, Number, String, JSON, Object, Array, Math, console,
+    Map, Set, Number, String, JSON, Object, Array, Math, console, Date,
     WORLD_ECONOMY: worldEconomy,
     zoneLootMultiplier,
     rollQuantity,
     npcRemnantRows,
+    fundBlackMarket,
+    takeBlackMarketLoot,
+    blackMarketFatigueFactor,
+    serverBlackMarketStore: () => market,
+    serverBlackMarketItemPrice: id => PRICES[id] || 0,
+    serverMarkBlackMarketDirty: () => {},
     serverBaseItemId: id => String(id || ''),
     SERVER_WEAPONS: {
       pistol: { id: 'pistol', ammoType: 'ammo9' },
@@ -83,8 +98,9 @@ function sandbox(worldEconomy, mode) {
   for (const name of ['serverNpcGearKind', 'serverApplyNpcCorpseEconomy', 'serverPrepareNpcCorpseLoot']) {
     vm.runInContext(functionSource(name), context);
   }
-  const room = { loc: { pvpMode: mode }, rng: () => 0.99 };
-  return { context, room };
+  const roll = options.roll ?? 0.99;
+  const room = { loc: { pvpMode: mode }, rng: () => roll };
+  return { context, room, market };
 }
 
 function raider() {
@@ -106,8 +122,9 @@ const byId = rows => Object.fromEntries(plain(rows).map(row => [row.id, row.qty]
   const enemy = raider();
   const loot = context.serverPrepareNpcCorpseLoot(enemy, room);
   // Пистолет: половина детали не выпала, лом 1; куртка и ботинки: по 1 лому
-  // из 1,5; марки 20 × 1,33 = 26,6 → 26 при неудачном броске дробной части.
-  assert.deepEqual(byId(loot), { medkit: 2, ammo9: 6, silver: 26, scrap: 3 },
+  // из 1,5; марки 20 × 1,33 = 26,6 → 26 при неудачном броске, из них 5 уходят
+  // в казну Чёрного рынка; бросок добычи рынка не удался.
+  assert.deepEqual(byId(loot), { medkit: 2, ammo9: 6, silver: 21, scrap: 3 },
     'gear becomes remnants and marks grow with the zone: ' + JSON.stringify(plain(loot)));
   assert.deepEqual(byId(enemy.inventory), byId(loot), 'the corpse inventory and loot agree');
   const again = context.serverPrepareNpcCorpseLoot(enemy, room);
@@ -125,10 +142,65 @@ const byId = rows => Object.fromEntries(plain(rows).map(row => [row.id, row.qty]
 
 // --- прежнее правило под флагом: снаряжение падает, марки всё равно по зоне ------
 {
-  const legacy = normalizeWorldEconomy({ ...economy, worldModel: { ...economy.worldModel, npcGearDrops: true } });
+  const legacy = normalizeWorldEconomy({ ...economy, worldModel: { ...economy.worldModel, npcGearDrops: true, blackMarket: false } });
   const { context, room } = sandbox(legacy, 'pvpBlack');
   const loot = context.serverPrepareNpcCorpseLoot(raider(), room);
   assert.deepEqual(byId(loot), { pistol: 1, leather: 1, boots: 1, medkit: 2, ammo9: 6, silver: 52 });
+}
+
+// --- Чёрный рынок: доля марок в казну и снаряжение со склада ----------------------
+{
+  const { context, room, market } = sandbox(economy, 'pvp', {
+    roll: 0.1,
+    stock: { knife: [{ c: 60, t: 1 }], rifle: [{ c: 100, t: 2 }] }
+  });
+  const enemy = raider();
+  const loot = context.serverPrepareNpcCorpseLoot(enemy, room);
+  // Удачный бросок: пистолет даёт деталь и лом, куртка и ботинки по 2 лома;
+  // марки 27 → 5 в казну; бюджет 15 × 1,33 ≈ 20 — со склада выпадает нож.
+  assert.deepEqual(byId(loot), { medkit: 2, ammo9: 6, silver: 22, knife: 1, weaponParts: 1, scrap: 5 },
+    'the corpse drops a player-made knife from the market stock: ' + JSON.stringify(plain(loot)));
+  assert.equal(market.treasury, 5, 'a fifth of the marks funds the market');
+  assert.equal(market.stock.knife, undefined, 'the dropped knife leaves the market stock');
+  assert.equal(market.stock.rifle.length, 1, 'a weak NPC does not take an expensive rifle');
+  assert.deepEqual(plain(enemy.blackMarketLoot), { itemId: 'knife', condition: 60 });
+}
+{
+  const { context, room, market } = sandbox(economy, 'pvp', { roll: 0.1 });
+  context.serverPrepareNpcCorpseLoot(raider(), room);
+  assert(market.bands.cheap.multiplier > 1, 'an empty market raises the price of the requested band');
+}
+
+// --- состояние предмета рынка доходит до игрока ------------------------------------
+{
+  const restored = [];
+  const conditions = {};
+  const context = vm.createContext({
+    Number, Array,
+    SERVER_WEAPONS: { pistol: { ammoType: 'ammo9' }, knife: { ammoType: null } },
+    serverRestoreWeaponRuntimeRecords: (player, records) => {
+      restored.push(...records);
+      return records;
+    },
+    serverSetPlayerItemCondition: (player, id, value) => {
+      conditions[id] = value;
+      return value;
+    }
+  });
+  vm.runInContext(functionSource('serverApplyBlackMarketLootCondition'), context);
+  const apply = context.serverApplyBlackMarketLootCondition;
+  const player = {};
+  const pistolCorpse = { blackMarketLoot: { itemId: 'pistol', condition: 42 } };
+  assert.equal(apply(player, pistolCorpse, [{ id: 'medkit', qty: 1 }], 0), false, 'other loot leaves the record waiting');
+  assert(pistolCorpse.blackMarketLoot, 'the record waits for the market item');
+  assert.equal(apply(player, pistolCorpse, [{ id: 'pistol', qty: 1 }], 3), true);
+  assert.deepEqual(plain(restored), [{ baseId: 'pistol', loaded: 0, condition: 42 }], 'a firearm keeps its sold condition');
+  assert.equal(pistolCorpse.blackMarketLoot, null, 'the record is used once');
+  assert.equal(apply(player, { blackMarketLoot: { itemId: 'knife', condition: 55 } }, [{ id: 'knife', qty: 1 }], 1), false,
+    'a shared condition is not overwritten when the player already owns the item');
+  assert.equal(conditions.knife, undefined);
+  assert.equal(apply(player, { blackMarketLoot: { itemId: 'knife', condition: 55 } }, [{ id: 'knife', qty: 1 }], 0), true);
+  assert.equal(conditions.knife, 55, 'a first knife arrives with its sold condition');
 }
 
 // --- серверная привязка ----------------------------------------------------------
@@ -136,8 +208,9 @@ for (const token of [
   'serverPrepareNpcCorpseLoot(enemy, room);',
   'serverPrepareNpcCorpseLoot(foe, room);',
   'serverPrepareNpcCorpseLoot(actor, room);',
+  'serverApplyBlackMarketLootCondition(p, enemy, taken, blackMarketHeld);',
   'qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room))), rng));'
 ]) assert(source.includes(token), `server.js must keep: ${token}`);
 assert(!/serverPrepareNpcCorpseLoot\((enemy|foe|actor)\);/.test(source), 'every corpse knows its room');
 
-console.log('NPC corpse economy OK: NPC equipment turns into parts and scrap, marks and resource nodes scale with the zone, and a corpse is converted once.');
+console.log('NPC corpse economy OK: NPC equipment turns into parts and scrap, marks and resource nodes scale with the zone, a fifth of the marks funds the black market, corpses drop player-made gear from its stock in its sold condition, and a corpse is converted once.');

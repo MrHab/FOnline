@@ -170,6 +170,43 @@ namespace Kromka.EditorTools
             if (scene.isDirty) EditorSceneManager.SaveScene(scene);
         }
 
+        /// <summary>
+        /// Адресный экспорт: переписывает в data только строки перечисленных
+        /// маркеров; остальные объекты, точки и заголовок определения не трогает.
+        /// Файл пишется, только если строка изменилась. Возвращает число
+        /// найденных маркеров.
+        /// </summary>
+        public static int ExportPlacedObjects(Scene scene, ICollection<string> objectIds)
+        {
+            KromkaLocationAuthoring authoring = FindComponent<KromkaLocationAuthoring>(scene);
+            if (authoring == null)
+                throw new InvalidOperationException("Некорректная Unity-локация: нет KromkaLocationAuthoring");
+            string locationPath = ProjectPath("data/locations/"
+                + authoring.StableLocationId + ".json");
+            JObject definition = ReadJson(locationPath);
+            JArray objects = definition["objects"] as JArray ?? new JArray();
+            int found = 0;
+            bool changed = false;
+            foreach (KromkaPlacedObjectAuthoring marker in authoring
+                         .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true)
+                         .Where(marker => marker != null && objectIds.Contains(marker.StableObjectId)))
+            {
+                JObject previous = objects.OfType<JObject>()
+                    .FirstOrDefault(row => Text(row, "id") == marker.StableObjectId);
+                JObject row = ExportObject(marker, previous);
+                found++;
+                // Сравнение текстом: DeepEquals различает 8 и 8.0 после чтения JSON.
+                if (previous != null && previous.ToString(Formatting.None) == row.ToString(Formatting.None)) continue;
+                if (previous != null) previous.Replace(row);
+                else objects.Add(row);
+                changed = true;
+            }
+            if (!changed) return found;
+            definition["objects"] = objects;
+            WriteJson(locationPath, definition);
+            return found;
+        }
+
         public static void ExportGlobalScene(Scene scene)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)

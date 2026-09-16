@@ -2480,7 +2480,7 @@ function createWastelandSimulation(options = {}) {
     ? clone(options.worldSimulationConfig)
     : readJson(options.worldSimulationFile || path.join(process.cwd(), 'data', 'kromka', 'world-simulation.json'), {});
   const anomalyLocations = Array.isArray(options.anomalyLocations) ? clone(options.anomalyLocations) : [];
-  // Экономика v3 (KRM-21) выключает части прежней живой пустоши. Без явной
+  // Экономика v3 (KRM-22) выключает части прежней живой пустоши. Без явной
   // настройки симуляция работает целиком, как раньше: так её проверяют тесты.
   const worldModel = Object.freeze({
     settlementLife: true,

@@ -13,7 +13,8 @@
     "npcTraders": true,
     "npcStations": true,
     "npcGearDrops": false,
-    "visibleWorldParties": true
+    "visibleWorldParties": true,
+    "blackMarket": true
   },
   "zones": {
     "brokenBelowCondition": 10,
@@ -21,6 +22,35 @@
     "blackDrop": { "trashChance": 0.33, "trashItemId": "scrap", "trashValueShare": 0.25, "droppedWearMin": 20, "droppedWearMax": 40 },
     "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 },
     "gatherYield": { "peaceful": 1, "pve": 1, "pvp": 1.25, "pvpFullDrop": 1.6, "pvpBlack": 2, "pvpEvent": 1 }
+  },
+  "blackMarket": {
+    "service": "blackMarket",
+    "hubLocationId": "coreMarket",
+    "categories": ["weapons", "armor"],
+    "treasuryShare": 0.2,
+    "startingTreasury": 3000,
+    "priceShare": 0.45,
+    "npcResaleCapShare": 0.38,
+    "minCondition": 10,
+    "bands": [
+      { "id": "cheap", "maxValue": 20 },
+      { "id": "common", "maxValue": 60 },
+      { "id": "good", "maxValue": 150 },
+      { "id": "rare", "maxValue": 400 },
+      { "id": "elite", "maxValue": 1000000 }
+    ],
+    "demandStep": 0.04,
+    "supplyStep": 0.01,
+    "minMultiplier": 0.6,
+    "maxMultiplier": 2.5,
+    "relaxPerHour": 0.02,
+    "maxStockPerItem": 60,
+    "dropChance": 0.3,
+    "budgetPerXp": 2,
+    "minBudget": 15,
+    "corruptSharePerDay": 0.1,
+    "corruptBands": ["cheap"],
+    "fatigue": { "windowMinutes": 20, "freeKills": 30, "perKill": 0.02, "minFactor": 0.4 }
   },
   "npcRemnants": {
     "share": 0.5,

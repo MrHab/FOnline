@@ -29,7 +29,7 @@ namespace Kromka
                 "coreZone", "coreBaseUprava", "coreBaseArtels", "coreBaseContour",
                 "coreBaseLeague", "coreLabSprout", "coreLabCircuit", "coreLabAlloy",
                 "coreLabSpectrum", "coreLabCenterService", "coreLabCenterResearch",
-                "coreLabCenterReactor"
+                "coreLabCenterReactor", "coreMarket"
             },
             StringComparer.Ordinal);
 

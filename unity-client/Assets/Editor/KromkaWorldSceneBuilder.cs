@@ -404,7 +404,29 @@ namespace Kromka.EditorTools
             }
         }
 
-        private static void BuildImportedGameplayObjects(Transform parent, string locationId)
+        /// <summary>
+        /// Дописывает в уже собранную сцену маркеры перечисленных строк
+        /// data/locations/&lt;id&gt;.json, не трогая остальное содержимое.
+        /// Возвращает число добавленных маркеров.
+        /// </summary>
+        internal static int ImportGameplayObjects(Scene scene, string locationId, ICollection<string> objectIds)
+        {
+            KromkaLocationAuthoring authoring = scene.GetRootGameObjects()
+                .Select(root => root.GetComponentInChildren<KromkaLocationAuthoring>(true))
+                .FirstOrDefault(component => component != null);
+            Transform parent = authoring != null
+                ? authoring.transform.Find("StaticContent_EDITABLE/GameplayObjects_EDITABLE")
+                : null;
+            if (parent == null)
+                throw new InvalidOperationException("В сцене " + locationId + " нет StaticContent_EDITABLE/GameplayObjects_EDITABLE.");
+            int before = parent.childCount;
+            BuildImportedGameplayObjects(parent, locationId, objectIds);
+            if (parent.childCount != before) EditorSceneManager.MarkSceneDirty(scene);
+            return parent.childCount - before;
+        }
+
+        private static void BuildImportedGameplayObjects(Transform parent, string locationId,
+            ICollection<string> onlyIds = null)
         {
             JObject definition = ReadProjectJson("data/locations/" + locationId + ".json");
             if (!(definition?["objects"] is JArray objects)) return;
@@ -417,6 +439,7 @@ namespace Kromka.EditorTools
             {
                 string id = Text(row, "id");
                 if (string.IsNullOrWhiteSpace(id) || IsLiveObject(row)
+                    || (onlyIds != null && !onlyIds.Contains(id))
                     || Text(row, "role") == "anomaly" || existingIds.Contains(id)
                     || IsRetiredLegacyVisual(row)
                     || !KeepLegacyGameplayObject(row))

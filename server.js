@@ -28,6 +28,10 @@ const {
 const {
   loadWorldEconomy,
   zoneDeathWear,
+  zoneLootMultiplier,
+  zoneGatherYield,
+  rollQuantity,
+  npcRemnantRows,
   conditionIsBroken
 } = require('./src/server/world-economy');
 const {
@@ -9991,7 +9995,48 @@ function serverNpcSetInventoryCaps(enemy = {}, caps = 0) {
   return serverNpcInventoryCaps(enemy);
 }
 
-function serverPrepareNpcCorpseLoot(enemy = {}) {
+/**
+ * Вид снаряжения NPC для останков (экономика v3): огнестрел, ближний бой или
+ * носимая защита. Пустая строка — не снаряжение, такой предмет падает как есть.
+ */
+function serverNpcGearKind(itemId = '') {
+  const id = serverBaseItemId(itemId);
+  if (!id || id === 'fists') return '';
+  const weapon = SERVER_WEAPONS[id];
+  if (weapon) return weapon.ammoType ? 'firearm' : 'melee';
+  const slot = String(KROMKA_ITEM_INDEXES.byId?.[id]?.slot || '');
+  if (['armor', 'helmet', 'boots', 'backpack', 'detector', 'artifactBelt'].includes(slot)) return 'armor';
+  return '';
+}
+
+/**
+ * Труп NPC по правилам экономики v3, один раз на смерть: снаряжение не
+ * падает, а превращается в детали и лом; марки умножаются на богатство зоны.
+ */
+function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.random) {
+  const mode = room ? locationPvpMode(roomLocation(room)) : 'peaceful';
+  const kept = [];
+  const gear = [];
+  for (const row of rows) {
+    const kind = WORLD_ECONOMY.worldModel.npcGearDrops ? '' : serverNpcGearKind(row.id);
+    if (kind) gear.push({ id: row.id, qty: row.qty, kind });
+    else kept.push({ ...row });
+  }
+  const multiplier = zoneLootMultiplier(WORLD_ECONOMY, mode);
+  for (const row of kept) {
+    if (row.id === 'silver' && multiplier !== 1) row.qty = rollQuantity(Number(row.qty || 0) * multiplier, random);
+  }
+  const merged = new Map(kept.filter(row => Number(row.qty || 0) > 0).map(row => [row.id, row]));
+  for (const remnant of npcRemnantRows(WORLD_ECONOMY, gear, random)) {
+    if (!SERVER_ITEM_IDS.has(remnant.id)) continue;
+    const existing = merged.get(remnant.id);
+    if (existing) existing.qty = Number(existing.qty || 0) + remnant.qty;
+    else merged.set(remnant.id, { id: remnant.id, qty: remnant.qty });
+  }
+  return [...merged.values()];
+}
+
+function serverPrepareNpcCorpseLoot(enemy = {}, room = null) {
   if (!enemy) return [];
   if (serverNpcIsNaturalCreature(enemy, enemy)) {
     normalizeServerNaturalCreatureState(enemy);
@@ -10003,6 +10048,15 @@ function serverPrepareNpcCorpseLoot(enemy = {}) {
   const inventory = sanitizeServerInventorySnapshot(enemy.inventory || [], { includeEquipped: true });
   if (inventory.length) enemy.loot = inventory.map(row => ({ ...row }));
   else enemy.loot = sanitizeServerInventorySnapshot(enemy.loot || [], { includeEquipped: true });
+  if (enemy.dead && !enemy.corpseEconomyApplied) {
+    enemy.corpseEconomyApplied = true;
+    const corpse = sanitizeServerInventorySnapshot(
+      serverApplyNpcCorpseEconomy(enemy.loot, room, room?.rng || Math.random),
+      { includeEquipped: true }
+    );
+    enemy.loot = corpse.map(row => ({ ...row }));
+    enemy.inventory = corpse.map(row => ({ ...row }));
+  }
   return enemy.loot;
 }
 
@@ -11789,7 +11843,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
   applyEnemyProgressionLoot(room, enemy, p);
-  serverPrepareNpcCorpseLoot(enemy);
+  serverPrepareNpcCorpseLoot(enemy, room);
   serverGrantXp(p, enemy.xp || 0);
   enemy.attackTimer = 0;
   io.to(room.id).emit('enemyKilled', {
@@ -14260,7 +14314,7 @@ function applyEnemyProgressionLoot(room, enemy, p = {}) {
   enemy.progressionLootApplied = true;
   if (!Array.isArray(enemy.inventory)) enemy.inventory = sanitizeServerInventorySnapshot(enemy.loot || [], { includeEquipped: true });
   const added = addServerProgressionLootBonus(enemy.inventory, p, room?.rng || Math.random, 'enemy');
-  serverPrepareNpcCorpseLoot(enemy);
+  serverPrepareNpcCorpseLoot(enemy, room);
   return added;
 }
 
@@ -16446,7 +16500,7 @@ function spawnAuthoredLocationActors(room, loc) {
     actor.traderMarket = trade.market || null;
     if (serverNpcIsNaturalCreature(actor, actor)) normalizeServerNaturalCreatureState(actor);
     else materializeAuthoredNpcRoutine(room, loc, actor, Date.now());
-    serverPrepareNpcCorpseLoot(actor);
+    serverPrepareNpcCorpseLoot(actor, room);
     count++;
   });
   return count;
@@ -23293,7 +23347,7 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       const diedAt = Date.now() - Math.max(1000,
         Math.round(Math.max(0, Number(zone.worldHour || 0) - Number(actor.diedHour || 0)) * 60000));
       finalizeNpcDeathState(enemy, diedAt);
-      serverPrepareNpcCorpseLoot(enemy);
+      serverPrepareNpcCorpseLoot(enemy, room);
     }
   });
   if (changed) {
@@ -23996,7 +24050,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     if (foe.hp <= 0 && !foe.dead) {
       finalizeNpcDeathState(foe, now);
       foe.killerId = actor.id;
-      serverPrepareNpcCorpseLoot(foe);
+      serverPrepareNpcCorpseLoot(foe, room);
       clearEnemyTacticalGoal(foe);
       invalidateEnemyPath(foe);
       recordServerWorldActivityEnemyKill(room, foe, null, now);
@@ -31116,6 +31170,8 @@ io.on('connection', (socket) => {
       0.78
     );
     let qty = 1 + (condition > 40 && rng() < bonusChance ? 1 : 0);
+    // Экономика v3: опасная зона щедрее — жёлтая +25%, красная +60%, чёрная ×2.
+    qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room))), rng));
     const carryCheck = serverLimitItemsByCarry(p, {}, [{ id: resourceDef.itemId, qty }], { apply: false });
     qty = Math.max(0, Number(carryCheck.items?.[0]?.qty || 0));
     if (qty <= 0) return fail('Нет места для ресурса.', { carry: carryCheck.carry });

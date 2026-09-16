@@ -12,14 +12,21 @@
     "worldCaravans": false,
     "npcTraders": true,
     "npcStations": true,
-    "npcGearDrops": true,
+    "npcGearDrops": false,
     "visibleWorldParties": true
   },
   "zones": {
     "brokenBelowCondition": 10,
     "deathWear": { "pve": 5, "pvp": 5, "pvpFullDrop": 20 },
     "blackDrop": { "trashChance": 0.33, "trashItemId": "scrap", "trashValueShare": 0.25, "droppedWearMin": 20, "droppedWearMax": 40 },
-    "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 }
+    "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 },
+    "gatherYield": { "peaceful": 1, "pve": 1, "pvp": 1.25, "pvpFullDrop": 1.6, "pvpBlack": 2, "pvpEvent": 1 }
+  },
+  "npcRemnants": {
+    "share": 0.5,
+    "firearm": { "weaponParts": 1, "scrap": 2 },
+    "melee": { "scrap": 1 },
+    "armor": { "scrap": 3 }
   },
   "strategicResource": {
     "itemId": "blue",

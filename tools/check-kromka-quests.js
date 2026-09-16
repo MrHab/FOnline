@@ -236,4 +236,64 @@ assert(result.reward && !chooseQuestOutcome(result.state, 'uprava_ration_unit', 
 const repeat1 = repeatableReward(result.state, 'escort_supplies', catalog);
 const repeat2 = repeatableReward(repeat1.state, 'escort_supplies', catalog);
 assert(repeat2.reward.silver < repeat1.reward.silver && !repeat1.reward.unlock && !repeat1.reward.items, 'Repeated contracts only pay diminishing ordinary rewards.');
-console.log('Kromka campaign check passed: 6 campaign stages, 18 faction quests, 10 personal quests, hidden secrets and idempotent rewards.');
+// --- опыт за задания --------------------------------------------------------
+// Сюжет платил только марками: serverApplyKromkaQuestResult начислял silver,
+// предметы и репутацию и ни разу не трогал опыт. Из-за этого 34 авторских
+// задания не открывали ни одного перка, хотя каталог перков сам гейтит их
+// уровнями 3/6/9/12, а весь опыт приходилось добирать убийствами.
+const xpOf = quest => {
+  const direct = Number(quest?.reward?.xp || 0);
+  if (direct > 0) return direct;
+  const outcomes = Array.isArray(quest?.outcomes) ? quest.outcomes : [];
+  if (!outcomes.length) return 0;
+  return outcomes.every(row => Number(row?.reward?.xp || 0) > 0)
+    ? Math.min(...outcomes.map(row => Number(row.reward.xp)))
+    : 0;
+};
+
+const authoredQuests = [...catalog.campaign, ...catalog.factionQuests, ...catalog.mechanicQuests, ...catalog.personalQuests];
+for (const quest of authoredQuests) {
+  assert(xpOf(quest) > 0, `${quest.id}: задание не даёт опыта — сюжет снова не растит персонажа`);
+}
+for (const template of catalog.repeatableTemplates || []) {
+  assert(Number(template.baseXp || 0) > 0, `${template.id}: повторяемый контракт не даёт опыта`);
+}
+
+const questXpTotal = authoredQuests.reduce((sum, quest) => sum + xpOf(quest), 0);
+// Кривая уровня: xpNeeded стартует со 100 и умножается на 1.45 за уровень.
+let needed = 100;
+let cumulative = 0;
+let reachable = 1;
+while (cumulative + needed <= questXpTotal && reachable < 200) {
+  cumulative += needed;
+  needed = Math.floor(needed * 1.45);
+  reachable += 1;
+}
+assert(reachable >= 9,
+  `весь сюжет даёт ${questXpTotal} опыта — это только ${reachable} уровень, перки уровней 9 и 12 остаются недостижимыми через сюжет`);
+
+// Опыт обязан доехать до персонажа, а не остаться числом в каталоге.
+const serverSource = fs.readFileSync(path.resolve(__dirname, '../server.js'), 'utf8');
+assert(serverSource.includes('const questXp = Math.max(0, Math.floor(Number(reward.xp || 0)));')
+  && serverSource.includes('serverGrantXp(player, questXp)'),
+  'server.js не начисляет опыт за задание');
+
+assert(Number(repeat1.reward.xp || 0) > 0 && Number(repeat2.reward.xp || 0) < Number(repeat1.reward.xp),
+  'Повторяемый контракт обязан платить опытом по затухающей кривой');
+
+// Два задания закрываются в обход serverApplyKromkaQuestResult: пролог — через
+// онбординг (это его единственный путь), «Право на воздух» — ещё и через меню
+// убежища. Каждый такой обход обязан выдавать награду сам, иначе опыт лежит в
+// каталоге мёртвым грузом.
+for (const [questId, marker] of [
+  ['campaign_prologue_twelfth', "serverKromkaQuestById('campaign_prologue_twelfth')?.reward"],
+  ['personal_aktov_air_rights', "serverKromkaQuestById('personal_aktov_air_rights')?.reward?.xp"]
+]) {
+  const closes = serverSource.includes(`completed.${questId} = {`);
+  if (!closes) continue;
+  assert(serverSource.includes(marker),
+    `${questId} закрывается в обход serverApplyKromkaQuestResult и не выдаёт свою награду`);
+}
+
+console.log('Kromka campaign check passed: 6 campaign stages, 18 faction quests, 10 personal quests, hidden secrets and idempotent rewards; '
+  + `${authoredQuests.length} authored quests grant ${questXpTotal} xp, carrying a character to level ${reachable}.`);

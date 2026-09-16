@@ -49,12 +49,39 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "chemspring_barrel_crate",
+      "name": "Ящик с реактивами",
+      "tier": "medical",
+      "tx": 21,
+      "tz": 15,
+      "x": 4,
+      "y": 0.1,
+      "z": -8,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "chemspring_drain_box",
+      "name": "Короб у сливной трубы",
+      "tier": "wasteland",
+      "tx": 28,
+      "tz": 21,
+      "x": 18,
+      "y": 0.1,
+      "z": 4,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "chem_barrels_01",
       "model": "barrelCluster",
-      "name": "Бочки с химией",      "position": {
+      "name": "Бочки с химией",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": -4.0
@@ -88,7 +115,8 @@
     {
       "id": "chem_scrap_01",
       "model": "scrapHeap",
-      "name": "Сломанный фильтр",      "position": {
+      "name": "Сломанный фильтр",
+      "position": {
         "x": 5.0,
         "y": 0.0,
         "z": 10.0
@@ -125,7 +153,8 @@
     {
       "id": "chem_tank_01",
       "model": "waterTank",
-      "name": "Химический бак",      "position": {
+      "name": "Химический бак",
+      "position": {
         "x": -7.0,
         "y": 0.0,
         "z": -7.0
@@ -1246,7 +1275,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 15.0,
         "y": 0.0,
         "z": -14.0

@@ -73,4 +73,57 @@ assert(server.includes('injuryProfile: attackProfile.injuryProfile')
   && server.includes('attackId: String(attackProfile.attackId ||'),
   'Canonical attack and injury profiles are not used by authoritative combat');
 
-console.log('Kromka mutants OK: eight explicit species, encounters, combat profiles and migration aliases');
+// --- авторские поля обязаны доходить до рантайма ------------------------------
+// Каталог описывал вдвое больше, чем сервер исполнял: он всегда брал attacks[0],
+// игнорировал telegraphMs и не читал bleedChance. Эти проверки стоят здесь,
+// чтобы авторские поля больше не превращались в мёртвые данные.
+const enemyAi = read('src/server/enemy-ai.js');
+
+assert(server.includes('function serverCreatureAttackFor(')
+  && !server.includes('Array.isArray(creature?.attacks) ? creature.attacks[0] : null'),
+  'Атака существа обязана выбираться среди авторских, а не быть всегда attacks[0]');
+assert(server.includes('function serverCommitCreatureAttack(')
+  && server.includes('serverEnemyAttackProfile(enemy, { commit: true, now })'),
+  'Выбранная атака обязана уходить на откат по своему cooldownMs');
+
+const maxTelegraph = Math.max(...catalog.types.flatMap(row => (row.attacks || []).map(a => Number(a.telegraphMs || 0))));
+const ceiling = Number((enemyAi.match(/options\.windowMs \?\? windowMs, 240, (\d+)\)/) || [])[1] || 0);
+assert(ceiling >= maxTelegraph,
+  'Потолок окна замаха ' + ceiling + ' мс срезает авторские ' + maxTelegraph + ' мс');
+assert(server.includes('windowMs: Number(creatureAttack.telegraphMs)'),
+  'Авторский telegraphMs обязан доезжать до клиентского телеграфа');
+
+assert(server.includes('Number(attack.telegraphMs || meanTelegraph)') && server.includes('fallbackAtk * weight'),
+  'Урон существа обязан зависеть от выбранной атаки, а не быть плоским enemy.atk');
+
+assert(server.includes('Number(profile.bleedChance || 0)'),
+  'bleedChance каталога не читается сервером');
+
+// Каждый авторский эффект атаки обязан иметь исполнителя. lure и reposition —
+// поведение ИИ, а не состояние жертвы, поэтому их здесь не ждём.
+const AI_ONLY_EFFECTS = new Set(['lure', 'reposition']);
+const effects = [...new Set(catalog.types.flatMap(row => (row.attacks || []).map(a => String(a.effect || '')).filter(Boolean)))];
+for (const effect of effects) {
+  if (AI_ONLY_EFFECTS.has(effect)) continue;
+  assert(server.includes("case '" + effect + "':"),
+    'Эффект атаки «' + effect + '» объявлен в каталоге, но сервер его не исполняет');
+}
+
+// Добыча обязана различать виды: один «Трофей» на всех делал девять тварей
+// неразличимыми, а у Обожжённого trophyQty: 0 обнулял труп целиком.
+const lootTables = readJson('data/loot-tables.json').enemies || {};
+for (const row of catalog.types) {
+  const table = lootTables[row.id];
+  assert(Array.isArray(table) && table.length > 0, row.id + ': нет таблицы добычи в data/loot-tables.json');
+  assert(table.some(entry => (entry.id || (entry.oneOf || [])[0]) !== 'trophy'),
+    row.id + ': таблица добычи состоит из одного трофея — вид неразличим по луту');
+}
+assert(server.includes('SERVER_ENEMY_LOOT_TABLES[creatureId]'),
+  'Таблица добычи вида не разыгрывается при смерти существа');
+assert(!server.includes('if (trophyQty <= 0) return [];'),
+  'Ранний выход по trophyQty обнулял добычу вида с нулевым трофеем');
+
+console.log('Kromka mutants OK: eight explicit species, encounters, combat profiles and migration aliases; '
+  + 'authored attacks rotate, telegraphs up to ' + maxTelegraph + ' ms survive, '
+  + (effects.length - [...effects].filter(e => AI_ONLY_EFFECTS.has(e)).length) + ' attack effects are executed '
+  + 'and every species has its own loot table');

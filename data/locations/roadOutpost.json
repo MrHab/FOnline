@@ -64,12 +64,39 @@
       ]
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "post17_cargo_crate",
+      "name": "Ящик заставы",
+      "tier": "wasteland",
+      "tx": 20,
+      "tz": 23,
+      "x": 2,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    },
+    {
+      "id": "post17_ammo_box",
+      "name": "Патронный короб караула",
+      "tier": "ammo",
+      "tx": 18,
+      "tz": 24,
+      "x": -2,
+      "y": 0.1,
+      "z": 10,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "outpost_cargo_01",
       "model": "cargoStack",
-      "name": "Груз аванпоста",      "position": {
+      "name": "Груз аванпоста",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": 7.0
@@ -103,7 +130,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -17.0,
         "y": 0.0,
         "z": 11.0
@@ -1786,7 +1814,8 @@
     {
       "id": "roadOutpost_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -19.0,
         "y": 0.0,
         "z": 9.0
@@ -1822,7 +1851,8 @@
     {
       "id": "roadOutpost_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -17.0,
         "y": 0.0,
         "z": 9.0
@@ -1858,7 +1888,8 @@
     {
       "id": "roadOutpost_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -15.0,
         "y": 0.0,
         "z": 9.0
@@ -1894,7 +1925,8 @@
     {
       "id": "roadOutpost_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -13.0,
         "y": 0.0,
         "z": 9.0
@@ -1930,7 +1962,8 @@
     {
       "id": "roadOutpost_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -19.0,
         "y": 0.0,
         "z": 11.0
@@ -1966,7 +1999,8 @@
     {
       "id": "road_outpost_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",      "position": {
+      "name": "Патронный станок",
+      "position": {
         "x": -4.0,
         "y": 0.0,
         "z": 17.0
@@ -2023,7 +2057,8 @@
     {
       "id": "road_outpost_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
+      "name": "Ремонтный верстак",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": 17.0

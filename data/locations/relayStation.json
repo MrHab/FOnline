@@ -155,7 +155,33 @@
       "armor"
     ]
   },
-  "containers": [],
+  "containers": [
+    {
+      "id": "contour3_order_locker",
+      "name": "Ларь ретрансляторной смены",
+      "tier": "settlement",
+      "tx": 18,
+      "tz": 23,
+      "x": -2,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    },
+    {
+      "id": "contour3_barrel_cache",
+      "name": "Запас у бочек",
+      "tier": "survival",
+      "tx": 6,
+      "tz": 15,
+      "x": -26,
+      "y": 0.1,
+      "z": -8,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "capital_station_relay_order_ammo_bench",

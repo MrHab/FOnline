@@ -39,11 +39,43 @@
     "z": -22.0,
     "rotationY": 0.0
   },
+  "containers": [
+    {
+      "id": "vector_archive_safe",
+      "name": "Сейф архива «Вектора»",
+      "tier": "rare",
+      "tx": 24,
+      "tz": 15,
+      "x": 12,
+      "y": 0.1,
+      "z": -6,
+      "rotationY": 0,
+      "locked": true,
+      "terminalLocked": true,
+      "terminalUnlocksLock": true,
+      "terminalName": "Терминал архива «Вектор»",
+      "lockDifficulty": "hard",
+      "terminalDifficulty": "medium"
+    },
+    {
+      "id": "vector_cargo_crate",
+      "name": "Ящик у завала",
+      "tier": "basic",
+      "tx": 26,
+      "tz": 13,
+      "x": 16,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "east_shell",
       "model": "concreteWall",
-      "name": "Восточная оболочка",      "position": {
+      "name": "Восточная оболочка",
+      "position": {
         "x": 14.0,
         "y": 0.0,
         "z": 5.0
@@ -77,7 +109,8 @@
     {
       "id": "entry_left",
       "model": "utilityPole",
-      "name": "Входной пилон",      "position": {
+      "name": "Входной пилон",
+      "position": {
         "x": -5.0,
         "y": 0.0,
         "z": -24.0
@@ -110,7 +143,8 @@
     {
       "id": "entry_right",
       "model": "utilityPole",
-      "name": "Входной пилон",      "position": {
+      "name": "Входной пилон",
+      "position": {
         "x": 5.0,
         "y": 0.0,
         "z": -24.0
@@ -143,7 +177,8 @@
     {
       "id": "inner_gate",
       "model": "cargoStack",
-      "name": "Герметичная секция",      "position": {
+      "name": "Герметичная секция",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": 22.0
@@ -177,7 +212,8 @@
     {
       "id": "landmark",
       "model": "relayAntenna",
-      "name": "Объект «Вектор»",      "position": {
+      "name": "Объект «Вектор»",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": 12.0
@@ -212,7 +248,8 @@
     {
       "id": "records",
       "model": "storageLeanTo",
-      "name": "Архивный терминал",      "position": {
+      "name": "Архивный терминал",
+      "position": {
         "x": 7.0,
         "y": 0.0,
         "z": -3.0
@@ -246,7 +283,8 @@
     {
       "id": "service",
       "model": "workshopBench",
-      "name": "Служебный пульт",      "position": {
+      "name": "Служебный пульт",
+      "position": {
         "x": -7.0,
         "y": 0.0,
         "z": -3.0
@@ -1646,7 +1684,8 @@
     {
       "id": "watch_a",
       "model": "watchPost",
-      "name": "Пост А",      "position": {
+      "name": "Пост А",
+      "position": {
         "x": -18.0,
         "y": 0.0,
         "z": -15.0
@@ -1679,7 +1718,8 @@
     {
       "id": "watch_b",
       "model": "watchPost",
-      "name": "Пост Б",      "position": {
+      "name": "Пост Б",
+      "position": {
         "x": 18.0,
         "y": 0.0,
         "z": -15.0
@@ -1712,7 +1752,8 @@
     {
       "id": "west_shell",
       "model": "concreteWall",
-      "name": "Западная оболочка",      "position": {
+      "name": "Западная оболочка",
+      "position": {
         "x": -14.0,
         "y": 0.0,
         "z": 5.0

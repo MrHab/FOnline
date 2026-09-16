@@ -49,7 +49,33 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "perimeter_ammo_box",
+      "name": "Ящик с боекомплектом",
+      "tier": "ammo",
+      "tx": 20,
+      "tz": 12,
+      "x": 2,
+      "y": 0.1,
+      "z": -14,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "perimeter_med_box",
+      "name": "Аптечный короб периметра",
+      "tier": "medical",
+      "tx": 17,
+      "tz": 24,
+      "x": -4,
+      "y": 0.1,
+      "z": 10,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "relayOutpost-checkpoint",
@@ -1702,7 +1728,8 @@
     {
       "id": "relayOutpost_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -20.0,
         "y": 0.0,
         "z": -12.0
@@ -1745,7 +1772,8 @@
     {
       "id": "relayOutpost_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -18.0,
         "y": 0.0,
         "z": -12.0
@@ -1788,7 +1816,8 @@
     {
       "id": "relayOutpost_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -16.0,
         "y": 0.0,
         "z": -12.0
@@ -1831,7 +1860,8 @@
     {
       "id": "relayOutpost_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -14.0,
         "y": 0.0,
         "z": -12.0
@@ -1874,7 +1904,8 @@
     {
       "id": "relayOutpost_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -20.0,
         "y": 0.0,
         "z": -10.0
@@ -1917,7 +1948,8 @@
     {
       "id": "relay_outpost_antenna",
       "model": "relayAntenna",
-      "name": "Малая антенна",      "position": {
+      "name": "Малая антенна",
+      "position": {
         "x": -12.0,
         "y": 0.0,
         "z": 2.0
@@ -1958,7 +1990,8 @@
     {
       "id": "relay_outpost_chem_station",
       "model": "craftStationChem",
-      "name": "Химический стол",      "position": {
+      "name": "Химический стол",
+      "position": {
         "x": 9.0,
         "y": 0.0,
         "z": 7.0
@@ -2015,7 +2048,8 @@
     {
       "id": "relay_outpost_energy_bench",
       "model": "craftStationEnergy",
-      "name": "Энергетический стенд",      "position": {
+      "name": "Энергетический стенд",
+      "position": {
         "x": 3.0,
         "y": 0.0,
         "z": 7.0
@@ -2072,7 +2106,8 @@
     {
       "id": "relay_outpost_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
+      "name": "Ремонтный верстак",
+      "position": {
         "x": 6.0,
         "y": 0.0,
         "z": 7.0
@@ -2129,7 +2164,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -17.0,
         "y": 0.0,
         "z": -10.0

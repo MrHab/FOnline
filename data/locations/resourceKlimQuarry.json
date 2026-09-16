@@ -49,12 +49,26 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "quarry_tool_crate",
+      "name": "Ящик карьерного инструмента",
+      "tier": "tools",
+      "tx": 8,
+      "tz": 10,
+      "x": -22,
+      "y": 0.1,
+      "z": -18,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "quarry_ore_01",
       "model": "oreOutcrop",
-      "name": "Рудная жила",      "position": {
+      "name": "Рудная жила",
+      "position": {
         "x": -10.0,
         "y": 0.0,
         "z": -8.0
@@ -91,7 +105,8 @@
     {
       "id": "quarry_ore_02",
       "model": "oreOutcrop",
-      "name": "Каменная жила",      "position": {
+      "name": "Каменная жила",
+      "position": {
         "x": 9.0,
         "y": 0.0,
         "z": -12.0
@@ -128,7 +143,8 @@
     {
       "id": "quarry_scrap_01",
       "model": "scrapHeap",
-      "name": "Ржавый лом",      "position": {
+      "name": "Ржавый лом",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": 9.0
@@ -1359,7 +1375,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 15.0,
         "y": 0.0,
         "z": 14.0

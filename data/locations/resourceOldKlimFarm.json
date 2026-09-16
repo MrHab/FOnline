@@ -49,12 +49,38 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "farm_water_crate",
+      "name": "Ларь у бака",
+      "tier": "survival",
+      "tx": 15,
+      "tz": 23,
+      "x": -8,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "farm_irrigation_box",
+      "name": "Короб поливальщиков",
+      "tier": "survival",
+      "tx": 29,
+      "tz": 24,
+      "x": 20,
+      "y": 0.1,
+      "z": 10,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "farm_patch_01",
       "model": "gardenPatch",
-      "name": "Сухой огород",      "position": {
+      "name": "Сухой огород",
+      "position": {
         "x": -6.0,
         "y": 0.0,
         "z": -7.0
@@ -91,7 +117,8 @@
     {
       "id": "farm_patch_02",
       "model": "gardenPatch",
-      "name": "Лекарственные травы",      "position": {
+      "name": "Лекарственные травы",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": -5.0
@@ -128,7 +155,8 @@
     {
       "id": "farm_pen_01",
       "model": "brahminPen",
-      "name": "Загон брамина",      "position": {
+      "name": "Загон брамина",
+      "position": {
         "x": 10.0,
         "y": 0.0,
         "z": 10.0
@@ -161,7 +189,8 @@
     {
       "id": "farm_water_01",
       "model": "waterTank",
-      "name": "Бак с водой",      "position": {
+      "name": "Бак с водой",
+      "position": {
         "x": -12.0,
         "y": 0.0,
         "z": 8.0
@@ -198,7 +227,8 @@
     {
       "id": "oldKlimFarm_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -20.0,
         "y": 0.0,
         "z": 16.0
@@ -234,7 +264,8 @@
     {
       "id": "oldKlimFarm_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -18.0,
         "y": 0.0,
         "z": 16.0
@@ -270,7 +301,8 @@
     {
       "id": "oldKlimFarm_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -20.0,
         "y": 0.0,
         "z": 18.0
@@ -306,7 +338,8 @@
     {
       "id": "oldKlimFarm_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -18.0,
         "y": 0.0,
         "z": 18.0
@@ -1812,7 +1845,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -15.0,
         "y": 0.0,
         "z": 14.0

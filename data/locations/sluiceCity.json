@@ -39,6 +39,33 @@
     "z": -22,
     "rotationY": 0
   },
+  "containers": [
+    {
+      "id": "stvor_ration_box",
+      "name": "Короб с пайком",
+      "tier": "survival",
+      "tx": 18,
+      "tz": 14,
+      "x": 0,
+      "y": 0.1,
+      "z": -8,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "stvor_yard_locker",
+      "name": "Ларь дворового старосты",
+      "tier": "settlement",
+      "tx": 21,
+      "tz": 21,
+      "x": 6,
+      "y": 0.1,
+      "z": 6,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "medium"
+    }
+  ],
   "objects": [
     {
       "id": "east_shell",

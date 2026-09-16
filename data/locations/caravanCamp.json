@@ -77,7 +77,32 @@
   },
   "transitions": [],
   "worldZones": [],
-  "containers": [],
+  "containers": [
+    {
+      "id": "crossroads_warehouse_crate",
+      "name": "Ящик грузового навеса",
+      "tier": "settlement",
+      "tx": 32,
+      "tz": 23,
+      "x": 26,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "crossroads_cargo_box",
+      "name": "Короб, забытый погонщиками",
+      "tier": "basic",
+      "tx": 27,
+      "tz": 19,
+      "x": 16,
+      "y": 0.1,
+      "z": 0,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "pvp": false,
   "fullDrop": false,
   "objects": [

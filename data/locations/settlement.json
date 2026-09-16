@@ -42,7 +42,33 @@
     "z": -31,
     "rotationY": 0
   },
-  "containers": [],
+  "containers": [
+    {
+      "id": "keys_artel_locker",
+      "name": "Ларь артельной смены",
+      "tier": "settlement",
+      "tx": 7,
+      "tz": 23,
+      "x": -24,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "keys_clinic_cabinet",
+      "name": "Шкаф полевого медпункта",
+      "tier": "medical",
+      "tx": 30,
+      "tz": 14,
+      "x": 22,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "pvp": false,
   "fullDrop": false,
   "schema": "realm.location.v1",

@@ -3305,7 +3305,7 @@ function sanitizeInjuries(input = {}, fallback = {}) {
   const src = input && typeof input === 'object' ? input : {};
   const base = fallback && typeof fallback === 'object' ? fallback : {};
   const out = {};
-  ['brokenArm', 'brokenLeg', 'concussion', 'infection'].forEach(id => {
+  ['brokenArm', 'brokenLeg', 'concussion', 'infection', 'bleeding'].forEach(id => {
     if (src[id] === true || base[id] === true) out[id] = true;
   });
   return out;
@@ -6414,13 +6414,24 @@ function rollServerNaturalCreatureLoot(room, type = {}, opts = {}) {
     addLootStack(loot, 'trophy', 1);
     return loot;
   }
-  const explicitType = KROMKA_MUTANT_BY_ID[String(opts.creatureTypeId || type.creatureTypeId || '')];
+  const creatureId = String(opts.creatureTypeId || type.creatureTypeId || '');
+  const explicitType = KROMKA_MUTANT_BY_ID[creatureId];
   const tier = String(type?.lootTier || opts?.lootTier || '').toLowerCase();
   const trophyQty = explicitType
     ? Math.max(0, Math.floor(Number(explicitType.loot?.trophyQty || 0)))
     : (['radscorpion', 'firegecko', 'supermutant'].includes(tier) ? 2 : 1);
-  if (trophyQty <= 0) return [];
-  addLootStack(loot, 'trophy', trophyQty);
+  if (trophyQty > 0) addLootStack(loot, 'trophy', trophyQty);
+  // Добыча обязана различать тварей. Раньше отсюда уходил один «Трофей», из-за
+  // чего девять видов приносили одно и то же, а с Обожжённого (trophyQty: 0)
+  // не падало вообще ничего — ранний выход съедал весь труп. Теперь к трофею
+  // добавляется таблица вида из data/loot-tables.json.
+  const table = SERVER_ENEMY_LOOT_TABLES[creatureId];
+  if (ECONOMY_RULES.randomLootTables && Array.isArray(table) && table.length) {
+    for (const entry of rollServerLootTable(room?.rng || Math.random, table)) {
+      addLootStack(loot, entry.id, entry.qty);
+    }
+  }
+  if (!loot.length) return [];
   return stripServerCreatureInventoryRows(loot);
 }
 
@@ -6593,7 +6604,20 @@ function serverNpcDamageRoll(enemy = {}, weapon = null, rng = Math.random) {
   const roll = typeof rng === 'function' ? rng() : Math.random();
   let damage = min + Math.floor(roll * (max - min + 1));
   const fallbackAtk = Math.max(1, Number(enemy.atk || 1));
-  if (w.id === 'fists') return Math.max(1, Math.round(fallbackAtk));
+  if (w.id === 'fists') {
+    // Кулаки — общий предмет для всех тварей, и раньше он возвращал одно и то же
+    // округлённое enemy.atk: девять видов били одинаково и без разброса. Теперь
+    // тяжёлый замах стоит дороже быстрого — удар складки на 900 мс бьёт больнее
+    // её же захвата на 650 мс, — и разброс урона наконец есть.
+    const attack = serverCreatureAttackFor(enemy, Date.now());
+    if (!attack) return Math.max(1, Math.round(fallbackAtk));
+    const attacks = KROMKA_MUTANT_BY_ID[String(enemy.creatureTypeId || '')]?.attacks || [];
+    const meanTelegraph = attacks.length
+      ? attacks.reduce((sum, row) => sum + Math.max(1, Number(row.telegraphMs || 520)), 0) / attacks.length
+      : 520;
+    const weight = clamp(Math.max(1, Number(attack.telegraphMs || meanTelegraph)) / Math.max(1, meanTelegraph), 0.72, 1.38);
+    return Math.max(1, Math.round(fallbackAtk * weight * (0.82 + roll * 0.36)));
+  }
   damage = w.ammoType ? damage * 0.62 : damage * 0.78 + fallbackAtk * 0.18;
   return Math.max(1, Math.round(damage));
 }
@@ -10383,6 +10407,23 @@ function serverTrySecondChance(p = {}, incomingDamage = 0, now = Date.now()) {
 }
 
 const SERVER_INFECTION_DAMAGE_INTERVAL_MS = 18000;
+// Кровотечение бьёт чаще инфекции и сильнее, но само останавливается: это
+// цена за то, чтобы оторваться от когтистой твари, а не второй хронический
+// недуг. Авторские bleedChance существ (data/mutants.json) наконец читаются.
+const SERVER_BLEED_DAMAGE_INTERVAL_MS = 6000;
+const SERVER_BLEED_TICKS = 5;
+
+// Абразивная атака точит надетое, а «фильтрующая» бьёт прицельно по шлему:
+// испорченный респиратор — это следующая пропущенная защита от токсина.
+function serverWearAttackedEquipment(p = {}, damage = 0, filterOnly = false) {
+  const equipment = p.equipment && typeof p.equipment === 'object' ? p.equipment : {};
+  const slots = filterOnly ? ['helmet'] : ['armor', 'helmet', 'boots'];
+  const worn = slots.map(slot => String(equipment[slot] || '')).filter(Boolean);
+  if (!worn.length) return '';
+  const itemId = worn[Math.floor(Math.random() * worn.length)];
+  const amount = clamp(1 + Math.max(0, Number(damage || 0)) * 0.12, 1, 7);
+  return serverWearPlayerItem(p, itemId, amount) === null ? '' : itemId;
+}
 
 function serverApplyInjuriesFromHit(p = {}, damage = 0, damageType = 'ballistic', sourceName = '', options = {}) {
   const dmg = Math.max(0, Number(damage || 0));
@@ -10394,6 +10435,10 @@ function serverApplyInjuriesFromHit(p = {}, damage = 0, damageType = 'ballistic'
     p.injuries[id] = true;
     added.push(id);
     if (id === 'infection') p.lastInfectionTickAt = Date.now();
+    if (id === 'bleeding') {
+      p.lastBleedTickAt = Date.now();
+      p.bleedTicksLeft = SERVER_BLEED_TICKS;
+    }
     return true;
   };
   const type = DAMAGE_TYPES.includes(damageType) ? damageType : 'ballistic';
@@ -10412,8 +10457,34 @@ function serverApplyInjuriesFromHit(p = {}, damage = 0, damageType = 'ballistic'
     if (Math.random() < clamp(Number(profile.fractureChance || 0) * severity * ironBonesGuard - enduranceGuard, 0, 0.82)) {
       add(Math.random() < 0.5 ? 'brokenLeg' : 'brokenArm');
     }
-    if (options.attackEffect === 'stagger' || options.attackEffect === 'knockdown' || options.attackEffect === 'disorient') {
-      if (Math.random() < clamp(Number(options.effectChance || 0) * severity - luckGuard, 0, 0.88)) add('concussion');
+    // Авторский bleedChance существа наконец читается: рваные раны Обожжённого
+    // и Гари действительно кровоточат, а не только описаны как кровоточащие.
+    if (Math.random() < clamp(Number(profile.bleedChance || 0) * severity - enduranceGuard, 0, 0.85)) add('bleeding');
+    const effectChance = clamp(Number(options.effectChance || 0) * severity, 0, 0.95);
+    switch (String(options.attackEffect || '')) {
+      case 'stagger':
+      case 'knockdown':
+      case 'disorient':
+        if (Math.random() < clamp(effectChance - luckGuard, 0, 0.88)) add('concussion');
+        break;
+      case 'bleed':
+        if (Math.random() < clamp(effectChance - enduranceGuard, 0, 0.9)) add('bleeding');
+        break;
+      case 'slow':
+        // Замедление в бою по очкам действия — это не скорость шага, а темп:
+        // повреждённая нога режет восстановление ОД (serverCombatApRegenRate),
+        // то есть бьёшь реже. Скорость шага сервером не режем: клиент о ней не
+        // знает, и коррекция превратилась бы в рывки.
+        if (Math.random() < clamp(effectChance - enduranceGuard, 0, 0.85)) add('brokenLeg');
+        break;
+      case 'equipment_wear':
+        if (Math.random() < effectChance) serverWearAttackedEquipment(p, dmg, false);
+        break;
+      case 'filter_damage':
+        if (Math.random() < effectChance) serverWearAttackedEquipment(p, dmg, true);
+        break;
+      default:
+        break;
     }
     return added;
   }
@@ -10452,19 +10523,59 @@ function serverApplyInjuriesFromHit(p = {}, damage = 0, damageType = 'ballistic'
   return added;
 }
 
+// Кровотечение — короткий и злой урон: пять тиков по шесть секунд, после чего
+// рана затягивается сама. Лечение у медика или стимулятором обрывает его
+// раньше, поэтому оно подталкивает разорвать дистанцию, а не терпеть.
+function updateServerPlayerBleeding(p = {}, now = Date.now()) {
+  const injuries = sanitizeInjuries(p.injuries || {});
+  if (!injuries.bleeding) {
+    p.lastBleedTickAt = 0;
+    p.bleedTicksLeft = 0;
+    return false;
+  }
+  if (!Number.isFinite(Number(p.bleedTicksLeft)) || Number(p.bleedTicksLeft) <= 0) {
+    p.bleedTicksLeft = SERVER_BLEED_TICKS;
+  }
+  if (!Number.isFinite(Number(p.lastBleedTickAt)) || Number(p.lastBleedTickAt) <= 0) {
+    p.lastBleedTickAt = now;
+    return false;
+  }
+  if (now - Number(p.lastBleedTickAt) < SERVER_BLEED_DAMAGE_INTERVAL_MS) return false;
+  p.lastBleedTickAt = now;
+  p.bleedTicksLeft = Math.max(0, Math.floor(Number(p.bleedTicksLeft)) - 1);
+  const before = Math.max(1, Number(p.hp || 1));
+  p.hp = Math.max(1, before - 2);
+  p.lastServerDamageAt = now;
+  if (p.bleedTicksLeft <= 0) {
+    delete p.injuries.bleeding;
+    p.lastBleedTickAt = 0;
+  }
+  const target = io.sockets.sockets.get(p.id);
+  target?.emit('playerStatusEffect', {
+    effect: 'bleeding',
+    damage: Math.max(0, before - p.hp),
+    hp: Math.round(p.hp),
+    maxHp: Math.round(Number(p.maxHp || 100)),
+    injuries: sanitizeInjuries(p.injuries || {}),
+    t: now
+  });
+  return true;
+}
+
 function updateServerPlayerMedicalEffects(p = {}, now = Date.now()) {
   if (!p || p.dead || Number(p.hp || 0) <= 0) return false;
   const injuries = sanitizeInjuries(p.injuries || {});
   p.injuries = injuries;
-  if (!injuries.infection) {
+  const bled = updateServerPlayerBleeding(p, now);
+  if (!p.injuries.infection) {
     p.lastInfectionTickAt = 0;
-    return false;
+    return bled;
   }
   if (!Number.isFinite(Number(p.lastInfectionTickAt)) || Number(p.lastInfectionTickAt) <= 0) {
     p.lastInfectionTickAt = now;
-    return false;
+    return bled;
   }
-  if (now - Number(p.lastInfectionTickAt) < SERVER_INFECTION_DAMAGE_INTERVAL_MS) return false;
+  if (now - Number(p.lastInfectionTickAt) < SERVER_INFECTION_DAMAGE_INTERVAL_MS) return bled;
   p.lastInfectionTickAt = now;
   const before = Math.max(1, Number(p.hp || 1));
   p.hp = Math.max(1, before - 1);
@@ -10971,7 +11082,10 @@ function serverReloadApCost(p = {}, w = SERVER_WEAPONS.fists) {
 
 function serverCombatApRegenRate(p = {}, now = Date.now()) {
   const base = 1.8 + serverTalentLevel(p, 'actionBoy') * 0.35;
-  return base * (1 + serverArtifactEffects(p).apRegenPct) * artifactApMultiplier(p, now);
+  // Сломанная нога до сих пор не стоила ничего, кроме визита к медику. Теперь
+  // она режет темп восстановления ОД — на этом держится эффект slow у тварей.
+  const injured = sanitizeInjuries(p.injuries || {}).brokenLeg ? 0.78 : 1;
+  return base * injured * (1 + serverArtifactEffects(p).apRegenPct) * artifactApMultiplier(p, now);
 }
 
 function serverEnsureCombatState(p = {}, now = Date.now()) {
@@ -11945,7 +12059,39 @@ const RESOURCE_RESPAWN_MS = Math.max(1000, Number(
 function enemyTypeDef(enemy) {
   return SERVER_ENEMY_TYPES[Math.max(0, Number(enemy?.typeIndex || 0))] || SERVER_ENEMY_TYPES[0] || {};
 }
-function serverEnemyAttackProfile(enemy = {}) {
+// Существо с двумя авторскими атаками должно показывать обе. Сервер всегда брал
+// attacks[0], и половина характера тварей — подкоп рыхляка, нырок плакальщицы,
+// захват складки — не случалась ни разу. Теперь атака выбирается по своим
+// cooldownMs: идёт та, что дольше молчала, и держится до конца замаха, чтобы
+// телеграф, урон и событие enemyMelee говорили об одном и том же ударе.
+function serverCreatureAttackFor(enemy = {}, now = Date.now()) {
+  const creature = KROMKA_MUTANT_BY_ID[String(enemy?.creatureTypeId || '')];
+  const attacks = Array.isArray(creature?.attacks) ? creature.attacks.filter(row => row && row.id) : [];
+  if (!attacks.length) return null;
+  if (attacks.length === 1) return attacks[0];
+  const held = attacks.find(row => row.id === String(enemy.creatureAttackId || ''));
+  if (held) return held;
+  const readyAt = enemy.creatureAttackReadyAt && typeof enemy.creatureAttackReadyAt === 'object'
+    ? enemy.creatureAttackReadyAt
+    : {};
+  const ready = attacks.filter(row => now >= Number(readyAt[row.id] || 0));
+  const pool = ready.length ? ready : attacks;
+  let chosen = pool[0];
+  for (const row of pool) {
+    if (Number(readyAt[row.id] || 0) < Number(readyAt[chosen.id] || 0)) chosen = row;
+  }
+  enemy.creatureAttackId = String(chosen.id);
+  return chosen;
+}
+
+function serverCommitCreatureAttack(enemy = {}, attack = null, now = Date.now()) {
+  if (!enemy || !attack || !attack.id) return;
+  if (!enemy.creatureAttackReadyAt || typeof enemy.creatureAttackReadyAt !== 'object') enemy.creatureAttackReadyAt = {};
+  enemy.creatureAttackReadyAt[String(attack.id)] = now + clamp(Number(attack.cooldownMs || 1800), 600, 9000);
+  enemy.creatureAttackId = '';
+}
+
+function serverEnemyAttackProfile(enemy = {}, options = {}) {
   const weapon = serverNpcWeaponDef(enemy);
   if (weapon && weapon.id !== 'fists') {
     return {
@@ -11956,8 +12102,10 @@ function serverEnemyAttackProfile(enemy = {}) {
     };
   }
   const creature = KROMKA_MUTANT_BY_ID[String(enemy.creatureTypeId || '')];
-  const authoredAttack = Array.isArray(creature?.attacks) ? creature.attacks[0] : null;
+  const attackNow = Number(options.now || Date.now());
+  const authoredAttack = serverCreatureAttackFor(enemy, attackNow);
   if (authoredAttack) {
+    if (options.commit) serverCommitCreatureAttack(enemy, authoredAttack, attackNow);
     const rawDamageType = String(authoredAttack.damageType || 'physical');
     const damageType = rawDamageType === 'physical' ? 'ballistic'
       : rawDamageType === 'psychic' ? 'anomalous'
@@ -11968,6 +12116,8 @@ function serverEnemyAttackProfile(enemy = {}) {
       injurySource: `${creature.displayName}: ${String(authoredAttack.id || 'удар').replace(/_/g, ' ')}`,
       effect: String(authoredAttack.effect || ''),
       effectChance: clamp(Number(authoredAttack.effectChance || 0), 0, 1),
+      telegraphMs: clamp(Number(authoredAttack.telegraphMs || 0), 0, 1200),
+      cooldownMs: clamp(Number(authoredAttack.cooldownMs || 0), 0, 9000),
       injuryProfile: creature.injuryProfile && typeof creature.injuryProfile === 'object'
         ? { ...creature.injuryProfile }
         : {},
@@ -18036,7 +18186,13 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
   const speechText = !e.dead && Number(e.npcSpeechUntil || 0) > now
     ? String(e.npcSpeechText || '').trim().slice(0, 96)
     : '';
-  const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e));
+  // Авторские telegraphMs (430-1100 мс) до сих пор игнорировались: клиент рисовал
+  // одно и то же окно 520 мс всем в ближнем бою, и замах твари ничего не сообщал.
+  const creatureAttack = serverCreatureAttackFor(e, Date.now());
+  const telegraphOptions = Number(creatureAttack?.telegraphMs) > 0
+    ? { windowMs: Number(creatureAttack.telegraphMs) }
+    : {};
+  const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e), telegraphOptions);
   const scheduleState = aiState === 'dialogue'
     ? 'dialogue'
     : String(e.npcScheduleState || '').slice(0, 24);
@@ -18997,6 +19153,12 @@ function serverApplyKromkaQuestResult(player = {}, result = {}, quest = null) {
   if (reward) {
     if (Number(reward.silver || 0) > 0) serverInventoryAdd(player, 'silver', Math.floor(Number(reward.silver)));
     serverGrantItems(player, reward.items || {});
+    // Сюжет растит персонажа наравне с пустошью. Без этого авторская линия
+    // платила только марками и не открывала перки, которые сама же гейтит
+    // уровнем (SERVER_TALENT_REQUIREMENTS): до уровня 12 приходилось
+    // добираться одними убийствами.
+    const questXp = Math.max(0, Math.floor(Number(reward.xp || 0)));
+    if (questXp > 0) result.xpGain = serverGrantXp(player, questXp);
     const factionId = canonicalKromkaFactionId(quest?.factionId || '');
     if (factionId && Number(reward.reputation || 0) !== 0) {
       player.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
@@ -23495,7 +23657,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     }
     let raw = serverNpcDamageRoll(actor, weapon, room.rng || Math.random);
     raw = Math.max(1, Math.round(raw * serverNpcShotgunDamageMultiplier(actor, foe, weapon)));
-    const attackProfile = serverEnemyAttackProfile(actor);
+    const attackProfile = serverEnemyAttackProfile(actor, { commit: true, now });
     const mitigation = serverMitigateNpcDamage(raw, foe, attackProfile.damageType || weapon.damageType || 'ballistic');
     const dmg = mitigation.damage;
     if (ranged) emitServerNpcShot(room, actor, foe, weapon, { hit: true });
@@ -23979,7 +24141,7 @@ function updateServerEnemies(room, dt, opts = {}) {
           }
           let raw = serverNpcDamageRoll(enemy, weapon, rng);
           raw = Math.max(1, Math.round(raw * serverNpcShotgunDamageMultiplier(enemy, target, weapon)));
-          const attackProfile = serverEnemyAttackProfile(enemy);
+          const attackProfile = serverEnemyAttackProfile(enemy, { commit: true, now });
           const damageType = attackProfile.damageType || 'ballistic';
           const mitigation = serverMitigateDamage(raw, target, damageType);
           const damage = mitigation.damage;
@@ -25569,7 +25731,15 @@ function serverAdvanceKromkaOnboarding(p = {}, action = '', options = {}) {
       p.kromkaQuestState.completed.campaign_prologue_twelfth = { outcomeId: '', completedAt: Date.now() };
       p.kromkaQuestState.rewardClaims.push('quest:campaign_prologue_twelfth');
       if (!p.kromkaQuestState.knownSecrets.includes('caravan_module_targeted')) p.kromkaQuestState.knownSecrets.push('caravan_module_targeted');
-      serverInventoryAdd(p, 'silver', 45);
+      // Пролог закрывается здесь, минуя serverApplyKromkaQuestResult: это
+      // единственный путь его завершить. Поэтому награду берём из каталога, а
+      // не повторяем числом — иначе опыт за пролог лёг бы в quests.json
+      // мёртвым грузом, как до этого лежала вся сюжетная линия.
+      const prologueReward = serverKromkaQuestById('campaign_prologue_twelfth')?.reward || {};
+      const prologueSilver = Math.max(0, Math.floor(Number(prologueReward.silver || 0)));
+      if (prologueSilver > 0) serverInventoryAdd(p, 'silver', prologueSilver);
+      const prologueXp = Math.max(0, Math.floor(Number(prologueReward.xp || 0)));
+      if (prologueXp > 0) serverGrantXp(p, prologueXp);
     }
   }
   persistActivePlayerState(p);
@@ -28084,6 +28254,12 @@ io.on('connection', (socket) => {
         p.kromkaQuestState.outcomeTags.push(`personal_aktov_air_rights:${outcomeId}`);
         p.kromkaQuestState.rewardClaims.push('quest:personal_aktov_air_rights');
         delete p.kromkaQuestState.active.personal_aktov_air_rights;
+        // Оформить участок можно и отсюда, из меню убежища, в обход
+        // serverApplyKromkaQuestResult. Раз квест здесь закрывается насовсем,
+        // здесь же выдаётся и его опыт — иначе выбор меню молча лишал бы
+        // игрока награды, которую даёт тот же квест через диалог.
+        const rightsXp = Math.max(0, Math.floor(Number(serverKromkaQuestById('personal_aktov_air_rights')?.reward?.xp || 0)));
+        if (rightsXp > 0) serverGrantXp(p, rightsXp);
       }
       base.updatedAt = now;
       persistSaves();
@@ -28445,7 +28621,7 @@ io.on('connection', (socket) => {
 
     if (itemId === 'doctorBag') {
       target.injuries = sanitizeInjuries(target.injuries || {});
-      const treatable = ['brokenArm', 'brokenLeg', 'concussion'].filter(id => !!target.injuries[id]);
+      const treatable = ['brokenArm', 'brokenLeg', 'concussion', 'bleeding'].filter(id => !!target.injuries[id]);
       if (!treatable.length) return fail('У игрока нет переломов или контузии.');
       const spend = serverPrepareFixedActionAp(healer, data, serverMedicalItemApCost(healer, itemId), Date.now(), 'лечение');
       if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(healer) });

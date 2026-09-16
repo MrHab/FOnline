@@ -48,6 +48,20 @@
       "radius": 4
     }
   ],
+  "containers": [
+    {
+      "id": "drypump_cargo_crate",
+      "name": "Ящик водозабора",
+      "tier": "survival",
+      "tx": 8,
+      "tz": 10,
+      "x": -22,
+      "y": 0.1,
+      "z": -18,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "resourceDryWaterPump-dressing-functional-01",
@@ -1348,7 +1362,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -17.0,
         "y": 0.0,
         "z": 16.0
@@ -1390,7 +1405,8 @@
     {
       "id": "water_barrels_01",
       "model": "barrelCluster",
-      "name": "Пустые бочки",      "position": {
+      "name": "Пустые бочки",
+      "position": {
         "x": -10.0,
         "y": 0.0,
         "z": 5.0
@@ -1423,7 +1439,8 @@
     {
       "id": "water_basin_rock_01",
       "model": "rubbleRock",
-      "name": "Сухие камни",      "position": {
+      "name": "Сухие камни",
+      "position": {
         "x": 12.0,
         "y": 0.0,
         "z": 9.0
@@ -1456,7 +1473,8 @@
     {
       "id": "water_pump_01",
       "model": "waterTank",
-      "name": "Старая водяная помпа",      "position": {
+      "name": "Старая водяная помпа",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": -7.0

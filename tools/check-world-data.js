@@ -1187,6 +1187,56 @@ for (const [id, row] of locations) {
 
 if (!locations.size) errors.push('No location files found in data/locations');
 
+// Покрытие мира контейнерами. Из 37 авторских контейнеров 35 лежали внутри
+// комплекса Ядра, поэтому навык взлома и вся поисковая петля не имели
+// поверхности за его пределами: 48 локаций из 58 не содержали ни одного.
+{
+  const isCore = id => /^core/i.test(id);
+  const outsideCore = [...locations.entries()].filter(([id]) => !isCore(id));
+  const withContainers = outsideCore.filter(([, row]) => (Array.isArray(row.loc.containers) ? row.loc.containers : []).length > 0);
+  const outsideCount = outsideCore.reduce((sum, [, row]) => sum + (Array.isArray(row.loc.containers) ? row.loc.containers.length : 0), 0);
+  if (withContainers.length < 15) {
+    errors.push(`world loot coverage: only ${withContainers.length} locations outside the Core hold containers — searching has no surface there`);
+  }
+  if (outsideCount < 30) {
+    errors.push(`world loot coverage: only ${outsideCount} containers outside the Core complex`);
+  }
+  // Личная комната перекатывает свой лут на каждом мировом тике
+  // (restockRoomWorldContainersIfNeeded), поэтому контейнер в ней — ферма:
+  // зашёл, вышел, забрал снова. Исключение одно — обучающий двор: он
+  // проходится однажды и в мировом цикле не участвует.
+  const FARMABLE_EXEMPT = new Set(['tutorialCaravanYard']);
+  for (const [id, row] of locations) {
+    if (row.loc.privateInstance !== true || FARMABLE_EXEMPT.has(id)) continue;
+    const count = Array.isArray(row.loc.containers) ? row.loc.containers.length : 0;
+    if (count > 0) {
+      errors.push(`${id}: private instance holds ${count} container(s) — world restock turns them into a farm`);
+    }
+  }
+
+  // Контейнер, вплотную приставленный к объекту, недостижим: сервер ставит его
+  // по тайлу, а подойти игроку будет некуда.
+  for (const [id, row] of locations) {
+    const containers = Array.isArray(row.loc.containers) ? row.loc.containers : [];
+    if (!containers.length) continue;
+    const dims = row.loc.map || {};
+    const width = Math.max(1, Number(dims.width || 72));
+    const height = Math.max(1, Number(dims.height || dims.width || 72));
+    const seen = new Set();
+    for (const container of containers) {
+      const tx = Number(container?.tx);
+      const tz = Number(container?.tz);
+      if (!Number.isFinite(tx) || !Number.isFinite(tz)) continue;
+      if (tx < 0 || tz < 0 || tx >= width || tz >= height) {
+        errors.push(`${id}: container "${container?.id}" sits outside the ${width}x${height} tile map at (${tx}, ${tz})`);
+      }
+      const key = `${tx}:${tz}`;
+      if (seen.has(key)) errors.push(`${id}: two containers share tile (${tx}, ${tz})`);
+      seen.add(key);
+    }
+  }
+}
+
 if (fs.existsSync(wastelandSimFile)) {
   const sim = readJson(wastelandSimFile);
   wastelandSim = sim;

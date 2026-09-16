@@ -49,7 +49,32 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "tiredepot_cargo_crate",
+      "name": "Складской ящик",
+      "tier": "tools",
+      "tx": 7,
+      "tz": 14,
+      "x": -24,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "tiredepot_bench_box",
+      "name": "Короб у верстака",
+      "tier": "basic",
+      "tx": 25,
+      "tz": 12,
+      "x": 12,
+      "y": 0.1,
+      "z": -14,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "resourceTireDepot-dressing-functional-01",
@@ -1259,7 +1284,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -15.0,
         "y": 0.0,
         "z": -14.0
@@ -1301,7 +1327,8 @@
     {
       "id": "tire_barrels_01",
       "model": "barrelCluster",
-      "name": "Бочки с реагентами",      "position": {
+      "name": "Бочки с реагентами",
+      "position": {
         "x": -10.0,
         "y": 0.0,
         "z": 9.0
@@ -1335,7 +1362,8 @@
     {
       "id": "tire_depot_01",
       "model": "tireStack",
-      "name": "Старые покрышки",      "position": {
+      "name": "Старые покрышки",
+      "position": {
         "x": -7.0,
         "y": 0.0,
         "z": -7.0
@@ -1372,7 +1400,8 @@
     {
       "id": "tire_scrap_01",
       "model": "scrapHeap",
-      "name": "Разобранный кузов",      "position": {
+      "name": "Разобранный кузов",
+      "position": {
         "x": 9.0,
         "y": 0.0,
         "z": -5.0

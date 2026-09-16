@@ -48,6 +48,32 @@
       "radius": 4
     }
   ],
+  "containers": [
+    {
+      "id": "scrapfields_cargo_crate",
+      "name": "Ящик сортировщиков",
+      "tier": "basic",
+      "tx": 9,
+      "tz": 10,
+      "x": -20,
+      "y": 0.1,
+      "z": -18,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "scrapfields_heap_stash",
+      "name": "Схрон в отвале",
+      "tier": "wasteland",
+      "tx": 29,
+      "tz": 23,
+      "x": 20,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "resourceScrapFields-dressing-functional-01",
@@ -1312,7 +1338,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 17.0,
         "y": 0.0,
         "z": 16.0
@@ -1354,7 +1381,8 @@
     {
       "id": "scrap_car_01",
       "model": "carWreck",
-      "name": "Остов машины",      "position": {
+      "name": "Остов машины",
+      "position": {
         "x": 1.0,
         "y": 0.0,
         "z": 12.0
@@ -1388,7 +1416,8 @@
     {
       "id": "scrap_resource_01",
       "model": "scrapHeap",
-      "name": "Куча металлолома",      "position": {
+      "name": "Куча металлолома",
+      "position": {
         "x": -7.0,
         "y": 0.0,
         "z": -8.0
@@ -1425,7 +1454,8 @@
     {
       "id": "scrap_resource_02",
       "model": "scrapHeap",
-      "name": "Куча металлолома",      "position": {
+      "name": "Куча металлолома",
+      "position": {
         "x": 10.0,
         "y": 0.0,
         "z": -5.0

@@ -49,12 +49,43 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "solar_cargo_crate",
+      "name": "Ящик монтажников",
+      "tier": "tools",
+      "tx": 9,
+      "tz": 10,
+      "x": -20,
+      "y": 0.1,
+      "z": -18,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "solar_panel_locker",
+      "name": "Шкаф панельного набора",
+      "tier": "rare",
+      "tx": 16,
+      "tz": 21,
+      "x": -6,
+      "y": 0.1,
+      "z": 4,
+      "rotationY": 0,
+      "locked": true,
+      "terminalLocked": true,
+      "terminalUnlocksLock": true,
+      "terminalName": "Пульт инверторной №4",
+      "lockDifficulty": "medium",
+      "terminalDifficulty": "medium"
+    }
+  ],
   "objects": [
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 17.0,
         "y": 0.0,
         "z": 14.0
@@ -1965,7 +1996,8 @@
     {
       "id": "solarArray_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -18.0,
         "y": 0.0,
         "z": 16.0
@@ -2001,7 +2033,8 @@
     {
       "id": "solarArray_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -16.0,
         "y": 0.0,
         "z": 16.0
@@ -2037,7 +2070,8 @@
     {
       "id": "solarArray_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": -14.0,
         "y": 0.0,
         "z": 16.0
@@ -2073,7 +2107,8 @@
     {
       "id": "solar_energy_bench",
       "model": "craftStationEnergy",
-      "name": "Энергетический стенд",      "position": {
+      "name": "Энергетический стенд",
+      "position": {
         "x": -1.7,
         "y": 0.0,
         "z": 7.0
@@ -2130,7 +2165,8 @@
     {
       "id": "solar_pole_01",
       "model": "utilityPole",
-      "name": "Опора станции",      "position": {
+      "name": "Опора станции",
+      "position": {
         "x": -9.0,
         "y": 0.0,
         "z": -8.0
@@ -2163,7 +2199,8 @@
     {
       "id": "solar_pole_02",
       "model": "utilityPole",
-      "name": "Опора станции",      "position": {
+      "name": "Опора станции",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": -8.0
@@ -2196,7 +2233,8 @@
     {
       "id": "solar_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
+      "name": "Ремонтный верстак",
+      "position": {
         "x": 1.7,
         "y": 0.0,
         "z": 7.0

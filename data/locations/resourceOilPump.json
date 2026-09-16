@@ -48,11 +48,39 @@
       "radius": 4
     }
   ],
+  "containers": [
+    {
+      "id": "oilramp_barrel_crate",
+      "name": "Ящик у бочек рампы",
+      "tier": "wasteland",
+      "tx": 11,
+      "tz": 18,
+      "x": -16,
+      "y": 0.1,
+      "z": -2,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "oilramp_lean_to",
+      "name": "Ларь под навесом рампы",
+      "tier": "tools",
+      "tx": 25,
+      "tz": 14,
+      "x": 12,
+      "y": 0.1,
+      "z": -10,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "objects": [
     {
       "id": "oil_barrels_01",
       "model": "barrelCluster",
-      "name": "Ржавые бочки",      "position": {
+      "name": "Ржавые бочки",
+      "position": {
         "x": -10.0,
         "y": 0.0,
         "z": -4.0
@@ -86,7 +114,8 @@
     {
       "id": "oil_car_01",
       "model": "carWreck",
-      "name": "Остов машины",      "position": {
+      "name": "Остов машины",
+      "position": {
         "x": 16.0,
         "y": 0.0,
         "z": -15.0
@@ -120,7 +149,8 @@
     {
       "id": "oil_pump_01",
       "model": "oilPumpJack",
-      "name": "Нефтяная качалка",      "position": {
+      "name": "Нефтяная качалка",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": -8.0
@@ -157,7 +187,8 @@
     {
       "id": "oil_scrap_01",
       "model": "scrapHeap",
-      "name": "Разобранная труба",      "position": {
+      "name": "Разобранная труба",
+      "position": {
         "x": 9.0,
         "y": 0.0,
         "z": 7.0
@@ -1282,7 +1313,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 17.0,
         "y": 0.0,
         "z": -16.0

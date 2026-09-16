@@ -49,12 +49,39 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "foundry_fuel_crate",
+      "name": "Ящик у топливных бочек",
+      "tier": "tools",
+      "tx": 22,
+      "tz": 21,
+      "x": 6,
+      "y": 0.1,
+      "z": 4,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "foundry_bench_box",
+      "name": "Короб литейных мастеров",
+      "tier": "basic",
+      "tx": 17,
+      "tz": 13,
+      "x": -4,
+      "y": 0.1,
+      "z": -12,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "objects": [
     {
       "id": "foundry_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",      "position": {
+      "name": "Патронный станок",
+      "position": {
         "x": -6.0,
         "y": 0.0,
         "z": -5.0
@@ -111,7 +138,8 @@
     {
       "id": "foundry_barrels_01",
       "model": "barrelCluster",
-      "name": "Топливные бочки",      "position": {
+      "name": "Топливные бочки",
+      "position": {
         "x": 11.0,
         "y": 0.0,
         "z": 8.0
@@ -144,7 +172,8 @@
     {
       "id": "foundry_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
+      "name": "Ремонтный верстак",
+      "position": {
         "x": -3.0,
         "y": 0.0,
         "z": -5.0
@@ -201,7 +230,8 @@
     {
       "id": "foundry_scrap_01",
       "model": "scrapHeap",
-      "name": "Куча металлолома",      "position": {
+      "name": "Куча металлолома",
+      "position": {
         "x": 8.0,
         "y": 0.0,
         "z": -6.0
@@ -238,7 +268,8 @@
     {
       "id": "foundry_tool_bench",
       "model": "craftStationTools",
-      "name": "Инструментальный верстак",      "position": {
+      "name": "Инструментальный верстак",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": -5.0
@@ -295,7 +326,8 @@
     {
       "id": "foundry_weapon_bench",
       "model": "craftStationWeapon",
-      "name": "Оружейный верстак",      "position": {
+      "name": "Оружейный верстак",
+      "position": {
         "x": -9.0,
         "y": 0.0,
         "z": -5.0
@@ -352,7 +384,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 17.0,
         "y": 0.0,
         "z": -14.0
@@ -1727,7 +1760,8 @@
     {
       "id": "scrapFoundry_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 14.0,
         "y": 0.0,
         "z": -16.0
@@ -1770,7 +1804,8 @@
     {
       "id": "scrapFoundry_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 16.0,
         "y": 0.0,
         "z": -16.0
@@ -1813,7 +1848,8 @@
     {
       "id": "scrapFoundry_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 18.0,
         "y": 0.0,
         "z": -16.0
@@ -1856,7 +1892,8 @@
     {
       "id": "scrapFoundry_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 20.0,
         "y": 0.0,
         "z": -16.0
@@ -1899,7 +1936,8 @@
     {
       "id": "scrapFoundry_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 14.0,
         "y": 0.0,
         "z": -14.0
@@ -1942,7 +1980,8 @@
     {
       "id": "scrapFoundry_cot_06",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 16.0,
         "y": 0.0,
         "z": -14.0

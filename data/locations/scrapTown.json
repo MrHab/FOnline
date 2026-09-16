@@ -165,7 +165,33 @@
       "armor"
     ]
   },
-  "containers": [],
+  "containers": [
+    {
+      "id": "razdolye_furnace_crate",
+      "name": "Ящик литейной смены",
+      "tier": "tools",
+      "tx": 7,
+      "tz": 24,
+      "x": -24,
+      "y": 0.1,
+      "z": 10,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "razdolye_artel_chest",
+      "name": "Сундук вольных артелей",
+      "tier": "settlement",
+      "tx": 19,
+      "tz": 23,
+      "x": 0,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "objects": [
     {
       "id": "scrap_gratch",

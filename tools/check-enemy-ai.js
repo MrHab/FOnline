@@ -215,7 +215,9 @@ const serverSource = fs.readFileSync(path.resolve(__dirname, '..', 'server.js'),
   'beginEnemySearchAt(room, enemy, searchX, searchZ',
   "io.to(target.id).emit('enemyAttackMiss'",
   "enemy.aiState = readiness.reloading ? 'reload' : 'chase'",
-  'const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e));',
+  // Окно замаха теперь может прийти авторским из каталога существа, поэтому
+  // вызов принимает третьим аргументом опции, а не только оружие.
+  'const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e), telegraphOptions);',
   'frame.attackTargetId = telegraph.targetId;',
   'updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)',
   'room.enemyAiPlayers = roomPlayers;',

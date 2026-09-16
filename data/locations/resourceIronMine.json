@@ -48,11 +48,39 @@
       "radius": 4
     }
   ],
+  "containers": [
+    {
+      "id": "mine_shift_crate",
+      "name": "Ящик третьей смены",
+      "tier": "tools",
+      "tx": 13,
+      "tz": 10,
+      "x": -12,
+      "y": 0.1,
+      "z": -18,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "mine_conveyor_box",
+      "name": "Короб у конвейера",
+      "tier": "basic",
+      "tx": 28,
+      "tz": 13,
+      "x": 18,
+      "y": 0.1,
+      "z": -12,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "objects": [
     {
       "id": "iron_ore_01",
       "model": "oreOutcrop",
-      "name": "Рудная жила",      "position": {
+      "name": "Рудная жила",
+      "position": {
         "x": -8.0,
         "y": 0.0,
         "z": -8.0
@@ -89,7 +117,8 @@
     {
       "id": "iron_ore_02",
       "model": "oreOutcrop",
-      "name": "Рудная жила",      "position": {
+      "name": "Рудная жила",
+      "position": {
         "x": 9.0,
         "y": 0.0,
         "z": -14.0
@@ -126,7 +155,8 @@
     {
       "id": "mine_rubble_01",
       "model": "rubbleRock",
-      "name": "Каменная осыпь",      "position": {
+      "name": "Каменная осыпь",
+      "position": {
         "x": 0.0,
         "y": 0.0,
         "z": 8.0
@@ -1318,7 +1348,8 @@
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": -17.0,
         "y": 0.0,
         "z": -16.0

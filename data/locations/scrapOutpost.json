@@ -49,12 +49,39 @@
       "radius": 4
     }
   ],
-  "containers": [],
+  "containers": [
+    {
+      "id": "guard_artel_crate",
+      "name": "Ящик сторожевой артели",
+      "tier": "wasteland",
+      "tx": 19,
+      "tz": 23,
+      "x": 0,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false
+    },
+    {
+      "id": "guard_artel_barrels",
+      "name": "Схрон за бочками",
+      "tier": "basic",
+      "tx": 14,
+      "tz": 12,
+      "x": -10,
+      "y": 0.1,
+      "z": -14,
+      "rotationY": 0,
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
   "objects": [
     {
       "id": "rest_campfire_01",
       "model": "campfireRest",
-      "name": "Место отдыха",      "position": {
+      "name": "Место отдыха",
+      "position": {
         "x": 17.0,
         "y": 0.0,
         "z": 10.0
@@ -1569,7 +1596,8 @@
     {
       "id": "scrapOutpost_cot_01",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 14.0,
         "y": 0.0,
         "z": 8.0
@@ -1612,7 +1640,8 @@
     {
       "id": "scrapOutpost_cot_02",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 16.0,
         "y": 0.0,
         "z": 8.0
@@ -1655,7 +1684,8 @@
     {
       "id": "scrapOutpost_cot_03",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 18.0,
         "y": 0.0,
         "z": 8.0
@@ -1698,7 +1728,8 @@
     {
       "id": "scrapOutpost_cot_04",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 20.0,
         "y": 0.0,
         "z": 8.0
@@ -1741,7 +1772,8 @@
     {
       "id": "scrapOutpost_cot_05",
       "model": "cotBed",
-      "name": "Койка НПС",      "position": {
+      "name": "Койка НПС",
+      "position": {
         "x": 14.0,
         "y": 0.0,
         "z": 10.0
@@ -1784,7 +1816,8 @@
     {
       "id": "scrap_outpost_ammo_bench",
       "model": "craftStationAmmo",
-      "name": "Патронный станок",      "position": {
+      "name": "Патронный станок",
+      "position": {
         "x": -31.0,
         "y": 0.0,
         "z": -17.0
@@ -1841,7 +1874,8 @@
     {
       "id": "scrap_outpost_cargo",
       "model": "cargoStack",
-      "name": "Груз лома",      "position": {
+      "name": "Груз лома",
+      "position": {
         "x": 6.0,
         "y": 0.0,
         "z": 7.0
@@ -1875,7 +1909,8 @@
     {
       "id": "scrap_outpost_repair_bench",
       "model": "craftStationRepair",
-      "name": "Ремонтный верстак",      "position": {
+      "name": "Ремонтный верстак",
+      "position": {
         "x": -37.0,
         "y": 0.0,
         "z": -17.0
@@ -1932,7 +1967,8 @@
     {
       "id": "scrap_outpost_tool_bench",
       "model": "craftStationTools",
-      "name": "Инструментальный верстак",      "position": {
+      "name": "Инструментальный верстак",
+      "position": {
         "x": -34.0,
         "y": 0.0,
         "z": -17.0

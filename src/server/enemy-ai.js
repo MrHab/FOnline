@@ -216,7 +216,10 @@ function npcAttackTelegraph(actor = {}, weapon = {}, options = {}) {
   if (weaponId === "rocketLauncher") windowMs = 680;
   else if (weaponId === "shotgun" || weaponId === "sawedOffShotgun") windowMs = 520;
   else if (weapon.automatic) windowMs = 330;
-  windowMs = Math.round(clamp(options.windowMs ?? windowMs, 240, 800));
+  // Верхняя граница поднята с 800 до 1200 мс: авторские замахи тварей доходят до
+  // 1100 мс (подкоп рыхляка, зов плакальщицы), и прежний потолок молча срезал их
+  // до общего окна, из-за чего тяжёлая атака ничем не отличалась от быстрой.
+  windowMs = Math.round(clamp(options.windowMs ?? windowMs, 240, 1200));
 
   const remainingMs = Math.max(0, Math.ceil(Number(actor.attackTimer || 0) * 1000));
   if (remainingMs <= 0 || remainingMs > windowMs) return null;

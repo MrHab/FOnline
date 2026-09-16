@@ -39,6 +39,37 @@
     "z": -22,
     "rotationY": 0
   },
+  "containers": [
+    {
+      "id": "balance_archive_locker",
+      "name": "Шкаф архива «Баланса»",
+      "tier": "rare",
+      "tx": 24,
+      "tz": 15,
+      "x": 12,
+      "y": 0.1,
+      "z": -6,
+      "rotationY": 0,
+      "locked": true,
+      "terminalLocked": true,
+      "terminalUnlocksLock": true,
+      "terminalName": "Архивный терминал «Баланса»",
+      "lockDifficulty": "medium",
+      "terminalDifficulty": "medium"
+    },
+    {
+      "id": "balance_service_box",
+      "name": "Короб служебного пульта",
+      "tier": "medical",
+      "tx": 13,
+      "tz": 15,
+      "x": -10,
+      "y": 0.1,
+      "z": -6,
+      "rotationY": 0,
+      "locked": false
+    }
+  ],
   "objects": [
     {
       "id": "balance-sink-01",

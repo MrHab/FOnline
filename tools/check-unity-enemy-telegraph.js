@@ -23,7 +23,7 @@ assert(enemyAi.includes('function npcAttackTelegraph(')
   && enemyAi.includes('remainingMs > windowMs')
   && enemyAi.includes('return { remainingMs, windowMs, targetId, ranged };'),
 'Server AI no longer exposes a bounded, weapon-aware wind-up window');
-assert(server.includes('const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e));')
+assert(server.includes('const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e), telegraphOptions);')
   && server.includes('| (telegraph ? 64 : 0)')
   && server.includes('| (telegraph?.ranged ? 128 : 0)')
   && server.includes('frame.attackMs = telegraph.remainingMs;')

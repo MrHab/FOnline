@@ -192,7 +192,12 @@ function repeatableReward(stateInput = {}, templateId = '', catalog = {}) {
   const count = Number(state.repeatCounts[templateId] || 0);
   state.repeatCounts[templateId] = count + 1;
   const multiplier = Math.max(0.35, 1 - count * 0.12);
-  return { ok: true, state, reward: { silver: Math.max(1, Math.floor(Number(template.baseReward || 0) * multiplier)) } };
+  // Повторяемый контракт платит и опытом, но по той же затухающей кривой, что
+  // и марками: иначе выгоднее крутить один шаблон, чем идти по сюжету.
+  const baseXp = Math.max(0, Math.floor(Number(template.baseXp || 0)));
+  const reward = { silver: Math.max(1, Math.floor(Number(template.baseReward || 0) * multiplier)) };
+  if (baseXp > 0) reward.xp = Math.max(1, Math.floor(baseXp * multiplier));
+  return { ok: true, state, reward };
 }
 
 function publicQuestJournal(stateInput = {}, catalog = {}) {

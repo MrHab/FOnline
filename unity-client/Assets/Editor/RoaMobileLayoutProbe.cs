@@ -105,6 +105,35 @@ namespace RealmOfAshes.EditorTools
                     "the target line of the map does not fit its row — " + Mathf.CeilToInt(metaNeeded)
                     + " px of text in a 21 px row: " + routeMeta);
 
+                // --- панель счёта осады ---------------------------------------------------
+                // Худший случай: фаза передатчиков, три претендента с обрезанными
+                // длинными именами, прогноз квалификации, реплика и строка возрождений.
+                var siege = JObject.Parse(@"{'status':'active','phase':'relay','phaseEndsAt':1800000300000,
+                    'defenderClanId':'def','defenderName':'Нейтральный гарнизон очень длинный',
+                    'challengers':[{'clanId':'a','name':'Первый очень длинный клан Кромки','declaredAt':1},
+                                   {'clanId':'b','name':'Второй очень длинный клан Кромки','declaredAt':2},
+                                   {'clanId':'c','name':'Третий очень длинный клан Кромки','declaredAt':3}],
+                    'rosters':{'a':['me']},'relayOwners':{'relay_a':'a','relay_b':'b','relay_c':'c'},
+                    'relayScores':{'a':1,'b':1,'c':1},'respawnWaves':{'a':1},'respawnWavesPerSide':3}");
+                string siegeText = RoaKromkaSiegePresentation.DescribeSiege(siege, "a", 1800000000000L);
+                foreach (bool mobile in new[] { false, true })
+                {
+                    Vector2 siegePanel = RoaKromkaSiegePresentation.PanelSize(mobile);
+                    float pad = RoaKromkaSiegePresentation.PanelPadding;
+                    float siegeNeeded = TextHeight(host, siegeText, RoaKromkaSiegePresentation.PanelFontSize(mobile), siegePanel.x - pad * 2f);
+                    float siegeRoom = RoaKromkaSiegePresentation.PanelMaxHeight(mobile) - pad * 2f;
+                    Debug.Log("[MOBILE LAYOUT] " + (mobile ? "mobile" : "desktop") + " siege score: "
+                        + Mathf.CeilToInt(siegeNeeded) + " / " + siegeRoom + " px");
+                    Require(siegeNeeded <= siegeRoom,
+                        "the siege score does not fit its panel — " + Mathf.CeilToInt(siegeNeeded) + " px in " + siegeRoom + " px: " + siegeText);
+                    // Панель растёт вниз от баннера PvP и не должна дойти до кнопки
+                    // действия у нижнего края (28 + 46).
+                    Vector2 canvasSize = CanvasSize(mobile ? MobileScreen : DesktopScreen, RoaUiScale.ReferenceFor(mobile));
+                    float bottom = -RoaKromkaSiegePresentation.PanelTop + RoaKromkaSiegePresentation.PanelMaxHeight(mobile);
+                    Require(bottom + 28f + 46f + 12f <= canvasSize.y,
+                        "the siege panel reaches the action button: bottom " + bottom + " of " + canvasSize.y);
+                }
+
                 // --- строка защиты в окне контейнера -----------------------------------
                 // Колонка окна лута шириной 620 × 0,94 минус отступы прокрутки и
                 // самой строки: текст защиты обязан уместиться в свою строку.
@@ -164,7 +193,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 Finish();
-                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row, map target line and item tooltip keep their text on desktop and on a landscape phone.");
+                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row, map target line, siege score and item tooltip keep their text on desktop and on a landscape phone.");
             }
             finally
             {

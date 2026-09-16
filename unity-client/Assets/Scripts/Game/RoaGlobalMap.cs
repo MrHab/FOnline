@@ -4655,6 +4655,7 @@ namespace RealmOfAshes.Game
             if (explicitFlag != null && explicitFlag.Type == JTokenType.Boolean) return explicitFlag.ToObject<bool>();
             string value = (mode ?? string.Empty).Trim();
             return string.Equals(value, "pvpFullDrop", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "pvpBlack", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "pvpEvent", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -6385,9 +6386,10 @@ namespace RealmOfAshes.Game
             string value = (mode ?? string.Empty).ToLowerInvariant();
             if (value == "peaceful") return "мирная зона";
             if (value == "pve") return "PvE: без PvP, вещи сохраняются";
-            if (value == "pvp") return "PvP: падают расходники";
+            if (value == "pvp") return "PvP: вещи сохраняются, экипировка изнашивается";
             if (value == "pvpevent") return "PvP: вещи сохраняются";
             if (value == "pvpfulldrop") return "PvP: инвентарь выпадает, экипировка сохраняется";
+            if (value == "pvpblack") return "PvP: выпадает всё, часть становится ломом";
             return mode;
         }
 

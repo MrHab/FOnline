@@ -986,16 +986,18 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Текст баннера режима зоны. Режим `pvpFullDrop` — частичная потеря:
-        /// инвентарь выпадает, экипировка сохраняется.
+        /// Текст баннера режима зоны — лестница экономики v3: синяя `pve`,
+        /// жёлтая `pvp`, красная `pvpFullDrop` (инвентарь выпадает, экипировка
+        /// цела) и чёрная `pvpBlack` (выпадает всё, часть становится ломом).
         /// </summary>
         public static string ZoneModeBannerText(string mode)
         {
             switch ((mode ?? string.Empty).Trim())
             {
+                case "pvpBlack": return "PvP · ВЫПАДАЕТ ВСЁ · ЧАСТЬ В ЛОМ";
                 case "pvpFullDrop": return "PvP · ТЕРЯЕТСЯ ИНВЕНТАРЬ · ЭКИПИРОВКА ЦЕЛА";
                 case "pvpEvent": return "PvP · ВЕЩИ СОХРАНЯЮТСЯ";
-                case "pvp": return "PvP · ПАДАЕТ ЧАСТЬ РАСХОДНИКОВ";
+                case "pvp": return "PvP · ВЕЩИ СОХРАНЯЮТСЯ · ИЗНОС";
                 case "pve": return "PvE · PvP ОТКЛЮЧЁН · ВЕЩИ СОХРАНЯЮТСЯ";
                 default: return "МИРНЫЙ · PvP ОТКЛЮЧЁН";
             }
@@ -1007,6 +1009,7 @@ namespace RealmOfAshes.Game
             bool visible = worldHud;
             _pvpPanel.SetActive(visible);
             if (!visible) return;
+            bool totalLoss = mode == "pvpBlack";
             bool inventoryLoss = mode == "pvpFullDrop";
             bool limitedDrop = mode == "pvp";
             bool pvpNoLoss = mode == "pvpEvent";
@@ -1014,7 +1017,13 @@ namespace RealmOfAshes.Game
             Image background = _pvpPanel.GetComponent<Image>();
             Outline outline = _pvpPanel.GetComponent<Outline>();
             _pvpText.text = ZoneModeBannerText(mode);
-            if (inventoryLoss)
+            if (totalLoss)
+            {
+                _pvpText.color = new Color(1f, 0.52f, 0.46f, 1f);
+                background.color = new Color(0.05f, 0.02f, 0.02f, 0.95f);
+                outline.effectColor = new Color(0.86f, 0.10f, 0.10f, 1f);
+            }
+            else if (inventoryLoss)
             {
                 _pvpText.color = new Color(1f, 0.66f, 0.42f, 1f);
                 background.color = new Color(0.22f, 0.035f, 0.025f, 0.92f);

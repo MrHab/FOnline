@@ -5,7 +5,7 @@
   "name": "Лаборатория «Цепь»",
   "seed": 2026091521,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvpBlack",
   "kind": "territoryLab",
   "respawnAllowed": false,
   "enemyCap": 0,

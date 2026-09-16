@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { canonicalKromkaFactionId } = require('../src/server/kromka-faction-contracts');
 const { ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp } = require('../src/server/zone-rules');
+const { deathLootPolicy } = require('../src/server/kromka-death-loot');
 const source = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
@@ -39,7 +40,7 @@ function fixture(mode = 'pvp') {
     players, rooms: new Map([[room.id, room]]),
     socket: { id: p.id, on: (event, callback) => { handlers[event] = callback; }, to: () => relay },
     io: { to: () => relay },
-    LOCATION_PVP_MODES: ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp,
+    LOCATION_PVP_MODES: ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp, deathLootPolicy,
     SERVER_FACTION_CAPITAL_LOCATION_IDS: new Set(['settlement', 'scrapTown', 'relayStation', 'caravanCamp']),
     SERVER_FACTION_ALLIES: new Set(['uprava|tract_league', 'tract_league|uprava']),
     SERVER_ALWAYS_HOSTILE_FACTION_GROUPS: new Set(['raiders', 'wild']),
@@ -97,7 +98,8 @@ function fixture(mode = 'pvp') {
   });
   for (const name of [
     'normalizeLocationPvpMode', 'capitalLocationId', 'locationIsFactionCapital',
-    'locationPvpMode', 'locationAllowsPvp', 'locationAllowsNpcCombat', 'roomAllowsNpcCombat', 'locationHasFullInventoryDrop',
+    'locationPvpMode', 'locationAllowsPvp', 'locationAllowsNpcCombat', 'roomAllowsNpcCombat', 'zoneModeDropsInventory',
+    'locationHasFullInventoryDrop', 'locationDropsEverything',
     'serverFactionKey', 'serverWorldFactionKey', 'serverCombatFactionGroup', 'serverFactionRelation',
     'serverFactionsHostile', 'serverActorHostileToPlayer', 'serverCombatFactionsAllied', 'serverPlayersAllied',
     'serverPlayerCanDamageNpc', 'serverPlayerCanDamagePlayer', 'serverProtectedAttackAck',

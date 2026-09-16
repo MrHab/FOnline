@@ -577,7 +577,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         public static bool ZoneModeAllowsPvp(string mode)
         {
-            return mode == "pvp" || mode == "pvpEvent" || mode == "pvpFullDrop";
+            return mode == "pvp" || mode == "pvpEvent" || mode == "pvpFullDrop" || mode == "pvpBlack";
         }
 
         /// <summary>

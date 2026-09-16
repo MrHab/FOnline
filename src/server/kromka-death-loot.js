@@ -9,26 +9,65 @@ function deathLootTransactionId(target = {}, mode = 'peaceful', now = Date.now()
 }
 
 /**
- * Политики потерь по режиму зоны.
+ * Политики потерь по режиму зоны (лестница экономики v3, библия 16.5).
  *
- * - `peaceful`, `pve`, `pvpEvent` — предметы сохраняются;
- * - `pvp` — падает половина каждой стопки расходников (старый режим);
- * - `pvpFullDrop` — частичная потеря: выпадает содержимое инвентаря, а
- *   действительная экипировка (с установленными модификациями и заряженными
- *   патронами), экипированный рюкзак, экипированный контейнер и установленные
- *   в него стабилизированные артефакты сохраняются. Содержимое рюкзака и
- *   быстрые слоты защиты не получают.
+ * - `peaceful`, `pve` (синяя), `pvp` (жёлтая), `pvpEvent` — ничего не
+ *   выпадает; износ надетого считает сервер по `data/kromka/economy.json`;
+ * - `pvpFullDrop` (красная) — частичная потеря: выпадает содержимое
+ *   инвентаря, а действительная экипировка (с установленными модификациями и
+ *   заряженными патронами), экипированный рюкзак, экипированный контейнер и
+ *   установленные в него стабилизированные артефакты сохраняются. Содержимое
+ *   рюкзака и быстрые слоты защиты не получают;
+ * - `pvpBlack` (чёрная) — выпадает всё, включая экипировку и установленные
+ *   артефакты; каждая выпавшая единица может стать ломом.
  */
 function deathLootPolicy(mode = 'peaceful') {
+  if (mode === 'pvpBlack') {
+    return Object.freeze({ mode, loss: 'all', loadedMagazines: true, trash: true });
+  }
   if (mode === 'pvpFullDrop') {
     return Object.freeze({
       mode, loss: 'inventory', loadedMagazines: true, keepEquipment: true, keepInstalledArtifacts: true
     });
   }
-  if (mode === 'pvp') return Object.freeze({ mode, loss: 'consumables', fraction: 0.5 });
+  if (mode === 'pvp') return Object.freeze({ mode, loss: 'none' });
   if (mode === 'pve') return Object.freeze({ mode, loss: 'none' });
   if (mode === 'pvpEvent') return Object.freeze({ mode, loss: 'none' });
   return Object.freeze({ mode: 'peaceful', loss: 'none' });
+}
+
+/**
+ * Лом чёрной зоны: каждая выпавшая единица независимо с шансом `chance`
+ * становится ломом. Возвращает строки, которые упадут целыми, и сколько единиц
+ * каждого вида уничтожено.
+ */
+function splitTrashRows(rows = [], chance = 0, random = Math.random) {
+  const kept = [];
+  const trashed = [];
+  const odds = Math.min(1, Math.max(0, Number(chance) || 0));
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+    if (!row?.id || qty <= 0) continue;
+    let lost = 0;
+    if (odds > 0) {
+      for (let i = 0; i < qty; i += 1) if (random() < odds) lost += 1;
+    }
+    if (qty - lost > 0) kept.push({ ...row, qty: qty - lost });
+    if (lost > 0) trashed.push({ id: row.id, qty: lost });
+  }
+  return { kept, trashed };
+}
+
+/**
+ * Сколько единиц лома остаётся от уничтоженного: доля базовой цены
+ * уничтоженных предметов в пересчёте на цену лома. Дешёвые патроны лома почти
+ * не дают, оружие и броня — заметно.
+ */
+function trashScrapQty(trashed = [], priceOf = () => 0, scrapPrice = 1, valueShare = 0.25) {
+  const value = (Array.isArray(trashed) ? trashed : []).reduce((sum, row) => (
+    sum + Math.max(0, Number(priceOf(row.id) || 0)) * Math.max(0, Math.floor(Number(row.qty || 0)))
+  ), 0);
+  return Math.max(0, Math.floor(value * Math.max(0, Number(valueShare) || 0) / Math.max(1, Number(scrapPrice) || 1)));
 }
 
 /**
@@ -121,5 +160,7 @@ module.exports = {
   restoreDeathState,
   restoreDownedState,
   resolveDeathLootTransaction,
-  selectBagDropRows
+  selectBagDropRows,
+  splitTrashRows,
+  trashScrapQty
 };

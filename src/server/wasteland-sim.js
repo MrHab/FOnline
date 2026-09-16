@@ -2480,6 +2480,14 @@ function createWastelandSimulation(options = {}) {
     ? clone(options.worldSimulationConfig)
     : readJson(options.worldSimulationFile || path.join(process.cwd(), 'data', 'kromka', 'world-simulation.json'), {});
   const anomalyLocations = Array.isArray(options.anomalyLocations) ? clone(options.anomalyLocations) : [];
+  // Экономика v3 (KRM-21) выключает части прежней живой пустоши. Без явной
+  // настройки симуляция работает целиком, как раньше: так её проверяют тесты.
+  const worldModel = Object.freeze({
+    settlementLife: true,
+    npcProduction: true,
+    worldCaravans: true,
+    ...(options.worldModel && typeof options.worldModel === 'object' ? options.worldModel : {})
+  });
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
   state.cargoLedger = pruneCargoLedger(state.cargoLedger || {});
   state.refugeeFlows = normalizeRefugeeState(state.refugeeFlows || {}, worldSimulationConfig);
@@ -10119,6 +10127,9 @@ function createWastelandSimulation(options = {}) {
   }
 
   function maybeCreateResourceSupportTask(site = {}, reason = '') {
+    // Без производства (экономика v3) точке нечего поддерживать: даже налёт
+    // не превращается в заказ на припасы.
+    if (!worldModel.npcProduction) return null;
     const supportReason = reason || resourceSiteSupportReason(site);
     if (!site || !supportReason) return null;
     const demand = resourceSiteSupportDemand(site, supportReason);
@@ -11778,10 +11789,41 @@ function createWastelandSimulation(options = {}) {
     }
   }
 
+  /**
+   * Караваны сняты с карты (worldModel.worldCaravans = false): постоянные
+   * караваны возвращаются при каждой загрузке из defaultParties, поэтому их
+   * убирают на каждом шаге. Груз в пути закрывается в журнале, привязанные
+   * задания сопровождения истекают обычным путём, раз партии больше нет.
+   */
+  function retireWorldCaravans() {
+    if (worldModel.worldCaravans) return false;
+    let changed = false;
+    for (const party of Object.values(state.parties || {})) {
+      if (!party || String(party.kind || '').toLowerCase() !== 'caravan') continue;
+      if (stockpileTotal(party.cargo || {}) > 0 || party.cargoTransactionId) {
+        settleCargoLoss(state.cargoLedger || (state.cargoLedger = {}), party, 'caravan_retired', state.worldHour);
+      }
+      delete state.parties[party.id];
+      changed = true;
+    }
+    const before = Array.isArray(state.worldZones) ? state.worldZones.length : 0;
+    state.worldZones = (Array.isArray(state.worldZones) ? state.worldZones : [])
+      .filter(zone => !(zone?.partyId && !state.parties[zone.partyId] && String(zone?.kind || zone?.type || '').includes('caravan')));
+    if (state.worldZones.length !== before) changed = true;
+    if (!worldModel.settlementLife && Object.keys(state.refugeeFlows?.active || {}).length) {
+      // Без населения нет и беженцев: незавершённые группы просто расходятся.
+      state.refugeeFlows.active = {};
+      changed = true;
+    }
+    if (changed) dirty = true;
+    return changed;
+  }
+
   function tickWorldSimStep(stepHours = 0) {
     const hours = Math.max(0, Number(stepHours || 0));
     if (hours <= 0) return;
     state.worldHour = Number(Number(state.worldHour || 0) + hours);
+    retireWorldCaravans();
     Object.values(state.sites || {}).forEach(site => {
       if (!site || Number(site.anomalyPressure || 0) <= 0) return;
       site.anomalyPressure = Number(Math.max(0, Number(site.anomalyPressure || 0) - hours * 2).toFixed(2));
@@ -11795,7 +11837,7 @@ function createWastelandSimulation(options = {}) {
     Object.values(state.parties).forEach(party => moveParty(party, hours));
     Object.values(state.parties).forEach(party => recordPartyMovementPoint(party, party, 1));
     updatePlayerAmbushInterceptions();
-    updateCaravanThreats(hours);
+    if (worldModel.worldCaravans) updateCaravanThreats(hours);
     updatePatrolThreats(hours);
     updateVisibleLairs(hours);
     resolvePartyContacts();
@@ -11806,22 +11848,28 @@ function createWastelandSimulation(options = {}) {
     resolveResourceRaids(hours);
     resolveSiteConflicts(hours);
     updatePatrolWorldOperations();
-    produceAtResourceSites(hours);
-    ensureResourceExpeditionTasks();
+    if (worldModel.npcProduction) {
+      produceAtResourceSites(hours);
+      ensureResourceExpeditionTasks();
+    }
     ensureReconExpeditionTasks();
     ensureOutpostDefenseTasks();
     ensureDistressSignalTasks();
     ensureAssaultDiversionTasks();
-    createResourceExportCaravans(hours);
-    advanceFactionProduction(hours);
-    produceAtSettlements(hours);
-    planFactionProduction(hours);
+    if (worldModel.npcProduction && worldModel.worldCaravans) createResourceExportCaravans(hours);
+    if (worldModel.npcProduction) {
+      advanceFactionProduction(hours);
+      produceAtSettlements(hours);
+      planFactionProduction(hours);
+    }
     restockRetailMarkets();
-    createProductionExportCaravans(hours);
-    advanceRefugeeMigration(hours);
-    consumeSettlementSupplies(hours);
-    createSurplusTradeCaravans(hours);
-    createFactionProcurementTasks();
+    if (worldModel.npcProduction && worldModel.worldCaravans) createProductionExportCaravans(hours);
+    if (worldModel.settlementLife) {
+      advanceRefugeeMigration(hours);
+      consumeSettlementSupplies(hours);
+    }
+    if (worldModel.worldCaravans) createSurplusTradeCaravans(hours);
+    if (worldModel.npcProduction) createFactionProcurementTasks();
     expirePunitiveParties();
     expireWorldTasks();
   }
@@ -13249,7 +13297,7 @@ function createWastelandSimulation(options = {}) {
     const isRaider = owner === 'raiders';
     const isWild = isContestedWorldSite(site);
     if (!isRaider && !isWild) return null;
-    const pvpFullDrop = String(site.pvpMode || '') === 'pvpFullDrop';
+    const pvpFullDrop = ['pvpFullDrop', 'pvpBlack'].includes(String(site.pvpMode || ''));
     const suppressed = Number(site.threatSuppressedUntil || 0) > Number(state.worldHour || 0);
     const suppressMul = suppressed ? 0.45 : 1;
     const protectionMul = clamp(1 - Number(site.protectionLevel || 0) / 160, 0.35, 1);
@@ -13905,7 +13953,7 @@ function createWastelandSimulation(options = {}) {
 
   function normalizePvpMode(value = '') {
     const key = String(value || '').trim();
-    if (key === 'peaceful' || key === 'pvp' || key === 'pvpFullDrop') return key;
+    if (key === 'peaceful' || key === 'pvp' || key === 'pvpFullDrop' || key === 'pvpBlack') return key;
     return 'pvp';
   }
 

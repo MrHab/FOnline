@@ -5,7 +5,7 @@
   "name": "Сердцевина",
   "seed": 2026091510,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvpBlack",
   "kind": "territoryZone",
   "respawnAllowed": false,
   "enemyCap": 0,

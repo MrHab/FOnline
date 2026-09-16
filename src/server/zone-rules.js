@@ -3,12 +3,13 @@
 const { deathLootPolicy } = require('./kromka-death-loot');
 
 /**
- * Режимы зон. Внутренний id `pvpFullDrop` сохранён ради совместимости данных,
- * сохранений и замороженного legacy-клиента, но его правило — частичная
- * потеря: выпадает инвентарь, экипировка сохраняется. В интерфейсе термин
- * «полный лут» не используется.
+ * Режимы зон — лестница экономики v3 (библия 16.5): мирная, синяя (`pve`),
+ * жёлтая (`pvp`), красная (`pvpFullDrop`), чёрная (`pvpBlack`) и события.
+ * Внутренний id `pvpFullDrop` сохранён ради совместимости данных, сохранений и
+ * замороженного legacy-клиента, но его правило — частичная потеря: выпадает
+ * инвентарь, экипировка сохраняется. Полная потеря — только `pvpBlack`.
  */
-const ZONE_MODES = Object.freeze(['peaceful', 'pve', 'pvp', 'pvpEvent', 'pvpFullDrop']);
+const ZONE_MODES = Object.freeze(['peaceful', 'pve', 'pvp', 'pvpEvent', 'pvpFullDrop', 'pvpBlack']);
 const ZONE_MODE_SET = new Set(ZONE_MODES);
 const ZONE_MODE_ALIASES = Object.freeze({
   peace: 'peaceful',
@@ -40,7 +41,14 @@ const ZONE_MODE_ALIASES = Object.freeze({
   partial_drop: 'pvpFullDrop',
   bagdrop: 'pvpFullDrop',
   bag_drop: 'pvpFullDrop',
-  territory: 'pvpFullDrop',
+  red: 'pvpFullDrop',
+  redzone: 'pvpFullDrop',
+  pvpblack: 'pvpBlack',
+  pvp_black: 'pvpBlack',
+  black: 'pvpBlack',
+  blackzone: 'pvpBlack',
+  black_zone: 'pvpBlack',
+  territory: 'pvpBlack',
   pvp: 'pvp',
   danger: 'pvp',
   dangerous: 'pvp',
@@ -52,9 +60,10 @@ const ZONE_MODE_ALIASES = Object.freeze({
 const ZONE_MODE_LABELS = Object.freeze({
   peaceful: 'Мирная зона: PvP отключён',
   pve: 'PvE: PvP запрещено, предметы сохраняются',
-  pvp: 'PvP: падают расходники',
+  pvp: 'PvP: предметы сохраняются, экипировка изнашивается',
   pvpEvent: 'PvP: предметы сохраняются',
-  pvpFullDrop: 'PvP: инвентарь выпадает, экипировка сохраняется'
+  pvpFullDrop: 'PvP: инвентарь выпадает, экипировка сохраняется',
+  pvpBlack: 'PvP: выпадает всё, часть становится ломом'
 });
 
 const ZONE_LOSS_LABELS = Object.freeze({
@@ -62,7 +71,9 @@ const ZONE_LOSS_LABELS = Object.freeze({
   consumables: 'При смерти выпадает половина каждой стопки расходников.',
   inventory: 'При смерти выпадает содержимое инвентаря, включая запасное снаряжение, '
     + 'материалы и любые артефакты в инвентаре. Экипировка, экипированный рюкзак, '
-    + 'экипированный контейнер и установленные в него стабилизированные артефакты сохраняются.'
+    + 'экипированный контейнер и установленные в него стабилизированные артефакты сохраняются.',
+  all: 'При смерти выпадает всё: экипировка, рюкзак, контейнер и установленные артефакты. '
+    + 'Каждый выпавший предмет может стать ломом. Марки и сюжетные предметы сохраняются.'
 });
 
 const ZONE_ACCESS_LABELS = Object.freeze({
@@ -111,7 +122,7 @@ function zoneRules(mode = 'peaceful', extra = {}) {
     access,
     accessLabel: ZONE_ACCESS_LABELS[access] || ZONE_ACCESS_LABELS.open,
     safe: zoneModeIsSafe(normalized),
-    confirmBeforeEntry: loss === 'inventory' || normalized === 'pvpEvent'
+    confirmBeforeEntry: loss === 'inventory' || loss === 'all' || normalized === 'pvpEvent'
   };
   if (extra.territoryId) rules.territoryId = String(extra.territoryId).slice(0, 32);
   if (extra.factionId) rules.factionId = String(extra.factionId).slice(0, 32);

@@ -13,7 +13,7 @@
   "zone": {
     "widthMeters": 320,
     "depthMeters": 320,
-    "pvpMode": "pvpFullDrop",
+    "pvpMode": "pvpBlack",
     "enemyCap": 0
   },
   "rules": {

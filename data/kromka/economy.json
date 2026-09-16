@@ -6,6 +6,21 @@
     "displayName": "Марки Тракта",
     "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками."
   },
+  "worldModel": {
+    "settlementLife": false,
+    "npcProduction": false,
+    "worldCaravans": false,
+    "npcTraders": true,
+    "npcStations": true,
+    "npcGearDrops": true,
+    "visibleWorldParties": true
+  },
+  "zones": {
+    "brokenBelowCondition": 10,
+    "deathWear": { "pve": 5, "pvp": 5, "pvpFullDrop": 20 },
+    "blackDrop": { "trashChance": 0.33, "trashItemId": "scrap", "trashValueShare": 0.25, "droppedWearMin": 20, "droppedWearMax": 40 },
+    "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 }
+  },
   "strategicResource": {
     "itemId": "blue",
     "displayName": "Синь",

@@ -21,8 +21,15 @@ const {
   restoreDeathState,
   restoreDownedState,
   resolveDeathLootTransaction,
-  selectBagDropRows
+  selectBagDropRows,
+  splitTrashRows,
+  trashScrapQty
 } = require('./src/server/kromka-death-loot');
+const {
+  loadWorldEconomy,
+  zoneDeathWear,
+  conditionIsBroken
+} = require('./src/server/world-economy');
 const {
   ZONE_MODE_SET,
   ZONE_MODE_LABELS,
@@ -736,6 +743,9 @@ const LOOT_TABLES_FILE = path.join(DATA_DIR, 'loot-tables.json');
 const MODEL_COLLIDERS_FILE = path.join(__dirname, 'public', 'assets', 'models', 'wasteland', 'model-colliders.json');
 const SERVER_MODEL_COLLIDERS = loadModelColliderCatalog(MODEL_COLLIDERS_FILE);
 
+// Экономика v3 (KRM-21): какие части живой пустоши включены и числа лестницы зон.
+const WORLD_ECONOMY = loadWorldEconomy(path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));
+
 const ECONOMY_RULES = Object.freeze({
   randomLootTables: false,
   progressionLootBonus: false,
@@ -1097,7 +1107,18 @@ function roomAllowsNpcCombat(room = null) {
   if (locationIsFactionCapital(roomLocation(room))) return false;
   return locationAllowsNpcCombat(roomLocation(room)) || !!room.locationWorldEvent;
 }
-function locationHasFullInventoryDrop(loc = {}) { return locationPvpMode(loc) === 'pvpFullDrop'; }
+// Выпадает ли что-нибудь при смерти: красная зона роняет рюкзак, чёрная — всё.
+function zoneModeDropsInventory(mode = '') {
+  return deathLootPolicy(mode).loss !== 'none';
+}
+
+function locationHasFullInventoryDrop(loc = {}) {
+  return zoneModeDropsInventory(locationPvpMode(loc));
+}
+
+function locationDropsEverything(loc = {}) {
+  return deathLootPolicy(locationPvpMode(loc)).loss === 'all';
+}
 
 const GLOBAL_MAP_GRID_DEFAULT = { cols: 38, rows: 30, cellPoints: 10, cellKm: 10 };
 const DEFAULT_GLOBAL_MAP_CONFIG = {
@@ -1282,7 +1303,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
   loc.pvpMode = normalizeLocationPvpMode(loc.pvpMode || loc.pvpType || loc.combatMode || loc.pvp, loc.safe !== false);
   loc.safe = loc.pvpMode === 'peaceful';
   loc.pvp = zoneModeAllowsPvp(loc.pvpMode);
-  loc.fullDrop = loc.pvpMode === 'pvpFullDrop';
+  loc.fullDrop = zoneModeDropsInventory(loc.pvpMode);
   loc.lossPolicy = deathLootPolicy(loc.pvpMode).loss;
   loc.territoryId = String(loc.territoryId || base.territoryId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
   const explicitSettlement = loc.kind === 'settlement' || loc.city === true || loc.settlement === true || loc.respawnAllowed === true;
@@ -5121,7 +5142,8 @@ const WASTELAND_SIM = createWastelandSimulation({
   traderProfiles: SERVER_TRADER_PROFILES,
   publicSiteIds: RELEASED_LOCATION_IDS,
   locationRelease: publicLocationRelease(),
-  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || []
+  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || [],
+  worldModel: WORLD_ECONOMY.worldModel
 });
 const rawWastelandPublicState = WASTELAND_SIM.publicState.bind(WASTELAND_SIM);
 const rawWastelandPublicWorldTasks = typeof WASTELAND_SIM.publicWorldTasks === 'function'
@@ -6181,6 +6203,8 @@ function serverArmorProfile(p = {}, damageType = 'ballistic') {
   for (const id of slots) {
     const item = SERVER_ARMOR_ITEMS[id];
     if (!item) continue;
+    // Сломанная броня (ниже порога состояния) не защищает, пока её не починят.
+    if (conditionIsBroken(WORLD_ECONOMY, p.itemConditions?.[id] ?? 100)) continue;
     protection += Number(item.protection?.[type] || 0);
     threshold += Number(item.thresholds?.[type] || 0);
   }
@@ -7345,15 +7369,20 @@ function performServerRepairItem(player = {}, data = {}) {
       + (weaponOrTool ? serverTalentLevel(player, 'weaponSmith') * 8 : 0)
       + (armorLike ? serverTalentLevel(player, 'armorTraining') * 8 : 0);
     mode = 'repairKit';
-  } else if (serverInventoryQty(player.inventory || [], 'ore') > 0 && serverInventoryQty(player.inventory || [], 'wood') > 0) {
-    serverInventoryRemove(player, 'ore', 1);
-    serverInventoryRemove(player, 'wood', 1);
+  } else if (weaponOrTool && serverInventoryQty(player.inventory || [], 'weaponParts') > 0) {
+    // Полевой ремонт оружия — крафтовыми деталями, а не сырьём: ремонт должен
+    // тратить то, что сделали игроки (экономика v3).
+    serverInventoryRemove(player, 'weaponParts', 1);
     restored = 18 + Math.round(serverSkillNorm(player, 'repair') * 22)
-      + (weaponOrTool ? serverTalentLevel(player, 'weaponSmith') * 4 : 0)
-      + (armorLike ? serverTalentLevel(player, 'armorTraining') * 4 : 0);
+      + serverTalentLevel(player, 'weaponSmith') * 4;
     mode = 'field';
   } else {
-    return { ok: false, error: 'Нужен ремкомплект или 1 руда + 1 древесина.' };
+    return {
+      ok: false,
+      error: weaponOrTool
+        ? 'Нужен ремкомплект или оружейные детали.'
+        : 'Нужен ремкомплект.'
+    };
   }
   const residentBonuses = serverResidentBonusesForPlayer(player, true);
   restored = Math.round(restored * (1 + Math.max(0, -Number(residentBonuses.repairCostPct || 0))));
@@ -11373,6 +11402,21 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
     }
   }
   for (const entry of resourceEntries) {
+    if (!entry.weapon.id || entry.weapon.id === 'fists') continue;
+    const condition = entry.weapon.ammoType
+      ? Number(entry.row.condition ?? 100)
+      : Number(serverPlayerItemCondition(p, entry.weapon.id) ?? 100);
+    if (conditionIsBroken(WORLD_ECONOMY, condition)) {
+      const combats = serverCombatAcksForEntries(p, entries, now);
+      return {
+        ok: false,
+        error: `Оружие сломано: состояние ниже ${WORLD_ECONOMY.zones.brokenBelowCondition}%. Почините его.`,
+        combat: combats[0],
+        combats
+      };
+    }
+  }
+  for (const entry of resourceEntries) {
     if (!entry.weapon.ammoType) continue;
     entry.row.loaded = Math.max(0, Number(entry.row.loaded || 0) - 1);
     // Оружейник базы ухаживает за стволами: каждый выстрел изнашивает меньше.
@@ -11542,16 +11586,24 @@ function serverInstalledArtifactCounts(target = {}) {
   return counts;
 }
 
-function serverDropPvpInventory(room, target, killer, now = Date.now()) {
+function serverDropPvpInventory(room, target, killer, now = Date.now(), options = {}) {
   if (!room || !target) return [];
   const inventory = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
   // Экипировка в рюкзаке не хранится, поэтому здесь остаётся только защита
-  // валюты/сюжетных предметов и установленных в контейнер артефактов.
+  // валюты/сюжетных предметов и установленных в контейнер артефактов. В чёрной
+  // зоне (options.all) установленные артефакты защиты не получают.
   const { drops, kept: protectedRows } = selectBagDropRows(inventory, {
-    installedCounts: serverInstalledArtifactCounts(target),
+    installedCounts: options.all ? new Map() : serverInstalledArtifactCounts(target),
     isProtected: serverItemProtectedFromPvpDrop
   });
   if (!drops.length) return [];
+  // Лом чёрной зоны: уничтоженные единицы уходят у погибшего вместе с
+  // остальными, но на землю падает только уцелевшее и кучка лома.
+  const trashChance = Math.max(0, Number(options.trashChance || 0));
+  const split = trashChance > 0 ? splitTrashRows(drops, trashChance) : { kept: drops, trashed: [] };
+  const keptQty = new Map(split.kept.map(row => [row.id, row.qty]));
+  const wearMin = Math.max(0, Number(options.droppedWearMin || 0));
+  const wearMax = Math.max(wearMin, Number(options.droppedWearMax || 0));
   const runtimeDrops = new Map();
   for (const entry of drops) {
     if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;
@@ -11563,15 +11615,36 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
       records: serverCaptureWeaponRuntimeRecords(target, entry, validation)
     });
   }
+  const scrapQty = trashScrapQty(
+    split.trashed,
+    id => SERVER_ITEM_BASE_PRICES[id] || 0,
+    SERVER_ITEM_BASE_PRICES[options.trashItemId] || 1,
+    options.trashValueShare
+  );
+  const groundRows = drops
+    .map(entry => ({ ...entry, qty: keptQty.get(entry.id) || 0 }))
+    .filter(entry => entry.qty > 0);
+  if (scrapQty > 0 && SERVER_ITEM_IDS.has(options.trashItemId)) {
+    groundRows.push({ id: options.trashItemId, qty: scrapQty, trash: true });
+  }
   const created = [];
   let index = 0;
-  for (const entry of drops) {
+  for (const entry of groundRows) {
     if (!entry || !SERVER_ITEM_IDS.has(entry.id) || entry.id === 'fists' || entry.qty <= 0) continue;
     const angle = index * 2.399963229728653 + 0.35;
     const radius = 0.35 + Math.min(1.2, index * 0.055);
     let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
     if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
+    const records = entry.trash ? [] : (runtimeDrops.get(entry.id)?.records || []).slice(0, entry.qty);
+    if (wearMax > 0) {
+      // Выпавшее оружие побито: у каждого экземпляра своя потеря состояния.
+      for (const record of records) {
+        if (!Number.isFinite(Number(record?.condition))) continue;
+        const wear = wearMin + Math.random() * (wearMax - wearMin);
+        record.condition = Number(Math.max(1, Number(record.condition) - wear).toFixed(2));
+      }
+    }
     const groundItem = {
       id: makeServerEntityId('pvp_drop'),
       itemId: entry.id,
@@ -11581,7 +11654,7 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
       droppedBy: target.id,
       killerId: killer?.id || '',
       pvpDrop: true,
-      itemRuntimeRecords: runtimeDrops.get(entry.id)?.records || [],
+      itemRuntimeRecords: records,
       createdAt: now
     };
     room.groundItems.set(groundItem.id, groundItem);
@@ -11605,60 +11678,66 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
   return created;
 }
 
-// Средний режим PvP: экипировка остаётся при владельце, падает половина
-// каждой стопки расходников. Расходник = всё стекуемое, кроме серебра.
-const SERVER_PVP_CONSUMABLE_DROP_IDS = new Set(Object.keys(SERVER_ITEM_STACK_LIMITS).filter(id => id !== 'silver'));
-
-function serverDropPvpConsumables(room, target, killer, now = Date.now()) {
-  if (!room || !target) return [];
-  const rows = Array.isArray(target.inventory) ? target.inventory : [];
-  const drops = [];
-  for (const row of rows) {
-    const baseId = serverBaseItemId(row?.id || '');
-    if (!SERVER_PVP_CONSUMABLE_DROP_IDS.has(baseId)) continue;
-    const have = Math.max(0, Math.floor(Number(row.qty || 0)));
-    const dropQty = Math.ceil(have / 2);
-    if (dropQty <= 0) continue;
-    row.qty = have - dropQty;
-    drops.push({ id: baseId, qty: dropQty });
+/**
+ * Чёрная зона: экипировка переходит в рюкзак без платы ОД и выпадает вместе с
+ * ним. Пояс и детектор тоже снимаются, поэтому установленные артефакты теряют
+ * защиту. Экземпляры оружия с магазином и модулями остаются в боевом
+ * состоянии и уходят в записи выпавших предметов.
+ */
+function serverStripEquipmentForDeath(target = {}, now = Date.now()) {
+  const current = sanitizeEquipment(target.equipment || {}, { weapon: 'fists' });
+  const counts = new Map();
+  for (const row of sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true })) {
+    counts.set(row.id, (counts.get(row.id) || 0) + Number(row.qty || 0));
   }
-  if (!drops.length) return [];
-  target.inventory = rows.filter(row => Math.max(0, Math.floor(Number(row?.qty || 0))) > 0);
+  let moved = 0;
+  for (const rawId of Object.values(current)) {
+    const id = serverBaseItemId(rawId);
+    if (!id || id === 'fists') continue;
+    counts.set(id, (counts.get(id) || 0) + 1);
+    moved += 1;
+  }
+  if (!moved) return false;
+  const empty = Object.fromEntries(Object.keys(VALID_EQUIPMENT).map(slot => [slot, slot === 'weapon' ? 'fists' : '']));
+  target.inventory = sanitizeServerInventorySnapshot(
+    [...counts.entries()].map(([id, qty]) => ({ id, qty })),
+    { includeEquipped: true }
+  );
+  target.equipment = sanitizeEquipment(empty, {});
+  target.equipmentRuntime = serverEquipmentRuntimeFromRequest({}, target.equipment, {});
+  target.weapon = serverActiveWeaponId(target);
+  target.equipmentRevision = Math.max(0, Math.floor(Number(target.equipmentRevision || 0))) + 1;
   target.inventoryUpdatedAt = now;
-  const created = [];
-  let index = 0;
-  for (const entry of drops) {
-    if (!SERVER_ITEM_IDS.has(entry.id)) continue;
-    const angle = index * 2.399963229728653 + 0.35;
-    const radius = 0.35 + Math.min(1.2, index * 0.055);
-    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
-    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -roomWorldExtent(room), roomWorldExtent(room));
-    if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
-    const groundItem = {
-      id: makeServerEntityId('pvp_drop'),
-      itemId: entry.id,
-      qty: entry.qty,
-      x,
-      z,
-      droppedBy: target.id,
-      killerId: killer?.id || '',
-      pvpDrop: true,
-      createdAt: now
-    };
-    room.groundItems.set(groundItem.id, groundItem);
-    created.push(publicGroundItem(groundItem));
-    index++;
+  sanitizeArtifactLoadout(target, KROMKA_ARTIFACT_CATALOG);
+  return true;
+}
+
+/**
+ * Износ надетого при смерти по цвету зоны (economy.json zones.deathWear):
+ * синяя и жёлтая — 5%, красная — 20%. Оружие с магазином хранит состояние в
+ * своём экземпляре, остальное — по базовому id.
+ */
+function serverApplyDeathWear(target = {}, mode = 'peaceful') {
+  const wear = zoneDeathWear(WORLD_ECONOMY, mode);
+  if (wear <= 0) return false;
+  const combat = serverEnsureCombatState(target, Date.now());
+  const worn = new Set();
+  for (const entry of serverEquippedWeaponRuntimeEntries(target)) {
+    const state = combat.weapons?.[entry.itemKey];
+    if (!SERVER_WEAPONS[entry.baseId]?.ammoType || !state) continue;
+    const before = Number(state.condition ?? serverPlayerItemCondition(target, entry.baseId) ?? 100);
+    state.condition = Number(Math.max(1, before - wear).toFixed(2));
+    state.updatedAt = Date.now();
+    worn.add(entry.baseId);
   }
-  if (created.length) {
-    refreshRoomWorldState(room);
-    io.to(room.id).emit('groundItemsSnapshot', {
-      roomId: room.id,
-      locationId: room.locationId,
-      t: now,
-      items: [...room.groundItems.values()].map(publicGroundItem)
-    });
+  const equipment = sanitizeEquipment(target.equipment || {}, { weapon: 'fists' });
+  for (const rawId of Object.values(equipment)) {
+    const id = serverBaseItemId(rawId);
+    if (!id || id === 'fists' || worn.has(id)) continue;
+    serverWearPlayerItem(target, id, wear);
+    worn.add(id);
   }
-  return created;
+  return worn.size > 0;
 }
 
 function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
@@ -11666,8 +11745,20 @@ function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
   const mode = locationPvpMode(loc);
   const policy = deathLootPolicy(mode);
   const outcome = resolveDeathLootTransaction(target, mode, now, () => {
+    serverApplyDeathWear(target, mode);
+    if (policy.loss === 'all') {
+      const black = WORLD_ECONOMY.zones.blackDrop;
+      serverStripEquipmentForDeath(target, now);
+      return serverDropPvpInventory(room, target, killer, now, {
+        all: true,
+        trashChance: black.trashChance,
+        trashItemId: black.trashItemId,
+        trashValueShare: black.trashValueShare,
+        droppedWearMin: black.droppedWearMin,
+        droppedWearMax: black.droppedWearMax
+      });
+    }
     if (policy.loss === 'inventory') return serverDropPvpInventory(room, target, killer, now);
-    if (policy.loss === 'consumables') return serverDropPvpConsumables(room, target, killer, now);
     return [];
   });
   if (!outcome.reused) {
@@ -11759,7 +11850,7 @@ function roomLocation(room) {
     pvpMode: override,
     safe: override === 'peaceful',
     pvp: zoneModeAllowsPvp(override),
-    fullDrop: override === 'pvpFullDrop',
+    fullDrop: zoneModeDropsInventory(override),
     lossPolicy: deathLootPolicy(override).loss
   };
 }
@@ -21337,7 +21428,7 @@ function publicWorldState(room, includeMap = true) {
       ownerName: savesDb.kromkaClans.clans?.[clanBaseRuntime?.ownerClanId]?.name || 'Нейтральный гарнизон',
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
-    fullDrop: pvpMode === 'pvpFullDrop',
+    fullDrop: zoneModeDropsInventory(pvpMode),
     activity: publicWorldActivity(room.worldActivity),
     pveArea: room.pveState
       ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
@@ -24468,7 +24559,7 @@ function updateServerEnemies(room, dt, opts = {}) {
               enemyName: enemy.name,
               pvpMode: locationPvpMode(deathLoc),
               fullDrop: npcFullDrop,
-              consumableDrop: locationPvpMode(deathLoc) === 'pvp',
+              totalDrop: locationDropsEverything(deathLoc),
               droppedItems
             });
           }
@@ -30500,7 +30591,7 @@ io.on('connection', (socket) => {
         injuries: sanitizeInjuries(target.injuries || {}),
         newInjuries,
         fullDrop: locationHasFullInventoryDrop(loc),
-        consumableDrop: locationPvpMode(loc) === 'pvp',
+        totalDrop: locationDropsEverything(loc),
         droppedItems,
         t: now
       };
@@ -30529,7 +30620,7 @@ io.on('connection', (socket) => {
         selfExplosion: row.isSelf,
         pvpMode: locationPvpMode(loc),
         fullDrop: !row.isSelf && locationHasFullInventoryDrop(loc),
-        consumableDrop: !row.isSelf && locationPvpMode(loc) === 'pvp',
+        totalDrop: !row.isSelf && locationDropsEverything(loc),
         killerId: p.id,
         killerName: p.name || 'Игрок',
         droppedItems: row.droppedItems
@@ -30920,7 +31011,7 @@ io.on('connection', (socket) => {
       injuries: sanitizeInjuries(target.injuries || {}),
       newInjuries,
       fullDrop: locationHasFullInventoryDrop(loc),
-      consumableDrop: locationPvpMode(loc) === 'pvp',
+      totalDrop: locationDropsEverything(loc),
       droppedItems,
       t: now
     };
@@ -30947,7 +31038,7 @@ io.on('connection', (socket) => {
       criticalMultiplier: criticalHits > 0 ? 2 : 1,
       secondChance,
       fullDrop: locationHasFullInventoryDrop(loc),
-      consumableDrop: locationPvpMode(loc) === 'pvp',
+      totalDrop: locationDropsEverything(loc),
       droppedItems,
       combat: spend.combat,
       combats: spend.combats
@@ -30958,7 +31049,7 @@ io.on('connection', (socket) => {
         pvp: true,
         pvpMode,
         fullDrop: locationHasFullInventoryDrop(loc),
-        consumableDrop: locationPvpMode(loc) === 'pvp',
+        totalDrop: locationDropsEverything(loc),
         killerId: attacker.id,
         killerName: attacker.name || 'Игрок',
         droppedItems

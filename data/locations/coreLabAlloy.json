@@ -5,7 +5,7 @@
   "name": "Лаборатория «Сплав»",
   "seed": 2026091522,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvpBlack",
   "kind": "territoryLab",
   "respawnAllowed": false,
   "enemyCap": 0,

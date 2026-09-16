@@ -146,11 +146,12 @@ const getJson = route => new Promise((resolve, reject) => {
   const baseDefinition = definitions.json.locations.coreBaseUprava;
   const metro = (baseDefinition.transitions || []).find(row => row.id === 'metro_platform');
   assert(metro && metro.targetZoneRules, 'The metro platform carries the rules of the zone behind it: ' + JSON.stringify(metro || {}).slice(0, 200));
-  assert.equal(metro.targetPvpMode, 'pvpFullDrop');
+  assert.equal(metro.targetPvpMode, 'pvpBlack', 'The territory is a black zone (economy v3).');
+  assert.equal(metro.targetZoneRules.loss, 'all', 'Death in the territory drops everything.');
   assert.equal(metro.targetZoneRules.confirmBeforeEntry, true, 'The territory asks for confirmation before entry.');
   assert(String(metro.targetZoneRules.lossLabel || '').length > 0, 'The rules explain what is lost on death.');
   const labDoor = (definitions.json.locations.coreZone.transitions || []).find(row => row.id === 'enter_coreLabSprout');
-  assert.equal(labDoor.targetZoneRules.mode, 'pvpFullDrop', 'A laboratory inherits the rules of the territory.');
+  assert.equal(labDoor.targetZoneRules.mode, 'pvpBlack', 'A laboratory inherits the rules of the territory.');
   const settlementExit = (definitions.json.locations.settlement.transitions || [])
     .find(row => row.targetZoneRules && row.targetZoneRules.mode === 'peaceful');
   if (settlementExit) assert.equal(settlementExit.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');

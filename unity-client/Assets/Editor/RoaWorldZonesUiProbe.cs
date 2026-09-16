@@ -108,10 +108,15 @@ namespace RealmOfAshes.EditorTools
             Require(!RoaWorldEventsPresentation.DescribeWorldBoss(boss, "coreLabCenterReactor", 0).Contains("сейфы"),
                 "A taken reward is not promised twice");
 
-            var pve = JObject.Parse(@"{'roomId':'antHive#pve_char','displayName':'Колония Пыльников','alive':3,'calmSeconds':0,'tracksReadyInSeconds':0,'tracksLabel':'Искать следы','lastResultLabel':'Слышно движение: появилась новая группа.'}");
+            var pve = JObject.Parse(@"{'roomId':'antHive#pve_char','displayName':'Колония Пыльников','personal':true,'alive':3,'calmSeconds':0,'tracksReadyInSeconds':0,'tracksLabel':'Искать следы','lastResultLabel':'Слышно движение: появилась новая группа.'}");
             string pveText = RoaWorldEventsPresentation.DescribePveArea(pve, "antHive#pve_char", 0);
             Require(pveText.Contains("личная встреча") && pveText.Contains("PvP отключён") && pveText.Contains("Врагов рядом: 3") && pveText.Contains("новая группа"),
                 "PvE area line shows personal mode, enemies and last result");
+            // Логово угодий — общая комната: панель так и говорит.
+            var lair = (JObject)pve.DeepClone();
+            lair["personal"] = false;
+            Require(RoaWorldEventsPresentation.DescribePveArea(lair, "antHive#pve_char", 0).Contains("общее логово"),
+                "A shared lair is not called personal");
             // Встречи приходят к идущему: остаток пути назван прямо, иначе
             // тишина в области выглядит поломкой.
             pve["distanceToRollM"] = 40;

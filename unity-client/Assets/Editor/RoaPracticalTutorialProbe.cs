@@ -124,6 +124,10 @@ namespace RealmOfAshes.EditorTools
                 bootstrap.Enemies = enemies;
                 var combat = host.AddComponent<RoaCombat>(); combat.enabled = false; bootstrap.Combat = combat;
                 var socket = host.AddComponent<RoaSocketClient>(); socket.enabled = false; combat.Socket = socket;
+                // Слот предмета клиент берёт из серверного каталога (RoaInventory.SlotFor),
+                // поэтому проба загружает тот же каталог, что игра получает при входе.
+                var items = JObject.Parse(File.ReadAllText(Path.GetFullPath(Path.Combine(Application.dataPath, "../../data/kromka/items.json"))));
+                Require(RoaItemData.ApplyCatalog(items, out string catalogError), "Item catalog rejected: " + catalogError);
                 var session = new JoinAck { Self = new JObject { ["equipment"] = new JObject { ["weapon"] = "medkit" } } };
                 typeof(RoaSocketClient).GetProperty("Session").SetValue(socket, session);
                 Require(combat.HasHeldMedkit && RoaInventory.SlotFor("medkit") == "weapon", "Held medkit is not usable in the client");
@@ -157,10 +161,13 @@ namespace RealmOfAshes.EditorTools
                 medicObject.transform.position = RoaCoords.ToUnity(10,8);
                 var medic = medicObject.AddComponent<RoaCharacterView>();
                 await medic.Load("http://127.0.0.1:1", new JObject { ["sex"] = "male", ["bodyType"] = "medium" });
-                await medic.EquipWeapon("http://127.0.0.1:1", "medkit");
+                // Аптечка в руке — настоящая модель предмета с сервера ассетов, как у
+                // остальных проб моделей (ROA_UNITY_PROBE_ORIGIN или локальный :3000).
+                string assetOrigin = Environment.GetEnvironmentVariable("ROA_UNITY_PROBE_ORIGIN") ?? "http://127.0.0.1:3000";
+                await medic.EquipWeapon(assetOrigin, "medkit");
                 Require(medic.WeaponReady && medic.WeaponId == "medkit"
-                    && medic.GetComponentsInChildren<Transform>().Any(t => t.name == "Tutorial_medkit" && t.parent.name == "hand_r"),
-                    "Medkit is not visibly attached to the player's right hand");
+                    && medic.GetComponentsInChildren<Transform>().Any(t => t.name == "ItemModel:medkit" && t.parent.name == "hand_r"),
+                    "Medkit is not visibly attached to the player's right hand (asset server " + assetOrigin + ")");
                 var steps = catalog["tutorial"]["steps"].OfType<JObject>().ToArray();
                 for (int view = 0; view < 2; view++)
                 {

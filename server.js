@@ -177,6 +177,7 @@ const {
   notePveDistance,
   publicPveAreaCatalog,
   pveAreaRewardIds,
+  pveAreaZone,
   publicPveRoomState,
   pveAreaForLocation,
   pveOwnerKey,
@@ -20724,7 +20725,27 @@ function serverNotePveTravel(room, occupants = []) {
   return notePveDistance(room.pveState, best);
 }
 
+/**
+ * Угодья на карте мира как постоянные зоны. Сервер сверяет контакт в пути со
+ * своими зонами, а не с каталогом областей, поэтому без этой публикации путь
+ * сквозь нарисованный контур ничего не значил: клиент предлагал вход, сервер
+ * отвечал «контакт не подтверждён». Зоны переставляются заново на каждом тике —
+ * симуляция чистит и пересобирает список, и угодья обязаны его пережить.
+ */
+function serverSyncPveAreaZones() {
+  if (typeof WASTELAND_SIM?.upsertWorldZone !== 'function') return 0;
+  const worldHour = Number(WASTELAND_SIM.state()?.worldHour || 0);
+  let published = 0;
+  for (const area of KROMKA_PVE_AREA_CATALOG.areas) {
+    const point = serverGlobalMapPointForLocation(area.locationId);
+    if (!point || !(Number(point.x) > 0 || Number(point.y) > 0)) continue;
+    if (WASTELAND_SIM.upsertWorldZone(pveAreaZone(area, point, worldHour))) published += 1;
+  }
+  return published;
+}
+
 function serverTickPveRooms(now = Date.now(), options = {}) {
+  serverSyncPveAreaZones();
   const rules = KROMKA_PVE_AREA_CATALOG.rules;
   const results = [];
   for (const room of rooms.values()) {
@@ -31708,6 +31729,10 @@ setInterval(() => {
     console.error('World boss tick failed:', error);
   }
 }, 1000);
+
+// Угодья встреч: постоянные зоны мира, чтобы путь сквозь контур предлагал вход,
+// а сервер подтверждал контакт на маршруте.
+serverSyncPveAreaZones();
 
 // Публичные события: появление, предупреждение, спорный сундук, истечение.
 serverRestorePublicEventZones();

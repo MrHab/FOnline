@@ -232,6 +232,35 @@ for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAr
 assert(clientMap.includes('sim["pveAreas"] = pveAreaRows'),
   'FetchWasteland must carry pveAreas into the snapshot the map draws from.');
 
+// --- путь сквозь угодья ------------------------------------------------------------
+// Контур на карте обязан что-то значить: отряд, вошедший в угодья, получает
+// предложение войти. Сервер сверяет контакт в пути со своими зонами мира, а не
+// с каталогом областей, поэтому у каждой области есть постоянная зона, и её
+// идентификатор едет клиенту — тот не придумывает его сам.
+for (const row of publicAreas) {
+  const area = catalog.byLocation[row.locationId];
+  const zone = pve.pveAreaZone(area, { x: row.x, y: row.y }, 12);
+  assert.equal(zone.id, row.worldZoneId, `${row.id}: the published zone id must match the area row`);
+  assert.equal(zone.kind, 'pveArea', `${row.id}: the zone declares itself as hunting grounds`);
+  assert.equal(zone.status, 'active', `${row.id}: hunting grounds never expire`);
+  assert.equal(zone.locationId, row.locationId, `${row.id}: the zone leads into the area's own location`);
+  // Ровно эти три поля решают, увидит ли сервер зону при сверке контакта
+  // (serverGlobalZoneVisible): статус, hidden и visible.
+  assert(zone.details.hidden !== true && zone.details.visible !== false,
+    `${row.id}: a hidden zone would never confirm a contact on the route`);
+  assert.equal(zone.forced, false, `${row.id}: entering hunting grounds stays the player's choice`);
+  assert(zone.radius >= 2, `${row.id}: the zone has a radius the server can measure against`);
+}
+assert(server.includes('function serverSyncPveAreaZones()')
+  && server.includes('WASTELAND_SIM.upsertWorldZone(pveAreaZone(area, point, worldHour))')
+  && server.includes('serverSyncPveAreaZones();\n\n// Публичные события'),
+  'The server must publish the hunting-ground zones at boot, or a route through the outline confirms nothing.');
+const tickAt = server.indexOf('function serverTickPveRooms(');
+assert(tickAt > 0 && server.slice(tickAt, tickAt + 160).includes('serverSyncPveAreaZones();'),
+  'The area tick must republish the zones: the simulation rebuilds its zone list.');
+for (const token of ['row["worldZoneId"]', 'EncounterZoneSemantic', 'public static bool RouteEntersArea('])
+  assert(clientMap.includes(token), `RoaGlobalMap must turn an area into a route contact: ${token}`);
+
 // --- обстоятельства встречи ------------------------------------------------------
 // Одна и та же область встречает по-разному: обычно стая бродит поодаль,
 // иногда поджидает вплотную, иногда приводит соседа другого вида.

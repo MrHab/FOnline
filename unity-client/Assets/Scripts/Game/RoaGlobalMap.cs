@@ -414,7 +414,7 @@ namespace RealmOfAshes.Game
                 if (_hoverDynamic != null)
                     return string.IsNullOrWhiteSpace(_hoverDynamic.Data?["boss"]?["displayName"]?.ToString())
                         ? _hoverDynamic.Semantic : "ГЛАВАРЬ";
-                if (_hoverArea != null) return "УГОДЬЯ";
+                if (_hoverArea != null) return EncounterZoneSemantic;
                 return _hoverNode != null ? "ПОСЕЛЕНИЕ" : string.Empty;
             }
         }
@@ -435,7 +435,11 @@ namespace RealmOfAshes.Game
         /// </summary>
         public JObject HoverCardRow
         {
-            get { return _hoverArea ?? CardRow(_hoverDynamic?.Data); }
+            get
+            {
+                if (_hoverArea != null) return _hoverArea;
+                return CardRow(_hoverDynamic?.Data);
+            }
         }
 
         /// <summary>
@@ -1511,6 +1515,27 @@ namespace RealmOfAshes.Game
                     if (center.X <= 0f && center.Y <= 0f) continue;
                     string areaId = row["id"]?.ToString() ?? string.Empty;
                     int shape = row["shape"]?.Value<int>() ?? 0;
+                    // Угодья — цель маршрута, а не только рисунок: без неё путь
+                    // сквозь контур ничего не значил. Идентификатор берётся из
+                    // снимка: по нему сервер подтверждает контакт в пути.
+                    string areaZoneId = row["worldZoneId"]?.ToString() ?? string.Empty;
+                    string areaLocationId = row["locationId"]?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(areaZoneId) && !string.IsNullOrEmpty(areaLocationId))
+                    {
+                        DynamicTarget areaTarget = TargetFrom(row, "zone");
+                        areaTarget.Id = areaZoneId;
+                        areaTarget.WorldZoneId = areaZoneId;
+                        areaTarget.LocationId = areaLocationId;
+                        areaTarget.Name = row["displayName"]?.ToString() ?? areaTarget.Name;
+                        areaTarget.Radius = radius;
+                        areaTarget.CanEnter = true;
+                        areaTarget.Forced = false;
+                        areaTarget.Semantic = EncounterZoneSemantic;
+                        areaTarget.Accent = EncounterZoneColor(row["danger"]?.Value<int>() ?? 3);
+                        areaTarget.Priority = EncounterZonePriority;
+                        areaTarget.Details = CardObjective(row) + " · личная встреча, PvP отключён";
+                        _dynamicTargets.Add(areaTarget);
+                    }
                     if (shape > 0)
                     {
                         Color band = EncounterZoneColor(row["danger"]?.Value<int>() ?? 3);
@@ -2119,6 +2144,8 @@ namespace RealmOfAshes.Game
         private const float BossBadgeHeight = 0.34f;
         private const float BossBadgeRadiusPoints = 5.5f;
         private const int EncounterZonePriority = 96;
+        /// <summary>Подпись угодий: по ней карта узнаёт свою цель среди прочих.</summary>
+        public const string EncounterZoneSemantic = "УГОДЬЯ";
 
         /// <summary>Цвет угодий по полосе опасности: от янтарного к алому.</summary>
         public static Color EncounterZoneColor(int dangerBand)
@@ -3325,6 +3352,11 @@ namespace RealmOfAshes.Game
                 float t;
                 float distance = PointSegmentDistance(target.Point, previousPoint, nextPoint, out t);
                 if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
+                // Угодья встречают того, кто вошёл в контур, а не всякого, кто
+                // прошёл в радиусе описанной окружности.
+                if (string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal)
+                    && !RouteEntersArea(PveAreaByLocation(target.LocationId), previousPoint, nextPoint))
+                    continue;
                 best = target;
                 bestT = t;
             }
@@ -5761,6 +5793,42 @@ namespace RealmOfAshes.Game
                     return row;
             }
             return null;
+        }
+
+        /// <summary>Строка области по её локации: по ней узнаётся зона угодий.</summary>
+        public JObject PveAreaByLocation(string locationId)
+        {
+            if (string.IsNullOrEmpty(locationId)) return null;
+            foreach (JToken token in _wasteland?["pveAreas"] as JArray ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row != null && string.Equals(row["locationId"]?.ToString(), locationId,
+                        StringComparison.OrdinalIgnoreCase))
+                    return row;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Зашёл ли отрезок маршрута внутрь угодий. Контакт в пути обязан
+        /// срабатывать по нарисованному контуру, а не по описанной окружности:
+        /// иначе отряд встречали бы за десяток километров от границы.
+        /// </summary>
+        public static bool RouteEntersArea(JObject area, GlobalMapPoint from, GlobalMapPoint to)
+        {
+            int shape = area?["shape"]?.Value<int>() ?? 0;
+            if (shape <= 0 || from == null || to == null) return false;
+            var center = new Vector2(Float(area["x"], 0f), Float(area["y"], 0f));
+            float radius = Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f);
+            float rotation = Float(area["shapeRotation"], 0f);
+            const int samples = 8;
+            for (int i = 1; i <= samples; i++)
+            {
+                float t = (float)i / samples;
+                var probe = new Vector2(Mathf.Lerp(from.X, to.X, t), Mathf.Lerp(from.Y, to.Y, t));
+                if (RoaGlobalMapZoneShapes.Contains(shape, rotation, radius, center, probe)) return true;
+            }
+            return false;
         }
 
         // ------------------------------------------------------------------

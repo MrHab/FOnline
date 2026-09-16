@@ -57,6 +57,24 @@ namespace RealmOfAshes.EditorTools
             Require(RoaGlobalMapZoneShapes.Contains(1, 0f, 56f, center, center + tip * 40f),
                 "Большая область накрывает точку, которую маленькая не накрывала");
 
+            // --- путь сквозь угодья --------------------------------------
+            // Отряд встречают там, где он вошёл в контур, а не в описанной
+            // окружности: иначе встреча приходила бы за километры от границы.
+            var route = JObject.Parse(@"{'id':'antHive','locationId':'antHive','x':120,'y':140,
+                'radiusPoints':28,'shape':1,'shapeRotation':0,'danger':2}");
+            var inside = new GlobalMapPoint { X = 120f, Y = 140f };
+            var far = new GlobalMapPoint { X = 320f, Y = 260f };
+            var aside = new GlobalMapPoint { X = 320f, Y = 140f };
+            Require(RoaGlobalMap.RouteEntersArea(route, far, inside),
+                "Маршрут, упирающийся в центр угодий, входит в контур");
+            Require(!RoaGlobalMap.RouteEntersArea(route, far, aside),
+                "Маршрут мимо угодий контур не задевает");
+            Require(!RoaGlobalMap.RouteEntersArea(
+                    JObject.Parse("{'x':120,'y':140,'radiusPoints':28,'shape':0}"), far, inside),
+                "Без силуэта путь не может войти в контур");
+            Require(!RoaGlobalMap.RouteEntersArea(null, far, inside) && !RoaGlobalMap.RouteEntersArea(route, null, inside),
+                "Пустая область или пустой отрезок не ломают проверку");
+
             // --- ярусный масштаб ----------------------------------------
             Require(Mathf.Approximately(RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Near), 1f)
                 && RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Far) > 1f,
@@ -171,8 +189,8 @@ namespace RealmOfAshes.EditorTools
                     "Не найден префаб угодий: " + path);
             }
 
-            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение по контуру с учётом яруса, "
-                      + "карточка цели/сложности/активности и превью награды, префабы на месте.");
+            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение и путь по контуру с учётом яруса, "
+                      + "карточка цели/сложности/активности/добычи и превью награды, префабы на месте.");
         }
 
         private static void Require(bool condition, string message)

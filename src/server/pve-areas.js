@@ -161,6 +161,9 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
     return {
       id: area.id,
       locationId: area.locationId,
+      // Зона мира этих угодий: по этому идентификатору сервер подтверждает
+      // контакт на маршруте, поэтому клиент не выдумывает его сам.
+      worldZoneId: pveAreaZoneId(area.id),
       displayName: area.displayName,
       x: Number(point?.x ?? 0),
       y: Number(point?.y ?? 0),
@@ -180,6 +183,44 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
       })).filter(row => row.id)
     };
   });
+}
+
+/**
+ * Зона угодий на глобальной карте. Без неё путь сквозь контур ничего не значит:
+ * сервер сверяет контакт в пути со своими зонами мира, а каталог областей он
+ * для этого не смотрит. Зона постоянная — угодья не истекают, как событие.
+ */
+function pveAreaZoneId(areaId = '') {
+  return `pvearea_${cleanId(areaId)}`.slice(0, 64);
+}
+
+function pveAreaZone(area = {}, point = { x: 0, y: 0 }, worldHour = 0) {
+  return {
+    id: pveAreaZoneId(area?.id),
+    kind: 'pveArea',
+    status: 'active',
+    title: String(area?.displayName || 'Угодья').slice(0, 96),
+    text: `Угодья обитателей. ${String(area?.objective || 'зачистить угодья')}.`.slice(0, 420),
+    x: Number(point?.x ?? 0),
+    y: Number(point?.y ?? 0),
+    radius: Math.max(2, Number(area?.radiusPoints ?? 24)),
+    priority: 2,
+    sourceType: 'pve_area',
+    sourceId: cleanId(area?.id),
+    locationId: cleanId(area?.locationId || area?.id),
+    pvpMode: 'pve',
+    createdHour: Number(worldHour || 0),
+    // Личная встреча: вход всегда по выбору игрока, «Обойти» обязано работать.
+    forced: false,
+    details: {
+      pveArea: true,
+      areaId: cleanId(area?.id),
+      danger: Number(area?.dangerBand ?? 1),
+      hidden: false,
+      visible: true,
+      forced: false
+    }
+  };
 }
 
 function pveAreaForLocation(catalog = {}, locationId = '') {
@@ -450,6 +491,8 @@ module.exports = {
   publicPveAreaCatalog,
   dangerBandLabel,
   pveAreaRewardIds,
+  pveAreaZone,
+  pveAreaZoneId,
   PVE_AREA_SHAPES,
   DEFAULT_RULES,
   RESULT_LABELS,

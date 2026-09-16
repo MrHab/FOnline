@@ -171,6 +171,10 @@ namespace RealmOfAshes.Net
         [JsonProperty("appearance")] public JObject Appearance;
         [JsonProperty("factionId")] public string FactionId;
         [JsonProperty("worldFactionId")] public string WorldFactionId;
+        /// <summary>Контракт Сердцевины: подписавшие один контракт друг друга не бьют.</summary>
+        [JsonProperty("territoryFactionId")] public string TerritoryFactionId;
+        /// <summary>Отряд каравана, к которому прикреплён игрок: сопровождающие — союзники.</summary>
+        [JsonProperty("worldPartyId")] public string WorldPartyId;
         [JsonProperty("x")] public float X;
         [JsonProperty("z")] public float Z;
         [JsonProperty("vx")] public float Vx;

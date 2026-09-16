@@ -748,7 +748,10 @@ namespace RealmOfAshes.Game
             }
         }
 
-        /// <summary>Visible hostile NPCs ordered exactly as the mobile auto-target list.</summary>
+        /// <summary>
+        /// NPC part of the mobile auto-target list, ordered by distance. Players in a PvP zone
+        /// are added by RoaRemotePlayers.CollectMobileTargets.
+        /// </summary>
         public void CollectMobileTargets(Vector3 origin, float maxDistance, List<MobileTarget> targets, bool medical = false)
         {
             if (targets == null) return;

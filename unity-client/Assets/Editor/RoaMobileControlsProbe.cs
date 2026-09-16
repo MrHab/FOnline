@@ -1,7 +1,13 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
+using RealmOfAshes.Net;
+using RealmOfAshes.World;
 using UnityEditor;
 using UnityEngine;
 
@@ -42,11 +48,12 @@ namespace RealmOfAshes.EditorTools
                 VerifyIndependentTouchZones(1920, 1080);
                 VerifyIndependentTouchZones(896, 414);
                 VerifyCanvasLayoutAndInput();
+                VerifyRemotePlayerTargets();
 
                 Debug.Log("[МОБИЛЬНОЕ УПРАВЛЕНИЕ] готово: stick="
                     + diagonal.x.ToString("0.00") + ":" + diagonal.y.ToString("0.00")
                     + ", fire=" + fire.width.ToString("0") + "px, compact="
-                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent, canvas=safe/held/states");
+                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent, canvas=safe/held/states, pvp-targets=filtered");
             }
             catch (Exception error)
             {
@@ -62,6 +69,128 @@ namespace RealmOfAshes.EditorTools
         private static bool Near(float a, float b)
         {
             return Mathf.Abs(a - b) < 0.0001f;
+        }
+
+        /// <summary>
+        /// Игроки в мобильной автоцели: только в PvP-зоне, не союзники, не друзья и
+        /// не соклановцы, не лежачие и не дальше дальности цикла. Ракетница не
+        /// должна подрывать стрелка тапом у своих ног.
+        /// </summary>
+        private static void VerifyRemotePlayerTargets()
+        {
+            Require(!RoaCombat.ZoneModeAllowsPvp("") && !RoaCombat.ZoneModeAllowsPvp("pve")
+                    && !RoaCombat.ZoneModeAllowsPvp("safezone") && RoaCombat.ZoneModeAllowsPvp("pvpFullDrop"),
+                    "mobile target cycle trusts an unknown zone mode");
+            JObject self = JObject.Parse(@"{'worldFactionId':'uprava','zoneRules':{'pvp':true,'safe':false},'pvpMode':'pvp'}");
+            JObject social = JObject.Parse(@"{'friends':[{'id':'char-friend'}],'clan':{'id':'c1','members':[{'id':'char-clan'}]}}");
+            Require(RoaCombat.PvpTargetAllowed(self, social, Player("s1", "char-enemy", "free_artels"), "pvp"),
+                    "mobile target cycle skips a legal PvP target");
+            Require(!RoaCombat.PvpTargetAllowed(self, social, Player("s1", "char-enemy", "free_artels"), "peaceful"),
+                    "mobile target cycle trusts a stale zone after transfer");
+            JObject peaceful = JObject.Parse(@"{'worldFactionId':'uprava','zoneRules':{'pvp':false},'pvpMode':'pvp'}");
+            JObject pve = JObject.Parse(@"{'worldFactionId':'uprava','pvpMode':'pve'}");
+            Require(!RoaCombat.PvpTargetAllowed(peaceful, social, Player("s1", "char-enemy", "free_artels"), null)
+                    && !RoaCombat.PvpTargetAllowed(pve, social, Player("s1", "char-enemy", "free_artels"), null),
+                    "mobile target cycle offers a player in a peaceful or PvE zone");
+            Require(!RoaCombat.PvpTargetAllowed(self, social, Player("s2", "char-x", "tract_league"), "pvp")
+                    && !RoaCombat.PvpTargetAllowed(self, social, Player("s3", "char-y", "uprava"), "pvp")
+                    && !RoaCombat.PvpTargetAllowed(self, social, Player("s4", "char-friend", "free_artels"), "pvp")
+                    && !RoaCombat.PvpTargetAllowed(self, social, Player("s5", "char-clan", "free_artels"), "pvp"),
+                    "mobile target cycle offers an ally (faction, friend or clan)");
+            PublicPlayer downed = Player("s6", "char-down", "free_artels");
+            downed.Downed = true;
+            Require(!RoaCombat.PvpTargetAllowed(self, social, downed, "pvp"), "mobile target cycle offers a downed player");
+
+            // Спутник по отряду каравана — союзник, посторонний — цель.
+            JObject escort = JObject.Parse(@"{'worldFactionId':'uprava','zoneRules':{'pvp':true},'pvpMode':'pvp',
+                'uiSnapshots':{'world':{'globalMap':{'attachedPartyId':'party-7'}}}}");
+            PublicPlayer partyMate = Player("s7", "char-party", "free_artels");
+            partyMate.WorldPartyId = "party-7";
+            Require(!RoaCombat.PvpTargetAllowed(escort, social, partyMate, "pvp")
+                    && RoaCombat.PvpTargetAllowed(escort, social, Player("s8", "char-stranger", "free_artels"), "pvp"),
+                    "mobile target cycle offers a caravan party mate");
+
+            // Сердцевина на настоящей локации: свой контракт, стрельба с платформы и
+            // цель на своей платформе сервер не пропускает; чужак на платформе — цель.
+            LocationDefinition core = JObject.Parse(File.ReadAllText(
+                Path.GetFullPath(Path.Combine(Application.dataPath, "../../data/locations/coreZone.json")))).ToObject<LocationDefinition>();
+            WorldZone upravaPlatform = core.WorldZones.Find(zone => zone != null && zone.Id == "platform_uprava");
+            Require(upravaPlatform != null && upravaPlatform.Type == "factionPlatform" && upravaPlatform.FactionId == "uprava",
+                    "core faction platforms are not read from the location");
+            RoaCoords.ToServer(RoaCoords.TileToWorld(upravaPlatform.Tx, upravaPlatform.Tz, core.TileWidth, core.TileDepth),
+                out float platformX, out float platformZ);
+            Require(RoaCombat.TerritoryPlatformAt(core, 0f, 0f) == null, "the core centre is not a platform");
+            JObject contract = JObject.Parse(@"{'worldFactionId':'free_artels','zoneRules':{'pvp':true,'territoryId':'core'},
+                'pvpMode':'pvpFullDrop','territoryFaction':{'factionId':'contour'}}");
+            PublicPlayer rival = Player("c1", "char-c1", "contour");
+            rival.TerritoryFactionId = "uprava";
+            PublicPlayer sameContract = Player("c2", "char-c2", "contour");
+            sameContract.TerritoryFactionId = "contour";
+            Require(RoaCombat.PvpTargetAllowed(contract, social, rival, "pvpFullDrop", core, 0f, 0f),
+                    "mobile target cycle skips a legal rival in the core");
+            Require(!RoaCombat.PvpTargetAllowed(contract, social, sameContract, "pvpFullDrop", core, 0f, 0f),
+                    "mobile target cycle offers a same-contract ally in the core");
+            Require(!RoaCombat.PvpTargetAllowed(contract, social, rival, "pvpFullDrop", core, platformX, platformZ),
+                    "mobile target cycle offers targets from a faction platform");
+            rival.X = platformX;
+            rival.Z = platformZ;
+            Require(!RoaCombat.PvpTargetAllowed(contract, social, rival, "pvpFullDrop", core, 0f, 0f),
+                    "mobile target cycle offers a player protected on their own platform");
+            PublicPlayer intruder = Player("c3", "char-c3", "contour");
+            intruder.TerritoryFactionId = "free_artels";
+            intruder.X = platformX;
+            intruder.Z = platformZ;
+            Require(RoaCombat.PvpTargetAllowed(contract, social, intruder, "pvpFullDrop", core, 0f, 0f),
+                    "an intruder on a foreign platform must stay a target");
+
+            var host = new GameObject("MobileRemoteTargetsProbe");
+            try
+            {
+                RoaRemotePlayers players = host.AddComponent<RoaRemotePlayers>();
+                Type remoteType = typeof(RoaRemotePlayers).GetNestedType("Remote", BindingFlags.NonPublic);
+                Require(remoteType != null, "runtime remote state type is missing");
+                IDictionary remotes = typeof(RoaRemotePlayers).GetField("_remotes", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?.GetValue(players) as IDictionary;
+                Require(remotes != null, "remote dictionary is missing");
+                remotes.Add("s1", Remote(remoteType, host, "s1", new Vector3(0f, 0f, 10f), Player("s1", "char-enemy", "free_artels")));
+                remotes.Add("far", Remote(remoteType, host, "far", new Vector3(0f, 0f, 40f), Player("far", "char-far", "free_artels")));
+                remotes.Add("friend", Remote(remoteType, host, "friend", new Vector3(0f, 0f, 5f), Player("friend", "char-friend", "free_artels")));
+                remotes.Add("down", Remote(remoteType, host, "down", new Vector3(0f, 0f, 6f), downed));
+                remotes.Add("empty", Remote(remoteType, host, "empty", new Vector3(0f, 0f, 3f), null));
+                var targets = new List<RoaEnemies.MobileTarget>();
+                players.CollectMobileTargets(Vector3.zero, 28f, targets, remote => RoaCombat.PvpTargetAllowed(self, social, remote, "pvp"));
+                Require(targets.Count == 1, "mobile target cycle offers a downed, distant, allied or empty player: " + targets.Count);
+                Require(targets[0].Id == RoaRemotePlayers.MobileTargetPrefix + "s1", "mobile player target id is not prefixed");
+                Require(players.TryGetTargetable("s1", out PublicPlayer found, out Vector3 at) && found.Id == "s1" && Mathf.Approximately(at.z, 10f),
+                        "a selected player cannot be resolved for aiming");
+                Require(!players.TryGetTargetable("down", out _, out _), "a downed player stays aimable");
+                var unfiltered = new List<RoaEnemies.MobileTarget>();
+                players.CollectMobileTargets(Vector3.zero, 28f, unfiltered, null);
+                Require(unfiltered.Count == 0, "without a PvP rule the mobile cycle offers players");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+
+            Require(RoaCombat.RocketSelfSafeDistance >= 6f, "a rocket tap can land inside the shooter's own blast");
+            Require(RoaMobileControls.WorldTapMaxSeconds < 0.40f, "a world tap is not shorter than the activity ping hold");
+        }
+
+        private static PublicPlayer Player(string id, string characterId, string faction)
+        {
+            return new PublicPlayer { Id = id, CharacterId = characterId, WorldFactionId = faction, Hp = 100, MaxHp = 100 };
+        }
+
+        private static object Remote(Type remoteType, GameObject host, string id, Vector3 position, PublicPlayer player)
+        {
+            var root = new GameObject("Remote:" + id);
+            root.transform.SetParent(host.transform, false);
+            root.transform.position = position;
+            object remote = Activator.CreateInstance(remoteType, true);
+            remoteType.GetField("Root", BindingFlags.Public | BindingFlags.Instance)?.SetValue(remote, root);
+            remoteType.GetField("Player", BindingFlags.Public | BindingFlags.Instance)?.SetValue(remote, player);
+            return remote;
         }
 
         private static void VerifyCanvasLayoutAndInput()

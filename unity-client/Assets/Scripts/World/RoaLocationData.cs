@@ -150,6 +150,9 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("label")] public string Label;
+        /// <summary>globalMap (выход) или factionPlatform (платформа фракции в Сердцевине).</summary>
+        [JsonProperty("type")] public string Type;
+        [JsonProperty("factionId")] public string FactionId;
         [JsonProperty("tx")] public int Tx;
         [JsonProperty("tz")] public int Tz;
         [JsonProperty("radius")] public float Radius;

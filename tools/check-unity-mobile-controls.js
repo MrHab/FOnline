@@ -94,4 +94,53 @@ assert(probe.includes('mobile Canvas control leaves the device safe area')
 assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, 'RoaMobileControlsCanvas.cs.meta')),
   'RoaMobileControlsCanvas.cs.meta has no valid GUID');
 
-console.log('Unity mobile controls OK: safe-area uGUI, 12 touch targets, held fire, bolt tool, floating stick and panel-aware states');
+// Прицел на телефоне: игроки в PvP-зоне входят в автоцель (без союзников и
+// друзей), выбранный игрок берётся в живой позиции, а ракетница стреляет
+// коротким тапом по миру, не ближе радиуса собственного взрыва.
+const combat = read(game, 'RoaCombat.cs');
+const remote = read(game, 'RoaRemotePlayers.cs');
+const activity = read(game, 'RoaWorldActivityCanvas.cs');
+const server = read('server.js');
+for (const token of ['public void CollectMobileTargets(', 'MobileTargetPrefix + pair.Key', 'remote.Player.Downed',
+  'public bool TryGetTargetable(', 'if (targets == null || allowed == null) return;'])
+  assert(remote.includes(token), `Remote players are not offered to the mobile target cycle: ${token}`);
+for (const token of ['RemotePlayers.CollectMobileTargets(', 'TryGetPosition(_selectedId.Substring(',
+  'IsPointerOverGameObject(', '_combat.TryGroundPointAtScreen(', 'WorldTapMaxSeconds = 0.35f', 'bolt.Pending',
+  'activity.PingMenuOpen', 'CollectMobileTargets(_player.transform.position, TargetRange, _targets, _remoteTargetFilter)'])
+  assert(controls.includes(token), `Mobile aiming is incomplete: ${token}`);
+assert(/if \(!medical && _combat/.test(controls), 'The medical mode must keep players out of the target cycle.');
+assert(activity.includes('MobilePingHoldSeconds = 0.40f'), 'A world tap must stay shorter than the activity ping hold.');
+for (const token of ['public static bool PvpTargetAllowed(', 'public static bool ZoneModeAllowsPvp(', 'SetSelectedRemoteAimTarget(_mobileAimTargetId)',
+  '"tract_league"', 'public bool UsesGroundTargeting', 'public bool TryGroundPointAtScreen(', 'RocketSelfSafeDistance = 6.3f',
+  'public static WorldZone TerritoryPlatformAt(', 'zone.Type != "factionPlatform"', 'remote.WorldPartyId', 'remote.TerritoryFactionId',
+  'TerritoryPlatformAt(location, selfX, selfZ) != null'])
+  assert(combat.includes(token), `Mobile PvP aiming rule is missing: ${token}`);
+// Союз фракций и радиус ракетницы живут на сервере: если они изменятся,
+// клиентское зеркало и безопасная дистанция устареют.
+const allies = /const SERVER_FACTION_ALLIES = new Set\(\[([^\]]*)\]\)/.exec(server);
+assert(allies && JSON.stringify([...allies[1].matchAll(/'([^']+)'/g)].map(m => m[1]).sort())
+  === JSON.stringify(['tract_league|uprava', 'uprava|tract_league']),
+  'The server faction alliance changed: update RoaCombat.CombatFactionsAllied.');
+const zoneRules = require(path.join(root, 'src/server/zone-rules.js'));
+assert.deepEqual(zoneRules.ZONE_MODES.filter(mode => zoneRules.zoneModeAllowsPvp(mode)), ['pvp', 'pvpEvent', 'pvpFullDrop'],
+  'The server PvP zone modes changed: update RoaCombat.ZoneModeAllowsPvp.');
+// Правила Сердцевины и отряда: клиент повторяет три отказа serverTerritoryPvpBlock
+// и союз по отряду; новый отказ на сервере требует зеркала в автоцели.
+const territoryBlock = /function serverTerritoryPvpBlock\(.*\) \{([\s\S]*?)\n\}/.exec(server);
+assert(territoryBlock && (territoryBlock[1].match(/return '/g) || []).length === 5
+  && ['sameFaction', 'attackerOnPlatform', 'targetProtected'].every(reason => territoryBlock[1].includes(`'${reason}'`)),
+  'The core PvP rules changed: update RoaCombat.PvpTargetAllowed.');
+assert(/function serverPlayersAllied[\s\S]*?playerMatchesWorldPartyMember/.test(server), 'The party alliance moved: update RoaCombat.PvpTargetAllowed.');
+for (const token of ['territoryFactionId: serverPlayerTerritoryFactionId(p)', "worldPartyId: worldTransferId(p.attachedPartyId || '')",
+  "emitAuthoritativePlayerState(p, { reason: 'serverWorldTransfer' })"])
+  assert(server.includes(token), `The server does not give the client what mobile aiming reads: ${token}`);
+assert(server.includes('explosiveRadius: 4.2'), 'The rocket blast radius moved: update RoaCombat.RocketSelfSafeDistance.');
+for (const message of ['mobile target cycle skips a legal PvP target', 'mobile target cycle trusts a stale zone after transfer',
+  'mobile target cycle offers an ally (faction, friend or clan)', 'mobile player target id is not prefixed',
+  'mobile target cycle offers a caravan party mate', 'mobile target cycle offers a same-contract ally in the core',
+  'mobile target cycle offers targets from a faction platform', 'mobile target cycle offers a player protected on their own platform',
+  'without a PvP rule the mobile cycle offers players'])
+  assert(probe.includes(message), `The mobile probe does not cover player targets: ${message}`);
+assert(probe.includes('pvp-targets=filtered'), 'The mobile probe summary must report the player target filter.');
+
+console.log('Unity mobile controls OK: safe-area uGUI, 12 touch targets, held fire, bolt tool, floating stick, panel-aware states, PvP player targets and rocket ground taps');

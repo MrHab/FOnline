@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using RealmOfAshes.Net;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace RealmOfAshes.Game
 {
@@ -33,6 +35,16 @@ namespace RealmOfAshes.Game
 
         private readonly List<RoaEnemies.MobileTarget> _targets = new List<RoaEnemies.MobileTarget>();
         private string _selectedId = string.Empty;
+        // Фильтр игроков для автоцели кешируется: список обновляется восемь раз в секунду.
+        private Func<PublicPlayer, bool> _remoteTargetFilter;
+
+        // Короткий тап по миру задаёт точку взрыва ракетницы. Он короче удержания,
+        // которым ставится метка активности (0,40 с), и почти без сдвига.
+        public const float WorldTapMaxSeconds = 0.35f;
+        public const float WorldTapMoveTolerance = 18f;
+        private int _worldTapFinger = -1;
+        private Vector2 _worldTapStart;
+        private float _worldTapStartedAt;
         private int _joystickFinger = -1;
         private Vector2 _joystickBase;
         private Vector2 _joystickPoint;
@@ -94,6 +106,7 @@ namespace RealmOfAshes.Game
             _enemies = enemies;
             _globalMap = globalMap;
             _groundItems = groundItems;
+            _remoteTargetFilter = combat != null ? (Func<PublicPlayer, bool>)combat.CanOfferRemoteTarget : null;
             ApplyMode();
         }
 
@@ -134,6 +147,7 @@ namespace RealmOfAshes.Game
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
             _targets.Clear();
+            _worldTapFinger = -1;
             PingAvailable = false;
             _combat?.ClearMobileAimTarget();
         }
@@ -157,6 +171,7 @@ namespace RealmOfAshes.Game
             {
                 if (_joystickFinger >= 0) ResetJoystick();
                 SetFireHeld(false);
+                _worldTapFinger = -1;
                 _combat?.ClearMobileAimTarget();
                 return;
             }
@@ -172,10 +187,12 @@ namespace RealmOfAshes.Game
             {
                 if (_joystickFinger >= 0) ResetJoystick();
                 SetFireHeld(false);
+                _worldTapFinger = -1;
             }
             else
             {
                 ReadJoystickTouches();
+                ReadWorldTap();
                 if (_fireHeld || (!CanvasDriven && TouchHeld(FireRect(Screen.width, Screen.height))))
                     Fire();
             }
@@ -272,6 +289,59 @@ namespace RealmOfAshes.Game
             if (_joystickFinger >= 0 && !found) ResetJoystick();
         }
 
+        /// <summary>
+        /// Короткий тап по миру с ракетницей стреляет в точку под пальцем. Тап над
+        /// кнопками, в зоне стика, во время броска болта или длиннее удержания
+        /// метки активности игнорируется.
+        /// </summary>
+        private void ReadWorldTap()
+        {
+            RoaBoltThrower bolt = RoaGameBootstrap.Active != null ? RoaGameBootstrap.Active.BoltThrower : null;
+            bool boltBusy = bolt != null && (bolt.IsAiming || bolt.Pending);
+            if (_combat == null || boltBusy || !_combat.UsesGroundTargeting)
+            {
+                _worldTapFinger = -1;
+                return;
+            }
+            bool found = false;
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                Touch touch = Input.GetTouch(i);
+                if (touch.fingerId == _joystickFinger) continue;
+                Vector2 gui = new Vector2(touch.position.x, Screen.height - touch.position.y);
+                if (_worldTapFinger < 0)
+                {
+                    // Над интерфейсом проверяется только в начале касания: на отпускании
+                    // данные указателя уже удалены.
+                    if (touch.phase != TouchPhase.Began) continue;
+                    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId)) continue;
+                    // Тап, закрывающий меню меток, — не выстрел. Флаг читается в
+                    // начале касания: к отпусканию меню уже может закрыться.
+                    RoaWorldActivityCanvas activity = RoaGameBootstrap.Active != null ? RoaGameBootstrap.Active.WorldActivityCanvas : null;
+                    if (activity != null && activity.PingMenuOpen) continue;
+                    if (IsJoystickStart(gui, Screen.width, Screen.height, Screen.safeArea)) continue;
+                    _worldTapFinger = touch.fingerId;
+                    _worldTapStart = touch.position;
+                    _worldTapStartedAt = Time.unscaledTime;
+                    found = true;
+                    continue;
+                }
+                if (touch.fingerId != _worldTapFinger) continue;
+                found = true;
+                bool tooLong = Time.unscaledTime - _worldTapStartedAt > WorldTapMaxSeconds;
+                bool moved = (touch.position - _worldTapStart).magnitude > WorldTapMoveTolerance;
+                if (touch.phase == TouchPhase.Canceled || tooLong || moved)
+                {
+                    _worldTapFinger = -1;
+                    continue;
+                }
+                if (touch.phase != TouchPhase.Ended) continue;
+                _worldTapFinger = -1;
+                if (_combat.TryGroundPointAtScreen(touch.position, out Vector3 point)) _combat.TriggerAttackAt(point);
+            }
+            if (!found) _worldTapFinger = -1;
+        }
+
         private void ResetJoystick()
         {
             _joystickFinger = -1;
@@ -324,8 +394,15 @@ namespace RealmOfAshes.Game
                 _selectedId = string.Empty;
                 return;
             }
-            _enemies.CollectMobileTargets(_player.transform.position, TargetRange, _targets,
-                _combat != null && _combat.HasHeldMedkit);
+            bool medical = _combat != null && _combat.HasHeldMedkit;
+            _enemies.CollectMobileTargets(_player.transform.position, TargetRange, _targets, medical);
+            // Игроки в PvP-зоне — тоже цели; аптечка из руки лечит только NPC,
+            // игроков лечат из ПУТНИКА с их согласия.
+            if (!medical && _combat != null && _combat.RemotePlayers != null)
+            {
+                _combat.RemotePlayers.CollectMobileTargets(_player.transform.position, TargetRange, _targets, _remoteTargetFilter);
+                _targets.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+            }
             if (string.IsNullOrEmpty(_selectedId)) return;
             for (int i = 0; i < _targets.Count; i++) if (_targets[i].Id == _selectedId) return;
             _selectedId = string.Empty;
@@ -339,6 +416,12 @@ namespace RealmOfAshes.Game
             {
                 if (_targets[i].Id != _selectedId) continue;
                 position = _targets[i].Position;
+                // Игрок бежит до 7 м/с, а список обновляется раз в 0,12 с: стрелять
+                // надо в живую позицию, иначе луч проходит мимо.
+                string prefix = RoaRemotePlayers.MobileTargetPrefix;
+                if (_selectedId.StartsWith(prefix, StringComparison.Ordinal) && _combat != null && _combat.RemotePlayers != null
+                    && _combat.RemotePlayers.TryGetPosition(_selectedId.Substring(prefix.Length), out Vector3 live))
+                    position = live;
                 return true;
             }
             _selectedId = string.Empty;

@@ -248,6 +248,58 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+        /// <summary>Префикс id игрока в мобильном списке целей: id NPC двоеточий не содержат.</summary>
+        public const string MobileTargetPrefix = "player:";
+
+        /// <summary>
+        /// Дописывает (не очищает) видимых живых игроков в мобильный список целей.
+        /// Правила PvP решает вызывающий: сервер всё равно погасит запрещённый
+        /// выстрел, но предлагать такую цель значит тратить патрон впустую.
+        /// </summary>
+        public void CollectMobileTargets(Vector3 origin, float maxDistance, List<RoaEnemies.MobileTarget> targets,
+            System.Func<PublicPlayer, bool> allowed)
+        {
+            // Без правила PvP игроков не предлагаем: безопаснее пропустить цель, чем
+            // навести прицел на союзника.
+            if (targets == null || allowed == null) return;
+            float maxSq = maxDistance * maxDistance;
+            foreach (KeyValuePair<string, Remote> pair in _remotes)
+            {
+                Remote remote = pair.Value;
+                if (!MobileTargetable(remote)) continue;
+                if (!allowed(remote.Player)) continue;
+                Vector3 position = remote.Root.transform.position;
+                Vector3 delta = position - origin;
+                delta.y = 0f;
+                float sq = delta.sqrMagnitude;
+                if (sq > maxSq) continue;
+                targets.Add(new RoaEnemies.MobileTarget
+                {
+                    Id = MobileTargetPrefix + pair.Key,
+                    Position = position,
+                    Distance = Mathf.Sqrt(sq)
+                });
+            }
+        }
+
+        /// <summary>Игрок, по которому сейчас можно прицелиться: живой, стоящий, видимый.</summary>
+        public bool TryGetTargetable(string id, out PublicPlayer player, out Vector3 position)
+        {
+            player = null;
+            position = Vector3.zero;
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote) || !MobileTargetable(remote)) return false;
+            player = remote.Player;
+            position = remote.Root.transform.position;
+            return true;
+        }
+
+        private static bool MobileTargetable(Remote remote)
+        {
+            return remote != null && remote.Root != null && remote.Player != null
+                && !remote.Player.Dead && !remote.Player.Downed
+                && (remote.Gate == null || remote.Gate.IsVisible);
+        }
+
         public bool TryGetCharacterView(string id, out RoaCharacterView view)
         {
             view = null;

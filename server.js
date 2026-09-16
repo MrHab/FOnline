@@ -25371,6 +25371,9 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     emitServerArtifactState(p, 'join');
     if (p.locationId === 'personalBase') emitServerPersonalBaseState(p, 'join');
     emitServerKromkaClanState(p, 'join');
+    // Правила новой зоны (PvP, безопасность, Сердцевина) клиент берёт из self:
+    // без свежего self после осады или засады он жил по правилам старой комнаты.
+    emitAuthoritativePlayerState(p, { reason: 'serverWorldTransfer' });
   } catch (error) {
     console.error('World transfer room snapshot failed:', p.id, room.id, error);
   }
@@ -25596,6 +25599,10 @@ function publicPlayer(p) {
     appearance: sanitizeCharacterAppearance(p.appearance || {}),
     factionId: worldFactionId,
     worldFactionId,
+    // Контракт Сердцевины и отряд каравана: по ним сервер не даёт бить своих,
+    // и мобильная автоцель не предлагает таких игроков.
+    territoryFactionId: serverPlayerTerritoryFactionId(p),
+    worldPartyId: worldTransferId(p.attachedPartyId || ''),
     x: Number(p.x.toFixed(3)),
     z: Number(p.z.toFixed(3)),
     vx: Number(clampPlayerVelocity(p.vx || 0).toFixed(3)),

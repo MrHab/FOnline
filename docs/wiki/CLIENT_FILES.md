@@ -116,7 +116,7 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
 `RoaUiScroll`, `RoaUiPrefabTemplate`.
 
 **Мобильное управление** — `RoaMobileControls`, `RoaMobileControlsCanvas`
-(landscape-стик, автоцель, игровые кнопки).
+(landscape-стик, автоцель по NPC и игрокам в PvP-зоне, тап ракетницей и игровые кнопки).
 
 **Прочее** — `RoaAudio`, `RoaModelPrefabCatalog`, `RoaModelUrl`
 (префикс `/assets/models-lite/` для WebGL), `RoaWebGlInputProbe`

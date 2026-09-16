@@ -131,6 +131,8 @@ namespace RealmOfAshes.Game
         private Button _pingDanger;
         private Button _pingLoot;
         private bool _pingMenuOpen;
+        /// <summary>Открыто меню меток: тап по миру закрывает его, а не стреляет.</summary>
+        public bool PingMenuOpen { get { return _pingMenuOpen; } }
         private bool _pingGestureMenu;
         private bool _desktopPingHeld;
         private float _desktopPingStartedAt;

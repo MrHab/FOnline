@@ -20,7 +20,8 @@ function has(source, marker, label) {
   assert(source.includes(marker), `${label} is missing: ${marker}`);
 }
 
-has(server, "['brokenArm', 'brokenLeg', 'concussion', 'infection']", 'server injury allowlist');
+// Кровотечение от атак мутантов стало пятой травмой: список сервера шире прежнего.
+has(server, "['brokenArm', 'brokenLeg', 'concussion', 'infection', 'bleeding']", 'server injury allowlist');
 has(server, 'const SERVER_INFECTION_DAMAGE_INTERVAL_MS = 18000;', 'server infection timer');
 has(server, '(injuries.brokenArm ? 0.12 : 0)', 'server broken-arm accuracy penalty');
 has(server, '(injuries.concussion ? 0.10 : 0)', 'server concussion accuracy penalty');

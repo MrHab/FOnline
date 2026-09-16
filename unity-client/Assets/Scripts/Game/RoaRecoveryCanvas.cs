@@ -158,6 +158,17 @@ namespace RealmOfAshes.Game
 
         public static string NextText(JObject payload)
         {
+            // Осада: возрождения общие на сторону, и после волны игрок остаётся в
+            // комнате осады, а не «в безопасном поселении».
+            if (payload?["reason"]?.ToString() == "clanSiegeWave")
+            {
+                int left = payload["respawnWavesRemaining"]?.ToObject<int>() ?? 0;
+                return left > 0
+                    ? "Возрождение осады: у стороны осталось " + left + ". Вы у точки входа своей стороны."
+                    : "Это было последнее возрождение стороны: следующая гибель выведет из осады.";
+            }
+            if ((payload?["cause"] as JObject)?["siegeEliminated"]?.ToObject<bool>() == true)
+                return "Возрождения вашей стороны закончились — вы выбыли из осады.";
             int failed = payload?["failedWorldActivityIds"] is JArray failedRows ? failedRows.Count : 0;
             // activityResult may arrive as null/string; indexing a JValue throws.
             string reason = (payload?["activityResult"] as JObject)?["reason"]?.ToString() ?? string.Empty;

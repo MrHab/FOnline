@@ -2869,6 +2869,7 @@ namespace RealmOfAshes.Game
             RectTransform page = Page_(Page.Clan, parent);
             SectionTitle(page, "КЛАН");
             _clanList = ListArea(page, out _);
+            BuildKromkaClanStatus(page);
         }
 
         private void RefreshClan()
@@ -2876,6 +2877,7 @@ namespace RealmOfAshes.Game
             JObject social = Pipboy.SocialState();
             JObject clan = social["clan"] as JObject;
             string clanName = clan?["name"]?.ToString() ?? string.Empty;
+            RefreshKromkaClanStatus();
 
             RebuildRows(_clanRows, _clanList, () =>
             {
@@ -2895,7 +2897,7 @@ namespace RealmOfAshes.Game
                 {
                     AddHeading(_clanRows, _clanList, "ВАШ КЛАН");
                     AddTextCard(_clanRows, _clanList, clanName, "Роль: " + (clan["role"]?.ToString() ?? "Участник"),
-                        new List<(string, System.Action)> { ("Покинуть", () => Pipboy.SubmitSocialState("leaveClan")) });
+                        new List<(string, System.Action)> { ("Покинуть", () => SubmitClanSocial("leaveClan")) });
 
                     AddHeading(_clanRows, _clanList, "УЧАСТНИКИ");
                     JArray members = clan["members"] as JArray;
@@ -2908,8 +2910,8 @@ namespace RealmOfAshes.Game
                 AddSocialEntries(_clanRows, _clanList, social["clanInvites"] as JArray,
                     entry => new List<(string, System.Action)>
                     {
-                        ("Принять", () => Pipboy.SubmitSocialState("acceptClan", entry)),
-                        ("Отклонить", () => Pipboy.SubmitSocialState("declineClan", entry))
+                        ("Принять", () => SubmitClanSocial("acceptClan", entry)),
+                        ("Отклонить", () => SubmitClanSocial("declineClan", entry))
                     });
                 AddKromkaClanBaseRows(clanName);
             });
@@ -2956,8 +2958,12 @@ namespace RealmOfAshes.Game
             create.onClick.AddListener(() =>
             {
                 string name = (_clanNameInput.text ?? string.Empty).Trim();
-                if (name.Length < 3) return;
-                Pipboy.SubmitSocialState("createClan", null, name);
+                if (name.Length < 3)
+                {
+                    SetKromkaClanStatus("Название клана должно содержать не меньше трёх символов.");
+                    return;
+                }
+                SubmitClanSocial("createClan", null, name);
                 _refreshAt = Time.unscaledTime + 0.4f;
             });
 

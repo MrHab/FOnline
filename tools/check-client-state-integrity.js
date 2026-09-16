@@ -2517,6 +2517,7 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     'actorHostilityKeys',
     'npcAttackTelegraph',
     'serverNpcWeaponDef',
+    'serverCreatureAttackFor',
     'Date',
     [
       functionSource(server, 'publicEnemyFrame'),
@@ -2527,6 +2528,8 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     () => new Set(),
     () => null,
     () => ({ id: 'fists', ammoType: null }),
+    // Кадр берёт авторское окно замаха твари; у охранника-человека вида нет.
+    () => null,
     { now: () => 5000 }
   );
   const frameRows = Array.from({ length: 100 }, (_, index) => frameRuntime.publicEnemyFrame({

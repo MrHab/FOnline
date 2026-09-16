@@ -3,7 +3,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const { addChallenge } = require('../src/server/siege-qualification');
-const { applyObjective, applyResolutionOnce, createSiegeEvent, tickSiege } = require('../src/server/siege-resolution');
+const { applyObjective, applyResolutionOnce, consumeRespawnWave, createSiegeEvent, tickSiege } = require('../src/server/siege-resolution');
 const root = path.resolve(__dirname, '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/sieges.json'), 'utf8'));
 const start = 1_800_000_000_000;
@@ -31,4 +31,28 @@ assert.equal(clans.bases.hydro2.ownerClanId, 'atk');
 assert.equal(clans.bases.hydro2.lastWeeklyBenefitAt, 0, 'New owner must receive a fresh weekly economy cycle.');
 assert.deepEqual(clans.bases.hydro2.benefitCredits, {}, 'New owner must not inherit fractional production credits.');
 assert.deepEqual(clans.bases.hydro2.benefitOrderCooldowns, {}, 'New owner must not inherit old order cooldowns.');
-console.log('Siege resolution check passed: three phases, one ownership transfer, no duplicated reward or looted storage.');
+// На эти правила опирается панель счёта: возрождения общие на сторону, защита
+// сбивает перезапись ядра, а повторный запуск её не сдвигает.
+{
+  const hold = createSiegeEvent({ id: 'siege-hold', baseId: 'hydro2', defenderClanId: 'def', startAt: start, roomId: 'clanSiege#hydro2#siege-hold' }, config, start - config.announceLeadMs);
+  assert(addChallenge(hold, 'atk', start - config.announceLeadMs, config.pledge).ok);
+  tickSiege(hold, start, config);
+  const perSide = Number(config.respawnWavesPerSide || 3);
+  for (let left = perSide - 1; left >= 0; left--) {
+    const wave = consumeRespawnWave(hold, 'atk', config);
+    assert(wave.ok && wave.remaining === left, `A death spends one shared respawn: ${left} left`);
+  }
+  assert.deepEqual(consumeRespawnWave(hold, 'atk', config), { ok: false, remaining: 0 }, 'An empty side cannot respawn');
+  assert(applyObjective(hold, { action: 'captureRelay', objectiveId: 'relay_a', clanId: 'atk', characterId: 'h1' }, start + 1000, config).ok);
+  assert(applyObjective(hold, { action: 'captureRelay', objectiveId: 'relay_c', clanId: 'atk', characterId: 'h2' }, start + 2000, config).ok);
+  for (let i = 0; i < 40; i++) assert(applyObjective(hold, { action: 'damageGate', clanId: 'atk', characterId: `h-gate-${i}` }, start + 3000, config).ok);
+  assert.equal(hold.phase, 'core');
+  assert(applyObjective(hold, { action: 'captureCore', clanId: 'atk', characterId: 'h-core-1' }, start + 4000, config).ok);
+  assert(applyObjective(hold, { action: 'captureCore', clanId: 'atk', characterId: 'h-core-2' }, start + 9000, config).ok);
+  assert.equal(hold.coreHoldStartedAt, start + 4000, 'A repeated capture does not restart the hold');
+  assert(applyObjective(hold, { action: 'contestCore', clanId: 'def', characterId: 'd-core' }, start + 10000, config).ok);
+  assert.equal(hold.coreOwnerClanId, '', 'The defence clears the rewrite');
+  assert.equal(hold.coreHoldStartedAt, 0, 'The hold starts again after a contest');
+}
+
+console.log('Siege resolution check passed: three phases, one ownership transfer, no duplicated reward or looted storage, shared respawns and core hold rules.');

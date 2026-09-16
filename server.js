@@ -22347,6 +22347,9 @@ function serverTryRespawnSiegePlayer(p, room, cause = {}, now = Date.now()) {
   if (!wave.ok) {
     event.eliminated = event.eliminated || {};
     event.eliminated[p.characterId] = { clanId: clan.id, at: Number(now) };
+    // Обычное возрождение уйдёт с этой же причиной: экран восстановления должен
+    // сказать, что игрок выбыл из осады, а не просто «вернулся в поселение».
+    cause.siegeEliminated = true;
     persistSaves();
     return false;
   }

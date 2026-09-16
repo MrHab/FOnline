@@ -71,6 +71,8 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaGroundDressingProbe),
             typeof(RoaWorldZonesUiProbe),
             typeof(RoaSocialRoutingProbe),
+            typeof(RoaPipboyClanStatusProbe),
+            typeof(RoaKromkaSiegeUiProbe),
             typeof(RoaGlobalMapZoneCardProbe)
             ,typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
         };

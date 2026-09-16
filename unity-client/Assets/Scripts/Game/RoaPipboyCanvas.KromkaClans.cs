@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
 {
@@ -14,6 +15,17 @@ namespace RealmOfAshes.Game
         private JObject _kromkaClanState;
         private bool _kromkaClanSubscribed;
         private float _nextKromkaClanRequestAt;
+
+        // Строка ответа сервера на вкладке «Клан». Раньше клановые и осадные
+        // действия молча отбрасывали отказ: русскую причину сервер присылал, а
+        // игрок видел, что кнопка «не сработала».
+        private Text _clanStatus;
+        private string _kromkaClanStatus = string.Empty;
+        // Общая строка ПУТНИКА в момент, когда клановый текст был написан:
+        // если она с тех пор сменилась (приглашение, выход, создание клана),
+        // новее она, и клановый текст уступает ей место.
+        private string _kromkaClanStatusMark = string.Empty;
+        private bool _kromkaClanPending;
 
         private void AddKromkaClanBaseRows(string clanName)
         {
@@ -89,6 +101,13 @@ namespace RealmOfAshes.Game
             {
                 JObject state = ack?["state"] as JObject;
                 if (state != null) ApplyKromkaClanState(state);
+                // Без сводки карточка «Сводка запрашивается» висела бы вечно:
+                // причину отказа или обрыва связи надо назвать.
+                else if (ack?["ok"]?.Value<bool>() != true && !_kromkaClanPending)
+                {
+                    string error = ack?["error"]?.ToString();
+                    SetKromkaClanStatus(string.IsNullOrEmpty(error) ? "Сводка кланов не пришла." : error);
+                }
             });
         }
 
@@ -171,16 +190,28 @@ namespace RealmOfAshes.Game
 
         private void SendKromkaSiegeAction(string action, string eventId, string baseId = "", long startAt = 0)
         {
-            if (Socket == null) return;
+            if (!BeginKromkaClanRequest("Штаб осады проверяет запрос…")) return;
             Socket.EmitWithAck("kromkaSiegeAction", new Dictionary<string, object>
             {
                 ["action"] = action, ["eventId"] = eventId ?? string.Empty, ["baseId"] = baseId ?? string.Empty, ["startAt"] = startAt
             }, ack =>
             {
-                Socket.ApplyGameplayAck(ack);
+                // Отказ осады несёт состояние ОСАДЫ, а не клана.
                 if (ack?["state"] is JObject state) ApplyKromkaSiegeEnvelope(new JObject { ["state"] = state });
-                _nextKromkaClanRequestAt = 0f;
+                FinishKromkaClanRequest(ack, KromkaSiegeSuccessText(action), "Штаб осады отклонил действие.");
             });
+        }
+
+        public static string KromkaSiegeSuccessText(string action)
+        {
+            switch (action)
+            {
+                case "challenge": return "Вызов объявлен, залог внесён.";
+                case "registerSelf": return "Вы записаны в состав осады.";
+                case "unregisterSelf": return "Вы сняты с состава осады.";
+                case "enter": return "Вход в контур осады…";
+                default: return "Штаб осады принял действие.";
+            }
         }
 
         private static string FormatSiegeTime(long milliseconds)
@@ -242,12 +273,15 @@ namespace RealmOfAshes.Game
 
         private void SendKromkaClanAction(string action, string baseId)
         {
-            SendKromkaClanPayload(new Dictionary<string, object> { ["action"] = action, ["baseId"] = baseId });
+            SendKromkaClanPayload(new Dictionary<string, object> { ["action"] = action, ["baseId"] = baseId },
+                action == "payUpkeep" ? "Содержание базы оплачено, недельная выдача учтена." : "Защищённый сбор: отряд ведут к базе.");
         }
 
         private void SendKromkaClanItemAction(string action, string itemId)
         {
-            SendKromkaClanPayload(new Dictionary<string, object> { ["action"] = action, ["itemId"] = itemId, ["qty"] = 1 });
+            SendKromkaClanPayload(new Dictionary<string, object> { ["action"] = action, ["itemId"] = itemId, ["qty"] = 1 },
+                (action == "deposit" ? "Внесено на клановый склад: " : "Выдано с кланового склада: ")
+                    + HumanObjective(itemId) + " ×1.");
         }
 
         private void SendKromkaClanModuleAction(string baseId, string socketId, string moduleId)
@@ -255,7 +289,7 @@ namespace RealmOfAshes.Game
             SendKromkaClanPayload(new Dictionary<string, object>
             {
                 ["action"] = "installModule", ["baseId"] = baseId, ["socketId"] = socketId, ["moduleId"] = moduleId
-            });
+            }, "Модуль установлен: " + HumanObjective(moduleId) + ".");
         }
 
         private void AddClanBenefitOrderRows(JObject profile, JObject benefitStatus)
@@ -286,7 +320,7 @@ namespace RealmOfAshes.Game
             SendKromkaClanPayload(new Dictionary<string, object>
             {
                 ["action"] = "completeBenefitOrder", ["baseId"] = baseId, ["orderId"] = orderId
-            });
+            }, "Особый заказ выполнен, выдача ушла на клановый склад.");
         }
 
         private static string FormatBenefitCooldown(long readyAt)
@@ -298,16 +332,88 @@ namespace RealmOfAshes.Game
             return hours > 0 ? hours + " ч " + minutes + " мин" : Math.Max(1, minutes) + " мин";
         }
 
-        private void SendKromkaClanPayload(Dictionary<string, object> payload)
+        private void SendKromkaClanPayload(Dictionary<string, object> payload, string success)
         {
-            if (Socket == null) return;
+            if (!BeginKromkaClanRequest("Клановый узел проверяет запрос…")) return;
             Socket.EmitWithAck("kromkaClanAction", payload, ack =>
             {
-                Socket.ApplyGameplayAck(ack);
                 JObject state = ack?["state"] as JObject;
                 if (state != null) ApplyKromkaClanState(state);
-                _nextKromkaClanRequestAt = 0f;
+                FinishKromkaClanRequest(ack, success, "Сервер отклонил клановое действие.");
             });
+        }
+
+        /// <summary>
+        /// Строка ответа под списком вкладки «Клан»: вне списка, потому что
+        /// строки пересобираются каждые 0,25 с и прокручиваются.
+        /// </summary>
+        private void BuildKromkaClanStatus(RectTransform page)
+        {
+            _clanStatus = Label("ClanStatus", page, 13, TextAnchor.LowerLeft, ScreenInkDim);
+            _clanStatus.rectTransform.anchorMin = new Vector2(0f, 0f);
+            _clanStatus.rectTransform.anchorMax = new Vector2(1f, 0f);
+            _clanStatus.rectTransform.pivot = new Vector2(0.5f, 0f);
+            _clanStatus.rectTransform.offsetMin = new Vector2(6f, 2f);
+            _clanStatus.rectTransform.offsetMax = new Vector2(-6f, 26f);
+        }
+
+        /// <summary>
+        /// Показать клановый текст сразу: кнопка карточки откладывает общий
+        /// Refresh на 0,3 с, а ответ без связи приходит синхронно.
+        /// </summary>
+        private void SetKromkaClanStatus(string text)
+        {
+            _kromkaClanStatus = text ?? string.Empty;
+            _kromkaClanStatusMark = Pipboy != null ? Pipboy.ProgressionStatus : string.Empty;
+            if (_clanStatus != null) _clanStatus.text = _kromkaClanStatus;
+            _refreshAt = 0f;
+        }
+
+        // Новее побеждает: ответ на социальное действие (выход, приглашение,
+        // создание клана) меняет общую строку и вытесняет старый клановый текст.
+        private void RefreshKromkaClanStatus()
+        {
+            if (_clanStatus == null) return;
+            string social = Pipboy != null ? Pipboy.ProgressionStatus : string.Empty;
+            if (social != _kromkaClanStatusMark) _kromkaClanStatus = string.Empty;
+            _clanStatus.text = string.IsNullOrEmpty(_kromkaClanStatus) ? social : _kromkaClanStatus;
+        }
+
+        // Флаг и текст ожидания ставятся ДО отправки: без связи EmitWithAck
+        // зовёт колбэк синхронно, и ожидание перезаписало бы причину отказа.
+        private bool BeginKromkaClanRequest(string waiting)
+        {
+            if (Socket == null || _kromkaClanPending) return false;
+            _kromkaClanPending = true;
+            SetKromkaClanStatus(waiting);
+            return true;
+        }
+
+        private void FinishKromkaClanRequest(JObject ack, string success, string fallback)
+        {
+            // Первой строкой: исключение ниже не должно оставить кнопки мёртвыми.
+            _kromkaClanPending = false;
+            Socket?.ApplyGameplayAck(ack);
+            string error = ack?["error"]?.ToString();
+            SetKromkaClanStatus(ack?["ok"]?.Value<bool>() == true
+                ? success
+                : (string.IsNullOrEmpty(error) ? fallback : error));
+            _nextKromkaClanRequestAt = 0f;
+        }
+
+        /// <summary>
+        /// Социальные действия вкладки: их итог ведёт общая строка ПУТНИКА.
+        /// Если ПУТНИК ещё ждёт прошлый ответ, он молча откажет — это надо сказать.
+        /// </summary>
+        private void SubmitClanSocial(string action, string targetId = null, string clanName = null)
+        {
+            if (Pipboy == null) return;
+            if (Pipboy.ProgressionPending)
+            {
+                SetKromkaClanStatus("Дождитесь ответа на предыдущее действие.");
+                return;
+            }
+            Pipboy.SubmitSocialState(action, targetId, clanName);
         }
 
         private static string FormatKromkaObject(JObject value, string empty)

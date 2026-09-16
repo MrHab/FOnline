@@ -115,7 +115,7 @@ namespace RealmOfAshes.Game
         private Text _hoverTitle;
         private Text _hoverMeta;
         private const float HoverCardWidth = 360f;
-        private const int HoverFactRows = 4;
+        private const int HoverFactRows = 5;
         // Карточка шириной 360 при кегле 11 держит около полусотни знаков.
         public const int HoverFactMaxChars = 52;
         private const float HoverFactHeight = 17f;
@@ -1064,6 +1064,10 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(difficulty)) lines.Add(HoverFactLine("Сложность", difficulty));
             string activity = RoaGlobalMap.CardActivity(row);
             if (!string.IsNullOrEmpty(activity)) lines.Add(HoverFactLine("Периоды активности", activity));
+            // Правило самих угодий: сколько у них встреч и каким Странником
+            // их обходят. Игрок должен понимать это до того, как войдёт.
+            string grounds = RoaGlobalMap.CardGroundsRule(row);
+            if (!string.IsNullOrEmpty(grounds)) lines.Add(HoverFactLine("Угодья", grounds));
             // У постоянных угодий добыча — это категории, а не список вещей:
             // одни трофеи в полосе иконок не объясняют, ради чего туда идти.
             string loot = RoaGlobalMap.CardLootCategories(row);

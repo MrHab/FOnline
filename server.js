@@ -178,6 +178,8 @@ const {
   publicPveAreaCatalog,
   pveAreaRewardIds,
   pveAreaZone,
+  rollAreaEncounter,
+  wandererPassesArea,
   publicPveRoomState,
   pveAreaForLocation,
   pveOwnerKey,
@@ -3907,6 +3909,9 @@ savesDb.anomalyBirths = normalizeArtifactBirthStore(savesDb.anomalyBirths);
 savesDb.publicEvents = normalizePublicEventStore(savesDb.publicEvents);
 // Мировые боссы: поражение и срок перерождения переживают перезапуск.
 if (!savesDb.worldBosses || typeof savesDb.worldBosses !== 'object' || Array.isArray(savesDb.worldBosses)) savesDb.worldBosses = {};
+// Главари логовищ угодий: когда убит — чтобы логово не стояло пустым вечно и
+// не отдавало главаря дважды подряд.
+if (!savesDb.pveAreaBosses || typeof savesDb.pveAreaBosses !== 'object' || Array.isArray(savesDb.pveAreaBosses)) savesDb.pveAreaBosses = {};
 // Рынок пустоши: книга ордеров и полки торговцев переживают перезапуск. Книга
 // одна на всех аукционеров; прежние фракционные книги вливаются в неё при
 // первом чтении, поэтому старое сохранение не теряет ни ордеров, ни полок.
@@ -20614,6 +20619,55 @@ function serverPveAreaForLocation(locationId = '') {
   return pveAreaForLocation(KROMKA_PVE_AREA_CATALOG, loc.id || locationId);
 }
 
+/**
+ * Угодья на маршруте: какая именно встреча попадётся отряду. Бросок делается
+ * один раз на сессию путешествия и на зону, чтобы предложение «вступить или
+ * обойти» и сама сцена совпадали, а после входа он снимается — следующий круг
+ * по угодьям выкатит другую встречу.
+ */
+function serverAreaForWorldZone(zone = null) {
+  const areaId = String(zone?.details?.areaId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  if (!areaId) return null;
+  return KROMKA_PVE_AREA_CATALOG.areas.find(area => area.id === areaId) || null;
+}
+
+function serverGroundsRollFor(session = null, zone = null, now = Date.now(), options = {}) {
+  const area = serverAreaForWorldZone(zone);
+  if (!session || !area || !area.encounters.length) return null;
+  if (!session.groundsRolls || typeof session.groundsRolls !== 'object') session.groundsRolls = {};
+  const key = String(zone.id || '').slice(0, 64);
+  const existing = session.groundsRolls[key];
+  if (existing && !existing.consumed) return existing;
+  const row = rollAreaEncounter(area, options.random || Math.random);
+  if (!row) return null;
+  const roll = {
+    areaId: area.id,
+    rowId: row.id,
+    encounterId: row.encounterId,
+    locationId: row.locationId,
+    title: row.title,
+    rolledAt: Number(now || Date.now()),
+    consumed: false
+  };
+  session.groundsRolls[key] = roll;
+  return roll;
+}
+
+/**
+ * Проверка «Странника» на входе в угодья: не дотянул — отряд выводят прямо на
+ * встречу, и «Обойти» недоступно. Порог объявляет сама область.
+ */
+function serverGroundsForcedFor(area = null, player = null) {
+  if (!area) return false;
+  return !wandererPassesArea(area, serverSkillPercent(player || {}, 'wanderer'));
+}
+
+function serverGroundsContactTitle(roll = null, area = null) {
+  const title = String(roll?.title || '').trim();
+  if (title) return title;
+  return String(area?.displayName || 'Угодья');
+}
+
 function serverPveOwnerKeyFor(player = {}) {
   return pveOwnerKey(player?.characterId || player?.userId || player?.id || '');
 }
@@ -20645,6 +20699,59 @@ function serverEnsurePveRoom(room, player = null, now = Date.now()) {
   }
   if (player) room.pveMembers.add(serverPveOwnerKeyFor(player));
   return room.pveState;
+}
+
+// Логово угодий отдаёт главаря заново через это время после гибели: место
+// остаётся живым, но не выдаёт мини-босса каждому входящему подряд.
+const SERVER_PVE_AREA_BOSS_RESPAWN_MS = 45 * 60 * 1000;
+
+function serverPveAreaBossStore() {
+  if (!savesDb.pveAreaBosses || typeof savesDb.pveAreaBosses !== 'object') savesDb.pveAreaBosses = {};
+  return savesDb.pveAreaBosses;
+}
+
+/**
+ * Мини-босс именной локации угодий. Тем логово и отличается от случайной
+ * встречи: встречу зачистили и забыли, а сюда возвращаются за главарём.
+ */
+function serverEnsurePveAreaBoss(room, area, now = Date.now()) {
+  if (!room || !area?.boss?.id) return false;
+  const store = serverPveAreaBossStore();
+  const state = store[area.boss.id] && typeof store[area.boss.id] === 'object' ? store[area.boss.id] : {};
+  const existing = [...(room.enemies?.values?.() || [])].find(enemy => enemy?.pveAreaBossId === area.boss.id);
+  if (existing) {
+    if (!existing.dead) return false;
+    if (!Number(state.killedAt || 0)) {
+      store[area.boss.id] = { killedAt: Number(now) };
+      persistSaves();
+    }
+    return false;
+  }
+  const killedAt = Number(state.killedAt || 0);
+  if (killedAt > 0 && Number(now) - killedAt < SERVER_PVE_AREA_BOSS_RESPAWN_MS) return false;
+  ensureRoomWorld(room);
+  const dims = roomTileDims(room);
+  const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const spot = findRoomSafeSpawnTile(room, center.tx, center.tz,
+    { maxRadius: 8, radius: 0.8, minEnemyDistance: 1.2, minPlayerDistance: 10 }) || center;
+  const boss = spawnEncounterActor(room, spot.tx, spot.tz, {
+    creatureTypeId: area.boss.creatureTypeId,
+    role: 'monster',
+    hostileToPlayer: true,
+    name: area.boss.displayName,
+    canDialogue: false
+  });
+  if (!boss) return false;
+  boss.pveAreaBossId = area.boss.id;
+  boss.eliteRank = 'boss';
+  const multiplier = Math.max(1, Number(area.boss.hpMultiplier || 2));
+  boss.maxHp = Math.round(Number(boss.maxHp || boss.hp || 60) * multiplier);
+  boss.hp = boss.maxHp;
+  boss.atk = Math.round(Number(boss.atk || 8) * Math.min(2, multiplier));
+  room.structureDirty = true;
+  store[area.boss.id] = { killedAt: 0, spawnedAt: Number(now) };
+  persistSaves();
+  return true;
 }
 
 function serverPveAliveCount(room) {
@@ -20723,6 +20830,7 @@ function serverPveRoomEntered(room, player, now = Date.now()) {
   const state = serverEnsurePveRoom(room, player, now);
   ensureRoomWorld(room);
   for (const pack of pveInitialPacks(state, area, room.rng || Math.random)) serverSpawnPvePack(room, area, pack, now);
+  serverEnsurePveAreaBoss(room, area, now);
   state.lastAlive = serverPveAliveCount(room);
 }
 
@@ -20791,6 +20899,7 @@ function serverTickPveRooms(now = Date.now(), options = {}) {
     // Пройденный отрядом путь по области: встречи приходят к идущему, поэтому
     // проверка ждёт не только часов, но и расстояния.
     serverNotePveTravel(room, occupants);
+    serverEnsurePveAreaBoss(room, area, now);
     const alive = serverPveAliveCount(room);
     const cleared = notePveAlive(room.pveState, rules, alive, now);
     const roll = rollPveEncounter(room.pveState, area, rules, now, { random: options.random || room.rng || Math.random, aliveCount: alive, occupied: true });
@@ -26089,6 +26198,19 @@ function serverGlobalTravelEncounterContact(session = null, encounterId = '', no
     const zonePoint = sanitizeServerGlobalMapPoint(zone);
     const radius = clamp(Number(zone.radius || 9), 2, 40);
     if (zonePoint && serverGlobalPointDistance(point, zonePoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
+      // Угодья предлагают не себя, а ту встречу, которая на них выпала, и
+      // «Обойти» зависит от «Странника» отряда: не дотянул — втянут без выбора.
+      const groundsArea = serverAreaForWorldZone(zone);
+      if (groundsArea) {
+        const roll = serverGroundsRollFor(session, zone, now);
+        return {
+          id,
+          kind: 'zone',
+          title: safeName(serverGroundsContactTitle(roll, groundsArea)),
+          point: zonePoint,
+          forced: serverGroundsForcedFor(groundsArea, players.get(String(session?.leaderId || '')))
+        };
+      }
       return {
         id,
         kind: 'zone',
@@ -26376,7 +26498,36 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
   if (zone) {
     const resolution = serverGlobalZoneResolution(zone, session?.fromPoint || null);
     const touchRadius = Number(resolution?.radius || 0) + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE;
-    if (resolution && serverGlobalPointDistance(expectedPoint, resolution.point) <= touchRadius) return resolution;
+    if (resolution && serverGlobalPointDistance(expectedPoint, resolution.point) <= touchRadius) {
+      // Путь сквозь угодья ведёт во встречу, а не в именное логово: сцена
+      // одноразовая, её комната своя у каждого отряда, и выпавший бросок
+      // снимается — следующий круг по угодьям даст другую встречу.
+      const groundsArea = serverAreaForWorldZone(zone);
+      const roll = groundsArea ? serverGroundsRollFor(session, zone, now) : null;
+      if (roll && LOCATIONS[normalizeLocationId(roll.locationId)]) {
+        const encounterLocationId = normalizeLocationId(roll.locationId);
+        const ownerKey = pveOwnerKey(leader?.characterId || leader?.userId || leader?.id || '').slice(0, 24);
+        const stamp = Math.floor(Number(roll.rolledAt || now)).toString(36).slice(-8);
+        roll.consumed = true;
+        return {
+          ...resolution,
+          locationId: encounterLocationId,
+          encounterId: roll.encounterId,
+          encounterRoomId: sanitizeEncounterRoomId(
+            `${encounterLocationId}#enc_${ownerKey}_${roll.rowId}_${stamp}`, encounterLocationId),
+          // Комната встречи живёт сама по себе: билет не должен требовать,
+          // чтобы зона угодий всё ещё стояла на карте.
+          worldZoneId: '',
+          groundsAreaId: groundsArea.id,
+          groundsTitle: roll.title,
+          pvpMode: normalizeLocationPvpMode(
+            LOCATIONS[encounterLocationId]?.pvpMode || 'pve',
+            LOCATIONS[encounterLocationId]?.safe !== false),
+          entryKey: serverGlobalEntryKey(encounterLocationId, resolution.point, session?.fromPoint || null)
+        };
+      }
+      return resolution;
+    }
   }
   if (partyId) {
     const party = simState?.parties?.[partyId] || null;

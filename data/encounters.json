@@ -6,145 +6,264 @@
     "ghoul_pack": {
       "name": "Сорванные Выжженные",
       "actors": [
-        { "tx": 16, "tz": 17, "creatureTypeId": "burned", "name": "Выжженный дозорный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "knife", "armor": "leather", "boots": "boots" } },
-        { "tx": 19, "tz": 16, "creatureTypeId": "burned", "name": "Выжженная дорожница", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "fists", "boots": "boots" } },
-        { "tx": 22, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный грузчик", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "axe", "armor": "leather" } },
-        { "tx": 18, "tz": 21, "creatureTypeId": "burned", "name": "Выжженный без жетона", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "fists" } },
-        { "tx": 21, "tz": 22, "creatureTypeId": "burned", "name": "Выжженная связистка", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "pistol", "boots": "boots" } }
+        {"tx": 16, "tz": 17, "creatureTypeId": "burned", "name": "Выжженный дозорный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}},
+        {"tx": 19, "tz": 16, "creatureTypeId": "burned", "name": "Выжженная дорожница", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "fists", "boots": "boots"}},
+        {"tx": 22, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный грузчик", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "axe", "armor": "leather"}},
+        {"tx": 18, "tz": 21, "creatureTypeId": "burned", "name": "Выжженный без жетона", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "fists"}},
+        {"tx": 21, "tz": 22, "creatureTypeId": "burned", "name": "Выжженная связистка", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "pistol", "boots": "boots"}}
       ]
     },
     "peaceful_caravan": {
       "name": "Стоянка Лиги Тракта",
       "actors": [
-        { "tx": 18, "tz": 18, "typeIndex": 0, "name": "Счётчик Лиги", "faction": "tract_league", "role": "merchant", "hostileToPlayer": false, "stationary": true, "hp": 48, "atk": 5, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack" }, "tradeProfile": "caravan", "lootFromTradeStock": true },
-        { "tx": 16, "tz": 18, "typeIndex": 0, "name": "Охранник Тракта", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardCaravan" },
-        { "tx": 20, "tz": 18, "typeIndex": 0, "name": "Охранница Тракта", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardCaravan" }
+        {"tx": 18, "tz": 18, "typeIndex": 0, "name": "Счётчик Лиги", "faction": "tract_league", "role": "merchant", "hostileToPlayer": false, "stationary": true, "hp": 48, "atk": 5, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack"}, "tradeProfile": "caravan", "lootFromTradeStock": true},
+        {"tx": 16, "tz": 18, "typeIndex": 0, "name": "Охранник Тракта", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": {"weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardCaravan"},
+        {"tx": 20, "tz": 18, "typeIndex": 0, "name": "Охранница Тракта", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardCaravan"}
       ]
     },
     "caravan_patrol_vs_ghouls": {
       "name": "Дозор Управы против Выжженных",
       "actors": [
-        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Старшая дозора Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 11, "equipment": { "weapon": "assaultRifle", "armor": "combatArmor", "helmet": "assaultHelmet", "boots": "reinforcedBoots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 16, "tz": 20, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 23, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный беглец", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "knife" } },
-        { "tx": 24, "tz": 20, "creatureTypeId": "burned", "name": "Выжженная беглянка", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "fists" } },
-        { "tx": 26, "tz": 19, "creatureTypeId": "burned", "name": "Выжженный с номером", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": { "weapon": "axe" } }
+        {"tx": 14, "tz": 18, "typeIndex": 0, "name": "Старшая дозора Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 11, "equipment": {"weapon": "assaultRifle", "armor": "combatArmor", "helmet": "assaultHelmet", "boots": "reinforcedBoots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 16, "tz": 20, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 23, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный беглец", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "knife"}},
+        {"tx": 24, "tz": 20, "creatureTypeId": "burned", "name": "Выжженная беглянка", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "fists"}},
+        {"tx": 26, "tz": 19, "creatureTypeId": "burned", "name": "Выжженный с номером", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "axe"}}
       ]
     },
     "raider_ambush": {
       "name": "Засада налётчиков",
       "actors": [
-        { "tx": 15, "tz": 18, "typeIndex": 0, "name": "Налётчик-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
-        { "tx": 18, "tz": 16, "typeIndex": 0, "name": "Налётчик", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
-        { "tx": 22, "tz": 18, "typeIndex": 0, "name": "Налётчик с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
-        { "tx": 19, "tz": 22, "typeIndex": 0, "name": "Сборщик чужого", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 52, "atk": 8, "equipment": { "weapon": "axe", "armor": "leather", "boots": "boots" } }
+        {"tx": 15, "tz": 18, "typeIndex": 0, "name": "Налётчик-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": {"weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 18, "tz": 16, "typeIndex": 0, "name": "Налётчик", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}},
+        {"tx": 22, "tz": 18, "typeIndex": 0, "name": "Налётчик с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 19, "tz": 22, "typeIndex": 0, "name": "Сборщик чужого", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 52, "atk": 8, "equipment": {"weapon": "axe", "armor": "leather", "boots": "boots"}}
       ]
     },
     "raiders_vs_patrol": {
       "name": "Налётчики против дозора Управы",
       "actors": [
-        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Дозорный Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 16, "tz": 20, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 23, "tz": 17, "typeIndex": 0, "name": "Налётчик-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
-        { "tx": 24, "tz": 20, "typeIndex": 0, "name": "Налётчик", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
-        { "tx": 25, "tz": 18, "typeIndex": 0, "name": "Налётчик с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } }
+        {"tx": 14, "tz": 18, "typeIndex": 0, "name": "Дозорный Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 16, "tz": 20, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 23, "tz": 17, "typeIndex": 0, "name": "Налётчик-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": {"weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 24, "tz": 20, "typeIndex": 0, "name": "Налётчик", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}},
+        {"tx": 25, "tz": 18, "typeIndex": 0, "name": "Налётчик с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}}
       ]
     },
     "radscorpion_nest": {
       "name": "Лежка Рыхляков",
       "actors": [
-        { "tx": 15, "tz": 18, "creatureTypeId": "rykhlyak", "name": "Костяной Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 112 },
-        { "tx": 18, "tz": 16, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 21, "tz": 18, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 17, "tz": 21, "creatureTypeId": "rykhlyak", "name": "Молодой Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 78 }
+        {"tx": 15, "tz": 18, "creatureTypeId": "rykhlyak", "name": "Костяной Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 112},
+        {"tx": 18, "tz": 16, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 21, "tz": 18, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 17, "tz": 21, "creatureTypeId": "rykhlyak", "name": "Молодой Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 78}
       ]
     },
     "mutant_ant_swarm": {
       "name": "Колония Пыльников",
       "actors": [
-        { "tx": 15, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник-носитель", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 17, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 19, "tz": 16, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 21, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 23, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 19, "tz": 22, "creatureTypeId": "dustling", "name": "Пыльник с поднятыми створками", "faction": "pylniki", "role": "animal", "hostileToPlayer": true, "hp": 62 }
+        {"tx": 15, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник-носитель", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 17, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 19, "tz": 16, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 21, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 19, "tz": 22, "creatureTypeId": "dustling", "name": "Пыльник с поднятыми створками", "faction": "pylniki", "role": "animal", "hostileToPlayer": true, "hp": 62}
       ]
     },
     "gecko_pack": {
       "name": "Гнездо Слухачей",
       "actors": [
-        { "tx": 15, "tz": 18, "creatureTypeId": "listener", "name": "Старый Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true, "hp": 68 },
-        { "tx": 18, "tz": 16, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true },
-        { "tx": 21, "tz": 17, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true },
-        { "tx": 23, "tz": 20, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true },
-        { "tx": 18, "tz": 22, "creatureTypeId": "mourner", "name": "Плакальщик-приманка", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true, "chance": 0.45 }
+        {"tx": 15, "tz": 18, "creatureTypeId": "listener", "name": "Старый Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true, "hp": 68},
+        {"tx": 18, "tz": 16, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 21, "tz": 17, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 20, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 18, "tz": 22, "creatureTypeId": "mourner", "name": "Плакальщик-приманка", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true, "chance": 0.45}
       ]
     },
     "ants_vs_geckos": {
       "name": "Пыльники против Слухачей",
       "actors": [
-        { "tx": 14, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 15, "tz": 20, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 17, "tz": 18, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 23, "tz": 17, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true },
-        { "tx": 24, "tz": 20, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true },
-        { "tx": 22, "tz": 22, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true }
+        {"tx": 14, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 20, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 17, "tz": 18, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 17, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 24, "tz": 20, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 22, "tz": 22, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true}
       ]
     },
     "radscorpions_vs_patrol": {
       "name": "Дозор Управы против Рыхляков",
       "actors": [
-        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Дозорный Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 15, "tz": 21, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
-        { "tx": 23, "tz": 17, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 24, "tz": 20, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 22, "tz": 22, "creatureTypeId": "rykhlyak", "name": "Костяной Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 112 }
+        {"tx": 14, "tz": 18, "typeIndex": 0, "name": "Дозорный Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 15, "tz": 21, "typeIndex": 0, "name": "Регистратор Управы", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 23, "tz": 17, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 24, "tz": 20, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 22, "tz": 22, "creatureTypeId": "rykhlyak", "name": "Костяной Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true, "hp": 112}
       ]
     },
     "super_mutant_lair": {
       "name": "Тканевый выводок",
       "actors": [
-        { "tx": 16, "tz": 17, "creatureTypeId": "fold", "name": "Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true },
-        { "tx": 19, "tz": 16, "creatureTypeId": "fold", "name": "Складень с рубцом", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 182 },
-        { "tx": 22, "tz": 19, "creatureTypeId": "fold", "name": "Старший Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 218, "atk": 23 },
-        { "tx": 18, "tz": 22, "creatureTypeId": "fold", "name": "Неполный Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 124, "speed": 1.7 }
+        {"tx": 16, "tz": 17, "creatureTypeId": "fold", "name": "Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true},
+        {"tx": 19, "tz": 16, "creatureTypeId": "fold", "name": "Складень с рубцом", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 182},
+        {"tx": 22, "tz": 19, "creatureTypeId": "fold", "name": "Старший Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 218, "atk": 23},
+        {"tx": 18, "tz": 22, "creatureTypeId": "fold", "name": "Неполный Складень", "faction": "skladni", "role": "monster", "hostileToPlayer": true, "hp": 124, "speed": 1.7}
       ]
     },
     "fire_gecko_ambush": {
       "name": "Чужие голоса",
       "actors": [
-        { "tx": 16, "tz": 18, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 19, "tz": 16, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true },
-        { "tx": 22, "tz": 18, "creatureTypeId": "mourner", "name": "Плакальщик: «Я здесь!»", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true, "hp": 46 },
-        { "tx": 18, "tz": 22, "creatureTypeId": "gari", "name": "Гарь под приманкой", "faction": "gari", "role": "animal", "hostileToPlayer": true },
-        { "tx": 21, "tz": 22, "creatureTypeId": "gari", "name": "Гарь под приманкой", "faction": "gari", "role": "animal", "hostileToPlayer": true }
+        {"tx": 16, "tz": 18, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 19, "tz": 16, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 22, "tz": 18, "creatureTypeId": "mourner", "name": "Плакальщик: «Я здесь!»", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true, "hp": 46},
+        {"tx": 18, "tz": 22, "creatureTypeId": "gari", "name": "Гарь под приманкой", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 21, "tz": 22, "creatureTypeId": "gari", "name": "Гарь под приманкой", "faction": "gari", "role": "animal", "hostileToPlayer": true}
       ]
     },
     "gari_pack": {
       "name": "Черная дуга",
       "actors": [
-        { "tx": 15, "tz": 18, "creatureTypeId": "gari", "name": "Ведущая Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true, "hp": 52 },
-        { "tx": 18, "tz": 16, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true },
-        { "tx": 21, "tz": 17, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true },
-        { "tx": 23, "tz": 20, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true }
+        {"tx": 15, "tz": 18, "creatureTypeId": "gari", "name": "Ведущая Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true, "hp": 52},
+        {"tx": 18, "tz": 16, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 21, "tz": 17, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 20, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true}
       ]
     },
     "lantern_grazing": {
       "name": "Холодные огни",
       "actors": [
-        { "tx": 16, "tz": 18, "creatureTypeId": "lantern", "name": "Фонарник", "faction": "fonarniki", "role": "animal", "hostileToPlayer": false },
-        { "tx": 19, "tz": 16, "creatureTypeId": "lantern", "name": "Молодой Фонарник", "faction": "fonarniki", "role": "animal", "hostileToPlayer": false, "hp": 54 },
-        { "tx": 24, "tz": 20, "creatureTypeId": "gari", "name": "Гарь в синем свете", "faction": "gari", "role": "animal", "hostileToPlayer": true, "chance": 0.65 },
-        { "tx": 23, "tz": 23, "creatureTypeId": "gari", "name": "Гарь в синем свете", "faction": "gari", "role": "animal", "hostileToPlayer": true, "chance": 0.45 }
+        {"tx": 16, "tz": 18, "creatureTypeId": "lantern", "name": "Фонарник", "faction": "fonarniki", "role": "animal", "hostileToPlayer": false},
+        {"tx": 19, "tz": 16, "creatureTypeId": "lantern", "name": "Молодой Фонарник", "faction": "fonarniki", "role": "animal", "hostileToPlayer": false, "hp": 54},
+        {"tx": 24, "tz": 20, "creatureTypeId": "gari", "name": "Гарь в синем свете", "faction": "gari", "role": "animal", "hostileToPlayer": true, "chance": 0.65},
+        {"tx": 23, "tz": 23, "creatureTypeId": "gari", "name": "Гарь в синем свете", "faction": "gari", "role": "animal", "hostileToPlayer": true, "chance": 0.45}
       ]
     },
     "kromka_caravan_twelve_ambush": {
       "name": "Двенадцатый не пришёл",
       "actors": [
-        { "tx": 25, "tz": 16, "typeIndex": 0, "name": "Налётчик без знаков", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 44, "atk": 8, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
-        { "tx": 27, "tz": 20, "typeIndex": 0, "name": "Налётчик у насыпи", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 48, "atk": 9, "equipment": { "weapon": "rifle", "armor": "leather", "boots": "boots" } },
-        { "tx": 23, "tz": 24, "typeIndex": 0, "name": "Сборщик чужого груза", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 52, "atk": 9, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
-        { "tx": 14, "tz": 17, "typeIndex": 0, "name": "Ирена «Верста» Белова", "faction": "tract_league", "role": "survivor", "hostileToPlayer": false, "stationary": true, "hp": 38, "atk": 4, "equipment": { "weapon": "knife", "armor": "leather", "boots": "boots", "backpack": "backpack" } }
+        {"tx": 25, "tz": 16, "typeIndex": 0, "name": "Налётчик без знаков", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 44, "atk": 8, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}},
+        {"tx": 27, "tz": 20, "typeIndex": 0, "name": "Налётчик у насыпи", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 48, "atk": 9, "equipment": {"weapon": "rifle", "armor": "leather", "boots": "boots"}},
+        {"tx": 23, "tz": 24, "typeIndex": 0, "name": "Сборщик чужого груза", "faction": "unknown_raiders", "role": "raider", "hostileToPlayer": true, "hp": 52, "atk": 9, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 14, "tz": 17, "typeIndex": 0, "name": "Ирена «Верста» Белова", "faction": "tract_league", "role": "survivor", "hostileToPlayer": false, "stationary": true, "hp": 38, "atk": 4, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots", "backpack": "backpack"}}
+      ]
+    },
+    "pylniki_vs_caravan": {
+      "name": "Пыльники против обоза Лиги",
+      "actors": [
+        {"tx": 14, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 20, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 22, "creatureTypeId": "dustling", "name": "Пыльник-разведчик", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 18, "typeIndex": 0, "name": "Возчик Лиги", "faction": "tract_league", "role": "merchant", "hostileToPlayer": false, "hp": 52, "atk": 7, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}, "tradeProfile": "caravan"},
+        {"tx": 24, "tz": 20, "typeIndex": 0, "name": "Охранник обоза", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 60, "atk": 10, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardCaravan"},
+        {"tx": 22, "tz": 22, "typeIndex": 0, "name": "Погонщик", "faction": "tract_league", "role": "survivor", "hostileToPlayer": false, "hp": 48, "atk": 6, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}}
+      ]
+    },
+    "pylniki_vs_burned": {
+      "name": "Пыльники против выжженных",
+      "actors": [
+        {"tx": 14, "tz": 18, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 21, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 17, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "knife"}},
+        {"tx": 24, "tz": 21, "creatureTypeId": "burned", "name": "Выжженная", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "axe"}},
+        {"tx": 22, "tz": 22, "creatureTypeId": "burned", "name": "Выжженный дозорный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true}
+      ]
+    },
+    "pylniki_vs_workers": {
+      "name": "Пыльники против артельщиков",
+      "actors": [
+        {"tx": 14, "tz": 19, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 21, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 17, "tz": 22, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Артельщик с киркой", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 54, "atk": 8, "equipment": {"weapon": "pickaxe", "armor": "leather", "boots": "boots"}},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Старшая артели", "faction": "free_artels", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 22, "tz": 17, "typeIndex": 0, "name": "Носильщик артели", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 46, "atk": 5, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}}
+      ]
+    },
+    "hunters_vs_pylniki": {
+      "name": "Охотники против пыльников",
+      "actors": [
+        {"tx": 15, "tz": 18, "typeIndex": 0, "name": "Старший охотник", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 11, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "reinforcedBoots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 16, "tz": 21, "typeIndex": 0, "name": "Охотница", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 14, "tz": 20, "typeIndex": 0, "name": "Загонщик", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 50, "atk": 7, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}},
+        {"tx": 23, "tz": 18, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 24, "tz": 20, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 22, "tz": 22, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 25, "tz": 21, "creatureTypeId": "dustling", "name": "Пыльник-матёрый", "faction": "pylniki", "role": "animal", "hostileToPlayer": true}
+      ]
+    },
+    "gari_vs_caravan": {
+      "name": "Гари против обоза Лиги",
+      "actors": [
+        {"tx": 14, "tz": 18, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 21, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 19, "creatureTypeId": "gari", "name": "Гарь", "faction": "gari", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Возчик Лиги", "faction": "tract_league", "role": "merchant", "hostileToPlayer": false, "hp": 52, "atk": 7, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}, "tradeProfile": "caravan"},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Охранник обоза", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 60, "atk": 10, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardCaravan"}
+      ]
+    },
+    "hunters_vs_slukhachi": {
+      "name": "Охотники против слухачей",
+      "actors": [
+        {"tx": 15, "tz": 19, "typeIndex": 0, "name": "Старший охотник", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 11, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "reinforcedBoots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 16, "tz": 22, "typeIndex": 0, "name": "Охотница", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 23, "tz": 18, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 24, "tz": 21, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true},
+        {"tx": 22, "tz": 22, "creatureTypeId": "listener", "name": "Слухач", "faction": "slukhachi", "role": "animal", "hostileToPlayer": true}
+      ]
+    },
+    "skladni_vs_workers": {
+      "name": "Складни против артельщиков",
+      "actors": [
+        {"tx": 14, "tz": 19, "creatureTypeId": "fold", "name": "Складень", "faction": "skladni", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 21, "creatureTypeId": "fold", "name": "Складень", "faction": "skladni", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 23, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Артельщик с киркой", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 54, "atk": 8, "equipment": {"weapon": "pickaxe", "armor": "leather", "boots": "boots"}},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Старшая артели", "faction": "free_artels", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 25, "tz": 18, "typeIndex": 0, "name": "Носильщик артели", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 46, "atk": 5, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}}
+      ]
+    },
+    "mourners_vs_hunters": {
+      "name": "Плакальщики против охотников",
+      "actors": [
+        {"tx": 14, "tz": 18, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 21, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 23, "creatureTypeId": "mourner", "name": "Плакальщик", "faction": "plakalshchiki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Старший охотник", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 11, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "reinforcedBoots"}, "tradeProfile": "guardKlimPatrol"},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Охотница", "faction": "uprava", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardKlimPatrol"}
+      ]
+    },
+    "rykhlyaki_vs_caravan": {
+      "name": "Рыхляки против обоза Лиги",
+      "actors": [
+        {"tx": 14, "tz": 19, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 15, "tz": 22, "creatureTypeId": "rykhlyak", "name": "Рыхляк", "faction": "rykhlyaki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 16, "tz": 17, "creatureTypeId": "dustling", "name": "Пыльник", "faction": "pylniki", "role": "animal", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Возчик Лиги", "faction": "tract_league", "role": "merchant", "hostileToPlayer": false, "hp": 52, "atk": 7, "equipment": {"weapon": "pistol", "armor": "leather", "boots": "boots"}, "tradeProfile": "caravan"},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Охранник обоза", "faction": "tract_league", "role": "guard", "hostileToPlayer": false, "hp": 60, "atk": 10, "equipment": {"weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}, "tradeProfile": "guardCaravan"},
+        {"tx": 25, "tz": 18, "typeIndex": 0, "name": "Погонщик", "faction": "tract_league", "role": "survivor", "hostileToPlayer": false, "hp": 48, "atk": 6, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}}
+      ]
+    },
+    "burned_vs_workers": {
+      "name": "Выжженные против артельщиков",
+      "actors": [
+        {"tx": 14, "tz": 19, "creatureTypeId": "burned", "name": "Выжженный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "knife"}},
+        {"tx": 15, "tz": 22, "creatureTypeId": "burned", "name": "Выжженная", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true, "equipment": {"weapon": "axe"}},
+        {"tx": 16, "tz": 18, "creatureTypeId": "burned", "name": "Выжженный дозорный", "faction": "burned_feral", "role": "burned", "hostileToPlayer": true},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Артельщик с киркой", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 54, "atk": 8, "equipment": {"weapon": "pickaxe", "armor": "leather", "boots": "boots"}},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Старшая артели", "faction": "free_artels", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}}
+      ]
+    },
+    "raiders_vs_workers": {
+      "name": "Налётчики против артельщиков",
+      "actors": [
+        {"tx": 14, "tz": 19, "typeIndex": 0, "name": "Налётчик-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": {"weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 15, "tz": 22, "typeIndex": 0, "name": "Налётчица", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 54, "atk": 9, "equipment": {"weapon": "smg", "armor": "leather", "boots": "boots"}},
+        {"tx": 16, "tz": 17, "typeIndex": 0, "name": "Налётчик с топором", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 56, "atk": 11, "equipment": {"weapon": "axe", "armor": "leather", "boots": "boots"}},
+        {"tx": 23, "tz": 19, "typeIndex": 0, "name": "Артельщик с киркой", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 54, "atk": 8, "equipment": {"weapon": "pickaxe", "armor": "leather", "boots": "boots"}},
+        {"tx": 24, "tz": 21, "typeIndex": 0, "name": "Старшая артели", "faction": "free_artels", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 10, "equipment": {"weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots"}},
+        {"tx": 25, "tz": 22, "typeIndex": 0, "name": "Носильщик артели", "faction": "free_artels", "role": "survivor", "hostileToPlayer": false, "hp": 46, "atk": 5, "equipment": {"weapon": "knife", "armor": "leather", "boots": "boots"}}
       ]
     }
   }

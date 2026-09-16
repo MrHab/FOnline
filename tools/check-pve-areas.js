@@ -27,8 +27,62 @@ assert.deepEqual(catalog.rules, {
   distancePerRollM: 90,
   // Обстоятельства встречи: засада подводит стаю вплотную, смешанная приводит
   // соседа другого вида.
-  ambushChance: 0.25, ambushMinPlayerDistance: 6, mixedChance: 0.25, mixedCompanionCount: 1
+  ambushChance: 0.25, ambushMinPlayerDistance: 6, mixedChance: 0.25, mixedCompanionCount: 1,
+  // Перезарядка встречи внутри контура: столько пути отряд проходит по угодьям,
+  // прежде чем они выкатят следующую сцену.
+  contactRearmPoints: 14
 });
+// --- угодья выкатывают встречи, а не ведут в логово --------------------------------
+// Игрок ходит по угодьям и встречает разное: таблица сцен принадлежит области,
+// каждая сцена — настоящая запись в data/encounters.json, а её локация —
+// одноразовый шаблон, иначе зачищенная встреча возрождалась бы.
+const encounterCatalog = JSON.parse(read('data/encounters.json')).encounters;
+const locationsDir = 'data/locations';
+for (const area of catalog.areas) {
+  assert(area.encounters.length >= 4,
+    `${area.id}: hunting grounds need a table of encounters, not a single door`);
+  const scenes = new Set();
+  for (const row of area.encounters) {
+    assert(encounterCatalog[row.encounterId],
+      `${area.id}/${row.id}: unknown encounter scene ${row.encounterId}`);
+    assert(Array.isArray(encounterCatalog[row.encounterId].actors)
+      && encounterCatalog[row.encounterId].actors.length > 0,
+      `${area.id}/${row.id}: the scene ${row.encounterId} has no actors`);
+    const template = JSON.parse(read(`${locationsDir}/${row.locationId}.json`));
+    assert(template.randomTemplate === true || template.encounterOnly === true,
+      `${area.id}/${row.id}: ${row.locationId} is not a one-shot encounter template`);
+    assert(template.noRespawn === true,
+      `${area.id}/${row.id}: a cleared encounter must stay cleared (${row.locationId} respawns)`);
+    assert(row.weight > 0 && row.title.length > 0, `${area.id}/${row.id}: a table row needs a weight and a title`);
+    scenes.add(row.encounterId);
+  }
+  assert(scenes.size >= 3, `${area.id}: the same scene over and over is not a random encounter`);
+  // Сцены «сторона против стороны» — половина обещания игроку: угодья живут не
+  // только стаями, но и чужими стычками.
+  const sides = area.encounters.filter(row => /_vs_|_против_/.test(row.encounterId)
+    || String(encounterCatalog[row.encounterId].name || '').includes(' против '));
+  assert(sides.length >= 1, `${area.id}: hunting grounds must also stage someone against someone`);
+  // Мини-босс принадлежит именной локации, а не встрече.
+  assert(area.boss && area.boss.displayName.length > 0, `${area.id}: the lair must keep a mini boss`);
+  assert(mutantIds.has(area.boss.creatureTypeId), `${area.id}: unknown boss creature ${area.boss.creatureTypeId}`);
+  assert(area.wandererRequired >= 0 && area.wandererRequired <= 100,
+    `${area.id}: the wanderer threshold decides whether the party can walk around an encounter`);
+}
+// Бросок по таблице детерминирован при заданном генераторе и не выходит за неё.
+{
+  const area = catalog.byLocation.antHive;
+  const first = pve.rollAreaEncounter(area, () => 0.01);
+  const last = pve.rollAreaEncounter(area, () => 0.999999);
+  assert(first && last && area.encounters.includes(first) && area.encounters.includes(last),
+    'A rolled encounter always comes from the area table.');
+  assert.equal(pve.rollAreaEncounter({ encounters: [] }, () => 0.5), null,
+    'An area without a table rolls nothing instead of throwing.');
+  // Проверка «Странника»: порог принадлежит области, сравнение — по проценту навыка.
+  assert.equal(pve.wandererPassesArea(area, area.wandererRequired), true,
+    'Exactly at the threshold the party still spots the encounter.');
+  assert.equal(pve.wandererPassesArea(area, area.wandererRequired - 1), false,
+    'Below the threshold the party is pulled in without a choice.');
+}
 for (const area of catalog.areas) {
   const location = JSON.parse(read(`data/locations/${area.locationId}.json`));
   assert.equal(location.pvpMode, 'pve', `${area.id}: the location must use the pve zone mode.`);
@@ -279,6 +333,18 @@ for (const row of publicAreas) {
       'pveArrivalRoomId is used before it is declared: the arrival handler would throw on the first party.');
   }
 }
+// Сервер обязан катить встречу на контакте и гасить бросок после входа.
+for (const needle of [
+  'function serverGroundsRollFor(session = null, zone = null, now = Date.now(), options = {})',
+  'function serverGroundsForcedFor(area = null, player = null)',
+  "serverSkillPercent(player || {}, 'wanderer')",
+  'roll.consumed = true;',
+  'function serverEnsurePveAreaBoss(room, area, now = Date.now())'
+]) assert(server.includes(needle), `server.js is missing the hunting-ground encounter contract: ${needle}`);
+// Клиент обязан продолжать выкатывать встречи, пока отряд идёт внутри контура.
+for (const token of ['private float GroundsContactFraction(', '_groundsWalked', 'rearmPoints'])
+  assert(clientMap.includes(token), `RoaGlobalMap must keep offering encounters inside the grounds: ${token}`);
+
 // Билет прибытия обязан нести комнату группы, а не комнату зоны.
 assert(server.includes("roomId: pveArrivalRoomId || resolution.encounterRoomId || ''")
   && server.includes("encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || ''"),
@@ -301,9 +367,15 @@ for (const token of ['row["worldZoneId"]', 'EncounterZoneSemantic', 'public stat
 const contactAt = clientMap.indexOf('private bool MaybeTriggerTravelContact(');
 assert(contactAt > 0, 'RoaGlobalMap must keep the travel contact trigger.');
 const contactBody = clientMap.slice(contactAt, contactAt + 2400);
-assert(contactBody.includes('EncounterZoneSemantic') && contactBody.includes('RouteEntryFraction(')
-  && contactBody.includes('PointInsideArea('),
-  'The contact trigger must decide hunting grounds by their outline, not by the circle around them.');
+assert(contactBody.includes('EncounterZoneSemantic') && contactBody.includes('GroundsContactFraction('),
+  'The contact trigger must decide hunting grounds by their own rule, not by the circle around them.');
+// А само правило — по контуру и по пройденному внутри пути.
+const groundsAt = clientMap.indexOf('private float GroundsContactFraction(');
+assert(groundsAt > 0, 'RoaGlobalMap must keep the hunting-ground contact rule.');
+const groundsBody = clientMap.slice(groundsAt, groundsAt + 1400);
+assert(groundsBody.includes('RouteEntryFraction(') && groundsBody.includes('PointInsideArea(')
+  && groundsBody.includes('rearmPoints'),
+  'Hunting grounds must offer an encounter on the outline and again after walking inside it.');
 // Цель угодий не должна воровать клик и наведение у площадки в том же центре.
 assert(clientMap.includes('if (target.ContactOnly) continue;') && clientMap.includes('areaTarget.ContactOnly = true;'),
   'An area target exists for the route contact only.');

@@ -22,7 +22,8 @@ const DEFAULT_RULES = Object.freeze({
   ambushChance: 0.25,
   ambushMinPlayerDistance: 6,
   mixedChance: 0.25,
-  mixedCompanionCount: 1
+  mixedCompanionCount: 1,
+  contactRearmPoints: 14
 });
 
 // Столько силуэтов области нарисовано в клиенте (`RoaGlobalMapZoneShapes`).
@@ -63,6 +64,10 @@ function normalizePveRules(input = {}) {
     maxAlive: Math.max(1, Math.floor(Number(src.maxAlive || DEFAULT_RULES.maxAlive))),
     spawnMinPlayerDistance: Math.max(2, Number(src.spawnMinPlayerDistance || DEFAULT_RULES.spawnMinPlayerDistance)),
     roomIdleResetMs: Math.max(10000, Math.floor(Number(src.roomIdleResetMs || DEFAULT_RULES.roomIdleResetMs))),
+    // Столько точек пути надо пройти внутри контура, прежде чем угодья выкатят
+    // следующую встречу: иначе одно пересечение давало бы одно предложение на
+    // весь маршрут, и цикл «зачистил — вышел — иду дальше» не замыкался бы.
+    contactRearmPoints: clamp(Number(src.contactRearmPoints ?? DEFAULT_RULES.contactRearmPoints), 4, 40),
     distancePerRollM: Math.max(0, Number(src.distancePerRollM ?? DEFAULT_RULES.distancePerRollM)),
     ambushChance: clamp(Number(src.ambushChance ?? DEFAULT_RULES.ambushChance), 0, 1),
     ambushMinPlayerDistance: Math.max(2, Number(src.ambushMinPlayerDistance || DEFAULT_RULES.ambushMinPlayerDistance)),
@@ -86,6 +91,54 @@ function normalizePack(input = {}, index = 0) {
     weight: Math.max(0, Number(input?.weight || 1)),
     label: String(input?.label || creatureTypeId || typeName).slice(0, 80)
   };
+}
+
+function normalizeAreaBoss(input = null) {
+  const id = cleanId(input?.id);
+  if (!id) return null;
+  return {
+    id,
+    displayName: String(input?.displayName || 'Главарь угодий').slice(0, 96),
+    creatureTypeId: cleanId(input?.creatureTypeId, 32),
+    hpMultiplier: clamp(Number(input?.hpMultiplier || 2.4), 1, 8)
+  };
+}
+
+function normalizeAreaEncounter(input = {}, index = 0) {
+  const encounterId = String(input?.encounterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+  const locationId = cleanId(input?.locationId);
+  if (!encounterId || !locationId) return null;
+  return {
+    id: cleanId(input?.id || `encounter_${index + 1}`),
+    encounterId,
+    locationId,
+    weight: Math.max(0, Number(input?.weight || 1)),
+    title: String(input?.title || encounterId).slice(0, 96)
+  };
+}
+
+/**
+ * Что встретит отряд, идущий по угодьям. Бросок по весам той же формы, что и
+ * выбор стаи внутри области, генератор случайных чисел инжектируется.
+ */
+function rollAreaEncounter(area = {}, random = Math.random) {
+  const rows = (Array.isArray(area?.encounters) ? area.encounters : []).filter(row => row && row.weight > 0);
+  if (!rows.length) return null;
+  const total = rows.reduce((sum, row) => sum + row.weight, 0);
+  let cursor = random() * total;
+  for (const row of rows) {
+    cursor -= row.weight;
+    if (cursor <= 0) return row;
+  }
+  return rows[rows.length - 1];
+}
+
+/**
+ * Прошёл ли отряд проверку «Странника». Высокий навык — встречу видно заранее
+ * и от неё можно уйти; низкий — отряд выводят прямо на неё.
+ */
+function wandererPassesArea(area = {}, wandererSkill = 0) {
+  return Math.max(0, Number(wandererSkill || 0)) >= Math.max(0, Number(area?.wandererRequired || 0));
 }
 
 function normalizePveAreaCatalog(raw = {}) {
@@ -119,6 +172,15 @@ function normalizePveAreaCatalog(raw = {}) {
       shapeRotation: ((Math.floor(Number(input?.shapeRotation ?? 0)) % 360) + 360) % 360,
       objective: String(input?.objective || 'зачистить угодья').slice(0, 64),
       activity: String(input?.activity || 'всегда').slice(0, 32),
+      // Порог навыка «Странник»: ниже него отряд не успевает заметить встречу
+      // и втягивается в неё без выбора.
+      wandererRequired: clamp(Math.floor(Number(input?.wandererRequired ?? 40)), 0, 100),
+      // Мини-босс именной локации угодий. Он и отличает логово от случайной
+      // встречи: встречи одноразовы, логово стоит на месте.
+      boss: normalizeAreaBoss(input?.boss),
+      // Таблица встреч угодий: что именно попадается тому, кто их пересекает.
+      encounters: (Array.isArray(input?.encounters) ? input.encounters : [])
+        .map(normalizeAreaEncounter).filter(Boolean),
       packs
     });
   }
@@ -181,6 +243,16 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
       dangerLabel: dangerBandLabel(area.dangerBand),
       objective: area.objective,
       activity: area.activity,
+      // Карта показывает порог «Странника» и главаря логова: по первому игрок
+      // понимает, втянут ли его во встречу без спроса, по второму карта рисует
+      // шестиугольник над именной локацией.
+      wandererRequired: area.wandererRequired,
+      // Столько пути надо пройти внутри контура до следующей встречи: карта
+      // считает это сама, пока отряд идёт, — иначе одни угодья давали бы одно
+      // предложение за маршрут.
+      rearmPoints: Number(catalog?.rules?.contactRearmPoints ?? 14),
+      boss: area.boss ? { displayName: area.boss.displayName } : null,
+      encounterCount: area.encounters.length,
       personal: true,
       inhabitants: area.packs.map(pack => String(pack.label || pack.typeName || pack.creatureTypeId || '')).filter(Boolean),
       lootCategories: [...area.lootCategories],
@@ -500,6 +572,8 @@ module.exports = {
   pveAreaRewardIds,
   pveAreaZone,
   pveAreaZoneId,
+  rollAreaEncounter,
+  wandererPassesArea,
   PVE_AREA_SHAPES,
   PVE_AREA_MAX_RADIUS,
   DEFAULT_RULES,

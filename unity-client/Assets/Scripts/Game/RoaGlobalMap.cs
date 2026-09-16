@@ -734,6 +734,8 @@ namespace RealmOfAshes.Game
         // Угодья наводятся не по точке, а по площади: курсор внутри контура
         // открывает карточку области, если рядом нет более точной цели.
         private JObject _hoverArea;
+        // Сколько отряд прошёл внутри каждых угодий с прошлой встречи.
+        private readonly Dictionary<string, float> _groundsWalked = new Dictionary<string, float>();
 
         private JObject _wasteland;
         private float _wastelandAppliedRealtime = -1f;
@@ -1540,6 +1542,13 @@ namespace RealmOfAshes.Game
                         areaTarget.Priority = EncounterZonePriority;
                         areaTarget.Details = CardObjective(row) + " · личная встреча, PvP отключён";
                         _dynamicTargets.Add(areaTarget);
+                    }
+                    // Логово угодий носит тот же шестиугольник, что и узел с
+                    // главарём: в нём стоит мини-босс, и это не случайная сцена.
+                    if (!string.IsNullOrWhiteSpace(row["boss"]?["displayName"]?.ToString()))
+                    {
+                        DrawBossBadge("PveAreaBoss:" + areaId, center, radius, EncounterZonePriority + 4);
+                        BossBadgeCount++;
                     }
                     if (shape > 0)
                     {
@@ -3351,18 +3360,21 @@ namespace RealmOfAshes.Game
             {
                 if (target == null || !target.CanEnter || target.Point == null) continue;
                 if (target.Kind != "party" && target.Kind != "zone") continue;
-                if (_ignoredRouteContacts.Contains(target.Kind + ":" + target.Id)) continue;
+                // Угодья не заносятся в «уже предложенные» навсегда: их темп
+                // держит пройденный внутри контура путь.
+                if (!string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal)
+                    && _ignoredRouteContacts.Contains(target.Kind + ":" + target.Id)) continue;
                 float t;
-                // Угодья живут по своему правилу: отряд встречают там, где он
-                // пересёк контур. Запас описанной окружности здесь не годится —
-                // он шире самих угодий, и шаг «вошёл в запас» гасил бы контакт
-                // до того, как маршрут дошёл до границы.
+                // Угодья живут по своему правилу: встреча выпадает на входе в
+                // контур и дальше — за каждый отрезок пути внутри него. Иначе
+                // одни угодья предлагали бы себя один раз за маршрут, а цикл
+                // «зачистил, вышел, иду дальше» не замыкался бы никогда.
                 if (string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal))
                 {
                     JObject area = PveAreaByLocation(target.LocationId);
+                    if (area == null) continue;
                     float detail = EncounterZoneDetailScale(CurrentDetailTier());
-                    if (area == null || PointInsideArea(area, previousPoint, detail)) continue;
-                    t = RouteEntryFraction(area, previousPoint, nextPoint, detail);
+                    t = GroundsContactFraction(area, target.Id, previousPoint, nextPoint, detail);
                     if (t < 0f || t >= bestT) continue;
                 }
                 else
@@ -3381,7 +3393,8 @@ namespace RealmOfAshes.Game
             _savedDestinationDynamic = _selectedDynamic;
             _savedDestinationNode = _selectedNode;
             _savedDestinationPoint = CopyPoint(_selectedPoint);
-            _ignoredRouteContacts.Add(best.Kind + ":" + best.Id);
+            if (!string.Equals(best.Semantic, EncounterZoneSemantic, StringComparison.Ordinal))
+                _ignoredRouteContacts.Add(best.Kind + ":" + best.Id);
 
             if ((best.Kind == "party" || best.Kind == "zone") && !best.Forced)
             {
@@ -5874,6 +5887,38 @@ namespace RealmOfAshes.Game
             return RouteEntryFraction(area, from, to, detailScale) >= 0f;
         }
 
+        /// <summary>
+        /// Где на отрезке угодья встречают отряд: доля пути 0..1 или -1. Встреча
+        /// выпадает на пересечении контура и потом за каждый отрезок, пройденный
+        /// внутри: столько, сколько объявила область (rearmPoints).
+        /// </summary>
+        private float GroundsContactFraction(JObject area, string zoneId,
+                                             GlobalMapPoint from, GlobalMapPoint to, float detailScale)
+        {
+            if (area == null || from == null || to == null) return -1f;
+            float entry = RouteEntryFraction(area, from, to, detailScale);
+            bool startedInside = PointInsideArea(area, from, detailScale);
+            if (!startedInside)
+            {
+                // Вход в контур: счётчик обнуляется, встреча выпадает здесь же.
+                if (entry < 0f) return -1f;
+                _groundsWalked[zoneId ?? string.Empty] = 0f;
+                return entry;
+            }
+
+            float rearm = Mathf.Max(2f, Float(area["rearmPoints"], 14f));
+            float walked = 0f;
+            _groundsWalked.TryGetValue(zoneId ?? string.Empty, out walked);
+            walked += Distance(from, to);
+            if (walked < rearm)
+            {
+                _groundsWalked[zoneId ?? string.Empty] = walked;
+                return -1f;
+            }
+            _groundsWalked[zoneId ?? string.Empty] = 0f;
+            return 1f;
+        }
+
         /// <summary>Стоит ли точка внутри контура этих угодий.</summary>
         public static bool PointInsideArea(JObject area, GlobalMapPoint point, float detailScale = 1f)
         {
@@ -5924,6 +5969,21 @@ namespace RealmOfAshes.Game
         /// Периоды активности: постоянные угодья говорят «всегда», временный
         /// узел — сколько ему осталось.
         /// </summary>
+        /// <summary>
+        /// Что угодья делают с идущим: сколько у них встреч и какой навык
+        /// «Странника» позволяет их обойти. Пустая строка у узлов, которые не
+        /// угодья, — карточка тогда просто не показывает строку.
+        /// </summary>
+        public static string CardGroundsRule(JObject row)
+        {
+            int encounters = row?["encounterCount"]?.Value<int>() ?? 0;
+            if (encounters <= 0) return string.Empty;
+            int wanderer = row?["wandererRequired"]?.Value<int>() ?? 0;
+            string rule = "встречи в пути: " + encounters;
+            if (wanderer > 0) rule += " · обойти с Странником " + wanderer;
+            return rule;
+        }
+
         public static string CardActivity(JObject row)
         {
             string activity = row?["activity"]?.ToString();

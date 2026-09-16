@@ -10,11 +10,22 @@
     "tracksChance": 0.8,
     "maxAlive": 8,
     "spawnMinPlayerDistance": 14,
-    "roomIdleResetMs": 600000
+    "roomIdleResetMs": 600000,
+    "contactRearmPoints": 14
   },
   "areas": [
     {
       "id": "antHive",
+      "wandererRequired": 40,
+      "boss": { "id": "antHive_matriarch", "displayName": "Пыльник-матка", "creatureTypeId": "dustling", "hpMultiplier": 2.6 },
+      "encounters": [
+        { "id": "swarm", "encounterId": "mutant_ant_swarm", "locationId": "randomDryBasin", "weight": 6, "title": "Стая пыльников" },
+        { "id": "vs_caravan", "encounterId": "pylniki_vs_caravan", "locationId": "randomRuinedRoad", "weight": 4, "title": "Пыльники против обоза Лиги" },
+        { "id": "vs_burned", "encounterId": "pylniki_vs_burned", "locationId": "randomAshGrove", "weight": 3, "title": "Пыльники против выжженных" },
+        { "id": "vs_workers", "encounterId": "pylniki_vs_workers", "locationId": "randomRuinedRoad", "weight": 3, "title": "Пыльники против артельщиков" },
+        { "id": "hunters", "encounterId": "hunters_vs_pylniki", "locationId": "randomDryBasin", "weight": 4, "title": "Охотники против пыльников" },
+        { "id": "vs_listeners", "encounterId": "ants_vs_geckos", "locationId": "randomDryBasin", "weight": 3, "title": "Пыльники против слухачей" }
+      ],
       "radiusPoints": 28,
       "shape": 1,
       "shapeRotation": 18,
@@ -33,6 +44,15 @@
     },
     {
       "id": "geckoCanyon",
+      "wandererRequired": 50,
+      "boss": { "id": "geckoCanyon_leader", "displayName": "Вожак гарей", "creatureTypeId": "gari", "hpMultiplier": 2.4 },
+      "encounters": [
+        { "id": "pack", "encounterId": "gari_pack", "locationId": "randomDryBasin", "weight": 6, "title": "Чёрная дуга" },
+        { "id": "listeners", "encounterId": "gecko_pack", "locationId": "randomAshGrove", "weight": 5, "title": "Гнездо слухачей" },
+        { "id": "vs_caravan", "encounterId": "gari_vs_caravan", "locationId": "randomRuinedRoad", "weight": 4, "title": "Гари против обоза Лиги" },
+        { "id": "hunters", "encounterId": "hunters_vs_slukhachi", "locationId": "randomDryBasin", "weight": 4, "title": "Охотники против слухачей" },
+        { "id": "vs_dustlings", "encounterId": "ants_vs_geckos", "locationId": "randomDryBasin", "weight": 3, "title": "Пыльники против слухачей" }
+      ],
       "radiusPoints": 30,
       "shape": 2,
       "shapeRotation": 145,
@@ -51,6 +71,14 @@
     },
     {
       "id": "mutantCrater",
+      "wandererRequired": 60,
+      "boss": { "id": "mutantCrater_elder", "displayName": "Старший складень", "creatureTypeId": "fold", "hpMultiplier": 2.8 },
+      "encounters": [
+        { "id": "brood", "encounterId": "super_mutant_lair", "locationId": "randomAshGrove", "weight": 5, "title": "Тканевый выводок" },
+        { "id": "vs_workers", "encounterId": "skladni_vs_workers", "locationId": "randomRuinedRoad", "weight": 4, "title": "Складни против артельщиков" },
+        { "id": "mourners", "encounterId": "mourners_vs_hunters", "locationId": "randomAshGrove", "weight": 4, "title": "Плакальщики против охотников" },
+        { "id": "lanterns", "encounterId": "lantern_grazing", "locationId": "randomDryBasin", "weight": 2, "title": "Холодные огни" }
+      ],
       "radiusPoints": 32,
       "shape": 3,
       "shapeRotation": 62,
@@ -69,6 +97,14 @@
     },
     {
       "id": "radscorpionNest",
+      "wandererRequired": 70,
+      "boss": { "id": "radscorpionNest_matriarch", "displayName": "Матка рыхляков", "creatureTypeId": "rykhlyak", "hpMultiplier": 2.8 },
+      "encounters": [
+        { "id": "nest", "encounterId": "radscorpion_nest", "locationId": "randomDryBasin", "weight": 6, "title": "Лёжка рыхляков" },
+        { "id": "vs_caravan", "encounterId": "rykhlyaki_vs_caravan", "locationId": "randomRuinedRoad", "weight": 4, "title": "Рыхляки против обоза Лиги" },
+        { "id": "vs_patrol", "encounterId": "radscorpions_vs_patrol", "locationId": "randomDryBasin", "weight": 4, "title": "Дозор Управы против рыхляков" },
+        { "id": "dustlings", "encounterId": "mutant_ant_swarm", "locationId": "randomDryBasin", "weight": 3, "title": "Стая пыльников" }
+      ],
       "radiusPoints": 26,
       "shape": 2,
       "shapeRotation": 297,
@@ -87,6 +123,16 @@
     },
     {
       "id": "oldDepot",
+      "wandererRequired": 30,
+      "boss": { "id": "oldDepot_foreman", "displayName": "Выжженный старшина", "creatureTypeId": "burned", "hpMultiplier": 2.4 },
+      "encounters": [
+        { "id": "burned", "encounterId": "ghoul_pack", "locationId": "randomAshGrove", "weight": 5, "title": "Сорванные выжженные" },
+        { "id": "ambush", "encounterId": "raider_ambush", "locationId": "randomRuinedRoad", "weight": 4, "title": "Засада налётчиков" },
+        { "id": "vs_workers", "encounterId": "raiders_vs_workers", "locationId": "randomRuinedRoad", "weight": 4, "title": "Налётчики против артельщиков" },
+        { "id": "burned_vs_workers", "encounterId": "burned_vs_workers", "locationId": "randomAshGrove", "weight": 3, "title": "Выжженные против артельщиков" },
+        { "id": "vs_patrol", "encounterId": "raiders_vs_patrol", "locationId": "randomRuinedRoad", "weight": 3, "title": "Налётчики против дозора Управы" },
+        { "id": "caravan", "encounterId": "peaceful_caravan", "locationId": "randomRuinedRoad", "weight": 2, "title": "Стоянка Лиги Тракта" }
+      ],
       "radiusPoints": 24,
       "shape": 3,
       "shapeRotation": 231,

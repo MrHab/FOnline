@@ -184,6 +184,16 @@ namespace RealmOfAshes.Game
             if (payload == null) return;
             HandleArtifactRuntime(payload);
 
+            // Здоровье приходит уже в join-ответе, но до сих пор не читалось, а
+            // снимок комнаты игрока про него самого не содержит никогда (сервер
+            // шлёт только остальных). Из-за этого HUD жил с нулём до первого
+            // попадания и рисовал «HP 0/1» — полоса красная, персонаж выглядит
+            // мёртвым. Теперь витальные показатели берутся при входе.
+            if (payload["maxHp"] != null) _maxHp = Mathf.RoundToInt(payload["maxHp"].ToObject<float>());
+            if (payload["hp"] != null) _hp = Mathf.RoundToInt(payload["hp"].ToObject<float>());
+            if (payload["dead"] != null) _dead = payload["dead"].ToObject<bool>();
+            if (payload["level"] != null) _level = payload["level"].ToObject<int>();
+
             JObject equipment = payload["equipmentRuntime"] as JObject ?? payload["equipment"] as JObject;
             if (equipment != null)
             {

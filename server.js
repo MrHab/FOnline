@@ -10563,6 +10563,30 @@ function updateServerPlayerBleeding(p = {}, now = Date.now()) {
   return true;
 }
 
+// Невозможное состояние: здоровье кончилось, а смерть не наступила. Ветка
+// гибели висит на `hp <= 0`, и при нечисловом hp она молча не срабатывает
+// (NaN <= 0 — ложь), так что игрок остаётся «живым» с пустым здоровьем.
+// Движение пускает его дальше, потому что смотрит только на dead/downed, а
+// семнадцать обработчиков отказывают по `Number(p.hp || 0) <= 0` и печатают
+// «Игрок недоступен.» — получается неубиваемый и ничего не умеющий персонаж.
+// Здесь это чинится на тике: раз состояние недостижимо по правилам, любой
+// способ в него попасть — ошибка, и игрока надо вернуть в играбельный вид.
+function repairImpossibleServerPlayerVitals(p = {}, now = Date.now()) {
+  if (!p || p.dead || p.downed) return false;
+  const hpFinite = Number.isFinite(Number(p.hp));
+  const maxFinite = Number.isFinite(Number(p.maxHp)) && Number(p.maxHp) > 0;
+  if (hpFinite && maxFinite && Number(p.hp) > 0) return false;
+  const before = { hp: p.hp, maxHp: p.maxHp };
+  if (!maxFinite) p.maxHp = serverPlayerMaxHp(p);
+  // Единица, а не полное здоровье: игрок снова управляем, но остаётся на
+  // волоске, и следующий удар доведёт его до честной смерти с лутом.
+  p.hp = Math.max(1, Math.min(Number(p.maxHp), hpFinite ? Math.max(1, Number(p.hp)) : 1));
+  serverApplyDerivedVitals(p);
+  console.warn(`[ROA] Восстановлены показатели игрока ${p.characterId || p.id}: было hp=${before.hp} maxHp=${before.maxHp}, стало hp=${p.hp} maxHp=${p.maxHp}`);
+  emitAuthoritativePlayerState(p, { reason: 'vitalsRepair' });
+  return true;
+}
+
 function updateServerPlayerMedicalEffects(p = {}, now = Date.now()) {
   if (!p || p.dead || Number(p.hp || 0) <= 0) return false;
   const injuries = sanitizeInjuries(p.injuries || {});
@@ -27745,7 +27769,8 @@ io.on('connection', (socket) => {
   socket.on('labNodeAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || !p.roomId || p.onGlobalMap || p.dead) return fail('Игрок недоступен.');
+    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
+    if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const mechanics = room ? serverLabMechanicsForRoom(room) : null;
     if (!room || !mechanics) return fail('Здесь нет узлов зала.');
@@ -27767,7 +27792,8 @@ io.on('connection', (socket) => {
   socket.on('publicEventAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || !p.roomId || p.onGlobalMap || p.dead) return fail('Игрок недоступен.');
+    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
+    if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const event = room ? serverPublicEventForRoom(room) : null;
     if (!room || !event) return fail('Здесь нет публичного события.');
@@ -29850,7 +29876,8 @@ io.on('connection', (socket) => {
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || !p.roomId || p.onGlobalMap || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
       const transaction = beginInventoryMutation(
@@ -31922,6 +31949,7 @@ setInterval(() => {
     if (p.dead) continue;
     expireLegacyPlayerInput(p, playerTickNow);
     serverRegenPlayerAp(p, playerTickNow);
+    repairImpossibleServerPlayerVitals(p, playerTickNow);
     updateServerPlayerMedicalEffects(p, playerTickNow);
     updateServerArtifactRegeneration(p, playerTickNow);
     const supportRoom = rooms.get(p.roomId);

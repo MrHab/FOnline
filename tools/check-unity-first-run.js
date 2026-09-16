@@ -139,4 +139,31 @@ assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(
   read('unity-client', 'Assets', 'Scripts', 'World', 'RoaWorldExitBoundary.cs.meta')),
   'RoaWorldExitBoundary.cs.meta has invalid metadata');
 
-console.log('Unity first run OK: guided movement, interaction, visible world exit, live-map mission and authoritative result');
+// --- показатели жизни в первую же секунду -------------------------------------
+// HUD брал здоровье только из снимка комнаты, а сервер в этом снимке шлёт
+// ВСЕХ, КРОМЕ САМОГО игрока (`v.id !== p.id` во всех сборках снимка). Поэтому
+// до первого попадания HUD жил с нулём и рисовал «HP 0/1» — красная полоса и
+// вид мертвеца у только что вошедшего живого персонажа.
+const hud = read(game, 'RoaHud.cs');
+const server = read('server.js');
+
+assert(/ApplyEquipmentAndSkills[\s\S]{0,1400}payload\["maxHp"\]/.test(hud)
+  && /ApplyEquipmentAndSkills[\s\S]{0,1400}payload\["hp"\]/.test(hud),
+  'HUD не читает здоровье из join-ответа — игрок увидит «HP 0/1» до первого попадания');
+assert(/ApplyEquipmentAndSkills[\s\S]{0,1400}payload\["dead"\]/.test(hud),
+  'HUD не читает признак смерти из join-ответа');
+assert(hud.includes('ApplyEquipmentAndSkills(ack.Self)'),
+  'join-ответ больше не проходит через чтение витальных показателей');
+
+// Источник этих полей — publicPlayer, развёрнутый в publicAuthoritativePlayerState.
+const publicPlayerBody = server.slice(server.indexOf('function publicPlayer(p) {'));
+const publicPlayerEnd = publicPlayerBody.indexOf('\n}\n');
+for (const field of ['hp:', 'maxHp:', 'dead:', 'level:']) {
+  assert(publicPlayerBody.slice(0, publicPlayerEnd).includes(field),
+    `publicPlayer больше не отдаёт ${field} — HUD останется без него при входе`);
+}
+assert(server.includes('...publicPlayer(p),'),
+  'publicAuthoritativePlayerState больше не разворачивает publicPlayer, и join-ответ теряет показатели жизни');
+
+console.log('Unity first run OK: guided movement, interaction, visible world exit, live-map mission, authoritative result '
+  + 'and vitals shown from the join reply instead of «HP 0/1» until the first hit');

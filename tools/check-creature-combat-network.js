@@ -9,7 +9,9 @@
 //
 // Проверяется:
 //   1) вид с двумя авторскими атаками показывает обе, а не одну;
-//   2) кровотечение живёт как состояние: тикает уроном и снижает здоровье.
+//   2) кровотечение живёт как состояние: тикает уроном и снижает здоровье;
+//   3) невозможное состояние «здоровье кончилось, а смерть не наступила»
+//      чинится тиком, а не превращается в неубиваемого немого персонажа.
 //
 // Авторское окно замаха здесь не наблюдается: telegraphMs уезжает в кадре
 // enemyFrame, а кадры сервер шлёт только подписанным на них клиентам. Его
@@ -40,6 +42,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   await h.bootstrapCharacters(accounts);
   const watcher = accounts.target;
   const bleeder = accounts.untargeted;
+  const stuck = accounts.persistence;
 
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json')));
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
@@ -117,12 +120,36 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   assert(hpSeries[hpSeries.length - 1] < hpSeries[0], 'здоровье не убывает от кровотечения');
 
   h.closeSocket(bleeder);
+
+  // --- 3: ремонт невозможного состояния ----------------------------------------
+  // Ветка гибели висит на `hp <= 0`. При нечисловом hp она молча не срабатывает
+  // (NaN <= 0 — ложь), и игрок застревает: ходить может (движение смотрит на
+  // dead/downed), а всё остальное отвечает «Игрок недоступен.». Сажаем ровно в
+  // это состояние и проверяем, что сервер вытаскивает сам.
+  const stuckSaves = JSON.parse(fs.readFileSync(savesPath, 'utf8'));
+  const stuckState = stuckSaves.characters[users.users[stuck.login].id][stuck.characterId].state;
+  stuckState.currentLocationId = 'settlement';
+  stuckState.serverLocationContext = { locationId: 'settlement' };
+  stuckState.player = { ...(stuckState.player || {}), hp: 0, dead: false, downed: false };
+  fs.writeFileSync(savesPath, JSON.stringify(stuckSaves));
+
+  const { socket: stuckSocket } = await h.connectAndJoin(stuck);
+  await delay(3000);
+  const probe = await h.socketAck(stuckSocket, 'socialAction', { action: 'trade', targetId: 'nobody' });
+  assert.notEqual(probe.error, 'Игрок недоступен.',
+    'игрок с нулевым здоровьем и без смерти остался в непроходимом состоянии — тик его не вытащил');
+  const repairedHp = Number(probe.self?.hp || 0);
+  assert(repairedHp > 0, `здоровье не восстановлено: hp=${repairedHp}`);
+  assert.equal(probe.self?.dead, false, 'починка не должна помечать игрока мёртвым');
+  h.closeSocket(stuck);
+
   await h.stopServer();
   h.cleanupSync();
 
   const rotated = observedMulti.map(id => `${id}: ${[...attacksBySpecies.get(id)].join(' + ')}`).join('; ');
   console.log(`Creature combat OK: ${meleeEvents} ударов в «${OBSERVE_LOCATION}», `
-    + `авторские атаки чередуются (${rotated}), кровотечение тикает уроном ${ticks.length} раз и снижает здоровье.`);
+    + `авторские атаки чередуются (${rotated}), кровотечение тикает уроном ${ticks.length} раз и снижает здоровье, `
+    + `а застрявший на нуле игрок восстановлен до ${repairedHp} HP вместо «Игрок недоступен.».`);
 })().catch(error => {
   console.error(`Creature combat check failed: ${error?.message || String(error)}`);
   const logs = h.serverLogs().trim();

@@ -29,6 +29,13 @@ const DEFAULT_RULES = Object.freeze({
 // Номер контура — авторское поле области, а не догадка карты.
 const PVE_AREA_SHAPES = 3;
 
+// Дальше этого радиуса сервер не подтвердит контакт на маршруте: сверка меряет
+// расстояние как `radius + SERVER_GLOBAL_PLAYER_RADIUS (5.2) +
+// SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE (5.5)`, а симуляция режет хранимый
+// радиус зоны до 28. Область шире этого снова оказалась бы нарисованной, но
+// непроходимой у собственной кромки, поэтому предел стоит здесь, а не в вере.
+const PVE_AREA_MAX_RADIUS = 38;
+
 // Полоса опасности словом. Карточка области на карте говорит «сложность:
 // высокая», а не «опасность 4»: цифра ничего не значит для игрока.
 const DANGER_BAND_LABELS = Object.freeze(['низкая', 'низкая', 'умеренная', 'средняя', 'высокая', 'крайняя']);
@@ -101,7 +108,7 @@ function normalizePveAreaCatalog(raw = {}) {
       // Игрок видит область до входа: её границы на карте, оценку опасности и
       // характерные категории добычи. Всё это авторские данные, а не догадка
       // клиента по типу узла.
-      radiusPoints: clamp(Number(input?.radiusPoints ?? 24), 4, 80),
+      radiusPoints: clamp(Number(input?.radiusPoints ?? 24), 4, PVE_AREA_MAX_RADIUS),
       dangerBand: clamp(Math.floor(Number(input?.dangerBand ?? 1)), 1, 5),
       lootCategories: (Array.isArray(input?.lootCategories) ? input.lootCategories : [])
         .map(row => String(row || '').slice(0, 64)).filter(Boolean).slice(0, 6),
@@ -494,6 +501,7 @@ module.exports = {
   pveAreaZone,
   pveAreaZoneId,
   PVE_AREA_SHAPES,
+  PVE_AREA_MAX_RADIUS,
   DEFAULT_RULES,
   RESULT_LABELS,
   choosePack,

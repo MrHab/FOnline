@@ -724,6 +724,10 @@ namespace RealmOfAshes.Game
             public string Semantic;
             public Color Accent;
             public int Priority;
+            // Цель, которая существует только ради контакта в пути: по ней не
+            // выбирают маршрут и не наводят карточку. Угодья стоят на том же
+            // узле, что и площадка пустоши, и без этого забирали бы у неё клик.
+            public bool ContactOnly;
             public JObject Data;
         }
 
@@ -1531,6 +1535,7 @@ namespace RealmOfAshes.Game
                         areaTarget.CanEnter = true;
                         areaTarget.Forced = false;
                         areaTarget.Semantic = EncounterZoneSemantic;
+                        areaTarget.ContactOnly = true;
                         areaTarget.Accent = EncounterZoneColor(row["danger"]?.Value<int>() ?? 3);
                         areaTarget.Priority = EncounterZonePriority;
                         areaTarget.Details = CardObjective(row) + " · личная встреча, PvP отключён";
@@ -3355,8 +3360,9 @@ namespace RealmOfAshes.Game
                 if (string.Equals(target.Semantic, EncounterZoneSemantic, StringComparison.Ordinal))
                 {
                     JObject area = PveAreaByLocation(target.LocationId);
-                    if (area == null || PointInsideArea(area, previousPoint)) continue;
-                    t = RouteEntryFraction(area, previousPoint, nextPoint);
+                    float detail = EncounterZoneDetailScale(CurrentDetailTier());
+                    if (area == null || PointInsideArea(area, previousPoint, detail)) continue;
+                    t = RouteEntryFraction(area, previousPoint, nextPoint, detail);
                     if (t < 0f || t >= bestT) continue;
                 }
                 else
@@ -3419,11 +3425,24 @@ namespace RealmOfAshes.Game
             if (contact == null || Socket == null || !IsLocalTravelLeader()) return false;
             _pendingContact = contact;
             StatusText = "На маршруте: " + contact.Name + ". Вступить или обойти?";
-            Socket.Emit("globalTravelEncounterDecision", new
+            // Отказ сервера приходит только ответом на запрос. Без чтения ответа
+            // окно «вступить или обойти» оставалось висеть, движение по маршруту
+            // стояло, а обе кнопки отвечали «встреча не найдена» — выйти было
+            // нечем. Теперь отказ закрывает окно и возвращает отряд в путь.
+            Socket.EmitWithAck("globalTravelEncounterDecision", new
             {
                 pending = true,
                 encounterId = contact.Id,
                 title = contact.Name
+            }, ack =>
+            {
+                if (AckOk(ack) || _pendingContact != contact) return;
+                _pendingContact = null;
+                _selectedDynamic = _savedDestinationDynamic;
+                _selectedNode = _savedDestinationNode;
+                _selectedPoint = CopyPoint(_savedDestinationPoint);
+                RefreshMarkers();
+                StatusText = AckError(ack, "Сервер не подтвердил контакт.") + " Маршрут продолжается.";
             });
             return true;
         }
@@ -5411,6 +5430,9 @@ namespace RealmOfAshes.Game
             foreach (DynamicTarget target in _dynamicTargets)
             {
                 if (target == null || target.Point == null) continue;
+                // Цель угодий живёт только ради контакта в пути: клик и наведение
+                // в её центре принадлежат площадке пустоши, что стоит там же.
+                if (target.ContactOnly) continue;
                 // Ховер информационный: отряд «onsite» нельзя выбрать целью,
                 // но подпись над ним обязана появляться — иначе зверь у скрытой
                 // площадки выглядит немым багом.
@@ -5824,12 +5846,17 @@ namespace RealmOfAshes.Game
         /// не по описанной окружности — иначе отряд встречали бы за десяток
         /// километров от границы.
         /// </summary>
-        public static float RouteEntryFraction(JObject area, GlobalMapPoint from, GlobalMapPoint to)
+        public static float RouteEntryFraction(JObject area, GlobalMapPoint from, GlobalMapPoint to,
+                                               float detailScale = 1f)
         {
             int shape = area?["shape"]?.Value<int>() ?? 0;
             if (shape <= 0 || from == null || to == null) return -1f;
             var center = new Vector2(Float(area["x"], 0f), Float(area["y"], 0f));
-            float radius = Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f);
+            // Тот же ярусный масштаб, каким презентация раздувает нарисованный
+            // силуэт: иначе на «РЕГИОНЕ» отряд встречали бы внутри кромки, а не
+            // на ней — на 18% глубже, чем показано.
+            float radius = Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f)
+                * Mathf.Max(0.01f, detailScale);
             float rotation = Float(area["shapeRotation"], 0f);
             const int samples = 12;
             for (int i = 1; i <= samples; i++)
@@ -5841,18 +5868,19 @@ namespace RealmOfAshes.Game
             return -1f;
         }
 
-        public static bool RouteEntersArea(JObject area, GlobalMapPoint from, GlobalMapPoint to)
+        public static bool RouteEntersArea(JObject area, GlobalMapPoint from, GlobalMapPoint to,
+                                           float detailScale = 1f)
         {
-            return RouteEntryFraction(area, from, to) >= 0f;
+            return RouteEntryFraction(area, from, to, detailScale) >= 0f;
         }
 
         /// <summary>Стоит ли точка внутри контура этих угодий.</summary>
-        public static bool PointInsideArea(JObject area, GlobalMapPoint point)
+        public static bool PointInsideArea(JObject area, GlobalMapPoint point, float detailScale = 1f)
         {
             int shape = area?["shape"]?.Value<int>() ?? 0;
             if (shape <= 0 || point == null) return false;
             return RoaGlobalMapZoneShapes.Contains(shape, Float(area["shapeRotation"], 0f),
-                Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f),
+                Mathf.Clamp(Float(area["radiusPoints"], 24f), 4f, 80f) * Mathf.Max(0.01f, detailScale),
                 new Vector2(Float(area["x"], 0f), Float(area["y"], 0f)),
                 new Vector2(point.X, point.Y));
         }

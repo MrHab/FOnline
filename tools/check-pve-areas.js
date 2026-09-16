@@ -150,7 +150,10 @@ for (const needle of [
   '? serverResolvePveRoomId({ characterId, userId: auth.user.id }, locationId, savedRoomId)',
   'if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());',
   '? serverResolvePveRoomId(leader, targetLocationId, \'\')',
-  "roomId: resolution.encounterRoomId || pveArrivalRoomId || '',",
+  // Комната группы идёт первой, иначе roomId зоны угодий уводит каждого
+  // спутника в его личный инстанс. Для прочих встреч ничего не меняется:
+  // pveArrivalRoomId непуст только у локаций с pveArea === true.
+  "roomId: pveArrivalRoomId || resolution.encounterRoomId || '',",
   "socket.on('pveAreaAction'",
   "emit('pveAreaState', payload)",
   'serverTickPveRooms(Date.now())',
@@ -242,15 +245,37 @@ for (const row of publicAreas) {
   const zone = pve.pveAreaZone(area, { x: row.x, y: row.y }, 12);
   assert.equal(zone.id, row.worldZoneId, `${row.id}: the published zone id must match the area row`);
   assert.equal(zone.kind, 'pveArea', `${row.id}: the zone declares itself as hunting grounds`);
-  assert.equal(zone.status, 'active', `${row.id}: hunting grounds never expire`);
+  assert.equal(zone.status, 'active', `${row.id}: the zone stays active`);
+  // Постоянные угодья не истекают: срока жизни у зоны быть не должно вовсе,
+  // иначе симуляция вычистит её тихо и путь снова перестанет что-то значить.
+  assert(!zone.expiresHour, `${row.id}: hunting grounds must not carry an expiry hour`);
   assert.equal(zone.locationId, row.locationId, `${row.id}: the zone leads into the area's own location`);
   // Ровно эти три поля решают, увидит ли сервер зону при сверке контакта
   // (serverGlobalZoneVisible): статус, hidden и visible.
   assert(zone.details.hidden !== true && zone.details.visible !== false,
     `${row.id}: a hidden zone would never confirm a contact on the route`);
-  assert.equal(zone.forced, false, `${row.id}: entering hunting grounds stays the player's choice`);
-  assert(zone.radius >= 2, `${row.id}: the zone has a radius the server can measure against`);
+  // Сверка контакта читает details.forced, а не поле верхнего уровня: вход в
+  // угодья обязан оставаться выбором игрока именно там, куда сервер смотрит.
+  assert.notEqual(zone.details.forced, true, `${row.id}: entering hunting grounds stays the player's choice`);
+  // Сверка меряет расстояние как radius + 5.2 + 5.5, а симуляция режет радиус
+  // зоны до 28: область шире этого была бы нарисована, но непроходима у кромки.
+  assert(row.radiusPoints <= pve.PVE_AREA_MAX_RADIUS,
+    `${row.id}: an area wider than ${pve.PVE_AREA_MAX_RADIUS} points cannot be confirmed at its own rim`);
+  assert(Math.min(zone.radius, 28) + 5.2 + 5.5 >= row.radiusPoints,
+    `${row.id}: the server could not confirm a contact at the outline's far edge`);
+  // Комната зоны не является билетом на вход в угодья: если она попадёт в
+  // билет, группа рассыплется по личным комнатам вместо комнаты лидера.
+  assert.equal(pve.pveRoomOwner(`${row.locationId}#${row.worldZoneId}`, row.locationId), '',
+    `${row.id}: the zone room id must never pass as a personal-room ticket`);
 }
+// Билет прибытия обязан нести комнату группы, а не комнату зоны.
+assert(server.includes("roomId: pveArrivalRoomId || resolution.encounterRoomId || ''")
+  && server.includes("encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || ''"),
+  'A travel party must arrive in the leader personal room, not scatter into one instance each.');
+// Предложение на маршруте обязано называть угодья по имени: сверка читает
+// details.title, потом title зоны — без второго игрок видит «Событие пустоши».
+assert(server.includes("title: safeName(zone.details?.title || zone.title || zone.name || 'Событие пустоши')"),
+  'The route contact must name the hunting grounds it offers.');
 assert(server.includes('function serverSyncPveAreaZones()')
   && server.includes('WASTELAND_SIM.upsertWorldZone(pveAreaZone(area, point, worldHour))')
   && server.includes('serverSyncPveAreaZones();\n\n// Публичные события'),
@@ -258,8 +283,23 @@ assert(server.includes('function serverSyncPveAreaZones()')
 const tickAt = server.indexOf('function serverTickPveRooms(');
 assert(tickAt > 0 && server.slice(tickAt, tickAt + 160).includes('serverSyncPveAreaZones();'),
   'The area tick must republish the zones: the simulation rebuilds its zone list.');
-for (const token of ['row["worldZoneId"]', 'EncounterZoneSemantic', 'public static bool RouteEntersArea('])
+for (const token of ['row["worldZoneId"]', 'EncounterZoneSemantic', 'public static float RouteEntryFraction('])
   assert(clientMap.includes(token), `RoaGlobalMap must turn an area into a route contact: ${token}`);
+// Грепа по файлу мало: поломка, ради которой писался контакт по контуру, жила
+// внутри самого метода — правило угодий обязано стоять в нём.
+const contactAt = clientMap.indexOf('private bool MaybeTriggerTravelContact(');
+assert(contactAt > 0, 'RoaGlobalMap must keep the travel contact trigger.');
+const contactBody = clientMap.slice(contactAt, contactAt + 2400);
+assert(contactBody.includes('EncounterZoneSemantic') && contactBody.includes('RouteEntryFraction(')
+  && contactBody.includes('PointInsideArea('),
+  'The contact trigger must decide hunting grounds by their outline, not by the circle around them.');
+// Цель угодий не должна воровать клик и наведение у площадки в том же центре.
+assert(clientMap.includes('if (target.ContactOnly) continue;') && clientMap.includes('areaTarget.ContactOnly = true;'),
+  'An area target exists for the route contact only.');
+// Отказ сервера обязан закрывать окно встречи: иначе маршрут стоит без выхода.
+const pendingAt = clientMap.indexOf('private bool OpenPendingTravelContact(');
+assert(pendingAt > 0 && clientMap.slice(pendingAt, pendingAt + 1200).includes('EmitWithAck'),
+  'A refused contact must not leave the route frozen with an open prompt.');
 
 // --- обстоятельства встречи ------------------------------------------------------
 // Одна и та же область встречает по-разному: обычно стая бродит поодаль,

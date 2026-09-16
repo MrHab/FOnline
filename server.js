@@ -26092,7 +26092,7 @@ function serverGlobalTravelEncounterContact(session = null, encounterId = '', no
       return {
         id,
         kind: 'zone',
-        title: safeName(zone.details?.title || zone.name || 'Событие пустоши'),
+        title: safeName(zone.details?.title || zone.title || zone.name || 'Событие пустоши'),
         point: zonePoint,
         forced: zone.details?.forced === true
       };
@@ -26575,7 +26575,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     entryKey: resolution.entryKey || 'entryFromWorld',
     encounter: !!resolution.encounter,
     encounterId: resolution.encounterId || '',
-    encounterRoomId: resolution.encounterRoomId || '',
+    encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || '',
     worldZoneId: resolution.worldZoneId || '',
     siteId: resolution.siteId || '',
     partyId: resolution.partyId || '',
@@ -26614,7 +26614,10 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     } else {
       stagePendingLocationTransition(member, {
         targetLocationId,
-        roomId: resolution.encounterRoomId || pveArrivalRoomId || '',
+        // Комната группы идёт первой: у зоны угодий есть собственный roomId,
+        // и он бы увёл каждого спутника в его личный инстанс, хотя сервер уже
+        // приготовил одну комнату лидера и вписал в неё всю группу.
+        roomId: pveArrivalRoomId || resolution.encounterRoomId || '',
         worldZoneId: resolution.worldZoneId || '',
         partyId: resolution.partyId || '',
         siteId: resolution.siteId || '',

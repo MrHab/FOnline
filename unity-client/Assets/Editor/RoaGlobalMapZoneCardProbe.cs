@@ -85,6 +85,15 @@ namespace RealmOfAshes.EditorTools
             Require(RoaGlobalMap.PointInsideArea(route, inside)
                 && !RoaGlobalMap.PointInsideArea(route, aside),
                 "Проверка «уже внутри» обязана различать центр угодий и точку мимо них");
+            // Путь и рисунок обязаны совпадать на каждом ярусе: презентация
+            // раздувает силуэт, и встреча должна ждать на видимой кромке.
+            Vector2 rim = RoaGlobalMapZoneShapes.Silhouette(1)[0] * 28f * 1.1f;
+            var beyondRim = new GlobalMapPoint { X = 120f + rim.x, Y = 140f + rim.y };
+            Require(!RoaGlobalMap.PointInsideArea(route, beyondRim, 1f),
+                "За кромкой ближнего яруса точка вне угодий");
+            Require(RoaGlobalMap.PointInsideArea(route, beyondRim,
+                    RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Far)),
+                "На дальнем ярусе раздутая кромка накрывает ту же точку — путь считает по ней же");
 
             // --- ярусный масштаб ----------------------------------------
             Require(Mathf.Approximately(RoaGlobalMap.EncounterZoneDetailScale(RoaGlobalMap.MapDetailTier.Near), 1f)
@@ -200,7 +209,7 @@ namespace RealmOfAshes.EditorTools
                     "Не найден префаб угодий: " + path);
             }
 
-            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение и путь по контуру с учётом яруса, "
+            Debug.Log("[ZONE CARDS] OK: три силуэта угодий, наведение и путь по контуру с ярусным масштабом, "
                       + "карточка цели/сложности/активности/добычи и превью награды, префабы на месте.");
         }
 

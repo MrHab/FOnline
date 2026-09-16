@@ -465,7 +465,18 @@ namespace RealmOfAshes.Game
 
             // The selected enemy can still be valid but outside this weapon's
             // range. Keep it visible as an explicit out-of-range target.
-            if (!SetEnemyAimTarget(_mobileAimTargetId, _mobileAimPosition)) _hoverTarget = null;
+            if (!SetEnemyAimTarget(_mobileAimTargetId, _mobileAimPosition)
+                && !SetSelectedRemoteAimTarget(_mobileAimTargetId)) _hoverTarget = null;
+        }
+
+        /// <summary>Выбранный в мобильном цикле игрок остаётся подсвеченным и вне дальности оружия.</summary>
+        private bool SetSelectedRemoteAimTarget(string id)
+        {
+            string prefix = RoaRemotePlayers.MobileTargetPrefix;
+            if (RemotePlayers == null || string.IsNullOrEmpty(id) || !id.StartsWith(prefix, StringComparison.Ordinal)) return false;
+            if (!RemotePlayers.TryGetTargetable(id.Substring(prefix.Length), out PublicPlayer remote, out Vector3 position)) return false;
+            SetRemoteAimTarget(remote, position);
+            return true;
         }
 
         private bool SetEnemyAimTarget(string enemyId, Vector3 position)
@@ -558,6 +569,98 @@ namespace RealmOfAshes.Game
         {
             if (downed) return "Вы без сознания и не можете атаковать.";
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Режимы зоны, в которых сервер разрешает PvP. Сервер шлёт канонические id,
+        /// неизвестное он считает мирной зоной — и клиент тоже.
+        /// </summary>
+        public static bool ZoneModeAllowsPvp(string mode)
+        {
+            return mode == "pvp" || mode == "pvpEvent" || mode == "pvpFullDrop";
+        }
+
+        /// <summary>
+        /// Клиентское зеркало serverPlayerCanDamagePlayer для мобильной автоцели:
+        /// зона с PvP, не союзная фракция, не друг, не соклановец, не спутник по
+        /// отряду каравана, а в Сердцевине — не подписавший тот же контракт, не с
+        /// платформы фракции и не цель, стоящая на своей платформе (сервер защищает
+        /// её вне боя; клиент боя цели не видит и её не предлагает). Сбор клана
+        /// по-прежнему называет protectedReason сервера. Зону подтверждают оба
+        /// источника: self (сервер присылает его и после переноса) и строка HUD.
+        /// Координаты — серверные.
+        /// </summary>
+        public static bool PvpTargetAllowed(JObject self, JObject social, PublicPlayer remote, string hudPvpMode,
+            LocationDefinition location = null, float selfX = 0f, float selfZ = 0f)
+        {
+            if (remote == null || remote.Dead || remote.Downed || remote.Hp <= 0) return false;
+            JToken pvp = self?["zoneRules"]?["pvp"];
+            bool selfZone = pvp != null && pvp.Type == JTokenType.Boolean
+                ? pvp.Value<bool>()
+                : ZoneModeAllowsPvp(self?["pvpMode"]?.ToString());
+            if (!selfZone) return false;
+            if (hudPvpMode != null && !ZoneModeAllowsPvp(hudPvpMode)) return false;
+            string ownFaction = self?["worldFactionId"]?.ToString();
+            if (string.IsNullOrEmpty(ownFaction)) ownFaction = self?["factionId"]?.ToString();
+            string otherFaction = string.IsNullOrEmpty(remote.WorldFactionId) ? remote.FactionId : remote.WorldFactionId;
+            if (CombatFactionsAllied(ownFaction, otherFaction)) return false;
+            if (social == null || !social.HasValues) social = self?["socialState"] as JObject;
+            string who = string.IsNullOrEmpty(remote.CharacterId) ? remote.Id : remote.CharacterId;
+            if (SocialListHas(social?["friends"] as JArray, who)
+                || SocialListHas(social?["clan"]?["members"] as JArray, who)) return false;
+            string ownParty = (self?["uiSnapshots"]?["world"]?["globalMap"] as JObject)?["attachedPartyId"]?.ToString();
+            if (!string.IsNullOrEmpty(ownParty) && string.Equals(ownParty, remote.WorldPartyId, StringComparison.Ordinal)) return false;
+            if (string.IsNullOrEmpty((self?["zoneRules"] as JObject)?["territoryId"]?.ToString())) return true;
+            string ownContract = (self?["territoryFaction"] as JObject)?["factionId"]?.ToString();
+            string otherContract = remote.TerritoryFactionId ?? string.Empty;
+            if (!string.IsNullOrEmpty(ownContract) && string.Equals(ownContract, otherContract, StringComparison.Ordinal)) return false;
+            if (TerritoryPlatformAt(location, selfX, selfZ) != null) return false;
+            WorldZone platform = TerritoryPlatformAt(location, remote.X, remote.Z);
+            return platform == null || !string.Equals(platform.FactionId ?? string.Empty, otherContract, StringComparison.Ordinal);
+        }
+
+        /// <summary>Платформа фракции под серверной точкой, как serverTerritoryPlatformZoneAt.</summary>
+        public static WorldZone TerritoryPlatformAt(LocationDefinition location, float serverX, float serverZ)
+        {
+            if (location?.WorldZones == null) return null;
+            foreach (WorldZone zone in location.WorldZones)
+            {
+                if (zone == null || zone.Type != "factionPlatform") continue;
+                Vector3 center = RoaCoords.TileToWorld(zone.Tx, zone.Tz, location.TileWidth, location.TileDepth);
+                RoaCoords.ToServer(center, out float centerX, out float centerZ);
+                float dx = serverX - centerX;
+                float dz = serverZ - centerZ;
+                if (dx * dx + dz * dz <= zone.Radius * zone.Radius) return zone;
+            }
+            return null;
+        }
+
+        /// <summary>Союз фракций как на сервере: одна фракция или пара Управа — Лига Тракта.</summary>
+        public static bool CombatFactionsAllied(string left, string right)
+        {
+            if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right)) return false;
+            return left == right
+                || (left == "uprava" && right == "tract_league")
+                || (left == "tract_league" && right == "uprava");
+        }
+
+        private static bool SocialListHas(JArray rows, string id)
+        {
+            if (rows == null || string.IsNullOrEmpty(id)) return false;
+            foreach (JToken row in rows)
+                if (string.Equals(row?["id"]?.ToString(), id, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        /// <summary>Можно ли предложить игрока мобильной автоцели прямо сейчас.</summary>
+        public bool CanOfferRemoteTarget(PublicPlayer remote)
+        {
+            LocationDefinition location = Bootstrap?.Loader?.Current;
+            if (IsFactionCapitalLocation(location)) return false;
+            float selfX = 0f, selfZ = 0f;
+            if (Player != null) RoaCoords.ToServer(Player.transform.position, out selfX, out selfZ);
+            return PvpTargetAllowed(Socket?.Session?.Self, Pipboy != null ? Pipboy.SocialState() : null, remote, Hud?.PvpMode,
+                location, selfX, selfZ);
         }
 
         public static bool IsFactionCapitalLocation(LocationDefinition location)
@@ -855,6 +958,43 @@ namespace RealmOfAshes.Game
             Ray ray = camera.ScreenPointToRay(screenPoint);
             if (!ground.Raycast(ray, out float rayDistance)) return false;
             cursor = ray.GetPoint(rayDistance);
+            return true;
+        }
+
+        /// <summary>
+        /// Ближе этого ракета задевает стрелка: радиус ракетницы 4.2 м, навык и
+        /// ранги подрывника до +0.85, радиус цели 0.72 и запас на отставание позиции.
+        /// </summary>
+        public const float RocketSelfSafeDistance = 6.3f;
+
+        /// <summary>
+        /// Оружие по площади: на телефоне короткий тап по миру задаёт точку взрыва.
+        /// В мирной зоне тап молчит, кнопка ОГОНЬ работает как прежде.
+        /// </summary>
+        public bool UsesGroundTargeting
+        {
+            get
+            {
+                if (ActiveWeapon() != "rocketLauncher") return false;
+                JToken safe = Socket?.Session?.Self?["zoneRules"]?["safe"];
+                if (safe != null && safe.Type == JTokenType.Boolean && safe.Value<bool>()) return false;
+                return Hud == null || Hud.PvpMode != "peaceful";
+            }
+        }
+
+        /// <summary>Точка взрыва под пальцем: не ближе безопасной дистанции и не дальше дальности оружия.</summary>
+        public bool TryGroundPointAtScreen(Vector2 screenPoint, out Vector3 point)
+        {
+            point = Vector3.zero;
+            if (Player == null || !TryScreenPointToWorld(screenPoint, out Vector3 hit)) return false;
+            Vector3 from = Player.transform.position;
+            Vector3 flat = hit - from;
+            flat.y = 0f;
+            if (flat.magnitude < RocketSelfSafeDistance) return false;
+            float range = RoaCombatPreview.EffectiveRange(Socket?.Session?.Self, Socket?.Session?.Combat, _fireMode);
+            point = range > 0f && flat.magnitude > range
+                ? new Vector3(from.x, hit.y, from.z) + flat.normalized * range
+                : hit;
             return true;
         }
 

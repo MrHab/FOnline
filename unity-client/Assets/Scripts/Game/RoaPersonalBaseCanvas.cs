@@ -244,7 +244,10 @@ namespace RealmOfAshes.Game
             }
             if (HasAccess("stations"))
             {
-                AddHeader("ПРОИЗВОДСТВО");
+                int activeJobs = 0;
+                foreach (JToken token in (_state["jobs"] as JArray) ?? new JArray())
+                    if (token is JObject row && row["claimed"]?.Value<bool>() != true) activeJobs++;
+                AddHeader("ПРОИЗВОДСТВО · очередь " + activeJobs + "/" + (_state["jobQueueLimit"]?.Value<int>() ?? 4));
                 foreach (JToken token in (_state["catalog"]?["jobs"] as JArray) ?? new JArray())
                 {
                     if (!(token is JObject job)) continue;
@@ -285,6 +288,12 @@ namespace RealmOfAshes.Game
                 AddHeader("ЖИТЕЛИ · ОСТАЮТСЯ НА БАЗЕ И НЕ ХОДЯТ С ИГРОКОМ");
                 JObject residentPopulation = _state["residentPopulation"] as JObject;
                 JObject residentStates = residentPopulation?["states"] as JObject;
+                // Что база даёт сейчас: сумма вклада работающих жителей.
+                string contribution = ResidentBonusLabel(residentPopulation?["bonuses"] as JObject);
+                AddNote("ВКЛАД БАЗЫ: " + (string.IsNullOrEmpty(contribution) ? "пока ничего — назначьте жителей" : contribution));
+                var activeResidents = new HashSet<string>();
+                foreach (JToken id in (residentPopulation?["bonuses"]?["activeResidentIds"] as JArray) ?? new JArray())
+                    activeResidents.Add(id?.ToString() ?? string.Empty);
                 foreach (JToken token in (residentPopulation?["candidates"] as JArray) ?? new JArray())
                 {
                     if (!(token is JObject resident)) continue;
@@ -294,10 +303,10 @@ namespace RealmOfAshes.Game
                     bool assigned = residentState?["assigned"]?.Value<bool>() == true;
                     string nextAction = !recruited ? "recruit" : assigned ? "unassign" : "assign";
                     string verb = !recruited ? "ПРИНЯТЬ" : assigned ? "ОСВОБОДИТЬ МЕСТО" : "НАЗНАЧИТЬ";
-                    string loyalty = recruited ? " · лояльность " + (residentState?["loyalty"]?.Value<int>() ?? 0) : string.Empty;
                     AddAction(verb + " · " + (resident["displayName"]?.ToString() ?? residentId),
-                        (resident["roleName"]?.ToString() ?? string.Empty) + loyalty + " · " + (resident["need"]?.ToString() ?? string.Empty),
-                        () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = nextAction, ["residentId"] = residentId }));
+                        ResidentRowText(resident, residentState, activeResidents.Contains(residentId)),
+                        () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = nextAction, ["residentId"] = residentId }),
+                        ResidentRowHeight);
                     if (recruited && residentState?["personalQuestStarted"]?.Value<bool>() != true)
                         AddAction("ОТКРЫТЬ ЛИЧНОЕ ДЕЛО · " + (resident["personalQuestName"]?.ToString() ?? string.Empty), resident["bark"]?.ToString() ?? string.Empty,
                             () => SendAction(new Dictionary<string, object> { ["action"] = "resident", ["residentAction"] = "startQuest", ["residentId"] = residentId }));
@@ -456,6 +465,7 @@ namespace RealmOfAshes.Game
             scrollGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.24f); scrollGo.GetComponent<Mask>().showMaskGraphic = false;
             _list = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter)).GetComponent<RectTransform>();
             _list.SetParent(sr, false); _list.anchorMin = new Vector2(0f, 1f); _list.anchorMax = new Vector2(1f, 1f); _list.pivot = new Vector2(0.5f, 1f);
+            _list.sizeDelta = Vector2.zero; // иначе контейнер на 100 px шире области прокрутки и маска режет края строк
             var layout = _list.GetComponent<VerticalLayoutGroup>(); layout.spacing = 6f; layout.padding = new RectOffset(8, 8, 8, 8); layout.childControlHeight = true; layout.childForceExpandHeight = false;
             _list.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             ScrollRect scroll = scrollGo.GetComponent<ScrollRect>(); scroll.content = _list; scroll.horizontal = false;
@@ -467,11 +477,101 @@ namespace RealmOfAshes.Game
             Text label = Label(_list, "Header", 15, TextAnchor.MiddleLeft); label.text = text; label.color = new Color(0.95f, 0.8f, 0.38f); label.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
         }
 
-        private void AddAction(string title, string details, Action action)
+        private void AddAction(string title, string details, Action action, float height = 58f)
         {
             Button button = Button(_list, "Action", title + "\n" + details, out Text label);
             label.alignment = TextAnchor.MiddleLeft; label.rectTransform.offsetMin = new Vector2(12f, 4f); label.rectTransform.offsetMax = new Vector2(-12f, -4f);
-            button.gameObject.AddComponent<LayoutElement>().preferredHeight = 58f; button.onClick.AddListener(() => action());
+            button.gameObject.AddComponent<LayoutElement>().preferredHeight = height; button.onClick.AddListener(() => action());
+        }
+
+        /// <summary>Строка-пояснение в списке: вклад базы. Высота измерена пробой раскладки.</summary>
+        private void AddNote(string text)
+        {
+            Text label = Label(_list, "Note", 14, TextAnchor.MiddleLeft);
+            label.text = text;
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.gameObject.AddComponent<LayoutElement>().preferredHeight = NoteHeight;
+        }
+
+        // --- вклад жителей: чистые форматтеры, их проверяет проба -------------------
+
+        /// <summary>Ширина подписи строки списка: окно 720 минус прокрутка, отступы списка и подписи.</summary>
+        public const float RowLabelWidth = 720f - 24f - 16f - 24f;
+        public const float ResidentRowHeight = 80f;
+        public const float NoteHeight = 88f;
+
+        /// <summary>
+        /// Что даёт житель или вся база. Подписаны только ключи, которые сервер
+        /// действительно применяет; служебные поля вроде activeResidentIds пропускаются.
+        /// </summary>
+        public static string ResidentBonusLabel(JObject bonus)
+        {
+            if (bonus == null) return string.Empty;
+            var parts = new List<string>();
+            foreach (JProperty entry in bonus.Properties())
+            {
+                if (entry.Value.Type != JTokenType.Integer && entry.Value.Type != JTokenType.Float) continue;
+                float value = entry.Value.Value<float>();
+                if (Mathf.Approximately(value, 0f)) continue;
+                string part = ResidentBonusPart(entry.Name, value);
+                if (!string.IsNullOrEmpty(part)) parts.Add(part);
+            }
+            return string.Join(" · ", parts);
+        }
+
+        private static string ResidentBonusPart(string key, float value)
+        {
+            switch (key)
+            {
+                case "repairCostPct": return "ремонт дома " + Percent(-value);
+                case "weaponWearPct": return "износ оружия при стрельбе " + Percent(value);
+                case "medicineOutputPct": return "выход лекарств " + Percent(value);
+                case "filterOutputPct": return "выход фильтров " + Percent(value);
+                case "foodOutputPct": return "выход еды " + Percent(value);
+                case "injuryRecoveryPct": return "сумка врача дома " + Percent(value);
+                case "maxHpFlat": return "макс. ОЗ " + SignedNumber(Mathf.RoundToInt(value));
+                case "artifactPenaltyPct": return "недостатки артефактов " + Percent(value);
+                case "shiftWarningLeadSeconds": return "прогноз сдвига +" + Mathf.Max(1, Mathf.RoundToInt(value / 60f)) + " мин";
+                case "commonTradePricePct": return "цены у торговцев выгоднее на " + Mathf.RoundToInt(value * 100f) + "%";
+                case "extraOrders": return "очередь производства " + SignedNumber(Mathf.RoundToInt(value));
+                case "storageCapacityPct": return "склад " + Percent(value);
+                case "productionSpeedPct": return "скорость станков " + Percent(value);
+                case "guestPermissionSlots": return "гостевые записи " + SignedNumber(Mathf.RoundToInt(value));
+                case "waterUsePct": return "вода грядки " + Percent(value) + " (не меньше 1 за цикл)";
+                case "scrapPerHour": return "лом " + SignedNumber(Mathf.RoundToInt(value)) + "/ч";
+                default: return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Строка жителя под именем: роль, лояльность, работает ли он сейчас,
+        /// что даёт и что ему нужно. Назначенный, но неактивный житель
+        /// простаивает — без этого снос нужной постройки проходил незаметно.
+        /// </summary>
+        public static string ResidentRowText(JObject resident, JObject state, bool active)
+        {
+            if (resident == null) return string.Empty;
+            bool recruited = state?["recruited"]?.Value<bool>() == true;
+            bool assigned = state?["assigned"]?.Value<bool>() == true;
+            var sb = new System.Text.StringBuilder(resident["roleName"]?.ToString() ?? string.Empty);
+            if (recruited) sb.Append(" · лояльность ").Append(state?["loyalty"]?.Value<int>() ?? 0);
+            if (assigned) sb.Append(active ? " · РАБОТАЕТ" : " · ПРОСТАИВАЕТ");
+            string gives = ResidentBonusLabel(resident["bonus"] as JObject);
+            if (!string.IsNullOrEmpty(gives)) sb.Append("\nДаёт: ").Append(gives);
+            string need = resident["need"]?.ToString();
+            if (!string.IsNullOrEmpty(need)) sb.Append("\nНужно: ").Append(need);
+            return sb.ToString();
+        }
+
+        private static string Percent(float value)
+        {
+            int rounded = Mathf.RoundToInt(value * 100f);
+            return (rounded > 0 ? "+" : rounded < 0 ? "−" : string.Empty) + Mathf.Abs(rounded) + "%";
+        }
+
+        private static string SignedNumber(int value)
+        {
+            return (value > 0 ? "+" : value < 0 ? "−" : string.Empty) + Mathf.Abs(value);
         }
 
         private static string CostText(JObject cost)

@@ -212,9 +212,21 @@ assert(barterCanvas.includes('TradeSkillNorm(self) * 0.24d')
   && barterCanvas.includes('TradeSkillNorm(self) * 0.30d')
   && barterCanvas.includes('TalentLevel(self, "merchant", 3) * 0.08d')
   && barterCanvas.includes('HasTrait(self, "traderStart") ? 0.15d')
-  && barterCanvas.includes('TradeBuyPrice(stockPriceForItem, self) * 0.85d')
   && barterCanvas.includes('interested ? 1.24d : 0.84d'),
   'Unity barter totals no longer mirror the server discount, bonus, cap, or interest formula');
+// Доля Торговца базы входит в обе цены и на сервере, и в смете клиента, а потолок
+// продажи считается от цены покупки без неё — иначе житель удешевлял бы продажу.
+assert(/TalentLevel\(self, "merchant", 3\) \* 0\.05d\s*\+ \(includeResident \? ResidentTradePct\(self\) : 0d\)/.test(barterCanvas)
+  && /TalentLevel\(self, "merchant", 3\) \* 0\.08d\s*\+ ResidentTradePct\(self\);/.test(barterCanvas)
+  && barterCanvas.includes('TradeBuyPriceCore(stockPriceForItem, self, false) * 0.85d')
+  && /serverTalentLevel\(player, 'merchant'\) \* 0\.05\s*\+ \(includeResident \? serverResidentTradePct\(player\) : 0\)/.test(server)
+  && /serverTalentLevel\(player, 'merchant'\) \* 0\.08\s*\+ serverResidentTradePct\(player\);/.test(server)
+  && server.includes('serverTradeMachineBuyPrice(stockEntry, player, false) * 0.85')
+  && /Math\.Min\(0\.48d/.test(barterCanvas) && server.includes('const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;'),
+  'Unity barter no longer mirrors the base trader share or the resident-free sell cap');
+// Перепродажа проданного товара: даже наибольшая скидка не делает выкуп дешевле продажи.
+assert(server.includes('Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))'),
+  'NPC resale price no longer outruns the largest buy discount');
 assert(barterCanvas.includes('TradeSellPrice(baseId, market, self)')
   && barterCanvas.includes('TradeBuyPrice(StockPrice(market, baseId), self)'),
   'Unity barter ledger is not using the authoritative-price mirror for both sides');

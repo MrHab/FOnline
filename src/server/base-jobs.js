@@ -6,16 +6,38 @@ function profile(catalog = {}, typeId = '') {
   return (catalog.jobs || []).find(row => row.id === String(typeId || '')) || null;
 }
 
-function startBaseJob(base = {}, typeId = '', catalog = {}, inventoryQty = () => 0, now = Date.now()) {
+const DEFAULT_QUEUE_LIMIT = 4;
+
+/**
+ * Вход работы с поправками жителей: доля экономии применяется к каждому
+ * сырью, округляется вниз по экономии и никогда не обнуляет вход.
+ */
+function adjustedJobInput(job = {}, inputSavingPct = {}) {
+  const input = {};
+  for (const [id, raw] of Object.entries(job.input || {})) {
+    const qty = Math.max(0, Math.floor(Number(raw || 0)));
+    const saving = Math.max(0, Math.min(0.9, Number(inputSavingPct?.[id] || 0)));
+    const saved = saving > 0 ? Math.max(1, Math.floor(qty * saving)) : 0;
+    input[id] = qty > 0 ? Math.max(1, qty - saved) : 0;
+  }
+  return input;
+}
+
+function startBaseJob(base = {}, typeId = '', catalog = {}, inventoryQty = () => 0, now = Date.now(), options = {}) {
   const job = profile(catalog, typeId);
   if (!job) return { ok: false, error: 'Неизвестное производство.' };
   if (!(base.objects || []).some(row => row.typeId === job.stationTypeId)) return { ok: false, error: 'На базе нет подходящего станка.' };
-  if ((base.jobs || []).filter(row => !row.claimed).length >= 4) return { ok: false, error: 'Очередь производства заполнена.' };
-  if (!Object.entries(job.input || {}).every(([id, qty]) => inventoryQty(id) >= Number(qty || 0))) return { ok: false, error: 'Не хватает сырья.' };
+  // Торговец базы добавляет места в очереди; без него их четыре.
+  const queueLimit = Math.max(1, Math.floor(Number(options.queueLimit || DEFAULT_QUEUE_LIMIT)));
+  if ((base.jobs || []).filter(row => !row.claimed).length >= queueLimit) {
+    return { ok: false, error: `Очередь производства заполнена: ${queueLimit}.` };
+  }
+  const input = adjustedJobInput(job, options.inputSavingPct);
+  if (!Object.entries(input).every(([id, qty]) => inventoryQty(id) >= Number(qty || 0))) return { ok: false, error: 'Не хватает сырья.' };
   const record = { id: `base_job_${randomUUID()}`, typeId: job.id, startedAt: Number(now), completesAt: Number(now) + Number(job.durationMs || 0), claimed: false };
   base.jobs = [...(base.jobs || []), record];
   base.updatedAt = Number(now);
-  return { ok: true, record, input: { ...(job.input || {}) } };
+  return { ok: true, record, input };
 }
 
 function claimBaseJob(base = {}, jobId = '', catalog = {}, now = Date.now()) {
@@ -29,4 +51,4 @@ function claimBaseJob(base = {}, jobId = '', catalog = {}, now = Date.now()) {
   return { ok: true, output: { ...(job.output || {}) }, record };
 }
 
-module.exports = { claimBaseJob, startBaseJob };
+module.exports = { DEFAULT_QUEUE_LIMIT, adjustedJobInput, claimBaseJob, startBaseJob };

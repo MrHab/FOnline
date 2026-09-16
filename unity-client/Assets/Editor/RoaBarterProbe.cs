@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json.Linq;
@@ -25,7 +26,11 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Проверить окно бартера")]
         public static void Run()
         {
-            Debug.Log(RunReport());
+            string report = RunReport();
+            Debug.Log(report);
+            // Клиентский аудит и пакетный запуск видят провал только как исключение:
+            // строка «FAIL» в логе проходила незамеченной.
+            if (!report.EndsWith("OK", StringComparison.Ordinal)) throw new InvalidOperationException(report);
         }
 
         public static string RunReport()
@@ -34,6 +39,9 @@ namespace RealmOfAshes.EditorTools
             GameObject host = null;
             try
             {
+                // Цены берутся из серверного каталога, как в игре после входа.
+                JObject items = JObject.Parse(File.ReadAllText(Path.GetFullPath(Path.Combine(Application.dataPath, "../../data/kromka/items.json"))));
+                Require(RoaItemData.ApplyCatalog(items, out string catalogError), "каталог предметов отклонён: " + catalogError);
                 host = new GameObject("RoaBarterProbe");
                 var interaction = host.AddComponent<RoaInteraction>();
                 Type panelKind = typeof(RoaInteraction).GetNestedType("PanelKind", BindingFlags.NonPublic);
@@ -59,9 +67,9 @@ namespace RealmOfAshes.EditorTools
                 canvas.Interaction = interaction;
                 canvas.Inventory = inventoryComponent;
 
-                // Регрессия со сделки фельдшера Старого Клима: старый экран считал
-                // эти продажи как 41 крышку и показывал выплату 9, тогда как сервер
-                // оценивал их в 56 и требовал у торговца 24 крышки.
+                // Регрессия со сделки фельдшера Старого Клима: экран должен считать эти
+                // продажи так же, как serverTradeMachineSellPrice с каталогом «Кромки»
+                // (47 и 32; до каталога цены были 56 и 32).
                 JObject quoteSelf = JObject.Parse(
                     "{\"special\":{\"cha\":5,\"int\":5},\"skillRanks\":{\"barter\":25},\"talentRanks\":{},\"traits\":[]}");
                 JObject quoteMarket = new JObject
@@ -79,8 +87,32 @@ namespace RealmOfAshes.EditorTools
                 int buyTotal = CallPrice("TradeBuyPrice", 21, quoteSelf) + CallPrice("TradeBuyPrice", 11, quoteSelf);
                 report.Append("Old Klim quote: sells=").Append(sellTotal).Append(" buys=").Append(buyTotal)
                       .Append(" payout=").Append(sellTotal - buyTotal).Append('\n');
-                Require(sellTotal == 56 && buyTotal == 32 && sellTotal - buyTotal == 24,
+                Require(sellTotal == 47 && buyTotal == 32 && sellTotal - buyTotal == 15,
                     "цены Unity снова расходятся с серверной сделкой фельдшера Старого Клима");
+
+                // Торговец личной базы: доля входит в обе цены, как на сервере,
+                // и перепродажа по-прежнему не выгоднее покупки.
+                JObject residentSelf = (JObject)quoteSelf.DeepClone();
+                residentSelf["residentTradePricePct"] = 0.08;
+                int residentBuy = CallPrice("TradeBuyPrice", 21, residentSelf) + CallPrice("TradeBuyPrice", 11, residentSelf);
+                report.Append("resident quote: buys=").Append(residentBuy).Append('\n');
+                Require(residentBuy == 30, "скидка Торговца базы не вошла в цену покупки: " + residentBuy);
+                int leather = CallPrice("TradeSellPrice", "leather", quoteMarket, quoteSelf);
+                int residentLeather = CallPrice("TradeSellPrice", "leather", quoteMarket, residentSelf);
+                Require(leather == 11 && residentLeather == 12, "надбавка Торговца базы не вошла в цену продажи: " + leather + " → " + residentLeather);
+                Require(CallPrice("TradeSellPrice", "medkit", quoteMarket, residentSelf) < CallPrice("TradeBuyPrice", 21, residentSelf),
+                    "со скидкой Торговца перепродажа стала выгоднее покупки");
+                // Опытный торговец упирается в потолок продажи: житель не должен его опускать.
+                JObject traderSelf = JObject.Parse(
+                    "{\"special\":{\"cha\":10,\"int\":5},\"skillRanks\":{\"barter\":100},\"talentRanks\":{\"merchant\":3},\"traits\":[]}");
+                JObject traderResident = (JObject)traderSelf.DeepClone();
+                traderResident["residentTradePricePct"] = 0.08;
+                int capped = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderSelf);
+                int cappedResident = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderResident);
+                report.Append("capped medkit: ").Append(capped).Append(" → ").Append(cappedResident).Append('\n');
+                Require(capped == 14 && cappedResident == 14, "Торговец базы удешевил продажу у опытного торговца: " + capped + " → " + cappedResident);
+                Require(CallPrice("TradeBuyPrice", 21, traderResident) == 12 && CallPrice("TradeBuyPriceCore", 21, traderResident, false) == 13,
+                    "потолок продажи считается не от цены покупки без доли жителя");
 
                 Call(canvas, "EnsureBuilt");
                 var root = (GameObject)Get(canvas, "_root");

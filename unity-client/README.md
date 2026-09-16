@@ -112,7 +112,7 @@ npm start
 | `Assets/Scripts/Game/RoaMinimap.cs` | локальная карта, авторские объекты и видимые живые маркеры |
 | `Assets/Scripts/Game/RoaRoofCutaway.cs` | прозрачность авторских крыш по LOS, камере и видимому полу |
 | `Assets/Scripts/Game/RoaCombatFx.cs` | пул трассеров/вспышек, взрывы и речевые облака NPC |
-| `Assets/Scripts/Game/RoaMobileControls.cs` | landscape touch-стик, автоцель и игровые кнопки |
+| `Assets/Scripts/Game/RoaMobileControls.cs` | landscape touch-стик, автоцель (NPC и игроки в PvP-зоне), тап ракетницей и игровые кнопки |
 | `Assets/Scripts/Game/RoaQuickbar.cs` | восемь быстрых слотов, круг выбора и синхронизация с сохранением персонажа |
 | `Assets/Scripts/Game/RoaFogOfWar.cs` | LOS, травмы обзора и единый двухслойный меш затенения земли |
 | `Assets/Scripts/Game/RoaEnemies.cs` | unified humanoid NPC, существа и публичные снимки целей |

@@ -10041,7 +10041,9 @@ function serverStatValue(p = {}, key = '') {
 function serverPlayerMaxHp(p = {}) {
   const levelBonus = Math.max(0, Math.floor(Number(p.level || 1)) - 1) * 12;
   const artifactBonus = serverArtifactEffects(p).maxHpFlat;
-  return Math.max(1, 55 + serverStatValue(p, 'end') * 9 + levelBonus + (serverHasTrait(p, 'bruiser') ? 18 : 0) + serverTalentLevel(p, 'toughness') * 12 + artifactBonus);
+  // Врач базы держит владельца в форме: постоянная прибавка к максимуму ОЗ.
+  const residentBonus = clamp(Math.floor(Number(serverCachedResidentBonuses(p).maxHpFlat || 0)), 0, 50);
+  return Math.max(1, 55 + serverStatValue(p, 'end') * 9 + levelBonus + (serverHasTrait(p, 'bruiser') ? 18 : 0) + serverTalentLevel(p, 'toughness') * 12 + artifactBonus + residentBonus);
 }
 
 function serverPlayerMaxAp(p = {}) {
@@ -11373,7 +11375,9 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
   for (const entry of resourceEntries) {
     if (!entry.weapon.ammoType) continue;
     entry.row.loaded = Math.max(0, Number(entry.row.loaded || 0) - 1);
-    const wear = Math.max(0.25, 0.55 - serverTalentLevel(p, 'weaponSmith') * 0.12);
+    // Оружейник базы ухаживает за стволами: каждый выстрел изнашивает меньше.
+    const wear = Math.max(0.25, 0.55 - serverTalentLevel(p, 'weaponSmith') * 0.12)
+      * (1 - clamp(-Number(serverCachedResidentBonuses(p).weaponWearPct || 0), 0, 0.5));
     entry.row.condition = Math.max(1, Number(entry.row.condition || 100) - wear);
     entry.row.updatedAt = now;
   }
@@ -14701,7 +14705,9 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   player.inventoryUpdatedAt = Date.now();
   if (SERVER_REPAIRABLE_ITEM_IDS.has(serverBaseItemId(crafted.output?.id || ''))) {
     let condition = 82 + Math.round(serverSkillNorm(actor, 'repair') * 10);
-    if (SERVER_WEAPONS[crafted.output.id]) condition += serverTalentLevel(actor, 'weaponSmith') * 7;
+    if (SERVER_WEAPONS[crafted.output.id]) {
+      condition += serverTalentLevel(actor, 'weaponSmith') * 7;
+    }
     if (['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(crafted.output.id)) condition += serverTalentLevel(actor, 'armorTraining') * 5;
     if (['pickaxe','axe','handPump'].includes(crafted.output.id)) condition += serverTalentLevel(actor, 'engineer') * 4;
     serverSetPlayerItemCondition(player, crafted.output.id, clamp(Math.round(condition), 55, 100));
@@ -14876,8 +14882,39 @@ function serverTradeMachineItemCategory(itemId = '') {
   return ['currency', 'strategic', 'artifacts'].includes(category) ? 'misc' : category;
 }
 
-function serverTradeMachineBuyPrice(entry = {}, player = {}) {
-  const discount = Math.min(0.48, serverSkillNorm(player, 'barter') * 0.24 + serverTalentLevel(player, 'merchant') * 0.05);
+// Бонусы жителей для частых расчётов — цены (на каждую строку сделки) и
+// максимум ОЗ (на каждое действие): база не пересобирается на каждый вызов.
+// Любое действие с базой сбрасывает запись игрока и владельца базы.
+const SERVER_RESIDENT_BONUS_CACHE = new Map();
+
+function serverCachedResidentBonuses(player = {}) {
+  const key = String(player?.userId || '');
+  if (!key) return {};
+  const now = Date.now();
+  const cached = SERVER_RESIDENT_BONUS_CACHE.get(key);
+  if (cached && now - cached.at < 2000) return cached.value;
+  const value = serverResidentBonusesForPlayer(player, false);
+  SERVER_RESIDENT_BONUS_CACHE.set(key, { value, at: now });
+  if (SERVER_RESIDENT_BONUS_CACHE.size > 4096) SERVER_RESIDENT_BONUS_CACHE.clear();
+  return value;
+}
+
+function serverForgetResidentBonuses(...accountIds) {
+  for (const id of accountIds) SERVER_RESIDENT_BONUS_CACHE.delete(String(id || ''));
+}
+
+// Торговец базы улучшает обычную торговлю у торговцев и автоматов.
+function serverResidentTradePct(player = {}) {
+  return clamp(Number(serverCachedResidentBonuses(player).commonTradePricePct || 0), 0, 0.2);
+}
+
+// Больше этой скидки не даёт ничто; от неё же считается нижняя граница цены
+// перепродажи, чтобы «продать и сразу выкупить» не приносило марок.
+const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;
+
+function serverTradeMachineBuyPrice(entry = {}, player = {}, includeResident = true) {
+  const discount = Math.min(SERVER_TRADE_MAX_BUY_DISCOUNT, serverSkillNorm(player, 'barter') * 0.24 + serverTalentLevel(player, 'merchant') * 0.05
+    + (includeResident ? serverResidentTradePct(player) : 0));
   return Math.max(1, Math.ceil(Math.max(1, Number(entry.price || 1)) * (1 - discount)));
 }
 
@@ -14895,9 +14932,12 @@ function serverTradeMachineSellPrice(itemId = '', market = {}, player = {}) {
     + (serverStatValue(player, 'cha') - 5) * 0.04
     + (serverHasTrait(player, 'traderStart') ? 0.15 : 0)
     + serverSkillNorm(player, 'barter') * 0.30
-    + serverTalentLevel(player, 'merchant') * 0.08;
+    + serverTalentLevel(player, 'merchant') * 0.08
+    + serverResidentTradePct(player);
   let price = Math.max(1, Math.floor(Number(base || 1) * charismaBonus));
-  if (stockEntry) price = Math.min(price, Math.max(1, Math.floor(serverTradeMachineBuyPrice(stockEntry, player) * 0.85)));
+  // Потолок продажи — от цены покупки без доли Торговца базы: иначе житель,
+  // который улучшает обе цены, опускал бы потолок и продажа дешевела.
+  if (stockEntry) price = Math.min(price, Math.max(1, Math.floor(serverTradeMachineBuyPrice(stockEntry, player, false) * 0.85)));
   const interests = Array.isArray(market.buyInterests) ? market.buyInterests : [];
   if (interests.length) price = Math.max(1, Math.round(price * (interests.includes(serverTradeMachineItemCategory(id)) ? 1.24 : 0.84)));
   return price;
@@ -15155,7 +15195,9 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
   const sellPrice = serverTradeMachineSellPrice(id, market, player);
   const category = serverTradeMachineItemCategory(id);
   const markup = category === 'ammo' ? 2 : (category === 'materials' ? 1.4 : 1.75);
-  return Math.max(sellPrice + 1, Math.round(sellPrice * markup));
+  // Даже при наибольшей скидке выкуп дороже проданного: ceil(R × (1 − 0,48)) > S.
+  return Math.max(sellPrice + 1, Math.round(sellPrice * markup),
+    Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT)));
 }
 
 function performServerNpcTradeExchange(room = null, actor = null, data = {}, player = null) {
@@ -18745,9 +18787,6 @@ function serverCurrentShiftState(now = Date.now(), player = null) {
     fieldsExcitedSeconds: fieldsExcited ? Math.max(0, Math.round((excitedUntil - now) / 1000)) : 0,
     fieldsChanceMultiplier: baseChance > 0 ? Number((chance / baseChance).toFixed(2)) : 1,
     earlyWarning: warningLeadSeconds > 0 && shift.phase === 'calm' && now >= earlyWarningAt,
-    nearestShelterHint: residentBonuses.nearestShelterHint === true,
-    resourceMarksPerShift: Math.max(0, Math.floor(Number(residentBonuses.resourceMarksPerShift || 0))),
-    safeRoute: residentBonuses.safeRoute === true,
     clanEventDetectionPct: clamp(Number(clanBenefits.eventDetectionPct || 0), 0, 1),
     sheltered: !!player && (safeShelters.has(locationId) || roomLocation(rooms.get(player.roomId))?.safe === true)
   };
@@ -18918,6 +18957,19 @@ function serverResidentBonusesForPlayer(player = {}, requireOwnBase = false) {
   return calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
 }
 
+/** Места в очереди производства базы: четыре и ещё до четырёх от Торговца. */
+function serverBaseJobQueueLimit(base = {}) {
+  const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+  return 4 + clamp(Math.floor(Number(bonuses.extraOrders || 0)), 0, 4);
+}
+
+/** Экономия сырья работ базы от жителей: Агроном бережёт воду грядки. */
+function serverBaseJobInputSaving(base = {}) {
+  const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
+  const water = clamp(-Number(bonuses.waterUsePct || 0), 0, 0.9);
+  return water > 0 ? { water } : {};
+}
+
 function serverPersonalBaseHostAccountId(player = {}) {
   const roomId = String(player?.roomId || '');
   if (player?.locationId === 'personalBase' && roomId.startsWith('personalBase#')) {
@@ -18953,6 +19005,7 @@ function publicServerPersonalBase(player = {}, accountId = '') {
     access,
     storageCapacity,
     storageUsed: Math.floor(storageUsed),
+    jobQueueLimit: serverBaseJobQueueLimit(base),
     ...publicPersonalBase(base, KROMKA_BASE_BUILDING_CATALOG, Date.now()),
     residentPopulation: publicBaseResidents(base, KROMKA_BASE_RESIDENT_CATALOG, KROMKA_BASE_BUILDING_CATALOG),
     catalog: {
@@ -25731,6 +25784,7 @@ function publicAuthoritativePlayerState(p = {}) {
     artifactSlots: p.artifactSlots,
     artifactBeltCapacity: serverArtifactBeltCapacity(p, KROMKA_ARTIFACT_CATALOG),
     artifactEffects,
+    residentTradePricePct: serverResidentTradePct(p),
     artifactRuntime: publicArtifactRuntime(p),
     radiation: Math.max(0, Number(p.radiation) || 0),
     kromkaOnboarding: publicKromkaOnboarding(
@@ -28558,7 +28612,10 @@ io.on('connection', (socket) => {
         base.updatedAt = now;
       } else if (action === 'startJob') {
         if (!access.stations) return fail('Владелец не разрешил пользоваться станциями.');
-        const result = serverStartBaseJob(base, String(data.typeId || ''), KROMKA_BASE_BUILDING_CATALOG, id => serverInventoryQty(p.inventory, id), now);
+        const result = serverStartBaseJob(base, String(data.typeId || ''), KROMKA_BASE_BUILDING_CATALOG, id => serverInventoryQty(p.inventory, id), now, {
+          queueLimit: serverBaseJobQueueLimit(base),
+          inputSavingPct: serverBaseJobInputSaving(base)
+        });
         if (!result.ok) return fail(result.error);
         const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
         const speedPct = clamp(Number(bonuses.productionSpeedPct || 0), 0, 0.6);
@@ -28642,7 +28699,9 @@ io.on('connection', (socket) => {
         }
         const characterId = String(data.characterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
         if (!characterId || characterId === p.characterId) return fail('Нужен другой персонаж.');
-        const permissionLimit = base.rights?.outcomeId === 'forged' ? 5 : 4;
+        // Начальник охраны ведёт список пропусков: ещё до четырёх гостевых записей.
+        const permissionLimit = (base.rights?.outcomeId === 'forged' ? 5 : 4)
+          + clamp(Math.floor(Number(calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG).guestPermissionSlots || 0)), 0, 4);
         if (!base.permissions[characterId] && Object.keys(base.permissions || {}).length >= permissionLimit) return fail(`Достигнут лимит гостевых записей: ${permissionLimit}.`);
         const nextPermission = {
           visit: data.visit === true, build: data.build === true,
@@ -28682,7 +28741,20 @@ io.on('connection', (socket) => {
       persistActivePlayerState(p);
     }
     const payload = emitServerPersonalBaseState(p, action);
+    // Стройка, снос, наём и права меняют вклад жителей и у игрока, и у хозяина базы.
+    serverForgetResidentBonuses(p.userId, base?.accountId);
+    serverApplyDerivedVitals(p);
     emitAuthoritativePlayerState(p, { reason: 'personalBaseAction' });
+    // Постройка гостя может включить жителя хозяина: хозяин в сети сразу
+    // получает новые ОЗ и долю цен, а не при следующем своём действии.
+    const hostId = String(base?.accountId || '');
+    if (hostId && hostId !== String(p.userId || '')) {
+      for (const owner of players.values()) {
+        if (String(owner.userId || '') !== hostId || owner.id === p.id) continue;
+        serverApplyDerivedVitals(owner);
+        emitAuthoritativePlayerState(owner, { reason: 'personalBaseHostChanged' });
+      }
+    }
     if (typeof ack === 'function') ack({ ok: true, ...payload, self: publicAuthoritativePlayerState(p) });
   });
 
@@ -28863,7 +28935,10 @@ io.on('connection', (socket) => {
       if (!treatable.length) return fail('У игрока нет переломов или контузии.');
       const spend = serverPrepareFixedActionAp(healer, data, serverMedicalItemApCost(healer, itemId), Date.now(), 'лечение');
       if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(healer) });
-      const chance = serverDoctorSuccessChance(healer);
+      const baseChance = serverDoctorSuccessChance(healer);
+      // Врач базы: дома травму залечить проще.
+      const homeCare = clamp(Number(serverResidentBonusesForPlayer(target, true).injuryRecoveryPct || 0), 0, 1);
+      const chance = homeCare > 0 ? clamp(baseChance * (1 + homeCare), 0.35, 0.98) : baseChance;
       const curedInjury = treatable[0];
       const ok = Math.random() <= chance;
       const refundItem = ok && serverDoctorBagPreserved(healer) ? 'doctorBag' : '';

@@ -36,6 +36,9 @@ for (const token of [
 ]) assert(serverSource.includes(token), `server.js must publish the excited fields window: ${token}`);
 for (const token of [
   'public static string ShiftLine(JObject shift)',
+  // Ранний прогноз сдвига от жителей и клановой базы виден в тихую фазу.
+  'shift["earlyWarning"]',
+  'СДВИГ СКОРО',
   'ПОЛЯ АКТИВНЫ: ещё ',
   'shift["fieldsChanceMultiplier"]'
 ]) assert(detector.includes(token), `The shift panel must show the excited fields: ${token}`);

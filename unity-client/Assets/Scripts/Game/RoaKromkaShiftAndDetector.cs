@@ -192,11 +192,20 @@ namespace RealmOfAshes.Game
             if (shift == null) return string.Empty;
             string phase = shift["phase"]?.ToString() ?? "calm";
             bool excited = shift["fieldsExcited"]?.Value<bool>() == true;
-            if (phase == "calm" && !excited) return string.Empty;
+            // Радист и разведчик базы (или клановая база) предупреждают о сдвиге
+            // раньше: без этой строки их вклад был невидим.
+            bool early = shift["earlyWarning"]?.Value<bool>() == true;
+            if (phase == "calm" && !excited && !early) return string.Empty;
             bool sheltered = shift["sheltered"]?.Value<bool>() == true;
             long remainingMs = shift["remainingMs"]?.Value<long>() ?? 0;
             int strength = shift["strength"]?.Value<int>() ?? 1;
             var sb = new StringBuilder();
+            if (phase == "calm" && early)
+            {
+                long untilShift = (shift["nextShiftAt"]?.Value<long>() ?? 0L) - (shift["serverNow"]?.Value<long>() ?? 0L);
+                sb.Append("СДВИГ СКОРО  •  через ").Append(Mathf.Max(1, Mathf.CeilToInt(untilShift / 60000f)))
+                  .Append(" мин  •  ранний прогноз");
+            }
             if (phase != "calm")
             {
                 string title = phase == "warning" ? "СДВИГ ПРИБЛИЖАЕТСЯ"

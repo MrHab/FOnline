@@ -198,8 +198,22 @@ namespace RealmOfAshes.Game
 
         private static int TradeBuyPrice(int stockPrice, JObject self)
         {
-            double discount = System.Math.Min(0.48d, TradeSkillNorm(self) * 0.24d + TalentLevel(self, "merchant", 3) * 0.05d);
+            return TradeBuyPriceCore(stockPrice, self, true);
+        }
+
+        /// <summary>Цена покупки; без доли жителя она нужна для потолка продажи, как на сервере.</summary>
+        private static int TradeBuyPriceCore(int stockPrice, JObject self, bool includeResident)
+        {
+            double discount = System.Math.Min(0.48d, TradeSkillNorm(self) * 0.24d + TalentLevel(self, "merchant", 3) * 0.05d
+                + (includeResident ? ResidentTradePct(self) : 0d));
             return System.Math.Max(1, (int)System.Math.Ceiling(System.Math.Max(1, stockPrice) * (1d - discount)));
+        }
+
+        /// <summary>Доля Торговца личной базы: сервер присылает её в self, смета учитывает её так же.</summary>
+        private static double ResidentTradePct(JObject self)
+        {
+            double value = self?["residentTradePricePct"]?.Value<double>() ?? 0d;
+            return System.Math.Max(0d, System.Math.Min(0.2d, value));
         }
 
         /// <summary>Персональная цена выкупа, полностью повторяющая серверную формулу.</summary>
@@ -222,12 +236,13 @@ namespace RealmOfAshes.Game
                 + (StatValue(self, "cha") - 5) * 0.04d
                 + (HasTrait(self, "traderStart") ? 0.15d : 0d)
                 + TradeSkillNorm(self) * 0.30d
-                + TalentLevel(self, "merchant", 3) * 0.08d;
+                + TalentLevel(self, "merchant", 3) * 0.08d
+                + ResidentTradePct(self);
             int price = System.Math.Max(1, (int)System.Math.Floor(basePrice * bonus));
 
             int stockPriceForItem = StockPrice(market, baseId);
             if (stockPriceForItem > 0)
-                price = System.Math.Min(price, System.Math.Max(1, (int)System.Math.Floor(TradeBuyPrice(stockPriceForItem, self) * 0.85d)));
+                price = System.Math.Min(price, System.Math.Max(1, (int)System.Math.Floor(TradeBuyPriceCore(stockPriceForItem, self, false) * 0.85d)));
 
             JArray interests = market?["buyInterests"] as JArray;
             if (interests != null && interests.Count > 0)

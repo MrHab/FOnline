@@ -50,6 +50,16 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   base.rights = { granted: false, outcomeId: '', questId: 'personal_aktov_air_rights', grantedAt: 0 };
   builder.kromkaQuestState = { completed: { personal_aktov_air_rights: { outcomeId: 'official', completedAt: Date.now() - 100000 } } };
   base.objects = [{ id: 'audit_bench', typeId: 'medical_bench', x: 6, z: 6, rotation: 0, builtAt: Date.now() - 100000 }];
+  // Жители с их постройками: Торговец меняет цены и очередь, Врач — максимум ОЗ.
+  base.objects.push(
+    { id: 'audit_crate', typeId: 'storage_crate', x: 2, z: 2, rotation: 0, builtAt: Date.now() - 100000 },
+    { id: 'audit_bed', typeId: 'bed_fold', x: 12, z: 2, rotation: 0, builtAt: Date.now() - 100000 },
+    { id: 'audit_water', typeId: 'water_collector', x: 2, z: 12, rotation: 0, builtAt: Date.now() - 100000 });
+  base.residentStates = {
+    veniamin_credit: { recruited: true, assigned: true, loyalty: 80 },
+    zoya_splint: { recruited: true, assigned: true, loyalty: 80 }
+  };
+  base.residents = ['veniamin_credit', 'zoya_splint'];
   base.jobs = Array.from({length: 10}, (_, i) => ({ id: 'audit_old_' + i, typeId: 'filters', startedAt: 1000+i, completesAt: 5000+i, claimed: true }));
   saves.personalBases[baseUserId] = base;
   const siegeConfig = require(path.join(root, 'data/kromka/sieges.json'));
@@ -77,6 +87,7 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   const duplicateRights = await h.socketAck(accounts.trade.socket, 'personalBaseAction', { action: 'resolveRights', outcomeId: 'official' });
   const stillOwned = await request(accounts.trade, 'state', { profileOnly: true });
   assert.equal(qty(stillOwned.self, 'silver'), 380, 'Rights must not be charged twice');
+  assert.equal(stillOwned.self.residentTradePricePct, 0, 'A base without residents changes no prices');
   const drop = await request(accounts.trade, 'dropItem', { itemId: 'artifactSpring', qty: 1 });
   assert.equal(qty(drop.self, 'artifactSpring'), 0);
   assert.deepEqual(drop.self.artifactSlots, []);
@@ -130,12 +141,17 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert.equal(job.state.jobs.filter(row => !row.claimed).length, 1);
   assert.equal(qty(job.self, 'scrap'), 8);
   assert.equal(qty(job.self, 'chemicals'), 8);
+  assert.equal(job.state.jobQueueLimit, 6, 'The trader adds two production orders');
+  assert.equal(job.self.residentTradePricePct, 0.08, 'The trader improves ordinary trade for the owner');
+  const hpWithDoctor = Number(job.self.maxHp);
+  const withoutDoctor = await request(accounts.persistence, 'personalBaseAction', { action: 'resident', residentAction: 'unassign', residentId: 'zoya_splint' });
+  assert.equal(Number(withoutDoctor.self.maxHp), hpWithDoctor - 10, 'The doctor adds ten maximum health and takes it with her');
   const jobId = job.state.jobs.find(row => !row.claimed).id;
   await h.connectAndJoin(accounts.progression);
   assert.notEqual(accounts.progression.join.locationId, 'clanSiege');
   const reenter = await h.socketAck(accounts.progression.socket, 'kromkaSiegeAction', { action: 'enter', eventId: siegeEvent.id });
   assert(!reenter.ok);
-  console.log('PASS instance repair, eleventh production job and siege elimination');
+  console.log('PASS instance repair, eleventh production job, resident bonuses and siege elimination');
 
   for (const account of Object.values(accounts)) h.closeSocket(account);
   await h.stopServer();

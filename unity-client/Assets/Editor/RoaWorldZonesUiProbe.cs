@@ -286,6 +286,10 @@ namespace RealmOfAshes.EditorTools
             // прямо, вместе с остатком времени и множителем находок.
             var quietShift = JObject.Parse(@"{'phase':'calm','remainingMs':0,'strength':1,'fieldsExcited':false}");
             Require(RoaKromkaShiftAndDetector.ShiftLine(quietShift) == string.Empty, "A quiet world shows no shift line");
+            // Радист базы или клановая база дают ранний прогноз: в тихую фазу он виден.
+            var earlyShift = JObject.Parse(@"{'phase':'calm','earlyWarning':true,'fieldsExcited':false,'nextShiftAt':1000600000,'serverNow':1000000000}");
+            string earlyLine = RoaKromkaShiftAndDetector.ShiftLine(earlyShift);
+            Require(earlyLine.Contains("СДВИГ СКОРО") && earlyLine.Contains("через 10 мин"), "An early forecast is shown: " + earlyLine);
             var excitedShift = JObject.Parse(@"{'phase':'calm','remainingMs':0,'strength':1,'fieldsExcited':true,
                 'fieldsExcitedSeconds':900,'fieldsChanceMultiplier':5.5}");
             string excitedLine = RoaKromkaShiftAndDetector.ShiftLine(excitedShift);

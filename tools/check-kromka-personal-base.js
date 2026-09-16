@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { createPersonalBase, sanitizePersonalBase, publicPersonalBase } = require('../src/server/personal-bases');
 const { placeObject, removeObject, validatePlacement } = require('../src/server/base-construction');
-const { claimBaseJob, startBaseJob } = require('../src/server/base-jobs');
+const { adjustedJobInput, claimBaseJob, startBaseJob } = require('../src/server/base-jobs');
 
 const root = path.resolve(__dirname, '..');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/base-building.json'), 'utf8'));
@@ -38,4 +38,24 @@ assert.equal(publicPersonalBase(roundTrip, catalog).objects.length, 1, 'Compact 
 
 const globalMap = JSON.parse(fs.readFileSync(path.join(root, 'data/global-map.json'), 'utf8'));
 assert(!(globalMap.nodes || []).some(row => row.locationId === 'personalBase' || row.id === 'personalBase'), 'Private bases must never occupy a global-map node.');
-console.log('Kromka personal base check passed: account isolation, construction, persistence and offline jobs.');
+// Жители меняют очередь и вход работ: Торговец добавляет места, Агроном
+// бережёт воду грядки, но вход никогда не обнуляется.
+{
+  const queue = createPersonalBase('queue-test', 1);
+  queue.rights.granted = true;
+  const station = (catalog.jobs || [])[0];
+  queue.objects.push({ id: 'station', typeId: station.stationTypeId });
+  const plenty = () => 999;
+  for (let i = 0; i < 6; i++) assert(startBaseJob(queue, station.id, catalog, plenty, 1000 + i, { queueLimit: 6 }).ok, `order ${i + 1} fits a queue of six`);
+  const full = startBaseJob(queue, station.id, catalog, plenty, 2000, { queueLimit: 6 });
+  assert(!full.ok && full.error.includes('6'), 'The seventh order is refused and the limit is named.');
+  const defaultQueue = createPersonalBase('queue-default', 1);
+  defaultQueue.objects.push({ id: 'station', typeId: station.stationTypeId });
+  for (let i = 0; i < 4; i++) assert(startBaseJob(defaultQueue, station.id, catalog, plenty, 1000 + i).ok);
+  assert(!startBaseJob(defaultQueue, station.id, catalog, plenty, 2000).ok, 'Without residents the queue stays at four.');
+  assert.deepEqual(adjustedJobInput({ input: { water: 3, seeds: 1 } }, { water: 0.15 }), { water: 2, seeds: 1 },
+    'A water saving takes at least one unit and never touches other inputs.');
+  assert.deepEqual(adjustedJobInput({ input: { water: 1 } }, { water: 0.9 }), { water: 1 }, 'A saving never zeroes an input.');
+}
+
+console.log('Kromka personal base check passed: account isolation, construction, persistence, offline jobs, resident queue and input savings.');

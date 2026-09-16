@@ -21,7 +21,13 @@ namespace RealmOfAshes.EditorTools
                 "PvE banner must promise no PvP and no loss");
             Require(RoaHudCanvas.ZoneModeBannerText("pvpEvent").Contains("СОХРАНЯЮТСЯ"), "Event banner must promise no loss");
             Require(RoaHudCanvas.ZoneModeBannerText("pvpFullDrop").Contains("ЭКИПИРОВКА ЦЕЛА") && !RoaHudCanvas.ZoneModeBannerText("pvpFullDrop").Contains("ПОЛН"),
-                "Territory banner must describe partial loss, never full loot");
+                "Red banner must describe partial loss, never full loot");
+            // Лестница экономики v3: жёлтая ничего не роняет, чёрная роняет всё.
+            Require(RoaHudCanvas.ZoneModeBannerText("pvp").Contains("СОХРАНЯЮТСЯ") && !RoaHudCanvas.ZoneModeBannerText("pvp").Contains("РАСХОДНИК"),
+                "Yellow banner must promise that items stay");
+            Require(RoaHudCanvas.ZoneModeBannerText("pvpBlack").Contains("ВЫПАДАЕТ ВСЁ") && !RoaHudCanvas.ZoneModeBannerText("pvpBlack").Contains("ЦЕЛА"),
+                "Black banner must warn that everything drops");
+            Require(RoaGlobalMap.ZoneRulesRequireConfirmation("pvpBlack", null), "The black zone asks before entry");
 
             var territory = JObject.Parse(@"{'zoneLocationId':'coreZone','factionNames':{'uprava':'Управа','free_artels':'Артели'},'outposts':[
                 {'id':'north','displayName':'Северный','ownerFactionId':'uprava','eventStatus':'closed','eventOpensInMs':754000,'capture':{'progress':{},'leadingFactionId':'','contested':false},'garrison':{'state':'arrived'}},

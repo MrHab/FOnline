@@ -13,7 +13,7 @@
   "zone": {
     "widthMeters": 320,
     "depthMeters": 320,
-    "pvpMode": "pvpFullDrop",
+    "pvpMode": "pvpBlack",
     "enemyCap": 0
   },
   "rules": {
@@ -373,6 +373,16 @@
       }
     }
   ],
+  "marketHub": {
+    "id": "coreMarket",
+    "displayName": "Рынок Ядра",
+    "description": "Нейтральный подземный рынок под Объектом Ноль. Скупщик берёт любое оружие и броню; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину.",
+    "door": {
+      "x": 0,
+      "z": 10
+    },
+    "entryKey": "entryFromMarket"
+  },
   "centralLab": {
     "id": "coreLabCenter",
     "displayName": "Объект Ноль",

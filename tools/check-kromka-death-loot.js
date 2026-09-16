@@ -10,7 +10,9 @@ const {
   restoreDeathState,
   restoreDownedState,
   resolveDeathLootTransaction,
-  selectBagDropRows
+  selectBagDropRows,
+  splitTrashRows,
+  trashScrapQty
 } = require('../src/server/kromka-death-loot');
 const { sanitizeArtifactLoadout } = require('../src/server/artifact-effects');
 
@@ -21,7 +23,9 @@ const readJson = relative => JSON.parse(read(relative));
 assert.deepStrictEqual(deathLootPolicy('peaceful'), { mode: 'peaceful', loss: 'none' });
 assert.deepStrictEqual(deathLootPolicy('pve'), { mode: 'pve', loss: 'none' });
 assert.deepStrictEqual(deathLootPolicy('pvpEvent'), { mode: 'pvpEvent', loss: 'none' });
-assert.deepStrictEqual(deathLootPolicy('pvp'), { mode: 'pvp', loss: 'consumables', fraction: 0.5 });
+// Жёлтая зона ничего не роняет: износ надетого считает сервер.
+assert.deepStrictEqual(deathLootPolicy('pvp'), { mode: 'pvp', loss: 'none' });
+assert.deepStrictEqual(deathLootPolicy('pvpBlack'), { mode: 'pvpBlack', loss: 'all', loadedMagazines: true, trash: true });
 assert.deepStrictEqual(deathLootPolicy('pvpFullDrop'), {
   mode: 'pvpFullDrop', loss: 'inventory', loadedMagazines: true, keepEquipment: true, keepInstalledArtifacts: true
 });
@@ -99,6 +103,23 @@ assert.deepStrictEqual(selectBagDropRows([{ id: 'ammo9', qty: 0 }, { id: '', qty
   assert.equal(carrier.equipment.armor, 'leatherArmor', 'worn armour stays too');
 }
 
+// Лом чёрной зоны: каждая единица бросается отдельно; уцелевшее падает, а
+// уничтоженное превращается в лом по доле базовой цены.
+{
+  const rolls = [0.1, 0.9, 0.5, 0.2, 0.95];
+  let cursor = 0;
+  const random = () => rolls[cursor++ % rolls.length];
+  const split = splitTrashRows([{ id: 'pistol', qty: 2 }, { id: 'ammo9', qty: 3 }, { id: 'ghost', qty: 0 }], 0.33, random);
+  assert.deepStrictEqual(split.kept, [{ id: 'pistol', qty: 1 }, { id: 'ammo9', qty: 2 }]);
+  assert.deepStrictEqual(split.trashed, [{ id: 'pistol', qty: 1 }, { id: 'ammo9', qty: 1 }]);
+  assert.deepStrictEqual(splitTrashRows([{ id: 'medkit', qty: 4 }], 0).trashed, [], 'without a chance nothing is destroyed');
+  assert.strictEqual(splitTrashRows([{ id: 'medkit', qty: 4 }], 1).kept.length, 0, 'a certain chance destroys everything');
+  const prices = { pistol: 40, ammo9: 1 };
+  assert.strictEqual(trashScrapQty(split.trashed, id => prices[id] || 0, 3, 0.25), 3,
+    'a destroyed pistol leaves a quarter of its price in scrap, a cartridge almost nothing');
+  assert.strictEqual(trashScrapQty([{ id: 'ammo9', qty: 5 }], id => prices[id] || 0, 3, 0.25), 0);
+}
+
 let mutations = 0;
 const victim = { id: 'socket-a', characterId: 'char-a', diedAt: 1700000000000 };
 const first = resolveDeathLootTransaction(victim, 'pvpFullDrop', victim.diedAt, () => {
@@ -153,12 +174,21 @@ assert(server.includes("id !== 'silver'"));
 assert(!server.includes('...KROMKA_ARTIFACT_CATALOG.types.map(row => row.itemId),\n  ...KROMKA_ARTIFACT_CATALOG.detectors'),
   'artifacts must no longer be protected from the partial-loss drop by item id');
 assert(server.includes('selectBagDropRows(inventory, {'));
-assert(server.includes('installedCounts: serverInstalledArtifactCounts(target)'));
+assert(server.includes('installedCounts: options.all ? new Map() : serverInstalledArtifactCounts(target)'),
+  'the black zone must drop installed artifacts too');
 assert(server.includes("if (!SERVER_WEAPONS[entry.id]?.ammoType && !KROMKA_ARTIFACT_INDEXES.byItem[entry.id]) continue;"));
-assert(server.includes('itemRuntimeRecords: runtimeDrops.get(entry.id)?.records || []'));
+assert(server.includes('itemRuntimeRecords: records,'), 'dropped weapons must carry their runtime records');
 assert(server.includes('resolveDeathLootTransaction(target, mode, now'));
 assert(server.includes("policy.loss === 'inventory'"));
-assert(server.includes("policy.loss === 'consumables'"));
+assert(!server.includes("policy.loss === 'consumables'") && !server.includes('consumableDrop:'),
+  'the half-consumables drop is gone with the v3 zone ladder');
+assert(server.includes("function locationDropsEverything(loc = {}) {\n  return deathLootPolicy(locationPvpMode(loc)).loss === 'all';"));
+assert(server.includes('loc.fullDrop = zoneModeDropsInventory(loc.pvpMode);'), 'the black zone also reports a drop');
+assert(server.includes("if (policy.loss === 'all') {"));
+assert(server.includes('serverStripEquipmentForDeath(target, now);'), 'the black zone must strip the equipment before dropping it');
+assert(server.includes('serverApplyDeathWear(target, mode);'), 'death must wear the worn equipment by zone');
+assert(server.includes('const split = trashChance > 0 ? splitTrashRows(drops, trashChance)'), 'the black drop must roll scrap per unit');
+assert(server.includes('(runtimeDrops.get(entry.id)?.records || []).slice(0, entry.qty)'), 'destroyed weapon instances must not reach the ground');
 assert(server.includes('serverSyncRoomGroundDrops(room);\n    persistActivePlayerState(target);'));
 assert(server.includes('serverRestoreRoomGroundDrops(rooms.get(id));'));
 assert(server.includes('serverDropPvpLootForMode(shiftRoom, p, null, shiftLoc, now)'), 'emission death must use the zone loss policy');
@@ -206,7 +236,7 @@ assert(serverSource.includes('droppedItems = serverDropPvpLootForMode(room, targ
   'A self-inflicted explosion must drop loot by the zone rule.');
 assert(!serverSource.includes('if (!isSelf) droppedItems = serverDropPvpLootForMode'),
   'The old exception for self-inflicted deaths must be gone.');
-assert(!serverSource.includes('fullDrop: !isSelf &&') && !serverSource.includes('consumableDrop: !isSelf &&'),
+assert(!serverSource.includes('fullDrop: !isSelf &&') && !serverSource.includes('totalDrop: !isSelf &&'),
   'Loss flags of an explosion death must not depend on who caused it.');
 
-console.log('Kromka death/loot contract: OK (5 zone modes, partial-loss drop by instance, atomic and reconnect-safe death loot, persisted ground drops, zone rules before entry).');
+console.log('Kromka death/loot contract: OK (6 zone modes, black-zone scrap, partial-loss drop by instance, atomic and reconnect-safe death loot, persisted ground drops, zone rules before entry).');

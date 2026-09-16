@@ -84,8 +84,9 @@ assert.strictEqual(territoryLocationAccess(otherBase, joined.membership, catalog
 assert.strictEqual(territoryLocationAccess(otherBase, joined.membership, catalog).access, 'ownFaction');
 assert.strictEqual(zone.noGlobalMapEntry, true, 'the zone is entered only through faction platforms');
 assert.strictEqual(zone.allowGlobalMapExit, false);
-assert.strictEqual(zone.pvpMode, 'pvpFullDrop');
-assert.strictEqual(lab.pvpMode, 'pvpFullDrop');
+// Экономика v3: Сердцевина — чёрная зона, базы фракций остаются мирными.
+assert.strictEqual(zone.pvpMode, 'pvpBlack');
+assert.strictEqual(lab.pvpMode, 'pvpBlack');
 assert.strictEqual(ownBase.pvpMode, 'peaceful');
 assert.strictEqual(zone.map.width, 320);
 for (const faction of catalog.factions) {
@@ -106,7 +107,7 @@ for (const faction of catalog.factions) {
   assert(base.objects.some(row => row.entity?.traderProfile === faction.traderProfile), `${faction.id} base has a trader`);
 }
 // Все пять лабораторий наследуют правила территории: вход только для членов
-// фракции, тот же режим PvP и та же частичная потеря при смерти, что в зоне.
+// фракции, тот же режим PvP и та же полная потеря при смерти, что в зоне.
 const labIds = [...catalog.labs.map(row => row.id), 'coreLabCenterService', 'coreLabCenterResearch', 'coreLabCenterReactor'];
 for (const labId of labIds) {
   const definition = JSON.parse(read(`data/locations/${labId}.json`));

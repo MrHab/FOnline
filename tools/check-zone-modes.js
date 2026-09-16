@@ -16,7 +16,7 @@ const {
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
-assert.deepStrictEqual([...ZONE_MODES], ['peaceful', 'pve', 'pvp', 'pvpEvent', 'pvpFullDrop']);
+assert.deepStrictEqual([...ZONE_MODES], ['peaceful', 'pve', 'pvp', 'pvpEvent', 'pvpFullDrop', 'pvpBlack']);
 
 // Нормализация: канонические id, алиасы и безопасный fallback.
 assert.strictEqual(normalizeZoneMode('peaceful'), 'peaceful');
@@ -27,17 +27,21 @@ assert.strictEqual(normalizeZoneMode('pvpEvent'), 'pvpEvent');
 assert.strictEqual(normalizeZoneMode('public_event'), 'pvpEvent');
 assert.strictEqual(normalizeZoneMode('pvpFullDrop'), 'pvpFullDrop');
 assert.strictEqual(normalizeZoneMode('fulldrop'), 'pvpFullDrop');
-assert.strictEqual(normalizeZoneMode('territory'), 'pvpFullDrop');
+assert.strictEqual(normalizeZoneMode('territory'), 'pvpBlack');
+assert.strictEqual(normalizeZoneMode('pvpBlack'), 'pvpBlack');
+assert.strictEqual(normalizeZoneMode('black'), 'pvpBlack');
+assert.strictEqual(normalizeZoneMode('red'), 'pvpFullDrop');
 assert.strictEqual(normalizeZoneMode(true), 'pvp');
 assert.strictEqual(normalizeZoneMode(false), 'peaceful');
 assert.strictEqual(normalizeZoneMode(false, false), 'pvp');
 assert.strictEqual(normalizeZoneMode('garbage'), 'peaceful');
 assert.strictEqual(normalizeZoneMode('garbage', false), 'pvp');
 
-// PvP разрешён только в трёх режимах; PvE-области и мирные зоны его запрещают.
-assert.deepStrictEqual(ZONE_MODES.map(zoneModeAllowsPvp), [false, false, true, true, true]);
-assert.deepStrictEqual(ZONE_MODES.map(zoneModeIsSafe), [true, false, false, false, false]);
-assert.deepStrictEqual(ZONE_MODES.map(zoneModeLossPolicy), ['none', 'none', 'consumables', 'none', 'inventory']);
+// Лестница экономики v3: PvP разрешён в жёлтой, красной, чёрной зонах и на
+// событиях; жёлтая ничего не роняет, красная — рюкзак, чёрная — всё.
+assert.deepStrictEqual(ZONE_MODES.map(zoneModeAllowsPvp), [false, false, true, true, true, true]);
+assert.deepStrictEqual(ZONE_MODES.map(zoneModeIsSafe), [true, false, false, false, false, false]);
+assert.deepStrictEqual(ZONE_MODES.map(zoneModeLossPolicy), ['none', 'none', 'none', 'none', 'inventory', 'all']);
 
 // Правила зоны: полный объект для интерфейса до входа и при смене режима.
 for (const mode of ZONE_MODES) {
@@ -51,6 +55,10 @@ for (const mode of ZONE_MODES) {
   assert(!/полн(ый|ого|ым) (лут|дроп)/i.test(`${rules.label} ${rules.lossLabel}`), `${mode} must not be called full loot`);
 }
 assert.strictEqual(zoneRules('pvpFullDrop').confirmBeforeEntry, true);
+assert.strictEqual(zoneRules('pvpBlack').confirmBeforeEntry, true);
+assert(zoneRules('pvpBlack').lossLabel.includes('может стать ломом'));
+assert(zoneRules('pvpBlack').lossLabel.includes('Марки и сюжетные предметы сохраняются'));
+assert.strictEqual(zoneRules('pvp').confirmBeforeEntry, false);
 assert.strictEqual(zoneRules('pvpEvent').confirmBeforeEntry, true);
 assert.strictEqual(zoneRules('pve').confirmBeforeEntry, false);
 assert(zoneRules('pvpFullDrop').lossLabel.includes('экипированный контейнер'));

@@ -137,20 +137,21 @@ namespace RealmOfAshes.Game
             int maxHp = Mathf.Max(1, payload?["maxHp"]?.ToObject<int>() ?? 1);
             int percent = Mathf.Clamp(Mathf.RoundToInt(hp * 100f / maxHp), 0, 100);
             JObject cause = payload?["cause"] as JObject ?? new JObject();
+            if (cause["totalDrop"]?.ToObject<bool>() == true)
+            {
+                // Чёрная зона: выпало всё, и часть выпавшего стала ломом.
+                int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
+                string loss = dropped > 0
+                    ? "Снаряжение и инвентарь остались на месте гибели: " + dropped + " поз., часть стала ломом."
+                    : "При вас не было ничего, что могло выпасть.";
+                return "Здоровье восстановлено до " + percent + "%. " + loss;
+            }
             if (cause["fullDrop"]?.ToObject<bool>() == true)
             {
                 int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
                 string loss = dropped > 0
                     ? "Инвентарь остался на месте гибели: " + dropped + " поз. Экипировка сохранена."
                     : "Инвентарь был пуст. Экипировка сохранена.";
-                return "Здоровье восстановлено до " + percent + "%. " + loss;
-            }
-            if (cause["consumableDrop"]?.ToObject<bool>() == true)
-            {
-                int dropped = cause["droppedItems"] is JArray rows ? rows.Count : 0;
-                string loss = dropped > 0
-                    ? "Часть расходников осталась на месте гибели: " + dropped + " поз. Экипировка сохранена."
-                    : "Расходников не было. Экипировка сохранена.";
                 return "Здоровье восстановлено до " + percent + "%. " + loss;
             }
             return "Здоровье восстановлено до " + percent + "%. Инвентарь и экипировка сохранены.";

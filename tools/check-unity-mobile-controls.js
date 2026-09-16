@@ -122,7 +122,7 @@ assert(allies && JSON.stringify([...allies[1].matchAll(/'([^']+)'/g)].map(m => m
   === JSON.stringify(['tract_league|uprava', 'uprava|tract_league']),
   'The server faction alliance changed: update RoaCombat.CombatFactionsAllied.');
 const zoneRules = require(path.join(root, 'src/server/zone-rules.js'));
-assert.deepEqual(zoneRules.ZONE_MODES.filter(mode => zoneRules.zoneModeAllowsPvp(mode)), ['pvp', 'pvpEvent', 'pvpFullDrop'],
+assert.deepEqual(zoneRules.ZONE_MODES.filter(mode => zoneRules.zoneModeAllowsPvp(mode)), ['pvp', 'pvpEvent', 'pvpFullDrop', 'pvpBlack'],
   'The server PvP zone modes changed: update RoaCombat.ZoneModeAllowsPvp.');
 // Правила Сердцевины и отряда: клиент повторяет три отказа serverTerritoryPvpBlock
 // и союз по отряду; новый отказ на сервере требует зеркала в автоцели.

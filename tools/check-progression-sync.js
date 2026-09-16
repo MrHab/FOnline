@@ -558,7 +558,9 @@ if (playerProtectionIndex < 0 || playerProtectionIndex > playerHitServerBody.ind
 }
 
 const syncNpcTradeStateBody = socketEventSlice(server, 'syncNpcTradeState');
-if (!syncNpcTradeStateBody.includes('market: serverNpcTradeMarket(actor)')
+// Скупщик Чёрного рынка отдаёт свою витрину, остальные NPC — обычную.
+if (!(syncNpcTradeStateBody.includes('market: serverNpcTradeMarket(actor)')
+    || syncNpcTradeStateBody.includes('serverIsBlackMarketActor(actor) ? serverBlackMarketTradeMarket(p) : serverNpcTradeMarket(actor)'))
   || !syncNpcTradeStateBody.includes('readOnly: true')
   || syncNpcTradeStateBody.includes('serverNpcSetInventoryCaps(')
   || syncNpcTradeStateBody.includes('data.inventory')

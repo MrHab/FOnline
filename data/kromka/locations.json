@@ -1595,6 +1595,27 @@
           "placement": "unity-authored"
         }
       ]
+    },
+    {
+      "id": "coreMarket",
+      "displayName": "Рынок Ядра",
+      "locationType": "settlement",
+      "macroRegion": "off_map",
+      "visualProfile": "territory-market-v1",
+      "anomalyDensity": 0,
+      "landmarkTags": [
+        "buried-installation",
+        "black-market"
+      ],
+      "ambientProfile": "buried-installation",
+      "territory": {
+        "id": "core",
+        "role": "marketHub"
+      },
+      "worldRevision": "kromka-1",
+      "migrationSpawnId": "coreMarket-stairs",
+      "legacyStable": false,
+      "unityScene": "Assets/Scenes/Kromka/Locations/coreMarket.unity"
     }
   ]
 }

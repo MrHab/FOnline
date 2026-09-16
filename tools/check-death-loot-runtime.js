@@ -12,6 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp } = require('../src/server/zone-rules');
+const { deathLootPolicy } = require('../src/server/kromka-death-loot');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -56,7 +57,7 @@ function fixture(mode = 'pvpFullDrop', targetHp = 5) {
     players, rooms: new Map([[room.id, room]]),
     socket: { id: p.id, on: (event, callback) => { handlers[event] = callback; }, to: () => relay },
     io: { to: () => relay },
-    LOCATION_PVP_MODES: ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp,
+    LOCATION_PVP_MODES: ZONE_MODE_SET, normalizeZoneMode, zoneModeAllowsPvp, deathLootPolicy,
     SERVER_FACTION_CAPITAL_LOCATION_IDS: new Set(['settlement']),
     roomLocation: current => current.loc,
     roomWorldExtent: () => 200,
@@ -123,7 +124,8 @@ function fixture(mode = 'pvpFullDrop', targetHp = 5) {
   });
   for (const name of [
     'normalizeLocationPvpMode', 'capitalLocationId', 'locationIsFactionCapital',
-    'locationPvpMode', 'locationAllowsPvp', 'locationHasFullInventoryDrop', 'serverCurrentHp'
+    'locationPvpMode', 'locationAllowsPvp', 'zoneModeDropsInventory', 'locationHasFullInventoryDrop',
+    'locationDropsEverything', 'serverCurrentHp'
   ]) vm.runInContext(functionSource(name), context);
   vm.runInContext(handlerSource('explosionAttack'), context);
   return { handlers, drops, respawns, players, p, target, room, events };
@@ -201,7 +203,7 @@ for (const labId of ['coreLabSprout', 'coreLabCircuit', 'coreLabAlloy', 'coreLab
   blast(world);
   assert.equal(world.target.dead, true, `${labId}: PvP works by the rules of the territory`);
   assert.equal(world.drops.length, 1, `${labId}: death runs through the same funnel`);
-  assert.equal(world.drops[0].mode, 'pvpFullDrop', `${labId}: the laboratory inherits the partial loss of the territory`);
+  assert.equal(world.drops[0].mode, 'pvpBlack', `${labId}: the laboratory inherits the black-zone loss of the territory`);
 }
 
 console.log('Death loot runtime OK: the blast handler kills through one funnel, self-inflicted death drops by the same rule, and the zone mode decides the loss, and all five laboratories inherit the rule of the territory.');

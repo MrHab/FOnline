@@ -182,4 +182,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/coreLabCenterReactor.unity
     guid: b8822a93e5832ab4b8fe86ac13670443
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/coreMarket.unity
+    guid: b161f78218f3adb4396c04b84be38708
   m_configObjects: {}

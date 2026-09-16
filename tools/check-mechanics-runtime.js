@@ -36,6 +36,15 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   shooter.inventory.repairKit = 2;
   shooter.inventory.ui_laserPistol_spare_1 = 1;
   shooter.itemRuntime.ui_laserPistol_spare_1 = { baseId: 'laserPistol', condition: 43, loaded: 0, createdAt: Date.now() };
+  // Экономика v3: ствол в руке сломан, для полевого ремонта есть ремкомплект,
+  // детали и сырьё.
+  const breaker = stateFor('untargeted');
+  breaker.itemRuntime.laserPistol.condition = 5;
+  breaker.player.itemConditions = { ...(breaker.player.itemConditions || {}), laserPistol: 5 };
+  breaker.inventory.repairKit = 1;
+  breaker.inventory.weaponParts = 1;
+  breaker.inventory.ore = 2;
+  breaker.inventory.wood = 2;
   const baseUserId = users.users[accounts.persistence.login].id;
   const builder = stateFor('persistence');
   builder.currentLocationId = donor.currentLocationId;
@@ -134,6 +143,39 @@ const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce
   assert(!badRepair.ok);
   const afterBad = await request(accounts.cadence, 'state', { profileOnly: true });
   assert.equal(qty(afterBad.self, 'repairKit'), 1);
+
+  // Оружие ниже 10% не стреляет; в поле его чинят ремкомплектом или деталями,
+  // а сырьё больше не чинит (экономика v3).
+  await h.connectAndJoin(accounts.untargeted);
+  const brokenShot = await h.socketAck(accounts.untargeted.socket, 'combatAttack', {
+    weapon: 'laserPistol', mode: 'single', attackToken: 'regression_broken_fire'
+  });
+  assert(!brokenShot.ok && /сломано/.test(brokenShot.error || ''), 'A weapon below 10% does not fire: ' + JSON.stringify(brokenShot).slice(0, 300));
+  const kitRepair = await request(accounts.untargeted, 'inventoryItemAction', {
+    action: 'repair', itemId: 'laserPistol', requestId: 'regression_repair_broken'
+  });
+  assert.equal(kitRepair.mode, 'repairKit');
+  assert(kitRepair.condition >= 10, 'The kit brings the weapon back above the broken threshold');
+  assert.equal(qty(kitRepair.self, 'repairKit'), 0);
+  const fixedShot = await request(accounts.untargeted, 'combatAttack', {
+    weapon: 'laserPistol', mode: 'single', attackToken: 'regression_fixed_fire'
+  });
+  assert(fixedShot.combat.condition < kitRepair.condition, 'The repaired weapon fires and wears again');
+  const partsRepair = await request(accounts.untargeted, 'inventoryItemAction', {
+    action: 'repair', itemId: 'laserPistol', requestId: 'regression_repair_parts'
+  });
+  assert.equal(partsRepair.mode, 'field', 'Without a kit the weapon is repaired with weapon parts');
+  assert.equal(qty(partsRepair.self, 'weaponParts'), 0);
+  assert.equal(qty(partsRepair.self, 'ore'), 2, 'Field repair no longer eats raw ore');
+  await new Promise(resolve => setTimeout(resolve, 900));
+  await request(accounts.untargeted, 'combatAttack', {
+    weapon: 'laserPistol', mode: 'single', attackToken: 'regression_worn_again'
+  });
+  const rawRepair = await h.socketAck(accounts.untargeted.socket, 'inventoryItemAction', {
+    action: 'repair', itemId: 'laserPistol', requestId: 'regression_repair_raw'
+  });
+  assert(!rawRepair.ok && rawRepair.error === 'Нужен ремкомплект или оружейные детали.',
+    'Ore and wood alone do not repair: ' + JSON.stringify(rawRepair).slice(0, 300));
 
   await h.connectAndJoin(accounts.persistence);
   await request(accounts.persistence, 'personalBaseAction', { action: 'enter' });

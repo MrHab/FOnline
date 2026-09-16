@@ -51,8 +51,13 @@ namespace RealmOfAshes.EditorTools
                 JObject pvp = JObject.Parse("{\"hp\":44,\"maxHp\":80,\"cause\":{\"killerName\":\"Рейдер\",\"fullDrop\":true,\"droppedItems\":[{\"id\":\"water\"},{\"id\":\"ammo9\"}]}}");
                 Require(RoaRecoveryCanvas.CauseText(pvp).Contains("Рейдер"),
                         "PvP killer is missing");
-                Require(RoaRecoveryCanvas.StateText(pvp).Contains("2 поз."),
-                        "full-loot loss count is missing");
+                Require(RoaRecoveryCanvas.StateText(pvp).Contains("2 поз.") && RoaRecoveryCanvas.StateText(pvp).Contains("Экипировка сохранена"),
+                        "red-zone loss count is missing");
+                // Чёрная зона: выпадает всё, и экран не обещает сохранённую экипировку.
+                JObject black = JObject.Parse("{\"hp\":30,\"maxHp\":80,\"cause\":{\"killerName\":\"Рейдер\",\"fullDrop\":true,\"totalDrop\":true,\"droppedItems\":[{\"id\":\"pistol\"},{\"id\":\"scrap\"},{\"id\":\"leather\"}]}}");
+                Require(RoaRecoveryCanvas.StateText(black).Contains("3 поз.") && RoaRecoveryCanvas.StateText(black).Contains("ломом")
+                        && !RoaRecoveryCanvas.StateText(black).Contains("сохранена"),
+                        "black-zone loss must not promise kept equipment");
                 Require(RoaWorldActivityCanvas.FailureSummary("time_expired").Contains("ВРЕМЯ ВЫШЛО"),
                         "timeout result does not explain failure");
 

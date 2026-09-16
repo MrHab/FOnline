@@ -1,9 +1,14 @@
 'use strict';
 
 // Генерирует авторские определения Сердцевины: одну большую сцену `coreZone`,
-// четыре базы фракций, четыре боковые лаборатории и три уровня «Объекта Ноль».
-// Источник — data/kromka/territory.json. Результат детерминирован; Unity
-// пересобирает сцены только для новых id и дописывает объекты при экспорте.
+// четыре базы фракций, четыре боковые лаборатории, три уровня «Объекта Ноль»
+// и хаб Чёрного рынка. Источник — data/kromka/territory.json. Результат
+// детерминирован; Unity пересобирает сцены только для новых id и дописывает
+// объекты при экспорте.
+//
+// Внимание: перезапись существующего определения теряет поля, которые Unity
+// дописала при экспорте. Новую локацию генерируйте адресно:
+//   node tools/build-kromka-territory-locations.js --only=coreMarket
 const fs = require('fs');
 const path = require('path');
 
@@ -45,6 +50,13 @@ function prop(id, name, file, x, z, scale = 1, tags = [], extra = {}) {
   };
 }
 
+// Сервер считает NPC с territoryFactionId враждебным членам других фракций
+// территории. Нейтральный персонал Рынка Ядра этого поля не несёт, иначе
+// скупщик и охрана атаковали бы каждого покупателя.
+function territoryOwner(factionId) {
+  return factionId === 'neutral' ? {} : { territoryFactionId: factionId };
+}
+
 function guard(id, name, factionId, x, z, rotationY = 0) {
   return {
     id, model: 'caravanGuard', name,
@@ -52,7 +64,7 @@ function guard(id, name, factionId, x, z, rotationY = 0) {
     collision: 'solid', tags: ['npc', 'friendly', 'guard', 'territory-guard'],
     entity: {
       kind: 'npc', role: 'guard', faction: factionId, hostileToPlayer: false,
-      equipmentProfile: 'guard', statProfile: 'guard', stationary: true, territoryFactionId: factionId
+      equipmentProfile: 'guard', statProfile: 'guard', stationary: true, ...territoryOwner(factionId)
     }
   };
 }
@@ -64,7 +76,7 @@ function serviceNpc(id, name, factionId, service, x, z, extra = {}) {
     collision: 'solid', tags: ['npc', 'friendly', 'service', `service-${service}`, ...(extra.tags || [])],
     entity: {
       kind: 'npc', role: extra.role || 'npc', faction: factionId, hostileToPlayer: false,
-      stationary: true, service, territoryFactionId: factionId, ...(extra.entity || {})
+      stationary: true, service, ...territoryOwner(factionId), ...(extra.entity || {})
     }
   };
 }
@@ -292,6 +304,17 @@ function zoneDefinition() {
   });
 
   const c = territory.centralLab;
+  // Спуск на Рынок Ядра — напротив служебного лифта Объекта Ноль: самое
+  // опасное место чёрной зоны, до него идут через всю Сердцевину.
+  const hub = territory.marketHub;
+  objects.push(prop('market_stairs', `${hub.displayName} — спуск`, 'cargo_stack.glb', hub.door.x, hub.door.z - 2, { x: 1.6, y: 1.2, z: 1.2 }, ['territory-center', 'market-door'], {
+    fields: { interactive: { kind: 'transition', role: 'marketDoor', to: hub.id } }
+  }));
+  transitions.push({
+    id: `enter_${hub.id}`, type: 'location', label: `${hub.displayName} — спуск`, to: hub.id, entryKey: 'entryFromCore',
+    ...point(hub.door.x, hub.door.z, width, depth), radius: 3
+  });
+  entries[hub.entryKey] = point(hub.door.x, hub.door.z + 4, width, depth, { rotationY: 0 });
   objects.push(prop('center_core', `${c.displayName}: надземный блок`, 'concrete_wall.glb', 0, 0, { x: 4.5, y: 3, z: 4.5 }, ['territory-center', 'landmark', 'central-lab']));
   objects.push(prop('center_antenna', 'Мачта установки', 'relay_antenna.glb', 6, 6, 1.8, ['territory-center', 'landmark']));
   objects.push(prop('center_lift', 'Служебный лифт', 'cargo_stack.glb', 0, -8, { x: 1.6, y: 1.8, z: 1.2 }, ['territory-center', 'lab-door'], {
@@ -574,12 +597,73 @@ function centralLevelDefinition(level, index) {
   };
 }
 
+/**
+ * Рынок Ядра — безопасный хаб Чёрного рынка (экономика v3, библия 14.5).
+ * Мирная зона для всех, кто подписал контракт Сердцевины; попасть сюда можно
+ * только спуском из чёрной центральной сцены.
+ */
+function marketHubDefinition() {
+  const hub = territory.marketHub;
+  const width = 76;
+  const depth = 76;
+  const objects = [
+    prop('stairs_up', 'Подъём в Сердцевину', 'cargo_stack.glb', 0, -32, { x: 1.6, y: 1.2, z: 1.2 }, ['territory-market', 'market-door'], {
+      fields: { interactive: { kind: 'transition', role: 'marketDoor', to: territory.zoneLocationId } }
+    }),
+    prop('stall_west', 'Прилавок скупщика', 'wasteland_shack.glb', -12, 8, 1.2, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
+    prop('stall_east', 'Склад скупщика', 'storage_lean_to.glb', 12, 8, 1.4, ['territory-market', 'stall'], { vision: { mode: 'cover' } }),
+    prop('crates_west', 'Ящики с оружием', 'cargo_stack.glb', -18, -4, 1.1, ['territory-market', 'crates']),
+    prop('crates_east', 'Ящики с бронёй', 'cargo_stack.glb', 18, -4, 1.1, ['territory-market', 'crates']),
+    prop('lamp_west', 'Фонарь рынка', 'utility_pole.glb', -8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
+    prop('lamp_east', 'Фонарь рынка', 'utility_pole.glb', 8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
+    prop('workbench', 'Верстак скупщика', 'workshop_bench.glb', 0, 16, 1.2, ['territory-market', 'bench'], { vision: { mode: 'cover' } }),
+    // Койки персонала — там же, где казарма на базах фракций.
+    ...Array.from({ length: 3 }, (_, k) => prop(`bunk_${k + 1}`, 'Койка персонала', 'cot_bed.glb', -26 + k * 2, -22, 1, ['territory-market', 'barracks', 'personal-bed'], { vision: { mode: 'none' } })),
+    serviceNpc('broker', 'Скупщик Ядра', 'neutral', 'blackMarket', 0, 8, {
+      role: 'merchant', model: 'traderNpc', tags: ['merchant', 'trader', 'black-market'],
+      entity: { traderProfile: 'blackMarket', tradeProfile: 'blackMarket', dialogueProfile: 'blackMarket' }
+    }),
+    guard('guard_stairs_a', 'Охрана рынка', 'neutral', -4, -28, 0),
+    guard('guard_stairs_b', 'Охрана рынка', 'neutral', 4, -28, 0)
+  ];
+  return {
+    schema: 'realm.location.v1', version: 1, id: hub.id, name: hub.displayName,
+    seed: 2026091700, safe: true, pvpMode: 'peaceful', kind: 'territoryHub', respawnAllowed: false,
+    enemyCap: 0, spawnCount: 0, noRespawn: true, allowGlobalMapExit: false, noGlobalMap: true, noGlobalMapEntry: true,
+    territoryId: territory.id, territoryRole: 'marketHub', factionAccess: 'territory',
+    marketHub: { service: 'blackMarket', description: hub.description },
+    ground: { preset: 'concreteFloor', label: hub.displayName },
+    map: { width, depth, origin: 'center' }, grid: { snap: true, step: 2 },
+    spawn: point(0, -26, width, depth),
+    entryFromWorld: point(0, -26, width, depth),
+    entryFromCore: point(0, -26, width, depth),
+    transitions: [
+      {
+        id: 'stairs_up', type: 'location', label: 'Подъём — Сердцевина', to: territory.zoneLocationId,
+        entryKey: hub.entryKey, ...point(0, -34, width, depth), radius: 3
+      }
+    ],
+    worldZones: [],
+    containers: [],
+    objects,
+    anomalyFields: [],
+    visualProfile: visualProfile('kromka-territory-market-v1', '#3a3630', '#4a443b', '#241f1a'),
+    worldRevision: 'kromka-1', runtimeMode: 'unity-authored', macroRegion: territory.macroRegion,
+    kromkaVisualProfile: 'territory-market-v1', ambientProfile: 'buried-installation', anomalyDensity: 0,
+    unityScene: `Assets/Scenes/Kromka/Locations/${hub.id}.unity`
+  };
+}
+
+const onlyArg = process.argv.find(arg => arg.startsWith('--only='));
+const onlyIds = onlyArg ? new Set(onlyArg.slice('--only='.length).split(',').map(value => value.trim()).filter(Boolean)) : null;
+
 const definitions = [
   zoneDefinition(),
   ...territory.factions.map(baseDefinition),
   ...territory.labs.map(labDefinition),
-  ...territory.centralLab.levels.map(centralLevelDefinition)
-];
+  ...territory.centralLab.levels.map(centralLevelDefinition),
+  marketHubDefinition()
+].filter(definition => !onlyIds || onlyIds.has(definition.id));
 
 // При повторном запуске сохраняем экспортированные Unity объекты и точки.
 for (const definition of definitions) {

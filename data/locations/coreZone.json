@@ -5,7 +5,7 @@
   "name": "Сердцевина",
   "seed": 2026091510,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvpBlack",
   "kind": "territoryZone",
   "respawnAllowed": false,
   "enemyCap": 0,
@@ -149,6 +149,14 @@
     "z": -14,
     "rotationY": 3.1415926535897931
   },
+  "entryFromMarket": {
+    "tx": 80,
+    "tz": 87,
+    "x": 0,
+    "y": 0.1,
+    "z": 14,
+    "rotationY": 0
+  },
   "transitions": [
     {
       "id": "metro_uprava",
@@ -277,6 +285,20 @@
       "x": 0,
       "y": 0.1,
       "z": -10,
+      "rotationY": 0,
+      "radius": 3
+    },
+    {
+      "id": "enter_coreMarket",
+      "type": "location",
+      "label": "Рынок Ядра — спуск",
+      "to": "coreMarket",
+      "entryKey": "entryFromCore",
+      "tx": 80,
+      "tz": 85,
+      "x": 0,
+      "y": 0.1,
+      "z": 10,
       "rotationY": 0,
       "radius": 3
     }
@@ -3193,6 +3215,46 @@
         "kind": "transition",
         "role": "labDoor",
         "to": "coreLabCenterService"
+      },
+      "footprint": {
+        "x": 3.094,
+        "z": 0.668
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "market_stairs",
+      "model": "cargoStack",
+      "name": "Рынок Ядра — спуск",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.2,
+        "z": 1.2
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-center",
+        "market-door"
+      ],
+      "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "marketDoor",
+        "to": "coreMarket"
       },
       "footprint": {
         "x": 3.094,

@@ -5,7 +5,7 @@
   "name": "Объект Ноль: исследовательский уровень",
   "seed": 2026091531,
   "safe": false,
-  "pvpMode": "pvpFullDrop",
+  "pvpMode": "pvpBlack",
   "kind": "territoryLab",
   "respawnAllowed": false,
   "enemyCap": 0,

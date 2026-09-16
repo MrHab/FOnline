@@ -1,12 +1,12 @@
 {
   "schema": "realm.location.v1",
   "version": 1,
-  "id": "coreLabCircuit",
-  "name": "Лаборатория «Цепь»",
-  "seed": 2026091521,
-  "safe": false,
-  "pvpMode": "pvpBlack",
-  "kind": "territoryLab",
+  "id": "coreMarket",
+  "name": "Рынок Ядра",
+  "seed": 2026091700,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "territoryHub",
   "respawnAllowed": false,
   "enemyCap": 0,
   "spawnCount": 0,
@@ -15,21 +15,15 @@
   "noGlobalMap": true,
   "noGlobalMapEntry": true,
   "territoryId": "core",
-  "territoryRole": "lab",
+  "territoryRole": "marketHub",
   "factionAccess": "territory",
-  "lab": {
-    "id": "coreLabCircuit",
-    "theme": "energy",
-    "summary": "Перераспределение питания, разряды и охранная машина.",
-    "rewardComponents": [
-      "circuitModule",
-      "electronics"
-    ],
-    "innerGateContainerId": "inner_vault"
+  "marketHub": {
+    "service": "blackMarket",
+    "description": "Нейтральный подземный рынок под Объектом Ноль. Скупщик берёт любое оружие и броню; стрелять здесь нельзя, но дорога сюда идёт через всю Сердцевину."
   },
   "ground": {
     "preset": "concreteFloor",
-    "label": "Лаборатория «Цепь»"
+    "label": "Рынок Ядра"
   },
   "map": {
     "width": 76,
@@ -42,35 +36,35 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -30.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -30.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromCore": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0,
     "y": 0.1,
-    "z": -30,
+    "z": -26,
     "rotationY": 0
   },
   "transitions": [
     {
-      "id": "exit_to_core",
+      "id": "stairs_up",
       "type": "location",
-      "label": "Выход в Сердцевину",
+      "label": "Подъём — Сердцевина",
       "to": "coreZone",
-      "entryKey": "entryFromLabCircuit",
+      "entryKey": "entryFromMarket",
       "tx": 19,
       "tz": 2,
       "x": 0,
@@ -78,110 +72,19 @@
       "z": -34,
       "rotationY": 0,
       "radius": 3
-    },
-    {
-      "id": "vent_to_core",
-      "type": "location",
-      "label": "Аварийный шлюз — в Сердцевину",
-      "to": "coreZone",
-      "entryKey": "entryFromLabCircuitVent",
-      "tx": 10,
-      "tz": 34,
-      "x": -18.0,
-      "y": 0.1,
-      "z": 30.0,
-      "rotationY": 0.0,
-      "radius": 3
     }
   ],
   "worldZones": [],
-  "containers": [
-    {
-      "id": "outer_vault",
-      "name": "Внешний шкаф",
-      "tier": "rare",
-      "tx": 10,
-      "tz": 18,
-      "x": -18,
-      "y": 0.1,
-      "z": -2,
-      "rotationY": 0,
-      "locked": true,
-      "lockDifficulty": "medium",
-      "loot": [
-        {
-          "id": "circuitModule",
-          "qty": 1
-        },
-        {
-          "id": "electronics",
-          "qty": 2
-        }
-      ],
-      "lootTable": true
-    },
-    {
-      "id": "inner_vault",
-      "name": "Сейф: Лаборатория «Цепь»",
-      "tier": "rare",
-      "tx": 19,
-      "tz": 33,
-      "x": 0,
-      "y": 0.1,
-      "z": 28,
-      "rotationY": 0,
-      "locked": true,
-      "lockDifficulty": "hard",
-      "terminalLocked": true,
-      "terminalDifficulty": "medium",
-      "terminalUnlocksLock": true,
-      "terminalName": "Терминал: Лаборатория «Цепь»",
-      "loot": [
-        {
-          "id": "circuitModule",
-          "qty": 2
-        },
-        {
-          "id": "electronics",
-          "qty": 2
-        }
-      ],
-      "lootTable": true
-    },
-    {
-      "id": "inner_cabinet",
-      "name": "Внутренний шкаф",
-      "tier": "rare",
-      "tx": 27,
-      "tz": 31,
-      "x": 16,
-      "y": 0.1,
-      "z": 24,
-      "rotationY": 0,
-      "locked": true,
-      "lockDifficulty": "medium",
-      "loot": [
-        {
-          "id": "circuitModule",
-          "qty": 1
-        },
-        {
-          "id": "electronics",
-          "qty": 2
-        }
-      ],
-      "lootTable": true
-    }
-  ],
+  "containers": [],
   "objects": [
     {
-      "id": "energy_guardian_1",
-      "model": "enemyGecko",
-      "name": "Слухач",
+      "id": "broker",
+      "model": "traderNpc",
+      "name": "Скупщик Ядра",
       "position": {
-        "x": -10.0,
+        "x": 0.0,
         "y": 0.0,
-        "z": 6.0
+        "z": 8.0
       },
       "rotation": {
         "x": 0.0,
@@ -196,32 +99,255 @@
       "collision": "solid",
       "tags": [
         "npc",
-        "enemy",
-        "hostile",
-        "monster",
-        "gecko"
+        "friendly",
+        "service",
+        "service-blackMarket",
+        "merchant",
+        "trader",
+        "black-market"
       ],
       "entity": {
         "kind": "npc",
-        "role": "monster",
-        "species": "gecko",
-        "labSection": "outer",
-        "creatureTypeId": "listener",
-        "faction": "wild",
-        "enemyType": "gecko",
-        "hostileToPlayer": true
+        "role": "merchant",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "blackMarket",
+        "traderProfile": "blackMarket",
+        "tradeProfile": "blackMarket",
+        "dialogueProfile": "blackMarket"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "energy_guardian_2",
-      "model": "enemyGecko",
-      "name": "Слухач",
+      "id": "guard_stairs_a",
+      "model": "caravanGuard",
+      "name": "Охрана рынка",
+      "position": {
+        "x": -4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "guard_stairs_b",
+      "model": "caravanGuard",
+      "name": "Охрана рынка",
+      "position": {
+        "x": 4.0,
+        "y": 0.0,
+        "z": -28.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "guard",
+        "territory-guard"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "guard",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "equipmentProfile": "guard",
+        "statProfile": "guard",
+        "stationary": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_1",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -26.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_2",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -24.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "bunk_3",
+      "model": "cotBed",
+      "name": "Койка персонала",
+      "position": {
+        "x": -22.0,
+        "y": 0.0,
+        "z": -22.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "barracks",
+        "personal-bed"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 0.58,
+        "z": 1.121
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-clinic",
+      "model": "field_clinic",
+      "name": "coreMarket-keys-clinic EDITABLE",
+      "position": {
+        "x": 13.0,
+        "y": 0.0,
+        "z": -11.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "clinic",
+        "medical",
+        "warm-light"
+      ],
+      "footprint": {
+        "x": 13.5,
+        "z": 15.8
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-keys-life",
+      "model": "community_yard",
+      "name": "coreMarket-keys-life EDITABLE",
       "position": {
         "x": 10.0,
         "y": 0.0,
-        "z": 6.0
+        "z": 10.0
       },
       "rotation": {
         "x": 0.0,
@@ -229,39 +355,36 @@
         "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
+      "role": "dressing",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "monster",
-        "gecko"
+        "garden",
+        "laundry",
+        "kitchen",
+        "lived-in"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "monster",
-        "species": "gecko",
-        "labSection": "outer",
-        "creatureTypeId": "listener",
-        "faction": "wild",
-        "enemyType": "gecko",
-        "hostileToPlayer": true
+      "footprint": {
+        "x": 10.0,
+        "z": 9.0
+      },
+      "vision": {
+        "blocks": false
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "energy_guardian_3",
-      "model": "enemySuperMutant",
-      "name": "Складень",
+      "id": "coreMarket-keys-market",
+      "model": "market_canopy",
+      "name": "coreMarket-keys-market EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": -6.0,
         "y": 0.0,
-        "z": 16.0
+        "z": 4.0
       },
       "rotation": {
         "x": 0.0,
@@ -269,39 +392,33 @@
         "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "structure",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "monster",
-        "supermutant"
+        "canopy",
+        "trade",
+        "shelter"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "monster",
-        "species": "superMutant",
-        "hp": 252,
-        "atk": 25,
-        "labSection": "inner",
-        "creatureTypeId": "fold",
-        "faction": "mutants",
-        "enemyType": "superMutant",
-        "hostileToPlayer": true
+      "footprint": {
+        "x": 6.5,
+        "z": 4.5
+      },
+      "vision": {
+        "blocks": false
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "energy_guardian_4",
-      "model": "enemyGhoul",
-      "name": "Выжженный",
+      "id": "coreMarket-keys-rail-bridge",
+      "model": "rail_bridge",
+      "name": "coreMarket-keys-rail-bridge EDITABLE",
       "position": {
-        "x": -14.0,
+        "x": 22.0,
         "y": 0.0,
         "z": 18.0
       },
@@ -311,41 +428,35 @@
         "z": 0.0
       },
       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
       "collision": "solid",
+      "role": "landmark",
       "tags": [
-        "npc",
-        "enemy",
-        "hostile",
-        "monster",
-        "ghoul"
+        "rail",
+        "bridge",
+        "top-readable"
       ],
-      "entity": {
-        "kind": "npc",
-        "role": "monster",
-        "species": "ghoul",
-        "hp": 87,
-        "atk": 12,
-        "labSection": "inner",
-        "creatureTypeId": "burned",
-        "faction": "mutants",
-        "enemyType": "ghoul",
-        "hostileToPlayer": true
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "bench_a",
-      "model": "workshopBench",
-      "name": "Лабораторный стол",
+      "id": "coreMarket-keys-water-tower",
+      "model": "water_tower",
+      "name": "coreMarket-keys-water-tower EDITABLE",
       "position": {
-        "x": -14.0,
+        "x": -23.0,
         "y": 0.0,
-        "z": -8.0
+        "z": 17.0
       },
       "rotation": {
         "x": 0.0,
@@ -353,67 +464,33 @@
         "z": 0.0
       },
       "scale": {
-        "x": 1.2,
-        "y": 1.2,
-        "z": 1.2
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
       },
-      "collision": "none",
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "water",
+        "tower",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
       "vision": {
         "blocks": true
-      },
-      "tags": [
-        "lab",
-        "bench"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 3.6,
-        "z": 1.68
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "bench_b",
-      "model": "workshopBench",
-      "name": "Лабораторный стол",
+      "id": "coreMarket-keys-workshops",
+      "model": "modular_workshop",
+      "name": "coreMarket-keys-workshops EDITABLE",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": -8.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.2,
-        "y": 1.2,
-        "z": 1.2
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "bench"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 3.6,
-        "z": 1.68
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "coreLabCircuit-black-reservoir",
-      "model": "ring_structure",
-      "name": "coreLabCircuit-black-reservoir EDITABLE",
-      "position": {
-        "x": 0.0,
+        "x": -18.0,
         "y": 0.0,
         "z": -12.0
       },
@@ -430,8 +507,9 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "ring",
-        "readable-from-above"
+        "workshop",
+        "sheet-metal",
+        "craft"
       ],
       "footprint": {
         "x": 1.0,
@@ -444,114 +522,9 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-cascade-feed",
-      "model": "external_pipe",
-      "name": "coreLabCircuit-cascade-feed EDITABLE",
-      "position": {
-        "x": 0.0,
-        "y": 2.0,
-        "z": 0.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 1.571,
-        "z": 1.571
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "structure",
-      "tags": [
-        "pipe",
-        "cascade"
-      ],
-      "footprint": {
-        "x": 1.0,
-        "z": 1.0
-      },
-      "vision": {
-        "blocks": true
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "coreLabCircuit-chime-1",
-      "model": "chime",
-      "name": "Anomaly coreLabCircuit-chime-1",
-      "position": {
-        "x": -20.0,
-        "y": 0.08,
-        "z": 20.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "role": "anomaly",
-      "tags": [
-        "visible-hazard",
-        "bolt-discharge"
-      ],
-      "footprint": {
-        "x": 0.2,
-        "z": 0.2
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "coreLabCircuit-chime-2",
-      "model": "chime",
-      "name": "Anomaly coreLabCircuit-chime-2",
-      "position": {
-        "x": 20.0,
-        "y": 0.08,
-        "z": 22.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "role": "anomaly",
-      "tags": [
-        "visible-hazard",
-        "bolt-discharge"
-      ],
-      "footprint": {
-        "x": 0.2,
-        "z": 0.2
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "coreLabCircuit-landmark",
-      "model": "sealed-laboratory",
-      "name": "Landmark sealed-laboratory EDITABLE",
+      "id": "coreMarket-landmark",
+      "model": "buried-installation",
+      "name": "Landmark buried-installation EDITABLE",
       "position": {
         "x": 0.0,
         "y": 0.0,
@@ -570,7 +543,7 @@
       "collision": "solid",
       "role": "landmark",
       "tags": [
-        "sealed-laboratory"
+        "buried-installation"
       ],
       "footprint": {
         "x": 1.0,
@@ -583,11 +556,11 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-module-1",
+      "id": "coreMarket-module-1",
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15.0,
+        "x": 22.0,
         "y": 1.4,
         "z": 0.0
       },
@@ -604,7 +577,7 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "story_complex",
+        "settlement",
         "modular"
       ],
       "footprint": {
@@ -618,13 +591,83 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-module-2",
+      "id": "coreMarket-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.199,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-2",
       "model": "industrial_module",
       "name": "Module 02",
       "position": {
-        "x": 4.635,
+        "x": 17.798,
         "y": 1.4,
-        "z": 14.266
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.942,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
       },
       "rotation": {
         "x": 0.0,
@@ -639,7 +682,7 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "story_complex",
+        "settlement",
         "modular"
       ],
       "footprint": {
@@ -653,17 +696,17 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-module-3",
+      "id": "coreMarket-module-4",
       "model": "industrial_module",
-      "name": "Module 03",
+      "name": "Module 04",
       "position": {
-        "x": -12.135,
+        "x": -6.798,
         "y": 1.4,
-        "z": 8.817
+        "z": 20.923
       },
       "rotation": {
         "x": 0.0,
-        "y": 5.341,
+        "y": 5.969,
         "z": 0.0
       },
       "scale": {
@@ -674,7 +717,7 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "story_complex",
+        "settlement",
         "modular"
       ],
       "footprint": {
@@ -688,13 +731,83 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-module-4",
+      "id": "coreMarket-module-5",
       "model": "industrial_module",
-      "name": "Module 04",
+      "name": "Module 05",
       "position": {
-        "x": -12.135,
+        "x": -17.798,
         "y": 1.4,
-        "z": -8.817
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.341,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22.0,
+        "y": 1.4,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.712,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
       },
       "rotation": {
         "x": 0.0,
@@ -709,7 +822,7 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "story_complex",
+        "settlement",
         "modular"
       ],
       "footprint": {
@@ -723,13 +836,48 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-module-5",
+      "id": "coreMarket-module-8",
       "model": "industrial_module",
-      "name": "Module 05",
+      "name": "Module 08",
       "position": {
-        "x": 4.635,
+        "x": -6.798,
         "y": 1.4,
-        "z": -14.266
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.456,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 7.0,
+        "y": 2.8,
+        "z": 5.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "settlement",
+        "modular"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
       },
       "rotation": {
         "x": 0.0,
@@ -744,7 +892,7 @@
       "collision": "solid",
       "role": "structure",
       "tags": [
-        "story_complex",
+        "settlement",
         "modular"
       ],
       "footprint": {
@@ -758,45 +906,9 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-regenerator-column",
-      "model": "blast_furnace",
-      "name": "coreLabCircuit-regenerator-column EDITABLE",
-      "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 12.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "solid",
-      "role": "landmark",
-      "tags": [
-        "industry",
-        "furnace",
-        "top-readable"
-      ],
-      "footprint": {
-        "x": 1.0,
-        "z": 1.0
-      },
-      "vision": {
-        "blocks": true
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "coreLabCircuit-region-departure-rail",
+      "id": "coreMarket-region-departure-rail",
       "model": "railway",
-      "name": "coreLabCircuit-region-departure-rail EDITABLE",
+      "name": "coreMarket-region-departure-rail EDITABLE",
       "position": {
         "x": 25.0,
         "y": 0.03,
@@ -829,9 +941,9 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-region-yard-fence",
+      "id": "coreMarket-region-yard-fence",
       "model": "wall",
-      "name": "coreLabCircuit-region-yard-fence EDITABLE",
+      "name": "coreMarket-region-yard-fence EDITABLE",
       "position": {
         "x": -34.0,
         "y": 1.2,
@@ -864,13 +976,118 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "coreLabCircuit-seam-3",
-      "model": "seam",
-      "name": "Anomaly coreLabCircuit-seam-3",
+      "id": "coreMarket-settlement-ring",
+      "model": "welded_yard",
+      "name": "coreMarket-settlement-ring EDITABLE",
       "position": {
         "x": 0.0,
-        "y": 0.08,
-        "z": 26.0
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "post-industrial",
+        "editable-perimeter"
+      ],
+      "footprint": {
+        "x": 1.0,
+        "z": 1.0
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "crates_east",
+      "model": "cargoStack",
+      "name": "Ящики с бронёй",
+      "position": {
+        "x": 18.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "crates"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.127,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "crates_west",
+      "model": "cargoStack",
+      "name": "Ящики с оружием",
+      "position": {
+        "x": -18.0,
+        "y": 0.0,
+        "z": -4.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.1,
+        "y": 1.1,
+        "z": 1.1
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": true
+      },
+      "tags": [
+        "territory-market",
+        "crates"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 2.127,
+        "z": 0.612
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "lamp_east",
+      "model": "utilityPole",
+      "name": "Фонарь рынка",
+      "position": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": -20.0
       },
       "rotation": {
         "x": 0.0,
@@ -883,29 +1100,29 @@
         "z": 1.0
       },
       "collision": "none",
-      "role": "anomaly",
-      "tags": [
-        "visible-hazard",
-        "bolt-discharge"
-      ],
-      "footprint": {
-        "x": 0.2,
-        "z": 0.2
-      },
       "vision": {
         "blocks": false
       },
+      "tags": [
+        "territory-market",
+        "light"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "inner_gate",
-      "model": "cargoStack",
-      "name": "Герметичная секция",
+      "id": "lamp_west",
+      "model": "utilityPole",
+      "name": "Фонарь рынка",
       "position": {
-        "x": 0.0,
+        "x": -8.0,
         "y": 0.0,
-        "z": 10.0
+        "z": -20.0
       },
       "rotation": {
         "x": 0.0,
@@ -913,141 +1130,74 @@
         "z": 0.0
       },
       "scale": {
-        "x": 3.0,
-        "y": 1.8,
+        "x": 1.0,
+        "y": 1.0,
         "z": 1.0
+      },
+      "collision": "none",
+      "vision": {
+        "blocks": false
+      },
+      "tags": [
+        "territory-market",
+        "light"
+      ],
+      "role": "scenery",
+      "footprint": {
+        "x": 1.558,
+        "z": 0.2
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "stairs_up",
+      "model": "cargoStack",
+      "name": "Подъём в Сердцевину",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -32.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.6,
+        "y": 1.2,
+        "z": 1.2
       },
       "collision": "none",
       "vision": {
         "blocks": true
       },
       "tags": [
-        "lab",
-        "inner-gate",
-        "energy"
+        "territory-market",
+        "market-door"
       ],
       "role": "scenery",
+      "interactive": {
+        "kind": "transition",
+        "role": "marketDoor",
+        "to": "coreZone"
+      },
       "footprint": {
-        "x": 5.802,
-        "z": 0.557
+        "x": 3.094,
+        "z": 0.668
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "inner_wall_e",
-      "model": "concreteWall",
-      "name": "Внутренняя переборка",
+      "id": "stall_east",
+      "model": "storageLeanTo",
+      "name": "Склад скупщика",
       "position": {
         "x": 12.0,
         "y": 0.0,
-        "z": 10.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 4.0,
-        "y": 1.4,
-        "z": 1.0
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "energy"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 0.615,
-        "z": 1.757
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "inner_wall_w",
-      "model": "concreteWall",
-      "name": "Внутренняя переборка",
-      "position": {
-        "x": -12.0,
-        "y": 0.0,
-        "z": 10.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 4.0,
-        "y": 1.4,
-        "z": 1.0
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "energy"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 0.615,
-        "z": 1.757
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "landmark",
-      "model": "relayAntenna",
-      "name": "Лаборатория «Цепь»",
-      "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 26.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.8,
-        "y": 1.8,
-        "z": 1.8
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "landmark",
-        "energy"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 2.902,
-        "z": 2.52
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "vent_shaft",
-      "model": "cargoStack",
-      "name": "Аварийный шлюз",
-      "position": {
-        "x": -18.0,
-        "y": 0.0,
-        "z": 28.0
+        "z": 8.0
       },
       "rotation": {
         "x": 0.0,
@@ -1056,37 +1206,33 @@
       },
       "scale": {
         "x": 1.4,
-        "y": 1.6,
-        "z": 1.0
+        "y": 1.4,
+        "z": 1.4
       },
       "collision": "none",
       "vision": {
         "blocks": true
       },
       "tags": [
-        "lab",
-        "lab-door",
-        "energy"
+        "territory-market",
+        "stall"
       ],
       "role": "scenery",
-      "interactive": {
-        "kind": "transition",
-        "role": "labDoor",
-        "to": "coreZone"
-      },
       "footprint": {
-        "x": 2.708,
-        "z": 0.557
-      }
+        "x": 1.803,
+        "z": 2.052
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
-      "id": "node_a",
-      "model": "utilityPole",
-      "name": "Распределительный щит",
+      "id": "stall_west",
+      "model": "wastelandShack",
+      "name": "Прилавок скупщика",
       "position": {
-        "x": -10.0,
+        "x": -12.0,
         "y": 0.0,
-        "z": 22.0
+        "z": 8.0
       },
       "rotation": {
         "x": 0.0,
@@ -1103,33 +1249,25 @@
         "blocks": true
       },
       "tags": [
-        "lab",
-        "mechanic-node",
-        "energy"
+        "territory-market",
+        "stall"
       ],
       "role": "scenery",
-      "interactive": {
-        "kind": "labNode",
-        "role": "mechanic",
-        "labId": "coreLabCircuit",
-        "nodeId": "node_a",
-        "theme": "energy"
-      },
       "footprint": {
-        "x": 1.869,
-        "z": 0.2
+        "x": 4.029,
+        "z": 4.587
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     },
     {
-      "id": "node_b",
-      "model": "utilityPole",
-      "name": "Распределительный щит",
+      "id": "workbench",
+      "model": "workshopBench",
+      "name": "Верстак скупщика",
       "position": {
-        "x": 10.0,
+        "x": 0.0,
         "y": 0.0,
-        "z": 22.0
+        "z": 16.0
       },
       "rotation": {
         "x": 0.0,
@@ -1146,184 +1284,25 @@
         "blocks": true
       },
       "tags": [
-        "lab",
-        "mechanic-node",
-        "energy"
-      ],
-      "role": "scenery",
-      "interactive": {
-        "kind": "labNode",
-        "role": "mechanic",
-        "labId": "coreLabCircuit",
-        "nodeId": "node_b",
-        "theme": "energy"
-      },
-      "footprint": {
-        "x": 1.869,
-        "z": 0.2
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "outer_shell_e",
-      "model": "concreteWall",
-      "name": "Внешний корпус",
-      "position": {
-        "x": 24.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.4,
-        "z": 9.0
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "energy"
+        "territory-market",
+        "bench"
       ],
       "role": "scenery",
       "footprint": {
-        "x": 0.2,
-        "z": 15.814
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "outer_shell_n",
-      "model": "concreteWall",
-      "name": "Внешний корпус",
-      "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 32.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 12.0,
-        "y": 1.4,
-        "z": 1.0
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "energy"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 1.845,
-        "z": 1.757
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "outer_shell_w",
-      "model": "concreteWall",
-      "name": "Внешний корпус",
-      "position": {
-        "x": -24.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.4,
-        "z": 9.0
-      },
-      "collision": "none",
-      "vision": {
-        "blocks": true
-      },
-      "tags": [
-        "lab",
-        "energy"
-      ],
-      "role": "scenery",
-      "footprint": {
-        "x": 0.2,
-        "z": 15.814
+        "x": 3.6,
+        "z": 1.68
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }
   ],
-  "anomalyFields": [
-    {
-      "id": "coreLabCircuit-chime-1",
-      "type": "chime",
-      "x": -20,
-      "z": 20,
-      "radius": 3.2,
-      "dischargeMs": 6000,
-      "training": false,
-      "placement": "unity-authored",
-      "belt": "lab",
-      "tierRange": [
-        2,
-        4
-      ]
-    },
-    {
-      "id": "coreLabCircuit-chime-2",
-      "type": "chime",
-      "x": 20,
-      "z": 22,
-      "radius": 3.2,
-      "dischargeMs": 6000,
-      "training": false,
-      "placement": "unity-authored",
-      "belt": "lab",
-      "tierRange": [
-        2,
-        4
-      ]
-    },
-    {
-      "id": "coreLabCircuit-seam-3",
-      "type": "seam",
-      "x": 0,
-      "z": 26,
-      "radius": 3.2,
-      "dischargeMs": 3000,
-      "training": false,
-      "placement": "unity-authored",
-      "belt": "lab",
-      "tierRange": [
-        2,
-        4
-      ]
-    }
-  ],
+  "anomalyFields": [],
   "visualProfile": {
-    "id": "kromka-territory-lab-energy-v1",
-    "skyDay": "#3f4650",
-    "fogDay": "#4d545c",
+    "id": "kromka-territory-market-v1",
+    "skyDay": "#3a3630",
+    "fogDay": "#4a443b",
     "hemiSkyDay": "#a5a8a0",
-    "hemiGroundDay": "#26292c",
+    "hemiGroundDay": "#241f1a",
     "fillDay": "#9aa08e",
     "sunDay": "#d6c797",
     "rimDay": "#c9b98d"
@@ -1331,13 +1310,37 @@
   "worldRevision": "kromka-1",
   "runtimeMode": "unity-authored",
   "macroRegion": "off_map",
-  "kromkaVisualProfile": "territory-lab-energy-v1",
-  "ambientProfile": "sealed-energy-laboratory",
-  "anomalyDensity": 0.6,
-  "unityScene": "Assets/Scenes/Kromka/Locations/coreLabCircuit.unity",
+  "kromkaVisualProfile": "territory-market-v1",
+  "ambientProfile": "buried-installation",
+  "anomalyDensity": 0.0,
+  "unityScene": "Assets/Scenes/Kromka/Locations/coreMarket.unity",
   "unitySpawns": [
     {
-      "id": "coreLabCircuit-airlock",
+      "id": "broker",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 8.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreMarket-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2.0,
+      "position": {
+        "x": 0.0,
+        "y": 0.1,
+        "z": -26.0
+      },
+      "rotationY": 0.0
+    },
+    {
+      "id": "coreMarket-stairs",
       "kind": "MigrationArrival",
       "targetLocationId": "",
       "radius": 3.0,
@@ -1349,62 +1352,26 @@
       "rotationY": 0.0
     },
     {
-      "id": "coreLabCircuit-arrival",
-      "kind": "PlayerArrival",
+      "id": "guard_stairs_a",
+      "kind": "Npc",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 0.8,
       "position": {
-        "x": 0.0,
-        "y": 0.1,
-        "z": -30.0
+        "x": -4.0,
+        "y": 0.0,
+        "z": -28.0
       },
       "rotationY": 0.0
     },
     {
-      "id": "energy_guardian_1",
-      "kind": "Enemy",
+      "id": "guard_stairs_b",
+      "kind": "Npc",
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -10.0,
+        "x": 4.0,
         "y": 0.0,
-        "z": 6.0
-      },
-      "rotationY": 0.0
-    },
-    {
-      "id": "energy_guardian_2",
-      "kind": "Enemy",
-      "targetLocationId": "",
-      "radius": 0.8,
-      "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": 6.0
-      },
-      "rotationY": 0.0
-    },
-    {
-      "id": "energy_guardian_3",
-      "kind": "Enemy",
-      "targetLocationId": "",
-      "radius": 0.8,
-      "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 16.0
-      },
-      "rotationY": 0.0
-    },
-    {
-      "id": "energy_guardian_4",
-      "kind": "Enemy",
-      "targetLocationId": "",
-      "radius": 0.8,
-      "position": {
-        "x": -14.0,
-        "y": 0.0,
-        "z": 18.0
+        "z": -28.0
       },
       "rotationY": 0.0
     }
@@ -1419,26 +1386,26 @@
   },
   "respawn": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -30.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entry": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -30.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromWasteland": {
     "tx": 19,
-    "tz": 4,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -30.0,
+    "z": -26.0,
     "rotationY": 0.0
   }
 }

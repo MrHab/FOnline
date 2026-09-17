@@ -242,6 +242,7 @@ const unityOnlyKromkaEmits = [
   'artifactLoadoutAction',
   'auctionAction',
   'baseServiceAction',
+  'craftingPlotAction',
   'kromkaClanAction',
   'kromkaOnboardingAction',
   'kromkaQuestAction',

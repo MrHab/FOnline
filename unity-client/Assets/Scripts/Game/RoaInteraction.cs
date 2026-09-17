@@ -131,6 +131,12 @@ namespace RealmOfAshes.Game
         private bool _locationReady;
         private bool _encounterLocation;
         private bool _craftPending;
+        private bool _plotPending;
+        private float _plotRefreshAt;
+        // null — поле ещё не заполнено значением по умолчанию; пустую строку
+        // игрок стёр сам, и её не нужно тут же заполнять заново.
+        private string _plotBidText;
+        private string _plotFeeText;
         private bool _harvestPending;
         private bool _robPending;
         private bool _worldRequestPending;
@@ -1400,9 +1406,61 @@ namespace RealmOfAshes.Game
         private void HandleJoined(JoinAck ack)
         {
             ClearWorld();
+            RoaCraftingPlots.Clear();
             if (ack == null) return;
             HandleSelf(ack.Self);
             HandleWorldState(ack.WorldState);
+            RequestPlotState();
+        }
+
+        /// <summary>
+        /// Снимок участков станков текущей локации: по нему окно станка и
+        /// Пип-Бой считают комиссию, сервер заодно зачисляет выплаты участков.
+        /// </summary>
+        private void RequestPlotState()
+        {
+            if (Socket == null) return;
+            _plotRefreshAt = Time.unscaledTime + PlotRefreshSeconds;
+            Socket.EmitWithAck("craftingPlotAction", new Dictionary<string, object>
+            {
+                ["action"] = "state"
+            }, ApplyPlotAck);
+        }
+
+        private void ApplyPlotAck(JObject ack)
+        {
+            if (ack?["ok"]?.ToObject<bool>() != true) return;
+            ApplyActionAck(ack);
+            RoaCraftingPlots.Apply(ack);
+            if (RoaCraftingPlots.LastPayout > 0)
+                Show("Участки: зачислено " + RoaCraftingPlots.LastPayout + " марок.", 4f);
+        }
+
+        private void PlotAction(string action, JObject plot, Dictionary<string, object> extra)
+        {
+            string plotId = plot?["plotId"]?.ToString();
+            if (_plotPending || Socket == null || string.IsNullOrEmpty(plotId)) return;
+            var payload = new Dictionary<string, object>
+            {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
+                ["action"] = action,
+                ["plotId"] = plotId
+            };
+            foreach (KeyValuePair<string, object> pair in extra) payload[pair.Key] = pair.Value;
+            _plotPending = true;
+            Socket.EmitWithAck("craftingPlotAction", payload, ack =>
+            {
+                _plotPending = false;
+                if (ack?["ok"]?.ToObject<bool>() != true)
+                {
+                    ApplyActionAck(ack);
+                    Show(ack?["error"]?.ToString() ?? "Сервер отклонил действие с участком.", 5f);
+                    RequestPlotState();
+                    return;
+                }
+                ApplyPlotAck(ack);
+                Show(action == "bid" ? "Ставка принята." : "Плата за станок изменена.", 4f);
+            });
         }
 
         private void HandleSelf(JObject self)
@@ -1626,9 +1684,14 @@ namespace RealmOfAshes.Game
             return marker;
         }
 
+        // Плата арендатора и сама аренда меняются без участия игрока: снимок
+        // участков локации обновляется сам, чтобы и Пип-Бой присылал верную плату.
+        private const float PlotRefreshSeconds = 15f;
+
         private void Update()
         {
             UpdateContainerVisibility();
+            if (RoaCraftingPlots.Plots.Count > 0 && Time.unscaledTime >= _plotRefreshAt) RequestPlotState();
 
             if (Player == null || !Player.gameObject.activeInHierarchy)
             {
@@ -1981,6 +2044,9 @@ namespace RealmOfAshes.Game
             _panel = PanelKind.Crafting;
             _scroll = Vector2.zero;
             _status = string.Empty;
+            _plotBidText = null;
+            _plotFeeText = null;
+            RequestPlotState();
         }
 
         private void OpenJobBoard(JObject board)
@@ -2404,6 +2470,8 @@ namespace RealmOfAshes.Game
                 if (ack?["ok"]?.ToObject<bool>() != true)
                 {
                     Show(CraftingError(ack));
+                    // Плата участка могла измениться: окно пересчитает комиссию.
+                    if (ack?["requiredFee"] != null) RequestPlotState();
                     return;
                 }
 
@@ -3171,7 +3239,11 @@ namespace RealmOfAshes.Game
         private void DrawCrafting()
         {
             string station = _active?["station"]?.ToString() ?? string.Empty;
-            GUILayout.Label("Состав рюкзака и результат повторно проверяет сервер. Комиссия поступает владельцу мастерской.", Dim());
+            JObject plot = RoaCraftingPlots.ForObject(_active?["id"]?.ToString());
+            if (plot != null) DrawPlot(plot);
+            GUILayout.Label(plot != null
+                ? "Состав рюкзака и результат повторно проверяет сервер. Комиссия уходит арендатору участка; свободный участок берёт плату поселения."
+                : "Состав рюкзака и результат повторно проверяет сервер. Комиссия поступает владельцу мастерской.", Dim());
             GUILayout.Space(8f);
 
             bool any = false;
@@ -3192,6 +3264,82 @@ namespace RealmOfAshes.Game
             }
 
             if (!any) GUILayout.Label("Для этого станка рецепты не найдены.");
+        }
+
+        /// <summary>Участок станка: арендатор, плата, торги за аренду.</summary>
+        private void DrawPlot(JObject plot)
+        {
+            bool leased = plot["leased"]?.ToObject<bool>() == true;
+            bool mine = plot["mine"]?.ToObject<bool>() == true;
+            double feePct = plot["feePct"]?.ToObject<double>() ?? 0d;
+            double returnRate = plot["returnRate"]?.ToObject<double>() ?? 0d;
+            JObject auction = plot["auction"] as JObject;
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("<b>Участок поселения</b> · возврат материалов " + Mathf.RoundToInt((float)(returnRate * 100d)) + "%", Rich());
+            if (leased)
+            {
+                GUILayout.Label("Арендатор: " + (mine ? "вы" : plot["lesseeName"]?.ToString()) + " · до "
+                    + PlotTime(plot["leaseEndsAt"]) + " · плата " + Percent(feePct) + " стоимости изделия"
+                    + (mine ? " (сами работаете бесплатно)" : string.Empty), Wrap());
+            }
+            else
+            {
+                GUILayout.Label("Участок свободен · плата поселения " + Percent(feePct) + " стоимости изделия, она сгорает.", Wrap());
+            }
+
+            bool open = auction?["open"]?.ToObject<bool>() == true;
+            int highest = auction?["highestBid"]?.ToObject<int>() ?? 0;
+            int minBid = auction?["minBid"]?.ToObject<int>() ?? 0;
+            if (open)
+            {
+                string leader = auction?["leading"]?.ToObject<bool>() == true ? "ваша" : auction?["bidderName"]?.ToString();
+                GUILayout.Label(highest > 0
+                    ? "Торги за аренду: ставка " + highest + " марок (" + leader + ") · до " + PlotTime(auction["endsAt"])
+                    : "Торги за аренду открыты: первая ставка от " + minBid + " марок, торги длятся сутки.", Wrap());
+                if (_plotBidText == null) _plotBidText = minBid.ToString();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Ставка:", GUILayout.Width(60f));
+                _plotBidText = GUILayout.TextField(_plotBidText, 9, GUILayout.Width(90f));
+                GUI.enabled = !_plotPending && int.TryParse(_plotBidText, out int bid) && bid >= minBid;
+                if (GUILayout.Button("Сделать ставку", GUILayout.Height(26f)) && int.TryParse(_plotBidText, out int amount))
+                    PlotAction("bid", plot, new Dictionary<string, object> { ["amount"] = amount });
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+                GUILayout.Label("Ставка сгорает как арендная плата; перебитую ставку сервер вернёт.", Dim());
+            }
+            else
+            {
+                GUILayout.Label("Торги за участок откроются за сутки до конца аренды.", Dim());
+            }
+
+            if (mine)
+            {
+                if (_plotFeeText == null) _plotFeeText = Mathf.RoundToInt((float)(feePct * 100d)).ToString();
+                double maxFee = plot["maxFeePct"]?.ToObject<double>() ?? 0d;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Плата, %:", GUILayout.Width(60f));
+                _plotFeeText = GUILayout.TextField(_plotFeeText, 3, GUILayout.Width(50f));
+                GUI.enabled = !_plotPending && int.TryParse(_plotFeeText, out int pct) && pct >= 0 && pct <= Mathf.RoundToInt((float)(maxFee * 100d));
+                if (GUILayout.Button("Назначить плату", GUILayout.Height(26f)) && int.TryParse(_plotFeeText, out int value))
+                    PlotAction("setFee", plot, new Dictionary<string, object> { ["feePct"] = value / 100d });
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(6f);
+        }
+
+        private static string Percent(double share)
+        {
+            return (share * 100d).ToString("0.#") + "%";
+        }
+
+        private static string PlotTime(JToken value)
+        {
+            long ms = value?.Type == JTokenType.Integer || value?.Type == JTokenType.Float ? value.Value<long>() : 0L;
+            if (ms <= 0) return "—";
+            return DateTimeOffset.FromUnixTimeMilliseconds(ms).ToLocalTime().ToString("dd.MM HH:mm");
         }
 
         private void DrawJobBoard()

@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const { normalizeBlackMarketConfig } = require('./black-market');
 const { normalizeCityAuctionConfig } = require('./city-auctions');
+const { normalizeCraftingPlotConfig } = require('./crafting-plots');
 
 /**
  * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
@@ -22,7 +23,8 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   // Торговля с любым мирным NPC вне столиц; иначе торгуют только торговцы-люди
   // в столицах фракций и на базах Сердцевины (и скупщик Чёрного рынка).
   wildTraders: true,
-  // Станки NPC; выключаются вместе с появлением участков.
+  // Станки NPC без аренды; выключенный флаг превращает станки поселений в
+  // участки с торгами за аренду и платой арендатору.
   npcStations: true,
   // Снаряжение с трупов NPC; заменяется останками и Чёрным рынком.
   npcGearDrops: true,
@@ -153,7 +155,8 @@ function normalizeWorldEconomy(input = {}) {
     zones: normalizeZones(src.zones),
     npcRemnants: normalizeNpcRemnants(src.npcRemnants),
     blackMarket: normalizeBlackMarketConfig(src.blackMarket),
-    auctions: normalizeCityAuctionConfig(src.auctions)
+    auctions: normalizeCityAuctionConfig(src.auctions),
+    plots: normalizeCraftingPlotConfig(src.plots)
   });
 }
 

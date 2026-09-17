@@ -237,6 +237,19 @@ const {
   expireCityMarkets
 } = require('./src/server/city-auctions');
 const {
+  normalizeCraftingPlotState,
+  ensurePlot,
+  creditPayout: creditPlotPayout,
+  takePayout: takePlotPayout,
+  placePlotBid,
+  setPlotFee,
+  settleCraftingPlots,
+  plotCraftFee,
+  plotReturnRate,
+  rollPlotReturns,
+  publicPlot
+} = require('./src/server/crafting-plots');
+const {
   ENCODING_HEAD_BYTES: UNITY_ENCODING_HEAD_BYTES,
   unityDeliveryHeaders
 } = require('./src/server/webgl-delivery');
@@ -3976,6 +3989,8 @@ if (WORLD_ECONOMY.worldModel.cityAuctions) {
   if (!firstMigration && legacyStillUsed) migrateLegacyMarket(savesDb.markets, savesDb.market, Date.now());
   if (firstMigration || legacyStillUsed) savesDb.market = normalizeMarketStore(null);
 }
+// Участки станков (экономика v3): аренда, ставки и невыплаченные марки.
+savesDb.craftingPlots = normalizeCraftingPlotState(savesDb.craftingPlots, WORLD_ECONOMY.plots);
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
@@ -14967,12 +14982,23 @@ function serverCraftingObjectText(row = {}) {
   ].map(value => String(value || '').toLowerCase()).join(' ');
 }
 
+// Ключи моделей станков в авторских данных. GLB окружения выведены из
+// обращения, поэтому модель станка узнаётся по ключу, а не по имени файла.
+const SERVER_CRAFT_STATION_MODEL_KEYS = {
+  ammo_bench: 'craftStationAmmo',
+  weapon_bench: 'craftStationWeapon',
+  tool_bench: 'craftStationTools',
+  repair_bench: 'craftStationRepair',
+  energy_bench: 'craftStationEnergy',
+  chem_station: 'craftStationChem'
+};
+
 function serverCraftingObjectMatchesStation(row = {}, stationId = '') {
   const key = String(stationId || '').toLowerCase();
   const explicit = serverCraftingObjectStationIds(row);
   if (explicit.length) {
     if (!explicit.includes(key)) return false;
-    if (row.unityAuthored === true && key === 'repair_bench' && row.model === 'craftStationRepair') return true;
+    if (SERVER_CRAFT_STATION_MODEL_KEYS[key] && row.model === SERVER_CRAFT_STATION_MODEL_KEYS[key]) return true;
     const modelFile = path.basename(locationObjectModelRef(row).replace(/\\/g, '/')).toLowerCase();
     return !SERVER_CRAFT_STATION_MODELS[key] || modelFile === SERVER_CRAFT_STATION_MODELS[key];
   }
@@ -14998,8 +15024,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!recipeId || !requiredStation) return { ok: false, error: 'unknown_recipe' };
   const requiredFee = serverCraftStationFeeForRecipe(recipeId);
   const requestedFee = Math.max(0, Math.floor(Number(data.fee || 0)));
-  if (requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
-  const fee = requiredFee;
+  if (!serverPlotsActive() && requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  let fee = requiredFee;
   const station = String(data.station || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
   if (station !== requiredStation) return { ok: false, error: 'wrong_station', requiredStation };
   const playerRoom = rooms.get(String(player?.roomId || '')) || null;
@@ -15027,6 +15053,26 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!serverInteractionHasLineOfSight(playerRoom, player, stationPoint)) {
     return { ok: false, error: 'interaction_blocked', requiredStation };
   }
+  // Участок станка: плату назначает арендатор, свободный участок берёт плату
+  // поселения. Клиент показывает ту же сумму и присылает её в fee.
+  const plotNow = Date.now();
+  const plot = serverLocationHasPlots(loc)
+    ? ensurePlot(serverCraftingPlotStore(), WORLD_ECONOMY.plots, { locationId, objectId: stationObjectId, station: requiredStation })
+    : null;
+  const plotOutput = SERVER_CRAFT_RECIPE_OUTPUTS[recipeId] || {};
+  const plotCharge = plot
+    ? plotCraftFee(plot, WORLD_ECONOMY.plots, player.characterId,
+      Number(SERVER_ITEM_BASE_PRICES[plotOutput.id] || 0) * Math.max(1, Math.floor(Number(plotOutput.qty || 1))),
+      requiredFee, plotNow)
+    : null;
+  if (plotCharge) {
+    if (requestedFee < plotCharge.fee) {
+      return { ok: false, error: `Плата за станок изменилась: ${plotCharge.fee} марок. Повторите заказ через пару секунд.`, requiredFee: plotCharge.fee };
+    }
+    fee = plotCharge.fee;
+  } else if (requestedFee < requiredFee) {
+    return { ok: false, error: 'fee_too_low', requiredFee };
+  }
   const explicitSiteId = String(stationObject?.worksiteId
     || stationObject?.stationSiteId
     || stationObject?.siteId
@@ -15040,7 +15086,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   const siteId = explicitSiteId || publicSites[0]?.id || '';
   const site = siteId ? simState?.sites?.[siteId] : null;
   const tutorialBench = locationId === 'tutorialCaravanYard' && stationObjectId === 'yard_repair_bench';
-  if (!site && !tutorialBench) return { ok: false, error: 'missing_site' };
+  if (!site && !tutorialBench && !plot) return { ok: false, error: 'missing_site' };
   const actor = syncServerActionProgressionPlayer(player, data);
   syncServerInventorySnapshot(player, data);
   const baseRequirements = serverCraftInventoryRequirements(recipeId, fee);
@@ -15078,6 +15124,23 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       carry: sanitizeCarrySnapshot(player)
     };
   }
+  // Станок участка возвращает часть материалов — если они влезают в
+  // грузоподъёмность; случайный возврат не должен срывать сам заказ.
+  let plotReturns = plot
+    ? rollPlotReturns(
+      Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
+      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, serverPlayerHasPremium(player)),
+      Math.random
+    )
+    : [];
+  if (plotReturns.length) {
+    const withReturns = serverInventoryMergeRows(crafted.inventory || [], plotReturns);
+    if (serverInventoryWeightWithEquipment(withReturns, player.equipment || {}) <= carryCapacity + 0.0001) {
+      crafted.inventory = withReturns;
+    } else {
+      plotReturns = [];
+    }
+  }
   if (clanContext && clanPreview) {
     serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);
     clanContext.runtime.lastCraftBenefit = {
@@ -15107,6 +15170,25 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       serverRecordTutorialFact(player, 'kitCrafted');
     return { ok: true, fee, inventory: player.inventory, output: crafted.output,
       requirements: crafted.requirements, self: publicAuthoritativePlayerState(player) };
+  }
+  if (plot) {
+    // Плата арендатору — выплатой; плата поселения сгорает.
+    if (plotCharge.payee && fee > 0) {
+      creditPlotPayout(serverCraftingPlotStore(), plotCharge.payee, fee);
+      plot.earned += fee;
+      serverDeliverPlotPayout(plotCharge.payee);
+    }
+    scheduleServerPublicEventPersist();
+    return {
+      ok: true,
+      fee,
+      inventory: player.inventory,
+      output: crafted.output,
+      requirements: crafted.requirements,
+      returned: plotReturns,
+      plot: publicPlot(plot, WORLD_ECONOMY.plots, player.characterId, plotNow),
+      self: publicAuthoritativePlayerState(player)
+    };
   }
   site.stockpile = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
   site.stockpile.silver = Math.max(0, Math.floor(Number(site.stockpile.silver || 0))) + fee;
@@ -19722,6 +19804,94 @@ function serverAuctionRulesFor(player = null) {
     premium: serverPlayerHasPremium(player),
     residentPct: player ? serverResidentTradePct(player) : 0
   });
+}
+
+// ---------------------------------------------------------------------------
+// Участки станков (экономика v3, библия 14.5): станок поселения сдаётся в
+// аренду на торгах, арендатор назначает плату за пользование, свободный
+// участок берёт плату поселения, которая сгорает.
+// ---------------------------------------------------------------------------
+function serverPlotsActive() {
+  return !WORLD_ECONOMY.worldModel.npcStations;
+}
+
+function serverCraftingPlotStore() {
+  if (!savesDb.craftingPlots || typeof savesDb.craftingPlots !== 'object') {
+    savesDb.craftingPlots = normalizeCraftingPlotState(null, WORLD_ECONOMY.plots);
+  }
+  return savesDb.craftingPlots;
+}
+
+/** Участки есть в поселениях; личная и клановые базы и обучение — не участки. */
+function serverLocationHasPlots(loc = {}) {
+  if (!serverPlotsActive() || !loc?.id) return false;
+  const id = normalizeLocationId(loc.id);
+  if (WORLD_ECONOMY.plots.excludedLocations.includes(id)) return false;
+  const kind = String(loc.kind || '');
+  return kind !== 'clanBase' && kind !== 'personalBase' && kind !== 'tutorial' && loc.privateInstance !== true;
+}
+
+function serverStationKeyForObject(row = {}) {
+  for (const key of Object.keys(SERVER_CRAFT_STATION_MODELS)) {
+    if (serverCraftingObjectMatchesStation(row, key)) return key;
+  }
+  return '';
+}
+
+function serverLocationPlots(loc = {}) {
+  if (!serverLocationHasPlots(loc)) return [];
+  const store = serverCraftingPlotStore();
+  const out = [];
+  for (const row of Array.isArray(loc.objects) ? loc.objects : []) {
+    const station = serverStationKeyForObject(row);
+    if (!station) continue;
+    const plot = ensurePlot(store, WORLD_ECONOMY.plots, { locationId: loc.id, objectId: row.id, station });
+    if (plot) out.push(plot);
+  }
+  return out;
+}
+
+/** Невыплаченные марки участков (возвраты ставок, плата арендатору) — в рюкзак. */
+function serverApplyPlotPayout(player = null) {
+  if (!player?.characterId) return 0;
+  const room = Math.max(0, serverItemStackLimit('silver') - serverInventoryQty(player.inventory || [], 'silver'));
+  const amount = takePlotPayout(serverCraftingPlotStore(), player.characterId, room);
+  if (amount <= 0) return 0;
+  serverInventoryAdd(player, 'silver', amount);
+  scheduleServerPublicEventPersist();
+  return amount;
+}
+
+/** Выплата уходит сразу, если получатель в игре; иначе ждёт его. */
+function serverDeliverPlotPayout(characterId = '') {
+  const id = String(characterId || '');
+  if (!id) return 0;
+  for (const player of players.values()) {
+    if (String(player?.characterId || '') !== id) continue;
+    const amount = serverApplyPlotPayout(player);
+    if (amount > 0) {
+      persistActivePlayerState(player);
+      emitAuthoritativePlayerState(player, { reason: 'plotPayout' });
+    }
+    return amount;
+  }
+  return 0;
+}
+
+function serverPlotStateFor(player = null, loc = {}, now = Date.now()) {
+  const payout = serverApplyPlotPayout(player);
+  return {
+    locationId: String(loc?.id || ''),
+    plots: serverLocationPlots(loc).map(plot => publicPlot(plot, WORLD_ECONOMY.plots, player?.characterId || '', now)),
+    payout
+  };
+}
+
+function serverTickCraftingPlots(now = Date.now()) {
+  if (!serverPlotsActive()) return 0;
+  const changes = settleCraftingPlots(serverCraftingPlotStore(), WORLD_ECONOMY.plots, now);
+  if (changes.length) scheduleServerPublicEventPersist();
+  return changes.length;
 }
 
 function serverTickAuctions(now = Date.now()) {
@@ -30319,6 +30489,55 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Участок станка: снимок участков локации, ставка на аренду, плата арендатора.
+  socket.on('craftingPlotAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const room = rooms.get(p.roomId);
+    const loc = room ? roomLocation(room) : null;
+    if (!loc) return fail('Локация не найдена.');
+    const now = Date.now();
+    serverTickCraftingPlots(now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const reply = payload => {
+      const state = serverPlotStateFor(p, loc, now);
+      if (state.payout > 0) persistActivePlayerState(p);
+      if (typeof ack === 'function') ack({ ok: true, ...payload, ...state, self: publicAuthoritativePlayerState(p) });
+    };
+    if (action === 'state') return reply({ action });
+    if (!['bid', 'setFee'].includes(action)) return fail('Неизвестное действие участка.');
+    if (!serverLocationHasPlots(loc)) return fail('Здесь нет участков.');
+    const plotId = String(data.plotId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 170);
+    const plot = serverLocationPlots(loc).find(row => row.id === plotId);
+    if (!plot) return fail('Такого участка в этой локации нет.');
+    const transaction = beginCriticalAction(p, 'craftingPlotAction', data, ['action', 'plotId', 'amount', 'feePct']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) return reply({ ...transaction.result, replay: true });
+    const store = serverCraftingPlotStore();
+    let payload = null;
+    if (action === 'bid') {
+      const amount = Math.max(0, Math.floor(Number(data.amount || 0)));
+      if (serverInventoryQty(p.inventory || [], 'silver') < amount) return fail(`Не хватает марок: нужно ${amount}.`);
+      const placed = placePlotBid(store, WORLD_ECONOMY.plots, plot.id, { characterId: p.characterId, name: p.name }, amount, now);
+      if (!placed.ok) return fail(placed.error);
+      serverInventoryRemove(p, 'silver', amount);
+      if (placed.refunded) serverDeliverPlotPayout(placed.refunded.characterId);
+      payload = { ok: true, action, plotId: plot.id, amount };
+    } else {
+      const changed = setPlotFee(store, WORLD_ECONOMY.plots, plot.id, p.characterId, Number(data.feePct), now);
+      if (!changed.ok) return fail(changed.error);
+      payload = { ok: true, action, plotId: plot.id, feePct: changed.plot.feePct };
+    }
+    commitCriticalAction(p, transaction, payload);
+    scheduleServerPublicEventPersist();
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'craftingPlot' });
+    reply(payload);
+  });
+
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
@@ -32208,6 +32427,15 @@ setInterval(() => {
     console.error('Black market tick failed:', error);
   }
 }, 60000);
+
+// Участки станков: итоги торгов и конец аренды.
+setInterval(() => {
+  try {
+    serverTickCraftingPlots(Date.now());
+  } catch (error) {
+    console.error('Crafting plot tick failed:', error);
+  }
+}, 30000);
 
 // Мировой босс: щит, уязвимость, импульсы, перерождение.
 setInterval(() => {

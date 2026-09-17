@@ -12,7 +12,7 @@
     "worldCaravans": false,
     "npcTraders": true,
     "wildTraders": false,
-    "npcStations": true,
+    "npcStations": false,
     "npcGearDrops": false,
     "visibleWorldParties": true,
     "blackMarket": true,
@@ -34,6 +34,26 @@
     "maxOrdersPerTrader": 30,
     "maxOrders": 1500,
     "residentTaxShare": 1
+  },
+  "plots": {
+    "leaseDays": 7,
+    "auctionHours": 24,
+    "extendMinutes": 5,
+    "minBid": 100,
+    "bidStepPct": 0.05,
+    "defaultFeePct": 0.05,
+    "maxFeePct": 0.3,
+    "unleasedFeePct": 0.15,
+    "plotBonus": 18,
+    "regionBonus": 15,
+    "premiumFocusBonus": 59,
+    "regions": {
+      "settlement": ["weapon_bench", "repair_bench"],
+      "scrapTown": ["tool_bench", "weapon_bench"],
+      "relayStation": ["energy_bench", "chem_station"],
+      "caravanCamp": ["ammo_bench", "chem_station"]
+    },
+    "excludedLocations": ["tutorialCaravanYard", "personalBase"]
   },
   "blackMarket": {
     "service": "blackMarket",

@@ -226,7 +226,9 @@ requireText('server crafting commits clan modifiers only after carry validation'
 requireText('server crafting uses authoritative room', serverCrafting, "rooms.get(String(player?.roomId || ''))");
 requireText('server crafting uses authoritative location', serverCrafting, 'normalizeLocationId(playerRoom.locationId');
 requireText('server crafting rejects forged location', serverCrafting, 'normalizeLocationId(requestedLocationId) !== locationId');
-requireText('server crafting uses authoritative fee', serverCrafting, 'const fee = requiredFee;');
+requireText('server crafting uses authoritative fee', serverCrafting, 'let fee = requiredFee;');
+requireText('server crafting charges the authoritative plot fee', serverCrafting, 'fee = plotCharge.fee;');
+requireText('server crafting refuses a lower plot fee', serverCrafting, 'if (requestedFee < plotCharge.fee)');
 rejectText('server crafting client-selected location', serverCrafting, 'normalizeLocationId(data.locationId ||');
 requireText('server crafting blocks world-map requests', server, 'if (!p || !p.roomId || p.onGlobalMap || p.dead');
 requireText('server crafting station model guard', functionBody(server, 'serverCraftingObjectMatchesStation'), 'SERVER_CRAFT_STATION_MODELS[key]');

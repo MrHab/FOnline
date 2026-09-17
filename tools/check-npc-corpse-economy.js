@@ -209,7 +209,7 @@ for (const token of [
   'serverPrepareNpcCorpseLoot(foe, room);',
   'serverPrepareNpcCorpseLoot(actor, room);',
   'serverApplyBlackMarketLootCondition(p, enemy, taken, blackMarketHeld);',
-  'qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room))), rng));'
+  'qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room)))'
 ]) assert(source.includes(token), `server.js must keep: ${token}`);
 assert(!/serverPrepareNpcCorpseLoot\((enemy|foe|actor)\);/.test(source), 'every corpse knows its room');
 

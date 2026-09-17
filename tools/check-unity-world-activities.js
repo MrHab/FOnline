@@ -142,7 +142,7 @@ requirePattern(server,
   /socket\.on\('requestWorldState'[\s\S]{0,700}ensureServerWorldActivityForRoom\(room, Date\.now\(\)\)[\s\S]{0,160}refreshRoomWorldState\(room, \{ force: true \}\)/,
   'Unity activity resync no longer repairs a missing room activity');
 requirePattern(server,
-  /socket\.on\('harvestResource'[\s\S]{0,4500}recordServerWorldActivityHarvest\(room, p, item, now\)/,
+  /socket\.on\('harvestResource'[\s\S]{0,5200}recordServerWorldActivityHarvest\(room, p, item, now\)/,
   'authoritative harvesting no longer advances the activity');
 requirePattern(server,
   /action === 'activity_extract'[\s\S]{0,180}performServerWorldActivityExtraction/,

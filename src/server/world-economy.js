@@ -5,6 +5,7 @@ const { normalizeBlackMarketConfig } = require('./black-market');
 const { normalizeCityAuctionConfig } = require('./city-auctions');
 const { normalizeCraftingPlotConfig } = require('./crafting-plots');
 const { normalizeDangerCellConfig } = require('./danger-cells');
+const { normalizeAccountSinConfig } = require('./account-sin');
 
 /**
  * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
@@ -33,6 +34,8 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   visibleWorldParties: true,
   // Опасные клетки: цвет клетки карты по правилам и серверные стычки в пути.
   dangerCells: false,
+  // Синь на счёте аккаунта, обменник сини и премиум.
+  accountSin: false,
   // Чёрный рынок в хабе Сердцевины: скупка снаряжения и добыча NPC с его склада.
   blackMarket: true,
   // Своя книга ордеров у каждой столицы вместо общей, налог v3 и довоенный запас.
@@ -160,7 +163,16 @@ function normalizeWorldEconomy(input = {}) {
     blackMarket: normalizeBlackMarketConfig(src.blackMarket),
     auctions: normalizeCityAuctionConfig(src.auctions),
     plots: normalizeCraftingPlotConfig(src.plots),
-    dangerCells: normalizeDangerCellConfig(src.dangerCells)
+    dangerCells: normalizeDangerCellConfig(src.dangerCells),
+    accountSin: normalizeAccountSinConfig(src.accountSin),
+    sinExchange: Object.freeze({
+      orderFee: Math.max(0, Math.floor(Number(src.accountSin?.exchange?.orderFee ?? 10) || 0)),
+      durationChoicesHours: Object.freeze((Array.isArray(src.accountSin?.exchange?.durationChoicesHours)
+        ? src.accountSin.exchange.durationChoicesHours : [24, 72, 168, 720]).map(Number).filter(value => value > 0)),
+      maxQtyPerOrder: Math.max(1, Math.floor(Number(src.accountSin?.exchange?.maxQtyPerOrder) || 100000)),
+      maxPrice: Math.max(1, Math.floor(Number(src.accountSin?.exchange?.maxPrice) || 100000)),
+      maxOrdersPerTrader: Math.max(1, Math.floor(Number(src.accountSin?.exchange?.maxOrdersPerTrader) || 10))
+    })
   });
 }
 

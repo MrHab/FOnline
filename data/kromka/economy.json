@@ -17,7 +17,8 @@
     "visibleWorldParties": false,
     "blackMarket": true,
     "cityAuctions": true,
-    "dangerCells": true
+    "dangerCells": true,
+    "accountSin": true
   },
   "zones": {
     "brokenBelowCondition": 10,
@@ -55,6 +56,26 @@
       "caravanCamp": ["ammo_bench", "chem_station"]
     },
     "excludedLocations": ["tutorialCaravanYard", "personalBase"]
+  },
+  "accountSin": {
+    "itemId": "blue",
+    "premium": {
+      "priceSin": 300,
+      "days": 30,
+      "xpMultiplier": 1.5,
+      "npcMarksMultiplier": 1.5,
+      "gatherMultiplier": 1.5,
+      "baseJobSpeedMultiplier": 1.5,
+      "auctionTaxPct": 0.04
+    },
+    "focus": { "perDay": 10000, "cap": 30000, "costPerValue": 10, "minCost": 50 },
+    "exchange": {
+      "orderFee": 10,
+      "durationChoicesHours": [24, 72, 168, 720],
+      "maxQtyPerOrder": 100000,
+      "maxPrice": 100000,
+      "maxOrdersPerTrader": 10
+    }
   },
   "dangerCells": {
     "subCellKm": 1.6,

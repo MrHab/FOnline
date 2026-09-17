@@ -239,6 +239,7 @@ assert.deepStrictEqual(
 
 const unityEmits = uniqueSorted([...unityTransportEmits, ...dynamicUnityEvents]);
 const unityOnlyKromkaEmits = [
+  'accountSinAction',
   'artifactLoadoutAction',
   'auctionAction',
   'baseServiceAction',

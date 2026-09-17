@@ -7,7 +7,6 @@
   const resourceNodes = [];
   const locationJobBoards = [];
   const locationCraftingStations = [];
-  const locationTradeMachines = [];
   const obstacleMeshes = [];
   const staticCullObjects = [];
   const staticCollisionBoxes = [];

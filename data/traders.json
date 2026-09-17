@@ -80,23 +80,6 @@
         { "id": "stim", "price": 13, "qty": 2 }
       ]
     },
-    "outpostMachine": {
-      "name": "Outpost vending machine",
-      "dialogueProfile": "tradeMachine",
-      "caps": 350,
-      "restockHours": 24,
-      "buyInterests": ["materials", "tools", "aid", "ammo"],
-      "stock": [
-        { "id": "water", "price": 6, "qty": 12 },
-        { "id": "stim", "price": 13, "qty": 6 },
-        { "id": "medkit", "price": 24, "qty": 3 },
-        { "id": "ammo9", "price": 3, "qty": 90 },
-        { "id": "ammo556", "price": 5, "qty": 60 },
-        { "id": "shotgunShell", "price": 6, "qty": 24 },
-        { "id": "repairKit", "price": 22, "qty": 3 },
-        { "id": "oil", "price": 10, "qty": 5 }
-      ]
-    },
     "scrap": {
       "name": "Scrap post trader",
       "dialogueProfile": "scrap",

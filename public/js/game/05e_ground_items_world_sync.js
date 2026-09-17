@@ -845,6 +845,8 @@
       traderId: naturalCreature ? '' : (saved.traderId || ''),
       traderProfile: naturalCreature ? '' : (saved.traderProfile || ''),
       dialogueProfile: naturalCreature ? '' : (saved.dialogueProfile || ''),
+      // Экономика v3: сервер говорит, торгует ли этот человек.
+      tradeOpen: naturalCreature ? false : saved.tradeOpen,
       traderQuests: naturalCreature ? [] : (Array.isArray(saved.traderQuests) ? saved.traderQuests.map(id => String(id || '')).filter(Boolean) : []),
       equipment,
       weapon: equipment.weapon,
@@ -1162,6 +1164,7 @@
       enemy.traderId = saved.traderId || enemy.traderId || '';
       enemy.traderProfile = saved.traderProfile || enemy.traderProfile || '';
       enemy.dialogueProfile = saved.dialogueProfile || enemy.dialogueProfile || '';
+      if (typeof saved.tradeOpen === 'boolean') enemy.tradeOpen = saved.tradeOpen;
       if (Array.isArray(saved.traderQuests)) enemy.traderQuests = saved.traderQuests.map(id => String(id || '')).filter(Boolean);
       enemy.equipment = equipment;
       enemy.weapon = enemy.equipment.weapon;
@@ -1354,7 +1357,6 @@
     staticCollisionBoxes.length = 0;
     locationCraftingStations.length = 0;
     locationJobBoards.length = 0;
-    locationTradeMachines.length = 0;
     traderNpc = null;
     storageBox = null;
     exitPortal = null;

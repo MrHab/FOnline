@@ -56,7 +56,6 @@ namespace RealmOfAshes.Game
             { "lowRuinedWall", Kind.Cover },
             { "roadblockBarricade", Kind.Cover },
             { "crate", Kind.Cover },
-            { "tradeMachine", Kind.Cover },
             { "storageChest", Kind.Cover },
             { "jobBoard", Kind.Cover },
             { "barrel", Kind.Cover },

@@ -73,8 +73,8 @@ namespace RealmOfAshes.Game
         [Tooltip("Радиус выбора контейнеров. Сервер разрешает открытие не дальше 3.2 м.")]
         public float ContainerRange = 3.1f;
 
-        private enum TargetKind { None, LabNode, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
-        private enum PanelKind { None, Npc, Trade, MachineTrade, Storage, Corpse, Container, Crafting, JobBoard }
+        private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
+        private enum PanelKind { None, Npc, Trade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
         private sealed class ContainerView
@@ -131,6 +131,12 @@ namespace RealmOfAshes.Game
         private bool _locationReady;
         private bool _encounterLocation;
         private bool _craftPending;
+        private bool _plotPending;
+        private float _plotRefreshAt;
+        // null — поле ещё не заполнено значением по умолчанию; пустую строку
+        // игрок стёр сам, и её не нужно тут же заполнять заново.
+        private string _plotBidText;
+        private string _plotFeeText;
         private bool _harvestPending;
         private bool _robPending;
         private bool _worldRequestPending;
@@ -164,8 +170,7 @@ namespace RealmOfAshes.Game
         /// <summary>Канва рисует торговлю сама; IMGUI-вариант этих панелей молчит.</summary>
         public bool TradeCanvasDriven { get; set; }
 
-        public bool TradeOpen { get { return _panel == PanelKind.Trade || _panel == PanelKind.MachineTrade; } }
-        public bool TradeIsMachine { get { return _panel == PanelKind.MachineTrade; } }
+        public bool TradeOpen { get { return _panel == PanelKind.Trade; } }
         public bool TradePending { get { return _tradePending; } }
         public JObject TradeMarket { get { return _market; } }
         public JObject TradeSelf { get { return _self; } }
@@ -173,7 +178,7 @@ namespace RealmOfAshes.Game
 
         public string TradeActorName
         {
-            get { return _active?["name"]?.ToString() ?? (TradeIsMachine ? "Торговый автомат" : "Торговец"); }
+            get { return _active?["name"]?.ToString() ?? "Торговец"; }
         }
 
         public System.Collections.Generic.IReadOnlyDictionary<string, int> TradeBuysQueue { get { return _tradeBuys; } }
@@ -240,7 +245,6 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
                 else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "поговорить";
                 return InteractKey + " — " + action + ": " + name;
             }
@@ -1359,7 +1363,6 @@ namespace RealmOfAshes.Game
             Socket.OnWorldContainers += HandleContainerSnapshot;
             Socket.OnWorldContainerUpdated += HandleContainerUpdated;
             Socket.OnEnemyTradeUpdated += HandleEnemyTradeUpdated;
-            Socket.OnTradeMachineMarketUpdated += HandleTradeMachineMarketUpdated;
             Socket.OnResourceUpdated += HandleResourceUpdated;
             _attached = true;
         }
@@ -1373,7 +1376,6 @@ namespace RealmOfAshes.Game
             Socket.OnWorldContainers -= HandleContainerSnapshot;
             Socket.OnWorldContainerUpdated -= HandleContainerUpdated;
             Socket.OnEnemyTradeUpdated -= HandleEnemyTradeUpdated;
-            Socket.OnTradeMachineMarketUpdated -= HandleTradeMachineMarketUpdated;
             Socket.OnResourceUpdated -= HandleResourceUpdated;
             _attached = false;
         }
@@ -1404,9 +1406,61 @@ namespace RealmOfAshes.Game
         private void HandleJoined(JoinAck ack)
         {
             ClearWorld();
+            RoaCraftingPlots.Clear();
             if (ack == null) return;
             HandleSelf(ack.Self);
             HandleWorldState(ack.WorldState);
+            RequestPlotState();
+        }
+
+        /// <summary>
+        /// Снимок участков станков текущей локации: по нему окно станка и
+        /// Пип-Бой считают комиссию, сервер заодно зачисляет выплаты участков.
+        /// </summary>
+        private void RequestPlotState()
+        {
+            if (Socket == null) return;
+            _plotRefreshAt = Time.unscaledTime + PlotRefreshSeconds;
+            Socket.EmitWithAck("craftingPlotAction", new Dictionary<string, object>
+            {
+                ["action"] = "state"
+            }, ApplyPlotAck);
+        }
+
+        private void ApplyPlotAck(JObject ack)
+        {
+            if (ack?["ok"]?.ToObject<bool>() != true) return;
+            ApplyActionAck(ack);
+            RoaCraftingPlots.Apply(ack);
+            if (RoaCraftingPlots.LastPayout > 0)
+                Show("Участки: зачислено " + RoaCraftingPlots.LastPayout + " марок.", 4f);
+        }
+
+        private void PlotAction(string action, JObject plot, Dictionary<string, object> extra)
+        {
+            string plotId = plot?["plotId"]?.ToString();
+            if (_plotPending || Socket == null || string.IsNullOrEmpty(plotId)) return;
+            var payload = new Dictionary<string, object>
+            {
+                ["requestId"] = Guid.NewGuid().ToString("N"),
+                ["action"] = action,
+                ["plotId"] = plotId
+            };
+            foreach (KeyValuePair<string, object> pair in extra) payload[pair.Key] = pair.Value;
+            _plotPending = true;
+            Socket.EmitWithAck("craftingPlotAction", payload, ack =>
+            {
+                _plotPending = false;
+                if (ack?["ok"]?.ToObject<bool>() != true)
+                {
+                    ApplyActionAck(ack);
+                    Show(ack?["error"]?.ToString() ?? "Сервер отклонил действие с участком.", 5f);
+                    RequestPlotState();
+                    return;
+                }
+                ApplyPlotAck(ack);
+                Show(action == "bid" ? "Ставка принята." : "Плата за станок изменена.", 4f);
+            });
         }
 
         private void HandleSelf(JObject self)
@@ -1451,19 +1505,6 @@ namespace RealmOfAshes.Game
                     _market["caps"] = Mathf.Max(0, caps);
                     ReconcileTradeQueue();
                 }
-            }
-        }
-
-        private void HandleTradeMachineMarketUpdated(JObject payload)
-        {
-            if (_panel != PanelKind.MachineTrade || _active == null) return;
-            string machineId = payload?["machineId"]?.ToString()
-                ?? payload?["market"]?["machineId"]?.ToString();
-            if (machineId != _active["id"]?.ToString()) return;
-            if (payload?["market"] is JObject market)
-            {
-                _market = (JObject)market.DeepClone();
-                ReconcileTradeQueue();
             }
         }
 
@@ -1643,9 +1684,14 @@ namespace RealmOfAshes.Game
             return marker;
         }
 
+        // Плата арендатора и сама аренда меняются без участия игрока: снимок
+        // участков локации обновляется сам, чтобы и Пип-Бой присылал верную плату.
+        private const float PlotRefreshSeconds = 15f;
+
         private void Update()
         {
             UpdateContainerVisibility();
+            if (RoaCraftingPlots.Plots.Count > 0 && Time.unscaledTime >= _plotRefreshAt) RequestPlotState();
 
             if (Player == null || !Player.gameObject.activeInHierarchy)
             {
@@ -1846,11 +1892,6 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (_candidateKind == TargetKind.TradeMachine)
-            {
-                OpenTradeMachine(_candidate);
-                return;
-            }
             if (_candidateKind == TargetKind.Storage)
             {
                 _active = (JObject)_candidate.DeepClone();
@@ -2003,6 +2044,9 @@ namespace RealmOfAshes.Game
             _panel = PanelKind.Crafting;
             _scroll = Vector2.zero;
             _status = string.Empty;
+            _plotBidText = null;
+            _plotFeeText = null;
+            RequestPlotState();
         }
 
         private void OpenJobBoard(JObject board)
@@ -2057,32 +2101,6 @@ namespace RealmOfAshes.Game
                     return;
                 }
                 Show(ack?["error"]?.ToString() ?? "Узел зала недоступен.");
-            });
-        }
-
-        private void OpenTradeMachine(JObject machine)
-        {
-            string id = machine?["id"]?.ToString();
-            if (string.IsNullOrEmpty(id)) return;
-            Show("Получаем ассортимент…", 2f);
-            Socket.EmitWithAck("tradeMachineMarketState", new Dictionary<string, object>
-            {
-                ["machineId"] = id
-            }, ack =>
-            {
-                if (ack?["ok"]?.ToObject<bool>() != true)
-                {
-                    Show(ack?["error"]?.ToString() ?? "Торговый автомат недоступен.");
-                    return;
-                }
-
-                _active = (JObject)machine.DeepClone();
-                if (!string.IsNullOrEmpty(ack["name"]?.ToString())) _active["name"] = ack["name"];
-                _market = (JObject)ack.DeepClone();
-                ClearTradeQueue();
-                _panel = PanelKind.MachineTrade;
-                _scroll = Vector2.zero;
-                _status = string.Empty;
             });
         }
 
@@ -2343,7 +2361,6 @@ namespace RealmOfAshes.Game
 
             string actorId = _active?["id"]?.ToString();
             if (string.IsNullOrEmpty(actorId) || Socket == null) return;
-            bool machine = _panel == PanelKind.MachineTrade;
             var buys = new List<Dictionary<string, object>>();
             var sells = new List<Dictionary<string, object>>();
             foreach (KeyValuePair<string, int> entry in _tradeBuys)
@@ -2371,7 +2388,7 @@ namespace RealmOfAshes.Game
                 ["buys"] = buys,
                 ["sells"] = sells
             };
-            payload[machine ? "machineId" : "enemyId"] = actorId;
+            payload["enemyId"] = actorId;
             if (_self?["inventory"] != null) payload["inventory"] = _self["inventory"].DeepClone();
             if (_self?["carry"] != null) payload["carry"] = _self["carry"].DeepClone();
             if (_self?["special"] != null) payload["special"] = _self["special"].DeepClone();
@@ -2382,7 +2399,7 @@ namespace RealmOfAshes.Game
 
             _tradePending = true;
             Show("Сервер проверяет обмен…", 4f);
-            Socket.EmitWithAck(machine ? "tradeMachineExchange" : "npcTradeExchange", payload, ack =>
+            Socket.EmitWithAck("npcTradeExchange", payload, ack =>
             {
                 _tradePending = false;
                 ApplyActionAck(ack);
@@ -2453,6 +2470,8 @@ namespace RealmOfAshes.Game
                 if (ack?["ok"]?.ToObject<bool>() != true)
                 {
                     Show(CraftingError(ack));
+                    // Плата участка могла измениться: окно пересчитает комиссию.
+                    if (ack?["requiredFee"] != null) RequestPlotState();
                     return;
                 }
 
@@ -2725,7 +2744,7 @@ namespace RealmOfAshes.Game
 
             // Бартер в канва-виде: IMGUI-окно этих панелей не рисуется, чтобы
             // два окна торговли не спорили за одни и те же кнопки.
-            if (TradeCanvasDriven && (_panel == PanelKind.Trade || _panel == PanelKind.MachineTrade))
+            if (TradeCanvasDriven && _panel == PanelKind.Trade)
             {
                 if (!HintCanvasDriven) DrawStatus();
                 return;
@@ -2756,7 +2775,7 @@ namespace RealmOfAshes.Game
 
             _scroll = GUILayout.BeginScrollView(_scroll);
             if (_panel == PanelKind.Npc) DrawNpc();
-            else if (_panel == PanelKind.Trade || _panel == PanelKind.MachineTrade) DrawTrade();
+            else if (_panel == PanelKind.Trade) DrawTrade();
             else if (_panel == PanelKind.Storage) DrawStorage();
             else if (_panel == PanelKind.Crafting) DrawCrafting();
             else if (_panel == PanelKind.JobBoard) DrawJobBoard();
@@ -2782,7 +2801,6 @@ namespace RealmOfAshes.Game
             else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
             else if (_candidateKind == TargetKind.Transition) action = "перейти";
             else if (_candidateKind == TargetKind.Container || _candidateKind == TargetKind.Storage) action = "открыть";
-            else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
             else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "говорить";
 
             const float width = 360f;
@@ -3221,7 +3239,11 @@ namespace RealmOfAshes.Game
         private void DrawCrafting()
         {
             string station = _active?["station"]?.ToString() ?? string.Empty;
-            GUILayout.Label("Состав рюкзака и результат повторно проверяет сервер. Комиссия поступает владельцу мастерской.", Dim());
+            JObject plot = RoaCraftingPlots.ForObject(_active?["id"]?.ToString());
+            if (plot != null) DrawPlot(plot);
+            GUILayout.Label(plot != null
+                ? "Состав рюкзака и результат повторно проверяет сервер. Комиссия уходит арендатору участка; свободный участок берёт плату поселения."
+                : "Состав рюкзака и результат повторно проверяет сервер. Комиссия поступает владельцу мастерской.", Dim());
             GUILayout.Space(8f);
 
             bool any = false;
@@ -3242,6 +3264,82 @@ namespace RealmOfAshes.Game
             }
 
             if (!any) GUILayout.Label("Для этого станка рецепты не найдены.");
+        }
+
+        /// <summary>Участок станка: арендатор, плата, торги за аренду.</summary>
+        private void DrawPlot(JObject plot)
+        {
+            bool leased = plot["leased"]?.ToObject<bool>() == true;
+            bool mine = plot["mine"]?.ToObject<bool>() == true;
+            double feePct = plot["feePct"]?.ToObject<double>() ?? 0d;
+            double returnRate = plot["returnRate"]?.ToObject<double>() ?? 0d;
+            JObject auction = plot["auction"] as JObject;
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("<b>Участок поселения</b> · возврат материалов " + Mathf.RoundToInt((float)(returnRate * 100d)) + "%", Rich());
+            if (leased)
+            {
+                GUILayout.Label("Арендатор: " + (mine ? "вы" : plot["lesseeName"]?.ToString()) + " · до "
+                    + PlotTime(plot["leaseEndsAt"]) + " · плата " + Percent(feePct) + " стоимости изделия"
+                    + (mine ? " (сами работаете бесплатно)" : string.Empty), Wrap());
+            }
+            else
+            {
+                GUILayout.Label("Участок свободен · плата поселения " + Percent(feePct) + " стоимости изделия, она сгорает.", Wrap());
+            }
+
+            bool open = auction?["open"]?.ToObject<bool>() == true;
+            int highest = auction?["highestBid"]?.ToObject<int>() ?? 0;
+            int minBid = auction?["minBid"]?.ToObject<int>() ?? 0;
+            if (open)
+            {
+                string leader = auction?["leading"]?.ToObject<bool>() == true ? "ваша" : auction?["bidderName"]?.ToString();
+                GUILayout.Label(highest > 0
+                    ? "Торги за аренду: ставка " + highest + " марок (" + leader + ") · до " + PlotTime(auction["endsAt"])
+                    : "Торги за аренду открыты: первая ставка от " + minBid + " марок, торги длятся сутки.", Wrap());
+                if (_plotBidText == null) _plotBidText = minBid.ToString();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Ставка:", GUILayout.Width(60f));
+                _plotBidText = GUILayout.TextField(_plotBidText, 9, GUILayout.Width(90f));
+                GUI.enabled = !_plotPending && int.TryParse(_plotBidText, out int bid) && bid >= minBid;
+                if (GUILayout.Button("Сделать ставку", GUILayout.Height(26f)) && int.TryParse(_plotBidText, out int amount))
+                    PlotAction("bid", plot, new Dictionary<string, object> { ["amount"] = amount });
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+                GUILayout.Label("Ставка сгорает как арендная плата; перебитую ставку сервер вернёт.", Dim());
+            }
+            else
+            {
+                GUILayout.Label("Торги за участок откроются за сутки до конца аренды.", Dim());
+            }
+
+            if (mine)
+            {
+                if (_plotFeeText == null) _plotFeeText = Mathf.RoundToInt((float)(feePct * 100d)).ToString();
+                double maxFee = plot["maxFeePct"]?.ToObject<double>() ?? 0d;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Плата, %:", GUILayout.Width(60f));
+                _plotFeeText = GUILayout.TextField(_plotFeeText, 3, GUILayout.Width(50f));
+                GUI.enabled = !_plotPending && int.TryParse(_plotFeeText, out int pct) && pct >= 0 && pct <= Mathf.RoundToInt((float)(maxFee * 100d));
+                if (GUILayout.Button("Назначить плату", GUILayout.Height(26f)) && int.TryParse(_plotFeeText, out int value))
+                    PlotAction("setFee", plot, new Dictionary<string, object> { ["feePct"] = value / 100d });
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(6f);
+        }
+
+        private static string Percent(double share)
+        {
+            return (share * 100d).ToString("0.#") + "%";
+        }
+
+        private static string PlotTime(JToken value)
+        {
+            long ms = value?.Type == JTokenType.Integer || value?.Type == JTokenType.Float ? value.Value<long>() : 0L;
+            if (ms <= 0) return "—";
+            return DateTimeOffset.FromUnixTimeMilliseconds(ms).ToLocalTime().ToString("dd.MM HH:mm");
         }
 
         private void DrawJobBoard()
@@ -3491,7 +3589,6 @@ namespace RealmOfAshes.Game
         {
             string name = _active?["name"]?.ToString() ?? "Взаимодействие";
             if (_panel == PanelKind.Trade) return "Торговля: " + name;
-            if (_panel == PanelKind.MachineTrade) return name;
             if (_panel == PanelKind.Storage) return "Хранилище: " + name;
             if (_panel == PanelKind.Crafting) return "Крафт: " + name;
             if (_panel == PanelKind.JobBoard) return name;
@@ -3521,6 +3618,9 @@ namespace RealmOfAshes.Game
         private static bool NpcHasTrade(JObject actor)
         {
             if (actor == null) return false;
+            // Сервер говорит прямо, торгует ли этот человек (экономика v3:
+            // только торговцы столиц и баз Сердцевины и скупщик Чёрного рынка).
+            if (actor["tradeOpen"]?.Type == JTokenType.Boolean) return actor["tradeOpen"].Value<bool>();
             return actor["personalTrade"]?.ToObject<bool>() == true
                 || !string.IsNullOrEmpty(actor["traderId"]?.ToString())
                 || !string.IsNullOrEmpty(actor["traderProfile"]?.ToString())
@@ -3548,12 +3648,6 @@ namespace RealmOfAshes.Game
             // Узел зала лаборатории: вентиляция, щит питания, охлаждение,
             // излучатель. Использование сбрасывает шкалу угрозы зала.
             if (kind == "labnode" || HasTag(entry, "lab-node")) return TargetKind.LabNode;
-
-            bool tradeMachine = model == "trademachine"
-                || kind == "trademachine" || kind == "vendingmachine"
-                || role == "trademachine" || HasTag(entry, "tradeMachine")
-                || HasTag(entry, "vendingMachine");
-            if (tradeMachine) return TargetKind.TradeMachine;
 
             bool storage = role == "storage" || containerType == "storage"
                 || HasTag(entry, "personal-storage") || HasTag(entry, "capital-storage");

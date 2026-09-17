@@ -229,6 +229,27 @@ const {
   takeSellOrder: marketTakeSellOrder
 } = require('./src/server/faction-market');
 const {
+  normalizeCityMarkets,
+  migrateLegacyMarket,
+  cityBook,
+  adoptLegacyShelf,
+  rulesForSeller: cityAuctionRulesForSeller,
+  expireCityMarkets
+} = require('./src/server/city-auctions');
+const {
+  normalizeCraftingPlotState,
+  ensurePlot,
+  creditPayout: creditPlotPayout,
+  takePayout: takePlotPayout,
+  placePlotBid,
+  setPlotFee,
+  settleCraftingPlots,
+  plotCraftFee,
+  plotReturnRate,
+  rollPlotReturns,
+  publicPlot
+} = require('./src/server/crafting-plots');
+const {
   ENCODING_HEAD_BYTES: UNITY_ENCODING_HEAD_BYTES,
   unityDeliveryHeaders
 } = require('./src/server/webgl-delivery');
@@ -3955,6 +3976,21 @@ if (!savesDb.pveAreaBosses || typeof savesDb.pveAreaBosses !== 'object' || Array
 // первом чтении, поэтому старое сохранение не теряет ни ордеров, ни полок.
 savesDb.market = normalizeMarketStore(savesDb.market || savesDb.factionAuctions);
 delete savesDb.factionAuctions;
+// Экономика v3: у каждой столицы своя книга. Общая книга переезжает один раз —
+// ордера снимаются, полки ждут владельцев у аукционеров, — и остаётся пустой,
+// чтобы товар не существовал в двух местах.
+if (WORLD_ECONOMY.worldModel.cityAuctions) {
+  const firstMigration = !(Number(savesDb.markets?.migratedAt) > 0);
+  savesDb.markets = normalizeCityMarkets(savesDb.markets, savesDb.market, Date.now());
+  // Если флаг выключали и в общей книге снова торговали, её содержимое
+  // переезжает ещё раз — иначе ордера и полки стали бы недоступны.
+  const legacyStillUsed = Object.keys(savesDb.market.orders || {}).length > 0
+    || Object.keys(savesDb.market.shelves || {}).length > 0;
+  if (!firstMigration && legacyStillUsed) migrateLegacyMarket(savesDb.markets, savesDb.market, Date.now());
+  if (firstMigration || legacyStillUsed) savesDb.market = normalizeMarketStore(null);
+}
+// Участки станков (экономика v3): аренда, ставки и невыплаченные марки.
+savesDb.craftingPlots = normalizeCraftingPlotState(savesDb.craftingPlots, WORLD_ECONOMY.plots);
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
@@ -10090,8 +10126,8 @@ function serverBlackMarketTradeMarket(player = null) {
 
 function performServerBlackMarketSale(room = null, actor = null, data = {}, player = null) {
   if (!room || !actor || !player) return { ok: false, error: 'Скупщик недоступен.' };
-  const buys = serverTradeMachineRows(data.buys || data.buyRows || []);
-  const sells = serverTradeMachineRows(data.sells || data.sellRows || []);
+  const buys = serverTradeRequestRows(data.buys || data.buyRows || []);
+  const sells = serverTradeRequestRows(data.sells || data.sellRows || []);
   if (buys.length) return { ok: false, error: 'Скупщик ничего не продаёт.' };
   if (!sells.length) return { ok: false, error: 'Выберите вещи для продажи.' };
   syncServerActionProgressionPlayer(player, data);
@@ -14946,12 +14982,23 @@ function serverCraftingObjectText(row = {}) {
   ].map(value => String(value || '').toLowerCase()).join(' ');
 }
 
+// Ключи моделей станков в авторских данных. GLB окружения выведены из
+// обращения, поэтому модель станка узнаётся по ключу, а не по имени файла.
+const SERVER_CRAFT_STATION_MODEL_KEYS = {
+  ammo_bench: 'craftStationAmmo',
+  weapon_bench: 'craftStationWeapon',
+  tool_bench: 'craftStationTools',
+  repair_bench: 'craftStationRepair',
+  energy_bench: 'craftStationEnergy',
+  chem_station: 'craftStationChem'
+};
+
 function serverCraftingObjectMatchesStation(row = {}, stationId = '') {
   const key = String(stationId || '').toLowerCase();
   const explicit = serverCraftingObjectStationIds(row);
   if (explicit.length) {
     if (!explicit.includes(key)) return false;
-    if (row.unityAuthored === true && key === 'repair_bench' && row.model === 'craftStationRepair') return true;
+    if (SERVER_CRAFT_STATION_MODEL_KEYS[key] && row.model === SERVER_CRAFT_STATION_MODEL_KEYS[key]) return true;
     const modelFile = path.basename(locationObjectModelRef(row).replace(/\\/g, '/')).toLowerCase();
     return !SERVER_CRAFT_STATION_MODELS[key] || modelFile === SERVER_CRAFT_STATION_MODELS[key];
   }
@@ -14977,8 +15024,8 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!recipeId || !requiredStation) return { ok: false, error: 'unknown_recipe' };
   const requiredFee = serverCraftStationFeeForRecipe(recipeId);
   const requestedFee = Math.max(0, Math.floor(Number(data.fee || 0)));
-  if (requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
-  const fee = requiredFee;
+  if (!serverPlotsActive() && requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  let fee = requiredFee;
   const station = String(data.station || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
   if (station !== requiredStation) return { ok: false, error: 'wrong_station', requiredStation };
   const playerRoom = rooms.get(String(player?.roomId || '')) || null;
@@ -15006,6 +15053,26 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (!serverInteractionHasLineOfSight(playerRoom, player, stationPoint)) {
     return { ok: false, error: 'interaction_blocked', requiredStation };
   }
+  // Участок станка: плату назначает арендатор, свободный участок берёт плату
+  // поселения. Клиент показывает ту же сумму и присылает её в fee.
+  const plotNow = Date.now();
+  const plot = serverLocationHasPlots(loc)
+    ? ensurePlot(serverCraftingPlotStore(), WORLD_ECONOMY.plots, { locationId, objectId: stationObjectId, station: requiredStation })
+    : null;
+  const plotOutput = SERVER_CRAFT_RECIPE_OUTPUTS[recipeId] || {};
+  const plotCharge = plot
+    ? plotCraftFee(plot, WORLD_ECONOMY.plots, player.characterId,
+      Number(SERVER_ITEM_BASE_PRICES[plotOutput.id] || 0) * Math.max(1, Math.floor(Number(plotOutput.qty || 1))),
+      requiredFee, plotNow)
+    : null;
+  if (plotCharge) {
+    if (requestedFee < plotCharge.fee) {
+      return { ok: false, error: `Плата за станок изменилась: ${plotCharge.fee} марок. Повторите заказ через пару секунд.`, requiredFee: plotCharge.fee };
+    }
+    fee = plotCharge.fee;
+  } else if (requestedFee < requiredFee) {
+    return { ok: false, error: 'fee_too_low', requiredFee };
+  }
   const explicitSiteId = String(stationObject?.worksiteId
     || stationObject?.stationSiteId
     || stationObject?.siteId
@@ -15019,7 +15086,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   const siteId = explicitSiteId || publicSites[0]?.id || '';
   const site = siteId ? simState?.sites?.[siteId] : null;
   const tutorialBench = locationId === 'tutorialCaravanYard' && stationObjectId === 'yard_repair_bench';
-  if (!site && !tutorialBench) return { ok: false, error: 'missing_site' };
+  if (!site && !tutorialBench && !plot) return { ok: false, error: 'missing_site' };
   const actor = syncServerActionProgressionPlayer(player, data);
   syncServerInventorySnapshot(player, data);
   const baseRequirements = serverCraftInventoryRequirements(recipeId, fee);
@@ -15057,6 +15124,23 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       carry: sanitizeCarrySnapshot(player)
     };
   }
+  // Станок участка возвращает часть материалов — если они влезают в
+  // грузоподъёмность; случайный возврат не должен срывать сам заказ.
+  let plotReturns = plot
+    ? rollPlotReturns(
+      Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
+      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, serverPlayerHasPremium(player)),
+      Math.random
+    )
+    : [];
+  if (plotReturns.length) {
+    const withReturns = serverInventoryMergeRows(crafted.inventory || [], plotReturns);
+    if (serverInventoryWeightWithEquipment(withReturns, player.equipment || {}) <= carryCapacity + 0.0001) {
+      crafted.inventory = withReturns;
+    } else {
+      plotReturns = [];
+    }
+  }
   if (clanContext && clanPreview) {
     serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);
     clanContext.runtime.lastCraftBenefit = {
@@ -15086,6 +15170,25 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       serverRecordTutorialFact(player, 'kitCrafted');
     return { ok: true, fee, inventory: player.inventory, output: crafted.output,
       requirements: crafted.requirements, self: publicAuthoritativePlayerState(player) };
+  }
+  if (plot) {
+    // Плата арендатору — выплатой; плата поселения сгорает.
+    if (plotCharge.payee && fee > 0) {
+      creditPlotPayout(serverCraftingPlotStore(), plotCharge.payee, fee);
+      plot.earned += fee;
+      serverDeliverPlotPayout(plotCharge.payee);
+    }
+    scheduleServerPublicEventPersist();
+    return {
+      ok: true,
+      fee,
+      inventory: player.inventory,
+      output: crafted.output,
+      requirements: crafted.requirements,
+      returned: plotReturns,
+      plot: publicPlot(plot, WORLD_ECONOMY.plots, player.characterId, plotNow),
+      self: publicAuthoritativePlayerState(player)
+    };
   }
   site.stockpile = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
   site.stockpile.silver = Math.max(0, Math.floor(Number(site.stockpile.silver || 0))) + fee;
@@ -15119,115 +15222,13 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   };
 }
 
-const SERVER_TRADE_MACHINE_SELL_PRICE_OVERRIDES = Object.freeze(Object.fromEntries(
+const SERVER_TRADE_SELL_PRICE_BASE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_ITEM_BASE_PRICES)
     .filter(([id, price]) => id !== 'silver' && Number(price || 0) > 0)
     .map(([id, price]) => [id, Math.max(1, Math.floor(Number(price) * 0.45))])
 ));
 
-function serverLocationObjectIsTradeMachine(row = {}) {
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const kind = String(interactive.kind || entity.kind || row.kind || '').toLowerCase();
-  const tags = [
-    ...locationObjectTags(row),
-    ...locationObjectTags(entity),
-    ...locationObjectTags(interactive)
-  ];
-  return kind === 'trademachine' || tags.includes('trademachine') || tags.includes('vendingmachine');
-}
-
-function serverTradeMachineObject(loc = {}, machineId = '') {
-  const id = String(machineId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
-  if (!id || !Array.isArray(loc.objects)) return null;
-  const row = loc.objects.find(entry => String(entry?.id || '') === id);
-  return row && serverLocationObjectIsTradeMachine(row) ? row : null;
-}
-
-function serverTradeMachineSite(room = null, loc = {}, row = {}) {
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const simState = WASTELAND_SIM && typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null;
-  const sites = simState?.sites || {};
-  const ids = [
-    interactive.siteId,
-    interactive.marketSiteId,
-    interactive.tradeSiteId,
-    entity.siteId,
-    entity.marketSiteId,
-    row.siteId,
-    row.marketSiteId,
-    room?.worldSiteId,
-    loc?.worldSiteId,
-    loc?.siteId,
-    loc?.id
-  ].map(value => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)).filter(Boolean);
-  for (const id of ids) if (sites[id]) return sites[id];
-  const locId = String(loc?.id || room?.locationId || '');
-  return Object.values(sites).find(site => site && String(site.locationId || '') === locId) || null;
-}
-
-function serverTradeMachineAuthoredStock(row = {}) {
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const source = Array.isArray(interactive.stock) ? interactive.stock : (Array.isArray(entity.stock) ? entity.stock : []);
-  return source.slice(0, 80).map(entry => ({
-    id: serverBaseItemId(entry?.id || ''),
-    price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
-    qty: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
-    shelfMin: clamp(Math.floor(Number(entry?.shelfMin ?? 0)), 0, 9999),
-    shelfTarget: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
-    shelfMax: clamp(Math.floor(Number(entry?.shelfMax ?? entry?.qty ?? 0)), 0, 9999),
-    priority: clamp(Math.floor(Number(entry?.priority ?? 60)), 1, 100)
-  })).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
-}
-
-function serverTradeMachineMarket(room = null, loc = {}, row = {}) {
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const site = serverTradeMachineSite(room, loc, row);
-  if (!site) return { ok: false, error: 'Торговый автомат не связан с точкой экономики мира.' };
-  const traderProfile = String(interactive.traderProfile || entity.traderProfile || row.traderProfile || `${site.id}_machine`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-  const buyInterests = (Array.isArray(interactive.buyInterests) ? interactive.buyInterests : (Array.isArray(entity.buyInterests) ? entity.buyInterests : []))
-    .map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24);
-  const caps = Math.max(0, Math.floor(Number(site.stockpile?.silver || 0)));
-  const restockHours = clamp(Math.floor(Number(interactive.restockHours ?? entity.restockHours ?? 24)), 1, 720);
-  const marketKey = `${site.id}:machine:${String(row.id || traderProfile).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)}`;
-  const supplied = WASTELAND_SIM.applyTraderSupply(traderProfile, {
-    stock: serverTradeMachineAuthoredStock(row),
-    caps,
-    restockHours,
-    buyInterests
-  }, {
-    siteId: site.id,
-    locationId: String(loc?.id || room?.locationId || ''),
-    role: 'tradeMachine',
-    traderProfile,
-    marketKey
-  });
-  const stock = (Array.isArray(supplied?.stock) ? supplied.stock : []).slice(0, 80).map(entry => ({
-    id: serverBaseItemId(entry?.id || ''),
-    price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
-    qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
-  })).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
-  return {
-    ok: true,
-    machineId: String(row.id || '').slice(0, 96),
-    name: String(row.name || 'Торговый автомат').slice(0, 96),
-    siteId: site.id,
-    traderProfile,
-    buyInterests,
-    stock,
-    caps: Math.max(0, Math.floor(Number(supplied?.caps ?? caps))),
-    baseCaps: Math.max(0, Math.floor(Number(supplied?.baseCaps ?? caps))),
-    restockHours: Number(supplied?.restockHours || restockHours),
-    marketKey: String(supplied?.marketKey || marketKey),
-    market: supplied?.market || null,
-    worldHour: Number(WASTELAND_SIM.state()?.worldHour || 0)
-  };
-}
-
-function serverTradeMachineRows(rows = []) {
+function serverTradeRequestRows(rows = []) {
   const merged = new Map();
   for (const row of Array.isArray(rows) ? rows.slice(0, 80) : []) {
     const id = serverBaseItemId(row?.id || row?.itemId || '');
@@ -15242,7 +15243,7 @@ function serverTradeMachineRows(rows = []) {
   return Array.from(merged.values());
 }
 
-function serverTradeMachineItemCategory(itemId = '') {
+function serverTradeItemCategory(itemId = '') {
   const id = serverBaseItemId(itemId);
   const category = String(SERVER_ITEM_CATEGORIES[id] || 'misc');
   return ['currency', 'strategic', 'artifacts'].includes(category) ? 'misc' : category;
@@ -15269,7 +15270,7 @@ function serverForgetResidentBonuses(...accountIds) {
   for (const id of accountIds) SERVER_RESIDENT_BONUS_CACHE.delete(String(id || ''));
 }
 
-// Торговец базы улучшает обычную торговлю у торговцев и автоматов.
+// Торговец базы улучшает обычную торговлю у торговцев.
 function serverResidentTradePct(player = {}) {
   return clamp(Number(serverCachedResidentBonuses(player).commonTradePricePct || 0), 0, 0.2);
 }
@@ -15278,16 +15279,16 @@ function serverResidentTradePct(player = {}) {
 // перепродажи, чтобы «продать и сразу выкупить» не приносило марок.
 const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;
 
-function serverTradeMachineBuyPrice(entry = {}, player = {}, includeResident = true) {
+function serverTradeBuyPrice(entry = {}, player = {}, includeResident = true) {
   const discount = Math.min(SERVER_TRADE_MAX_BUY_DISCOUNT, serverSkillNorm(player, 'barter') * 0.24 + serverTalentLevel(player, 'merchant') * 0.05
     + (includeResident ? serverResidentTradePct(player) : 0));
   return Math.max(1, Math.ceil(Math.max(1, Number(entry.price || 1)) * (1 - discount)));
 }
 
-function serverTradeMachineSellPrice(itemId = '', market = {}, player = {}) {
+function serverTradeSellPrice(itemId = '', market = {}, player = {}) {
   const id = serverBaseItemId(itemId);
   const stockEntry = (market.stock || []).find(entry => entry.id === id) || null;
-  let base = SERVER_TRADE_MACHINE_SELL_PRICE_OVERRIDES[id];
+  let base = SERVER_TRADE_SELL_PRICE_BASE[id];
   if (!Number.isFinite(Number(base))) {
     if (stockEntry) base = Math.max(1, Math.floor(Number(stockEntry.price || 1) * 0.45));
     else {
@@ -15303,9 +15304,9 @@ function serverTradeMachineSellPrice(itemId = '', market = {}, player = {}) {
   let price = Math.max(1, Math.floor(Number(base || 1) * charismaBonus));
   // Потолок продажи — от цены покупки без доли Торговца базы: иначе житель,
   // который улучшает обе цены, опускал бы потолок и продажа дешевела.
-  if (stockEntry) price = Math.min(price, Math.max(1, Math.floor(serverTradeMachineBuyPrice(stockEntry, player, false) * 0.85)));
+  if (stockEntry) price = Math.min(price, Math.max(1, Math.floor(serverTradeBuyPrice(stockEntry, player, false) * 0.85)));
   const interests = Array.isArray(market.buyInterests) ? market.buyInterests : [];
-  if (interests.length) price = Math.max(1, Math.round(price * (interests.includes(serverTradeMachineItemCategory(id)) ? 1.24 : 0.84)));
+  if (interests.length) price = Math.max(1, Math.round(price * (interests.includes(serverTradeItemCategory(id)) ? 1.24 : 0.84)));
   return price;
 }
 
@@ -15344,113 +15345,11 @@ function serverCommitArtifactMarketTransfer(player, marketKey, buys, removals) {
   serverRestoreWeaponRuntimeRecords(player, incoming);
 }
 
-function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data = {}, player = null) {
-  const market = serverTradeMachineMarket(room, loc, row);
-  if (!market.ok) return market;
-  const buys = serverTradeMachineRows(data.buys || data.buyRows || []);
-  const sells = serverTradeMachineRows(data.sells || data.sellRows || []);
-  if (!buys.length && !sells.length) return { ok: false, error: 'Выберите товары для обмена.', market };
-
-  syncServerActionProgressionPlayer(player, data);
-  syncServerInventorySnapshot(player, data);
-  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
-  const runtimeRemovals = [];
-  for (const rowToSell of sells) {
-    if (serverInventoryQty(nextInventory, rowToSell.id) < rowToSell.qty) {
-      return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.', market };
-    }
-    const validation = serverValidateWeaponRuntimeRemoval(player, rowToSell, { releaseLoadedAmmo: true });
-    if (!validation.ok) return { ok: false, error: validation.error, market };
-    runtimeRemovals.push({ row: rowToSell, validation, artifactRecords: KROMKA_ARTIFACT_INDEXES.byItem[rowToSell.id]
-      ? serverCaptureWeaponRuntimeRecords(player, rowToSell, validation) : [] });
-  }
-  let buyTotal = 0;
-  for (const rowToBuy of buys) {
-    const offer = market.stock.find(entry => entry.id === rowToBuy.id);
-    if (!offer || Number(offer.qty || 0) < rowToBuy.qty) {
-      return { ok: false, error: 'Запас автомата изменился. Проверьте ассортимент.', market };
-    }
-    if (serverInventoryQty(nextInventory, rowToBuy.id) + rowToBuy.qty > serverItemStackLimit(rowToBuy.id)) {
-      return { ok: false, error: 'Для этого товара нет места в инвентаре.', market };
-    }
-    buyTotal += serverTradeMachineBuyPrice(offer, player) * rowToBuy.qty;
-  }
-  let sellTotal = 0;
-  for (const rowToSell of sells) sellTotal += serverTradeMachineSellPrice(rowToSell.id, market, player) * rowToSell.qty;
-  const net = buyTotal - sellTotal;
-  if (net > 0 && serverInventoryQty(nextInventory, 'silver') < net) {
-    return { ok: false, error: 'Недостаточно марок для обмена.', market };
-  }
-  if (net < 0 && market.caps < Math.abs(net)) {
-    return { ok: false, error: 'У производственной точки не хватает марок для выкупа.', market };
-  }
-  const nextSilver = serverInventoryQty(nextInventory, 'silver') - net;
-  if (nextSilver > serverItemStackLimit('silver')) {
-    return { ok: false, error: 'В инвентаре достигнут предел марок.', market };
-  }
-
-  const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
-  const inventoryResult = serverBuildTradeInventory(nextInventory, sells, buys, unloadedAmmo, nextSilver);
-  if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error, market };
-  nextInventory = inventoryResult.inventory;
-  const inventoryWeight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
-  const capacity = serverCarryCapacityAfterRuntimeRemovals(player, nextInventory, runtimeRemovals);
-  if (inventoryWeight > capacity + 0.0001) {
-    return { ok: false, error: `Перегруз: ${inventoryWeight.toFixed(1)}/${capacity.toFixed(1)} кг.`, market };
-  }
-
-  const applied = WASTELAND_SIM.applyTradeMachineTransaction(market.siteId, {
-    buys,
-    sells,
-    resaleRows: sells.map(entry => ({
-      ...entry,
-      price: serverNpcTradeResalePrice(entry.id, market, player)
-    })),
-    silverDelta: net,
-    playerId: player?.id || '',
-    marketKey: market.marketKey
-  });
-  if (!applied?.ok) {
-    const updatedMarket = serverTradeMachineMarket(room, loc, row);
-    const error = applied?.error === 'insufficient_site_silver'
-      ? 'У производственной точки закончились марки.'
-      : 'Запас производственной точки изменился. Повторите обмен.';
-    return { ok: false, error, market: updatedMarket };
-  }
-
-  player.inventory = nextInventory;
-  player.inventoryUpdatedAt = Date.now();
-  for (const removal of runtimeRemovals) {
-    serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
-  }
-  player.carry = {
-    weight: Number(inventoryWeight.toFixed(3)),
-    capacity: Number(capacity.toFixed(3)),
-    serverCapacity: Number(capacity.toFixed(3)),
-    updatedAt: Date.now()
-  };
-  serverCommitArtifactMarketTransfer(player, `machine:${market.marketKey || market.siteId}`, buys, runtimeRemovals);
-  refreshWastelandWarehouseRoomsForLocation(loc.id || room?.locationId || '');
-  return {
-    ok: true,
-    net,
-    buyTotal,
-    sellTotal,
-    buys,
-    sells,
-    unloadedAmmo,
-    inventory: player.inventory,
-    carry: player.carry,
-    market: serverTradeMachineMarket(room, loc, row),
-    self: publicAuthoritativePlayerState(player)
-  };
-}
-
 function serverNpcPersonalTradePrice(itemId = '') {
   const id = serverBaseItemId(itemId);
-  let base = Number(SERVER_TRADE_MACHINE_SELL_PRICE_OVERRIDES[id]);
+  let base = Number(SERVER_TRADE_SELL_PRICE_BASE[id]);
   if (!Number.isFinite(base)) {
-    const category = serverTradeMachineItemCategory(id);
+    const category = serverTradeItemCategory(id);
     base = category === 'weapons' ? 12
       : category === 'armor' ? 8
         : category === 'ammo' ? 2
@@ -15558,20 +15457,39 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
   const id = serverBaseItemId(itemId);
   const existing = market.stock.find(entry => entry.id === id);
   if (existing) return Math.max(1, Math.floor(Number(existing.price || 1)));
-  const sellPrice = serverTradeMachineSellPrice(id, market, player);
-  const category = serverTradeMachineItemCategory(id);
+  const sellPrice = serverTradeSellPrice(id, market, player);
+  const category = serverTradeItemCategory(id);
   const markup = category === 'ammo' ? 2 : (category === 'materials' ? 1.4 : 1.75);
   // Даже при наибольшей скидке выкуп дороже проданного: ceil(R × (1 − 0,48)) > S.
   return Math.max(sellPrice + 1, Math.round(sellPrice * markup),
     Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT)));
 }
 
+const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Торговцы есть в столицах фракций и на базах Сердцевины, остальное — на аукционе.';
+
+/**
+ * Открыта ли торговля с NPC. В экономике v3 торгуют только торговцы-люди
+ * (роль merchant или trader) в столицах фракций и на базах Сердцевины, а
+ * также скупщик Чёрного рынка; остальные мирные NPC не торгуют.
+ */
+function serverNpcTradeOpen(actor = null, locationId = '') {
+  if (!actor || serverNpcIsNaturalCreature(actor, actor)) return false;
+  if (serverIsBlackMarketActor(actor)) return true;
+  if (!WORLD_ECONOMY.worldModel.npcTraders) return false;
+  if (WORLD_ECONOMY.worldModel.wildTraders) return true;
+  const role = String(actor.role || '').toLowerCase();
+  if (role !== 'merchant' && role !== 'trader') return false;
+  const id = normalizeLocationId(locationId || actor.authoredLocationId || actor.wastelandSiteWorkerLocationId || '');
+  return !!LOCATIONS[id] && locationIsFactionCapital(LOCATIONS[id]);
+}
+
 function performServerNpcTradeExchange(room = null, actor = null, data = {}, player = null) {
   if (!room || !actor || !player) return { ok: false, error: 'Торговец недоступен.' };
   if (serverIsBlackMarketActor(actor)) return performServerBlackMarketSale(room, actor, data, player);
+  if (!serverNpcTradeOpen(actor, room.locationId)) return { ok: false, error: SERVER_NPC_TRADE_CLOSED_ERROR };
   const market = serverNpcTradeMarket(actor);
-  const buys = serverTradeMachineRows(data.buys || data.buyRows || []);
-  const sells = serverTradeMachineRows(data.sells || data.sellRows || []);
+  const buys = serverTradeRequestRows(data.buys || data.buyRows || []);
+  const sells = serverTradeRequestRows(data.sells || data.sellRows || []);
   if (!buys.length && !sells.length) return { ok: false, error: 'Выберите товары для обмена.' };
   syncServerActionProgressionPlayer(player, data);
   let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
@@ -15588,10 +15506,10 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
     const offer = market.stock.find(entry => entry.id === row.id);
     if (!offer || Number(offer.qty || 0) < row.qty) return { ok: false, error: 'Запас торговца изменился. Проверьте ассортимент.' };
     if (serverInventoryQty(nextInventory, row.id) + row.qty > serverItemStackLimit(row.id)) return { ok: false, error: 'Для этого товара нет места в инвентаре.' };
-    buyTotal += serverTradeMachineBuyPrice(offer, player) * row.qty;
+    buyTotal += serverTradeBuyPrice(offer, player) * row.qty;
   }
   let sellTotal = 0;
-  for (const row of sells) sellTotal += serverTradeMachineSellPrice(row.id, market, player) * row.qty;
+  for (const row of sells) sellTotal += serverTradeSellPrice(row.id, market, player) * row.qty;
   const net = buyTotal - sellTotal;
   if (net > 0 && serverInventoryQty(nextInventory, 'silver') < net) return { ok: false, error: 'Недостаточно марок для обмена.' };
   if (net < 0 && market.caps < Math.abs(net)) return { ok: false, error: 'У торговца не хватает марок для выкупа.' };
@@ -18556,6 +18474,8 @@ function publicEnemy(e, viewer = null) {
     traderProfile: naturalCreature ? '' : String(e.traderProfile || '').slice(0, 64),
     dialogueProfile: naturalCreature ? '' : String(e.dialogueProfile || '').slice(0, 64),
     personalTrade: !naturalCreature && e.personalTrade === true,
+    // Клиент предлагает «Покажи товары» только тем, с кем сервер торгует.
+    tradeOpen: serverNpcTradeOpen(e),
     traderQuests: naturalCreature ? [] : (Array.isArray(e.traderQuests) ? e.traderQuests.map(id => String(id || '').slice(0, 64)).filter(Boolean) : []),
     kromkaNamedNpcId: naturalCreature ? '' : String(e.kromkaNamedNpcId || '').slice(0, 96),
     kromkaOnboardingNpcId: naturalCreature ? '' : String(e.kromkaOnboardingNpcId || '').slice(0, 96),
@@ -19858,17 +19778,130 @@ function serverReturnClosedSiegePlayers(event = {}, now = Date.now()) {
 // фракции, предметы, артефакты и удержанные марки лежат на сервере, выручка и
 // возвраты — на полке торговца у аукционера.
 // ---------------------------------------------------------------------------
-function serverAuctionStore() {
+function serverCityMarkets() {
+  if (!savesDb.markets || typeof savesDb.markets !== 'object') {
+    savesDb.markets = normalizeCityMarkets(null, null, Date.now());
+  }
+  return savesDb.markets;
+}
+
+/** Книга аукционера: своя у каждой столицы (v3) или общая прежняя. */
+function serverAuctionStore(hubId = '') {
+  if (WORLD_ECONOMY.worldModel.cityAuctions) return cityBook(serverCityMarkets(), hubId);
   if (!savesDb.market || typeof savesDb.market !== 'object') savesDb.market = normalizeMarketStore(null);
   return savesDb.market;
+}
+
+/** Премиум аккаунта (этап 6 KRM-22); пока его нельзя получить. */
+function serverPlayerHasPremium(player = null) {
+  return false;
+}
+
+/** Правила книги для продавца: налог зависит от премиума и жителей базы. */
+function serverAuctionRulesFor(player = null) {
+  if (!WORLD_ECONOMY.worldModel.cityAuctions) return KROMKA_AUCTION_RULES;
+  return cityAuctionRulesForSeller(WORLD_ECONOMY.auctions, {
+    premium: serverPlayerHasPremium(player),
+    residentPct: player ? serverResidentTradePct(player) : 0
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Участки станков (экономика v3, библия 14.5): станок поселения сдаётся в
+// аренду на торгах, арендатор назначает плату за пользование, свободный
+// участок берёт плату поселения, которая сгорает.
+// ---------------------------------------------------------------------------
+function serverPlotsActive() {
+  return !WORLD_ECONOMY.worldModel.npcStations;
+}
+
+function serverCraftingPlotStore() {
+  if (!savesDb.craftingPlots || typeof savesDb.craftingPlots !== 'object') {
+    savesDb.craftingPlots = normalizeCraftingPlotState(null, WORLD_ECONOMY.plots);
+  }
+  return savesDb.craftingPlots;
+}
+
+/** Участки есть в поселениях; личная и клановые базы и обучение — не участки. */
+function serverLocationHasPlots(loc = {}) {
+  if (!serverPlotsActive() || !loc?.id) return false;
+  const id = normalizeLocationId(loc.id);
+  if (WORLD_ECONOMY.plots.excludedLocations.includes(id)) return false;
+  const kind = String(loc.kind || '');
+  return kind !== 'clanBase' && kind !== 'personalBase' && kind !== 'tutorial' && loc.privateInstance !== true;
+}
+
+function serverStationKeyForObject(row = {}) {
+  for (const key of Object.keys(SERVER_CRAFT_STATION_MODELS)) {
+    if (serverCraftingObjectMatchesStation(row, key)) return key;
+  }
+  return '';
+}
+
+function serverLocationPlots(loc = {}) {
+  if (!serverLocationHasPlots(loc)) return [];
+  const store = serverCraftingPlotStore();
+  const out = [];
+  for (const row of Array.isArray(loc.objects) ? loc.objects : []) {
+    const station = serverStationKeyForObject(row);
+    if (!station) continue;
+    const plot = ensurePlot(store, WORLD_ECONOMY.plots, { locationId: loc.id, objectId: row.id, station });
+    if (plot) out.push(plot);
+  }
+  return out;
+}
+
+/** Невыплаченные марки участков (возвраты ставок, плата арендатору) — в рюкзак. */
+function serverApplyPlotPayout(player = null) {
+  if (!player?.characterId) return 0;
+  const room = Math.max(0, serverItemStackLimit('silver') - serverInventoryQty(player.inventory || [], 'silver'));
+  const amount = takePlotPayout(serverCraftingPlotStore(), player.characterId, room);
+  if (amount <= 0) return 0;
+  serverInventoryAdd(player, 'silver', amount);
+  scheduleServerPublicEventPersist();
+  return amount;
+}
+
+/** Выплата уходит сразу, если получатель в игре; иначе ждёт его. */
+function serverDeliverPlotPayout(characterId = '') {
+  const id = String(characterId || '');
+  if (!id) return 0;
+  for (const player of players.values()) {
+    if (String(player?.characterId || '') !== id) continue;
+    const amount = serverApplyPlotPayout(player);
+    if (amount > 0) {
+      persistActivePlayerState(player);
+      emitAuthoritativePlayerState(player, { reason: 'plotPayout' });
+    }
+    return amount;
+  }
+  return 0;
+}
+
+function serverPlotStateFor(player = null, loc = {}, now = Date.now()) {
+  const payout = serverApplyPlotPayout(player);
+  return {
+    locationId: String(loc?.id || ''),
+    plots: serverLocationPlots(loc).map(plot => publicPlot(plot, WORLD_ECONOMY.plots, player?.characterId || '', now)),
+    payout
+  };
+}
+
+function serverTickCraftingPlots(now = Date.now()) {
+  if (!serverPlotsActive()) return 0;
+  const changes = settleCraftingPlots(serverCraftingPlotStore(), WORLD_ECONOMY.plots, now);
+  if (changes.length) scheduleServerPublicEventPersist();
+  return changes.length;
 }
 
 function serverTickAuctions(now = Date.now()) {
   // Истёкший ордер на продажу возвращает товар, ордер на выкуп — удержанные
   // марки; и то и другое ложится на полку у аукционера.
-  const resolved = marketExpireOrders(serverAuctionStore(), KROMKA_AUCTION_RULES, now);
-  if (resolved.length) scheduleServerPublicEventPersist();
-  return resolved.length;
+  const resolved = WORLD_ECONOMY.worldModel.cityAuctions
+    ? expireCityMarkets(serverCityMarkets(), now)
+    : marketExpireOrders(serverAuctionStore(), KROMKA_AUCTION_RULES, now).length;
+  if (resolved) scheduleServerPublicEventPersist();
+  return resolved;
 }
 
 // Ордер на выкуп ставится только на предметы без собственного состояния:
@@ -19965,8 +19998,7 @@ function serverRepairmanRepair(p = {}, data = {}) {
 }
 
 // Полка забирается целиком в пределах переносимого веса и предела стаков.
-function serverClaimAuctionShelf(p, data = {}, now = Date.now()) {
-  const store = serverAuctionStore();
+function serverClaimAuctionShelf(p, data = {}, now = Date.now(), store = serverAuctionStore()) {
   const shelf = marketShelfFor(store, p.characterId);
   if (shelf.silver <= 0 && !shelf.items.length) return { ok: false, error: 'Полка пуста.' };
   const requested = [];
@@ -28203,15 +28235,21 @@ io.on('connection', (socket) => {
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const loc = room ? roomLocation(room) : null;
-    // Книга одна на всю пустошь, а торгует ею любой аукционер: членство во
-    // фракции больше ничего не решает, важны защищённая столица и сам аукционер.
+    // Членство во фракции ничего не решает, важны защищённая столица и сам
+    // аукционер. В экономике v3 у каждой столицы своя книга.
     if (!loc || loc.safe !== true) return fail('Рынок работает только в защищённом поселении.');
     if (!serverNearbyServiceActor(p, 'auction')) return fail('Аукционер должен быть рядом.');
     const now = Date.now();
-    const store = serverAuctionStore();
-    marketExpireOrders(store, KROMKA_AUCTION_RULES, now);
+    const cityAuctions = WORLD_ECONOMY.worldModel.cityAuctions;
+    const hubId = cityAuctions ? normalizeLocationId(loc.id || room.locationId || '') : 'wasteland';
+    if (cityAuctions && adoptLegacyShelf(serverCityMarkets(), hubId, p.characterId)) scheduleServerPublicEventPersist();
+    const store = serverAuctionStore(hubId);
+    const auctionRules = serverAuctionRulesFor(p);
+    marketExpireOrders(store, auctionRules, now);
     const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
-    const auctionState = () => publicMarket(store, p.characterId, KROMKA_AUCTION_RULES, now, {
+    const auctionState = () => publicMarket(store, p.characterId, auctionRules, now, {
+      marketId: hubId,
+      marketName: cityAuctions ? String(loc.name || hubId) : '',
       // Состояние артефакта видно до покупки; скрытые свойства сырого
       // экземпляра публичная проекция по-прежнему не отдаёт.
       projectArtifact: record => publicArtifactRecord(record, KROMKA_ARTIFACT_CATALOG)
@@ -28230,7 +28268,7 @@ io.on('connection', (socket) => {
     }
     const orderId = String(data.orderId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     const durationHours = Math.max(0, Math.floor(Number(data.durationHours || 0)));
-    const durationMs = durationHours > 0 ? durationHours * 3600000 : KROMKA_AUCTION_RULES.listingLifetimeMs;
+    const durationMs = durationHours > 0 ? durationHours * 3600000 : auctionRules.listingLifetimeMs;
     let payload = null;
     if (action === 'sell') {
       // Ордер на продажу: товар уходит на сервер, встречные ордера на выкуп
@@ -28241,7 +28279,7 @@ io.on('connection', (socket) => {
       if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
       if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
       if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
-      const setupFee = marketSetupFee(qty, price, KROMKA_AUCTION_RULES);
+      const setupFee = marketSetupFee(qty, price, auctionRules);
       if (serverInventoryQty(p.inventory, 'silver') < setupFee) return fail(`Сбор за ордер — ${setupFee} марок.`);
       const row = { id: itemId, qty, itemRuntimeId: String(data.itemRuntimeId || '').slice(0, 96) };
       const validation = serverValidateWeaponRuntimeRemoval(p, row, { releaseLoadedAmmo: true });
@@ -28252,8 +28290,10 @@ io.on('connection', (socket) => {
       const placed = marketPlaceSellOrder(store, {
         ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs, records,
         // Категория ордера — собственная категория предмета из каталога сервера.
-        category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc'
-      }, KROMKA_AUCTION_RULES, now);
+        category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc',
+        // Ставка налога продавца на момент выставления.
+        taxPct: auctionRules.taxPct
+      }, auctionRules, now);
       if (!placed.ok) {
         serverInventoryAdd(p, itemId, qty);
         serverRestoreWeaponRuntimeRecords(p, records);
@@ -28282,13 +28322,13 @@ io.on('connection', (socket) => {
         return fail('Ордер на выкуп ставится только на предметы без износа и собственных свойств.');
       }
       if (qty <= 0) return fail('Укажите количество.');
-      const setupFee = marketSetupFee(qty, price, KROMKA_AUCTION_RULES);
+      const setupFee = marketSetupFee(qty, price, auctionRules);
       const reserve = qty * price + setupFee;
       if (serverInventoryQty(p.inventory, 'silver') < reserve) return fail(`Нужно ${reserve} марок: ордер и сбор.`);
       const placed = marketPlaceBuyOrder(store, {
         ownerCharacterId: p.characterId, ownerName: p.name, itemId, qty, price, durationMs,
         category: KROMKA_ITEM_INDEXES.categories[itemId] || 'misc'
-      }, KROMKA_AUCTION_RULES, now);
+      }, auctionRules, now);
       if (!placed.ok) return fail(placed.error);
       serverInventoryRemove(p, 'silver', placed.spent + placed.escrow + placed.setupFee);
       // Купленное сразу кладём в рюкзак, а что не поднять — на полку: товар по
@@ -28323,7 +28363,7 @@ io.on('connection', (socket) => {
       if (serverInventoryQty(p.inventory, 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
       const carryCheck = serverLimitItemsByCarry(p, data, [{ id: order.itemId, qty: take }], { apply: false });
       if (!carryCheck.items.some(entry => entry.id === order.itemId && entry.qty >= take)) return fail('Нет места или грузоподъёмности для покупки.');
-      const bought = marketTakeSellOrder(store, orderId, p.characterId, take, KROMKA_AUCTION_RULES, now);
+      const bought = marketTakeSellOrder(store, orderId, p.characterId, take, auctionRules, now);
       if (!bought.ok) return fail(bought.error);
       serverInventoryRemove(p, 'silver', bought.cost);
       serverInventoryAdd(p, bought.order.itemId, bought.qty);
@@ -28348,7 +28388,7 @@ io.on('connection', (socket) => {
       const records = serverCaptureWeaponRuntimeRecords(p, row, validation);
       serverInventoryRemove(p, itemId, take);
       serverFinalizeWeaponRuntimeRemoval(p, row, validation);
-      const sold = marketTakeBuyOrder(store, orderId, p.characterId, take, records, KROMKA_AUCTION_RULES, now);
+      const sold = marketTakeBuyOrder(store, orderId, p.characterId, take, records, auctionRules, now);
       if (!sold.ok) {
         serverInventoryAdd(p, itemId, take);
         serverRestoreWeaponRuntimeRecords(p, records);
@@ -28366,7 +28406,7 @@ io.on('connection', (socket) => {
       if (!cancelled.ok) return fail(cancelled.error);
       payload = { ok: true, action, orderId, side: cancelled.order.side };
     } else {
-      const claimed = serverClaimAuctionShelf(p, data, now);
+      const claimed = serverClaimAuctionShelf(p, data, now, store);
       if (!claimed.ok) return fail(claimed.error);
       payload = { ok: true, action, ...claimed };
     }
@@ -30334,25 +30374,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('tradeMachineMarketState', (data = {}, ack) => {
-    const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    const room = rooms.get(p.roomId);
-    if (!room) return fail('Локация не найдена.');
-    ensureRoomWorld(room);
-    const loc = roomLocation(room);
-    const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
-    if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
-    if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
-      return fail('Подойдите ближе к торговому автомату.');
-    }
-    if (!serverInteractionHasLineOfSight(room, p, point)) return fail('Торговый автомат находится за препятствием.');
-    const market = serverTradeMachineMarket(room, loc, machine);
-    if (typeof ack === 'function') ack(market);
-  });
-
   socket.on('storageTransfer', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
@@ -30468,50 +30489,53 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('tradeMachineExchange', (data = {}, ack) => {
+  // Участок станка: снимок участков локации, ставка на аренду, плата арендатора.
+  socket.on('craftingPlotAction', (data = {}, ack) => {
     const p = players.get(socket.id);
-    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
-    if (!room) return fail('Локация не найдена.');
-    ensureRoomWorld(room);
-    const loc = roomLocation(room);
-    const machine = serverTradeMachineObject(loc, data.machineId || data.id || '');
-    if (!machine) return fail('Торговый автомат не найден в этой локации.');
-    const point = serverLocationObjectWorldPoint(machine, locationTileDims(loc));
-    if (!point || Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > 5.2) {
-      return fail('Подойдите ближе к торговому автомату.');
-    }
-    if (!serverInteractionHasLineOfSight(room, p, point)) return fail('Торговый автомат находится за препятствием.');
-    const transaction = beginInventoryMutation(
-      p,
-      'tradeMachineExchange',
-      data,
-      ['machineId', 'id', 'buys', 'buyRows', 'sells', 'sellRows']
-    );
+    const loc = room ? roomLocation(room) : null;
+    if (!loc) return fail('Локация не найдена.');
+    const now = Date.now();
+    serverTickCraftingPlots(now);
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const reply = payload => {
+      const state = serverPlotStateFor(p, loc, now);
+      if (state.payout > 0) persistActivePlayerState(p);
+      if (typeof ack === 'function') ack({ ok: true, ...payload, ...state, self: publicAuthoritativePlayerState(p) });
+    };
+    if (action === 'state') return reply({ action });
+    if (!['bid', 'setFee'].includes(action)) return fail('Неизвестное действие участка.');
+    if (!serverLocationHasPlots(loc)) return fail('Здесь нет участков.');
+    const plotId = String(data.plotId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 170);
+    const plot = serverLocationPlots(loc).find(row => row.id === plotId);
+    if (!plot) return fail('Такого участка в этой локации нет.');
+    const transaction = beginCriticalAction(p, 'craftingPlotAction', data, ['action', 'plotId', 'amount', 'feePct']);
     if (!transaction.ok) return fail(transaction.error);
-    if (transaction.replay) {
-      return typeof ack === 'function' && ack({
-        ...transaction.result,
-        inventory: p.inventory,
-        carry: sanitizeCarrySnapshot(p),
-        market: serverTradeMachineMarket(room, loc, machine),
-        self: publicAuthoritativePlayerState(p)
-      });
+    if (transaction.replay) return reply({ ...transaction.result, replay: true });
+    const store = serverCraftingPlotStore();
+    let payload = null;
+    if (action === 'bid') {
+      const amount = Math.max(0, Math.floor(Number(data.amount || 0)));
+      if (serverInventoryQty(p.inventory || [], 'silver') < amount) return fail(`Не хватает марок: нужно ${amount}.`);
+      const placed = placePlotBid(store, WORLD_ECONOMY.plots, plot.id, { characterId: p.characterId, name: p.name }, amount, now);
+      if (!placed.ok) return fail(placed.error);
+      serverInventoryRemove(p, 'silver', amount);
+      if (placed.refunded) serverDeliverPlotPayout(placed.refunded.characterId);
+      payload = { ok: true, action, plotId: plot.id, amount };
+    } else {
+      const changed = setPlotFee(store, WORLD_ECONOMY.plots, plot.id, p.characterId, Number(data.feePct), now);
+      if (!changed.ok) return fail(changed.error);
+      payload = { ok: true, action, plotId: plot.id, feePct: changed.plot.feePct };
     }
-    const result = performServerTradeMachineExchange(room, loc, machine, data, p);
-    if (!result?.ok) {
-      if (typeof ack === 'function') ack(result);
-      return;
-    }
-    commitInventoryMutation(p, transaction, { ...result, machineId: String(machine.id || '') });
+    commitCriticalAction(p, transaction, payload);
+    scheduleServerPublicEventPersist();
+    sanitizeCarrySnapshot(p);
     persistActivePlayerState(p);
-    if (typeof ack === 'function') ack(result);
-    io.to(room.id).emit('tradeMachineMarketUpdated', {
-      machineId: String(machine.id || ''),
-      market: result.market,
-      t: Date.now()
-    });
+    emitAuthoritativePlayerState(p, { reason: 'craftingPlot' });
+    reply(payload);
   });
 
   socket.on('craftingStationUsed', (data = {}, ack) => {
@@ -31440,6 +31464,7 @@ io.on('connection', (socket) => {
     const grudgeHours = serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
 
+    if (!serverNpcTradeOpen(actor, room.locationId)) return fail(SERVER_NPC_TRADE_CLOSED_ERROR);
     const enemy = publicEnemy(actor);
     const market = serverIsBlackMarketActor(actor) ? serverBlackMarketTradeMarket(p) : serverNpcTradeMarket(actor);
     if (typeof ack === 'function') ack({ ok: true, enemy, market, readOnly: true });
@@ -32402,6 +32427,15 @@ setInterval(() => {
     console.error('Black market tick failed:', error);
   }
 }, 60000);
+
+// Участки станков: итоги торгов и конец аренды.
+setInterval(() => {
+  try {
+    serverTickCraftingPlots(Date.now());
+  } catch (error) {
+    console.error('Crafting plot tick failed:', error);
+  }
+}, 30000);
 
 // Мировой босс: щит, уязвимость, импульсы, перерождение.
 setInterval(() => {

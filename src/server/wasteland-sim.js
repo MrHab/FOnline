@@ -12533,7 +12533,7 @@ function createWastelandSimulation(options = {}) {
     return changed;
   }
 
-  function applyTradeMachineTransaction(siteId = '', trade = {}) {
+  function applyRetailTransaction(siteId = '', trade = {}) {
     const key = safeId(siteId || trade.siteId || '', '');
     const site = key ? state.sites[key] : null;
     if (!site) return { ok: false, error: 'missing_site', siteId: key };
@@ -12595,8 +12595,8 @@ function createWastelandSimulation(options = {}) {
       }
       site.retailMarkets[marketKey] = storedMarket;
       refreshSiteRetailDemand(site);
-      site.lastTradeMachineHour = Number(state.worldHour || 0);
-      site.lastTradeMachineTransaction = { playerId: String(trade.playerId || '').slice(0, 64), buys, sells, silverDelta, marketKey };
+      site.lastRetailTradeHour = Number(state.worldHour || 0);
+      site.lastRetailTransaction = { playerId: String(trade.playerId || '').slice(0, 64), buys, sells, silverDelta, marketKey };
       dirty = true;
       save(true);
       return { ok: true, siteId: site.id, marketKey, stock: clone(storedMarket.stock), caps: storedMarket.caps, market: clone(storedMarket) };
@@ -12623,8 +12623,8 @@ function createWastelandSimulation(options = {}) {
     next.silver = nextSilver;
     site.stockpile = next;
     site.resourceActivity = resourceActivityPercent(site, state.worldHour);
-    site.lastTradeMachineHour = Number(state.worldHour || 0);
-    site.lastTradeMachineTransaction = {
+    site.lastRetailTradeHour = Number(state.worldHour || 0);
+    site.lastRetailTransaction = {
       playerId: String(trade.playerId || '').slice(0, 64),
       buys,
       sells,
@@ -12646,7 +12646,7 @@ function createWastelandSimulation(options = {}) {
         restockHours: trade.restockHours
       }, { ...context, siteId: site.id, marketKey: key });
     }
-    return applyTradeMachineTransaction(site.id, { ...trade, marketKey: key });
+    return applyRetailTransaction(site.id, { ...trade, marketKey: key });
   }
 
   function syncTraderMarket(profileId = '', snapshot = {}, context = {}) {
@@ -14078,7 +14078,7 @@ function createWastelandSimulation(options = {}) {
     applyNpcTraderTransaction,
     consumeTraderStock,
     receiveTraderStock,
-    applyTradeMachineTransaction,
+    applyRetailTransaction,
     syncTraderMarket,
     performVisibleSiteWork,
     recordEncounterOutcome,

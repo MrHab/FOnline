@@ -32,7 +32,7 @@ assert(/roomStaticCollisionBlocksSegment[\s\S]*isRoomFullVisionBlocker/.test(
   'Authoritative LoS must include precise static collision and authored vision blockers.');
 
 [
-  'npcDialogueFocus', 'tradeMachineMarketState', 'storageTransfer', 'tradeMachineExchange',
+  'npcDialogueFocus', 'storageTransfer',
   'harvestResource', 'syncNpcTradeState', 'npcTradeExchange', 'robEncounterActor',
   'inspectCorpse', 'lootEnemy', 'pickupGroundItem', 'pickLock', 'hackTerminal',
   'openWorldContainer', 'lootWorldContainer'

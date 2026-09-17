@@ -19,7 +19,14 @@ namespace RealmOfAshes.Game
         public int SilverFee;
         public int WorkSeconds;
 
-        public int Fee
+        /// <summary>
+        /// Комиссия заказа: на участке столицы её назначает арендатор
+        /// (RoaCraftingPlots), иначе — прежняя комиссия рецепта.
+        /// </summary>
+        public int Fee { get { return RoaCraftingPlots.FeeFor(this); } }
+
+        /// <summary>Комиссия рецепта без участка — нижняя граница платы.</summary>
+        public int BaseFee
         {
             get
             {

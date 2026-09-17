@@ -1564,8 +1564,8 @@ function assertDestroyedPatrolFailsMissionOperation() {
     'destroyed patrol operation has no terminal time');
 }
 
-function assertTradeMachineStockIsActuallyBacked() {
-  const { sim, state } = simulation('trade-machine-stock');
+function assertRetailStockIsActuallyBacked() {
+  const { sim, state } = simulation('retail-stock');
   state.sites.ammoWorks = site('ammoWorks', 390, 90, {
     type: 'production',
     owner: 'old_klim',
@@ -1589,13 +1589,13 @@ function assertTradeMachineStockIsActuallyBacked() {
   const offer = market.stock.find(row => row.id === 'ammo9');
 
   assert(offer, 'ammo workshop stopped offering its available 9mm ammunition');
-  assert.strictEqual(offer.qty, 18, 'trade machine advertised more ammunition than the site can deliver');
-  const purchase = sim.applyTradeMachineTransaction('ammoWorks', {
+  assert.strictEqual(offer.qty, 18, 'the site shop advertised more ammunition than the site can deliver');
+  const purchase = sim.applyRetailTransaction('ammoWorks', {
     buys: [{ id: 'ammo9', qty: offer.qty }],
     silverDelta: offer.qty * offer.price,
     playerId: 'economy-check'
   });
-  assert(purchase.ok, 'trade machine could not deliver the full quantity shown in its market');
+  assert(purchase.ok, 'the site shop could not deliver the full quantity shown in its market');
   assert.strictEqual(Math.floor(Number(state.sites.ammoWorks.stockpile.ammo9 || 0)), 0,
     'successful ammunition purchase did not consume the real site stock');
 }
@@ -1900,7 +1900,7 @@ try {
   assertPatrolParticipationTerminalKeepsNpcOperationActive();
   assertPatrolOperationRewardRequiresCompletedDuty();
   assertDestroyedPatrolFailsMissionOperation();
-  assertTradeMachineStockIsActuallyBacked();
+  assertRetailStockIsActuallyBacked();
   assertWorldTaskOutcomeStatsStayAccurate();
   assertFactionCaravanLossIsCountedAndFailsEscort();
   assertLiveCaravanBattleLossIsNotDoubleCounted();

@@ -68,7 +68,7 @@ namespace RealmOfAshes.EditorTools
                 canvas.Inventory = inventoryComponent;
 
                 // Регрессия со сделки фельдшера Старого Клима: экран должен считать эти
-                // продажи так же, как serverTradeMachineSellPrice с каталогом «Кромки»
+                // продажи так же, как serverTradeSellPrice с каталогом «Кромки»
                 // (47 и 32; до каталога цены были 56 и 32).
                 JObject quoteSelf = JObject.Parse(
                     "{\"special\":{\"cha\":5,\"int\":5},\"skillRanks\":{\"barter\":25},\"talentRanks\":{},\"traits\":[]}");

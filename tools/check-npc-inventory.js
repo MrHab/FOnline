@@ -376,8 +376,7 @@ assert(traderStateSource.includes("multiplayer.socket.emit('syncNpcTradeState', 
   'The client must request NPC trade state without uploading a shadow wallet or inventory');
 assert(!traderStateSource.includes('if (actor) actor.traderCaps'),
   'Client NPC currency updates must write only the silver inventory row');
-assert(traderStateSource.includes('caps: trader.isTradeMachine ? baseCaps : physicalCaps')
-  && traderStateSource.includes('caps: trader.isTradeMachine ? Math.max(0, Math.floor(Number(existing.caps || 0))) : physicalCaps'),
+assert(traderStateSource.split('        caps: physicalCaps,').length - 1 === 2 && !traderStateSource.includes('isTradeMachine'),
   'Client market cache must take NPC caps from physical inventory on create, reload and day rollover');
 assert(traderStateSource.includes("return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);"), 'Client must recognize every friendly sapient NPC as a barter partner');
 assert(dialogueSource.includes('function renderFriendlyNpcDialogue'), 'Client must provide a generic non-quest dialogue for friendly NPCs');

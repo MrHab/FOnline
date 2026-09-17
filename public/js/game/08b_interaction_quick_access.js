@@ -121,7 +121,6 @@
     if (target.type === 'storage') return openStorageWindow();
     if (target.type === 'jobBoard') return openWorldTaskBoardWindow(target.board);
     if (target.type === 'craftingStation') return openCraftingStationWindow(target.station);
-    if (target.type === 'tradeMachine') return openTraderWindow(target.machine);
     if (target.type === 'resource') return tryHarvestResourceWithHeldTool(target.resource);
     return false;
   }
@@ -151,7 +150,6 @@
     if (target.type === 'trader') return 'E - поговорить с торговцем.';
     if (target.type === 'storage') return 'E - открыть хранилище.';
     if (target.type === 'jobBoard') return 'E - открыть доску заданий.';
-    if (target.type === 'tradeMachine') return 'E - открыть торговый автомат.';
     if (target.type === 'craftingStation') return 'E - \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0441\u0442\u0430\u043d\u043e\u043a.';
     if (target.type === 'resource') {
       const def = interactionResourceDef(target.resource);

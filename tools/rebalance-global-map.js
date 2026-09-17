@@ -1031,26 +1031,6 @@ function obj(id, model, name, x, z, opts = {}) {
   };
 }
 
-function productionTradeMachine(id, name, x, z, siteId, traderProfile, caps, buyInterests, stock) {
-  const row = obj(id, 'tradeMachine', name, x, z, {
-    file: 'trade_machine.glb',
-    collision: 'solid',
-    tags: ['interactive', 'tradeMachine', 'vendingMachine', 'production-market'],
-    vision: 'cover',
-    ry: Math.PI
-  });
-  row.interactive = {
-    kind: 'tradeMachine',
-    role: 'productionTradeMachine',
-    siteId,
-    traderProfile,
-    caps,
-    buyInterests,
-    stock
-  };
-  return row;
-}
-
 function writeLocationFiles() {
   const files = [
     baseLocation('resourceOldKlimFarm', 'Сухая ферма Старого Клима', {
@@ -1079,10 +1059,6 @@ function writeLocationFiles() {
       containers: [{ id: 'klim_ammo_crate', tx: 16, tz: 18, name: 'Ящик мастерской', tier: 'ammo', locked: true, lockDifficulty: 'medium' }],
       objects: [
         obj('klim_workbench_01', 'workshopBench', 'Оружейный верстак', -4, -6, { file: 'workshop_bench.glb', collision: 'solid', tags: ['cover', 'workshop'], vision: 'cover' }),
-        productionTradeMachine('klim_ammo_trade_machine', 'Автомат снабжения патронной мастерской', 4, 6, 'klimAmmoWorks', 'klimAmmoWorksMachine', 180, ['ammo', 'materials', 'weapons', 'tools'], [
-          { id: 'ammo9', price: 3, qty: 120 }, { id: 'ammo556', price: 5, qty: 80 }, { id: 'ammoParts', price: 4, qty: 24 },
-          { id: 'repairKit', price: 22, qty: 4 }, { id: 'pistol', price: 58, qty: 2 }, { id: 'rifle', price: 88, qty: 1 }
-        ]),
         obj('klim_armory_01', 'armoryRack', 'Стойка с деталями', 8, -4, { file: 'armory_rack.glb', collision: 'solid', tags: ['cover', 'workshop'], vision: 'cover' }),
         obj('klim_cargo_01', 'cargoStack', 'Ящики патронов', -9, 7, { file: 'cargo_stack.glb', collision: 'cover', tags: ['cover'], vision: 'cover' }),
         obj('klim_barricade_01', 'roadblockBarricade', 'Баррикада мастерской', 10, 10, { file: 'roadblock_barricade.glb', collision: 'cover', tags: ['cover'], vision: 'cover', ry: 0.5 })
@@ -1103,10 +1079,6 @@ function writeLocationFiles() {
       containers: [{ id: 'foundry_parts_crate', tx: 18, tz: 17, name: 'Ящик литейной', tier: 'tools' }],
       objects: [
         obj('foundry_workbench_01', 'workshopBench', 'Пресс литейной', -5, -5, { file: 'workshop_bench.glb', collision: 'solid', tags: ['cover', 'workshop'], vision: 'cover' }),
-        productionTradeMachine('scrap_foundry_trade_machine', 'Автомат снабжения литейной', 2, 7, 'scrapFoundry', 'scrapFoundryMachine', 170, ['materials', 'tools', 'weapons', 'armor'], [
-          { id: 'scrap', price: 4, qty: 24 }, { id: 'ammoParts', price: 4, qty: 24 }, { id: 'weaponParts', price: 14, qty: 8 },
-          { id: 'repairKit', price: 20, qty: 5 }, { id: 'rifle', price: 84, qty: 2 }, { id: 'metalArmor', price: 38, qty: 1 }
-        ]),
         obj('foundry_scrap_01', 'scrapHeap', 'Куча металлолома', 8, -6, { file: 'scrap_heap.glb', collision: 'resource', tags: ['resource', 'scrap'], resourceType: 'scrap', hp: 6 }),
         obj('foundry_storage_01', 'storageLeanTo', 'Складской навес', -10, 9, { file: 'storage_lean_to.glb', collision: 'solid', tags: ['cover'], vision: 'block' }),
         obj('foundry_barrels_01', 'barrelCluster', 'Топливные бочки', 11, 8, { file: 'barrel_cluster.glb', collision: 'cover', tags: ['cover'], vision: 'cover' })
@@ -1136,10 +1108,6 @@ function writeLocationFiles() {
       containers: [{ id: 'relay_workshop_tools', tx: 17, tz: 18, name: 'Ящик техников', tier: 'tools' }],
       objects: [
         obj('relay_workbench_01', 'workshopBench', 'Технический верстак', -5, -6, { file: 'workshop_bench.glb', collision: 'solid', tags: ['cover', 'workshop'], vision: 'cover' }),
-        productionTradeMachine('relay_workshop_trade_machine', 'Автомат снабжения техмастерской', 3, 9, 'relayWorkshop', 'relayWorkshopMachine', 190, ['materials', 'ammo', 'tools', 'weapons'], [
-          { id: 'electronics', price: 9, qty: 18 }, { id: 'energyCell', price: 5, qty: 72 }, { id: 'napalm', price: 7, qty: 36 },
-          { id: 'repairKit', price: 24, qty: 5 }, { id: 'laserPistol', price: 92, qty: 2 }, { id: 'plasmaRifle', price: 180, qty: 1 }
-        ]),
         obj('relay_pole_01', 'utilityPole', 'Мачта питания', 8, -7, { file: 'utility_pole.glb', collision: 'cover', tags: ['cover'], vision: 'cover' }),
         obj('relay_cargo_01', 'cargoStack', 'Ящики электроники', -9, 8, { file: 'cargo_stack.glb', collision: 'cover', tags: ['cover'], vision: 'cover' }),
         obj('relay_antenna_01', 'relayAntenna', 'Малая антенна', 9, 8, { file: 'relay_antenna.glb', collision: 'cover', tags: ['cover'], vision: 'cover', scale: { x: 0.75, y: 0.75, z: 0.75 } })
@@ -1152,10 +1120,6 @@ function writeLocationFiles() {
         obj('solar_pole_01', 'utilityPole', 'Опора станции', -9, -8, { file: 'utility_pole.glb', collision: 'cover', tags: ['cover'], vision: 'cover' }),
         obj('solar_pole_02', 'utilityPole', 'Опора станции', 8, -8, { file: 'utility_pole.glb', collision: 'cover', tags: ['cover'], vision: 'cover' }),
         obj('solar_workbench_01', 'workshopBench', 'Инверторный щит', 0, 7, { file: 'workshop_bench.glb', collision: 'solid', tags: ['cover', 'workshop'], vision: 'cover' }),
-        productionTradeMachine('solar_array_trade_machine', 'Автомат снабжения солнечной станции', 8, 7, 'solarArray', 'solarArrayMachine', 130, ['materials', 'ammo', 'tools'], [
-          { id: 'energyCell', price: 4, qty: 96 }, { id: 'electronics', price: 8, qty: 14 },
-          { id: 'repairKit', price: 22, qty: 4 }, { id: 'laserPistol', price: 90, qty: 1 }
-        ])
       ]
     }),
     baseLocation('mutantCrater', 'Кратер супермутантов', {

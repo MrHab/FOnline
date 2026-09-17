@@ -11,10 +11,12 @@
     "npcProduction": false,
     "worldCaravans": false,
     "npcTraders": true,
-    "npcStations": true,
+    "wildTraders": false,
+    "npcStations": false,
     "npcGearDrops": false,
     "visibleWorldParties": true,
-    "blackMarket": true
+    "blackMarket": true,
+    "cityAuctions": true
   },
   "zones": {
     "brokenBelowCondition": 10,
@@ -22,6 +24,36 @@
     "blackDrop": { "trashChance": 0.33, "trashItemId": "scrap", "trashValueShare": 0.25, "droppedWearMin": 20, "droppedWearMax": 40 },
     "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 },
     "gatherYield": { "peaceful": 1, "pve": 1, "pvp": 1.25, "pvpFullDrop": 1.6, "pvpBlack": 2, "pvpEvent": 1 }
+  },
+  "auctions": {
+    "taxPct": 0.08,
+    "premiumTaxPct": 0.04,
+    "setupFeePct": 0.025,
+    "durationChoicesHours": [24, 72, 168, 720],
+    "listingLifetimeHours": 168,
+    "maxOrdersPerTrader": 30,
+    "maxOrders": 1500,
+    "residentTaxShare": 1
+  },
+  "plots": {
+    "leaseDays": 7,
+    "auctionHours": 24,
+    "extendMinutes": 5,
+    "minBid": 100,
+    "bidStepPct": 0.05,
+    "defaultFeePct": 0.05,
+    "maxFeePct": 0.3,
+    "unleasedFeePct": 0.15,
+    "plotBonus": 18,
+    "regionBonus": 15,
+    "premiumFocusBonus": 59,
+    "regions": {
+      "settlement": ["weapon_bench", "repair_bench"],
+      "scrapTown": ["tool_bench", "weapon_bench"],
+      "relayStation": ["energy_bench", "chem_station"],
+      "caravanCamp": ["ammo_bench", "chem_station"]
+    },
+    "excludedLocations": ["tutorialCaravanYard", "personalBase"]
   },
   "blackMarket": {
     "service": "blackMarket",

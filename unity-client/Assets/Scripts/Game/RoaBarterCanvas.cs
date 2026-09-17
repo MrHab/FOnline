@@ -295,7 +295,7 @@ namespace RealmOfAshes.Game
             bool blackMarket = IsBlackMarket(market);
             _title.text = blackMarket
                 ? traderName + " · ТОЛЬКО СКУПКА"
-                : (Interaction.TradeIsMachine ? "ТОРГОВЫЙ АВТОМАТ" : traderName) + " · БАРТЕР";
+                : traderName + " · БАРТЕР";
             _player.Meta.text = money + " мар.";
             _vendor.Meta.text = traderName + " · " + traderCaps + " мар.";
 
@@ -349,7 +349,7 @@ namespace RealmOfAshes.Game
                 }
             }
             string reason = string.Empty;
-            if (Interaction.TradePending) reason = "Автомат проводит обмен на сервере.";
+            if (Interaction.TradePending) reason = "Сервер проводит обмен.";
             else if (!hasTrade) reason = "Выберите предметы для обмена.";
             else if (blackMarket && buyEntries.Count > 0) reason = "Скупщик ничего не продаёт.";
             else if (!string.IsNullOrEmpty(refused)) reason = "Скупщик не берёт: " + refused + " (только целое оружие и броня).";

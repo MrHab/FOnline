@@ -119,6 +119,11 @@ function sanitizeOrder(input = {}) {
     escrow: side === 'buy' ? Math.max(0, Math.floor(Number(input?.escrow ?? qty * price))) : 0,
     ownerCharacterId,
     ownerName: String(input?.ownerName || input?.sellerName || '').slice(0, 48),
+    // Налог продавца фиксируется при выставлении: его премиум и жители базы
+    // решают ставку, даже если ордер исполнят позже. Пусто — ставка книги.
+    ...(side === 'sell' && Number.isFinite(Number(input?.taxPct)) && input?.taxPct !== null && input?.taxPct !== ''
+      ? { taxPct: Math.min(1, Math.max(0, Number(input.taxPct))) }
+      : {}),
     records: side === 'sell' ? sanitizeRecords(input?.records) : [],
     createdAt,
     durationMs: Math.max(0, Math.floor(Number(input?.durationMs || Math.max(0, expiresAt - createdAt)))),
@@ -252,6 +257,14 @@ function saleTax(value = 0, rules = DEFAULT_RULES) {
   return Math.floor(Math.max(0, Math.floor(Number(value || 0))) * rules.taxPct);
 }
 
+// Налог с исполнения стоящего ордера на продажу — по ставке его продавца.
+function orderSaleTax(order = {}, value = 0, rules = DEFAULT_RULES) {
+  return Number.isFinite(Number(order?.taxPct))
+    ? Math.floor(Math.max(0, Math.floor(Number(value || 0))) * Number(order.taxPct))
+    : saleTax(value, rules);
+}
+
+
 function ordersOf(store = {}, characterId = '', now = Date.now()) {
   const owner = cleanId(characterId, 96);
   return activeOrders(store, now).filter(row => row.ownerCharacterId === owner);
@@ -331,6 +344,7 @@ function placeSellOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Dat
       ownerCharacterId,
       ownerName: input.ownerName,
       records,
+      taxPct: input.taxPct,
       createdAt: now,
       durationMs,
       expiresAt: Number(now) + durationMs
@@ -367,7 +381,7 @@ function placeBuyOrder(store = {}, input = {}, rules = DEFAULT_RULES, now = Date
     if (sell.ownerCharacterId === ownerCharacterId) continue;
     const take = Math.min(remaining, sell.qty);
     const value = take * sell.price;
-    const fillTax = saleTax(value, rules);
+    const fillTax = orderSaleTax(sell, value, rules);
     const sellerShelf = ensureShelf(store, sell.ownerCharacterId);
     sellerShelf.silver += value - fillTax;
     sellerShelf.sales += 1;
@@ -425,7 +439,7 @@ function takeSellOrder(store = {}, orderId = '', buyerCharacterId = '', qty = 0,
   if (order.ownerCharacterId === buyer) return { ok: false, error: 'Свой ордер можно только отменить.' };
   const take = Math.max(1, Math.min(Math.floor(Number(qty || 0)) || order.qty, order.qty));
   const cost = take * order.price;
-  const tax = saleTax(cost, rules);
+  const tax = orderSaleTax(order, cost, rules);
   const sellerShelf = ensureShelf(store, order.ownerCharacterId);
   sellerShelf.silver += cost - tax;
   sellerShelf.sales += 1;
@@ -594,8 +608,10 @@ function publicMarket(store = {}, viewerCharacterId = '', rules = DEFAULT_RULES,
   const counts = new Map();
   for (const row of items) counts.set(row.category, (counts.get(row.category) || 0) + 1);
   return {
-    // Книга одна на всю пустошь: где бы ни стоял аукционер, ордера те же.
-    marketId: 'wasteland',
+    // Прежде книга была одна на всю пустошь; в экономике v3 у каждой столицы
+    // своя, и сервер называет её.
+    marketId: String(options?.marketId || 'wasteland'),
+    marketName: String(options?.marketName || ''),
     taxPct: rules.taxPct,
     setupFeePct: rules.setupFeePct,
     listingLifetimeHours: Math.round(rules.listingLifetimeMs / HOUR_MS),
@@ -638,7 +654,9 @@ module.exports = {
   placeSellOrder,
   publicMarket,
   publicOrder,
+  orderSaleTax,
   saleTax,
+  sanitizeShelf,
   setupFeeFor,
   shelfFor,
   takeBuyOrder,

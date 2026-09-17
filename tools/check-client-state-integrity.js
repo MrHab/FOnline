@@ -2911,7 +2911,6 @@ function assertNpcScheduledTradeClosure() {
     role: 'merchant',
     _hasNetworkActivity: true,
     serviceAvailable: false,
-    isTradeMachine: false,
     tradePending: false
   };
   runtime.setActive(trader);

@@ -447,9 +447,11 @@ namespace RealmOfAshes.Game
         {
             if (_root == null || !_root.activeSelf) return;
 
-            // Книга одна на всю пустошь: у любого аукционера видны те же ордера.
-            _title.text = "РЫНОК ПУСТОШИ";
-            _terms.text = "Налог с продажи " + Mathf.RoundToInt(TaxPct * 100f) + "% · сбор за ордер "
+            // Экономика v3: у каждой столицы своя книга, сервер называет её.
+            string marketName = _state?["marketName"]?.ToString();
+            _title.text = string.IsNullOrEmpty(marketName) ? "РЫНОК ПУСТОШИ" : "РЫНОК · " + marketName.ToUpperInvariant();
+            // Налог продавца может быть дробным: премиум и жители базы снижают ставку.
+            _terms.text = "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
                 + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
             _status.text = string.IsNullOrEmpty(_note)
                 ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")

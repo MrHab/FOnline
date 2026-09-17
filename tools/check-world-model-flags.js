@@ -72,7 +72,7 @@ const goods = state => Object.values(state.sites || {}).reduce((sum, site) => {
 
 // --- сервер передаёт флаги симуляции -------------------------------------------------
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-assert(server.includes("const WORLD_ECONOMY = loadWorldEconomy(path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));"));
+assert(server.includes("const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));"));
 assert(server.includes('worldModel: WORLD_ECONOMY.worldModel'), 'the server must hand the world model to the simulation');
 
 fs.rmSync(tempRoot, { recursive: true, force: true });

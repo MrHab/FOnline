@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const { normalizeBlackMarketConfig } = require('./black-market');
 const { normalizeCityAuctionConfig } = require('./city-auctions');
 const { normalizeCraftingPlotConfig } = require('./crafting-plots');
+const { normalizeDangerCellConfig } = require('./danger-cells');
 
 /**
  * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
@@ -30,6 +31,8 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   npcGearDrops: true,
   // Отряды NPC на глобальной карте; уходят вместе с опасными клетками.
   visibleWorldParties: true,
+  // Опасные клетки: цвет клетки карты по правилам и серверные стычки в пути.
+  dangerCells: false,
   // Чёрный рынок в хабе Сердцевины: скупка снаряжения и добыча NPC с его склада.
   blackMarket: true,
   // Своя книга ордеров у каждой столицы вместо общей, налог v3 и довоенный запас.
@@ -156,7 +159,8 @@ function normalizeWorldEconomy(input = {}) {
     npcRemnants: normalizeNpcRemnants(src.npcRemnants),
     blackMarket: normalizeBlackMarketConfig(src.blackMarket),
     auctions: normalizeCityAuctionConfig(src.auctions),
-    plots: normalizeCraftingPlotConfig(src.plots)
+    plots: normalizeCraftingPlotConfig(src.plots),
+    dangerCells: normalizeDangerCellConfig(src.dangerCells)
   });
 }
 

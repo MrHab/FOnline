@@ -6,7 +6,7 @@
 // списывают марки и перебитые возвращаются владельцу, итоги торгов делают
 // победителя арендатором, арендатор назначает плату и работает бесплатно, а
 // гость платит арендатору; устаревшая плата отклоняется, аренда переживает
-// перезапуск.
+// перезапуск. Премиум тратит фокус на заказ у станка.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -46,6 +46,13 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   // Третий участник торгов.
   place('target', 0);
   delete saves.craftingPlots;
+  // Гость с премиумом и полным запасом фокуса.
+  const focusCap = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'economy.json'))).accountSin.focus;
+  saves.accounts = {
+    [users.users[accounts.harvest.login].id]: {
+      sin: 0, premiumUntil: Date.now() + 7 * 86400000, focus: focusCap.cap, focusUpdatedAt: Date.now()
+    }
+  };
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   const craft = (role, fee, requestId) => h.socketAck(accounts[role].socket, 'craftingStationUsed', {
@@ -76,7 +83,10 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert.equal(guestCraft.fee, settlementFee, 'свободный участок берёт плату поселения');
     assert.equal(qty(guestCraft.self, 'silver'), 1000 - settlementFee);
     assert.equal(qty(guestCraft.self, 'knife'), qty(accounts.harvest.join.self, 'knife') + 1);
-    console.log('PASS free plot charges the settlement fee (' + settlementFee + ')');
+    assert.equal(guestCraft.self.account.premium, true);
+    assert.equal(guestCraft.self.account.focus, focusCap.cap - Math.max(focusCap.minCost, Math.ceil(knifePrice * focusCap.costPerValue)),
+      'премиум тратит фокус на заказ: ' + JSON.stringify(guestCraft.self.account));
+    console.log('PASS free plot charges the settlement fee (' + settlementFee + ') and premium spends focus');
 
     // --- торги --------------------------------------------------------------------
     const low = await plotAction('trade', { action: 'bid', plotId: PLOT_ID, amount: 50, requestId: 'bid-low' });
@@ -154,7 +164,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   assert.equal(saved.feePct, 0.2);
   assert.equal(saved.earned, feeFor(knifePrice, 0.2));
   h.cleanupSync();
-  console.log('Crafting plots network OK: settlement fee on a free plot, lease bids with refunds (also to offline bidders), auction settlement, lessee fee setting, free work for the lessee, fees paid to the lessee, stale fees refused and the lease saved.');
+  console.log('Crafting plots network OK: settlement fee on a free plot, premium focus spent on an order, lease bids with refunds (also to offline bidders), auction settlement, lessee fee setting, free work for the lessee, fees paid to the lessee, stale fees refused and the lease saved.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

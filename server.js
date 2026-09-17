@@ -217,6 +217,7 @@ const {
   cancelOrder: marketCancelOrder,
   commitShelfClaim: marketCommitShelfClaim,
   creditShelfItems: marketCreditShelfItems,
+  creditShelfSilver: marketCreditShelfSilver,
   expireOrders: marketExpireOrders,
   normalizeMarketRules,
   normalizeMarketStore,
@@ -255,6 +256,18 @@ const {
   cellEncounter: dangerCellEncounter,
   cellDangerModes
 } = require('./src/server/danger-cells');
+const {
+  normalizeAccountStore,
+  accountFor: sinAccountFor,
+  premiumActive: sinPremiumActive,
+  focusAt: sinFocusAt,
+  creditSin,
+  spendSin,
+  buyPremium: buySinPremium,
+  focusCostFor,
+  spendFocus: spendSinFocus,
+  publicAccount: publicSinAccount
+} = require('./src/server/account-sin');
 const {
   ENCODING_HEAD_BYTES: UNITY_ENCODING_HEAD_BYTES,
   unityDeliveryHeaders
@@ -2536,6 +2549,24 @@ app.post('/api/dev/global-map', (req, res) => {
   });
 });
 
+// Выдача сини на счёт аккаунта: платёжного магазина пока нет.
+app.post('/api/dev/accounts/sin', (req, res) => {
+  if (!serverAccountSinActive()) return res.status(409).json({ ok: false, error: 'Счёт сини выключен.' });
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const login = normalizeLogin(body.login);
+  const user = login ? usersDb.users?.[login] : Object.values(usersDb.users || {}).find(row => row?.id === String(body.userId || ''));
+  const amount = Math.floor(Number(body.amount || 0));
+  if (!user?.id) return res.status(404).json({ ok: false, error: 'Аккаунт не найден.' });
+  if (!(amount > 0)) return res.status(400).json({ ok: false, error: 'Нужна положительная сумма сини.' });
+  const account = sinAccountFor(savesDb.accounts, user.id, WORLD_ECONOMY.accountSin);
+  const credited = creditSin(account, WORLD_ECONOMY.accountSin, amount, 'grant', Date.now());
+  persistSaves();
+  for (const player of players.values()) {
+    if (String(player?.userId || '') === String(user.id)) emitAuthoritativePlayerState(player, { reason: 'accountSin' });
+  }
+  res.json({ ok: true, userId: user.id, credited, sin: account.sin });
+});
+
 app.post('/api/dev/wasteland/site', (req, res) => {
   if (GLOBAL_MAP.sitePlacement === 'unity-authored')
     return res.status(409).json({ ok: false, error: 'Размещение локаций задаётся в Unity. Экспортируйте авторскую глобальную сцену.' });
@@ -3834,7 +3865,8 @@ function serverUpdateFreeProgressionPoints(p = {}) {
 }
 
 function serverGrantXp(p = {}, amount = 0) {
-  const gained = Math.max(0, Math.floor(Number(amount || 0)));
+  // Премиум: +50% опыта.
+  const gained = Math.max(0, Math.floor(Number(amount || 0) * serverPremiumMultiplier(p, 'xpMultiplier')));
   if (!p || gained <= 0) return { gained: 0, levels: 0 };
   p.xp = Math.max(0, Math.floor(Number(p.xp || 0))) + gained;
   p.xpNeeded = Math.max(1, Math.floor(Number(p.xpNeeded || 100)));
@@ -4164,6 +4196,9 @@ if (WORLD_ECONOMY.worldModel.cityAuctions) {
 }
 // Участки станков (экономика v3): аренда, ставки и невыплаченные марки.
 savesDb.craftingPlots = normalizeCraftingPlotState(savesDb.craftingPlots, WORLD_ECONOMY.plots);
+// Синь на счетах аккаунтов и книга обменника синь↔марки (экономика v3).
+savesDb.accounts = normalizeAccountStore(savesDb.accounts, WORLD_ECONOMY.accountSin);
+savesDb.sinExchange = normalizeMarketStore(savesDb.sinExchange);
 const KROMKA_AUCTION_RULES = normalizeMarketRules(KROMKA_TERRITORY_CATALOG.rules?.auction || {});
 const KROMKA_ARTIFACT_INDEXES = artifactIndexes(KROMKA_ARTIFACT_CATALOG);
 const KROMKA_SHIFT_CYCLE = createShiftCycle(KROMKA_ARTIFACT_CATALOG.shift || {});
@@ -10209,6 +10244,12 @@ function serverNpcInventoryCaps(enemy = {}) {
   return serverInventoryQty(enemy.inventory || [], 'silver');
 }
 
+/** NPC, чьи марки могли прийти от игроков: торговцы и скупщик Чёрного рынка. */
+function serverNpcHoldsTraderBalance(enemy = null) {
+  const role = String(enemy?.role || '').toLowerCase();
+  return role === 'merchant' || role === 'trader' || serverIsBlackMarketActor(enemy);
+}
+
 function serverNpcSetInventoryCaps(enemy = {}, caps = 0) {
   if (!enemy) return 0;
   enemy.inventory = serverInventorySetRows(enemy.inventory || [], 'silver', caps);
@@ -15299,21 +15340,26 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   }
   // Станок участка возвращает часть материалов — если они влезают в
   // грузоподъёмность; случайный возврат не должен срывать сам заказ.
+  // Премиум тратит фокус на бонус возврата — если возврат не выброшен весом.
+  const focusCost = plot ? serverCraftFocusCost(player, plotOutput) : 0;
   let plotReturns = plot
     ? rollPlotReturns(
       Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
-      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, serverPlayerHasPremium(player)),
+      plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0),
       Math.random
     )
     : [];
+  let returnsDropped = false;
   if (plotReturns.length) {
     const withReturns = serverInventoryMergeRows(crafted.inventory || [], plotReturns);
     if (serverInventoryWeightWithEquipment(withReturns, player.equipment || {}) <= carryCapacity + 0.0001) {
       crafted.inventory = withReturns;
     } else {
       plotReturns = [];
+      returnsDropped = true;
     }
   }
+  if (focusCost > 0 && !returnsDropped) serverSpendCraftFocus(player, focusCost);
   if (clanContext && clanPreview) {
     serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);
     clanContext.runtime.lastCraftBenefit = {
@@ -19504,8 +19550,15 @@ function serverPlayerHasProtectedClanRally(player = {}, room = null, now = Date.
 }
 
 function serverConsumeCost(player = {}, cost = {}) {
-  if (!Object.entries(cost || {}).every(([id, qty]) => serverInventoryQty(player.inventory, id) >= Number(qty || 0))) return false;
-  for (const [id, qty] of Object.entries(cost || {})) serverInventoryRemove(player, id, qty);
+  // Синь лежит на счёте аккаунта: её часть цены списывается оттуда.
+  const account = serverSinAccountFor(player);
+  const sinItemId = WORLD_ECONOMY.accountSin.itemId;
+  const sinCost = account ? Math.max(0, Math.floor(Number(cost?.[sinItemId] || 0))) : 0;
+  const itemCost = Object.entries(cost || {}).filter(([id]) => !(account && id === sinItemId));
+  if (!itemCost.every(([id, qty]) => serverInventoryQty(player.inventory, id) >= Number(qty || 0))) return false;
+  if (sinCost > 0 && account.sin < sinCost) return false;
+  if (sinCost > 0) spendSin(account, WORLD_ECONOMY.accountSin, sinCost, 'cost', Date.now());
+  for (const [id, qty] of itemCost) serverInventoryRemove(player, id, qty);
   return true;
 }
 
@@ -19958,6 +20011,19 @@ function serverCityMarkets() {
   return savesDb.markets;
 }
 
+/**
+ * Выручка встречного исполнения: в рюкзак — сколько поместится в стопку марок,
+ * остаток — на полку книги, чтобы оплаченные покупателем марки не пропали.
+ */
+function serverPayMarketProceeds(player, store, ownerId, amount = 0) {
+  const value = Math.max(0, Math.floor(Number(amount) || 0));
+  const room = Math.max(0, serverItemStackLimit('silver') - serverInventoryQty(player.inventory || [], 'silver'));
+  const inHand = Math.min(value, room);
+  if (inHand > 0) serverInventoryAdd(player, 'silver', inHand);
+  if (value > inHand) marketCreditShelfSilver(store, ownerId, value - inHand);
+  return value - inHand;
+}
+
 /** Книга аукционера: своя у каждой столицы (v3) или общая прежняя. */
 function serverAuctionStore(hubId = '') {
   if (WORLD_ECONOMY.worldModel.cityAuctions) return cityBook(serverCityMarkets(), hubId);
@@ -19965,9 +20031,135 @@ function serverAuctionStore(hubId = '') {
   return savesDb.market;
 }
 
-/** Премиум аккаунта (этап 6 KRM-22); пока его нельзя получить. */
+// ---------------------------------------------------------------------------
+// Синь и премиум (экономика v3, библия 14.5): валюта аккаунта вместо кассет в
+// рюкзаке, премиум за синь и его бонусы, обменник синь↔марки у аукционера.
+// ---------------------------------------------------------------------------
+function serverAccountSinActive() {
+  return WORLD_ECONOMY.worldModel.accountSin === true;
+}
+
+function serverSinAccountFor(player = null, options = {}) {
+  const id = String(player?.userId || '');
+  if (!serverAccountSinActive() || !id) return null;
+  if (!savesDb.accounts || typeof savesDb.accounts !== 'object') savesDb.accounts = {};
+  // Чтение не заводит пустых счетов: запись появляется с первой операцией.
+  if (options.create === false) return savesDb.accounts[id] || null;
+  return sinAccountFor(savesDb.accounts, id, WORLD_ECONOMY.accountSin);
+}
+
 function serverPlayerHasPremium(player = null) {
-  return false;
+  const account = serverSinAccountFor(player, { create: false });
+  return !!account && sinPremiumActive(account, Date.now());
+}
+
+/** Кассеты сини из рюкзака переходят на счёт аккаунта. */
+function serverConvertSinCassettes(player = null) {
+  if (!serverAccountSinActive() || !player?.userId || !player?.characterId) return 0;
+  const itemId = WORLD_ECONOMY.accountSin.itemId;
+  const qty = serverInventoryQty(player.inventory || [], itemId);
+  if (qty <= 0) return 0;
+  const account = serverSinAccountFor(player);
+  const before = { sin: account.sin, ledger: account.ledger.slice() };
+  serverInventoryRemove(player, itemId, qty);
+  const credited = creditSin(account, WORLD_ECONOMY.accountSin, qty, 'cassettes', Date.now());
+  // Счёт и рюкзак уходят на диск одной записью: иначе чужое сохранение
+  // записало бы зачисление при старом рюкзаке, и после перезапуска кассеты
+  // зачлись бы второй раз.
+  let saved = false;
+  try {
+    saved = persistActivePlayerState(player) === true;
+  } catch (error) {
+    console.error('Sin cassette conversion was not saved:', player.id, error);
+  }
+  if (saved) return credited;
+  account.sin = before.sin;
+  account.ledger = before.ledger;
+  serverInventoryAdd(player, itemId, qty);
+  return 0;
+}
+
+/** Количество для проверки цены: синь считается на счёте аккаунта. */
+function serverCostItemQty(player = {}, itemId = '') {
+  if (serverAccountSinActive() && player?.userId && itemId === WORLD_ECONOMY.accountSin.itemId) {
+    return serverSinAccountFor(player, { create: false })?.sin || 0;
+  }
+  return serverInventoryQty(player?.inventory || [], itemId);
+}
+
+function serverSinTradedOnlyInExchange(itemId = '') {
+  return serverAccountSinActive() && itemId === WORLD_ECONOMY.accountSin.itemId;
+}
+
+function serverPublicSinAccount(player = null) {
+  if (!serverAccountSinActive() || !player?.userId) return null;
+  return publicSinAccount(serverSinAccountFor(player, { create: false }), WORLD_ECONOMY.accountSin, Date.now());
+}
+
+function serverPremiumMultiplier(player = null, key = '') {
+  if (!serverPlayerHasPremium(player)) return 1;
+  return Number(WORLD_ECONOMY.accountSin.premium[key] || 1);
+}
+
+const SERVER_SIN_EXCHANGE_RULES = normalizeMarketRules({
+  durationChoicesMs: WORLD_ECONOMY.sinExchange.durationChoicesHours.map(hours => hours * 3600000),
+  listingLifetimeMs: 168 * 3600000,
+  maxOrdersPerTrader: WORLD_ECONOMY.sinExchange.maxOrdersPerTrader,
+  maxOrders: 5000,
+  taxPct: 0,
+  setupFeePct: 0,
+  maxPrice: WORLD_ECONOMY.sinExchange.maxPrice,
+  maxQtyPerOrder: WORLD_ECONOMY.sinExchange.maxQtyPerOrder
+});
+
+function serverSinExchangeStore() {
+  if (!savesDb.sinExchange || typeof savesDb.sinExchange !== 'object') savesDb.sinExchange = normalizeMarketStore(null);
+  return savesDb.sinExchange;
+}
+
+/** Синь с полки обменника сразу ложится на счёт владельца: у валюты аккаунта нет веса. */
+function serverSettleSinExchangeShelf(ownerId = '', store = serverSinExchangeStore(), now = Date.now()) {
+  const id = String(ownerId || '');
+  if (!serverAccountSinActive() || !id) return 0;
+  const shelf = marketShelfFor(store, id);
+  const rows = shelf.items.map(row => ({ itemId: row.itemId, qty: row.qty, at: row.at }));
+  const sin = rows.reduce((sum, row) => sum + row.qty, 0);
+  if (sin <= 0) return 0;
+  if (!savesDb.accounts || typeof savesDb.accounts !== 'object') savesDb.accounts = {};
+  const account = sinAccountFor(savesDb.accounts, id, WORLD_ECONOMY.accountSin);
+  if (!account) return 0;
+  creditSin(account, WORLD_ECONOMY.accountSin, sin, 'exchange', now);
+  marketCommitShelfClaim(store, id, { silver: 0, items: rows });
+  return sin;
+}
+
+/** Обменник: истёкшие ордера на полку, купленная синь — на счета владельцев. */
+function serverTickSinExchange(now = Date.now()) {
+  if (!serverAccountSinActive()) return 0;
+  const store = serverSinExchangeStore();
+  const expired = marketExpireOrders(store, SERVER_SIN_EXCHANGE_RULES, now).length;
+  const owners = new Set();
+  for (const ownerId of Object.keys(store.shelves || {})) {
+    if (serverSettleSinExchangeShelf(ownerId, store, now) > 0) owners.add(ownerId);
+  }
+  if (expired || owners.size) scheduleServerPublicEventPersist();
+  for (const player of players.values()) {
+    if (owners.has(String(player?.userId || ''))) emitAuthoritativePlayerState(player, { reason: 'accountSin' });
+  }
+  return expired + owners.size;
+}
+
+/** Марки с полки обменника — в рюкзак, сколько поместится в стопку. */
+function serverClaimSinExchangeShelf(player, store) {
+  const ownerId = String(player.userId || '');
+  const shelf = marketShelfFor(store, ownerId);
+  if (shelf.silver <= 0) return { ok: false, error: 'Полка обменника пуста.' };
+  const room = Math.max(0, serverItemStackLimit('silver') - serverInventoryQty(player.inventory || [], 'silver'));
+  const silver = Math.min(shelf.silver, room);
+  if (silver <= 0) return { ok: false, error: 'В рюкзаке нет места для марок.' };
+  serverInventoryAdd(player, 'silver', silver);
+  marketCommitShelfClaim(store, ownerId, { silver, items: [] });
+  return { ok: true, claimedSilver: silver, partial: silver < shelf.silver };
 }
 
 /** Правила книги для продавца: налог зависит от премиума и жителей базы. */
@@ -20060,6 +20252,21 @@ function serverPlotStateFor(player = null, loc = {}, now = Date.now()) {
   };
 }
 
+/** Фокус заказа у станка: 0, если премиума нет или фокуса не хватает. */
+function serverCraftFocusCost(player = null, output = {}) {
+  const account = serverSinAccountFor(player, { create: false });
+  const now = Date.now();
+  if (!account || !sinPremiumActive(account, now)) return 0;
+  const worth = Number(SERVER_ITEM_BASE_PRICES[output?.id] || 0) * Math.max(1, Math.floor(Number(output?.qty || 1)));
+  const cost = focusCostFor(WORLD_ECONOMY.accountSin, worth);
+  return sinFocusAt(account, WORLD_ECONOMY.accountSin, now) >= cost ? cost : 0;
+}
+
+function serverSpendCraftFocus(player = null, cost = 0) {
+  const account = serverSinAccountFor(player, { create: false });
+  return !!account && spendSinFocus(account, WORLD_ECONOMY.accountSin, cost, Date.now());
+}
+
 function serverTickCraftingPlots(now = Date.now()) {
   if (!serverPlotsActive()) return 0;
   const changes = settleCraftingPlots(serverCraftingPlotStore(), WORLD_ECONOMY.plots, now);
@@ -20074,7 +20281,7 @@ function serverTickAuctions(now = Date.now()) {
     ? expireCityMarkets(serverCityMarkets(), now)
     : marketExpireOrders(serverAuctionStore(), KROMKA_AUCTION_RULES, now).length;
   if (resolved) scheduleServerPublicEventPersist();
-  return resolved;
+  return resolved + serverTickSinExchange(now);
 }
 
 // Ордер на выкуп ставится только на предметы без собственного состояния:
@@ -26365,6 +26572,8 @@ function publicAuthoritativePlayerState(p = {}) {
     artifactBeltCapacity: serverArtifactBeltCapacity(p, KROMKA_ARTIFACT_CATALOG),
     artifactEffects,
     residentTradePricePct: serverResidentTradePct(p),
+    // Синь на счёте аккаунта и премиум (экономика v3).
+    account: serverPublicSinAccount(p),
     artifactRuntime: publicArtifactRuntime(p),
     radiation: Math.max(0, Number(p.radiation) || 0),
     kromkaOnboarding: publicKromkaOnboarding(
@@ -26389,6 +26598,8 @@ function publicAuthoritativePlayerState(p = {}) {
 
 function emitAuthoritativePlayerState(p = {}, extra = {}) {
   if (!p?.id) return;
+  // Кассеты сини, попавшие в рюкзак, уходят на счёт раньше, чем их увидит клиент.
+  serverConvertSinCassettes(p);
   const target = io.sockets.sockets.get(p.id);
   if (!target) return;
   target.emit('authoritativePlayerState', { ...publicAuthoritativePlayerState(p), ...extra, t: Date.now() });
@@ -27979,6 +28190,7 @@ io.on('connection', (socket) => {
     serverUpdateFreeProgressionPoints(p);
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
+    serverConvertSinCassettes(p);
     players.set(socket.id, p);
     if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());
     if (resumableSiege) {
@@ -28458,6 +28670,7 @@ io.on('connection', (socket) => {
       const qty = Math.max(0, Math.floor(Number(data.qty || 0)));
       const price = Math.max(0, Math.floor(Number(data.price || 0)));
       if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
+      if (serverSinTradedOnlyInExchange(itemId)) return fail('Синь продаётся в обменнике сини у аукционера.');
       if (serverItemProtectedFromPvpDrop(itemId)) return fail('Этот предмет нельзя выставить.');
       if (qty <= 0 || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
       const setupFee = marketSetupFee(qty, price, auctionRules);
@@ -28484,12 +28697,12 @@ io.on('connection', (socket) => {
       serverInventoryRemove(p, 'silver', placed.setupFee);
       // Выручка встречного исполнения приходит сразу в руки; то, что придёт
       // позже по стоящему ордеру, ляжет на полку.
-      if (placed.proceeds > 0) serverInventoryAdd(p, 'silver', placed.proceeds);
+      const shelvedSilver = serverPayMarketProceeds(p, store, p.characterId, placed.proceeds);
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
       payload = {
         ok: true, action, orderId: placed.order ? placed.order.id : '', itemId, qty,
         soldQty: placed.soldQty, restingQty: placed.restingQty, price,
-        proceeds: placed.proceeds, tax: placed.tax, setupFee: placed.setupFee
+        proceeds: placed.proceeds, tax: placed.tax, setupFee: placed.setupFee, shelvedSilver
       };
     } else if (action === 'buy') {
       // Ордер на выкуп: марки уходят на сервер, встречные ордера на продажу
@@ -28499,6 +28712,7 @@ io.on('connection', (socket) => {
       const price = Math.max(0, Math.floor(Number(data.price || 0)));
       if (!itemId || !SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') return fail('Неизвестный предмет.');
       if (itemId === 'silver') return fail('Марки не выкупают за марки.');
+      if (serverSinTradedOnlyInExchange(itemId)) return fail('Синь выкупают в обменнике сини у аукционера.');
       if (!serverMarketItemIsFungible(itemId)) {
         return fail('Ордер на выкуп ставится только на предметы без износа и собственных свойств.');
       }
@@ -28576,11 +28790,11 @@ io.on('connection', (socket) => {
         sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
         return fail(sold.error);
       }
-      serverInventoryAdd(p, 'silver', sold.proceeds);
+      const shelvedSilver = serverPayMarketProceeds(p, store, p.characterId, sold.proceeds);
       sanitizeArtifactLoadout(p, KROMKA_ARTIFACT_CATALOG);
       payload = {
         ok: true, action, orderId, itemId, qty: sold.qty, price: sold.price,
-        proceeds: sold.proceeds, tax: sold.tax
+        proceeds: sold.proceeds, tax: sold.tax, shelvedSilver
       };
     } else if (action === 'cancel') {
       const cancelled = marketCancelOrder(store, orderId, p.characterId, now);
@@ -29208,16 +29422,18 @@ io.on('connection', (socket) => {
         base.updatedAt = now;
       } else if (action === 'startJob') {
         if (!access.stations) return fail('Владелец не разрешил пользоваться станциями.');
-        const result = serverStartBaseJob(base, String(data.typeId || ''), KROMKA_BASE_BUILDING_CATALOG, id => serverInventoryQty(p.inventory, id), now, {
+        const result = serverStartBaseJob(base, String(data.typeId || ''), KROMKA_BASE_BUILDING_CATALOG, id => serverCostItemQty(p, id), now, {
           queueLimit: serverBaseJobQueueLimit(base),
           inputSavingPct: serverBaseJobInputSaving(base)
         });
         if (!result.ok) return fail(result.error);
         const bonuses = calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG);
         const speedPct = clamp(Number(bonuses.productionSpeedPct || 0), 0, 0.6);
-        if (speedPct > 0 && result.record) {
+        // Премиум ускоряет работы базы сверх бонуса жителей.
+        const premiumSpeed = serverPremiumMultiplier(p, 'baseJobSpeedMultiplier');
+        if ((speedPct > 0 || premiumSpeed > 1) && result.record) {
           const duration = Math.max(1000, Number(result.record.completesAt || now) - Number(result.record.startedAt || now));
-          result.record.completesAt = Number(result.record.startedAt || now) + Math.round(duration / (1 + speedPct));
+          result.record.completesAt = Number(result.record.startedAt || now) + Math.round(duration / ((1 + speedPct) * premiumSpeed));
         }
         if (!serverConsumeCost(p, result.input)) {
           base.jobs = base.jobs.filter(row => row.id !== result.record.id);
@@ -30679,6 +30895,112 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Синь: счёт, покупка премиума и обменник синь↔марки у аукционера.
+  socket.on('accountSinAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.userId) return fail('Игрок недоступен.');
+    if (!serverAccountSinActive()) return fail('Счёт сини выключен.');
+    const now = Date.now();
+    serverConvertSinCassettes(p);
+    const account = serverSinAccountFor(p);
+    const store = serverSinExchangeStore();
+    marketExpireOrders(store, SERVER_SIN_EXCHANGE_RULES, now);
+    if (serverSettleSinExchangeShelf(p.userId, store, now) > 0) {
+      scheduleServerPublicEventPersist();
+      persistActivePlayerState(p);
+    }
+    const action = String(data.action || 'state').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+    const exchangeState = () => ({
+      ...publicMarket(store, p.userId, SERVER_SIN_EXCHANGE_RULES, now, { marketId: 'sinExchange', marketName: 'Обменник сини' }),
+      orderFee: WORLD_ECONOMY.sinExchange.orderFee
+    });
+    const reply = payload => {
+      if (typeof ack === 'function') {
+        ack({ ok: true, ...payload, account: serverPublicSinAccount(p), exchange: exchangeState(), self: publicAuthoritativePlayerState(p) });
+      }
+    };
+    if (action === 'state') return reply({ action });
+    const exchangeActions = ['sell', 'buy', 'buyNow', 'sellNow', 'cancel', 'claim'];
+    if (action !== 'buyPremium' && !exchangeActions.includes(action)) return fail('Неизвестное действие со счётом.');
+    if (exchangeActions.includes(action) && !serverNearbyServiceActor(p, 'auction')) return fail('Обменник сини — у аукционера столицы.');
+    const transaction = beginCriticalAction(p, 'accountSinAction', data, ['action', 'qty', 'price', 'durationHours', 'orderId']);
+    if (!transaction.ok) return fail(transaction.error);
+    if (transaction.replay) return reply({ ...transaction.result, replay: true });
+    const itemId = WORLD_ECONOMY.accountSin.itemId;
+    const qty = Math.max(0, Math.floor(Number(data.qty || 0)));
+    const price = Math.max(0, Math.floor(Number(data.price || 0)));
+    const fee = WORLD_ECONOMY.sinExchange.orderFee;
+    const durationHours = Math.max(0, Math.floor(Number(data.durationHours || 0)));
+    const durationMs = durationHours > 0 ? durationHours * 3600000 : SERVER_SIN_EXCHANGE_RULES.listingLifetimeMs;
+    const orderId = String(data.orderId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    let payload = null;
+    if (action === 'buyPremium') {
+      const bought = buySinPremium(account, WORLD_ECONOMY.accountSin, now);
+      if (!bought.ok) return fail(bought.error);
+      payload = { ok: true, action, premiumUntil: bought.premiumUntil, spent: bought.spent };
+    } else if (action === 'sell') {
+      if (qty <= 0 || account.sin < qty) return fail('На счёте нет столько сини.');
+      if (serverInventoryQty(p.inventory || [], 'silver') < fee) return fail(`Сбор за ордер — ${fee} марок.`);
+      const placed = marketPlaceSellOrder(store, {
+        ownerCharacterId: p.userId, ownerName: p.name, itemId, qty, price, durationMs, category: 'misc'
+      }, SERVER_SIN_EXCHANGE_RULES, now);
+      if (!placed.ok) return fail(placed.error);
+      spendSin(account, WORLD_ECONOMY.accountSin, qty, 'exchangeSell', now);
+      serverInventoryRemove(p, 'silver', fee);
+      const shelvedSilver = serverPayMarketProceeds(p, store, p.userId, placed.proceeds);
+      payload = { ok: true, action, orderId: placed.order ? placed.order.id : '', soldQty: placed.soldQty, restingQty: placed.restingQty, proceeds: placed.proceeds, fee, shelvedSilver };
+    } else if (action === 'buy') {
+      const reserve = qty * price + fee;
+      if (qty <= 0) return fail('Укажите количество сини.');
+      if (serverInventoryQty(p.inventory || [], 'silver') < reserve) return fail(`Нужно ${reserve} марок: ордер и сбор.`);
+      const placed = marketPlaceBuyOrder(store, {
+        ownerCharacterId: p.userId, ownerName: p.name, itemId, qty, price, durationMs, category: 'misc'
+      }, SERVER_SIN_EXCHANGE_RULES, now);
+      if (!placed.ok) return fail(placed.error);
+      serverInventoryRemove(p, 'silver', placed.spent + placed.escrow + fee);
+      const boughtSin = placed.bought.reduce((sum, row) => sum + row.qty, 0);
+      if (boughtSin > 0) creditSin(account, WORLD_ECONOMY.accountSin, boughtSin, 'exchangeBuy', now);
+      payload = { ok: true, action, orderId: placed.order ? placed.order.id : '', boughtQty: placed.boughtQty, restingQty: placed.restingQty, spent: placed.spent, escrow: placed.escrow, fee };
+    } else if (action === 'buyNow') {
+      const order = store.orders?.[orderId];
+      if (!order || order.side !== 'sell') return fail('Ордер уже снят.');
+      const take = Math.max(1, Math.min(qty > 0 ? qty : order.qty, order.qty));
+      const cost = take * order.price;
+      if (serverInventoryQty(p.inventory || [], 'silver') < cost) return fail(`Не хватает марок: нужно ${cost}.`);
+      const bought = marketTakeSellOrder(store, orderId, p.userId, take, SERVER_SIN_EXCHANGE_RULES, now);
+      if (!bought.ok) return fail(bought.error);
+      serverInventoryRemove(p, 'silver', bought.cost);
+      creditSin(account, WORLD_ECONOMY.accountSin, bought.qty, 'exchangeBuy', now);
+      payload = { ok: true, action, orderId, qty: bought.qty, cost: bought.cost };
+    } else if (action === 'sellNow') {
+      const order = store.orders?.[orderId];
+      if (!order || order.side !== 'buy') return fail('Ордер уже снят.');
+      const take = Math.max(1, Math.min(qty > 0 ? qty : order.qty, order.qty));
+      if (account.sin < take) return fail('На счёте нет столько сини.');
+      const sold = marketTakeBuyOrder(store, orderId, p.userId, take, [], SERVER_SIN_EXCHANGE_RULES, now);
+      if (!sold.ok) return fail(sold.error);
+      spendSin(account, WORLD_ECONOMY.accountSin, sold.qty, 'exchangeSell', now);
+      const shelvedSilver = serverPayMarketProceeds(p, store, p.userId, sold.proceeds);
+      payload = { ok: true, action, orderId, qty: sold.qty, proceeds: sold.proceeds, shelvedSilver };
+    } else if (action === 'cancel') {
+      const cancelled = marketCancelOrder(store, orderId, p.userId, now);
+      if (!cancelled.ok) return fail(cancelled.error);
+      payload = { ok: true, action, orderId, side: cancelled.order.side };
+    } else {
+      const claimed = serverClaimSinExchangeShelf(p, store);
+      if (!claimed.ok) return fail(claimed.error);
+      payload = { ok: true, action, ...claimed };
+    }
+    serverSettleSinExchangeShelf(p.userId, store, now);
+    commitCriticalAction(p, transaction, payload);
+    scheduleServerPublicEventPersist();
+    sanitizeCarrySnapshot(p);
+    persistActivePlayerState(p);
+    emitAuthoritativePlayerState(p, { reason: 'accountSin' });
+    reply(payload);
+  });
+
   // Участок станка: снимок участков локации, ставка на аренду, плата арендатора.
   socket.on('craftingPlotAction', (data = {}, ack) => {
     const p = players.get(socket.id);
@@ -31608,7 +31930,10 @@ io.on('connection', (socket) => {
     );
     let qty = 1 + (condition > 40 && rng() < bonusChance ? 1 : 0);
     // Экономика v3: опасная зона щедрее — жёлтая +25%, красная +60%, чёрная ×2.
-    qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room))), rng));
+    // Премиум добавляет выход, но опыт за него не растёт второй раз.
+    const premiumGather = serverPremiumMultiplier(p, 'gatherMultiplier');
+    qty = Math.max(1, rollQuantity(qty * zoneGatherYield(WORLD_ECONOMY, locationPvpMode(roomLocation(room)))
+      * premiumGather, rng));
     const carryCheck = serverLimitItemsByCarry(p, {}, [{ id: resourceDef.itemId, qty }], { apply: false });
     qty = Math.max(0, Number(carryCheck.items?.[0]?.qty || 0));
     if (qty <= 0) return fail('Нет места для ресурса.', { carry: carryCheck.carry });
@@ -31628,8 +31953,7 @@ io.on('connection', (socket) => {
     serverInventoryAdd(p, item.id, item.qty);
     if (resource.id === 'yard_ore') serverRecordTutorialFact(p, 'oreGathered', item.qty);
     if (resource.id === 'yard_wood') serverRecordTutorialFact(p, 'woodGathered', item.qty);
-    const xp = serverHarvestXp(qty);
-    serverGrantXp(p, xp);
+    const xp = serverGrantXp(p, serverHarvestXp(Math.max(1, Math.round(qty / premiumGather)))).gained;
     const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
     const publicRes = publicResource(resource);
     if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted: Number(resource.hp || 0) <= 0 });
@@ -31832,6 +32156,11 @@ io.on('connection', (socket) => {
     }
     const blackMarketHeld = enemy.blackMarketLoot ? serverOwnedItemQty(p, enemy.blackMarketLoot.itemId) : 0;
     taken.forEach(row => serverInventoryAdd(p, row.id, row.qty));
+    // Премиум: +50% марок с NPC — сверх взятого, труп не беднеет.
+    // Касса торговца — марки игроков, а не NPC: с неё бонуса нет.
+    const premiumMarks = serverNpcHoldsTraderBalance(enemy) ? 1 : serverPremiumMultiplier(p, 'npcMarksMultiplier');
+    const takenMarks = taken.filter(row => row.id === 'silver').reduce((sum, row) => sum + Number(row.qty || 0), 0);
+    if (premiumMarks > 1 && takenMarks > 0) serverInventoryAdd(p, 'silver', rollQuantity(takenMarks * (premiumMarks - 1), Math.random));
     serverApplyBlackMarketLootCondition(p, enemy, taken, blackMarketHeld);
     refreshRoomWorldState(room);
     const publicLootEnemy = publicEnemy(enemy);

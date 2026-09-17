@@ -236,4 +236,14 @@ assert(!unityCanvas.includes('["factionId"]'), 'экран рынка больш
 const unityDialogue = read('unity-client/Assets/Scripts/Game/RoaDialogueCanvas.cs');
 assert(!unityDialogue.includes('AddAuctionOptions'), 'The auctioneer opens its own screen, so the dialogue keeps no auction options.');
 
-console.log('Wasteland market OK: one book for every auctioneer, crossing at the resting price, partial fills, setup fee and sales tax, instant buy/sell, cancel and expiry returns, faction books merged on migration, private projection, server hooks and the standalone market screen.');
+// Выручка сверх стопки марок продавца ложится на его полку и забирается оттуда.
+{
+  const store = market.normalizeMarketStore({});
+  market.creditShelfSilver(store, 'seller', 155.9);
+  market.creditShelfSilver(store, 'seller', -5);
+  assert.equal(market.shelfFor(store, 'seller').silver, 155);
+  market.commitShelfClaim(store, 'seller', { silver: 100, items: [] });
+  assert.equal(market.shelfFor(store, 'seller').silver, 55);
+}
+
+console.log('Wasteland market OK: one book for every auctioneer, crossing at the resting price, partial fills, setup fee and sales tax, instant buy/sell, cancel and expiry returns, faction books merged on migration, private projection, server hooks, overflow proceeds on the shelf and the standalone market screen.');

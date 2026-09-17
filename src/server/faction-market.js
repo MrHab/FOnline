@@ -518,6 +518,14 @@ function creditShelfItems(store = {}, characterId = '', rows = [], now = Date.no
   return shelf;
 }
 
+// Марки, не поместившиеся в стопку продавца при встречном исполнении, ждут на
+// полке: выручка не должна пропасть из-за предела марок в рюкзаке.
+function creditShelfSilver(store = {}, characterId = '', amount = 0) {
+  const shelf = ensureShelf(store, characterId);
+  shelf.silver += Math.max(0, Math.floor(Number(amount) || 0));
+  return shelf;
+}
+
 // Забрать полку целиком: сервер применяет rows/silver к инвентарю и вызывает
 // commitShelfClaim только после успешного зачисления.
 function shelfFor(store = {}, characterId = '') {
@@ -645,6 +653,7 @@ module.exports = {
   cancelOrder,
   commitShelfClaim,
   creditShelfItems,
+  creditShelfSilver,
   expireOrders,
   marketItems,
   normalizeMarketRules,

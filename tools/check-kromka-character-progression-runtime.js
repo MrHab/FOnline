@@ -26,7 +26,9 @@ function checkXpThresholds() {
     // derived stats and persistence are exercised over Socket.IO below.
     enforceServerProgressionBudget: () => {}, serverApplyDerivedVitals: () => {},
     serverSpentSkillPoints: p => p.spentSkills || 0,
-    serverSpentPerkPoints: p => p.spentPerks || 0
+    serverSpentPerkPoints: p => p.spentPerks || 0,
+    // Премиум экономики v3 даёт +50% опыта.
+    serverPremiumMultiplier: (p, key) => (p.premium && key === 'xpMultiplier' ? 1.5 : 1)
   });
   for (const name of ['serverSkillBudgetFor', 'serverPerkBudgetFor', 'serverUpdateFreeProgressionPoints', 'serverGrantXp']) {
     const start = source.indexOf(`function ${name}(`);
@@ -55,7 +57,9 @@ function checkXpThresholds() {
   assert.equal(capped.xp, 900);
   assert.equal(capped.skillPoints, 988);
   assert.equal(capped.perkPoints, 63);
-  console.log('XP thresholds OK: exact level-up, multiple levels, remainder, skill/perk awards, spent points and level cap.');
+  const premium = { level: 1, xp: 0, xpNeeded: 100, traits: [], spentSkills: 0, spentPerks: 0, premium: true };
+  assert.equal(context.serverGrantXp(premium, 41).gained, 61, 'premium adds half the XP, rounded down');
+  console.log('XP thresholds OK: exact level-up, multiple levels, remainder, skill/perk awards, spent points, level cap and the premium bonus.');
 }
 
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

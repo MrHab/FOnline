@@ -11,12 +11,16 @@ namespace RealmOfAshes.Game
     /// заменяет собой диалог, поэтому вариантов ответа у аукционера нет.
     ///
     /// Торговля идёт книгой ордеров, а не ставками. Слева — разделы (ПОКУПКА,
-    /// ПРОДАЖА, МОИ ОРДЕРА, ПОЛКА) и категории товаров со счётчиками, в центре
+    /// ПРОДАЖА, МОИ ОРДЕРА, ПОЛКА, СИНЬ) и категории товаров со счётчиками, в центре
     /// — товары книги или строки ордеров по выбранному предмету, справа — форма
     /// ордера на выкуп или на продажу со сбором, налогом и сроком. Все проверки
     /// серверные: экран показывает снимок `auctionAction:state` и отправляет
     /// действия, а срок ордера идёт от последнего снимка, чтобы таймер не
     /// замирал между обновлениями.
+    ///
+    /// Раздел СИНЬ (экономика v3) показывает счёт сини аккаунта, премиум и
+    /// обменник синь↔марки: это отдельная книга `accountSinAction`, синь в ней
+    /// списывается со счёта и зачисляется на счёт, а не в рюкзак.
     /// </summary>
     public sealed class RoaAuctionCanvas : MonoBehaviour
     {
@@ -31,8 +35,9 @@ namespace RealmOfAshes.Game
         private static readonly Color RowSelected = new Color(0.2f, 0.19f, 0.11f, 0.98f);
         private static readonly Color ButtonBg = new Color(0.16f, 0.28f, 0.12f, 0.95f);
         private static readonly Color QuietBg = new Color(0f, 0f, 0f, 0.35f);
+        private static readonly Color ConfirmBg = new Color(0.46f, 0.15f, 0.1f, 0.96f);
 
-        private enum Tab { Buy, Sell, Mine, Shelf }
+        private enum Tab { Buy, Sell, Mine, Shelf, Sin }
 
         public RoaInteraction Interaction;
 
@@ -69,6 +74,21 @@ namespace RealmOfAshes.Game
         private float _detailCursor;
         private int _detailButtons;
 
+        // Счёт сини и обменник: отдельный снимок, раздел виден, только если
+        // сервер ведёт счёт сини.
+        private JObject _sinAccount;
+        private JObject _sinExchange;
+        private long _sinSnapshotAt;
+        private bool _sinSell;
+        // Пока ответ обменника не пришёл, кнопки сини не шлют второй запрос:
+        // у каждого нажатия свой requestId, и двойной клик купил бы дважды.
+        private bool _sinBusy;
+        private float _sinBusyAt;
+        private bool _premiumConfirm;
+
+        /// <summary>Блокировка снимается ответом, а без ответа — через 10 секунд.</summary>
+        private bool SinBusy { get { return _sinBusy && Time.unscaledTime - _sinBusyAt < 10f; } }
+
         /// <summary>
         /// Создаёт экран рядом с диалогом при первом разговоре с аукционером.
         /// Отдельная сборка сцены не нужна: экран живёт на том же объекте.
@@ -98,6 +118,8 @@ namespace RealmOfAshes.Game
                 {
                     _root.SetActive(false);
                     _state = null;
+                    _sinAccount = null;
+                    _sinExchange = null;
                     _note = string.Empty;
                     _itemId = string.Empty;
                     _orderId = string.Empty;
@@ -152,6 +174,94 @@ namespace RealmOfAshes.Game
                 Rebuild();
             });
             if (!sent) { _pending = false; _note = "Нет связи с сервером."; }
+            RequestSinState();
+        }
+
+        private void RequestSinState()
+        {
+            if (Interaction == null || Interaction.Socket == null) return;
+            RoaAccountSinNet.RequestState(Interaction.Socket, ack =>
+            {
+                if (ack != null && ack["ok"]?.Value<bool>() == true) ApplySin(ack);
+                else
+                {
+                    _sinAccount = null;
+                    _sinExchange = null;
+                    if (_tab == Tab.Sin) _tab = Tab.Buy;
+                }
+                Rebuild();
+            });
+        }
+
+        private void ApplySin(JObject ack)
+        {
+            _sinAccount = ack["account"] as JObject;
+            _sinExchange = ack["exchange"] as JObject;
+            _sinSnapshotAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+
+        /// <summary>Действие обменника: одно за раз, ответ снимает блокировку.</summary>
+        private void SendSin(Func<Action<JObject>, bool> send)
+        {
+            if (SinBusy || Interaction == null || Interaction.Socket == null) return;
+            _premiumConfirm = false;
+            _sinBusyAt = Time.unscaledTime;
+            _sinBusy = send(AfterSinAction);
+            if (!_sinBusy) { _note = "Нет связи с сервером."; Rebuild(); }
+        }
+
+        private void AfterSinAction(JObject ack)
+        {
+            _sinBusy = false;
+            if (ack != null && ack["ok"]?.Value<bool>() == true)
+            {
+                _note = SinActionNote(ack);
+                ApplySin(ack);
+            }
+            else _note = ack?["error"]?.ToString() ?? "Обменник отклонил действие.";
+            _refreshAt = Time.unscaledTime + 6f;
+            Rebuild();
+        }
+
+        private static string SinActionNote(JObject ack)
+        {
+            if (ack["replay"]?.Value<bool>() == true) return "Это действие уже выполнено.";
+            int qty = ack["qty"]?.Value<int>() ?? 0;
+            int fee = ack["fee"]?.Value<int>() ?? 0;
+            int shelved = ack["shelvedSilver"]?.Value<int>() ?? 0;
+            string shelfNote = shelved > 0 ? " " + shelved + " марок не влезли в рюкзак и ждут на полке." : string.Empty;
+            switch (ack["action"]?.ToString() ?? string.Empty)
+            {
+                case "buyPremium":
+                    return "Премиум продлён до " + DateLabel(ack["premiumUntil"]?.Value<long>() ?? 0) + ".";
+                case "sell":
+                {
+                    int sold = ack["soldQty"]?.Value<int>() ?? 0;
+                    int resting = ack["restingQty"]?.Value<int>() ?? 0;
+                    string note = sold > 0 ? "Продано сразу: " + sold + " сини за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " сини.";
+                    return note + " Сбор " + fee + "." + shelfNote;
+                }
+                case "buy":
+                {
+                    int bought = ack["boughtQty"]?.Value<int>() ?? 0;
+                    int resting = ack["restingQty"]?.Value<int>() ?? 0;
+                    string note = bought > 0 ? "Куплено сразу: " + bought + " сини за " + (ack["spent"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "Ордер на выкуп: " + resting + " сини, заморожено " + (ack["escrow"]?.Value<int>() ?? 0) + ".";
+                    return note + " Сбор " + fee + ".";
+                }
+                case "buyNow": return "Куплено " + qty + " сини за " + (ack["cost"]?.Value<int>() ?? 0) + " марок.";
+                case "sellNow": return "Продано " + qty + " сини за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." + shelfNote;
+                case "cancel": return "Ордер отменён: синь вернулась на счёт, марки ждут на полке обменника.";
+                case "claim": return "С полки обменника забрано " + (ack["claimedSilver"]?.Value<int>() ?? 0) + " марок.";
+                default: return string.Empty;
+            }
+        }
+
+        private static string DateLabel(long unixMs)
+        {
+            if (unixMs <= 0) return "—";
+            return DateTimeOffset.FromUnixTimeMilliseconds(unixMs).ToLocalTime().ToString("dd.MM.yyyy HH:mm");
         }
 
         private void AfterAction(JObject ack)
@@ -223,6 +333,36 @@ namespace RealmOfAshes.Game
         private float SetupFeePct { get { return _state?["setupFeePct"]?.Value<float>() ?? 0.015f; } }
 
         private JObject Shelf { get { return _state?["shelf"] as JObject; } }
+
+        private int SinBalance { get { return _sinAccount?["sin"]?.Value<int>() ?? 0; } }
+
+        private bool SinPremium { get { return _sinAccount?["premium"]?.Value<bool>() == true; } }
+
+        private int SinOrderFee { get { return _sinExchange?["orderFee"]?.Value<int>() ?? 0; } }
+
+        /// <summary>Сторона книги обменника: продажи от дешёвых, выкупы от дорогих.</summary>
+        private List<JObject> SinBook(string side)
+        {
+            var rows = new List<JObject>();
+            foreach (JToken token in _sinExchange?["orders"] as JArray ?? new JArray())
+            {
+                JObject order = token as JObject;
+                if (order != null && (order["side"]?.ToString() ?? string.Empty) == side) rows.Add(order);
+            }
+            rows.Sort((a, b) =>
+            {
+                int left = a["price"]?.Value<int>() ?? 0;
+                int right = b["price"]?.Value<int>() ?? 0;
+                return side == "sell" ? left.CompareTo(right) : right.CompareTo(left);
+            });
+            return rows;
+        }
+
+        private int SinBestPrice(string side)
+        {
+            List<JObject> rows = SinBook(side);
+            return rows.Count > 0 ? (rows[0]["price"]?.Value<int>() ?? 0) : 0;
+        }
 
         /// <summary>Рюкзак ищется один раз: строк книги бывает много, а поиск по сцене недёшев.</summary>
         private RoaInventory _inventory;
@@ -383,7 +523,7 @@ namespace RealmOfAshes.Game
             Place(left, 0f, 0f, 0f, 1f, new Vector2(14f, 32f), new Vector2(214f, -76f));
 
             _tabsColumn = Child("Tabs", left);
-            Place(_tabsColumn, 0f, 1f, 1f, 1f, new Vector2(0f, -164f), new Vector2(0f, 0f));
+            Place(_tabsColumn, 0f, 1f, 1f, 1f, new Vector2(0f, -202f), new Vector2(0f, 0f));
             var tabsLayout = _tabsColumn.gameObject.AddComponent<VerticalLayoutGroup>();
             tabsLayout.spacing = 4f;
             tabsLayout.childForceExpandHeight = false;
@@ -391,7 +531,7 @@ namespace RealmOfAshes.Game
             tabsLayout.childControlWidth = true;
 
             _categoryColumn = Child("Categories", left);
-            Place(_categoryColumn, 0f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(0f, -172f));
+            Place(_categoryColumn, 0f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(0f, -210f));
             var categoryLayout = _categoryColumn.gameObject.AddComponent<VerticalLayoutGroup>();
             categoryLayout.spacing = 2f;
             categoryLayout.childForceExpandHeight = false;
@@ -451,8 +591,11 @@ namespace RealmOfAshes.Game
             string marketName = _state?["marketName"]?.ToString();
             _title.text = string.IsNullOrEmpty(marketName) ? "РЫНОК ПУСТОШИ" : "РЫНОК · " + marketName.ToUpperInvariant();
             // Налог продавца может быть дробным: премиум и жители базы снижают ставку.
-            _terms.text = "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
-                + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
+            _terms.text = _tab == Tab.Sin
+                ? "Обменник сини: сбор за ордер " + SinOrderFee + " марок, налога нет · у вас " + Marks
+                    + " марок, на счёте " + SinBalance + " сини"
+                : "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
+                    + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
             _status.text = string.IsNullOrEmpty(_note)
                 ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")
                 : _note;
@@ -470,6 +613,7 @@ namespace RealmOfAshes.Game
                     break;
                 case Tab.Mine: BuildMyOrdersPage(); break;
                 case Tab.Shelf: BuildShelfPage(); break;
+                case Tab.Sin: BuildSinPage(); break;
                 default:
                     if (string.IsNullOrEmpty(_itemId)) BuildMarketPage(); else BuildBookPage();
                     break;
@@ -492,6 +636,7 @@ namespace RealmOfAshes.Game
             AddTab(Tab.Sell, "ПРОДАЖА");
             AddTab(Tab.Mine, "МОИ ОРДЕРА" + (mine > 0 ? " (" + mine + ")" : string.Empty));
             AddTab(Tab.Shelf, "ПОЛКА" + (shelfSilver > 0 || shelfItems > 0 ? " ●" : string.Empty));
+            if (_sinAccount != null) AddTab(Tab.Sin, "СИНЬ · " + SinBalance + (SinPremium ? " ★" : string.Empty));
         }
 
         private void AddTab(Tab tab, string caption)
@@ -514,6 +659,8 @@ namespace RealmOfAshes.Game
                 _itemId = string.Empty;
                 _orderId = string.Empty;
                 _note = string.Empty;
+                _premiumConfirm = false;
+                if (captured == Tab.Sin) PrepareSinForm();
                 Rebuild();
             });
         }
@@ -879,6 +1026,217 @@ namespace RealmOfAshes.Game
             _rows.Add(go);
         }
 
+        // --- синь -----------------------------------------------------------
+
+        /// <summary>Подсказка цены, пока книга обменника пуста: у сини нет каталожной цены.</summary>
+        private const int SinStarterPrice = 25;
+
+        private void PrepareSinForm()
+        {
+            int best = SinBestPrice(_sinSell ? "buy" : "sell");
+            _priceInput.text = (best > 0 ? best : SinStarterPrice).ToString();
+            _qtyInput.text = "1";
+        }
+
+        private void BuildSinPage()
+        {
+            if (_sinAccount == null) { AddNote("Счёт сини недоступен."); return; }
+            AddHeading("СЧЁТ АККАУНТА");
+            AddInfoRow("Синь на счёте", SinBalance.ToString());
+            AddInfoRow("Премиум", SinPremium
+                ? "до " + DateLabel(_sinAccount["premiumUntil"]?.Value<long>() ?? 0)
+                : "нет · " + (_sinAccount["premiumPriceSin"]?.Value<int>() ?? 0) + " сини за "
+                    + (_sinAccount["premiumDays"]?.Value<int>() ?? 0) + " д");
+            if (SinPremium || (_sinAccount["focus"]?.Value<int>() ?? 0) > 0)
+                AddInfoRow("Фокус", (_sinAccount["focus"]?.Value<int>() ?? 0) + " из " + (_sinAccount["focusCap"]?.Value<int>() ?? 0));
+            AddNote("Премиум: налог рынка ниже, +50% опыта, марок с NPC и добычи при сборе, фокус для возврата "
+                + "материалов на станках участков, работы на личной базе быстрее.");
+
+            List<JObject> sells = SinBook("sell");
+            List<JObject> buys = SinBook("buy");
+            AddHeading("ПРОДАЮТ СИНЬ" + (sells.Count == 0 ? " — пусто" : string.Empty));
+            foreach (JObject order in sells) AddSinOrderRow(order);
+            AddHeading("ВЫКУПАЮТ СИНЬ" + (buys.Count == 0 ? " — пусто" : string.Empty));
+            foreach (JObject order in buys) AddSinOrderRow(order);
+
+            int shelfSilver = _sinExchange?["shelf"]?["silver"]?.Value<int>() ?? 0;
+            if (shelfSilver > 0)
+            {
+                AddHeading("ПОЛКА ОБМЕННИКА");
+                AddShelfRow("Марки", shelfSilver, "выручка и возвраты");
+            }
+        }
+
+        private void AddInfoRow(string title, string value)
+        {
+            var go = new GameObject("InfoRow", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 30f;
+            go.AddComponent<Image>().color = RowBg;
+            var rect = (RectTransform)go.transform;
+
+            Text name = Label("Name", rect, 13, TextAnchor.MiddleLeft, Ink);
+            Place(name.rectTransform, 0f, 0f, 0.45f, 1f, new Vector2(10f, 0f), new Vector2(-4f, 0f));
+            name.text = title;
+
+            Text text = Label("Value", rect, 13, TextAnchor.MiddleRight, Accent, FontStyle.Bold);
+            Place(text.rectTransform, 0.45f, 0f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-10f, 0f));
+            text.text = value;
+            _rows.Add(go);
+        }
+
+        private void AddSinOrderRow(JObject order)
+        {
+            string id = order["id"]?.ToString() ?? string.Empty;
+            bool sell = (order["side"]?.ToString() ?? "sell") == "sell";
+            int qty = order["qty"]?.Value<int>() ?? 0;
+            int price = order["price"]?.Value<int>() ?? 0;
+            bool mine = order["mine"]?.Value<bool>() == true;
+
+            var go = new GameObject("SinOrder", typeof(RectTransform));
+            go.transform.SetParent(_list, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 44f;
+            go.AddComponent<Image>().color = mine ? RowSelected : RowBg;
+            var rect = (RectTransform)go.transform;
+
+            Text priceText = Label("Price", rect, 15, TextAnchor.UpperLeft, sell ? Ink : Good, FontStyle.Bold);
+            Place(priceText.rectTransform, 0f, 0f, 0.34f, 1f, new Vector2(10f, 20f), new Vector2(-4f, -3f));
+            priceText.text = price + " марок за синь";
+
+            Text qtyText = Label("Qty", rect, 11, TextAnchor.LowerLeft, InkDim);
+            Place(qtyText.rectTransform, 0f, 0f, 0.34f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -22f));
+            qtyText.text = qty + " сини · всего " + (qty * price);
+
+            Text owner = Label("Owner", rect, 12, TextAnchor.UpperLeft, InkDim);
+            Place(owner.rectTransform, 0.34f, 0f, 0.62f, 1f, new Vector2(0f, 20f), new Vector2(-4f, -3f));
+            owner.text = mine ? "ваш ордер" : (order["ownerName"]?.ToString() ?? "—");
+
+            Text timer = Label("Timer", rect, 11, TextAnchor.LowerLeft, InkDim);
+            Place(timer.rectTransform, 0.34f, 0f, 0.62f, 1f, new Vector2(0f, 4f), new Vector2(-4f, -22f));
+            _timers.Add(new KeyValuePair<Text, long>(timer, _sinSnapshotAt + (order["remainingSeconds"]?.Value<int>() ?? 0) * 1000L));
+
+            string label;
+            Action action;
+            if (mine)
+            {
+                label = "Отменить";
+                action = () => SendSin(done => RoaAccountSinNet.Cancel(Interaction.Socket, id, done));
+            }
+            else if (sell)
+            {
+                int take = Mathf.Min(qty, price > 0 ? Marks / price : 0);
+                label = take > 0 ? "Купить " + take : "Мало марок";
+                action = take > 0 ? (Action)(() => SendSin(done => RoaAccountSinNet.TakeOrder(Interaction.Socket, id, true, take, done))) : null;
+            }
+            else
+            {
+                int take = Mathf.Min(qty, SinBalance);
+                label = take > 0 ? "Продать " + take : "Нет сини";
+                action = take > 0 ? (Action)(() => SendSin(done => RoaAccountSinNet.TakeOrder(Interaction.Socket, id, false, take, done))) : null;
+            }
+            Button button = TextButton("Act", rect, label, 12, out Text buttonLabel);
+            var buttonRect = (RectTransform)button.transform;
+            buttonRect.anchorMin = new Vector2(0.62f, 0f);
+            buttonRect.anchorMax = new Vector2(1f, 1f);
+            buttonRect.offsetMin = new Vector2(0f, 8f);
+            buttonRect.offsetMax = new Vector2(-10f, -8f);
+            button.GetComponent<Image>().color = action == null ? QuietBg : ButtonBg;
+            buttonLabel.color = action == null ? InkDim : (mine ? Warn : Accent);
+            Action captured = action;
+            button.onClick.AddListener(() =>
+            {
+                if (captured != null && Interaction != null && Interaction.Socket != null) captured();
+            });
+            _rows.Add(go);
+        }
+
+        private void RebuildSinPanel()
+        {
+            AddDetailText("ОБМЕННИК СИНИ", 15, Accent, 24f, FontStyle.Bold);
+            float top = _detailCursor;
+            AddSinSideButton("Купить синь", false, 12f, top);
+            AddSinSideButton("Продать синь", true, 184f, top);
+            _detailCursor = top - 34f;
+            AddDetailText("Цена одной сини в марках и количество:", 11, InkDim, 30f);
+
+            // Поля формы стоят на своих местах; подписи и кнопки ложатся ниже.
+            _detailCursor = -204f;
+            int price = FormPrice;
+            int qty = FormQty;
+            int fee = SinOrderFee;
+            if (_sinSell)
+            {
+                int best = SinBestPrice("buy");
+                AddDetailText(best > 0
+                    ? "Дороже всего выкупают по " + best + " — ордер не дороже этой цены продастся сразу."
+                    : "Заявок на выкуп нет: ордер будет ждать покупателя.", 11, InkDim, 34f);
+                AddDurationRow(_sinExchange?["durationChoicesHours"] as JArray);
+                AddDetailText("Со счёта уйдёт " + qty + " сини, сбор " + fee + " марок, на руки не меньше "
+                    + (price * qty) + " марок.", 11, qty > SinBalance || fee > Marks ? Warn : InkDim, 40f);
+            }
+            else
+            {
+                int best = SinBestPrice("sell");
+                AddDetailText(best > 0
+                    ? "Дешевле всего продают по " + best + " — ордер не дешевле этой цены исполнится сразу."
+                    : "Сейчас синь никто не продаёт: ордер будет ждать продавца.", 11, InkDim, 34f);
+                AddDurationRow(_sinExchange?["durationChoicesHours"] as JArray);
+                AddDetailText("Заморозится " + (price * qty) + " марок, сбор " + fee + ". У вас " + Marks + ".",
+                    11, price * qty + fee > Marks ? Warn : InkDim, 40f);
+            }
+
+            bool ready = !SinBusy && price > 0 && qty > 0 && (_sinSell ? qty <= SinBalance && fee <= Marks : price * qty + fee <= Marks);
+            AddDetailButton(ready ? "ПОСТАВИТЬ ОРДЕР НА " + _durationHours + " Ч" : "УКАЖИТЕ ЦЕНУ И КОЛИЧЕСТВО",
+                ready ? ButtonBg : QuietBg, () =>
+                {
+                    if (!ready) return;
+                    bool sell = _sinSell;
+                    int hours = _durationHours;
+                    SendSin(done => RoaAccountSinNet.PlaceOrder(Interaction.Socket, sell, qty, price, hours, done));
+                });
+
+            int premiumPrice = _sinAccount?["premiumPriceSin"]?.Value<int>() ?? 0;
+            int premiumDays = _sinAccount?["premiumDays"]?.Value<int>() ?? 0;
+            bool canPremium = !SinBusy && _sinAccount != null && premiumPrice > 0 && SinBalance >= premiumPrice;
+            // Покупка премиума — в два нажатия: первое спрашивает подтверждение.
+            string premiumCaption = _premiumConfirm && canPremium
+                ? "ПОДТВЕРДИТЬ: СПИСАТЬ " + premiumPrice + " СИНИ"
+                : (SinPremium ? "ПРОДЛИТЬ ПРЕМИУМ: " : "ПРЕМИУМ: ") + premiumPrice + " СИНИ / " + premiumDays + " Д";
+            AddDetailButton(premiumCaption, canPremium ? (_premiumConfirm ? ConfirmBg : ButtonBg) : QuietBg, () =>
+                {
+                    if (!canPremium) return;
+                    if (!_premiumConfirm)
+                    {
+                        _premiumConfirm = true;
+                        Rebuild();
+                        return;
+                    }
+                    SendSin(done => RoaAccountSinNet.BuyPremium(Interaction.Socket, done));
+                });
+
+            if ((_sinExchange?["shelf"]?["silver"]?.Value<int>() ?? 0) > 0)
+                AddDetailButton("ЗАБРАТЬ МАРКИ С ПОЛКИ", ButtonBg, () => SendSin(done => RoaAccountSinNet.Claim(Interaction.Socket, done)));
+        }
+
+        private void AddSinSideButton(string caption, bool sell, float x, float top)
+        {
+            Button button = TextButton("SinSide", _detail, caption, 12, out Text label);
+            var rect = (RectTransform)button.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(x, top);
+            rect.sizeDelta = new Vector2(166f, 28f);
+            button.GetComponent<Image>().color = _sinSell == sell ? ButtonBg : QuietBg;
+            label.color = _sinSell == sell ? Accent : Ink;
+            button.onClick.AddListener(() =>
+            {
+                _sinSell = sell;
+                PrepareSinForm();
+                Rebuild();
+            });
+            _detailRows.Add(button.gameObject);
+        }
+
         // --- вспомогательные строки списка --------------------------------
 
         private void AddBackRow(string caption)
@@ -928,11 +1286,12 @@ namespace RealmOfAshes.Game
             ClearRows(_detailRows);
             bool form = (_tab == Tab.Buy || _tab == Tab.Sell) && !string.IsNullOrEmpty(_itemId);
             bool sellForm = _tab == Tab.Sell;
-            bool showInputs = form && (sellForm || Fungible(_itemId));
+            bool showInputs = (form && (sellForm || Fungible(_itemId))) || (_tab == Tab.Sin && _sinExchange != null);
             _priceInput.gameObject.SetActive(showInputs);
             _qtyInput.gameObject.SetActive(showInputs);
 
             if (_tab == Tab.Shelf) { RebuildShelfPanel(); return; }
+            if (_tab == Tab.Sin) { RebuildSinPanel(); return; }
             if (_tab == Tab.Mine) { RebuildOrderPanel(); return; }
             if (!form)
             {
@@ -1004,12 +1363,12 @@ namespace RealmOfAshes.Game
                 });
         }
 
-        private void AddDurationRow()
+        private void AddDurationRow(JArray choices = null)
         {
             AddDetailText("СРОК ОРДЕРА", 11, InkDim, 18f, FontStyle.Bold);
             float top = _detailCursor;
             float x = 12f;
-            foreach (JToken token in _state?["durationChoicesHours"] as JArray ?? new JArray())
+            foreach (JToken token in choices ?? _state?["durationChoicesHours"] as JArray ?? new JArray())
             {
                 int choice = token?.Value<int>() ?? 0;
                 if (choice <= 0) continue;

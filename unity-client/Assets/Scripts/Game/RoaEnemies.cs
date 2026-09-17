@@ -847,9 +847,11 @@ namespace RealmOfAshes.Game
                 bool dead = ReadBoolean(enemy.Snapshot["dead"], enemy.Dead);
                 bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
                 bool canDialogue = ReadBoolean(enemy.Snapshot["canDialogue"]);
-                bool hasTrade = !string.IsNullOrEmpty(enemy.Snapshot["traderProfile"]?.ToString())
-                    || !string.IsNullOrEmpty(enemy.Snapshot["traderId"]?.ToString())
-                    || ReadBoolean(enemy.Snapshot["personalTrade"]);
+                bool hasTrade = enemy.Snapshot["tradeOpen"]?.Type == JTokenType.Boolean
+                    ? ReadBoolean(enemy.Snapshot["tradeOpen"])
+                    : !string.IsNullOrEmpty(enemy.Snapshot["traderProfile"]?.ToString())
+                        || !string.IsNullOrEmpty(enemy.Snapshot["traderId"]?.ToString())
+                        || ReadBoolean(enemy.Snapshot["personalTrade"]);
 
                 if (!dead && (hostile || (!canDialogue && !hasTrade))) continue;
 

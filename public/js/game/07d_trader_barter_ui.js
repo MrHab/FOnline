@@ -247,70 +247,8 @@
     return total;
   }
 
-  function submitServerTradeMachineExchange(machine, state) {
-    if (!machine || !machine.isTradeMachine || machine.tradePending) return false;
-    if (typeof multiplayer === 'undefined' || !multiplayer?.socket?.connected || !multiplayer.joined) {
-      setReadout('Торговый автомат не может провести обмен без сервера мира.');
-      return false;
-    }
-    const buys = Array.from(buyQueue.entries()).map(([id, qty]) => ({ id: baseItemId(id), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
-    const sells = Array.from(saleQueue.entries()).map(([id, qty]) => ({ id: baseItemId(id), itemRuntimeId: String(id || '').slice(0, 96), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
-    machine.tradePending = true;
-    renderTraderWindow();
-    multiplayer.socket.emit('tradeMachineExchange', {
-      machineId: machine.id || '',
-      locationId: currentLocation?.id || '',
-      buys,
-      sells,
-      inventory: multiplayerInventorySnapshot(),
-      carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null,
-      special: characterProfile?.special || DEFAULT_SPECIAL,
-      skillRanks: typeof clientSkillRanksSnapshot === 'function' ? clientSkillRanksSnapshot() : { ...skillRanks },
-      talentRanks: { ...talentRanks },
-      traits: Array.isArray(characterProfile?.traits) ? characterProfile.traits.slice(0, 2) : [],
-      level: player.level
-    }, ack => {
-      machine.tradePending = false;
-      if (ack?.market?.ok && typeof applyServerTradeMachineMarket === 'function') {
-        applyServerTradeMachineMarket(machine, ack.market);
-      }
-      if (!ack?.ok) {
-        setReadout(ack?.error || 'Сервер отклонил обмен.');
-        renderTraderWindow();
-        return;
-      }
-      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') {
-        applyServerAuthoritativePlayerState(ack.self);
-      } else if (Array.isArray(ack.inventory) && typeof applyServerInventorySnapshot === 'function') {
-        applyServerInventorySnapshot(ack.inventory);
-      }
-      saleQueue.clear();
-      buyQueue.clear();
-      clearEquipmentReferencesToMissing();
-      const net = Number(ack.net || state?.net || 0);
-      const bought = buys.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
-      const sold = sells.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
-      const parts = [];
-      const unloaded = (Array.isArray(ack.unloadedAmmo) ? ack.unloadedAmmo : [])
-        .map(row => `${ITEMS[row.id]?.name || row.id} x${Math.max(0, Math.floor(Number(row.qty || 0)))}`)
-        .filter(Boolean);
-      if (unloaded.length) parts.push(`патроны из магазинов возвращены: ${unloaded.join(', ')}`);
-      if (bought.length) parts.push(`куплено: ${bought.join(', ')}`);
-      if (sold.length) parts.push(`продано: ${sold.join(', ')}`);
-      const balance = net > 0 ? `доплата ${net}` : (net < 0 ? `получено ${Math.abs(net)}` : 'без доплаты');
-      addLog(`Торговый автомат: ${parts.join('; ')} (${balance} крышек).`, null, 'loot');
-      setReadout(`Обмен подтвержден сервером: ${balance} крышек.`);
-      renderTraderWindow();
-      renderInventory();
-      renderQuickbar();
-      renderWeaponReadout();
-      queueSave(true);
-    });
-    return true;
-  }
-
   function submitServerNpcTradeExchange(trader, state = {}, requested = null) {
-    if (!trader || trader.isTradeMachine || trader.tradePending) return false;
+    if (!trader || trader.tradePending) return false;
     if (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
       const closedActiveWindow = typeof handleNpcScheduledTradeAvailabilityChanged === 'function'
         && handleNpcScheduledTradeAvailabilityChanged(trader);
@@ -397,10 +335,6 @@
     }
     const net = state.net;
     const trader = activeTraderOrNearby(4.2);
-    if (trader?.isTradeMachine) {
-      submitServerTradeMachineExchange(trader, state);
-      return;
-    }
     submitServerNpcTradeExchange(trader, state);
   }
 

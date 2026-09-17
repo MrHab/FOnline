@@ -1670,23 +1670,6 @@ varying float vInstanceOpacity;`
       || model.includes('job_board');
   }
 
-  function authoredObjectIsTradeMachine(row = {}) {
-    const tags = authoredObjectTags(row);
-    const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-    const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-    const entityKind = String(entity.kind || '').toLowerCase();
-    const interactiveKind = String(interactive.kind || '').toLowerCase();
-    const role = String(entity.role || interactive.role || row.role || '').toLowerCase();
-    const model = String(row.model || row.url || '').toLowerCase();
-    return entityKind === 'trademachine'
-      || interactiveKind === 'trademachine'
-      || role === 'trademachine'
-      || tags.includes('trademachine')
-      || tags.includes('vendingmachine')
-      || model.includes('trademachine')
-      || model.includes('trade_machine');
-  }
-
   function authoredCraftingStationIds(row = {}) {
     const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
     const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
@@ -1738,41 +1721,6 @@ varying float vInstanceOpacity;`
       || role === 'craftingstation'
       || tags.includes('crafting-station')
       || authoredCraftingStationIds(row).length > 0;
-  }
-
-  const DEFAULT_TRADE_MACHINE_PROFILE = {
-    caps: 350,
-    buyInterests: ['materials', 'tools', 'aid', 'ammo'],
-    stock: [
-      { id: 'water', price: 6, qty: 12 },
-      { id: 'stim', price: 13, qty: 6 },
-      { id: 'medkit', price: 24, qty: 3 },
-      { id: 'ammo9', price: 3, qty: 90 },
-      { id: 'ammo556', price: 5, qty: 60 },
-      { id: 'shotgunShell', price: 6, qty: 24 },
-      { id: 'napalm', price: 7, qty: 18 },
-      { id: 'repairKit', price: 22, qty: 3 },
-      { id: 'oil', price: 10, qty: 5 }
-    ]
-  };
-
-  function authoredTradeMachineStock(row = {}) {
-    const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-    const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-    const traderProfile = String(interactive.traderProfile || entity.traderProfile || 'outpostMachine').trim();
-    const stockSource = Array.isArray(interactive.stock)
-      ? interactive.stock
-      : (Array.isArray(entity.stock)
-        ? entity.stock
-        : (traderProfile === 'outpostMachine' ? DEFAULT_TRADE_MACHINE_PROFILE.stock : []));
-    return stockSource
-      .map(entry => ({
-        id: String(entry?.id || '').trim(),
-        price: Math.max(1, Math.round(Number(entry?.price || 1))),
-        qty: Number.isFinite(Number(entry?.qty)) ? Math.max(0, Math.floor(Number(entry.qty))) : 1
-      }))
-      .filter(entry => entry.id && entry.price > 0 && entry.qty > 0)
-      .slice(0, 48);
   }
 
   function authoredObjectOcclusionRole(row = {}) {
@@ -1952,7 +1900,7 @@ varying float vInstanceOpacity;`
     // instance is temporarily replaced by a lightweight transparent copy.
     if (!(isFloorBuildingBlockKey(key) || isWallBuildingBlockKey(key) || isRoofBuildingBlockKey(key))) return false;
     if (locationObjectIsEntity(row)) return false;
-    if (authoredObjectIsJobBoard(row) || authoredObjectIsTradeMachine(row)) return false;
+    if (authoredObjectIsJobBoard(row)) return false;
     return true;
   }
 
@@ -1966,7 +1914,7 @@ varying float vInstanceOpacity;`
     if (!key || !AUTHORED_STATIC_INSTANCED_MODEL_KEYS.has(key) || !THREE.InstancedMesh) return false;
     if (key === 'cargoStack' && currentLocation?.id !== 'settlement') return false;
     if (locationObjectIsEntity(row)) return false;
-    if (authoredObjectIsJobBoard(row) || authoredObjectIsTradeMachine(row) || authoredObjectIsCraftingStation(row)) return false;
+    if (authoredObjectIsJobBoard(row) || authoredObjectIsCraftingStation(row)) return false;
     return true;
   }
 
@@ -2277,44 +2225,6 @@ varying float vInstanceOpacity;`
           child.userData.craftingStation = station;
         });
         locationCraftingStations.push(station);
-      }
-      if (authoredObjectIsTradeMachine(row)) {
-        const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-        const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-        const traderProfile = String(interactive.traderProfile || entity.traderProfile || 'outpostMachine').slice(0, 64);
-        const profileDefaults = traderProfile === 'outpostMachine' ? DEFAULT_TRADE_MACHINE_PROFILE : { caps: 0, buyInterests: [] };
-        const caps = Number.isFinite(Number(interactive.caps ?? entity.caps))
-          ? Math.max(0, Math.floor(Number(interactive.caps ?? entity.caps)))
-          : profileDefaults.caps;
-        const buyInterests = Array.isArray(interactive.buyInterests)
-          ? interactive.buyInterests
-          : (Array.isArray(entity.buyInterests) ? entity.buyInterests : profileDefaults.buyInterests);
-        const machine = {
-          id: String(row.id || `trade_machine_${locationTradeMachines.length + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96),
-          name: String(row.name || interactive.name || entity.name || 'Торговый автомат').slice(0, 80),
-          x,
-          z,
-          mesh: group,
-          locationId: currentLocation?.id || '',
-          isTradeMachine: true,
-          hostileToPlayer: false,
-          encounterRole: 'merchant',
-          traderId: String(interactive.traderId || entity.traderId || traderProfile || row.id || 'outpost_machine').slice(0, 64),
-          traderProfile,
-          siteId: String(interactive.siteId || interactive.marketSiteId || entity.siteId || entity.marketSiteId || row.siteId || row.marketSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-          dialogueProfile: 'tradeMachine',
-          traderCaps: caps,
-          traderBuyInterests: buyInterests.map(value => String(value || '')).filter(Boolean),
-          traderStock: authoredTradeMachineStock(row),
-          inventory: caps > 0 ? [{ id: 'silver', qty: caps }] : [],
-          row
-        };
-        group.userData.tradeMachine = machine;
-        group.traverse(child => {
-          child.userData = child.userData || {};
-          child.userData.tradeMachine = machine;
-        });
-        locationTradeMachines.push(machine);
       }
       registerAuthoredTraderCutawayBlock(group, row, key, x, y, z, angle);
       if (key === 'oldKlimTradeHallRoof') {

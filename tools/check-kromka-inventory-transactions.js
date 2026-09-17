@@ -59,7 +59,7 @@ assert.strictEqual(sanitizeInventoryMutationLedger(new Array(140).fill(null).map
   kind: 'craftingStationUsed', requestId: `req_${index}`, fingerprint: 'x', t: index
 }))).length, 96, 'ledger should remain bounded');
 
-for (const kind of ['storageTransfer', 'inventoryItemAction', 'tradeMachineExchange', 'craftingStationUsed']) {
+for (const kind of ['storageTransfer', 'inventoryItemAction', 'craftingStationUsed']) {
   assert(server.includes(`'${kind}'`) && server.includes('beginInventoryMutation'), `${kind} is not protected on server`);
 }
 assert(server.includes('next.inventoryMutationLedger = sanitizeInventoryMutationLedger'), 'ledger is not persisted');

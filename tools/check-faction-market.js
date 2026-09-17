@@ -214,7 +214,7 @@ for (const needle of [
   'category: KROMKA_ITEM_INDEXES.categories[itemId]',
   "serverInventoryRemove(p, 'silver', placed.spent + placed.escrow + placed.setupFee);",
   'marketExpireOrders(serverAuctionStore(), KROMKA_AUCTION_RULES, now)',
-  'function serverClaimAuctionShelf(p, data = {}, now = Date.now())',
+  'function serverClaimAuctionShelf(p, data = {}, now = Date.now(), store = serverAuctionStore())',
   'serverTickAuctions(Date.now())'
 ]) assert(server.includes(needle), `server.js is missing the market contract: ${needle}`);
 assert(!/serverPlayerTerritoryFactionId\(p\);\s*\n\s*if \(!factionId\) return fail\('Аукцион/.test(server),

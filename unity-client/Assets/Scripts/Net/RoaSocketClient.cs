@@ -98,9 +98,6 @@ namespace RealmOfAshes.Net
         /// <summary>Игрок спровоцировал мирную группу в случайной встрече.</summary>
         public event Action<JObject> OnEncounterFactionHostile;
 
-        /// <summary>Рынок авторского торгового автомата изменился в текущей комнате.</summary>
-        public event Action<JObject> OnTradeMachineMarketUpdated;
-
         /// <summary>Точечное серверное изменение ресурсного узла после добычи или респауна.</summary>
         public event Action<JObject> OnResourceUpdated;
 
@@ -575,12 +572,6 @@ namespace RealmOfAshes.Net
                 var payload = First<JObject>(args);
                 if (payload == null || !IsForCurrentRoom(payload["roomId"]?.ToString())) return;
                 OnEncounterFactionHostile?.Invoke(payload);
-            }));
-
-            _connection.On("tradeMachineMarketUpdated", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnTradeMachineMarketUpdated?.Invoke(payload);
             }));
 
             _connection.On("resourceUpdated", args => _mainThread.Enqueue(() =>

@@ -552,7 +552,6 @@
     staticCollisionBoxes.length = 0;
     locationJobBoards.length = 0;
     locationCraftingStations.length = 0;
-    locationTradeMachines.length = 0;
     clearAuthoredTileLayers();
     resourceNodes.length = 0;
     map.length = 0;

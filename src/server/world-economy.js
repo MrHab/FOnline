@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const { normalizeBlackMarketConfig } = require('./black-market');
+const { normalizeCityAuctionConfig } = require('./city-auctions');
 
 /**
  * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
@@ -16,8 +17,11 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   npcProduction: false,
   // Постоянные, экспортные и торговые караваны вместе с сопровождением.
   worldCaravans: false,
-  // Полки NPC-торговцев; выключаются вместе с появлением аукционов.
+  // Торговля с NPC-торговцами.
   npcTraders: true,
+  // Торговля с любым мирным NPC вне столиц; иначе торгуют только торговцы-люди
+  // в столицах фракций и на базах Сердцевины (и скупщик Чёрного рынка).
+  wildTraders: true,
   // Станки NPC; выключаются вместе с появлением участков.
   npcStations: true,
   // Снаряжение с трупов NPC; заменяется останками и Чёрным рынком.
@@ -25,7 +29,9 @@ const DEFAULT_WORLD_MODEL = Object.freeze({
   // Отряды NPC на глобальной карте; уходят вместе с опасными клетками.
   visibleWorldParties: true,
   // Чёрный рынок в хабе Сердцевины: скупка снаряжения и добыча NPC с его склада.
-  blackMarket: true
+  blackMarket: true,
+  // Своя книга ордеров у каждой столицы вместо общей, налог v3 и довоенный запас.
+  cityAuctions: false
 });
 
 const DEFAULT_ZONES = Object.freeze({
@@ -146,7 +152,8 @@ function normalizeWorldEconomy(input = {}) {
     worldModel: normalizeWorldModel(src.worldModel),
     zones: normalizeZones(src.zones),
     npcRemnants: normalizeNpcRemnants(src.npcRemnants),
-    blackMarket: normalizeBlackMarketConfig(src.blackMarket)
+    blackMarket: normalizeBlackMarketConfig(src.blackMarket),
+    auctions: normalizeCityAuctionConfig(src.auctions)
   });
 }
 

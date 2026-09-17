@@ -1653,7 +1653,7 @@ function assertSocketAndClientContract() {
   );
   const leaveHandler = serverSource.slice(
     serverSource.indexOf("socket.on('worldTaskLeaveParty'"),
-    serverSource.indexOf("socket.on('tradeMachineMarketState'", serverSource.indexOf("socket.on('worldTaskLeaveParty'"))
+    serverSource.indexOf("socket.on('craftingStationUsed'", serverSource.indexOf("socket.on('worldTaskLeaveParty'"))
   );
   assert(joinHandler.includes('ok: false') && !joinHandler.includes('WASTELAND_SIM.joinWorldParty'),
     'legacy join handler can still mutate simulation state');

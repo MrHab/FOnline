@@ -73,7 +73,7 @@
     "check:public-events": "node --check src/server/public-events.js && node tools/check-public-events.js",
     "check:world-boss": "node --check src/server/world-boss.js && node tools/check-world-boss.js",
     "check:lab-mechanics": "node --check src/server/lab-mechanics.js && node --check tools/check-lab-mechanics.js && node tools/check-lab-mechanics.js",
-    "check:faction-market": "node --check src/server/faction-market.js && node --check tools/check-faction-market.js && node tools/check-faction-market.js",
+    "check:faction-market": "node --check src/server/faction-market.js && node --check src/server/city-auctions.js && node --check tools/check-faction-market.js && node --check tools/check-city-auctions.js && node tools/check-faction-market.js && node tools/check-city-auctions.js",
     "check:auction-network": "node --check tools/check-auction-network.js && node tools/check-auction-network.js",
     "check:webgl-delivery": "node --check src/server/webgl-delivery.js && node --check tools/check-webgl-delivery.js && node tools/check-webgl-delivery.js",
     "check:webgl-payload": "node --check tools/check-webgl-payload.js && node tools/check-webgl-payload.js",

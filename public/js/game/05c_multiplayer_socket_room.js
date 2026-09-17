@@ -1188,9 +1188,6 @@
       if (positionMode === 'correction' && !networkPayloadIsForCurrentRoom(data || {})) return;
       applyServerAuthoritativePlayerState(data || {}, { positionMode });
     });
-    multiplayer.socket.on('tradeMachineMarketUpdated', data => {
-      if (typeof handleTradeMachineMarketUpdated === 'function') handleTradeMachineMarketUpdated(data || {});
-    });
     multiplayer.socket.on('enemyKilled', data => {
       if (!data || !data.enemyId) return;
       const enemy = enemies.find(e => e.id === data.enemyId);

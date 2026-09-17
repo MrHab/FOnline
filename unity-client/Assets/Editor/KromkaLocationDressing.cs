@@ -77,7 +77,8 @@ namespace Kromka.EditorTools
                 case "faction_capital":
                     return new[] { "wasteland_shack", "trader_awning", "job_board", "garden_patch", "storage_lean_to", "barrel_cluster", "watch_post", "cot_bed", "cot_bed", "cot_bed" };
                 case "caravan_hub":
-                    return new[] { "cargo_stack", "trader_awning", "trade_machine", "car_wreck", "tire_stack", "workshop_bench", "storage_lean_to", "cot_bed", "cot_bed" };
+                    // Торговых автоматов в экономике v3 нет.
+                    return new[] { "cargo_stack", "trader_awning", "car_wreck", "tire_stack", "workshop_bench", "storage_lean_to", "cot_bed", "cot_bed" };
                 case "road_outpost":
                     return new[] { "roadblock_barricade", "watch_post", "scrap_watch_tower", "highway_sign", "barrel_cluster", "cot_bed" };
                 case "resource_site":

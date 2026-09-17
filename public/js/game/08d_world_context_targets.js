@@ -312,9 +312,6 @@
     if (target.type === 'craftingStation') {
       return target.station ? { x: Number(target.station.x || 0), z: Number(target.station.z || 0) } : null;
     }
-    if (target.type === 'tradeMachine') {
-      return target.machine ? { x: Number(target.machine.x || 0), z: Number(target.machine.z || 0) } : null;
-    }
     if (target.type === 'resource') {
       if (!target.resource) return null;
       const pos = tileToWorld(target.resource.tx, target.resource.tz);
@@ -334,7 +331,6 @@
     if (target.type === 'storage') return !!target.storage;
     if (target.type === 'jobBoard') return !!(target.board && (!target.board.mesh || target.board.mesh.visible !== false));
     if (target.type === 'craftingStation') return !!(target.station && (!target.station.mesh || target.station.mesh.visible !== false));
-    if (target.type === 'tradeMachine') return !!(target.machine && (!target.machine.mesh || target.machine.mesh.visible !== false));
     if (target.type === 'resource') return !!(target.resource && target.resource.hp > 0);
     return true;
   }
@@ -609,15 +605,6 @@
     return null;
   }
 
-  function tradeMachineFromObject(object) {
-    let node = object;
-    while (node) {
-      if (node.userData?.tradeMachine) return node.userData.tradeMachine;
-      node = node.parent;
-    }
-    return null;
-  }
-
   function craftingStationFromObject(object) {
     let node = object;
     while (node) {
@@ -637,20 +624,6 @@
     for (const hit of hits) {
       const board = jobBoardFromObject(hit.object);
       if (board) return board;
-    }
-    return null;
-  }
-
-  function findTradeMachineFromEvent(clientX, clientY) {
-    if (!Array.isArray(locationTradeMachines) || !locationTradeMachines.length) return null;
-    const roots = locationTradeMachines.map(row => row?.mesh).filter(Boolean);
-    if (!roots.length) return null;
-    updatePointerWorld(clientX, clientY);
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(roots, true);
-    for (const hit of hits) {
-      const machine = tradeMachineFromObject(hit.object);
-      if (machine) return machine;
     }
     return null;
   }
@@ -891,8 +864,6 @@
     if (jobBoard) return { type: 'jobBoard', board: jobBoard, title: jobBoard.name || 'Доска заданий' };
     const craftingStation = findCraftingStationFromEvent(clientX, clientY);
     if (craftingStation) return { type: 'craftingStation', station: craftingStation, title: craftingStation.name || '\u0420\u0430\u0431\u043e\u0447\u0438\u0439 \u0441\u0442\u0430\u043d\u043e\u043a' };
-    const tradeMachine = findTradeMachineFromEvent(clientX, clientY);
-    if (tradeMachine) return { type: 'tradeMachine', machine: tradeMachine, title: tradeMachine.name || 'Торговый автомат' };
     const resource = findResourceFromEvent(clientX, clientY);
     if (resource) return { type: 'resource', resource, title: interactionResourceDef(resource).title };
     return null;
@@ -984,9 +955,6 @@
     ];
     if (target.type === 'craftingStation') return [
       { label: '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0441\u0442\u0430\u043d\u043e\u043a', action: () => openCraftingStationWindow(target.station) }
-    ];
-    if (target.type === 'tradeMachine') return [
-      { label: 'Торговать', action: () => openTraderWindow(target.machine) }
     ];
     if (target.type === 'resource') return [
       { label: interactionResourceDef(target.resource).menu, action: () => tryHarvestResourceWithHeldTool(target.resource) }

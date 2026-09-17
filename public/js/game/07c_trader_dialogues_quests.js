@@ -4,19 +4,18 @@
       setReadout('Рядом нет торговца.');
       return false;
     }
-    const tradeMachine = trader?.isTradeMachine === true;
-    if (!tradeMachine && typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
+    if (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
       setReadout(`${trader.name || 'Торговец'} сейчас не работает. Приходите в рабочие часы.`);
       return false;
     }
-    if (trader !== traderNpc && !tradeMachine && !isCaravanTrader(trader)) {
+    if (trader !== traderNpc && !isCaravanTrader(trader)) {
       setReadout(`${trader.name || 'НПС'} сейчас ничего не продаёт.`);
       return false;
     }
     closeAllWindows();
     activeTraderActor = trader;
     ensureTraderMarket(trader);
-    if (!tradeMachine) beginNpcDialogueFocus(trader);
+    beginNpcDialogueFocus(trader);
     saleQueue.clear();
     buyQueue.clear();
     traderWindowOpen = true;
@@ -24,9 +23,6 @@
     document.getElementById('trader-window').style.display = 'block';
     renderTraderWindow();
     renderInventory();
-    if (tradeMachine && typeof requestTradeMachineMarket === 'function') {
-      requestTradeMachineMarket(trader, { silent: true });
-    }
     setReadout(`${trader.name}: выбирайте товары для обмена.`);
     if (typeof updateMobilePanelState === 'function') updateMobilePanelState();
     return true;
@@ -78,7 +74,7 @@
 
   function closeTraderWindow() {
     closeQuantityPanel();
-    if (activeTraderActor && activeTraderActor.isTradeMachine !== true) endNpcDialogueFocus(activeTraderActor);
+    if (activeTraderActor) endNpcDialogueFocus(activeTraderActor);
     const win = document.getElementById('trader-window');
     if (win) win.style.display = 'none';
     traderWindowOpen = false;

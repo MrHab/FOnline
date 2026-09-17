@@ -1037,6 +1037,7 @@
         traderId: naturalCreature ? '' : (e.traderId || ''),
         traderProfile: naturalCreature ? '' : (e.traderProfile || ''),
         dialogueProfile: naturalCreature ? '' : (e.dialogueProfile || ''),
+        tradeOpen: naturalCreature ? false : e.tradeOpen,
         traderQuests: naturalCreature ? [] : (Array.isArray(e.traderQuests) ? e.traderQuests.map(id => String(id || '')).filter(Boolean) : []),
         traderStock,
         traderBuyInterests: naturalCreature ? [] : (Array.isArray(e.traderBuyInterests) ? e.traderBuyInterests.map(id => String(id || '')).filter(Boolean) : []),
@@ -1090,6 +1091,7 @@
         traderId: naturalCreature ? '' : (saved.traderId || ''),
         traderProfile: naturalCreature ? '' : (saved.traderProfile || ''),
         dialogueProfile: naturalCreature ? '' : (saved.dialogueProfile || ''),
+        tradeOpen: naturalCreature ? false : saved.tradeOpen,
         traderQuests: naturalCreature ? [] : (Array.isArray(saved.traderQuests) ? saved.traderQuests.map(id => String(id || '')).filter(Boolean) : []),
         traderStock: naturalCreature ? [] : (Array.isArray(saved.traderStock) ? saved.traderStock.map(row => ({
           id: String(row.id || ''),

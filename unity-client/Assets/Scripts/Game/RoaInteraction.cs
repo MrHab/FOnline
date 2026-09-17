@@ -73,8 +73,8 @@ namespace RealmOfAshes.Game
         [Tooltip("Радиус выбора контейнеров. Сервер разрешает открытие не дальше 3.2 м.")]
         public float ContainerRange = 3.1f;
 
-        private enum TargetKind { None, LabNode, Actor, Container, TradeMachine, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
-        private enum PanelKind { None, Npc, Trade, MachineTrade, Storage, Corpse, Container, Crafting, JobBoard }
+        private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
+        private enum PanelKind { None, Npc, Trade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
         private sealed class ContainerView
@@ -164,8 +164,7 @@ namespace RealmOfAshes.Game
         /// <summary>Канва рисует торговлю сама; IMGUI-вариант этих панелей молчит.</summary>
         public bool TradeCanvasDriven { get; set; }
 
-        public bool TradeOpen { get { return _panel == PanelKind.Trade || _panel == PanelKind.MachineTrade; } }
-        public bool TradeIsMachine { get { return _panel == PanelKind.MachineTrade; } }
+        public bool TradeOpen { get { return _panel == PanelKind.Trade; } }
         public bool TradePending { get { return _tradePending; } }
         public JObject TradeMarket { get { return _market; } }
         public JObject TradeSelf { get { return _self; } }
@@ -173,7 +172,7 @@ namespace RealmOfAshes.Game
 
         public string TradeActorName
         {
-            get { return _active?["name"]?.ToString() ?? (TradeIsMachine ? "Торговый автомат" : "Торговец"); }
+            get { return _active?["name"]?.ToString() ?? "Торговец"; }
         }
 
         public System.Collections.Generic.IReadOnlyDictionary<string, int> TradeBuysQueue { get { return _tradeBuys; } }
@@ -240,7 +239,6 @@ namespace RealmOfAshes.Game
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
-                else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
                 else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "поговорить";
                 return InteractKey + " — " + action + ": " + name;
             }
@@ -1359,7 +1357,6 @@ namespace RealmOfAshes.Game
             Socket.OnWorldContainers += HandleContainerSnapshot;
             Socket.OnWorldContainerUpdated += HandleContainerUpdated;
             Socket.OnEnemyTradeUpdated += HandleEnemyTradeUpdated;
-            Socket.OnTradeMachineMarketUpdated += HandleTradeMachineMarketUpdated;
             Socket.OnResourceUpdated += HandleResourceUpdated;
             _attached = true;
         }
@@ -1373,7 +1370,6 @@ namespace RealmOfAshes.Game
             Socket.OnWorldContainers -= HandleContainerSnapshot;
             Socket.OnWorldContainerUpdated -= HandleContainerUpdated;
             Socket.OnEnemyTradeUpdated -= HandleEnemyTradeUpdated;
-            Socket.OnTradeMachineMarketUpdated -= HandleTradeMachineMarketUpdated;
             Socket.OnResourceUpdated -= HandleResourceUpdated;
             _attached = false;
         }
@@ -1451,19 +1447,6 @@ namespace RealmOfAshes.Game
                     _market["caps"] = Mathf.Max(0, caps);
                     ReconcileTradeQueue();
                 }
-            }
-        }
-
-        private void HandleTradeMachineMarketUpdated(JObject payload)
-        {
-            if (_panel != PanelKind.MachineTrade || _active == null) return;
-            string machineId = payload?["machineId"]?.ToString()
-                ?? payload?["market"]?["machineId"]?.ToString();
-            if (machineId != _active["id"]?.ToString()) return;
-            if (payload?["market"] is JObject market)
-            {
-                _market = (JObject)market.DeepClone();
-                ReconcileTradeQueue();
             }
         }
 
@@ -1846,11 +1829,6 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (_candidateKind == TargetKind.TradeMachine)
-            {
-                OpenTradeMachine(_candidate);
-                return;
-            }
             if (_candidateKind == TargetKind.Storage)
             {
                 _active = (JObject)_candidate.DeepClone();
@@ -2057,32 +2035,6 @@ namespace RealmOfAshes.Game
                     return;
                 }
                 Show(ack?["error"]?.ToString() ?? "Узел зала недоступен.");
-            });
-        }
-
-        private void OpenTradeMachine(JObject machine)
-        {
-            string id = machine?["id"]?.ToString();
-            if (string.IsNullOrEmpty(id)) return;
-            Show("Получаем ассортимент…", 2f);
-            Socket.EmitWithAck("tradeMachineMarketState", new Dictionary<string, object>
-            {
-                ["machineId"] = id
-            }, ack =>
-            {
-                if (ack?["ok"]?.ToObject<bool>() != true)
-                {
-                    Show(ack?["error"]?.ToString() ?? "Торговый автомат недоступен.");
-                    return;
-                }
-
-                _active = (JObject)machine.DeepClone();
-                if (!string.IsNullOrEmpty(ack["name"]?.ToString())) _active["name"] = ack["name"];
-                _market = (JObject)ack.DeepClone();
-                ClearTradeQueue();
-                _panel = PanelKind.MachineTrade;
-                _scroll = Vector2.zero;
-                _status = string.Empty;
             });
         }
 
@@ -2343,7 +2295,6 @@ namespace RealmOfAshes.Game
 
             string actorId = _active?["id"]?.ToString();
             if (string.IsNullOrEmpty(actorId) || Socket == null) return;
-            bool machine = _panel == PanelKind.MachineTrade;
             var buys = new List<Dictionary<string, object>>();
             var sells = new List<Dictionary<string, object>>();
             foreach (KeyValuePair<string, int> entry in _tradeBuys)
@@ -2371,7 +2322,7 @@ namespace RealmOfAshes.Game
                 ["buys"] = buys,
                 ["sells"] = sells
             };
-            payload[machine ? "machineId" : "enemyId"] = actorId;
+            payload["enemyId"] = actorId;
             if (_self?["inventory"] != null) payload["inventory"] = _self["inventory"].DeepClone();
             if (_self?["carry"] != null) payload["carry"] = _self["carry"].DeepClone();
             if (_self?["special"] != null) payload["special"] = _self["special"].DeepClone();
@@ -2382,7 +2333,7 @@ namespace RealmOfAshes.Game
 
             _tradePending = true;
             Show("Сервер проверяет обмен…", 4f);
-            Socket.EmitWithAck(machine ? "tradeMachineExchange" : "npcTradeExchange", payload, ack =>
+            Socket.EmitWithAck("npcTradeExchange", payload, ack =>
             {
                 _tradePending = false;
                 ApplyActionAck(ack);
@@ -2725,7 +2676,7 @@ namespace RealmOfAshes.Game
 
             // Бартер в канва-виде: IMGUI-окно этих панелей не рисуется, чтобы
             // два окна торговли не спорили за одни и те же кнопки.
-            if (TradeCanvasDriven && (_panel == PanelKind.Trade || _panel == PanelKind.MachineTrade))
+            if (TradeCanvasDriven && _panel == PanelKind.Trade)
             {
                 if (!HintCanvasDriven) DrawStatus();
                 return;
@@ -2756,7 +2707,7 @@ namespace RealmOfAshes.Game
 
             _scroll = GUILayout.BeginScrollView(_scroll);
             if (_panel == PanelKind.Npc) DrawNpc();
-            else if (_panel == PanelKind.Trade || _panel == PanelKind.MachineTrade) DrawTrade();
+            else if (_panel == PanelKind.Trade) DrawTrade();
             else if (_panel == PanelKind.Storage) DrawStorage();
             else if (_panel == PanelKind.Crafting) DrawCrafting();
             else if (_panel == PanelKind.JobBoard) DrawJobBoard();
@@ -2782,7 +2733,6 @@ namespace RealmOfAshes.Game
             else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
             else if (_candidateKind == TargetKind.Transition) action = "перейти";
             else if (_candidateKind == TargetKind.Container || _candidateKind == TargetKind.Storage) action = "открыть";
-            else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
             else action = _candidate["dead"]?.ToObject<bool>() == true ? "обыскать" : "говорить";
 
             const float width = 360f;
@@ -3491,7 +3441,6 @@ namespace RealmOfAshes.Game
         {
             string name = _active?["name"]?.ToString() ?? "Взаимодействие";
             if (_panel == PanelKind.Trade) return "Торговля: " + name;
-            if (_panel == PanelKind.MachineTrade) return name;
             if (_panel == PanelKind.Storage) return "Хранилище: " + name;
             if (_panel == PanelKind.Crafting) return "Крафт: " + name;
             if (_panel == PanelKind.JobBoard) return name;
@@ -3521,6 +3470,9 @@ namespace RealmOfAshes.Game
         private static bool NpcHasTrade(JObject actor)
         {
             if (actor == null) return false;
+            // Сервер говорит прямо, торгует ли этот человек (экономика v3:
+            // только торговцы столиц и баз Сердцевины и скупщик Чёрного рынка).
+            if (actor["tradeOpen"]?.Type == JTokenType.Boolean) return actor["tradeOpen"].Value<bool>();
             return actor["personalTrade"]?.ToObject<bool>() == true
                 || !string.IsNullOrEmpty(actor["traderId"]?.ToString())
                 || !string.IsNullOrEmpty(actor["traderProfile"]?.ToString())
@@ -3548,12 +3500,6 @@ namespace RealmOfAshes.Game
             // Узел зала лаборатории: вентиляция, щит питания, охлаждение,
             // излучатель. Использование сбрасывает шкалу угрозы зала.
             if (kind == "labnode" || HasTag(entry, "lab-node")) return TargetKind.LabNode;
-
-            bool tradeMachine = model == "trademachine"
-                || kind == "trademachine" || kind == "vendingmachine"
-                || role == "trademachine" || HasTag(entry, "tradeMachine")
-                || HasTag(entry, "vendingMachine");
-            if (tradeMachine) return TargetKind.TradeMachine;
 
             bool storage = role == "storage" || containerType == "storage"
                 || HasTag(entry, "personal-storage") || HasTag(entry, "capital-storage");

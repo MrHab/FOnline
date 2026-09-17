@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка рынка и сервисов столиц на настоящем сервере (изолированный
-// DATA_DIR): книга одна на всех аукционеров — ордер, выставленный в одной
-// столице, виден и исполняется в другой; членство во фракции больше ничего не
-// решает; ордер на выкуп замораживает марки и исполняется встречными по цене
-// книги; ремонтник чинит снаряжение за марки, а медик и он сам работают только
-// рядом с собой.
+// Сетевая проверка рынков и сервисов столиц на настоящем сервере (изолированный
+// DATA_DIR). Экономика v3: у каждой столицы своя книга — ордер одной столицы
+// не виден в другой; налог 8% и сбор 2,5%; прежняя общая книга переезжает на
+// полки владельцев; членство во фракции ничего не решает. Торгуют только
+// торговцы-люди: аукционер «Покажи товары» не предлагает и торговать
+// отказывается. Ремонтник чинит снаряжение за марки, а медик и он сам
+// работают только рядом с собой.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -36,15 +37,16 @@ const servicePosition = (locationId, service) => {
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const stateFor = role => saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
   const membership = factionId => ({ version: 1, factionId, joinedAt: Date.now() - 1000, changeAllowedAt: Date.now() + 72 * 3600000, history: [] });
+  const noFaction = () => ({ version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] });
 
-  // Продавец стоит в столице «Управы» между аукционером и ремонтником и НЕ
-  // состоит ни в одной фракции Сердцевины: рынок обязан его принять.
+  // Продавец стоит в «Створе» между аукционером и ремонтником и НЕ состоит ни
+  // в одной фракции Сердцевины: рынок обязан его принять.
   const sluiceAuction = servicePosition('sluiceCity', 'auction');
   const sluiceRepair = servicePosition('sluiceCity', 'repair');
   const sellerState = stateFor('trade');
   sellerState.currentLocationId = 'sluiceCity';
   sellerState.serverLocationContext = { locationId: 'sluiceCity' };
-  sellerState.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
+  sellerState.territoryFaction = noFaction();
   sellerState.inventory.silver = 3000;
   sellerState.inventory.ammo9 = 60;
   sellerState.inventory.leather = 1;
@@ -57,12 +59,20 @@ const servicePosition = (locationId, service) => {
     z: (sluiceAuction.z + sluiceRepair.z) / 2
   };
 
-  // Покупатель — в другой столице, у другого аукционера.
+  // Покупатель в той же столице.
+  const neighbourState = stateFor('harvest');
+  neighbourState.currentLocationId = 'sluiceCity';
+  neighbourState.serverLocationContext = { locationId: 'sluiceCity' };
+  neighbourState.territoryFaction = noFaction();
+  neighbourState.inventory.silver = 3000;
+  neighbourState.player = { ...(neighbourState.player || {}), x: sluiceAuction.x, z: sluiceAuction.z - 2 };
+
+  // Покупатель в другой столице, у другого аукционера.
   const scrapAuction = servicePosition('scrapTown', 'auction');
   const buyerState = stateFor('target');
   buyerState.currentLocationId = 'scrapTown';
   buyerState.serverLocationContext = { locationId: 'scrapTown' };
-  buyerState.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
+  buyerState.territoryFaction = noFaction();
   buyerState.inventory.silver = 3000;
   buyerState.player = { ...(buyerState.player || {}), x: scrapAuction.x, z: scrapAuction.z - 2 };
 
@@ -75,10 +85,26 @@ const servicePosition = (locationId, service) => {
   coreState.inventory.silver = 3000;
   coreState.player = { ...(coreState.player || {}), x: coreAuction.x, z: coreAuction.z - 2 };
 
+  // Прежняя общая книга: у продавца стоит ордер на 5 патронов и 9 марок на полке.
+  const now = Date.now();
+  saves.market = {
+    version: 3,
+    counter: 1,
+    orders: {
+      lot_1: {
+        id: 'lot_1', side: 'sell', itemId: 'ammo9', category: 'ammo', qty: 5, filled: 0, price: 7,
+        ownerCharacterId: accounts.trade.characterId, ownerName: 'Продавец', records: [],
+        createdAt: now - 1000, durationMs: 24 * 3600000, expiresAt: now + 24 * 3600000
+      }
+    },
+    shelves: { [accounts.trade.characterId]: { silver: 9, items: [], sales: 1 } }
+  };
+  delete saves.markets;
+
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   await h.startServer();
-  for (const role of ['trade', 'target', 'untargeted']) await h.connectAndJoin(accounts[role]);
+  for (const role of ['trade', 'harvest', 'target', 'untargeted']) await h.connectAndJoin(accounts[role]);
 
   const send = async (role, event, data, ok = true) => {
     const response = await h.socketAck(accounts[role].socket, event, data);
@@ -87,48 +113,66 @@ const servicePosition = (locationId, service) => {
   };
   const market = (role, data, ok = true) => send(role, 'auctionAction', data, ok);
 
-  // --- рынок открыт без членства во фракции ------------------------------
+  // --- рынок столицы открыт без членства во фракции ---------------------
   const opened = await market('trade', { action: 'state' });
-  assert.equal(opened.auction.marketId, 'wasteland', 'книга у всех аукционеров одна');
-  assert.equal(opened.auction.taxPct, 0.05);
-  assert.equal(opened.auction.setupFeePct, 0.015);
-  assert.deepEqual(opened.auction.durationChoicesHours, [6, 24, 72, 168]);
+  assert.equal(opened.auction.marketId, 'sluiceCity', 'у каждой столицы своя книга');
+  assert.equal(opened.auction.marketName, locations.sluiceCity.name);
+  assert.equal(opened.auction.taxPct, 0.08);
+  assert.equal(opened.auction.setupFeePct, 0.025);
+  assert.deepEqual(opened.auction.durationChoicesHours, [24, 72, 168, 720]);
   assert(!('factionId' in opened.auction), 'снимок рынка не привязан к фракции');
+  // Переезд общей книги: ордер снят, товар и марки ждут на полке.
+  assert.equal(opened.auction.orders.length, 0, 'ордера общей книги сняты');
+  assert.equal(opened.auction.shelf.silver, 9, 'марки общей полки переехали');
+  assert.deepEqual(opened.auction.shelf.items.map(row => [row.itemId, row.qty]), [['ammo9', 5]],
+    'выставленные патроны вернулись на полку');
 
-  // --- ордер из одной столицы виден в другой ------------------------------
-  const listed = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 24, requestId: 'sell-1' });
+  // --- ордер столицы виден только в ней -----------------------------------
+  const listed = await market('trade', { action: 'sell', itemId: 'ammo9', qty: 20, price: 10, durationHours: 720, requestId: 'sell-1' });
   assert.equal(listed.restingQty, 20);
-  assert.equal(listed.setupFee, 3);
+  assert.equal(listed.setupFee, 5, 'сбор 2,5% от 200');
   assert.equal(qty(listed.self, 'ammo9'), 40, 'выставленная пачка уходит из рюкзака');
   const orderId = listed.orderId;
 
   const fromScrapTown = await market('target', { action: 'state' });
-  const seen = fromScrapTown.auction.orders.find(row => row.id === orderId);
-  assert(seen, 'ордер из «Шлюзового города» обязан быть виден в «Свалке»: '
-    + JSON.stringify(fromScrapTown.auction.orders).slice(0, 300));
-  assert.equal(seen.price, 10);
-  assert.equal(seen.mine, false);
-
+  assert.equal(fromScrapTown.auction.marketId, 'scrapTown');
+  assert(!fromScrapTown.auction.orders.some(row => row.id === orderId),
+    'ордер «Створа» не виден в «Раздолье»: ' + JSON.stringify(fromScrapTown.auction.orders).slice(0, 300));
+  await market('target', { action: 'buyNow', orderId, qty: 5, requestId: 'buynow-far' }, false);
   const fromCoreBase = await market('untargeted', { action: 'state' });
-  assert(fromCoreBase.auction.orders.some(row => row.id === orderId),
-    'тот же ордер виден и у аукционера базы Сердцевины');
+  assert(!fromCoreBase.auction.orders.some(row => row.id === orderId), 'и у аукционера базы Сердцевины его нет');
 
-  // --- сделка через столицы ----------------------------------------------
-  const bought = await market('target', { action: 'buyNow', orderId, qty: 5, requestId: 'buynow-1' });
+  // --- сделка в своей столице -----------------------------------------------
+  const ammoBefore = qty(accounts.harvest.join.self, 'ammo9');
+  const bought = await market('harvest', { action: 'buyNow', orderId, qty: 5, requestId: 'buynow-1' });
   assert.equal(bought.cost, 50);
-  assert.equal(qty(bought.self, 'ammo9'), 5, 'покупатель получает товар в другой столице');
-  assert.equal(qty(bought.self, 'silver'), 2950);
+  assert.equal(bought.tax, 4, 'налог 8% с 50');
+  assert.equal(qty(bought.self, 'ammo9'), ammoBefore + 5);
   const sellerBook = await market('trade', { action: 'state' });
-  assert.equal(sellerBook.auction.shelf.silver, 48, 'выручка продавца ждёт его на полке: цена минус налог');
+  assert.equal(sellerBook.auction.shelf.silver, 9 + 46, 'выручка продавца ждёт его на полке: цена минус налог');
   assert.equal(sellerBook.auction.orders.find(row => row.id === orderId).qty, 15, 'в книге остался остаток ордера');
 
-  // Ордер на выкуп с базы Сердцевины исполняется остатком того же ордера.
-  const crossing = await market('untargeted', { action: 'buy', itemId: 'ammo9', qty: 15, price: 12, durationHours: 24, requestId: 'buy-1' });
-  assert.equal(crossing.boughtQty, 15, 'встречный ордер забирает остаток продавца из другой столицы');
+  const crossing = await market('harvest', { action: 'buy', itemId: 'ammo9', qty: 15, price: 12, durationHours: 24, requestId: 'buy-1' });
+  assert.equal(crossing.boughtQty, 15, 'встречный ордер забирает остаток продавца');
   assert.equal(crossing.spent, 150, 'исполнение идёт по цене того ордера, что стоял в книге');
   const afterCrossing = await market('trade', { action: 'state' });
-  assert.equal(afterCrossing.auction.orders.length, 0, 'исполненный ордер уходит из общей книги');
-  assert.equal(afterCrossing.auction.shelf.silver, 48 + 143, 'вторая выручка тоже на полке');
+  assert.equal(afterCrossing.auction.orders.length, 0, 'исполненный ордер уходит из книги');
+  assert.equal(afterCrossing.auction.shelf.silver, 9 + 46 + 138, 'вторая выручка тоже на полке');
+
+  const claimed = await market('trade', { action: 'claim', requestId: 'claim-1' });
+  assert.equal(claimed.claimedSilver, 193);
+  assert.equal(qty(claimed.self, 'ammo9'), 45, 'возвращённые патроны общей книги забраны');
+
+  // --- торгуют только торговцы-люди -----------------------------------------
+  const scrapActors = accounts.target.join.worldState?.enemies || [];
+  const merchant = scrapActors.find(row => row.role === 'merchant' && row.hostileToPlayer === false);
+  const auctioneer = scrapActors.find(row => row.service === 'auction');
+  assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
+  assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
+  assert(scrapActors.filter(row => row.hostileToPlayer === false && row.role === 'guard').every(row => row.tradeOpen === false),
+    'охрана столицы не торгует');
+  const refused = await send('target', 'syncNpcTradeState', { enemyId: auctioneer.id }, false);
+  assert(/не торгует/.test(refused.error), 'сервер отказывает в торговле с аукционером: ' + refused.error);
 
   // --- ремонтник столицы --------------------------------------------------
   const repairState = await send('trade', 'baseServiceAction', { service: 'repair', action: 'state' });
@@ -150,7 +194,7 @@ const servicePosition = (locationId, service) => {
   await send('target', 'baseServiceAction', { service: 'repair', action: 'state' }, false);
   await send('trade', 'baseServiceAction', { service: 'tinker', action: 'state' }, false);
 
-  console.log('Capital services network OK: one book across capitals without faction membership, cross-capital fills at the resting price, shelf payouts, repairman restores gear for marks, and every service needs its own NPC nearby.');
+  console.log('Capital services network OK: a book per capital without faction membership, 8% tax and 2.5% fee, the shared book moved onto owner shelves, fills at the resting price, only human traders trade, repairman restores gear for marks, and every service needs its own NPC nearby.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   Object.values(accounts).forEach(h.closeSocket);
   await h.stopServer();

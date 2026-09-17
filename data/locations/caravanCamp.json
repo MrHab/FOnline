@@ -757,41 +757,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "caravanCamp-dressing-functional-03",
-      "model": "trade_machine",
-      "name": "caravanCamp-dressing-functional-03",
-      "position": {
-        "x": -1.353,
-        "y": 0,
-        "z": 19.353
-      },
-      "rotation": {
-        "x": 0,
-        "y": 6.213,
-        "z": 0
-      },
-      "scale": {
-        "x": 0.9,
-        "y": 0.9,
-        "z": 0.9
-      },
-      "collision": "none",
-      "role": "scenery",
-      "tags": [
-        "caravan_hub",
-        "functional-dressing"
-      ],
-      "footprint": {
-        "x": 1.499,
-        "z": 1.312
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "caravanCamp-dressing-functional-04",
       "model": "car_wreck",
       "name": "caravanCamp-dressing-functional-04",

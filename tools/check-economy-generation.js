@@ -238,12 +238,14 @@ requireText('client crafting station pointer targeting', functionBody(clientWorl
 requireText('client crafting station context action', functionBody(clientWorldContext, 'buildWorldContextOptions'), 'openCraftingStationWindow(target.station)');
 requireText('client crafting station keyboard interaction', functionBody(clientQuickInteraction, 'performCursorTargetInteraction'), "target.type === 'craftingStation'");
 requireText('client crafting station mobile interaction', functionBody(clientMobileInteraction, 'buildMobileWorldContextTarget'), 'findNearbyCraftingStation(CRAFTING_STATION_INTERACT_DISTANCE)');
-requireText('client trade machine server market request', functionBody(clientTradeStorage, 'requestTradeMachineMarket'), "emit('tradeMachineMarketState'");
-requireText('client trade machine server exchange', functionBody(clientTradeStorage, 'submitServerTradeMachineExchange'), "emit('tradeMachineExchange'");
-requireText('server trade machine state handler', server, "socket.on('tradeMachineMarketState'");
-requireText('server trade machine exchange handler', server, "socket.on('tradeMachineExchange'");
-requireText('server trade machine atomic world transaction', functionBody(server, 'performServerTradeMachineExchange'), 'WASTELAND_SIM.applyTradeMachineTransaction');
-requireText('world trade machine stock transaction', functionBody(wastelandSim, 'applyTradeMachineTransaction'), 'site.stockpile = next;');
+// Экономика v3: торговых автоматов нет — ни обработчиков на сервере, ни
+// запросов из клиентов. Торгуют только люди в столицах и скупщик Ядра.
+for (const [label, source] of [['server', server], ['legacy trade client', clientTradeStorage], ['legacy world context', clientWorldContext]]) {
+  rejectText(`${label} trade machine`, source, 'tradeMachineMarketState');
+  rejectText(`${label} trade machine`, source, 'tradeMachineExchange');
+}
+requireText('world retail stock transaction', functionBody(wastelandSim, 'applyRetailTransaction'), 'site.stockpile = next;');
+requireText('server NPC trade only from capital traders', functionBody(server, 'serverNpcTradeOpen'), 'locationIsFactionCapital(LOCATIONS[id])');
 requireText('world visible production deposit', functionBody(wastelandSim, 'performVisibleSiteWork'), "kind: 'visible_craft'");
 requireText('world npc production deposit', functionBody(wastelandSim, 'produceAtSettlements'), "kind: 'npc_craft'");
 requireText('world npc ammo production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const ammoCycles = Math.min(cycles');

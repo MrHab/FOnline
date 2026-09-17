@@ -5,7 +5,6 @@
   let activeTraderActor = null;
   let traderMarketState = {};
   let traderMarketRestockCheckTimer = 0;
-  const tradeMachineMarketRequests = new Set();
   const npcQuestState = {
     klimSupplies: 'available',
     klimTerminal: 'locked',
@@ -270,13 +269,14 @@
   }
 
   function isCaravanTrader(actor) {
-    if (actor?.isTradeMachine) return true;
     if (isSilentCreatureActor(actor)) return false;
+    // Экономика v3: сервер сам говорит, торгует ли этот человек.
+    if (actor && actor.tradeOpen === false) return false;
     return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);
   }
 
   function npcUsesScheduledTradeHours(actor) {
-    if (!actor || actor.isTradeMachine) return false;
+    if (!actor) return false;
     const role = String(actor.role || actor.encounterRole || '').toLowerCase();
     return ['merchant', 'trader', 'quartermaster'].includes(role);
   }
@@ -379,26 +379,9 @@
     return best;
   }
 
-  function findNearbyTradeMachine(maxDist = 3.0) {
-    if (!Array.isArray(locationTradeMachines) || !locationTradeMachines.length) return null;
-    let best = null;
-    let bestDist = maxDist;
-    locationTradeMachines.forEach(machine => {
-      if (!machine || machine._removed || (machine.mesh && machine.mesh.visible === false)) return;
-      const d = Math.hypot(Number(machine.x || 0) - player.x, Number(machine.z || 0) - player.z);
-      if (d <= bestDist) {
-        best = machine;
-        bestDist = d;
-      }
-    });
-    return best;
-  }
-
   function findNearbyTrader(maxDist = 3.0) {
     const encounterTrader = findNearbyEncounterTrader(maxDist);
     if (encounterTrader) return encounterTrader;
-    const tradeMachine = findNearbyTradeMachine(maxDist);
-    if (tradeMachine) return tradeMachine;
     if (!traderNpc) return null;
     const d = Math.hypot(traderNpc.x - player.x, traderNpc.z - player.z);
     return d <= maxDist ? traderNpc : null;
@@ -482,7 +465,7 @@
   }
 
   function syncNpcTradeStateToServer(trader = null) {
-    if (!trader || trader.isTradeMachine || !trader.id || typeof multiplayer === 'undefined' || !multiplayer?.socket || !multiplayer.socket.connected) return;
+    if (!trader || !trader.id || typeof multiplayer === 'undefined' || !multiplayer?.socket || !multiplayer.socket.connected) return;
     multiplayer.socket.emit('syncNpcTradeState', { enemyId: trader.id }, ack => {
       if (!ack || !ack.ok) {
         if (ack?.error) setReadout(ack.error);
@@ -531,80 +514,15 @@
     return `loc:${loc}:${name}`;
   }
 
-  function applyServerTradeMachineMarket(machine, market = {}) {
-    if (!machine || !machine.isTradeMachine || !market || market.ok === false) return null;
-    const stock = normalizeTraderStockRows(market.stock || []);
-    const caps = Math.max(0, Math.floor(Number(market.caps || 0)));
-    const key = traderMarketKey(machine);
-    machine.serverMarketAuthoritative = true;
-    machine.siteId = String(market.siteId || machine.siteId || '').slice(0, 64);
-    machine.traderProfile = String(market.traderProfile || machine.traderProfile || '').slice(0, 64);
-    machine.traderBuyInterests = Array.isArray(market.buyInterests)
-      ? market.buyInterests.map(value => String(value || '')).filter(Boolean)
-      : (Array.isArray(machine.traderBuyInterests) ? machine.traderBuyInterests : []);
-    machine.traderStock = stock.map(row => ({ ...row }));
-    machine.traderCaps = caps;
-    machine.traderMarket = market.market || null;
-    machine.inventory = caps > 0 ? [{ id: 'silver', qty: caps }] : [];
-    traderMarketState[key] = {
-      restockDay: Number.isFinite(Number(market.worldHour)) ? Math.floor(Number(market.worldHour) / 24) : null,
-      baseCaps: caps,
-      caps,
-      baseStock: stock.map(row => ({ ...row })),
-      stock: stock.map(row => ({ ...row }))
-    };
-    return traderMarketState[key];
-  }
-
-  function requestTradeMachineMarket(machine, options = {}) {
-    if (!machine || !machine.isTradeMachine) return Promise.resolve(null);
-    if (typeof multiplayer === 'undefined' || !multiplayer?.socket?.connected || !multiplayer.joined) {
-      if (!options.silent) setReadout('Торговый автомат работает только через сервер мира.');
-      return Promise.resolve(null);
-    }
-    const requestKey = String(machine.id || traderMarketKey(machine));
-    if (tradeMachineMarketRequests.has(requestKey)) return Promise.resolve(null);
-    tradeMachineMarketRequests.add(requestKey);
-    return new Promise(resolve => {
-      multiplayer.socket.emit('tradeMachineMarketState', {
-        machineId: machine.id || '',
-        locationId: currentLocation?.id || ''
-      }, ack => {
-        tradeMachineMarketRequests.delete(requestKey);
-        if (!ack?.ok) {
-          if (!options.silent) setReadout(ack?.error || 'Не удалось получить ассортимент автомата.');
-          resolve(null);
-          return;
-        }
-        const state = applyServerTradeMachineMarket(machine, ack);
-        if (traderWindowOpen && activeTraderActor === machine) renderTraderWindow();
-        resolve(state);
-      });
-    });
-  }
-
-  function handleTradeMachineMarketUpdated(data = {}) {
-    const machine = Array.isArray(locationTradeMachines)
-      ? locationTradeMachines.find(row => row && String(row.id || '') === String(data.machineId || data.market?.machineId || ''))
-      : null;
-    if (!machine || !data.market?.ok) return false;
-    applyServerTradeMachineMarket(machine, data.market);
-    if (traderWindowOpen && activeTraderActor === machine && !machine.tradePending) renderTraderWindow();
-    return true;
-  }
-
   function computeTraderRestockCaps(trader) {
     const inventoryCaps = npcInventoryCapsOrNull(trader);
     if (inventoryCaps !== null) return inventoryCaps;
-    const explicit = Number(trader?.isTradeMachine ? trader.traderCaps : undefined);
-    if (Number.isFinite(explicit)) return Math.max(0, Math.floor(explicit));
     return 0;
   }
 
   function syncTraderMarketToActor(trader, state) {
     if (!trader || !state) return;
     const caps = Math.max(0, Math.floor(Number(state.caps || 0)));
-    if (trader.isTradeMachine) trader.traderCaps = caps;
     setNpcInventoryCaps(trader, caps);
     trader.traderRestockDay = Number(state.restockDay || 0);
     trader.traderStock = normalizeTraderStockRows(state.stock);
@@ -634,14 +552,6 @@
 
   function ensureTraderMarket(trader = activeTraderOrNearby(4.2), force = false) {
     if (!trader) return null;
-    if (trader.isTradeMachine && trader.serverMarketAuthoritative) {
-      const key = traderMarketKey(trader);
-      const existing = traderMarketState[key];
-      if (existing) {
-        syncTraderMarketToActor(trader, existing);
-        return existing;
-      }
-    }
     const day = typeof currentGameDayIndex === 'function' ? currentGameDayIndex() : Math.floor(Date.now() / (60 * 60 * 1000));
     const key = traderMarketKey(trader);
     const existing = traderMarketState[key] || null;
@@ -657,7 +567,7 @@
       traderMarketState[key] = {
         restockDay: day,
         baseCaps,
-        caps: trader.isTradeMachine ? baseCaps : physicalCaps,
+        caps: physicalCaps,
         baseStock: baseStock.map(row => ({ ...row })),
         stock: baseStock.map(row => ({ ...row }))
       };
@@ -666,7 +576,7 @@
         ...existing,
         restockDay: Number(existing.restockDay),
         baseCaps,
-        caps: trader.isTradeMachine ? Math.max(0, Math.floor(Number(existing.caps || 0))) : physicalCaps,
+        caps: physicalCaps,
         baseStock: baseStock.map(row => ({ ...row })),
         stock: normalizeTraderStockRows(existing.stock).map(row => ({ ...row }))
       };
@@ -740,10 +650,6 @@
     traderMarketRestockCheckTimer = 0;
     const trader = traderWindowOpen ? activeTraderOrNearby(4.2) : null;
     if (!trader) return;
-    if (trader.isTradeMachine) {
-      requestTradeMachineMarket(trader, { silent: true });
-      return;
-    }
     const before = traderMarketState[traderMarketKey(trader)]?.restockDay;
     const state = ensureTraderMarket(trader);
     if (state && before !== undefined && Number(before) !== Number(state.restockDay)) {

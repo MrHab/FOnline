@@ -189,7 +189,7 @@ for (const match of unity.matchAll(/\b(?:Socket\.)?Emit(?:WithAck)?\(\s*"([^"]+)
 const dynamicUnityEvents = [
   'lootEnemy', 'lootWorldContainer',
   'hackTerminal', 'pickLock',
-  'tradeMachineExchange', 'npcTradeExchange'
+  'npcTradeExchange'
 ];
 assert(interaction.includes('string eventName = _panel == PanelKind.Corpse ? "lootEnemy" : "lootWorldContainer";')
   && interaction.includes('Socket.EmitWithAck(eventName, payload'),
@@ -198,8 +198,9 @@ assert(interaction.includes('SecurityAction("hackTerminal")')
   && interaction.includes('SecurityAction("pickLock")')
   && interaction.includes('Socket.EmitWithAck(action, new Dictionary<string, object>'),
   'Unity security action must keep a closed hackTerminal/pickLock event domain');
-assert(interaction.includes('Socket.EmitWithAck(machine ? "tradeMachineExchange" : "npcTradeExchange", payload'),
-  'Unity trade must keep a closed machine/NPC event domain');
+assert(interaction.includes('Socket.EmitWithAck("npcTradeExchange", payload')
+  && !interaction.includes('tradeMachine') && !interaction.includes('TradeMachine'),
+  'Unity trade must talk only to NPC traders: trade machines are gone');
 
 assert(server.includes('Object.entries(SERVER_ITEM_BASE_PRICES)')
   && server.includes('Math.floor(Number(price) * 0.45)'),
@@ -221,7 +222,7 @@ assert(/TalentLevel\(self, "merchant", 3\) \* 0\.05d\s*\+ \(includeResident \? R
   && barterCanvas.includes('TradeBuyPriceCore(stockPriceForItem, self, false) * 0.85d')
   && /serverTalentLevel\(player, 'merchant'\) \* 0\.05\s*\+ \(includeResident \? serverResidentTradePct\(player\) : 0\)/.test(server)
   && /serverTalentLevel\(player, 'merchant'\) \* 0\.08\s*\+ serverResidentTradePct\(player\);/.test(server)
-  && server.includes('serverTradeMachineBuyPrice(stockEntry, player, false) * 0.85')
+  && server.includes('serverTradeBuyPrice(stockEntry, player, false) * 0.85')
   && /Math\.Min\(0\.48d/.test(barterCanvas) && server.includes('const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;'),
   'Unity barter no longer mirrors the base trader share or the resident-free sell cap');
 // Перепродажа проданного товара: даже наибольшая скидка не делает выкуп дешевле продажи.
@@ -232,7 +233,7 @@ assert(barterCanvas.includes('TradeSellPrice(baseId, market, self)')
   'Unity barter ledger is not using the authoritative-price mirror for both sides');
 assert.deepStrictEqual(
   (unity.match(/\bSocket\.EmitWithAck\(\s*[A-Za-z_][A-Za-z0-9_]*/g) || []).sort(),
-  ['Socket.EmitWithAck(action', 'Socket.EmitWithAck(eventName', 'Socket.EmitWithAck(machine'],
+  ['Socket.EmitWithAck(action', 'Socket.EmitWithAck(eventName'],
   'Every dynamic Unity EmitWithAck call must remain one of the audited loot/security/trade call sites'
 );
 

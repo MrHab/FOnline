@@ -42,17 +42,12 @@ function versionAtLeast(actual, minimum) {
   return true;
 }
 
+// Resources ships whole in the WebGL build, so the catalog holds only what every
+// player needs at once: the animation library and the six character bodies.
+// Creatures load by URL from /assets/models-lite/ (see check-webgl-payload.js).
 function expectedRuntimeUrls() {
   const urls = [
-    '/assets/models/characters/npc/npc_humanoid_animations.glb',
-    '/assets/models/wasteland/brahmin.glb',
-    '/assets/models/wasteland/npc_ash_wolf.glb',
-    '/assets/models/wasteland/npc_fire_gecko.glb',
-    '/assets/models/wasteland/npc_gecko.glb',
-    '/assets/models/wasteland/npc_ghoul.glb',
-    '/assets/models/wasteland/npc_mutant_ant.glb',
-    '/assets/models/wasteland/npc_radscorpion.glb',
-    '/assets/models/wasteland/npc_super_mutant.glb'
+    '/assets/models/characters/npc/npc_humanoid_animations.glb'
   ];
   for (const sex of ['female', 'male']) {
     for (const body of ['large', 'medium', 'slim']) {

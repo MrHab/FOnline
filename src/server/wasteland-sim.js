@@ -2486,6 +2486,7 @@ function createWastelandSimulation(options = {}) {
     settlementLife: true,
     npcProduction: true,
     worldCaravans: true,
+    visibleWorldParties: true,
     ...(options.worldModel && typeof options.worldModel === 'object' ? options.worldModel : {})
   });
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
@@ -13330,10 +13331,13 @@ function createWastelandSimulation(options = {}) {
 
   function publicThreatZones() {
     const zones = [];
-    Object.values(state.parties).forEach(party => {
-      const zone = partyThreatZone(party);
-      if (zone) zones.push(zone);
-    });
+    // Скрытые отряды не выдают себя и кругами угрозы.
+    if (worldModel.visibleWorldParties !== false) {
+      Object.values(state.parties).forEach(party => {
+        const zone = partyThreatZone(party);
+        if (zone) zones.push(zone);
+      });
+    }
     Object.values(state.sites).filter(siteVisibleOnPublicGlobalMap).forEach(site => {
       const zone = siteThreatZone(site);
       if (zone) zones.push(zone);
@@ -13858,7 +13862,8 @@ function createWastelandSimulation(options = {}) {
         };
       }),
       refugeeFlows: Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites)),
-      parties: [
+      // Экономика v3: отряды NPC не видны на карте — угрозы живут в опасных клетках.
+      parties: worldModel.visibleWorldParties === false ? [] : [
         ...Object.values(state.parties).map(publicParty),
         ...Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites))
       ],

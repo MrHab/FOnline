@@ -230,6 +230,8 @@ namespace RealmOfAshes.Game
 
         private enum DynamicVisualLayer
         {
+            // Опасные клетки видны на всех ярусах: это правила пути, а не справка.
+            DangerZone,
             TerritoryFill,
             TerritoryBorder,
             Influence,
@@ -316,6 +318,9 @@ namespace RealmOfAshes.Game
         public bool InputEnabled = true;
         public string StatusText { get; private set; } = string.Empty;
         public int TerritoryCellCount { get; private set; }
+        /// <summary>Залитые чёрные клетки и отрезки границ опасных зон (экономика v3).</summary>
+        public int DangerCellCount { get; private set; }
+        public int DangerBorderCount { get; private set; }
         public int TerritoryBorderCount { get; private set; }
         public int InfluenceZoneCount { get; private set; }
         public int SettlementModelCount { get; private set; }
@@ -1341,6 +1346,8 @@ namespace RealmOfAshes.Game
             _factionSummary = string.Empty;
             TerritoryCellCount = 0;
             TerritoryBorderCount = 0;
+            DangerCellCount = 0;
+            DangerBorderCount = 0;
             InfluenceZoneCount = 0;
             SiteMarkerCount = 0;
             SettlementStatusCount = 0;
@@ -1351,6 +1358,7 @@ namespace RealmOfAshes.Game
 
             BuildFactionTerritories();
             if (TerritoryCellCount == 0) BuildFactionInfluence();
+            BuildDangerCells();
 
             JArray sites = _wasteland["sites"] as JArray;
             if (sites != null)
@@ -2061,8 +2069,72 @@ namespace RealmOfAshes.Game
             _factionSummary = ComposeFactionSummary();
         }
 
+        private static readonly Color RedZoneColor = new Color(0.82f, 0.16f, 0.12f, 1f);
+        private static readonly Color BlackZoneColor = new Color(0.07f, 0.03f, 0.09f, 1f);
+
+        /// <summary>
+        /// Опасные клетки (экономика v3): сервер красит клетки карты по правилам
+        /// зон. Чёрные клетки заливаются, у красной зоны рисуется только
+        /// граница — видно, где путь грозит потерей рюкзака или всего.
+        /// </summary>
+        private void BuildDangerCells()
+        {
+            if (_map?.Grid == null || _map.Cells == null) return;
+            float cellPoints = _map.Grid.CellPoints;
+            float cellWorld = cellPoints * MapWorldScale;
+            foreach (KeyValuePair<string, GlobalMapCell> pair in _map.Cells)
+            {
+                string mode = DangerModeOf(pair.Value);
+                bool black = mode == "pvpblack";
+                if (!black && mode != "pvpfulldrop") continue;
+                string[] parts = pair.Key.Split(':');
+                if (parts.Length != 2 || !int.TryParse(parts[0], out int cx) || !int.TryParse(parts[1], out int cy)) continue;
+                if (IsWaterCell(cx, cy)) continue;
+                Color color = black ? BlackZoneColor : RedZoneColor;
+                if (black)
+                {
+                    GameObject cell = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell,
+                        "DangerCell:" + cx + ":" + cy);
+                    if (cell != null)
+                    {
+                        cell.transform.localPosition = PointToWorld((cx + 0.5f) * cellPoints,
+                                                                     (cy + 0.5f) * cellPoints, 0.05f);
+                        cell.transform.localScale = new Vector3(cellWorld * 1.005f, 1f, cellWorld * 1.005f);
+                        TintLivePrefab(cell, new Color(color.r, color.g, color.b, 0.34f));
+                        RegisterDynamicVisual(cell, DynamicVisualLayer.DangerZone,
+                            new GlobalMapPoint { X = (cx + 0.5f) * cellPoints, Y = (cy + 0.5f) * cellPoints });
+                        DangerCellCount++;
+                    }
+                }
+                foreach (char side in "NESW")
+                {
+                    if (DangerModeAtCell(cx, cy, side) == mode) continue;
+                    if (TerritoryBorderTouchesWater(cx, cy, side)) continue;
+                    if (PlaceTerritoryBorder(cx, cy, side, cellPoints, cellWorld,
+                            new Color(color.r, color.g, color.b, 0.85f), DynamicVisualLayer.DangerZone) != null)
+                        DangerBorderCount++;
+                }
+            }
+        }
+
+        private static string DangerModeOf(GlobalMapCell cell)
+        {
+            return (cell?.PvpMode ?? string.Empty).ToLowerInvariant();
+        }
+
+        private string DangerModeAtCell(int cx, int cy, char side)
+        {
+            if (side == 'N') cy--;
+            else if (side == 'E') cx++;
+            else if (side == 'S') cy++;
+            else if (side == 'W') cx--;
+            if (_map?.Grid == null || cx < 0 || cy < 0 || cx >= _map.Grid.Cols || cy >= _map.Grid.Rows) return string.Empty;
+            return _map.Cells.TryGetValue(cx + ":" + cy, out GlobalMapCell cell) ? DangerModeOf(cell) : string.Empty;
+        }
+
         private GameObject PlaceTerritoryBorder(int cx, int cy, char side, float cellPoints,
-                                                float cellWorld, Color color)
+                                                float cellWorld, Color color,
+                                                DynamicVisualLayer layer = DynamicVisualLayer.TerritoryBorder)
         {
             float pointX = (cx + 0.5f) * cellPoints;
             float pointY = (cy + 0.5f) * cellPoints;
@@ -2073,14 +2145,13 @@ namespace RealmOfAshes.Game
             else if (side == 'E') pointX = (cx + 1f) * cellPoints;
 
             GameObject border = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryBorder,
-                "TerritoryBorder:" + cx + ":" + cy + ":" + side);
+                (layer == DynamicVisualLayer.DangerZone ? "DangerBorder:" : "TerritoryBorder:") + cx + ":" + cy + ":" + side);
             if (border == null) return null;
             border.transform.localPosition = PointToWorld(pointX, pointY, 0.078f);
             border.transform.localRotation = Quaternion.Euler(0f, horizontal ? 90f : 0f, 0f);
             border.transform.localScale = new Vector3(1f, 1f, cellWorld * 0.98f);
             TintLivePrefab(border, color);
-            RegisterDynamicVisual(border, DynamicVisualLayer.TerritoryBorder,
-                new GlobalMapPoint { X = pointX, Y = pointY });
+            RegisterDynamicVisual(border, layer, new GlobalMapPoint { X = pointX, Y = pointY });
             return border;
         }
 
@@ -2365,6 +2436,9 @@ namespace RealmOfAshes.Game
                 {
                     switch (state.Layer)
                     {
+                        case DynamicVisualLayer.DangerZone:
+                            visible = true;
+                            break;
                         case DynamicVisualLayer.TerritoryFill:
                             visible = _showFactions && profile.TerritoryFill;
                             break;
@@ -4024,7 +4098,8 @@ namespace RealmOfAshes.Game
                     danger = Mathf.Max(danger, Mathf.Clamp(
                         Mathf.Max(cell.Difficulty, cell.Danger) * 22f, 0f, 78f));
                     string pvp = (cell.PvpMode ?? string.Empty).ToLowerInvariant();
-                    if (pvp.Contains("fulldrop")) danger = Mathf.Max(danger, 72f);
+                    if (pvp == "pvpblack") danger = Mathf.Max(danger, 90f);
+                    else if (pvp.Contains("fulldrop")) danger = Mathf.Max(danger, 72f);
                     else if (pvp == "pvp") danger = Mathf.Max(danger, 46f);
                 }
             }
@@ -5240,6 +5315,8 @@ namespace RealmOfAshes.Game
             _factionSummary = string.Empty;
             TerritoryCellCount = 0;
             TerritoryBorderCount = 0;
+            DangerCellCount = 0;
+            DangerBorderCount = 0;
             InfluenceZoneCount = 0;
             SettlementModelCount = 0;
             SiteMarkerCount = 0;

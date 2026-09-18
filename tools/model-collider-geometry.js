@@ -9,16 +9,6 @@ const WALK_COLLISION_MAX_Y = 0.95;
 const MAX_COLLIDER_PARTS = 24;
 const MIN_PART_SIZE = 0.06;
 
-const NON_BLOCKING_MODEL_FILES = new Set([
-  'asphalt_slab.glb',
-  'trader_floor_slab.glb',
-  'trader_roof_block.glb',
-  'mod_floor_tile.glb',
-  'mod_floor_wood.glb',
-  'mod_roof_metal.glb',
-  'mod_roof_wood.glb'
-]);
-
 const NON_COLLIDING_MESH_NAME = /(?:painted_contact_shadow|ground_pebble_detail|ground_detail|loose_scrap_flake|discarded_bolt_detail)/i;
 
 function finite(value, fallback = 0) {
@@ -234,12 +224,9 @@ function authoredWalkProjectionRects(scene) {
   return rects;
 }
 
-function computeWalkCollision(THREE, scene, fileName = '', options = {}) {
+function computeWalkCollision(THREE, scene, options = {}) {
   const minY = finite(options.minY, WALK_COLLISION_MIN_Y);
   const maxY = finite(options.maxY, WALK_COLLISION_MAX_Y);
-  if (NON_BLOCKING_MODEL_FILES.has(String(fileName || '').toLowerCase())) {
-    return { mode: 'none', reason: 'non-blocking-surface', slab: { minY, maxY }, parts: [] };
-  }
 
   scene.updateMatrixWorld(true);
   const authoredRects = authoredWalkProjectionRects(scene);
@@ -294,7 +281,6 @@ function computeWalkCollision(THREE, scene, fileName = '', options = {}) {
 
 module.exports = {
   MAX_COLLIDER_PARTS,
-  NON_BLOCKING_MODEL_FILES,
   WALK_COLLISION_MAX_Y,
   WALK_COLLISION_MIN_Y,
   computeWalkCollision,

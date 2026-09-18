@@ -48,7 +48,7 @@ async function buildCatalog() {
       max: { x: round(box.max.x), y: round(box.max.y), z: round(box.max.z) },
       size: { x: round(size.x), y: round(size.y), z: round(size.z) },
       center: { x: round(center.x), y: round(center.y), z: round(center.z) },
-      collision: roundCollision(computeWalkCollision(THREE, gltf.scene, file))
+      collision: roundCollision(computeWalkCollision(THREE, gltf.scene))
     };
   }
 

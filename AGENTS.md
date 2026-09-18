@@ -1,4 +1,4 @@
-# Realm of Ashes repository guidance
+# Кромка (Realm of Ashes) repository guidance
 
 ## Runtime and setup
 
@@ -16,10 +16,11 @@
 - `public/` holds the static files the server serves: GLB models and textures
   (`public/assets/`), the generated Unity WebGL build (`public/unity/`, not in
   git) with its fallback page `unity-unavailable.html`, and the local dev
-  editors. The old Three.js browser client has been removed.
+  editors. There is no browser client besides the Unity build.
 - `data/` contains authored world data. Runtime account, save and simulation files are ignored.
 - `tools/` contains generators and verification scripts.
-- `docs/wiki/` documents the current game architecture.
+- `docs/wiki/` documents the current game architecture; the design canon is
+  `docs/KROMKA_GAME_BIBLE_AND_PATCH_PLAN.md`.
 
 ## Working rules
 
@@ -34,7 +35,7 @@
 
 - Run the narrowest relevant `npm run check:*` command while iterating.
 - Run `npm run check` before handing off a substantial change or publishing a branch.
-  It is the whole chain: there is no separate `precheck`.
+  It is the whole chain; nothing runs before it.
 - Checks assert behaviour: unit tests of `src/server` modules, scenarios against a
   real server, authored data and built assets. Do not add checks that only search
   source files or docs for strings: they break on every refactor and prove nothing.

@@ -1,4 +1,4 @@
-# Работа с Realm of Ashes через Codex
+# Работа с «Кромкой» через Codex
 
 - Репозиторий проекта: <https://github.com/MrHab/FOnline>
 - Основная ветка: `main`
@@ -66,7 +66,7 @@ GitHub, затем получите их на другом устройстве.
 ## Что не должно попадать в GitHub
 
 - `.env` и любые секреты;
-- `data/users.json`, `data/saves.json`, `data/wasteland-sim.json`;
+- `data/users.json`, `data/saves.json`, `data/wasteland-sim.json`, `data/danger-ecology.json`;
 - журналы `*.log`;
 - `node_modules/`;
 - локальные резервные копии;

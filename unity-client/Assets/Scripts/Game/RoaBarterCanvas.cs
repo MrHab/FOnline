@@ -105,7 +105,7 @@ namespace RealmOfAshes.Game
 
         // ------------------------------------------------------------------ данные
 
-        private struct Entry { public string RuntimeId; public string BaseId; public int Qty; public int Price; }
+        private struct Entry { public string RuntimeId; public string BaseId; public int Qty; public int Price; public bool OnBody; }
 
         private static string ItemName(string baseId)
         {
@@ -274,14 +274,6 @@ namespace RealmOfAshes.Game
             return price;
         }
 
-        private bool IsEquipped(string runtimeId, string baseId)
-        {
-            if (Inventory == null) return false;
-            foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
-                if (!string.IsNullOrEmpty(slot.Value) && (slot.Value == runtimeId || RoaArmorData.BaseId(slot.Value) == baseId)) return true;
-            return false;
-        }
-
         // ------------------------------------------------------------------ обновление
 
         private void Refresh()
@@ -390,8 +382,10 @@ namespace RealmOfAshes.Game
                 {
                     string runtimeId = slot.Value;
                     string baseId = RoaArmorData.BaseId(runtimeId);
-                    if (string.IsNullOrEmpty(baseId) || baseId == "fists" || !seen.Add(runtimeId)) continue;
-                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = 1, Price = TradeSellPriceFor(runtimeId, baseId, market, self) });
+                    // Надетое не делит ключ с сумкой: у брони runtime-id равен базовому,
+                    // и запасная куртка того же вида иначе пропадала из списка продажи.
+                    if (string.IsNullOrEmpty(baseId) || baseId == "fists") continue;
+                    entries.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = 1, Price = TradeSellPriceFor(runtimeId, baseId, market, self), OnBody = true });
                 }
             }
             JArray inventory = self?["inventory"] as JArray;
@@ -418,21 +412,20 @@ namespace RealmOfAshes.Game
             foreach (Entry e in entries)
             {
                 if (!RoaItemCategories.Matches(e.BaseId, _player.Category)) continue;
-                int queued = Interaction.TradeQueuedQuantity(e.RuntimeId, false);
-                int free = Mathf.Max(0, e.Qty - queued);
-                bool equipped = IsEquipped(e.RuntimeId, e.BaseId);
                 // Сама надетая вещь: сервер проверяет продажу по рюкзаку, поэтому
                 // строка видна (вкладка категории активна), но продать её нельзя, пока не снята.
-                bool onBody = Inventory != null && Inventory.IsEquipped(e.RuntimeId);
+                // Строка сумки — всегда запасная вещь, даже если такая же сейчас надета.
+                bool onBody = e.OnBody;
+                int queued = onBody ? 0 : Interaction.TradeQueuedQuantity(e.RuntimeId, false);
+                int free = Mathf.Max(0, e.Qty - queued);
                 Entry captured = e;
                 int capturedFree = free;
-                AddRow(_player, index++, e.BaseId, ItemName(e.BaseId), equipped ? "ЭКИПИРОВАНО" : null,
+                AddRow(_player, index++, e.BaseId, ItemName(e.BaseId), onBody ? "ЭКИПИРОВАНО" : null,
                     RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · продажа " + e.Price + " мар.",
                     onBody ? "на теле" : "x" + free, queued > 0 ? "в обмене " + queued : null,
-                    queued > 0 ? RowQueued : (equipped ? RowEquipped : RowBorder), free <= 0 || onBody,
+                    queued > 0 ? RowQueued : (onBody ? RowEquipped : RowBorder), free <= 0 || onBody,
                     () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
-                    (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. "
-                            : (equipped ? "Предмет сейчас на персонаже. Продавайте его только если точно хотите с ним расстаться. " : string.Empty))
+                    (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. " : string.Empty)
                     + "Продажа: " + e.Price + " марок за 1 шт.");
             }
             SetEmpty(_player, index == 0, _player.Category == "all"

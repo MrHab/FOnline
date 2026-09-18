@@ -9788,9 +9788,15 @@ function serverResolveWeaponRuntimeRequest(player = {}, requestedRawId = '', cur
   if (currentMatchesBase && requestedKey === currentKey) return currentKey;
 
   // The first unique-id profile packet migrates a legacy base-id row instead
-  // of manufacturing a second magazine for the same physical weapon.
+  // of manufacturing a second magazine for the same physical weapon. Only an id
+  // the server has never seen can be that same weapon under a new name: a known
+  // instance keeps its own magazine, and a legacy row held in the other hand is
+  // a different physical weapon, not a row to rename.
   const legacyKey = combat.weapons?.[weapon.id] ? weapon.id : '';
-  if (requestedKey !== weapon.id && legacyKey) {
+  const legacyHeldElsewhere = !!legacyKey
+    && !(currentMatchesBase && currentKey === legacyKey)
+    && serverEquippedWeaponRuntimeEntries(player).some(entry => entry.itemKey === legacyKey);
+  if (requestedKey !== weapon.id && legacyKey && !combat.weapons?.[requestedKey] && !legacyHeldElsewhere) {
     if (mutate) {
       combat.weapons[requestedKey] = { ...combat.weapons[legacyKey], weaponId: weapon.id };
       delete combat.weapons[legacyKey];

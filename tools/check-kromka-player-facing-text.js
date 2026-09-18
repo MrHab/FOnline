@@ -72,6 +72,24 @@ function inspect(relPath, source, literalsOnly) {
   return failures;
 }
 
+// Кириллица, пережившая перекодировку в однобайтовую кодировку, становится «?»:
+// так отказ торговца в performServerNpcTradeExchange дошёл до игрока как
+// '? ???????? ??????????? ??????.'. Литерал, где «?» идут подряд и их больше,
+// чем букв и цифр, — потерянный текст; U+FFFD — тот же сбой другой утилиты.
+function lostEncodingLiterals(relPath, source) {
+  const failures = [];
+  for (const match of source.matchAll(/@?"(?:\\.|""|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/gsu)) {
+    const text = match[0].replace(/\{[^{}]*\}/gu, ' ');
+    const questionMarks = (text.match(/\?/gu) || []).length;
+    const lettersAndDigits = (text.match(/[\p{L}\p{N}]/gu) || []).length;
+    const mostlyQuestionMarks = /\?{3}/u.test(text) && questionMarks > lettersAndDigits;
+    if (!mostlyQuestionMarks && !match[0].includes('\uFFFD')) continue;
+    const line = source.slice(0, match.index).split(/\r?\n/u).length;
+    failures.push(`${relPath}:${line}: текст потерял кодировку: ${match[0].slice(0, 60)}`);
+  }
+  return failures;
+}
+
 function inspectPublicBoundaryContracts() {
   const failures = [];
   const serverPath = path.join(root, 'server.js');
@@ -91,17 +109,24 @@ function inspectPublicBoundaryContracts() {
 }
 
 const failures = [];
+const encodingProbe = lostEncodingLiterals('probe',
+  "const error = lost ? '? ???????? ??????????? ??????.' : 'Кто оставил эту запись?' ?? '';");
+if (encodingProbe.length !== 1 || !encodingProbe[0].startsWith('probe:1:')) {
+  failures.push('tools/check-kromka-player-facing-text.js: контракт проверки кодировки нарушен');
+}
 for (const relPath of runtimeRoots.flatMap(filesUnder)) {
-  failures.push(...inspect(relPath, fs.readFileSync(path.join(root, relPath), 'utf8'), true));
+  const source = fs.readFileSync(path.join(root, relPath), 'utf8');
+  failures.push(...inspect(relPath, source, true), ...lostEncodingLiterals(relPath, source));
 }
 for (const relPath of rawFiles) {
-  failures.push(...inspect(relPath, fs.readFileSync(path.join(root, relPath), 'utf8'), false));
+  const source = fs.readFileSync(path.join(root, relPath), 'utf8');
+  failures.push(...inspect(relPath, source, false), ...lostEncodingLiterals(relPath, source));
 }
 failures.push(...inspectPublicBoundaryContracts());
 
 if (failures.length) {
-  console.error('В видимых игроку поверхностях осталась старая терминология:\n' + failures.join('\n'));
+  console.error('В видимых игроку поверхностях осталась старая терминология или битая кодировка:\n' + failures.join('\n'));
   process.exit(1);
 }
 
-console.log(`Kromka player-facing terminology OK: ${runtimeRoots.length} runtime roots, ${rawFiles.length} metadata surfaces`);
+console.log(`Kromka player-facing terminology and encoding OK: ${runtimeRoots.length} runtime roots, ${rawFiles.length} metadata surfaces`);

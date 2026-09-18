@@ -1357,7 +1357,9 @@ namespace RealmOfAshes.Game
             _mapImage.enabled = true;
             _mapImage.texture = _minimap.StaticTexture;
             // В клетке опасных земель — её имя с номером («Меловая чаша №47»).
-            string cellTitle = _hud?.Socket?.Session?.Self?["dangerCell"]?["title"]?.ToString();
+            // Вне клетки сервер шлёт dangerCell: null — это JValue, а не C#-null: «?.» его
+            // пропускает, и индексатор по нему бросал исключение каждый кадр.
+            string cellTitle = (_hud?.Socket?.Session?.Self?["dangerCell"] as Newtonsoft.Json.Linq.JObject)?["title"]?.ToString();
             _mapTitle.text = !string.IsNullOrEmpty(cellTitle) ? cellTitle
                 : (string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName);
             _cellText.text = _minimap.CellLabel;

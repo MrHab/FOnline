@@ -5,9 +5,9 @@
 // настоящем сервере. Файл экономики проверки делает красные клетки
 // сквозными, как чёрная Сердцевина: путь, начатый в красной земле, во второй
 // мелкой клетке обязательно заводит отряд в её сцену, вход — со стороны
-// прихода; выход через тот же край ведёт в соседнюю сквозную сцену, выход в
-// обычную землю ставит отряд на карту у общей границы, а в занятую сцену
-// сервер досыпает угрозы.
+// прихода; выход через тот же край ведёт в соседнюю сквозную сцену, а выход в
+// обычную землю ставит отряд на карту у общей границы. A-Life здесь выключен:
+// группы клеток проверяет check-danger-ecology-network.js.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -21,7 +21,7 @@ const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'ec
 economy.dangerCells.sceneModes = ['pvpBlack', 'pvpFullDrop'];
 economy.dangerCells.encounterChance = { peaceful: 0, pve: 0, pvp: 0, pvpFullDrop: 0, pvpBlack: 0 };
 economy.dangerCells.edgeGraceKm = 0.5;
-economy.dangerCells.respawn = { intervalSeconds: 1, minHostiles: { pvp: 0, pvpFullDrop: 60, pvpBlack: 60 } };
+economy.worldModel.dangerEcology = false;
 const economyFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-walk-')), 'economy.json');
 fs.writeFileSync(economyFile, JSON.stringify(economy));
 process.env.KROMKA_ECONOMY_FILE = economyFile;
@@ -112,18 +112,6 @@ async function driveTo(account, state, x, z, maxFrames = 120) {
     assert(inSecond.z < -20, 'going south, the party appears at the north edge of the next scene: z=' + inSecond.z);
     console.log('PASS the edge of a walk scene leads into the neighbouring scene (' + second.roomId + ')');
 
-    // --- угрозы досыпаются ------------------------------------------------------------------
-    const hostiles = rows => (rows || []).filter(row => !row.dead && row.hostileToPlayer !== false).length;
-    const countBefore = hostiles(second.worldState?.enemies);
-    const counts = [];
-    const onSnapshot = payload => counts.push(hostiles(payload?.enemies));
-    walker.socket.on('enemySnapshot', onSnapshot);
-    await delay(3500);
-    walker.socket.off('enemySnapshot', onSnapshot);
-    const most = Math.max(countBefore, ...counts);
-    assert(most > countBefore, `threats respawn in an occupied walk scene: ${countBefore} → ${JSON.stringify(counts)}`);
-    console.log(`PASS threats respawn in an occupied scene (${countBefore} → ${most})`);
-
     // --- выход в обычную землю: на карту у общей границы ------------------------------------
     const scout = accounts.harvest;
     await h.connectAndJoin(scout);
@@ -147,7 +135,7 @@ async function driveTo(account, state, x, z, maxFrames = 120) {
     h.cleanupSync();
     fs.rmSync(path.dirname(economyFile), { recursive: true, force: true });
   }
-  console.log('Danger walk network OK: walk cells are entered on foot from the side of arrival, scene edges lead into the neighbouring walk cells or onto the map at the shared border, and threats respawn in occupied scenes.');
+  console.log('Danger walk network OK: walk cells are entered on foot from the side of arrival, and scene edges lead into the neighbouring walk cells or onto the map at the shared border.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

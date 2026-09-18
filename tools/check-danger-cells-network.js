@@ -7,7 +7,9 @@
 // клетки — двое, кого стычка застала в одной клетке, оказываются в одной
 // комнате, точка карты остаётся на месте стычки, частая смена маршрута
 // бросков не отменяет, — а путь через мирный пояс столицы стычек не даёт.
-// Шанс стычки поднят до единицы отдельным файлом экономики.
+// Шанс стычки поднят до единицы отдельным файлом экономики. Здесь проверяется
+// стычка из пула встреч (A-Life выключен); стычки с группами A-Life
+// проверяет check-danger-ecology-network.js.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -22,6 +24,7 @@ const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'ec
 economy.dangerCells.encounterChance = { peaceful: 0, pve: 0, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 };
 economy.dangerCells.wandererReduction = 0;
 economy.dangerCells.edgeGraceKm = 0.5;
+economy.worldModel.dangerEcology = false;
 const economyFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-')), 'economy.json');
 fs.writeFileSync(economyFile, JSON.stringify(economy));
 process.env.KROMKA_ECONOMY_FILE = economyFile;

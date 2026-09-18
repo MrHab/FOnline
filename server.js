@@ -259,9 +259,27 @@ const {
   neighbourCell: dangerNeighbourCell,
   entryKeyForDirection: dangerEntryKeyForDirection,
   directionBetween: dangerDirectionBetween,
-  boundaryPoint: dangerBoundaryPoint,
-  minHostilesFor: dangerMinHostilesFor
+  boundaryPoint: dangerBoundaryPoint
 } = require('./src/server/danger-cells');
+const {
+  normalizeEcologyConfig,
+  normalizeEcologyState,
+  serializeEcologyState,
+  buildLairs: ecologyBuildLairs,
+  resetLairs: ecologyResetLairs,
+  tickEcology,
+  groupsAt: ecologyGroupsAt,
+  nearestOfflineGroup: ecologyNearestOfflineGroup,
+  moveGroup: ecologyMoveGroup,
+  setGroupOnline: ecologySetGroupOnline,
+  setGroupOffline: ecologySetGroupOffline,
+  memberKilled: ecologyMemberKilled,
+  ecologySummary,
+  cellKey: ecologyCellKey,
+  hash01: ecologyHash01,
+  STEPS: ECOLOGY_STEPS,
+  LIVING_MODES: ECOLOGY_LIVING_MODES
+} = require('./src/server/danger-ecology');
 const {
   normalizeAccountStore,
   accountFor: sinAccountFor,
@@ -808,6 +826,16 @@ const SERVER_MODEL_COLLIDERS = loadModelColliderCatalog(MODEL_COLLIDERS_FILE);
 // Экономика v3 (KRM-22): какие части живой пустоши включены и числа лестницы зон.
 // KROMKA_ECONOMY_FILE подменяет числа экономики в сетевых проверках.
 const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));
+// A-Life опасных клеток: виды, логова и темп жизни групп. KROMKA_DANGER_ECOLOGY_FILE
+// подменяет их в сетевых проверках; состояние мира групп живёт в DATA_DIR.
+const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
+  process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
+const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
+// Играбельный контур глобальной карты в точках карты — из сцены Unity
+// (tools/build-global-map-playable.js): за ним логов и групп нет.
+const GLOBAL_MAP_PLAYABLE_POINTS = (readJson(path.join(BUNDLED_DATA_DIR, 'kromka', 'global-map-playable.json'), {}).points || [])
+  .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
+  .map(point => [Number(point[0]), Number(point[1])]);
 
 const ECONOMY_RULES = Object.freeze({
   randomLootTables: false,
@@ -2307,6 +2335,9 @@ function serverStartDangerCellEncounter(session, leader, point, cell, mode, entr
   const memberIds = [...new Set([String(session.leaderId || leader.id || ''), ...(Array.isArray(session.memberIds) ? session.memberIds : [])]
     .map(id => String(id || '')).filter(Boolean))];
   const members = memberIds.map(id => players.get(id)).filter(player => player && player.onGlobalMap && !player.dead);
+  // Под A-Life шанс стычки — шанс наткнуться на группу, что бродит рядом;
+  // вокруг никого — путь идёт дальше. Сквозные клетки заходят и без группы.
+  if (serverEcologyActive() && !dangerIsSceneMode(WORLD_ECONOMY.dangerCells, mode) && !serverEcologyEncounterGroup(cell, mode)) return false;
   return serverEnterDangerCell(members, point, cell, mode, entryKey, 'dangerCell') > 0;
 }
 
@@ -2325,7 +2356,10 @@ function serverEnterDangerCell(members = [], point = null, cell = null, mode = '
   // Опустевшая сцена начинается заново: следующий отряд не попадает в уже
   // зачищенную и обобранную стычку.
   const previous = rooms.get(roomId);
-  if (previous && previous.encounterSetupDone && !livePlayersInRoom(previous).length) rooms.delete(roomId);
+  if (previous && previous.encounterSetupDone && !livePlayersInRoom(previous).length) {
+    serverEcologyReleaseRoom(previous);
+    rooms.delete(roomId);
+  }
   const room = getOrCreateRoom(roomId, encounter.locationId);
   if (!room.encounterSetupDone) {
     // Правила сцены ставятся один раз: игроки внутри не видят смены цвета.
@@ -2335,8 +2369,9 @@ function serverEnterDangerCell(members = [], point = null, cell = null, mode = '
     room.dangerCellKey = cell.key;
     room.dangerCell = { sx: cell.sx, sy: cell.sy, key: cell.key, center: { ...cell.center } };
     room.dangerMode = encounter.pvpMode;
-    room.dangerRespawnAt = Date.now() + WORLD_ECONOMY.dangerCells.respawn.intervalSeconds * 1000;
-    setupRandomEncounterRoom(room, encounter.encounterId, { pvpMode: room.pvpModeOverride });
+    // Под A-Life врагов в сцену приводят группы клетки, а не встреча из пула.
+    if (serverEcologyActive()) serverSetupEcologyRoom(room);
+    else setupRandomEncounterRoom(room, encounter.encounterId, { pvpMode: room.pvpModeOverride });
   }
   refreshRoomWorldState(room);
   const title = zoneRules(room.pvpModeOverride).label || 'опасная клетка';
@@ -2365,6 +2400,8 @@ function serverEnterDangerCell(members = [], point = null, cell = null, mode = '
       player.currentWorldSiteId = previousSiteId;
     }
   }
+  // Группы, что сейчас в этой клетке, — в сцене, подальше от края входа.
+  if (moved > 0 && serverEcologyActive()) serverEcologyMaterializeCell(room, entryKey);
   return moved;
 }
 
@@ -2406,28 +2443,496 @@ function serverDangerExitAlong(player = {}, direction = '') {
   return clamp((tile.tz - bounds.minZ) / Math.max(1, bounds.height), 0, 1);
 }
 
-/** Угрозы в занятых сценах клеток: сервер досыпает их по цвету клетки. */
-function serverRespawnDangerThreats(now = Date.now()) {
-  const config = WORLD_ECONOMY.dangerCells;
+// --- A-Life опасных клеток ---------------------------------------------------------------------------
+
+/**
+ * A-Life опасных клеток (src/server/danger-ecology.js, data/kromka/danger-ecology.json):
+ * группы монстров Кромки и налётчиков живут на сетке мелких клеток и сами
+ * приходят в сцены. Сервер даёт им цвет земли и занятость сцен, превращает
+ * группу в настоящих NPC, когда она оказывается в сцене с игроками, и
+ * возвращает её в мир с ранами выживших, когда сцена пустеет. Досыпки угроз
+ * по таймеру нет: новые враги в сцене — это пришедшая группа.
+ */
+let dangerEcologyState = null;
+let dangerEcologySavedAt = 0;
+let dangerEcologyModeCacheMap = null;
+const dangerEcologyModeCache = new Map();
+// Сторона, с которой входит группа, идущая в эту сторону света.
+const ECOLOGY_SIDE_FROM = Object.freeze({ north: 'С юга', south: 'С севера', east: 'С запада', west: 'С востока' });
+// Край сцены в сторону света: точка входа с той же стороны.
+const ECOLOGY_EXIT_KEYS = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
+
+function serverEcologyActive() {
+  return WORLD_ECONOMY.worldModel.dangerCells === true
+    && WORLD_ECONOMY.worldModel.dangerEcology === true
+    && DANGER_ECOLOGY.species.length > 0;
+}
+
+/** Точка внутри играбельного контура карты (контур — из сцены Unity). */
+function serverGlobalMapPointPlayable(point = {}) {
+  const points = GLOBAL_MAP_PLAYABLE_POINTS;
+  if (points.length < 3) return true;
+  const x = Number(point?.x);
+  const y = Number(point?.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+    const a = points[i];
+    const b = points[j];
+    if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / ((b[1] - a[1]) || 1e-9) + a[0]) inside = !inside;
+  }
+  return inside;
+}
+
+function serverEcologyCellCenter(sx, sy) {
+  const size = WORLD_ECONOMY.dangerCells.subCellKm / serverGlobalMapPointKm();
+  return { x: (sx + 0.5) * size, y: (sy + 0.5) * size };
+}
+
+/** Цвет мелкой клетки для жизни групп; за играбельным контуром — пусто. */
+function serverEcologyModeAt(sx, sy) {
+  if (dangerEcologyModeCacheMap !== GLOBAL_MAP) {
+    dangerEcologyModeCache.clear();
+    dangerEcologyModeCacheMap = GLOBAL_MAP;
+  }
+  const key = ecologyCellKey(sx, sy);
+  if (dangerEcologyModeCache.has(key)) return dangerEcologyModeCache.get(key);
+  const center = serverEcologyCellCenter(sx, sy);
+  const bounds = serverGlobalMapBounds();
+  const mode = center.x > 0 && center.y > 0 && center.x < bounds.width && center.y < bounds.height
+    && serverGlobalMapPointPlayable(center)
+    ? serverDangerModeAtPoint(center)
+    : '';
+  dangerEcologyModeCache.set(key, mode);
+  return mode;
+}
+
+/** Клетки для логов: играбельные мелкие клетки живых цветов вдали от мест карты. */
+function serverEcologyCandidates() {
+  const size = WORLD_ECONOMY.dangerCells.subCellKm / serverGlobalMapPointKm();
+  const bounds = serverGlobalMapBounds();
+  const clear = DANGER_ECOLOGY.lairs.placeClearKm / serverGlobalMapPointKm();
+  const places = serverDangerPlaces();
+  const rows = [];
+  for (let sy = 0; sy < Math.floor(bounds.height / size); sy += 1) {
+    for (let sx = 0; sx < Math.floor(bounds.width / size); sx += 1) {
+      const mode = serverEcologyModeAt(sx, sy);
+      if (!ECOLOGY_LIVING_MODES.includes(mode)) continue;
+      const center = serverEcologyCellCenter(sx, sy);
+      if (places.some(place => serverGlobalPointDistance(place, center) < clear)) continue;
+      rows.push({ sx, sy, mode, region: GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(center)]?.macroRegion || '' });
+    }
+  }
+  return rows;
+}
+
+/** Ревизия логов: другая карта, цвета земель или настройки логов — логова ставятся заново. */
+function serverEcologyRevision() {
+  const source = JSON.stringify([
+    DANGER_ECOLOGY.lairs,
+    DANGER_ECOLOGY.species.map(row => [row.id, row.habitat, row.regions]),
+    WORLD_ECONOMY.dangerCells.subCellKm,
+    serverDangerCellModes(),
+    GLOBAL_MAP_PLAYABLE_POINTS.length
+  ]);
+  return `${GLOBAL_MAP.worldRevision || 'map'}:${Math.floor(ecologyHash01(source) * 4294967296).toString(36)}`;
+}
+
+function serverEcologyState() {
+  if (dangerEcologyState) return dangerEcologyState;
+  const state = normalizeEcologyState(readJson(DANGER_ECOLOGY_STATE_FILE, {}), DANGER_ECOLOGY);
+  const revision = serverEcologyRevision();
+  if (state.mapRevision !== revision || !state.lairs.size) {
+    // Группы прежних логов остаются бродягами, пока не погибнут.
+    ecologyResetLairs(state, ecologyBuildLairs(DANGER_ECOLOGY, serverEcologyCandidates(), revision), revision);
+  }
+  dangerEcologyState = state;
+  return state;
+}
+
+function serverSaveEcology(force = false, now = Date.now()) {
+  const state = dangerEcologyState;
+  if (!state || (!state.dirty && !force)) return false;
+  if (!force && now - dangerEcologySavedAt < 30000) return false;
+  try {
+    writeJsonAtomic(DANGER_ECOLOGY_STATE_FILE, serializeEcologyState(state));
+    state.dirty = false;
+    dangerEcologySavedAt = now;
+    return true;
+  } catch (error) {
+    console.error('Danger ecology state was not saved:', error);
+    return false;
+  }
+}
+
+function serverEcologyEnemyType(type = '') {
+  if (type === 'raider') return SERVER_ENEMY_TYPES[0] || null;
+  const index = serverEnemyTypeIndexByCreatureId(type);
+  return index >= 0 ? SERVER_ENEMY_TYPES[index] : null;
+}
+
+function serverEcologyMemberStats(type = '') {
+  const enemyType = serverEcologyEnemyType(type);
+  return { maxHp: Math.max(1, Math.round(Number(enemyType?.hp || 60))), name: String(enemyType?.name || '') };
+}
+
+/** Параметры спавна особи: вид бестиария, фракция группы, снаряжение налётчиков. */
+function serverEcologySpawnOptions(species, member) {
+  const spec = species.members[member.spec] || species.members.find(row => row.type === member.type) || {};
+  const human = member.type === 'raider';
+  const equipment = {};
+  for (const [slot, itemId] of Object.entries(spec.equipment || {})) {
+    if (SERVER_ITEM_IDS.has(itemId)) equipment[slot] = itemId;
+  }
+  const opts = {
+    creatureTypeId: human ? undefined : member.type,
+    typeIndex: human ? 0 : undefined,
+    name: member.name || spec.name || undefined,
+    faction: species.faction || (human ? 'raiders' : 'monsters'),
+    role: human ? 'raider' : (KROMKA_MUTANT_BY_ID[member.type]?.role || 'animal'),
+    hostileToPlayer: species.hostile,
+    equipment: Object.keys(equipment).length ? equipment : undefined
+  };
+  const visual = serverEncounterActorVisualModel(opts);
+  return { ...opts, visual: visual.visual, modelKey: visual.modelKey };
+}
+
+function serverEcologyRoomCenter(room) {
+  const dims = roomTileDims(room);
+  return tileToWorld(Math.floor(dims.w / 2), Math.floor(dims.h / 2), dims);
+}
+
+function serverEcologyNotice(room, text = '') {
+  if (!room || !text) return;
+  io.to(room.id).emit('dangerCellNotice', { text: String(text).slice(0, 160), t: Date.now() });
+}
+
+/**
+ * Группа в сцене: особи становятся NPC. С направлением — пришла с края
+ * (входит со стороны, откуда шла, и идёт к середине), без него — уже была в
+ * клетке и стоит в глубине сцены, подальше от края входа игроков.
+ */
+function serverEcologyMaterialize(room, group, options = {}) {
+  const state = serverEcologyState();
+  const species = DANGER_ECOLOGY.speciesById[group?.speciesId];
+  if (!room || !group || group.online || !species) return 0;
+  const loc = roomLocation(room);
+  const dims = roomTileDims(room);
+  const direction = String(options.direction || '');
+  const entryKey = direction ? dangerEntryKeyForDirection(direction) : '';
+  const entry = entryKey && loc[entryKey] && Number.isFinite(Number(loc[entryKey].tx)) ? loc[entryKey] : null;
+  let anchor = entry ? { tx: Number(entry.tx), tz: Number(entry.tz) } : null;
+  if (!anchor) {
+    const avoid = options.avoidEntryKey && loc[options.avoidEntryKey] ? loc[options.avoidEntryKey] : null;
+    const cx = Math.floor(dims.w / 2);
+    const cz = Math.floor(dims.h / 2);
+    const rng = room.rng || Math.random;
+    const spread = Math.max(3, Math.floor(Math.min(dims.w, dims.h) / 5));
+    let tx = cx + Math.round((rng() * 2 - 1) * spread);
+    let tz = cz + Math.round((rng() * 2 - 1) * spread);
+    if (avoid && Number.isFinite(Number(avoid.tx)) && Number.isFinite(Number(avoid.tz))) {
+      // Дальняя от входа игроков половина сцены.
+      tx = Math.round(cx + (cx - Number(avoid.tx)) * 0.35 + (rng() * 2 - 1) * spread * 0.5);
+      tz = Math.round(cz + (cz - Number(avoid.tz)) * 0.35 + (rng() * 2 - 1) * spread * 0.5);
+    }
+    anchor = { tx: clamp(tx, 3, dims.w - 4), tz: clamp(tz, 3, dims.h - 4) };
+  }
+  const center = serverEcologyRoomCenter(room);
   let spawned = 0;
-  for (const room of rooms.values()) {
-    if (!room?.dangerCell || !room.encounterSetupDone || now < Number(room.dangerRespawnAt || 0)) continue;
-    room.dangerRespawnAt = now + config.respawn.intervalSeconds * 1000;
-    if (!livePlayersInRoom(room).length) continue;
-    const alive = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
-      .filter(enemy => enemy && !enemy.dead && enemy.hostileToPlayer !== false).length;
-    if (alive >= dangerMinHostilesFor(config, room.dangerMode)) continue;
-    const pool = config.encounters[room.dangerMode] || config.encounters.pvp || [];
-    if (!pool.length) continue;
-    const wave = Math.floor(now / (config.respawn.intervalSeconds * 1000));
-    const encounterId = pool[(wave + Number(room.dangerCell.sx) * 7 + Number(room.dangerCell.sy) * 13) % pool.length];
-    room.encounterSetupDone = false;
-    setupRandomEncounterRoom(room, encounterId, { pvpMode: room.pvpModeOverride, preserveExisting: true });
-    refreshRoomWorldState(room);
-    emitEnemySnapshot(room, true);
+  for (const member of group.members) {
+    const enemy = spawnServerEnemy(room, {
+      ...serverEcologySpawnOptions(species, member),
+      tx: anchor.tx,
+      tz: anchor.tz,
+      force: true,
+      maxSpawnSearchRadius: 6,
+      minPlayerDistance: entry ? 5 : 12
+    });
+    if (!enemy) continue;
+    const ratio = Math.max(0.05, Math.min(1, Number(member.hp || 0) / Math.max(1, Number(member.maxHp || 1))));
+    enemy.hp = Math.max(1, Math.round(Number(enemy.maxHp || member.maxHp || 1) * ratio));
+    enemy.ecologyGroupId = group.id;
+    enemy.ecologyMemberId = member.id;
+    if (entry) {
+      enemy.ecologyPhase = 'entering';
+      enemy.ecologyTargetX = center.x;
+      enemy.ecologyTargetZ = center.z;
+    }
     spawned += 1;
   }
+  if (!spawned) return 0;
+  ecologySetGroupOnline(state, group, room.id);
+  if (!(room.ecologyGroupIds instanceof Set)) room.ecologyGroupIds = new Set();
+  room.ecologyGroupIds.add(group.id);
+  refreshRoomWorldState(room);
+  emitEnemySnapshot(room, true);
+  if (entry) {
+    serverEcologyNotice(room, `${ECOLOGY_SIDE_FROM[direction] || 'С края'} подходит: ${species.name.toLowerCase()}.`);
+  }
   return spawned;
+}
+
+/** Все группы вне сети, что сейчас в клетке этой сцены, — в сцену. */
+function serverEcologyMaterializeCell(room, avoidEntryKey = '') {
+  if (!room?.dangerCell || !serverEcologyActive()) return 0;
+  const state = serverEcologyState();
+  let count = 0;
+  for (const group of ecologyGroupsAt(state, room.dangerCell.sx, room.dangerCell.sy)) {
+    if (group.online) continue;
+    if (serverEcologyMaterialize(room, group, { avoidEntryKey }) > 0) count += 1;
+  }
+  return count;
+}
+
+/** Здоровье особи в сцене в масштабе записи группы. */
+function serverEcologyMemberHp(group, enemy) {
+  const member = group?.members.find(row => row.id === enemy?.ecologyMemberId);
+  if (!member) return null;
+  return { id: member.id, hp: Math.round(Number(enemy.hp || 0) / Math.max(1, Number(enemy.maxHp || 1)) * member.maxHp) };
+}
+
+/** Сцена опустела: группы уходят в мир с ранами выживших и остаются в этой клетке. */
+function serverEcologyReleaseRoom(room, now = Date.now()) {
+  if (!(room?.ecologyGroupIds instanceof Set) || !room.ecologyGroupIds.size || !dangerEcologyState) return 0;
+  const state = dangerEcologyState;
+  let released = 0;
+  for (const groupId of [...room.ecologyGroupIds]) {
+    const group = state.groups.get(groupId);
+    const hp = new Map();
+    for (const enemy of [...(room.enemies instanceof Map ? room.enemies.values() : [])]) {
+      if (!enemy || enemy.ecologyGroupId !== groupId || enemy.dead) continue;
+      const row = serverEcologyMemberHp(group, enemy);
+      if (row) hp.set(row.id, row.hp);
+      roomEnemyDelete(room, enemy.id);
+    }
+    if (group) {
+      ecologySetGroupOffline(state, group, hp, now);
+      released += 1;
+    }
+    room.ecologyGroupIds.delete(groupId);
+    if (room.ecologyLeaving instanceof Map) room.ecologyLeaving.delete(groupId);
+  }
+  return released;
+}
+
+/** Гибель особи группы — насовсем; большие потери обращают группу в бегство. */
+function serverEcologyNoteDeath(room, enemy) {
+  if (!enemy?.ecologyGroupId || enemy.ecologyDeathNoted || !dangerEcologyState) return;
+  enemy.ecologyDeathNoted = true;
+  const result = ecologyMemberKilled(dangerEcologyState, DANGER_ECOLOGY, enemy.ecologyGroupId, enemy.ecologyMemberId);
+  if (!result.ok) return;
+  if (result.destroyed) {
+    if (room?.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(enemy.ecologyGroupId);
+    return;
+  }
+  if (result.fleeing && room) serverEcologyStartLeaving(room, result.group);
+}
+
+/** Бегство: уцелевшие идут к краю сцены, дальнему от игроков, и уходят в соседнюю клетку. */
+function serverEcologyStartLeaving(room, group) {
+  if (!room || !group) return false;
+  const loc = roomLocation(room);
+  const dims = roomTileDims(room);
+  const livePlayers = livePlayersInRoom(room);
+  const exits = Object.keys(ECOLOGY_STEPS).map(direction => {
+    const point = loc[ECOLOGY_EXIT_KEYS[direction]];
+    if (!point || !Number.isFinite(Number(point.tx)) || !Number.isFinite(Number(point.tz))) return null;
+    const world = tileToWorld(Number(point.tx), Number(point.tz), dims);
+    const nearest = livePlayers.length
+      ? Math.min(...livePlayers.map(player => Math.hypot(Number(player.x || 0) - world.x, Number(player.z || 0) - world.z)))
+      : 999;
+    return { direction, world, nearest };
+  }).filter(Boolean).sort((a, b) => b.nearest - a.nearest);
+  if (!exits.length) return false;
+  const exit = exits[0];
+  for (const enemy of room.enemies instanceof Map ? room.enemies.values() : []) {
+    if (!enemy || enemy.dead || enemy.ecologyGroupId !== group.id) continue;
+    enemy.ecologyPhase = 'leaving';
+    enemy.ecologyPhaseSince = Date.now();
+    enemy.ecologyTargetX = exit.world.x;
+    enemy.ecologyTargetZ = exit.world.z;
+    enemy.ecologyExitDirection = exit.direction;
+    clearEnemyTarget(enemy);
+    enemy.factionTargetId = '';
+    enemy.stationary = false;
+  }
+  const species = DANGER_ECOLOGY.speciesById[group.speciesId];
+  if (species?.hostile) serverEcologyNotice(room, `${species.name} отступают.`);
+  return true;
+}
+
+/** Особь ушла за край: когда уйдут все, группа — в соседней клетке, вне сцены. */
+function serverEcologyActorLeft(room, enemy, now = Date.now()) {
+  const state = dangerEcologyState;
+  const group = state?.groups.get(enemy.ecologyGroupId) || null;
+  if (!(room.ecologyLeaving instanceof Map)) room.ecologyLeaving = new Map();
+  const leaving = room.ecologyLeaving.get(enemy.ecologyGroupId)
+    || { direction: String(enemy.ecologyExitDirection || ''), hp: new Map() };
+  const row = serverEcologyMemberHp(group, enemy);
+  if (row) leaving.hp.set(row.id, row.hp);
+  room.ecologyLeaving.set(enemy.ecologyGroupId, leaving);
+  roomEnemyDelete(room, enemy.id);
+  if (!group) return;
+  const stillHere = [...room.enemies.values()].some(other => other && !other.dead && other.ecologyGroupId === group.id);
+  if (stillHere) return;
+  room.ecologyLeaving.delete(group.id);
+  if (room.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(group.id);
+  const step = ECOLOGY_STEPS[leaving.direction];
+  const species = DANGER_ECOLOGY.speciesById[group.speciesId];
+  if (step && species) {
+    const sx = group.sx + step.dx;
+    const sy = group.sy + step.dy;
+    const mode = serverEcologyModeAt(sx, sy);
+    if (ECOLOGY_LIVING_MODES.includes(mode) && species.habitat[mode] > 0) ecologyMoveGroup(state, group, sx, sy);
+  }
+  ecologySetGroupOffline(state, group, leaving.hp, now, DANGER_ECOLOGY);
+  emitEnemySnapshot(room, true);
+  // Соседняя клетка тоже занята — группа входит туда с этого края.
+  const next = serverEcologyOccupiedRoomAt(group.sx, group.sy);
+  if (next && next !== room && step) serverEcologyMaterialize(next, group, { direction: leaving.direction });
+}
+
+function serverEcologyOccupiedRoomAt(sx, sy) {
+  for (const room of rooms.values()) {
+    if (room?.dangerCell && room.dangerCell.sx === sx && room.dangerCell.sy === sy && livePlayersInRoom(room).length) return room;
+  }
+  return null;
+}
+
+/**
+ * Особи группы в сцене: пришедшая с края идёт к середине, пока не заметит
+ * игрока (дальше решает обычный ИИ); отступающая идёт к краю и уходит.
+ */
+function updateEcologyActorLifecycle(room = null, enemy = null, dt = 0) {
+  if (!room || !enemy?.ecologyGroupId || enemy.dead) return false;
+  const phase = String(enemy.ecologyPhase || '');
+  if (!phase) return false;
+  const tx = Number(enemy.ecologyTargetX);
+  const tz = Number(enemy.ecologyTargetZ);
+  if (!Number.isFinite(tx) || !Number.isFinite(tz)) {
+    enemy.ecologyPhase = '';
+    return false;
+  }
+  const now = Date.now();
+  if (!Number(enemy.ecologyPhaseSince || 0)) enemy.ecologyPhaseSince = now;
+  if (phase === 'entering') {
+    const noticed = !!enemy.targetId || livePlayersInRoom(room)
+      .some(player => !player.dead && Math.hypot(Number(player.x || 0) - enemy.x, Number(player.z || 0) - enemy.z) < 14);
+    // Заметил игрока или застрял по дороге — дальше решает обычный ИИ.
+    if (noticed || now - Number(enemy.ecologyPhaseSince) > 20000) {
+      enemy.ecologyPhase = '';
+      enemy.ecologyPhaseSince = 0;
+      return false;
+    }
+    const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.2, Number(enemy.speed || 1.8) * 0.9), dt, { separationWeight: 0.32 });
+    if (distance <= 2.5) {
+      enemy.ecologyPhase = '';
+      enemy.ecologyPhaseSince = 0;
+      enemy.homeX = enemy.x;
+      enemy.homeZ = enemy.z;
+    }
+    return true;
+  }
+  if (phase === 'leaving') {
+    enemy.aiState = 'return';
+    enemy.targetId = '';
+    const distance = moveEnemyTowards(room, enemy, tx, tz, Math.max(1.35, Number(enemy.speed || 1.8)), dt, { separationWeight: 0.3 });
+    // Точка края бывает на непроходимой клетке: у края застрял — тоже ушёл;
+    // и никто не отступает дольше 30 с.
+    const stuckAtEdge = distance <= 6 && Number(enemy.pathStuckSince || 0) > 0 && now - Number(enemy.pathStuckSince) > 800;
+    if (distance <= 1.4 || stuckAtEdge || now - Number(enemy.ecologyPhaseSince) > 30000) serverEcologyActorLeft(room, enemy, now);
+    return true;
+  }
+  return false;
+}
+
+/** Сцена с игроками: гибель мимо обычных путей (аномалии, кровотечение) — тоже насовсем. */
+function serverEcologyReconcileRoom(room, now = Date.now()) {
+  if (!(room?.ecologyGroupIds instanceof Set) || !room.ecologyGroupIds.size || !dangerEcologyState) return;
+  for (const enemy of room.enemies instanceof Map ? [...room.enemies.values()] : []) {
+    if (enemy?.ecologyGroupId && enemy.dead && !enemy.ecologyDeathNoted) serverEcologyNoteDeath(room, enemy);
+  }
+  for (const groupId of [...room.ecologyGroupIds]) {
+    const group = dangerEcologyState.groups.get(groupId);
+    if (!group) {
+      room.ecologyGroupIds.delete(groupId);
+      continue;
+    }
+    const present = [...room.enemies.values()].some(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === groupId);
+    if (!present && !(room.ecologyLeaving instanceof Map && room.ecologyLeaving.has(groupId))) {
+      // Особей в сцене нет, а группа жива (сцену почистил другой код): снова в мире.
+      ecologySetGroupOffline(dangerEcologyState, group, new Map(), now);
+      room.ecologyGroupIds.delete(groupId);
+    }
+  }
+}
+
+/** Сцена клетки под A-Life: без встречи из пула — врагов приводят группы. */
+function serverSetupEcologyRoom(room) {
+  if (!room) return;
+  ensureRoomWorld(room);
+  clearRoomEnemies(room);
+  room.encounterId = 'danger_ecology';
+  room.encounterOutcomeFlags = {};
+  room.encounterInitialFactions = [];
+  room.encounterSetupDone = true;
+  refreshRoomWorldState(room);
+}
+
+/**
+ * Стычка в пути: отряд натыкается на враждебную группу в этой клетке или
+ * ближайшую вокруг (pullRadiusCells) — она оказывается в клетке. Никого
+ * рядом — стычки нет.
+ */
+function serverEcologyEncounterGroup(cell = null, mode = '') {
+  if (!cell) return null;
+  const state = serverEcologyState();
+  const cellMode = ECOLOGY_LIVING_MODES.includes(mode) ? mode : serverEcologyModeAt(cell.sx, cell.sy);
+  const fits = group => {
+    const species = DANGER_ECOLOGY.speciesById[group.speciesId];
+    return species?.hostile === true && Number(species.habitat[cellMode] || 0) > 0;
+  };
+  const here = ecologyGroupsAt(state, cell.sx, cell.sy).find(group => !group.online && fits(group));
+  if (here) return here;
+  const near = ecologyNearestOfflineGroup(state, cell.sx, cell.sy, DANGER_ECOLOGY.pullRadiusCells, fits);
+  if (!near) return null;
+  ecologyMoveGroup(state, near, cell.sx, cell.sy);
+  near.state = 'hunt';
+  near.target = { sx: cell.sx, sy: cell.sy };
+  return near;
+}
+
+/** Такт A-Life: сцены без игроков отпускают группы, мир живёт, группы входят в занятые сцены. */
+function serverTickEcology(now = Date.now()) {
+  if (!serverEcologyActive()) return 0;
+  const state = serverEcologyState();
+  const occupied = new Map();
+  for (const room of rooms.values()) {
+    if (!room?.dangerCell) continue;
+    if (livePlayersInRoom(room).length) {
+      occupied.set(ecologyCellKey(room.dangerCell.sx, room.dangerCell.sy), room);
+      serverEcologyReconcileRoom(room, now);
+    } else if (room.ecologyGroupIds instanceof Set && room.ecologyGroupIds.size) {
+      serverEcologyReleaseRoom(room, now);
+    }
+  }
+  const events = tickEcology(state, DANGER_ECOLOGY, {
+    modeAt: serverEcologyModeAt,
+    occupied: (sx, sy) => occupied.has(ecologyCellKey(sx, sy)),
+    occupiedCells: [...occupied.values()].map(room => room.dangerCell),
+    createMember: serverEcologyMemberStats
+  }, now);
+  let arrivals = 0;
+  for (const event of events) {
+    if (event.type !== 'arrive') continue;
+    const room = occupied.get(ecologyCellKey(event.sx, event.sy));
+    const group = state.groups.get(event.groupId);
+    if (room && group && serverEcologyMaterialize(room, group, { direction: event.direction }) > 0) arrivals += 1;
+  }
+  // Группы в занятой клетке вне сцены (после перезапуска, возвращения игрока) — в сцену.
+  for (const room of occupied.values()) serverEcologyMaterializeCell(room);
+  serverSaveEcology(false, now);
+  return arrivals;
 }
 
 /** Окрестность, где стычек нет: только у настоящих мест, не у точки в пустоши. */
@@ -2507,7 +3012,6 @@ function serverTickDangerCells(now = Date.now()) {
     session.dangerCheckedAt = t;
     if (hit && serverStartDangerCellEncounter(session, leader, hit.point, hit.cell, hit.mode, hit.entryKey)) started += 1;
   }
-  started += serverRespawnDangerThreats(now);
   return started;
 }
 
@@ -2612,6 +3116,67 @@ app.get('/api/dev/wasteland', (_, res) => {
     file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
     sim: WASTELAND_SIM.publicState()
   });
+});
+
+// A-Life опасных клеток для разработчика: сводка и группы вокруг мелкой клетки (?sx=&sy=&radius=).
+app.get('/api/dev/danger-ecology', (req, res) => {
+  if (!serverEcologyActive()) return res.json({ ok: true, active: false });
+  const state = serverEcologyState();
+  const sx = Number(req.query.sx);
+  const sy = Number(req.query.sy);
+  const radius = clamp(Math.floor(Number(req.query.radius ?? 3)), 0, 40);
+  const near = Number.isFinite(sx) && Number.isFinite(sy)
+    ? [...state.groups.values()]
+      .filter(group => Math.max(Math.abs(group.sx - sx), Math.abs(group.sy - sy)) <= radius)
+      .map(group => ({
+        id: group.id,
+        speciesId: group.speciesId,
+        lairId: group.lairId,
+        sx: group.sx,
+        sy: group.sy,
+        state: group.state,
+        online: group.online,
+        members: group.members.map(member => ({ id: member.id, type: member.type, hp: member.hp, maxHp: member.maxHp })),
+        // Особи группы в сцене: фаза (вход, отступление) и место.
+        actors: group.online && rooms.get(group.online)?.enemies instanceof Map
+          ? [...rooms.get(group.online).enemies.values()]
+            .filter(enemy => enemy?.ecologyGroupId === group.id)
+            .map(enemy => ({ memberId: enemy.ecologyMemberId, phase: enemy.ecologyPhase || '', dead: !!enemy.dead, x: Math.round(enemy.x), z: Math.round(enemy.z) }))
+          : []
+      }))
+    : [];
+  res.json({
+    ok: true,
+    active: true,
+    file: path.relative(__dirname, DANGER_ECOLOGY_STATE_FILE).replace(/\\/g, '/'),
+    summary: ecologySummary(state, DANGER_ECOLOGY),
+    near
+  });
+});
+
+// Для разработчика: добить особей группы в её сцене обычным путём гибели —
+// проверка потерь и бегства без стрельбы.
+app.post('/api/dev/danger-ecology/kill', (req, res) => {
+  if (!serverEcologyActive()) return res.status(409).json({ ok: false, error: 'A-Life выключен.' });
+  const state = serverEcologyState();
+  const group = state.groups.get(String(req.body?.groupId || ''));
+  if (!group) return res.status(404).json({ ok: false, error: 'Группы нет.' });
+  const room = group.online ? rooms.get(group.online) : null;
+  if (!room) return res.status(409).json({ ok: false, error: 'Группа не в сцене.' });
+  const count = clamp(Math.floor(Number(req.body?.count || 1)), 1, 12);
+  const now = Date.now();
+  let killed = 0;
+  for (const enemy of [...room.enemies.values()]) {
+    if (killed >= count) break;
+    if (!enemy || enemy.dead || enemy.ecologyGroupId !== group.id) continue;
+    enemy.hp = 0;
+    finalizeNpcDeathState(enemy, now);
+    serverEcologyNoteDeath(room, enemy);
+    killed += 1;
+  }
+  emitEnemySnapshot(room, true);
+  const alive = state.groups.get(group.id);
+  res.json({ ok: true, killed, members: alive ? alive.members.length : 0, state: alive ? alive.state : 'destroyed' });
 });
 
 app.get('/api/dev/global-map', (_, res) => {
@@ -12416,6 +12981,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
   });
   recordServerWorldActivityEnemyKill(room, enemy, p, now);
   maybeReportEncounterOutcome(room, 'player_kill', enemy, p);
+  serverEcologyNoteDeath(room, enemy);
   maybeClaimClearedWastelandSite(room, enemy, p);
   emitAuthoritativePlayerState(p, { reason: 'enemyKill', xpGained: Math.max(0, Number(enemy.xp || 0)) });
   return true;
@@ -23922,12 +24488,16 @@ function setupDataDrivenEncounterRoom(room, encounterId = '') {
         }))
       ]
       : undefined;
+    // Существо бестиария берёт тип, характеристики и облик из своего вида:
+    // без creatureTypeId спавн выбирал тип наугад, а облик — по роли.
+    const creatureTypeId = actorDef.creatureTypeId || '';
     spawnEncounterActor(room, actorDef.tx, actorDef.tz, {
+      creatureTypeId: creatureTypeId || undefined,
       typeIndex: actorDef.typeIndex,
       typeName: actorDef.typeName,
       name: actorDef.name,
-      visual: actorDef.visual,
-      modelKey: actorDef.modelKey || actorDef.model,
+      visual: creatureTypeId ? undefined : actorDef.visual,
+      modelKey: creatureTypeId ? undefined : (actorDef.modelKey || actorDef.model),
       species: actorDef.species,
       tags: Array.isArray(actorDef.tags) ? actorDef.tags : [],
       faction: actorDef.faction,
@@ -24857,6 +25427,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
       invalidateEnemyPath(foe);
       recordServerWorldActivityEnemyKill(room, foe, null, now);
       maybeReportEncounterOutcome(room, 'faction_combat', foe, null);
+      serverEcologyNoteDeath(room, foe);
     } else if (!foe.dead) {
       applyNpcHitStagger(foe, dmg, now);
     }
@@ -25059,6 +25630,8 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
     ensureEnemyHome(enemy);
+    // Отступающая группа A-Life уходит за край и из стычки с другими NPC.
+    if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;
     // Стационарные торговцы и служебные NPC просто стоят и торгуют.
     if (serverNpcIsQuietService(enemy)) {
       holdQuietServiceNpc(room, enemy, now);
@@ -25158,6 +25731,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     }
     if (updateServerNpcCorpseLooting(room, enemy, dt, now)) continue;
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
+    if (updateEcologyActorLifecycle(room, enemy, dt)) continue;
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
     if (updateTerritoryGarrisonActor(room, enemy, dt, now)) continue;
@@ -33176,6 +33750,15 @@ setInterval(() => {
     console.error('Danger cell tick failed:', error);
   }
 }, 2000);
+
+// A-Life опасных клеток: жизнь групп без игроков и приход в занятые сцены.
+setInterval(() => {
+  try {
+    serverTickEcology(Date.now());
+  } catch (error) {
+    console.error('Danger ecology tick failed:', error);
+  }
+}, Math.round(DANGER_ECOLOGY.tickSeconds * 1000));
 
 // Участки станков: итоги торгов и конец аренды.
 setInterval(() => {

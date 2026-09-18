@@ -43,10 +43,15 @@ const goods = state => Object.values(state.sites || {}).reduce((sum, site) => {
   return sum + pile + shelves;
 }, 0);
 
-// --- прежняя пустошь без настроек: караваны на месте --------------------------------
+const hostileParties = state => Object.values(state.parties || {})
+  .filter(party => ['raider', 'monster'].includes(String(party?.kind || '').toLowerCase()));
+
+// --- прежняя пустошь без настроек: караваны и враждебные отряды на месте -------------
 {
   const legacy = simulation('legacy');
   assert(caravans(legacy.state()).length > 0, 'without settings the simulation keeps its caravans');
+  legacy.tick(Date.now() + 1000, { hours: 1, force: true });
+  assert(hostileParties(legacy.state()).length > 0, 'without settings raiders and monsters still roam the old wasteland');
 }
 
 // --- экономика v3 -------------------------------------------------------------------
@@ -60,6 +65,7 @@ const goods = state => Object.values(state.sites || {}).reduce((sum, site) => {
     sim.tick(start + hour * 1000, { hours: 1, force: true });
     const current = sim.state();
     assert.equal(caravans(current).length, 0, `hour ${hour}: no caravan exists`);
+    assert.equal(hostileParties(current).length, 0, `hour ${hour}: raiders and monsters live in danger cells, not as old wasteland parties`);
     for (const task of current.worldTasks || []) seenTasks.add(String(task?.type || ''));
     assert.equal(Object.keys(current.refugeeFlows?.active || {}).length, 0, `hour ${hour}: no refugees move`);
   }
@@ -76,4 +82,4 @@ assert(server.includes("const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMK
 assert(server.includes('worldModel: WORLD_ECONOMY.worldModel'), 'the server must hand the world model to the simulation');
 
 fs.rmSync(tempRoot, { recursive: true, force: true });
-console.log('World model flags OK: without settings the old wasteland runs, with the v3 settings there are no caravans, no production, no consumption and no refugees.');
+console.log('World model flags OK: without settings the old wasteland runs, with the v3 settings there are no caravans, no production, no consumption, no refugees and no old hostile parties.');

@@ -80,6 +80,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnKromkaSiegeState;
         public event Action<JObject> OnTerritoryOutpostState;
         public event Action<JObject> OnPveAreaState;
+        public event Action<JObject> OnDangerCellNotice;
         public event Action<JObject> OnPublicEventState;
         public event Action<JObject> OnWorldBossState;
         public event Action<JObject> OnLabHallState;
@@ -508,6 +509,14 @@ namespace RealmOfAshes.Net
             {
                 var payload = First<JObject>(args);
                 if (payload != null) OnPveAreaState?.Invoke(payload);
+            }));
+
+            // A-Life опасных клеток: группа подходит к сцене или отступает —
+            // строка приходит всей комнате.
+            _connection.On("dangerCellNotice", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnDangerCellNotice?.Invoke(payload);
             }));
 
             // Залы боковых лабораторий: шкала угрозы, объявленный удар и

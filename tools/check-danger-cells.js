@@ -101,8 +101,7 @@ assert.equal(cells.encounterChance(config, 'peaceful', 0), 0);
   assert.deepEqual([...config.sceneModes], ['pvpBlack'], 'the black core is walked on foot, red stays a chance');
   assert.equal(cells.isSceneMode(config, 'pvpBlack'), true);
   assert.equal(cells.isSceneMode(config, 'pvpFullDrop'), false);
-  assert.equal(cells.minHostilesFor(config, 'pvpBlack'), 4);
-  assert.equal(config.respawn.intervalSeconds, 90);
+  assert.equal(config.respawn, undefined, 'threats come with A-Life groups, not a respawn timer');
   const base = cells.subCellAt(config, { x: 170, y: 150 }, pointKm);
   const north = cells.neighbourCell(config, base, 'north', pointKm);
   assert.deepEqual([north.sx, north.sy], [base.sx, base.sy - 1]);
@@ -120,10 +119,8 @@ assert.equal(cells.encounterChance(config, 'peaceful', 0), 0);
   assert(Math.abs(edge.y - (base.sy + 0.25) * size) < 1e-9, JSON.stringify(edge));
   const top = cells.boundaryPoint(config, base, 'north', pointKm, 0.5);
   assert.equal(cells.subCellAt(config, top, pointKm).key, north.key);
-  const custom = cells.normalizeDangerCellConfig({ sceneModes: ['pvpBlack', 'pvpFullDrop', 'bogus'], respawn: { intervalSeconds: 0, minHostiles: { pvp: 99 } } });
+  const custom = cells.normalizeDangerCellConfig({ sceneModes: ['pvpBlack', 'pvpFullDrop', 'bogus'] });
   assert.deepEqual([...custom.sceneModes], ['pvpBlack', 'pvpFullDrop']);
-  assert.equal(custom.respawn.intervalSeconds, 1);
-  assert.equal(custom.respawn.minHostiles.pvp, 40);
 }
 
-console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, encounter chances by colour and wanderer skill, and walk cells with neighbours, entry sides, border points and threat respawn.');
+console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, encounter chances by colour and wanderer skill, and walk cells with neighbours, entry sides and border points.');

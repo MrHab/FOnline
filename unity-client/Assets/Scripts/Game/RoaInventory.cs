@@ -187,6 +187,11 @@ namespace RealmOfAshes.Game
                 if (row.Id == itemRuntimeId && row.Qty > 0) return true;
             foreach (KeyValuePair<string, string> entry in _equipment)
                 if (entry.Value == itemRuntimeId) return true;
+            // Строки сумки несут базовый id; экземпляр огнестрела в ней сервер
+            // называет отдельно, в weaponInventoryRuntime.
+            if (_self?["weaponInventoryRuntime"] is JArray records)
+                foreach (JToken row in records)
+                    if (row["id"]?.ToString() == itemRuntimeId) return true;
             return false;
         }
 
@@ -345,6 +350,52 @@ namespace RealmOfAshes.Game
                 if (SlotItems.TryGetValue(slot, out allowed) && allowed.Contains(itemId)) return slot;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Экипировка — штучная вещь: у каждой свой износ, магазин и сборка, поэтому
+        /// в сетках она лежит по одной, а не стопкой «×3». Расходник, который тоже
+        /// берётся в руку (аптечка), остаётся стопкой: износа у него нет.
+        /// </summary>
+        public static bool IsGear(string itemOrRuntimeId)
+        {
+            string baseId = BaseId(itemOrRuntimeId);
+            if (string.IsNullOrEmpty(baseId) || baseId == "fists" || SlotFor(baseId) == null) return false;
+            return RoaItemData.ConditionMode(baseId) != "none" || RepairableItems.Contains(baseId);
+        }
+
+        /// <summary>
+        /// Runtime-id экземпляров, лежащих в сумке. Сервер ведёт их только для
+        /// огнестрела (weaponInventoryRuntime — уже без надетого); остальным и
+        /// экземплярам без записи достаётся базовый id.
+        /// </summary>
+        public List<string> BagInstanceIds(string baseId, int count)
+        {
+            var result = new List<string>();
+            if (_self?["weaponInventoryRuntime"] is JArray records)
+                foreach (JToken row in records)
+                {
+                    if (row["baseId"]?.ToString() != baseId) continue;
+                    string id = row["id"]?.ToString();
+                    int qty = Mathf.Max(1, row["qty"]?.ToObject<int>() ?? 1);
+                    for (int i = 0; i < qty && result.Count < count; i++)
+                        result.Add(string.IsNullOrEmpty(id) ? baseId : id);
+                }
+            while (result.Count < count) result.Add(baseId);
+            return result;
+        }
+
+        /// <summary>
+        /// Состояние экземпляра из сумки. ConditionPercent для базового id сначала
+        /// смотрит на надетый экземпляр — запасной ствол показывал бы чужой износ.
+        /// </summary>
+        public float BagConditionPercent(string itemOrRuntimeId)
+        {
+            if (_self?["weaponInventoryRuntime"] is JArray records)
+                foreach (JToken row in records)
+                    if (row["id"]?.ToString() == itemOrRuntimeId && row["condition"] != null)
+                        return row["condition"].ToObject<float>();
+            return _self?["itemConditions"]?[BaseId(itemOrRuntimeId)]?.ToObject<float>() ?? 100f;
         }
 
         private void Equip(string slot, string itemRuntimeId)
@@ -841,21 +892,6 @@ namespace RealmOfAshes.Game
         // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
 
         public bool IsRepairable(string itemOrRuntimeId) { return RepairableItems.Contains(BaseId(itemOrRuntimeId)); }
-        public List<string> RepairableRuntimeIds(string itemId)
-        {
-            var result = new List<string>();
-            string baseId = BaseId(itemId);
-            foreach (var entry in _equipment)
-                if (BaseId(entry.Value) == baseId && !result.Contains(entry.Value)) result.Add(entry.Value);
-            if (_self?["weaponInventoryRuntime"] is JArray records)
-                foreach (JToken row in records)
-                {
-                    string id = row["id"]?.ToString();
-                    if (row["baseId"]?.ToString() == baseId && !string.IsNullOrEmpty(id) && !result.Contains(id)) result.Add(id);
-                }
-            if (result.Count == 0) result.Add(itemId);
-            return result;
-        }
         public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
         /// <summary>
         /// Огнестрел определяется наличием типа патронов в каталоге: у ножа, кулаков

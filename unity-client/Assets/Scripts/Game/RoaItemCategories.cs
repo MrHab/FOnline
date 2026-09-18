@@ -92,14 +92,30 @@ namespace RealmOfAshes.Game
             return CategoryById.ContainsKey(id) ? id : "misc";
         }
 
-        /// <summary>PNG-растр SVG-арта web; null только если ресурс отсутствует.</summary>
+        /// <summary>
+        /// Картинка предмета; null только если нет вообще ничего.
+        ///
+        /// Сначала пробуем ИНДИВИДУАЛЬНЫЙ рендер item_{id}: их печёт из моделей
+        /// предметов RoaItemRenderBaker (меню «Realm of Ashes/Напечь рендеры
+        /// предметов»), и они есть у 83 предметов из 84. Общий рисунок по ArtKey
+        /// остаётся запасным — по нему живут те, у кого своей модели нет
+        /// (сейчас это только fists), — а item_misc замыкает цепочку.
+        /// Кэш теперь по id, а не по ключу арта: картинки стали разными.
+        /// </summary>
         public static Texture2D Art(string itemOrRuntimeId)
         {
-            string key = ArtKey(itemOrRuntimeId);
-            if (ArtCache.TryGetValue(key, out Texture2D cached)) return cached;
-            Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + key);
-            if (texture == null && key != "misc") texture = Resources.Load<Texture2D>("RealmUi/items/item_misc");
-            ArtCache[key] = texture;
+            string id = RoaInventory.BaseId(itemOrRuntimeId);
+            if (string.IsNullOrEmpty(id)) id = "misc";
+            if (ArtCache.TryGetValue(id, out Texture2D cached)) return cached;
+
+            Texture2D texture = Resources.Load<Texture2D>("RealmUi/items/item_" + id);
+            if (texture == null)
+            {
+                string key = ArtKey(itemOrRuntimeId);
+                if (key != id) texture = Resources.Load<Texture2D>("RealmUi/items/item_" + key);
+                if (texture == null) texture = Resources.Load<Texture2D>("RealmUi/items/item_misc");
+            }
+            ArtCache[id] = texture;
             return texture;
         }
     }

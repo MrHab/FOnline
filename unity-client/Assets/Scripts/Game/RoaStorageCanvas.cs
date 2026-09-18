@@ -28,7 +28,6 @@ namespace RealmOfAshes.Game
         private static readonly Color GridBorder = new Color(0.341f, 0.322f, 0.235f, 0.55f);
         private static readonly Color CardBg = new Color(0.094f, 0.106f, 0.094f, 1f);          // rgba(24,27,24)
         private static readonly Color CardBorder = new Color(0.341f, 0.322f, 0.235f, 0.55f);  // rgba(87,82,60,.55)
-        private static readonly Color CardEquipped = new Color(0.498f, 0.698f, 0.294f, 1f);   // #7fb24b
         private static readonly Color CardBlocked = new Color(0.45f, 0.2f, 0.15f, 0.8f);
         private static readonly Color CardName = new Color(0.937f, 0.867f, 0.678f, 1f);
         private static readonly Color CardWeight = new Color(0.82f, 0.694f, 0.404f, 1f);
@@ -102,9 +101,36 @@ namespace RealmOfAshes.Game
                 if (string.IsNullOrEmpty(runtimeId) || qty <= 0) continue;
                 string baseId = RoaInteraction.TradeBaseId(runtimeId);
                 if (baseId == "fists" || (backpack && baseId == "silver")) continue;
-                list.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty });
+                if (!RoaInventory.IsGear(baseId))
+                {
+                    list.Add(new Entry { RuntimeId = runtimeId, BaseId = baseId, Qty = qty });
+                    continue;
+                }
+                // Экипировка лежит поштучно, как в ПУТНИКе: перенос идёт по экземпляру,
+                // и сервер забирает именно тот ствол, по которому кликнули.
+                List<string> instances = backpack && Inventory != null
+                    ? Inventory.BagInstanceIds(baseId, qty)
+                    : StoredInstanceIds(baseId, qty);
+                foreach (string instance in instances)
+                    list.Add(new Entry { RuntimeId = instance, BaseId = baseId, Qty = 1 });
             }
             return list;
+        }
+
+        /// <summary>Экземпляры в ящике; запись есть только у огнестрела, остальным достаётся базовый id.</summary>
+        private List<string> StoredInstanceIds(string baseId, int count)
+        {
+            var result = new List<string>();
+            JArray records = Interaction.StorageRuntimeRecords;
+            if (records != null)
+                foreach (JToken record in records)
+                {
+                    if (result.Count >= count) break;
+                    string id = record["id"]?.ToString();
+                    if (record["baseId"]?.ToString() == baseId && !string.IsNullOrEmpty(id)) result.Add(id);
+                }
+            while (result.Count < count) result.Add(baseId);
+            return result;
         }
 
         private static int CategoryOrder(string id)
@@ -147,27 +173,20 @@ namespace RealmOfAshes.Game
                 });
         }
 
-        /// <summary>isProtectedInventoryItem web: крышки, надетое и патроны текущего оружия остаются в рюкзаке.</summary>
+        /// <summary>
+        /// isProtectedInventoryItem web: марки и патроны текущего оружия остаются в
+        /// рюкзаке. Надетое сюда не попадает вовсе: сумка сервера — только запасные
+        /// вещи, и вторая куртка того же вида, что на персонаже, кладётся в ящик свободно.
+        /// </summary>
         private bool IsProtected(Entry entry)
         {
             if (entry.BaseId == "silver") return true;
             if (Inventory == null) return false;
-            foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
-                if (slot.Value == entry.RuntimeId || RoaArmorData.BaseId(slot.Value) == entry.BaseId) return true;
             if (Inventory.EquipmentSlots.TryGetValue("weapon", out string weaponId))
             {
                 RoaWeaponData.Weapon weapon = RoaWeaponData.Get(RoaArmorData.BaseId(weaponId));
                 if (weapon != null && !string.IsNullOrEmpty(weapon.AmmoType) && weapon.AmmoType == entry.BaseId) return true;
             }
-            return false;
-        }
-
-        /// <summary>Класс .equipped web — только надетые вещи, не патроны.</summary>
-        private bool IsEquipped(Entry entry)
-        {
-            if (Inventory == null) return false;
-            foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
-                if (!string.IsNullOrEmpty(slot.Value) && (slot.Value == entry.RuntimeId || RoaArmorData.BaseId(slot.Value) == entry.BaseId)) return true;
             return false;
         }
 
@@ -260,12 +279,11 @@ namespace RealmOfAshes.Game
             int carryMax = backpack ? entry.Qty : CarryMax(entry);
             bool carryLimited = !backpack && carryMax < entry.Qty;
             bool carryBlocked = !backpack && carryMax <= 0;
-            bool equipped = backpack && IsEquipped(entry);
 
             GameObject card = CardShell(column, "Item:" + entry.RuntimeId, index);
             var image = card.GetComponent<Image>();
             var outline = card.GetComponent<Outline>();
-            outline.effectColor = equipped ? CardEquipped : (carryBlocked ? CardBlocked : CardBorder);
+            outline.effectColor = carryBlocked ? CardBlocked : CardBorder;
             if (carryBlocked) image.color = new Color(CardBg.r, CardBg.g, CardBg.b, 0.6f);
             var rect = (RectTransform)card.transform;
 
@@ -273,13 +291,7 @@ namespace RealmOfAshes.Game
             Text weight = Label("Weight", rect, 9, TextAnchor.UpperRight, CardWeight, FontStyle.Bold);
             Place(weight.rectTransform, 0.4f, 1f, 1f, 1f, new Vector2(0f, -16f), new Vector2(-5f, -3f));
             weight.text = (RoaItemData.Weight(entry.BaseId) * entry.Qty).ToString("0.0") + " кг";
-            if (equipped)
-            {
-                Text tag = Label("Tag", rect, 8, TextAnchor.UpperLeft, CardEquipped);
-                Place(tag.rectTransform, 0f, 1f, 0.6f, 1f, new Vector2(4f, -16f), new Vector2(0f, -3f));
-                tag.text = "НАДЕТО";
-            }
-            else if (carryLimited)
+            if (carryLimited)
             {
                 Text tag = Label("Tag", rect, 8, TextAnchor.UpperLeft, new Color(1f, 0.6f, 0.33f, 1f));
                 Place(tag.rectTransform, 0f, 1f, 0.6f, 1f, new Vector2(4f, -16f), new Vector2(0f, -3f));

@@ -538,6 +538,21 @@ function seedCombatFixtures(accounts) {
     initialAp: 0,
     carriedItems: [{ id: 'rifle', qty: 1 }]
   }, usersDb, savesDb);
+  seedCharacterState(accounts.legacyMix, {
+    // A worn pistol still keyed by its base id (the row older clients created)
+    // plus a looted spare the server already knows under its own runtime id.
+    special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'laserPistol',
+    additionalWeapons: [{
+      baseId: 'laserPistol',
+      runtimeId: 'ui_laserPistol_legacymix_2',
+      loaded: 2
+    }],
+    ammoType: 'energyCell',
+    loaded: 5,
+    reserveAmmo: 4
+  }, usersDb, savesDb);
   seedCharacterState(accounts.harvest, {
     // Фикстура добычи стоит у лома в опасной локации всё время проверки
     // возрождения, поэтому ей нужен запас здоровья, чтобы не погибнуть и не
@@ -819,6 +834,7 @@ async function bootstrapCharacters(accounts) {
     ['dualPistols', 'dual'],
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
+    ['legacyMix', 'legacymix'],
     ['harvest', 'harvest'],
     ['progression', 'progression'],
     ['trade', 'trade'],
@@ -1961,6 +1977,44 @@ async function assertEquipmentActionAuthority(accounts) {
   closeSocket(account);
 }
 
+async function assertKnownInstanceKeepsItsMagazine(accounts) {
+  // The inventory shows every spare weapon as its own tile and names that exact
+  // instance when equipping. Naming a known instance must never trigger the
+  // legacy base-id migration: that would hand the spare the worn pistol's
+  // magazine and leave the worn pistol empty.
+  const account = accounts.legacyMix;
+  const spare = 'ui_laserPistol_legacymix_2';
+  await connectAndJoin(account);
+  assertCombat(account.join.combat, {
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'laserPistol',
+    loaded: 5,
+    reserveAmmo: 4
+  }, 'legacy-mix join combat');
+  assertRuntimeWeaponInventory(account.join.self, spare, 2, 'legacy-mix join bag');
+
+  const equip = await sendEquipmentAction(account, spare, { slot: 'offhand' });
+  invariant(equip.ack.ok === true
+    && equip.ack.self?.equipmentRuntime?.weapon === 'laserPistol'
+    && equip.ack.self?.equipmentRuntime?.offhand === spare,
+  'A known bag instance could not join a legacy base-id pistol in the other hand', equip.ack);
+  assertCombat(equip.ack.combat, {
+    weaponRuntimeId: 'laserPistol',
+    loaded: 5,
+    reserveAmmo: 4
+  }, 'legacy-mix worn pistol after the spare was equipped');
+
+  const unequip = await sendEquipmentAction(account, '', { slot: 'offhand' });
+  invariant(unequip.ack.ok === true && !unequip.ack.self?.equipmentRuntime?.offhand,
+    'The spare pistol could not be taken off again', unequip.ack);
+  assertRuntimeWeaponInventory(unequip.ack.self, spare, 2, 'legacy-mix spare back in the bag');
+  assertCombat(unequip.ack.combat, {
+    weaponRuntimeId: 'laserPistol',
+    loaded: 5,
+    reserveAmmo: 4
+  }, 'legacy-mix worn pistol after the spare was taken off');
+}
+
 async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
   const account = accounts.trade;
   const soldRuntimeId = account.weaponRuntimeIds[1];
@@ -2092,6 +2146,7 @@ async function main() {
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
+    await assertKnownInstanceKeepsItsMagazine(accounts);
     await assertLoadedWeaponAutoUnloadsOnTrade(accounts);
     await assertProgressionAllocationAuthority(accounts);
     // The shooter fixtures intentionally share one combat arena so they can
@@ -2104,6 +2159,7 @@ async function main() {
       'dualPistols',
       'strictAp',
       'equipmentAp',
+      'legacyMix',
       'target'
     ]);
     await assertHarvestRequiresEquippedTool(accounts);
@@ -2119,6 +2175,7 @@ async function main() {
       + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
       + 'loaded bag weapons auto-unloaded into inventory when sold, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
+      + 'a known bag instance joined a legacy base-id pistol without taking over its magazine, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );

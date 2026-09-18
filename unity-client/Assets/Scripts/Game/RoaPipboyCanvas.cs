@@ -66,20 +66,37 @@ namespace RealmOfAshes.Game
         // ITEMS
         private Text _carryLine;
         public RoaQuickbar Quickbar;
-        private RoaCharacterPreview _itemsPreview;
-        private RawImage _itemsModel;
         private Text _itemsPanelName;
         private Text _itemsPanelSlots;
-        private readonly Dictionary<string, (Button button, RawImage art, Text name, Text type, Text empty)> _itemsSlots
-            = new Dictionary<string, (Button, RawImage, Text, Text, Text)>();
         private readonly List<(Button button, Text label)> _quickSlots = new List<(Button, Text)>();
-        private Text _quickHint;
         private RectTransform _itemsGrid;
         private Text _itemsStatus;
         private string _selectedItemId = string.Empty;
         /// <summary>Выбранный в ПУТНИКе предмет — его же выставляет аукционер базы.</summary>
         public string SelectedItemId { get { return _selectedItemId; } }
+        // Выбрана плитка, а не вид предмета: надетый пистолет и такой же запасной
+        // в сумке — две разные вещи с разными действиями.
+        private string _selectedTileKey = string.Empty;
+        private string _selectedRuntimeId = string.Empty;
+        private string _selectedSlot = string.Empty;
         private readonly List<GameObject> _itemCards = new List<GameObject>();
+
+        /// <summary>
+        /// Плитка сетки предметов. Надетая вещь — всегда своя плитка; экипировка из
+        /// сумки лежит по одной; стопкой остаются только расходники и материалы.
+        /// </summary>
+        private struct ItemTile
+        {
+            /// <summary>"eq:{слот}" для надетого, "bag:{baseId}:{номер}" для сумки.</summary>
+            public string Key;
+            public string BaseId;
+            /// <summary>Экземпляр для запроса серверу; у стопки и брони — базовый id.</summary>
+            public string RuntimeId;
+            /// <summary>Слот, в котором вещь надета; у вещи из сумки пусто.</summary>
+            public string Slot;
+            public int Qty;
+            public bool Equipped { get { return !string.IsNullOrEmpty(Slot); } }
+        }
         // Категории и сортировка — как itemCategoryFilters / sortModes в web.
         private RectTransform _categoryTabs;
         private readonly Dictionary<string, Button> _categoryButtons = new Dictionary<string, Button>();
@@ -131,7 +148,7 @@ namespace RealmOfAshes.Game
 
         private static readonly (Page page, string label)[] TabOrder =
         {
-            (Page.Status, "Статус"), (Page.Items, "Инвентарь"), (Page.Skills, "Навыки"),
+            (Page.Items, "Персонаж"), (Page.Skills, "Навыки"),
             (Page.Perks, "Перки"), (Page.Craft, "Крафт"), (Page.Quests, "Журнал"),
             (Page.Contracts, "Контракты"), (Page.World, "Мир"), (Page.Factions, "Фракции"), (Page.Friends, "Друзья"),
             (Page.Clan, "Клан"), (Page.Base, "Укрытие"), (Page.Radio, "Радио")
@@ -152,10 +169,10 @@ namespace RealmOfAshes.Game
             // Во время набора текста буквы принадлежат полю ввода, а не терминалу.
             if (TypingInInputField()) return;
 
-            // Tab — статус, I — инвентарь, K — навыки, P — крафт. Повторное нажатие
+            // Tab и I — экран персонажа, K — навыки, P — крафт. Повторное нажатие
             // своей клавиши закрывает. Клавишу B занимает болт (RoaBoltThrower), и
             // обучение прямо просит нажать её, чтобы достать щуп.
-            if (Input.GetKeyDown(KeyCode.Tab)) TogglePage(Page.Status);
+            if (Input.GetKeyDown(KeyCode.Tab)) TogglePage(Page.Items);
             else if (Input.GetKeyDown(KeyCode.I)) TogglePage(Page.Items);
             else if (Input.GetKeyDown(KeyCode.K)) TogglePage(Page.Skills);
             else if (Input.GetKeyDown(KeyCode.P)) TogglePage(Page.Craft);
@@ -186,14 +203,25 @@ namespace RealmOfAshes.Game
 
         public void TogglePage(Page page)
         {
-            if (IsOpen && _page == page) { Close(); return; }
+            if (IsOpen && _page == Resolve(page)) { Close(); return; }
             Open(page);
+        }
+
+        /// <summary>
+        /// Отдельной страницы «Статус» больше нет: экипировка, характеристики и
+        /// состояние живут на экране персонажа. Член перечисления остаётся —
+        /// на него ссылается мобильная панель (RoaMobileControls.cs:445), и её
+        /// кнопка обязана открывать что-то осмысленное, а не пустоту.
+        /// </summary>
+        private static Page Resolve(Page page)
+        {
+            return page == Page.Status ? Page.Items : page;
         }
 
         public void Open(Page page)
         {
             EnsureBuilt();
-            _page = page;
+            _page = Resolve(page);
             _root.SetActive(true);
             ApplyPage();
             Refresh();
@@ -201,12 +229,46 @@ namespace RealmOfAshes.Game
             FitFrameToViewport();
         }
 
+        /// <summary>
+        /// Рама шире экрана-предшественника: на 16:9 множитель выходит ровно 1.00,
+        /// то есть терминал наконец рисуется пиксель в пиксель. Со старыми 980x800
+        /// он всегда ужимался до 0.9875 и мылил подписи в 9-10 пунктов.
+        /// </summary>
+        public const float FrameWidth = 1180f;
+        public const float FrameHeight = 780f;
+
         private void FitFrameToViewport()
         {
             if (_frameRect == null || _canvas == null) return;
             Rect viewport = ((RectTransform)_canvas.transform).rect;
-            float fit = Mathf.Min(1f, (viewport.width - 20f) / 980f, (viewport.height - 20f) / 800f);
+            Vector2 frame = _frameRect.sizeDelta;
+            float fit = Mathf.Min(1f, (viewport.width - 20f) / Mathf.Max(1f, frame.x),
+                                      (viewport.height - 20f) / Mathf.Max(1f, frame.y));
             _frameRect.localScale = Vector3.one * Mathf.Max(0.1f, fit);
+            ApplyCompactLayout(viewport.width < 900f);
+        }
+
+        /// <summary>
+        /// Узкий экран: решётка снаряжения уходит, сумка занимает всю ширину и
+        /// растит ячейки. Три колонки в 0.54 масштаба портрета читаются хуже, чем
+        /// одна крупная. Вызывается каждый кадр из Update — поэтому сравнение
+        /// с текущим состоянием обязательно, иначе перестройка идёт без остановки.
+        /// </summary>
+        private void ApplyCompactLayout(bool compact)
+        {
+            if (_compactLayout.HasValue && _compactLayout.Value == compact) return;
+            _compactLayout = compact;
+            if (_equipPanel == null || _bagPanel == null) return;
+
+            _equipPanel.gameObject.SetActive(!compact);
+            Place_(_bagPanel, 0f, 0f, 0f, 0f, new Vector2(compact ? 0f : 546f, 30f), new Vector2(1112f, 586f));
+
+            if (_itemsGridLayout != null)
+                _itemsGridLayout.cellSize = compact ? new Vector2(150f, 116f) : new Vector2(102f, 104f);
+
+            if (_hintBar != null) _hintBar.gameObject.SetActive(!compact);
+            if (_hintTouch != null) _hintTouch.gameObject.SetActive(compact);
+            _refreshAt = 0f;
         }
 
         public void Close()
@@ -267,7 +329,7 @@ namespace RealmOfAshes.Game
             _frameRect = frame;
             frame.anchorMin = frame.anchorMax = new Vector2(0.5f, 0.5f);
             frame.pivot = new Vector2(0.5f, 0.5f);
-            frame.sizeDelta = new Vector2(980f, 800f);
+            frame.sizeDelta = new Vector2(FrameWidth, FrameHeight);
             var frameImage = frame.gameObject.AddComponent<Image>();
             frameImage.color = FrameBg;
             var frameOutline = frame.gameObject.AddComponent<Outline>();
@@ -290,10 +352,9 @@ namespace RealmOfAshes.Game
             RectTransform pageArea = Child("Pages", screen);
             pageArea.anchorMin = new Vector2(0f, 0f);
             pageArea.anchorMax = new Vector2(1f, 1f);
-            pageArea.offsetMin = new Vector2(18f, 64f);
+            pageArea.offsetMin = new Vector2(18f, 54f);
             pageArea.offsetMax = new Vector2(-18f, -108f);
 
-            BuildStatusPage(pageArea);
             BuildItemsPage(pageArea);
             BuildSkillsPage(pageArea);
             BuildPerksPage(pageArea);
@@ -373,8 +434,8 @@ namespace RealmOfAshes.Game
             tabs.anchorMin = new Vector2(0f, 0f);
             tabs.anchorMax = new Vector2(1f, 0f);
             tabs.pivot = new Vector2(0.5f, 0f);
-            tabs.offsetMin = new Vector2(12f, 10f);
-            tabs.offsetMax = new Vector2(-12f, 54f);
+            tabs.offsetMin = new Vector2(12f, 8f);
+            tabs.offsetMax = new Vector2(-12f, 46f);
 
             var layout = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 4f;
@@ -411,138 +472,13 @@ namespace RealmOfAshes.Game
         private static readonly Color PlateName = new Color(0.843f, 0.757f, 0.424f, 1f);   // #d7c16c
         private static readonly Color SlotBg = new Color(0.03f, 0.075f, 0.042f, 1f);
         private static readonly Color SlotBorder = new Color(0.494f, 0.784f, 0.357f, 0.32f);
+        /// <summary>Занятая ячейка держит границу заметнее пустой — решётка читается без чтения подписей.</summary>
+        private static readonly Color EquippedSlotBorder = new Color(0.494f, 0.784f, 0.357f, 0.58f);
         private static readonly Color SlotName = new Color(0.827f, 0.933f, 0.541f, 1f);    // #d3ee8a
         private static readonly Color SpecialValue = new Color(0.937f, 0.816f, 0.471f, 1f); // #efd078
         private static readonly Color CellBg = new Color(0.03f, 0.075f, 0.042f, 1f);
         private static readonly Color CellBorder = new Color(0.494f, 0.784f, 0.357f, 0.28f);
 
-        private Text _plateName;
-        private Text _plateMeta;
-        private readonly Dictionary<string, (RawImage art, Text name, Text type, Text empty)> _statusSlots
-            = new Dictionary<string, (RawImage, Text, Text, Text)>();
-        private readonly Dictionary<string, Text> _specialCells = new Dictionary<string, Text>();
-        private readonly List<Text> _statLines = new List<Text>();
-        private Text _injuryBody;
-
-        private static readonly (string slot, string title)[] StatusSlots =
-        {
-            ("weapon", "Правая рука"), ("offhand", "Левая рука"), ("armor", "Корпус"),
-            ("helmet", "Голова"), ("boots", "Ноги"), ("backpack", "Спина")
-        };
-
-        private void BuildStatusPage(RectTransform parent)
-        {
-            RectTransform page = Page_(Page.Status, parent);
-            SectionTitle(page, "СОСТОЯНИЕ");
-
-            // Левая колонка: пластина персонажа + сетка слотов.
-            RectTransform left = Child("Left", page);
-            left.anchorMin = new Vector2(0f, 0f);
-            left.anchorMax = new Vector2(0.415f, 1f);
-            left.offsetMin = new Vector2(0f, 0f);
-            left.offsetMax = new Vector2(-8f, -34f);
-
-            RectTransform plate = Panel_(left, PlateBg, PlateBorder);
-            Place_(plate, 0f, 1f, 1f, 1f, new Vector2(0f, -150f), new Vector2(0f, 0f));
-            _plateName = Label("Name", plate, 15, TextAnchor.UpperLeft, PlateName, FontStyle.Bold);
-            Place_(_plateName.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -30f), new Vector2(-12f, -10f));
-            _plateMeta = Label("Meta", plate, 11, TextAnchor.UpperLeft, ScreenInkDim);
-            Place_(_plateMeta.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -46f), new Vector2(-12f, -32f));
-            BuildBodyReadout(plate);
-
-            for (int i = 0; i < StatusSlots.Length; i++)
-            {
-                RectTransform slot = Panel_(left, SlotBg, SlotBorder);
-                float top = 158f + i * 52f;
-                Place_(slot, 0f, 1f, 1f, 1f, new Vector2(0f, -top - 46f), new Vector2(0f, -top));
-                RectTransform artRect = Child("Art", slot);
-                artRect.anchorMin = artRect.anchorMax = new Vector2(0f, 0.5f);
-                artRect.pivot = new Vector2(0f, 0.5f);
-                artRect.anchoredPosition = new Vector2(6f, 0f);
-                artRect.sizeDelta = new Vector2(31f, 31f);
-                var art = artRect.gameObject.AddComponent<RawImage>();
-                art.raycastTarget = false;
-                Text empty = Label("Empty", slot, 16, TextAnchor.MiddleCenter, ScreenInkDim);
-                Place_(empty.rectTransform, 0f, 0f, 0f, 1f, new Vector2(6f, 0f), new Vector2(37f, 0f));
-                empty.text = "—";
-                Text name = Label("Name", slot, 11, TextAnchor.UpperLeft, SlotName);
-                Place_(name.rectTransform, 0f, 0.5f, 1f, 1f, new Vector2(44f, -2f), new Vector2(-6f, -8f));
-                name.verticalOverflow = VerticalWrapMode.Truncate;
-                Text type = Label("Type", slot, 9, TextAnchor.UpperLeft, ScreenInkDim);
-                Place_(type.rectTransform, 0f, 0f, 1f, 0.5f, new Vector2(44f, 8f), new Vector2(-6f, 2f));
-                type.text = StatusSlots[i].title;
-                _statusSlots[StatusSlots[i].slot] = (art, name, type, empty);
-            }
-
-            // Правая колонка: SPECIAL, stat-line, Состояние.
-            RectTransform right = Child("Right", page);
-            right.anchorMin = new Vector2(0.415f, 0f);
-            right.anchorMax = new Vector2(1f, 1f);
-            right.offsetMin = new Vector2(8f, 0f);
-            right.offsetMax = new Vector2(0f, -34f);
-
-            RectTransform special = Panel_(right, new Color(0.03f, 0.06f, 0.04f, 1f), new Color(0.835f, 0.722f, 0.392f, 0.3f));
-            Place_(special, 0f, 1f, 1f, 1f, new Vector2(0f, -88f), new Vector2(0f, 0f));
-            Text specialTitle = Label("Title", special, 11, TextAnchor.UpperLeft, AccentWarm, FontStyle.Bold);
-            specialTitle.text = "ХАРАКТЕРИСТИКИ";
-            Place_(specialTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(9f, -24f), new Vector2(-9f, -8f));
-            string[] keys = { "str", "per", "end", "cha", "int", "agi", "luck" };
-            string[] codes = { "МЩ", "НБ", "СТ", "ВЛ", "ИН", "РЕ", "ЧУ" };
-            for (int i = 0; i < keys.Length; i++)
-            {
-                RectTransform cell = Panel_(special, CellBg, CellBorder);
-                float minX = i / 7f, maxX = (i + 1) / 7f;
-                Place_(cell, minX, 0f, maxX, 0f, new Vector2(i == 0 ? 9f : 2.5f, 9f), new Vector2(i == 6 ? -9f : -2.5f, 57f));
-                Text code = Label("Code", cell, 9, TextAnchor.UpperCenter, ScreenInkDim, FontStyle.Bold);
-                code.text = codes[i];
-                Place_(code.rectTransform, 0f, 1f, 1f, 1f, new Vector2(0f, -18f), new Vector2(0f, -5f));
-                Text value = Label("Value", cell, 18, TextAnchor.LowerCenter, SpecialValue, FontStyle.Bold);
-                Place_(value.rectTransform, 0f, 0f, 1f, 0f, new Vector2(0f, 4f), new Vector2(0f, 28f));
-                _specialCells[keys[i]] = value;
-            }
-
-            _statLines.Clear();
-            for (int i = 0; i < 18; i++)
-            {
-                Text line = Label("Stat" + i, right, 11, TextAnchor.MiddleLeft, ScreenInkDim);
-                line.supportRichText = true;
-                Place_(line.rectTransform, 0f, 1f, 1f, 1f, new Vector2(2f, -98f - i * 15f - 14f), new Vector2(-2f, -98f - i * 15f));
-                _statLines.Add(line);
-            }
-
-            RectTransform injury = Panel_(right, SlotBg, SlotBorder);
-            Place_(injury, 0f, 1f, 1f, 1f, new Vector2(0f, -98f - 18 * 15f - 8f - 56f), new Vector2(0f, -98f - 18 * 15f - 8f));
-            Text injuryTitle = Label("Title", injury, 12, TextAnchor.UpperLeft, SlotName, FontStyle.Bold);
-            injuryTitle.text = "СОСТОЯНИЕ";
-            Place_(injuryTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -24f), new Vector2(-8f, -6f));
-            _injuryBody = Label("Body", injury, 11, TextAnchor.UpperLeft, ScreenInkDim);
-            Place_(_injuryBody.rectTransform, 0f, 0f, 1f, 1f, new Vector2(8f, 4f), new Vector2(-8f, -26f));
-        }
-
-        /// <summary>.pipboy-body-readout: схематичный силуэт (голова, торс, руки, ноги, оружие).</summary>
-        private static void BuildBodyReadout(RectTransform plate)
-        {
-            Color body = new Color(0.49f, 0.804f, 0.369f, 0.35f);
-            Color weapon = new Color(0.937f, 0.816f, 0.471f, 0.55f);
-            void Part(string name, Vector2 pos, Vector2 size, Color color)
-            {
-                RectTransform rect = Child(name, plate);
-                rect.anchorMin = rect.anchorMax = new Vector2(1f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.anchoredPosition = pos;
-                rect.sizeDelta = size;
-                var image = rect.gameObject.AddComponent<Image>();
-                image.color = color;
-                image.raycastTarget = false;
-            }
-            Part("Head", new Vector2(-60f, 40f), new Vector2(18f, 18f), body);
-            Part("Torso", new Vector2(-60f, 10f), new Vector2(26f, 38f), body);
-            Part("ArmL", new Vector2(-80f, 10f), new Vector2(8f, 34f), body);
-            Part("ArmR", new Vector2(-40f, 10f), new Vector2(8f, 34f), body);
-            Part("LegL", new Vector2(-67f, -28f), new Vector2(9f, 36f), body);
-            Part("LegR", new Vector2(-53f, -28f), new Vector2(9f, 36f), body);
-            Part("Weapon", new Vector2(-28f, 12f), new Vector2(5f, 30f), weapon);
-        }
 
         private static RectTransform Panel_(RectTransform parent, Color bg, Color border)
         {
@@ -564,148 +500,211 @@ namespace RealmOfAshes.Game
             rect.offsetMax = offsetMax;
         }
 
-        private void RefreshStatus(JObject self)
+
+        // ------------------------------------------------------------------
+        // ЭКРАН ПЕРСОНАЖА: экипировка | характеристики | сумка
+        //
+        // Композиция взята из современных выживалок: слева решётка надетого,
+        // посередине колонка чисел, справа сумка, снизу полоса подсказок.
+        // Страница живёт в 1112x586. SectionTitle здесь снят намеренно — эти
+        // 26 px отданы решётке, а название экрана и так написано на вкладке.
+        //
+        // Все координаты ниже абсолютные (якорь в левом нижнем углу страницы),
+        // потому что колонки обязаны держать ширину: на дробных якорях решётка
+        // 94-пиксельных ячеек разъезжается на первом же нестандартном аспекте.
+        // ------------------------------------------------------------------
+
+        private RectTransform _hintBar; // полоса подсказок внизу экрана персонажа
+        private Text _hintTouch;
+        private RectTransform _equipPanel;
+        private RectTransform _bagPanel;
+        private GridLayoutGroup _itemsGridLayout;
+        /// <summary>null — режим ещё ни разу не применяли; иначе текущий.</summary>
+        private bool? _compactLayout;
+        private RectTransform _quickRow;
+        private Text _gearPowerLine;
+        private Text _invClanLine;
+        private Text _invFundsLine;
+        private RectTransform _weightFill;
+        private Image _weightFillImage;
+
+        /// <summary>Ячейка надетого предмета: больше частей, чем у прежнего слота.</summary>
+        private sealed class EquipCell
         {
-            if (self == null) return;
-            string weaponId = Inventory != null && Inventory.EquipmentSlots.TryGetValue("weapon", out string w) ? RoaArmorData.BaseId(w) : string.Empty;
-            string offhandId = Inventory != null && Inventory.EquipmentSlots.TryGetValue("offhand", out string o) ? RoaArmorData.BaseId(o) : string.Empty;
-            string heldId = !string.IsNullOrEmpty(weaponId) && weaponId != "fists" ? weaponId : (!string.IsNullOrEmpty(offhandId) ? offhandId : "fists");
-            string heldName = heldId == "fists" ? "Кулаки" : ItemName(heldId);
-
-            _plateName.text = (self["name"]?.ToString() ?? "Странник").ToUpperInvariant();
-            _plateMeta.text = "Уровень " + (self["level"]?.ToObject<int>() ?? 1) + " · " + heldName;
-
-            foreach ((string slot, string _) in StatusSlots)
-            {
-                (RawImage art, Text name, Text type, Text empty) row = _statusSlots[slot];
-                string runtimeId = Inventory != null && Inventory.EquipmentSlots.TryGetValue(slot, out string id) ? id : string.Empty;
-                string baseId = RoaArmorData.BaseId(runtimeId ?? string.Empty);
-                bool has = !string.IsNullOrEmpty(baseId) && baseId != "fists";
-                row.art.texture = has ? RoaItemCategories.Art(baseId) : null;
-                row.art.enabled = has && row.art.texture != null;
-                row.empty.gameObject.SetActive(!has);
-                row.name.text = has ? ItemName(baseId) : "Пусто";
-            }
-
-            JObject special = self["special"] as JObject;
-            foreach (KeyValuePair<string, Text> cell in _specialCells)
-                cell.Value.text = (special?[cell.Key]?.ToObject<int>() ?? 5).ToString();
-
-            RoaWeaponData.Weapon weapon = RoaWeaponData.Get(heldId);
-            bool melee = string.IsNullOrEmpty(weapon.AmmoType);
-            string ammoText = melee ? "не нужны" : RoaWeaponData.AmmoLabel(weapon.AmmoType);
-            float speed = 4.35f + (special?["agi"]?.ToObject<int>() ?? 5) * 0.13f;
-            int vision = Fog != null ? Fog.Radius : 0;
-            string faction = RoaPipboy.FactionLabel(self["worldFactionId"]?.ToString() ?? self["factionId"]?.ToString());
-            int skillsAboveBase = 0;
-            foreach (RoaProgressionData.SkillDef skill in RoaProgressionData.Skills)
-            {
-                JToken rank = self["skillRanks"]?[skill.Id];
-                if (rank != null && rank.Type != JTokenType.Null && rank.ToObject<int>() > RoaPipboy.SkillPercent(new JObject { ["special"] = special, ["taggedSkills"] = self["taggedSkills"] }, skill.Id)) skillsAboveBase++;
-            }
-            int learnedPerks = 0;
-            foreach (KeyValuePair<string, JToken> rank in self["talentRanks"] as JObject ?? new JObject())
-                learnedPerks += rank.Value?.ToObject<int>() ?? 0;
-            int power = RoaGearData.PowerTotal(Inventory != null ? Inventory.EquipmentSlots : null,
-                id => Mathf.RoundToInt(self["itemConditions"]?[id]?.ToObject<float>() ?? 100f));
-
-            string[] lines =
-            {
-                "Активно: <b>" + heldName + "</b>",
-                "Правая рука: <b>" + (!string.IsNullOrEmpty(weaponId) && weaponId != "fists" ? ItemName(weaponId) : "пусто") + "</b>",
-                "Левая рука: <b>" + (!string.IsNullOrEmpty(offhandId) ? ItemName(offhandId) : "пусто") + "</b>",
-                "Урон: <b>" + weapon.DmgMin + "-" + weapon.DmgMax + "</b>",
-                "Дальность: <b>" + RoaGearData.Range(heldId).ToString("0.##") + "</b>",
-                "Патроны: <b>" + ammoText + "</b>",
-                "Броня: <b>" + (Hud != null ? Hud.ArmorThreshold : 0) + "</b>",
-                "СИЛА: <b>" + power + "</b>",
-                "Скорость: <b>" + speed.ToString("0.0") + "</b>",
-                "Вес: <b>" + (Inventory != null ? Inventory.CarryWeight.ToString("0.#") + "/" + Inventory.CarryCapacity.ToString("0") : "—") + "</b>",
-                "Обзор: <b>" + vision + " кл.</b>",
-                "ОД: <b>" + (Hud != null ? Hud.MaxAp : (self["maxAp"]?.ToObject<int>() ?? 0)) + "</b>",
-                "Фракция: <b>" + faction + "</b>",
-                "Свободные очки навыков: <b>" + (self["skillPoints"]?.ToObject<int>() ?? 0) + "</b>",
-                "Свободные перки: <b>" + (self["talentPoints"]?.ToObject<int>() ?? self["perkPoints"]?.ToObject<int>() ?? 0) + "</b>",
-                "Навыки выше базы: <b>" + skillsAboveBase + "</b>",
-                "Изучено перков: <b>" + learnedPerks + "</b>",
-                "Фокус: <b>" + RoaCraftingPlots.FocusText(self["account"] as JObject) + "</b>"
-            };
-            for (int i = 0; i < _statLines.Count && i < lines.Length; i++)
-                _statLines[i].text = lines[i].Replace("<b>", "<b><color=#d3ee8a>").Replace("</b>", "</color></b>");
-
-            JObject injuries = self["injuries"] as JObject;
-            var names = new List<string>();
-            if (injuries?["brokenArm"]?.ToObject<bool>() == true) names.Add("перелом руки");
-            if (injuries?["brokenLeg"]?.ToObject<bool>() == true) names.Add("перелом ноги");
-            if (injuries?["concussion"]?.ToObject<bool>() == true) names.Add("сотрясение");
-            if (injuries?["infection"]?.ToObject<bool>() == true) names.Add("инфекция");
-            _injuryBody.text = names.Count > 0 ? string.Join(" · ", names) : "Травм нет.";
+            public Button Button;
+            public RawImage Art;
+            public Text Name;
+            public Text Type;
+            public Text Empty;
+            public Text Weight;
+            public Text Meta;
+            public Image Condition;
         }
+
+        private readonly Dictionary<string, EquipCell> _equipCells = new Dictionary<string, EquipCell>();
 
         private void BuildItemsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Items, parent);
-            SectionTitle(page, "ИНВЕНТАРЬ");
 
-            // Слева — панель персонажа (inventory-character-panel): шапка, модель, слоты вокруг.
-            RectTransform panel = Panel_(page, PlateBg, PlateBorder);
-            Place_(panel, 0f, 0f, 0.30f, 1f, new Vector2(0f, 4f), new Vector2(-6f, -34f));
-            Text modelLabel = Label("ModelLabel", panel, 10, TextAnchor.UpperLeft, ScreenInkDim, FontStyle.Bold);
-            modelLabel.text = "МОДЕЛЬ";
-            Place_(modelLabel.rectTransform, 0f, 1f, 0.6f, 1f, new Vector2(10f, -20f), new Vector2(0f, -8f));
-            _itemsPanelName = Label("Name", panel, 13, TextAnchor.UpperLeft, PlateName, FontStyle.Bold);
-            _itemsPanelName.verticalOverflow = VerticalWrapMode.Truncate;
-            Place_(_itemsPanelName.rectTransform, 0f, 1f, 0.7f, 1f, new Vector2(10f, -38f), new Vector2(0f, -20f));
-            _itemsPanelSlots = Label("Slots", panel, 9, TextAnchor.UpperRight, ScreenInkDim);
-            Place_(_itemsPanelSlots.rectTransform, 0.5f, 1f, 1f, 1f, new Vector2(0f, -20f), new Vector2(-10f, -8f));
+            BuildHintBar(page);
 
-            RectTransform stage = Child("Stage", panel);
-            Place_(stage, 0f, 0f, 1f, 1f, new Vector2(6f, 6f), new Vector2(-6f, -44f));
-            _itemsModel = stage.gameObject.AddComponent<RawImage>();
-            _itemsModel.color = Color.white;
-            _itemsModel.raycastTarget = false;
-            _itemsModel.enabled = false;
+            _equipPanel = Panel_(page, PlateBg, PlateBorder);
+            Place_(_equipPanel, 0f, 0f, 0f, 0f, new Vector2(0f, 30f), new Vector2(536f, 586f));
+            BuildEquipPanel(_equipPanel);
 
+            _bagPanel = Panel_(page, PlateBg, PlateBorder);
+            Place_(_bagPanel, 0f, 0f, 0f, 0f, new Vector2(546f, 30f), new Vector2(1112f, 586f));
+            BuildBagPanel(_bagPanel);
+        }
+
+        /// <summary>
+        /// Подсказки пишем только про то, что экран действительно умеет: обещать
+        /// «выбросить по G» нельзя — эта клавиша уже занята в мире и окна не знает.
+        /// </summary>
+        private void BuildHintBar(RectTransform page)
+        {
+            _hintBar = Child("HintBar", page);
+            Place_(_hintBar, 0f, 0f, 1f, 0f, new Vector2(0f, 0f), new Vector2(0f, 24f));
+            var layout = _hintBar.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 18f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+
+            AddHint("SHIFT+ЛКМ", "Экипировать");
+            AddHint("ПКМ", "Действия");
+            AddHint("Наведение", "Сведения");
+            AddHint("1–8", "Быстрый доступ");
+
+            // На телефоне клавиш нет — и обещать их нельзя.
+            _hintTouch = Label("HintTouch", page, 10, TextAnchor.MiddleCenter, RoaUiPalette.InkLabel);
+            _hintTouch.text = "Касание — выбрать · Долгое нажатие — действия";
+            Place_(_hintTouch.rectTransform, 0f, 0f, 1f, 0f, new Vector2(0f, 0f), new Vector2(0f, 24f));
+            _hintTouch.gameObject.SetActive(false);
+        }
+
+        private void AddHint(string key, string caption)
+        {
+            RectTransform row = Child("Hint:" + key, _hintBar);
+            var rowLayout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 5f;
+            rowLayout.childAlignment = TextAnchor.MiddleLeft;
+            rowLayout.childForceExpandWidth = false;
+            rowLayout.childForceExpandHeight = false;
+            rowLayout.childControlWidth = true;
+            rowLayout.childControlHeight = true;
+
+            RectTransform badge = Child("Key", row);
+            var badgeImage = badge.gameObject.AddComponent<Image>();
+            badgeImage.sprite = RoaUiPalette.Plate();
+            badgeImage.type = Image.Type.Sliced;
+            badgeImage.color = new Color(0.016f, 0.055f, 0.031f, 0.85f);
+            badgeImage.raycastTarget = false;
+            var badgeOutline = badge.gameObject.AddComponent<Outline>();
+            badgeOutline.effectColor = RoaUiPalette.TileBorder;
+            badgeOutline.effectDistance = new Vector2(1f, -1f);
+            Text keyLabel = Label("Label", badge, 9, TextAnchor.MiddleCenter, RoaUiPalette.Accent);
+            keyLabel.text = key;
+            // Без Overflow узкий бейдж переносит подпись и она ложится сама на себя.
+            keyLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Stretch(keyLabel.rectTransform, 1f);
+            badge.gameObject.AddComponent<LayoutElement>().preferredWidth = 14f + key.Length * 7.5f;
+
+            Text text = Label("Caption", row, 10, TextAnchor.MiddleLeft, RoaUiPalette.InkLabel);
+            text.text = caption;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.gameObject.AddComponent<LayoutElement>().preferredWidth = 6f + caption.Length * 6.5f;
+        }
+
+        /// <summary>Шапка панели: заголовок слева, счётчик справа.</summary>
+        private Text PanelHeader(RectTransform panel, string caption, out Text counter)
+        {
+            Text title = Label("Header", panel, 12, TextAnchor.MiddleLeft, RoaUiPalette.InkLabel, FontStyle.Bold);
+            title.text = caption;
+            Place_(title.rectTransform, 0f, 1f, 0.6f, 1f, new Vector2(10f, -26f), new Vector2(0f, -4f));
+            counter = Label("HeaderCounter", panel, 9, TextAnchor.MiddleRight, RoaUiPalette.InkLabel);
+            Place_(counter.rectTransform, 0.4f, 1f, 1f, 1f, new Vector2(0f, -26f), new Vector2(-10f, -4f));
+            return title;
+        }
+
+        // --- ЛЕВАЯ ПАНЕЛЬ: решётка надетого и колонка характеристик ----------
+
+        private void BuildEquipPanel(RectTransform panel)
+        {
+            PanelHeader(panel, "ЭКИПИРОВКА", out _itemsPanelSlots);
+
+            RectTransform lattice = Child("Lattice", panel);
+            Place_(lattice, 0f, 0f, 0f, 1f, new Vector2(6f, 32f), new Vector2(306f, -30f));
+
+            // Порядок и подписи неприкосновенны: их посимвольно требует
+            // tools/check-unity-kromka-artifacts.js:23-28.
             string[] leftSlots = { "weapon", "armor", "boots", "detector" };
             string[] rightSlots = { "offhand", "helmet", "backpack", "artifactBelt" };
             string[] leftTitles = { "Правая рука", "Корпус", "Ноги", "Детектор" };
             string[] rightTitles = { "Левая рука", "Голова", "Спина", "Арт-пояс" };
-            for (int i = 0; i < leftSlots.Length; i++)
-            {
-                BuildItemsSlot(stage, leftSlots[i], leftTitles[i], true, i);
-                BuildItemsSlot(stage, rightSlots[i], rightTitles[i], false, i);
-            }
 
-            // Справа — вес, список, действия.
-            _carryLine = Label("Carry", page, 14, TextAnchor.MiddleLeft, ScreenInk, FontStyle.Bold);
-            _carryLine.rectTransform.anchorMin = new Vector2(0.31f, 1f);
-            _carryLine.rectTransform.anchorMax = new Vector2(1f, 1f);
-            _carryLine.rectTransform.pivot = new Vector2(0.5f, 1f);
-            _carryLine.rectTransform.offsetMin = new Vector2(0f, -58f);
-            _carryLine.rectTransform.offsetMax = new Vector2(-4f, -34f);
+            // Геометрия решётки 3x5 в шаге 100: оружие и вторая рука во всю ширину,
+            // корпус крупным квадратом 2x2, остальное — обычные ячейки.
+            BuildEquipCell(lattice, leftSlots[0], leftTitles[0], 0, 0, 3, 1);
+            BuildEquipCell(lattice, rightSlots[0], rightTitles[0], 0, 1, 3, 1);
+            BuildEquipCell(lattice, leftSlots[1], leftTitles[1], 0, 2, 2, 2);
+            BuildEquipCell(lattice, rightSlots[1], rightTitles[1], 2, 2, 1, 1);
+            BuildEquipCell(lattice, leftSlots[2], leftTitles[2], 2, 3, 1, 1);
+            BuildEquipCell(lattice, rightSlots[2], rightTitles[2], 0, 4, 1, 1);
+            BuildEquipCell(lattice, leftSlots[3], leftTitles[3], 1, 4, 1, 1);
+            BuildEquipCell(lattice, rightSlots[3], rightTitles[3], 2, 4, 1, 1);
 
-            // Кнопка «Сортировать · по типу» справа от строки веса (inventory-sort-btn).
-            Button sort = TextButton("Sort", page, "Сортировать", 12, out _sortLabel);
-            var sortRect = (RectTransform)sort.transform;
-            sortRect.anchorMin = new Vector2(1f, 1f);
-            sortRect.anchorMax = new Vector2(1f, 1f);
-            sortRect.pivot = new Vector2(1f, 1f);
-            sortRect.anchoredPosition = new Vector2(-4f, -34f);
-            sortRect.sizeDelta = new Vector2(190f, 24f);
-            sort.GetComponent<Image>().color = new Color(0.13f, 0.22f, 0.11f, 0.95f);
-            sort.onClick.AddListener(() =>
-            {
-                _sortMode = _sortMode == "type" ? "weight" : "type";
-                _refreshAt = 0f;
-            });
-            _carryLine.rectTransform.offsetMax = new Vector2(-200f, -34f);
+            _gearPowerLine = Label("GearPower", panel, 10, TextAnchor.MiddleLeft, RoaUiPalette.InkLabel);
+            Place_(_gearPowerLine.rectTransform, 0f, 0f, 0f, 0f, new Vector2(6f, 6f), new Vector2(306f, 30f));
 
-            // Вкладки категорий (#inventory-category-tabs).
-            _categoryTabs = Child("CategoryTabs", page);
-            _categoryTabs.anchorMin = new Vector2(0.31f, 1f);
-            _categoryTabs.anchorMax = new Vector2(1f, 1f);
-            _categoryTabs.offsetMin = new Vector2(0f, -88f);
-            _categoryTabs.offsetMax = new Vector2(-4f, -62f);
+            RectTransform divider = Child("Divider", panel);
+            Place_(divider, 0f, 0f, 0f, 1f, new Vector2(310f, 32f), new Vector2(311f, -30f));
+            var dividerImage = divider.gameObject.AddComponent<Image>();
+            dividerImage.color = RoaUiPalette.Divider;
+            dividerImage.raycastTarget = false;
+
+            BuildStatsColumn(panel);
+        }
+
+        // --- ПРАВАЯ ПАНЕЛЬ: владелец, сумка, быстрый доступ, действия --------
+
+        private void BuildBagPanel(RectTransform panel)
+        {
+            // Шапка: кто это, из какого клана, сколько денег, сколько несёт.
+            RectTransform header = Child("Header", panel);
+            Place_(header, 0f, 1f, 1f, 1f, new Vector2(6f, -54f), new Vector2(-6f, 0f));
+
+            _itemsPanelName = Label("Owner", header, 14, TextAnchor.LowerLeft, RoaUiPalette.InkPrimary, FontStyle.Bold);
+            Place_(_itemsPanelName.rectTransform, 0f, 0.5f, 0.55f, 1f, new Vector2(4f, 0f), new Vector2(0f, -4f));
+            _invClanLine = Label("Clan", header, 10, TextAnchor.UpperLeft, RoaUiPalette.InkLabel);
+            Place_(_invClanLine.rectTransform, 0f, 0f, 0.55f, 0.5f, new Vector2(4f, 4f), new Vector2(0f, 0f));
+
+            _invFundsLine = Label("Funds", header, 12, TextAnchor.LowerRight, RoaUiPalette.Accent, FontStyle.Bold);
+            Place_(_invFundsLine.rectTransform, 0.55f, 0.5f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-4f, -4f));
+
+            _carryLine = Label("Carry", header, 10, TextAnchor.UpperRight, RoaUiPalette.InkLabel);
+            Place_(_carryLine.rectTransform, 0.55f, 0f, 0.82f, 0.5f, new Vector2(0f, 4f), new Vector2(0f, 0f));
+
+            RectTransform weightTrack = Child("WeightTrack", header);
+            Place_(weightTrack, 0.82f, 0f, 1f, 0.5f, new Vector2(6f, 9f), new Vector2(-4f, -3f));
+            var trackImage = weightTrack.gameObject.AddComponent<Image>();
+            trackImage.color = new Color(0f, 0f, 0f, 0.45f);
+            trackImage.raycastTarget = false;
+            _weightFill = Child("Fill", weightTrack);
+            _weightFill.anchorMin = new Vector2(0f, 0f);
+            _weightFill.anchorMax = new Vector2(1f, 1f);
+            _weightFill.offsetMin = Vector2.zero;
+            _weightFill.offsetMax = Vector2.zero;
+            _weightFillImage = _weightFill.gameObject.AddComponent<Image>();
+            _weightFillImage.color = RoaUiPalette.InkPrimary;
+            _weightFillImage.raycastTarget = false;
+
+            // Рейка категорий и сортировка.
+            _categoryTabs = Child("CategoryTabs", panel);
+            Place_(_categoryTabs, 0f, 1f, 1f, 1f, new Vector2(6f, -86f), new Vector2(-104f, -60f));
             var tabsLayout = _categoryTabs.gameObject.AddComponent<HorizontalLayoutGroup>();
             tabsLayout.spacing = 5f;
             tabsLayout.childForceExpandWidth = false;
@@ -714,8 +713,8 @@ namespace RealmOfAshes.Game
             tabsLayout.childControlHeight = true;
             foreach (RoaItemCategories.Tab tab in RoaItemCategories.Tabs)
             {
-                Button button = TextButton("Tab:" + tab.Id, _categoryTabs, tab.Label, 11, out Text label);
-                button.gameObject.AddComponent<LayoutElement>().preferredWidth = 12f + tab.Label.Length * 8f;
+                Button button = TextButton("Tab:" + tab.Id, _categoryTabs, tab.Label, 10, out Text label);
+                button.gameObject.AddComponent<LayoutElement>().preferredWidth = 10f + tab.Label.Length * 7f;
                 var outline = button.gameObject.AddComponent<Outline>();
                 outline.effectDistance = new Vector2(1f, -1f);
                 string id = tab.Id;
@@ -727,19 +726,62 @@ namespace RealmOfAshes.Game
                 _categoryButtons[id] = button;
             }
 
-            // Быстрый доступ 1–8 (mobile-inventory-quickbar в web): выбрать предмет → нажать слот.
-            _quickHint = Label("QuickHint", page, 9, TextAnchor.MiddleLeft, ScreenInkDim, FontStyle.Bold);
-            _quickHint.text = "БЫСТРЫЙ ДОСТУП: ВЫБЕРИТЕ ПРЕДМЕТ И НАЖМИТЕ СЛОТ 1–8";
-            Place_(_quickHint.rectTransform, 0.31f, 1f, 1f, 1f, new Vector2(2f, -104f), new Vector2(-4f, -92f));
+            Button sort = TextButton("Sort", panel, "Сортировать", 10, out _sortLabel);
+            var sortRect = (RectTransform)sort.transform;
+            Place_(sortRect, 1f, 1f, 1f, 1f, new Vector2(-100f, -84f), new Vector2(-6f, -62f));
+            sort.GetComponent<Image>().color = new Color(0.13f, 0.22f, 0.11f, 0.95f);
+            sort.onClick.AddListener(() =>
+            {
+                _sortMode = _sortMode == "type" ? "weight" : "type";
+                _refreshAt = 0f;
+            });
+
+            // Сетка предметов.
+            RectTransform scrollArea = Child("Scroll", panel);
+            Place_(scrollArea, 0f, 0f, 1f, 1f, new Vector2(6f, 98f), new Vector2(-6f, -92f));
+            var scrollImage = scrollArea.gameObject.AddComponent<Image>();
+            scrollImage.color = new Color(0f, 0f, 0f, 0.25f);
+            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
+            scrollArea.gameObject.AddComponent<RectMask2D>();
+
+            _categoryEmpty = Label("CategoryEmpty", scrollArea, 12, TextAnchor.MiddleCenter, RoaUiPalette.InkLabel);
+            Place_(_categoryEmpty.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -60f), new Vector2(-8f, -8f));
+            _categoryEmpty.gameObject.SetActive(false);
+
+            _itemsGrid = Child("Grid", scrollArea);
+            _itemsGrid.anchorMin = new Vector2(0f, 1f);
+            _itemsGrid.anchorMax = new Vector2(1f, 1f);
+            // Pivot строго в левый верх: с центральным pivot контент, чуть
+            // переросший viewport, съезжал влево и резал первую колонку.
+            _itemsGrid.pivot = new Vector2(0f, 1f);
+            _itemsGrid.sizeDelta = Vector2.zero; // иначе контейнер на 100 px шире области прокрутки
+            var grid = _itemsGrid.gameObject.AddComponent<GridLayoutGroup>();
+            // 5 колонок: 5*102 + 4*6 + 16 = 550 при ширине области 554.
+            // Высота 104, а не 96: 8 px уходят арту — рендер предмета в 34 px
+            // сливается в пятно, ради чего его тогда печь.
+            grid.cellSize = new Vector2(102f, 104f);
+            grid.childAlignment = TextAnchor.UpperLeft;
+            grid.spacing = new Vector2(6f, 6f);
+            grid.padding = new RectOffset(8, 8, 8, 8);
+            _itemsGridLayout = grid;
+            var fitter = _itemsGrid.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.content = _itemsGrid;
+
+            // Быстрый доступ 1-8: без этого ряда слоты 5-8 недостижимы вовсе —
+            // контекстное меню предлагает только первые четыре.
+            _quickRow = Child("QuickRow", panel);
+            Place_(_quickRow, 0f, 0f, 1f, 0f, new Vector2(6f, 56f), new Vector2(-6f, 92f));
             for (int i = 0; i < RoaQuickbar.SlotCount; i++)
             {
-                Button slot = TextButton("Quick" + (i + 1), page, (i + 1) + "\n—", 9, out Text label);
+                Button slot = TextButton("Quick" + (i + 1), _quickRow, (i + 1) + "\n—", 9, out Text label);
                 var srect = (RectTransform)slot.transform;
-                srect.anchorMin = new Vector2(0.31f, 1f);
-                srect.anchorMax = new Vector2(0.31f, 1f);
-                srect.pivot = new Vector2(0f, 1f);
-                srect.anchoredPosition = new Vector2(i * 52f, -106f);
-                srect.sizeDelta = new Vector2(48f, 40f);
+                srect.anchorMin = srect.anchorMax = new Vector2(0f, 0f);
+                srect.pivot = new Vector2(0f, 0f);
+                srect.anchoredPosition = new Vector2(i * 69f, 0f);
+                srect.sizeDelta = new Vector2(64f, 36f);
                 slot.GetComponent<Image>().color = new Color(0.016f, 0.055f, 0.031f, 0.58f);
                 var outline = slot.gameObject.AddComponent<Outline>();
                 outline.effectColor = SlotBorder;
@@ -750,74 +792,27 @@ namespace RealmOfAshes.Game
                 _quickSlots.Add((slot, label));
             }
 
-            RectTransform scrollArea = Child("Scroll", page);
-            scrollArea.anchorMin = new Vector2(0.31f, 0f);
-            scrollArea.anchorMax = new Vector2(1f, 1f);
-            scrollArea.offsetMin = new Vector2(0f, 64f);
-            scrollArea.offsetMax = new Vector2(-4f, -150f);
+            // Действия по выбранному предмету.
+            RectTransform actions = Child("Actions", panel);
+            Place_(actions, 0f, 0f, 1f, 0f, new Vector2(6f, 0f), new Vector2(-6f, 52f));
 
-            _categoryEmpty = Label("CategoryEmpty", scrollArea, 13, TextAnchor.MiddleCenter, ScreenInkDim);
-            _categoryEmpty.rectTransform.anchorMin = new Vector2(0f, 1f);
-            _categoryEmpty.rectTransform.anchorMax = new Vector2(1f, 1f);
-            _categoryEmpty.rectTransform.offsetMin = new Vector2(8f, -60f);
-            _categoryEmpty.rectTransform.offsetMax = new Vector2(-8f, -8f);
-            _categoryEmpty.gameObject.SetActive(false);
-            var scrollImage = scrollArea.gameObject.AddComponent<Image>();
-            scrollImage.color = new Color(0f, 0f, 0f, 0.25f);
-            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
-            scroll.horizontal = false;
-            RoaUiScroll.Configure(scroll);
-            var mask = scrollArea.gameObject.AddComponent<RectMask2D>();
-
-            _itemsGrid = Child("Grid", scrollArea);
-            _itemsGrid.anchorMin = new Vector2(0f, 1f);
-            _itemsGrid.anchorMax = new Vector2(1f, 1f);
-            // Pivot строго в левый верх: с центральным pivot контент, чуть
-            // переросший viewport, съезжал влево и резал первую колонку.
-            _itemsGrid.pivot = new Vector2(0f, 1f);
-            _itemsGrid.sizeDelta = Vector2.zero; // иначе контейнер на 100 px шире области прокрутки
-            var grid = _itemsGrid.gameObject.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(112f, 96f); // .inv-card: арт 42px, имя по центру, вес/кол-во по углам
-            grid.childAlignment = TextAnchor.UpperLeft;
-            grid.spacing = new Vector2(8f, 8f);
-            grid.padding = new RectOffset(8, 8, 8, 8);
-            var fitter = _itemsGrid.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            scroll.content = _itemsGrid;
-
-            // Панель действий под списком.
-            RectTransform actions = Child("Actions", page);
-            actions.anchorMin = new Vector2(0.31f, 0f);
-            actions.anchorMax = new Vector2(1f, 0f);
-            actions.pivot = new Vector2(0.5f, 0f);
-            actions.offsetMin = new Vector2(0f, 0f);
-            actions.offsetMax = new Vector2(-4f, 58f);
-
-            _selectedTitle = Label("Selected", actions, 13, TextAnchor.UpperLeft, ScreenInkDim);
-            _selectedTitle.rectTransform.anchorMin = new Vector2(0f, 0.55f);
-            _selectedTitle.rectTransform.anchorMax = new Vector2(1f, 1f);
-            _selectedTitle.rectTransform.offsetMin = new Vector2(2f, 0f);
-            _selectedTitle.rectTransform.offsetMax = Vector2.zero;
+            _selectedTitle = Label("Selected", actions, 11, TextAnchor.UpperLeft, RoaUiPalette.InkLabel);
+            Place_(_selectedTitle.rectTransform, 0f, 0.56f, 0.62f, 1f, new Vector2(2f, 0f), new Vector2(0f, 0f));
+            _itemsStatus = Label("Status", actions, 10, TextAnchor.UpperRight, RoaUiPalette.InkLabel);
+            Place_(_itemsStatus.rectTransform, 0.62f, 0.56f, 1f, 1f, new Vector2(0f, 0f), new Vector2(-2f, 0f));
 
             _equipButton = ActionButton(actions, 0f, "Экипировать", out _equipLabel, OnEquipClicked);
-            _useButton = ActionButton(actions, 0.26f, "Использовать", out _, OnUseClicked);
-            _dropButton = ActionButton(actions, 0.52f, "Выбросить", out _, OnDropClicked);
-            _modifyButton = ActionButton(actions, 0.78f, "Модификация", out _, OnModifyClicked);
-
-            _itemsStatus = Label("Status", actions, 12, TextAnchor.LowerRight, ScreenInkDim);
-            _itemsStatus.rectTransform.anchorMin = new Vector2(0.55f, 0f);
-            _itemsStatus.rectTransform.anchorMax = new Vector2(1f, 0.5f);
-            _itemsStatus.rectTransform.offsetMin = Vector2.zero;
-            _itemsStatus.rectTransform.offsetMax = Vector2.zero;
+            _useButton = ActionButton(actions, 0.255f, "Использовать", out _, OnUseClicked);
+            _dropButton = ActionButton(actions, 0.51f, "Выбросить", out _, OnDropClicked);
+            _modifyButton = ActionButton(actions, 0.765f, "Модификация", out _, OnModifyClicked);
         }
-
         private Button ActionButton(RectTransform parent, float left, string caption,
                                     out Text label, UnityEngine.Events.UnityAction onClick)
         {
             Button button = TextButton("Action:" + caption, parent, caption, 13, out label);
             var rect = (RectTransform)button.transform;
             rect.anchorMin = new Vector2(left, 0f);
-            rect.anchorMax = new Vector2(left + 0.24f, 0.5f);
+            rect.anchorMax = new Vector2(left + 0.235f, 0.5f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             button.GetComponent<Image>().color = new Color(0.13f, 0.22f, 0.11f, 0.95f);
@@ -881,7 +876,6 @@ namespace RealmOfAshes.Game
 
             switch (_page)
             {
-                case Page.Status: RefreshStatus(self); break;
                 case Page.Items: RefreshItems(); break;
                 case Page.Skills: RefreshSkills(self); break;
                 case Page.Perks: RefreshPerks(self); break;
@@ -939,9 +933,8 @@ namespace RealmOfAshes.Game
         private void RefreshItems()
         {
             if (Inventory == null) return;
-            if (_itemsPreview != null) _itemsPreview.SetVisible(true);
 
-            _carryLine.text = "Вес: " + Inventory.CarryWeight.ToString("0.0")
+            _carryLine.text = Inventory.CarryWeight.ToString("0.0")
                 + " / " + Inventory.CarryCapacity.ToString("0") + " кг";
 
             RefreshItemsPanel();
@@ -952,39 +945,10 @@ namespace RealmOfAshes.Game
             _sortLabel.text = "Сортировать · " + (_sortMode == "weight" ? "по весу" : "по типу");
 
             // Полный список (надетое первым, как в web), затем доступность категорий.
-            var all = new List<RoaInventory.Row>();
-            var shown = new HashSet<string>();
-            foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
-            {
-                string baseId = RoaArmorData.BaseId(slot.Value);
-                if (string.IsNullOrEmpty(baseId) || baseId == "fists" || !shown.Add(baseId)) continue;
-                all.Add(new RoaInventory.Row { Id = baseId, Qty = 1 });
-            }
-            int equippedCount = all.Count;
-            var rest = new List<RoaInventory.Row>();
-            foreach (RoaInventory.Row row in Inventory.Items)
-            {
-                if (row.Qty <= 0 || !shown.Add(row.Id)) continue;
-                rest.Add(row);
-            }
-            if (_sortMode == "weight")
-                rest.Sort((a, b) =>
-                {
-                    float aw = RoaItemData.Weight(a.Id) * a.Qty, bw = RoaItemData.Weight(b.Id) * b.Qty;
-                    if (!Mathf.Approximately(aw, bw)) return bw.CompareTo(aw);
-                    return string.Compare(ItemName(a.Id), ItemName(b.Id), System.StringComparison.CurrentCulture);
-                });
-            else
-                rest.Sort((a, b) =>
-                {
-                    int cmp = CategoryOrder(a.Id).CompareTo(CategoryOrder(b.Id));
-                    if (cmp != 0) return cmp;
-                    return string.Compare(ItemName(a.Id), ItemName(b.Id), System.StringComparison.CurrentCulture);
-                });
-            all.AddRange(rest);
+            List<ItemTile> all = BuildItemTiles();
 
             var available = new HashSet<string>();
-            foreach (RoaInventory.Row row in all) available.Add(RoaItemCategories.Category(row.Id));
+            foreach (ItemTile tile in all) available.Add(RoaItemCategories.Category(tile.BaseId));
             foreach (KeyValuePair<string, Button> entry in _categoryButtons)
             {
                 bool active = entry.Key == _activeCategory;
@@ -999,37 +963,338 @@ namespace RealmOfAshes.Game
                 label.color = active ? AccentWarm : new Color(0.663f, 0.788f, 0.561f, enabled ? 1f : 0.4f);
             }
 
-            bool selectedStillOwned = false;
+            ResolveSelectedTile(all);
+
+            // Бейдж быстрого слота — один на вид предмета: три запасных пистолета
+            // с одной и той же цифрой читались бы как три разные привязки.
+            var badged = new HashSet<string>();
             int visible = 0;
-            foreach (RoaInventory.Row row in all)
+            foreach (ItemTile tile in all)
             {
-                if (!RoaItemCategories.Matches(row.Id, _activeCategory)) continue;
-                if (row.Id == _selectedItemId) selectedStillOwned = true;
-                _itemCards.Add(BuildItemCard(row));
+                if (!RoaItemCategories.Matches(tile.BaseId, _activeCategory)) continue;
+                _itemCards.Add(BuildItemCard(tile, badged.Add(tile.BaseId)));
                 visible++;
             }
             _categoryEmpty.gameObject.SetActive(visible == 0 && _activeCategory != "all");
             _categoryEmpty.text = "В разделе «" + RoaItemCategories.Label(_activeCategory) + "» пока пусто.";
 
-            if (!selectedStillOwned) _selectedItemId = string.Empty;
             RefreshSelection();
         }
 
-        private void BuildItemsSlot(RectTransform stage, string slot, string title, bool left, int index)
+        /// <summary>
+        /// Надетое идёт первым и никогда не сливается с сумкой: строка сумки сервера —
+        /// это запасные вещи, даже если такая же сейчас на персонаже. Экипировка из
+        /// сумки раскладывается по одной плитке на экземпляр.
+        /// </summary>
+        private List<ItemTile> BuildItemTiles()
         {
-            Button button = TextButton("Slot:" + slot, stage, string.Empty, 9, out Text _);
+            var tiles = new List<ItemTile>();
+            foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
+            {
+                string baseId = RoaArmorData.BaseId(slot.Value);
+                if (string.IsNullOrEmpty(baseId) || baseId == "fists") continue;
+                tiles.Add(new ItemTile { Key = "eq:" + slot.Key, BaseId = baseId, RuntimeId = slot.Value, Slot = slot.Key, Qty = 1 });
+            }
+
+            var rest = new List<RoaInventory.Row>();
+            var seen = new HashSet<string>();
+            foreach (RoaInventory.Row row in Inventory.Items)
+            {
+                if (row.Qty <= 0 || !seen.Add(row.Id)) continue;
+                rest.Add(row);
+            }
+            if (_sortMode == "weight")
+                rest.Sort((a, b) =>
+                {
+                    float aw = TileWeight(a), bw = TileWeight(b);
+                    if (!Mathf.Approximately(aw, bw)) return bw.CompareTo(aw);
+                    return string.Compare(ItemName(a.Id), ItemName(b.Id), System.StringComparison.CurrentCulture);
+                });
+            else
+                rest.Sort((a, b) =>
+                {
+                    int cmp = CategoryOrder(a.Id).CompareTo(CategoryOrder(b.Id));
+                    if (cmp != 0) return cmp;
+                    return string.Compare(ItemName(a.Id), ItemName(b.Id), System.StringComparison.CurrentCulture);
+                });
+
+            foreach (RoaInventory.Row row in rest)
+            {
+                string baseId = RoaArmorData.BaseId(row.Id);
+                if (!RoaInventory.IsGear(baseId))
+                {
+                    tiles.Add(new ItemTile { Key = "bag:" + baseId + ":0", BaseId = baseId, RuntimeId = row.Id, Slot = string.Empty, Qty = row.Qty });
+                    continue;
+                }
+                List<string> instances = Inventory.BagInstanceIds(baseId, row.Qty);
+                for (int i = 0; i < instances.Count; i++)
+                    tiles.Add(new ItemTile { Key = "bag:" + baseId + ":" + i, BaseId = baseId, RuntimeId = instances[i], Slot = string.Empty, Qty = 1 });
+            }
+            return tiles;
+        }
+
+        /// <summary>Вес одной плитки: экипировка лежит поштучно, стопка весит целиком.</summary>
+        private static float TileWeight(RoaInventory.Row row)
+        {
+            return RoaItemData.Weight(row.Id) * (RoaInventory.IsGear(row.Id) ? 1 : Mathf.Max(1, row.Qty));
+        }
+
+        /// <summary>
+        /// Привязать выбор к плитке свежего списка. Если именно эта плитка исчезла
+        /// (последний экземпляр надели, сняли или выбросили), выбор переходит на
+        /// соседнюю того же вида — иначе серия «выбросить» обрывалась бы на каждом шаге.
+        /// </summary>
+        private void ResolveSelectedTile(List<ItemTile> tiles)
+        {
+            if (string.IsNullOrEmpty(_selectedItemId)) { ClearSelection(); return; }
+            int found = -1, sameKind = -1;
+            bool wantEquipped = _selectedTileKey.StartsWith("eq:", StringComparison.Ordinal);
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                if (tiles[i].Key == _selectedTileKey) { found = i; break; }
+                if (tiles[i].BaseId != _selectedItemId) continue;
+                if (sameKind < 0 || tiles[i].Equipped == wantEquipped) sameKind = i;
+            }
+            if (found < 0) found = sameKind;
+            if (found < 0) { ClearSelection(); return; }
+            SelectTile(tiles[found]);
+        }
+
+        private void SelectTile(ItemTile tile)
+        {
+            _selectedItemId = tile.BaseId;
+            _selectedTileKey = tile.Key;
+            _selectedRuntimeId = tile.RuntimeId;
+            _selectedSlot = tile.Slot;
+        }
+
+        private void ClearSelection()
+        {
+            _selectedItemId = string.Empty;
+            _selectedTileKey = string.Empty;
+            _selectedRuntimeId = string.Empty;
+            _selectedSlot = string.Empty;
+        }
+
+        // --- КОЛОНКА ХАРАКТЕРИСТИК ------------------------------------------
+        //
+        // Строки создаются ОДИН раз и потом только меняют текст. Прежний экран
+        // пересобирал списки через Destroy четыре раза в секунду; для колонки из
+        // трёх десятков строк это мусор на каждом такте.
+
+        private RectTransform _statsSelfContent;
+        private RectTransform _statsEffectsContent;
+        private Button _statsTabSelf;
+        private Button _statsTabEffects;
+        private Text _statsTabSelfLabel;
+        private Text _statsTabEffectsLabel;
+        private bool _statsShowEffects;
+        private readonly Dictionary<string, Text> _statCells = new Dictionary<string, Text>();
+        private readonly Dictionary<string, Text> _specialCells = new Dictionary<string, Text>();
+        private readonly Dictionary<string, GameObject> _statRows = new Dictionary<string, GameObject>();
+
+        private void BuildStatsColumn(RectTransform panel)
+        {
+            _statsTabSelf = TextButton("StatsTabSelf", panel, "Персонаж", 10, out _statsTabSelfLabel);
+            Place_((RectTransform)_statsTabSelf.transform, 0f, 1f, 0f, 1f, new Vector2(316f, -54f), new Vector2(420f, -30f));
+            _statsTabSelf.onClick.AddListener(() => SetStatsTab(false));
+
+            _statsTabEffects = TextButton("StatsTabEffects", panel, "Эффекты", 10, out _statsTabEffectsLabel);
+            Place_((RectTransform)_statsTabEffects.transform, 0f, 1f, 0f, 1f, new Vector2(426f, -54f), new Vector2(530f, -30f));
+            _statsTabEffects.onClick.AddListener(() => SetStatsTab(true));
+
+            RectTransform scrollArea = Child("StatsScroll", panel);
+            Place_(scrollArea, 0f, 0f, 0f, 1f, new Vector2(316f, 6f), new Vector2(530f, -58f));
+            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
+            scrollArea.gameObject.AddComponent<RectMask2D>();
+
+            _statsSelfContent = StatsContent("StatsSelf", scrollArea);
+            _statsEffectsContent = StatsContent("StatsEffects", scrollArea);
+            scroll.content = _statsSelfContent;
+
+            // SPECIAL переехал сюда вместе с закрытием отдельной страницы «Статус»:
+            // это единственное место в клиенте, где игрок видит семь характеристик.
+            AddStatGroup(_statsSelfContent, "ОСОБЫЕ");
+            AddSpecialRow(_statsSelfContent);
+
+            AddStatGroup(_statsSelfContent, "ОСНОВНОЕ");
+            AddStatRow(_statsSelfContent, "hp", "Живучесть");
+            AddStatRow(_statsSelfContent, "ap", "Очки действий");
+            AddStatRow(_statsSelfContent, "speed", "Скорость");
+            AddStatRow(_statsSelfContent, "carry", "Переносимый вес");
+            AddStatRow(_statsSelfContent, "vision", "Обзор");
+            AddStatRow(_statsSelfContent, "power", "Сила снаряжения");
+            AddStatRow(_statsSelfContent, "heal", "Эффективность лечения");
+            AddStatRow(_statsSelfContent, "regen", "Регенерация");
+
+            AddStatGroup(_statsSelfContent, "ЗАЩИТА");
+            foreach ((string id, string label) in ProtectionOrder)
+                AddStatRow(_statsSelfContent, "prot:" + id, label);
+
+            AddStatGroup(_statsSelfContent, "БОЙ");
+            AddStatRow(_statsSelfContent, "hand", "Правая рука");
+            AddStatRow(_statsSelfContent, "offhand", "Левая рука");
+            AddStatRow(_statsSelfContent, "damage", "Урон");
+            AddStatRow(_statsSelfContent, "range", "Дальность");
+            AddStatRow(_statsSelfContent, "ammo", "Патроны");
+            AddStatRow(_statsSelfContent, "weaponSkill", "Навык оружия");
+
+            AddStatGroup(_statsSelfContent, "РАЗВИТИЕ");
+            AddStatRow(_statsSelfContent, "level", "Уровень");
+            AddStatRow(_statsSelfContent, "faction", "Фракция");
+            AddStatRow(_statsSelfContent, "skillPoints", "Свободные очки навыков");
+            AddStatRow(_statsSelfContent, "perkPoints", "Свободные перки");
+            AddStatRow(_statsSelfContent, "focus", "Фокус");
+
+            AddStatGroup(_statsEffectsContent, "СОСТОЯНИЕ");
+            AddStatRow(_statsEffectsContent, "injuries", "Травмы");
+            AddStatRow(_statsEffectsContent, "hydration", "Гидратация");
+
+            AddStatGroup(_statsEffectsContent, "АРТЕФАКТЫ");
+            AddStatRow(_statsEffectsContent, "belt", "Пояс");
+            AddStatRow(_statsEffectsContent, "beltTotals", "Итог пояса");
+            AddStatRow(_statsEffectsContent, "artifactStatus", "Состояние");
+
+            SetStatsTab(false);
+        }
+
+        /// <summary>Порядок типов защиты фиксирован: игрок читает колонку глазами, а не поиском.</summary>
+        private static readonly (string id, string label)[] ProtectionOrder =
+        {
+            ("bullet", "Пуля"), ("explosion", "Взрыв"), ("energy", "Энергия"), ("fire", "Огонь"),
+            ("electric", "Электр."), ("toxin", "Токсины"), ("radiation", "Радиация"), ("anomaly", "Аномалия")
+        };
+
+        private static RectTransform StatsContent(string name, RectTransform scrollArea)
+        {
+            RectTransform content = Child(name, scrollArea);
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.sizeDelta = Vector2.zero; // иначе Child оставляет 100x100
+            var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 2f;
+            layout.padding = new RectOffset(6, 6, 6, 6);
+            layout.childForceExpandHeight = false;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlWidth = true;
+            var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            return content;
+        }
+
+        private void SetStatsTab(bool effects)
+        {
+            _statsShowEffects = effects;
+            if (_statsSelfContent != null) _statsSelfContent.gameObject.SetActive(!effects);
+            if (_statsEffectsContent != null) _statsEffectsContent.gameObject.SetActive(effects);
+            if (_statsTabSelfLabel != null)
+            {
+                _statsTabSelfLabel.color = effects ? RoaUiPalette.InkLabel : RoaUiPalette.Accent;
+                _statsTabSelfLabel.fontStyle = effects ? FontStyle.Normal : FontStyle.Bold;
+            }
+            if (_statsTabEffectsLabel != null)
+            {
+                _statsTabEffectsLabel.color = effects ? RoaUiPalette.Accent : RoaUiPalette.InkLabel;
+                _statsTabEffectsLabel.fontStyle = effects ? FontStyle.Bold : FontStyle.Normal;
+            }
+            _refreshAt = 0f;
+        }
+
+        private void AddStatGroup(RectTransform content, string caption)
+        {
+            RectTransform row = Child("Group:" + caption, content);
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 22f;
+            Text title = Label("Title", row, 10, TextAnchor.LowerLeft, RoaUiPalette.Accent, FontStyle.Bold);
+            title.text = caption;
+            Place_(title.rectTransform, 0f, 0f, 1f, 1f, new Vector2(0f, 3f), new Vector2(0f, 0f));
+            RectTransform line = Child("Rule", row);
+            Place_(line, 0f, 0f, 1f, 0f, new Vector2(0f, 1f), new Vector2(0f, 2f));
+            var image = line.gameObject.AddComponent<Image>();
+            image.color = RoaUiPalette.Divider;
+            image.raycastTarget = false;
+        }
+
+        /// <summary>Семь ячеек SPECIAL одной строкой: код сверху, число снизу.</summary>
+        private void AddSpecialRow(RectTransform content)
+        {
+            string[] keys = { "str", "per", "end", "cha", "int", "agi", "luck" };
+            string[] codes = { "МЩ", "НБ", "СТ", "ВЛ", "ИН", "РЕ", "ЧУ" };
+
+            RectTransform row = Child("Special", content);
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                RectTransform cell = Panel_(row, CellBg, CellBorder);
+                Place_(cell, i / 7f, 0f, (i + 1) / 7f, 1f, new Vector2(1f, 0f), new Vector2(-1f, 0f));
+                Text code = Label("Code", cell, 8, TextAnchor.UpperCenter, RoaUiPalette.InkLabel);
+                code.horizontalOverflow = HorizontalWrapMode.Overflow;
+                code.text = codes[i];
+                Place_(code.rectTransform, 0f, 1f, 1f, 1f, new Vector2(0f, -13f), new Vector2(0f, -2f));
+                Text value = Label("Value", cell, 14, TextAnchor.LowerCenter, SpecialValue, FontStyle.Bold);
+                value.horizontalOverflow = HorizontalWrapMode.Overflow;
+                Place_(value.rectTransform, 0f, 0f, 1f, 0f, new Vector2(0f, 1f), new Vector2(0f, 19f));
+                _specialCells[keys[i]] = value;
+            }
+        }
+
+        private void AddStatRow(RectTransform content, string id, string label)
+        {
+            RectTransform row = Child("Stat:" + id, content);
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 16f;
+            Text caption = Label("Label", row, 10, TextAnchor.MiddleLeft, RoaUiPalette.InkLabel);
+            caption.text = label;
+            caption.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Place_(caption.rectTransform, 0f, 0f, 0.55f, 1f, Vector2.zero, Vector2.zero);
+            Text value = Label("Value", row, 10, TextAnchor.MiddleRight, RoaUiPalette.InkPrimary);
+            value.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Place_(value.rectTransform, 0.55f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
+            _statCells[id] = value;
+            _statRows[id] = row.gameObject;
+        }
+
+        /// <summary>Строка есть — значит, за ней стоит число. Пустую прячем, а не рисуем прочерк.</summary>
+        private void SetStat(string id, string value, Color? color = null)
+        {
+            if (!_statCells.TryGetValue(id, out Text cell)) return;
+            bool has = !string.IsNullOrEmpty(value);
+            if (_statRows.TryGetValue(id, out GameObject row) && row.activeSelf != has) row.SetActive(has);
+            if (!has) return;
+            cell.text = value;
+            cell.color = color ?? RoaUiPalette.InkPrimary;
+        }
+
+        // --- ЯЧЕЙКА НАДЕТОГО ПРЕДМЕТА ---------------------------------------
+
+        /// <summary>
+        /// Ячейка решётки: адрес задаётся клеткой (col,row) и охватом (wSpan,hSpan)
+        /// при шаге 100 и зазоре 6. Крупные ячейки показывают больше — вес, тир и
+        /// состояние; мелкие ограничиваются артом и именем.
+        /// </summary>
+        private void BuildEquipCell(RectTransform lattice, string slot, string title,
+                                    int col, int row, int wSpan, int hSpan)
+        {
+            Button button = TextButton("Slot:" + slot, lattice, string.Empty, 9, out Text _);
             var rect = (RectTransform)button.transform;
-            rect.anchorMin = new Vector2(left ? 0f : 1f, 1f);
-            rect.anchorMax = new Vector2(left ? 0f : 1f, 1f);
-            rect.pivot = new Vector2(left ? 0f : 1f, 1f);
-            rect.anchoredPosition = new Vector2(left ? 2f : -2f, -8f - index * 74f);
-            rect.sizeDelta = new Vector2(92f, 64f);
-            button.GetComponent<Image>().color = SlotBg;
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(col * 100f, -row * 100f);
+            rect.sizeDelta = new Vector2(wSpan * 100f - 6f, hSpan * 100f - 6f);
+            var image = button.GetComponent<Image>();
+            image.sprite = RoaUiPalette.Plate();
+            image.type = Image.Type.Sliced;
+            image.color = SlotBg;
             var outline = button.gameObject.AddComponent<Outline>();
             outline.effectColor = SlotBorder;
             outline.effectDistance = new Vector2(1f, -1f);
-            // Правый клик по слоту — showEquippedItemContextMenu web (03d:265); подсказка — по надетому предмету.
+
+            bool big = wSpan > 1 || hSpan > 1;
             string slotId = slot;
+
+            // Правый клик по слоту — то же меню, что и в списке; подсказка по надетому.
             RoaItemPopups.BindMenu(button.gameObject, () => BuildSlotContextOptions(slotId));
             var hover = button.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
             var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
@@ -1042,40 +1307,66 @@ namespace RealmOfAshes.Game
             exit.callback.AddListener(_ => { if (RoaItemPopups.Instance != null) RoaItemPopups.Instance.Hide(); });
             hover.triggers.Add(enter); hover.triggers.Add(exit);
 
+            var cell = new EquipCell { Button = button };
+
+            cell.Type = Label("Type", rect, 8, TextAnchor.UpperLeft, RoaUiPalette.InkLabel);
+            cell.Type.text = title.ToUpperInvariant();
+            Place_(cell.Type.rectTransform, 0f, 1f, 1f, 1f, new Vector2(6f, -16f), new Vector2(-6f, -4f));
+
+            cell.Name = Label("Name", rect, big ? 11 : 9, TextAnchor.UpperLeft, RoaUiPalette.InkPrimary);
+            cell.Name.verticalOverflow = VerticalWrapMode.Truncate;
+            Place_(cell.Name.rectTransform, 0f, 1f, 1f, 1f, new Vector2(6f, -34f), new Vector2(-6f, -16f));
+
             RectTransform artRect = Child("Art", rect);
-            artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 1f);
-            artRect.pivot = new Vector2(0.5f, 1f);
-            artRect.anchoredPosition = new Vector2(0f, -4f);
-            artRect.sizeDelta = new Vector2(26f, 26f);
-            var art = artRect.gameObject.AddComponent<RawImage>();
-            art.raycastTarget = false;
-            Text empty = Label("Empty", rect, 14, TextAnchor.UpperCenter, ScreenInkDim);
-            empty.text = "—";
-            Place_(empty.rectTransform, 0f, 1f, 1f, 1f, new Vector2(0f, -30f), new Vector2(0f, -6f));
-            Text name = Label("Name", rect, 9, TextAnchor.UpperCenter, SlotName);
-            name.verticalOverflow = VerticalWrapMode.Truncate;
-            Place_(name.rectTransform, 0f, 0f, 1f, 1f, new Vector2(3f, 12f), new Vector2(-3f, -32f));
-            Text type = Label("Type", rect, 8, TextAnchor.LowerCenter, ScreenInkDim);
-            type.text = title.ToUpperInvariant();
-            Place_(type.rectTransform, 0f, 0f, 1f, 0f, new Vector2(2f, 2f), new Vector2(-2f, 13f));
+            float art = big ? (hSpan > 1 ? 104f : 60f) : 46f;
+            if (big && hSpan == 1)
+            {
+                artRect.anchorMin = artRect.anchorMax = new Vector2(0f, 0.5f);
+                artRect.pivot = new Vector2(0f, 0.5f);
+                artRect.anchoredPosition = new Vector2(10f, -4f);
+            }
+            else
+            {
+                artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 0.5f);
+                artRect.pivot = new Vector2(0.5f, 0.5f);
+                artRect.anchoredPosition = new Vector2(0f, big ? -4f : -2f);
+            }
+            artRect.sizeDelta = new Vector2(art, art);
+            cell.Art = artRect.gameObject.AddComponent<RawImage>();
+            cell.Art.raycastTarget = false;
+
+            cell.Empty = Label("Empty", rect, 12, TextAnchor.MiddleCenter, RoaUiPalette.InkMuted);
+            cell.Empty.text = "—";
+            Place_(cell.Empty.rectTransform, 0f, 0f, 1f, 1f, new Vector2(0f, 6f), new Vector2(0f, -30f));
+
+            cell.Weight = Label("Weight", rect, 9, TextAnchor.LowerLeft, RoaUiPalette.InkLabel);
+            Place_(cell.Weight.rectTransform, 0f, 0f, 0.5f, 0f, new Vector2(6f, 4f), new Vector2(0f, 16f));
+            cell.Meta = Label("Meta", rect, 9, TextAnchor.LowerRight, RoaUiPalette.Accent);
+            Place_(cell.Meta.rectTransform, 0.5f, 0f, 1f, 0f, new Vector2(0f, 4f), new Vector2(-6f, 16f));
+
+            RectTransform bar = Child("Condition", rect);
+            Place_(bar, 0f, 0f, 1f, 0f, new Vector2(1f, 1f), new Vector2(-1f, 3f));
+            cell.Condition = bar.gameObject.AddComponent<Image>();
+            cell.Condition.raycastTarget = false;
+            cell.Condition.color = RoaUiPalette.InkPrimary;
 
             button.onClick.AddListener(() => OnItemsSlotClicked(slotId));
-            _itemsSlots[slot] = (button, art, name, type, empty);
+            _equipCells[slot] = cell;
         }
-
         private void OnItemsSlotClicked(string slot)
         {
             if (Inventory == null) return;
             Inventory.EquipmentSlots.TryGetValue(slot, out string current);
             string currentBase = RoaArmorData.BaseId(current ?? string.Empty);
-            // Выбран подходящий предмет — надеть; иначе клик по занятому слоту снимает (equip-clear ×).
-            if (!string.IsNullOrEmpty(_selectedItemId) && RoaInventory.SlotFor(_selectedItemId) == slot && _selectedItemId != currentBase)
+            // Выбрана подходящая вещь из сумки — надеть (в том числе такую же на замену
+            // надетой); иначе клик по занятому слоту снимает (equip-clear ×).
+            bool bagTileSelected = !string.IsNullOrEmpty(_selectedItemId) && string.IsNullOrEmpty(_selectedSlot);
+            if (bagTileSelected && RoaInventory.SlotFor(_selectedItemId) == slot)
             {
-                Submit(Inventory.SubmitEquipmentAction(slot, _selectedItemId, OnActionAck), "Экипирую…");
+                SubmitEquip(slot, _selectedRuntimeId);
                 return;
             }
-            if (!string.IsNullOrEmpty(currentBase) && currentBase != "fists")
-                Submit(Inventory.SubmitEquipmentAction(slot, string.Empty, OnActionAck), "Снимаю…");
+            if (!string.IsNullOrEmpty(currentBase) && currentBase != "fists") SubmitUnequip(slot);
         }
 
         private void OnQuickSlotClicked(int index)
@@ -1099,42 +1390,66 @@ namespace RealmOfAshes.Game
         {
             JObject self = Socket != null && Socket.Session != null ? Socket.Session.Self : null;
             _itemsPanelName.text = (self?["name"]?.ToString() ?? "Странник").ToUpperInvariant();
+
+            string clan = self?["socialState"]?["clan"]?["name"]?.ToString();
+            string faction = RoaPipboy.FactionLabel(self?["worldFactionId"]?.ToString() ?? self?["factionId"]?.ToString());
+            _invClanLine.text = string.IsNullOrEmpty(clan) ? faction : clan + " · " + faction;
+            _invFundsLine.text = "Марки · " + CapsCount().ToString("N0", System.Globalization.CultureInfo.CurrentCulture);
+
+            float capacity = Mathf.Max(0.01f, Inventory.CarryCapacity);
+            float share = Inventory.CarryWeight / capacity;
+            _weightFill.anchorMax = new Vector2(Mathf.Clamp01(share), 1f);
+            _weightFillImage.color = share > 1f ? RoaUiPalette.Negative
+                : share > 0.85f ? RoaUiPalette.Accent : RoaUiPalette.InkPrimary;
+
             int filled = 0;
-            foreach (KeyValuePair<string, (Button button, RawImage art, Text name, Text type, Text empty)> entry in _itemsSlots)
+            foreach (KeyValuePair<string, EquipCell> entry in _equipCells)
             {
-                Inventory.EquipmentSlots.TryGetValue(entry.Key, out string runtimeId);
+                EquipCell cell = entry.Value;
+                string runtimeId = Inventory.EquipmentSlots.TryGetValue(entry.Key, out string id) ? id : string.Empty;
                 string baseId = RoaArmorData.BaseId(runtimeId ?? string.Empty);
                 bool has = !string.IsNullOrEmpty(baseId) && baseId != "fists";
                 if (has) filled++;
-                entry.Value.art.texture = has ? RoaItemCategories.Art(baseId) : null;
-                entry.Value.art.enabled = has && entry.Value.art.texture != null;
-                entry.Value.empty.gameObject.SetActive(!has);
-                entry.Value.name.text = has ? ItemName(baseId) : "Пусто";
-                bool highlight = !string.IsNullOrEmpty(_selectedItemId) && RoaInventory.SlotFor(_selectedItemId) == entry.Key;
-                entry.Value.button.gameObject.GetComponent<Outline>().effectColor = highlight ? AccentWarm : SlotBorder;
-            }
-            _itemsPanelSlots.text = filled + "/6 СЛОТОВ";
 
-            // Модель персонажа с экипировкой — как pipboy-character-model в web.
-            if (_itemsPreview == null)
-            {
-                _itemsPreview = gameObject.AddComponent<RoaCharacterPreview>();
-                _itemsPreview.FieldOfView = 40f;
+                cell.Art.texture = has ? RoaItemCategories.Art(baseId) : null;
+                cell.Art.enabled = has && cell.Art.texture != null;
+                cell.Empty.gameObject.SetActive(!has);
+                cell.Name.text = has ? ItemName(baseId) : string.Empty;
+                cell.Name.color = has ? RoaUiPalette.TierInk(RoaGearData.Tier(baseId)) : RoaUiPalette.InkLabel;
+
+                cell.Weight.text = has ? RoaItemData.Weight(baseId).ToString("0.#") + " кг" : string.Empty;
+
+                // Состояние показываем только у того, что вообще изнашивается:
+                // у пояса и детектора шкалы прочности нет, и рисовать её — врать.
+                bool wears = has && Inventory.IsRepairable(baseId);
+                float condition = wears ? Inventory.ConditionPercent(runtimeId) : 0f;
+                int tier = has ? RoaGearData.Tier(baseId) : 0;
+                string tierLabel = tier > 0 ? RoaGearData.TierShortLabel(tier) : string.Empty;
+                string metaText = wears ? condition.ToString("0") + "%" : string.Empty;
+                if (!string.IsNullOrEmpty(tierLabel))
+                    metaText = string.IsNullOrEmpty(metaText) ? tierLabel : tierLabel + " · " + metaText;
+                cell.Meta.text = metaText;
+
+                cell.Condition.enabled = wears;
+                if (wears)
+                {
+                    var barRect = (RectTransform)cell.Condition.transform;
+                    barRect.anchorMax = new Vector2(Mathf.Clamp01(condition / 100f), 0f);
+                    cell.Condition.color = condition < 25f ? RoaUiPalette.Negative
+                        : condition < 60f ? RoaUiPalette.Accent : RoaUiPalette.InkPrimary;
+                }
+
+                bool highlight = !string.IsNullOrEmpty(_selectedItemId) && RoaInventory.SlotFor(_selectedItemId) == entry.Key;
+                cell.Button.GetComponent<Outline>().effectColor = highlight ? AccentWarm
+                    : has ? EquippedSlotBorder : SlotBorder;
             }
-            JObject appearance = self?["appearance"] as JObject;
-            if (appearance != null)
-            {
-                var rect = (RectTransform)_itemsModel.transform;
-                _itemsPreview.Show(RoaGameBootstrap.ActiveBaseUrl, appearance.ToObject<CharacterAppearance>(),
-                    Mathf.Max(64, Mathf.RoundToInt(rect.rect.width)), Mathf.Max(64, Mathf.RoundToInt(rect.rect.height)));
-                var equipment = new JObject();
-                foreach (KeyValuePair<string, string> slot in Inventory.EquipmentSlots)
-                    equipment[slot.Key] = RoaArmorData.BaseId(slot.Value ?? string.Empty);
-                if (string.IsNullOrEmpty(equipment["weapon"]?.ToString())) equipment["weapon"] = "fists";
-                _itemsPreview.ApplyEquipment(RoaGameBootstrap.ActiveBaseUrl, equipment);
-                if (_itemsModel.texture != _itemsPreview.Texture) _itemsModel.texture = _itemsPreview.Texture;
-                _itemsModel.enabled = _itemsPreview.Texture != null;
-            }
+            _itemsPanelSlots.text = filled + "/8 СЛОТОВ";
+
+            int power = RoaGearData.PowerTotal(Inventory.EquipmentSlots,
+                itemId => Mathf.RoundToInt(Inventory.ConditionOf(itemId)));
+            _gearPowerLine.text = "СИЛА СНАРЯЖЕНИЯ · " + power;
+
+            RefreshStatsColumn(self);
 
             if (Quickbar != null)
             {
@@ -1147,85 +1462,246 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private GameObject BuildItemCard(RoaInventory.Row row)
+        /// <summary>
+        /// Колонка чисел. Правило одно: нет числа — нет строки. Единственное
+        /// исключение — нулевая защита: её показываем приглушённой, потому что
+        /// «защиты нет» это тоже сведение, и игрок обязан его получить до боя.
+        /// </summary>
+        private void RefreshStatsColumn(JObject self)
         {
-            var card = new GameObject("Item:" + row.Id, typeof(RectTransform));
+            if (_statsShowEffects) { RefreshEffectsColumn(self); return; }
+
+            JObject special = self?["special"] as JObject;
+            foreach (KeyValuePair<string, Text> cell in _specialCells)
+                cell.Value.text = (special?[cell.Key]?.ToObject<int>() ?? 5).ToString();
+
+            SetStat("hp", Hud != null ? Hud.Hp + " / " + Mathf.Max(1, Hud.MaxHp) : null);
+            SetStat("ap", Hud != null ? Mathf.FloorToInt(Hud.Ap) + " / " + Mathf.Max(1, Hud.MaxAp) : null);
+            SetStat("speed", Player != null ? Player.Speed.ToString("0.0") + " м/с" : null);
+            SetStat("carry", Inventory.CarryCapacity.ToString("0") + " кг");
+            SetStat("vision", Fog != null ? Fog.Radius + " кл." : null);
+            SetStat("power", RoaGearData.PowerTotal(Inventory.EquipmentSlots,
+                itemId => Mathf.RoundToInt(Inventory.ConditionOf(itemId))).ToString());
+
+            JObject effects = self?["artifactEffects"] as JObject;
+            float heal = effects?["medkitEffectPct"]?.ToObject<float>() ?? 0f;
+            SetStat("heal", Mathf.Approximately(heal, 0f) ? null : (heal > 0f ? "+" : string.Empty) + heal.ToString("0.#") + " %");
+            float regen = effects?["regenHpPerSecond"]?.ToObject<float>() ?? 0f;
+            // Подпись прямо называет источник: естественной регенерации в игре нет,
+            // и без пояса эта строка обязана исчезать, а не показывать ноль.
+            SetStat("regen", Mathf.Approximately(regen, 0f) ? null : regen.ToString("0.##") + " ОЗ/с (пояс)");
+
+            JObject protection = self?["combatProtection"] as JObject;
+            foreach ((string id, string _) in ProtectionOrder)
+            {
+                JToken row = protection?[id];
+                if (row == null) { SetStat("prot:" + id, null); continue; }
+                int threshold = row["threshold"]?.ToObject<int>() ?? 0;
+                int percent = row["protection"]?.ToObject<int>() ?? row["resistance"]?.ToObject<int>() ?? 0;
+                bool none = threshold == 0 && percent == 0;
+                SetStat("prot:" + id, "порог " + threshold + " · " + percent + " %",
+                        none ? RoaUiPalette.InkMuted : RoaUiPalette.InkPrimary);
+            }
+
+            string weaponId = Inventory.EquipmentSlots.TryGetValue("weapon", out string w) ? RoaArmorData.BaseId(w) : string.Empty;
+            string offhandId = Inventory.EquipmentSlots.TryGetValue("offhand", out string o) ? RoaArmorData.BaseId(o) : string.Empty;
+            string heldId = !string.IsNullOrEmpty(weaponId) && weaponId != "fists" ? weaponId
+                : (!string.IsNullOrEmpty(offhandId) ? offhandId : "fists");
+            SetStat("hand", !string.IsNullOrEmpty(weaponId) && weaponId != "fists" ? ItemName(weaponId) : "Кулаки");
+            SetStat("offhand", !string.IsNullOrEmpty(offhandId) ? ItemName(offhandId) : null);
+
+            RoaWeaponData.Weapon weapon = RoaWeaponData.Get(heldId);
+            SetStat("damage", weapon.DmgMin + "-" + weapon.DmgMax);
+            SetStat("range", RoaGearData.Range(heldId).ToString("0.##"));
+            // Магазин и запас сервер шлёт только для активного оружия — для всего
+            // остального честнее назвать тип патрона, чем выдумывать числа.
+            SetStat("ammo", string.IsNullOrEmpty(weapon.AmmoType) ? null
+                : Hud != null && Hud.MagSize > 0
+                    ? Hud.Loaded + " / " + Hud.MagSize + " · запас " + Hud.ReserveAmmo
+                    : RoaWeaponData.AmmoLabel(weapon.AmmoType));
+            SetStat("weaponSkill", Hud != null ? Hud.WeaponSkillPercent + " %" : null);
+
+            SetStat("level", self?["level"]?.ToObject<int>().ToString());
+            SetStat("faction", RoaPipboy.FactionLabel(self?["worldFactionId"]?.ToString() ?? self?["factionId"]?.ToString()));
+            int skillPoints = self?["skillPoints"]?.ToObject<int>() ?? 0;
+            SetStat("skillPoints", skillPoints > 0 ? skillPoints.ToString() : null, RoaUiPalette.Accent);
+            int perkPoints = self?["talentPoints"]?.ToObject<int>() ?? self?["perkPoints"]?.ToObject<int>() ?? 0;
+            SetStat("perkPoints", perkPoints > 0 ? perkPoints.ToString() : null, RoaUiPalette.Accent);
+            // Фокус премиума: тратится у станков участков на возврат материалов.
+            SetStat("focus", RoaCraftingPlots.FocusText(self?["account"] as JObject));
+        }
+
+        private void RefreshEffectsColumn(JObject self)
+        {
+            JObject injuries = self?["injuries"] as JObject;
+            var names = new List<string>();
+            if (injuries?["brokenArm"]?.ToObject<bool>() == true) names.Add("перелом руки");
+            if (injuries?["brokenLeg"]?.ToObject<bool>() == true) names.Add("перелом ноги");
+            if (injuries?["concussion"]?.ToObject<bool>() == true) names.Add("сотрясение");
+            if (injuries?["infection"]?.ToObject<bool>() == true) names.Add("инфекция");
+            SetStat("injuries", names.Count > 0 ? string.Join(" · ", names) : "нет",
+                    names.Count > 0 ? RoaUiPalette.Negative : RoaUiPalette.InkPrimary);
+
+            SetStat("hydration", Hud != null ? Hud.Hydration.ToString("0") + " %" : null);
+
+            int belt = 0;
+            foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
+                if (entry.Key == "artifactBelt" && !string.IsNullOrEmpty(entry.Value)) belt++;
+            int capacity = self?["artifactBeltCapacity"]?.ToObject<int>() ?? 0;
+            SetStat("belt", capacity > 0 ? belt + " / " + capacity : null);
+            string totals = BeltTotalsLine(self?["artifactEffects"] as JObject);
+            SetStat("beltTotals", string.IsNullOrEmpty(totals) ? null : totals);
+            SetStat("artifactStatus", string.IsNullOrEmpty(Inventory.ArtifactStatus) ? null : Inventory.ArtifactStatus);
+        }
+        /// <summary>
+        /// Карточка предмета 102x96. Шесть зон вместо прежних трёх: категория и
+        /// состояние сверху, имя цветом тира, арт, вес и калибр снизу, полоска
+        /// износа по нижней кромке. Всё, кроме имени, появляется только когда за
+        /// ним стоит число — пустых подписей на карточке нет.
+        /// </summary>
+        private GameObject BuildItemCard(ItemTile tile, bool showQuickBadge)
+        {
+            // Дальше карточка читает вид предмета; экземпляр нужен только износу и действиям.
+            var row = new RoaInventory.Row { Id = tile.BaseId, Qty = tile.Qty };
+            var card = new GameObject("Item:" + tile.Key, typeof(RectTransform));
             card.transform.SetParent(_itemsGrid, false);
             var image = card.AddComponent<Image>();
-            bool equipped = IsEquippedBase(row.Id);
-            image.color = row.Id == _selectedItemId ? CardSelected : CardBg;
+            bool equipped = tile.Equipped;
+            image.sprite = RoaUiPalette.Plate();
+            image.type = Image.Type.Sliced;
+            image.color = tile.Key == _selectedTileKey ? RoaUiPalette.TileSelected : RoaUiPalette.TileBg;
             var outline = card.AddComponent<Outline>();
-            outline.effectColor = equipped ? AccentWarm : ScreenBorder;
+            outline.effectColor = equipped ? RoaUiPalette.EquippedEdge : RoaUiPalette.TileBorder;
             outline.effectDistance = new Vector2(1f, -1f);
 
             var rect = (RectTransform)card.transform;
 
-            // .inv-tag — слева сверху: ЭКИПИРОВАНО или «быстр.».
-            bool quickable = Inventory.IsQuickAssignable(row.Id);
-            if (equipped || quickable)
+            // Верхняя строка: к какому разделу предмет относится. Берём подпись
+            // категории, а не RoaItemInfo.Type — там у десяти записей лежит
+            // английский ключ слота, и карточка прочлась бы как «helmet».
+            Text meta = Label("Meta", rect, 9, TextAnchor.UpperLeft, RoaUiPalette.InkLabel);
+            meta.horizontalOverflow = HorizontalWrapMode.Overflow;
+            meta.text = equipped ? "НАДЕТО" : RoaItemCategories.Label(RoaItemCategories.Category(row.Id));
+            if (equipped) meta.color = RoaUiPalette.EquippedEdge;
+            Place_(meta.rectTransform, 0f, 1f, 0.62f, 1f, new Vector2(5f, -16f), new Vector2(0f, -3f));
+
+            // Состояние — только у того, что изнашивается.
+            bool wears = Inventory != null && Inventory.IsRepairable(row.Id);
+            float condition = !wears ? 0f
+                : equipped ? Inventory.ConditionPercent(tile.RuntimeId)
+                : Inventory.BagConditionPercent(tile.RuntimeId);
+            if (wears)
             {
-                Text tag = Label("Tag", rect, 9, TextAnchor.UpperLeft, equipped ? new Color(0.573f, 0.776f, 0.427f, 1f) : ScreenInkDim);
-                tag.rectTransform.anchorMin = new Vector2(0f, 1f);
-                tag.rectTransform.anchorMax = new Vector2(0.7f, 1f);
-                tag.rectTransform.offsetMin = new Vector2(4f, -16f);
-                tag.rectTransform.offsetMax = new Vector2(0f, -3f);
-                tag.text = equipped ? "ЭКИПИРОВАНО" : "быстр.";
+                Text state = Label("Condition", rect, 9, TextAnchor.UpperRight, RoaUiPalette.Accent);
+                state.horizontalOverflow = HorizontalWrapMode.Overflow;
+                state.text = condition.ToString("0") + "%";
+                Place_(state.rectTransform, 0.62f, 1f, 1f, 1f, new Vector2(0f, -16f), new Vector2(-5f, -3f));
             }
 
-            // .inv-weight — справа сверху.
-            float weight = RoaItemData.Weight(row.Id) * row.Qty;
-            Text weightText = Label("Weight", rect, 9, TextAnchor.UpperRight, AccentWarm, FontStyle.Bold);
-            weightText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
-            weightText.rectTransform.anchorMax = new Vector2(1f, 1f);
-            weightText.rectTransform.offsetMin = new Vector2(0f, -16f);
-            weightText.rectTransform.offsetMax = new Vector2(-5f, -3f);
-            weightText.text = weight.ToString("0.0") + " кг";
+            Text name = Label("Name", rect, 10, TextAnchor.UpperLeft, RoaUiPalette.TierInk(RoaGearData.Tier(row.Id)));
+            name.horizontalOverflow = HorizontalWrapMode.Wrap;
+            name.verticalOverflow = VerticalWrapMode.Truncate;
+            name.text = ItemName(row.Id);
+            Place_(name.rectTransform, 0f, 1f, 1f, 1f, new Vector2(5f, -38f), new Vector2(-5f, -16f));
 
-            // .inv-emoji — арт 42px по центру.
             RectTransform artRect = Child("Art", rect);
-            artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 1f);
-            artRect.pivot = new Vector2(0.5f, 1f);
-            artRect.anchoredPosition = new Vector2(0f, -16f);
-            artRect.sizeDelta = new Vector2(42f, 42f);
+            artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 0f);
+            artRect.pivot = new Vector2(0.5f, 0f);
+            artRect.anchoredPosition = new Vector2(0f, 16f);
+            artRect.sizeDelta = new Vector2(50f, 50f);
             var art = artRect.gameObject.AddComponent<RawImage>();
             art.texture = RoaItemCategories.Art(row.Id);
             art.raycastTarget = false;
             art.enabled = art.texture != null;
 
-            // .inv-name — по центру под артом.
-            Text name = Label("Name", rect, 10, TextAnchor.UpperCenter, new Color(0.788f, 0.91f, 0.514f, 1f));
-            name.rectTransform.anchorMin = new Vector2(0f, 0f);
-            name.rectTransform.anchorMax = new Vector2(1f, 1f);
-            name.rectTransform.offsetMin = new Vector2(4f, 4f);
-            name.rectTransform.offsetMax = new Vector2(-4f, -60f);
-            name.horizontalOverflow = HorizontalWrapMode.Wrap;
-            name.verticalOverflow = VerticalWrapMode.Truncate;
-            name.text = ItemName(row.Id);
-
-            // .inv-count — справа снизу для стопок.
-            string category = RoaItemCategories.Category(row.Id);
-            if (row.Qty > 1 || category == "ammo" || category == "materials" || row.Id == "silver")
+            // Бейдж горячей клавиши рисуем ТОЛЬКО когда предмет действительно
+            // назначен: пустой квадрат обещал бы игроку несуществующую привязку.
+            int quickIndex = showQuickBadge ? QuickSlotOf(row.Id) : -1;
+            if (quickIndex >= 0)
             {
-                Text count = Label("Count", rect, 11, TextAnchor.LowerRight, AccentWarm, FontStyle.Bold);
-                count.rectTransform.anchorMin = new Vector2(0.5f, 0f);
-                count.rectTransform.anchorMax = new Vector2(1f, 0f);
-                count.rectTransform.offsetMin = new Vector2(0f, 2f);
-                count.rectTransform.offsetMax = new Vector2(-5f, 16f);
-                count.text = row.Qty.ToString();
+                RectTransform badge = Child("Quick", rect);
+                badge.anchorMin = badge.anchorMax = new Vector2(0f, 0f);
+                badge.pivot = new Vector2(0f, 0f);
+                badge.anchoredPosition = new Vector2(4f, 3f);
+                badge.sizeDelta = new Vector2(14f, 14f);
+                var badgeImage = badge.gameObject.AddComponent<Image>();
+                badgeImage.sprite = RoaUiPalette.Plate();
+                badgeImage.type = Image.Type.Sliced;
+                badgeImage.color = new Color(0.016f, 0.055f, 0.031f, 0.9f);
+                badgeImage.raycastTarget = false;
+                Text badgeLabel = Label("Label", badge, 9, TextAnchor.MiddleCenter, RoaUiPalette.Accent);
+                badgeLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+                badgeLabel.text = (quickIndex + 1).ToString();
+                Stretch(badgeLabel.rectTransform, 0f);
+            }
+
+            float weight = RoaItemData.Weight(row.Id) * Mathf.Max(1, row.Qty);
+            Text weightText = Label("Weight", rect, 9, TextAnchor.LowerLeft, RoaUiPalette.InkLabel);
+            weightText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            weightText.text = weight >= 1f ? weight.ToString("0.#") + " кг"
+                                           : Mathf.RoundToInt(weight * 1000f) + " г";
+            Place_(weightText.rectTransform, 0f, 0f, 0.55f, 0f, new Vector2(quickIndex >= 0 ? 22f : 5f, 3f), new Vector2(0f, 15f));
+
+            // Правый нижний угол: количество для стопки, иначе калибр у ствола,
+            // иначе тир. Боезапас сервер шлёт только для активного оружия, поэтому
+            // на карточке в сумке его нет — там честнее назвать патрон.
+            string corner = string.Empty;
+            if (row.Qty > 1) corner = "×" + row.Qty;
+            else if (Inventory != null && Inventory.IsFirearmItem(row.Id))
+                corner = RoaWeaponData.AmmoLabel(RoaWeaponData.Get(row.Id).AmmoType);
+            else
+            {
+                int tier = RoaGearData.Tier(row.Id);
+                if (tier > 0) corner = RoaGearData.TierShortLabel(tier);
+            }
+            if (!string.IsNullOrEmpty(corner))
+            {
+                Text cornerText = Label("Corner", rect, 9, TextAnchor.LowerRight, RoaUiPalette.Accent);
+                cornerText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                cornerText.text = corner;
+                Place_(cornerText.rectTransform, 0.55f, 0f, 1f, 0f, new Vector2(0f, 3f), new Vector2(-5f, 15f));
+            }
+
+            if (wears)
+            {
+                RectTransform bar = Child("ConditionBar", rect);
+                bar.anchorMin = new Vector2(0f, 0f);
+                bar.anchorMax = new Vector2(Mathf.Clamp01(condition / 100f), 0f);
+                bar.offsetMin = new Vector2(1f, 1f);
+                bar.offsetMax = new Vector2(-1f, 3f);
+                var barImage = bar.gameObject.AddComponent<Image>();
+                barImage.raycastTarget = false;
+                barImage.color = condition < 25f ? RoaUiPalette.Negative
+                    : condition < 60f ? RoaUiPalette.Accent : RoaUiPalette.InkPrimary;
             }
 
             var button = card.AddComponent<Button>();
             button.targetGraphic = image;
-            string id = row.Id;
-            button.onClick.AddListener(() =>
-            {
-                _selectedItemId = id;
-                _refreshAt = 0f;
-            });
+            ItemTile captured = tile;
+            button.onClick.AddListener(() => OnCardClicked(captured));
             // Подсказка (showTooltip) и контекстное меню правой кнопкой (showItemContextMenu web 03d:229).
-            RoaItemPopups.Bind(card, id, ItemExtraStat(id));
-            RoaItemPopups.BindMenu(card, () => { _selectedItemId = id; _refreshAt = 0f; return BuildItemContextOptions(id); });
+            RoaItemPopups.Bind(card, tile.BaseId, ItemExtraStat(tile.BaseId, wears ? condition : -1f));
+            RoaItemPopups.BindMenu(card, () => { SelectTile(captured); _refreshAt = 0f; return BuildItemContextOptions(captured); });
             return card;
+        }
+
+        private int QuickSlotOf(string baseId)
+        {
+            if (Quickbar == null || string.IsNullOrEmpty(baseId)) return -1;
+            for (int i = 0; i < Quickbar.Slots.Count; i++)
+                if (Quickbar.Slots[i] == baseId) return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Обычный клик выбирает предмет, SHIFT — сразу экипирует. Полоса подсказок
+        /// обещает игроку именно это, и обещание обязано быть правдой.
+        /// </summary>
+        private void OnCardClicked(ItemTile tile)
+        {
+            SelectTile(tile);
+            _refreshAt = 0f;
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) OnEquipClicked();
         }
 
         /// <summary>Порядок типов compareItemEntries('type') web: оружие, броня, патроны, мед., инструменты, материалы, разное.</summary>
@@ -1243,23 +1719,15 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private bool IsEquippedBase(string baseId)
-        {
-            if (Inventory == null) return false;
-            foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
-                if (RoaArmorData.BaseId(entry.Value) == baseId) return true;
-            return false;
-        }
-
         private void RefreshSelection()
         {
             bool hasSelection = !string.IsNullOrEmpty(_selectedItemId);
+            bool equipped = hasSelection && !string.IsNullOrEmpty(_selectedSlot);
             _selectedTitle.text = hasSelection
-                ? "Выбрано: " + ItemName(_selectedItemId)
+                ? "Выбрано: " + ItemName(_selectedItemId) + (equipped ? " · надето" : string.Empty)
                 : "Выберите предмет, чтобы действовать.";
             if (!string.IsNullOrEmpty(Inventory.ArtifactStatus)) _selectedTitle.text += "   ·   " + Inventory.ArtifactStatus;
 
-            bool equipped = hasSelection && IsEquippedBase(_selectedItemId);
             _equipButton.gameObject.SetActive(hasSelection);
             _useButton.gameObject.SetActive(hasSelection && Inventory.IsQuickAssignable(_selectedItemId));
             _dropButton.gameObject.SetActive(hasSelection && !equipped);
@@ -1276,20 +1744,51 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (IsEquippedBase(_selectedItemId))
-            {
-                foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
-                {
-                    if (RoaArmorData.BaseId(entry.Value) != _selectedItemId) continue;
-                    Submit(Inventory.SubmitEquipmentAction(entry.Key, string.Empty, OnActionAck), "Снимаю…");
-                    return;
-                }
-                return;
-            }
+            if (!string.IsNullOrEmpty(_selectedSlot)) { SubmitUnequip(_selectedSlot); return; }
 
             string slot = RoaInventory.SlotFor(_selectedItemId);
             if (slot == null) { _itemsStatus.text = "Этот предмет не экипируется."; return; }
-            Submit(Inventory.SubmitEquipmentAction(slot, _selectedItemId, OnActionAck), "Экипирую…");
+            SubmitEquip(slot, _selectedRuntimeId);
+        }
+
+        /// <summary>
+        /// Надеть именно этот экземпляр. После ответа выбор переходит на надетую
+        /// плитку: кнопка сразу читается «Снять», а не предлагает надеть следующий
+        /// такой же предмет из сумки.
+        /// </summary>
+        private void SubmitEquip(string slot, string runtimeId)
+        {
+            string baseId = RoaArmorData.BaseId(runtimeId);
+            Submit(Inventory.SubmitEquipmentAction(slot, runtimeId, ack =>
+            {
+                OnActionAck(ack);
+                if (ack == null || ack["ok"]?.ToObject<bool>() != true || _selectedItemId != baseId) return;
+                string target = null;
+                foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
+                {
+                    if (RoaArmorData.BaseId(entry.Value) != baseId) continue;
+                    // Двуручное, надетое «в левую», сервер кладёт в правую — слот берём из ответа.
+                    if (runtimeId != baseId && entry.Value == runtimeId) { target = entry.Key; break; }
+                    if (target == null || entry.Key == slot) target = entry.Key;
+                }
+                if (target != null) _selectedTileKey = "eq:" + target;
+            }), "Экипирую…");
+        }
+
+        /// <summary>Снять вещь из слота; выбор уходит за ней в сумку.</summary>
+        private void SubmitUnequip(string slot)
+        {
+            Inventory.EquipmentSlots.TryGetValue(slot, out string runtimeId);
+            string baseId = RoaArmorData.BaseId(runtimeId ?? string.Empty);
+            Submit(Inventory.SubmitEquipmentAction(slot, string.Empty, ack =>
+            {
+                OnActionAck(ack);
+                if (ack == null || ack["ok"]?.ToObject<bool>() != true || _selectedTileKey != "eq:" + slot) return;
+                int copy = RoaInventory.IsGear(baseId)
+                    ? Mathf.Max(0, Inventory.BagInstanceIds(baseId, Inventory.CountOf(baseId)).IndexOf(runtimeId))
+                    : 0;
+                _selectedTileKey = "bag:" + baseId + ":" + copy;
+            }), "Снимаю…");
         }
 
         private Button _modifyButton;
@@ -1298,19 +1797,17 @@ namespace RealmOfAshes.Game
         private void OnModifyClicked()
         {
             if (string.IsNullOrEmpty(_selectedItemId) || Inventory == null) return;
-            string runtimeId = _selectedItemId;
-            foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
-                if (RoaArmorData.BaseId(entry.Value) == _selectedItemId) runtimeId = entry.Value;
-            if (Inventory.OpenWorkbench(runtimeId)) Close();
+            if (Inventory.OpenWorkbench(_selectedRuntimeId)) Close();
             else _itemsStatus.text = Inventory.ActionStatus;
         }
 
         /// <summary>Динамическая часть строки характеристик: состояние и магазин, как itemStatLine web.</summary>
-        private string ItemExtraStat(string baseId)
+        private string ItemExtraStat(string baseId, float tileCondition = -1f)
         {
             var parts = new List<string>();
+            // У плитки состояние своё: запасной ствол не должен показывать износ надетого.
             if (Inventory != null && (Inventory.IsRepairable(baseId)))
-                parts.Add("состояние " + Mathf.RoundToInt(Inventory.ConditionPercent(baseId)) + "%");
+                parts.Add("состояние " + Mathf.RoundToInt(tileCondition >= 0f ? tileCondition : Inventory.ConditionPercent(baseId)) + "%");
             // Пояс показывает, что он сейчас даёт и где потолок: до этого итог
             // эффектов считался на сервере, но игроку его никто не показывал.
             if (baseId != null && baseId.StartsWith("artifactBelt", StringComparison.Ordinal))
@@ -1569,14 +2066,17 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>Пункты showItemContextMenu web (03d:229) в том же порядке.</summary>
-        private List<RoaItemPopups.Option> BuildItemContextOptions(string baseId)
+        private List<RoaItemPopups.Option> BuildItemContextOptions(ItemTile tile)
         {
+            string baseId = tile.BaseId;
             var options = BuildArtifactContextOptions(baseId);
             if (Inventory == null) return options;
             RoaItemInfo.Row info = RoaItemInfo.Get(baseId);
-            string equippedSlot = null, equippedRuntime = null;
-            foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
-                if (!string.IsNullOrEmpty(entry.Value) && RoaArmorData.BaseId(entry.Value) == baseId) { equippedSlot = entry.Key; equippedRuntime = entry.Value; }
+            // Меню относится к плитке: у запасной вещи из сумки нет «Снять», даже
+            // если точно такая же сейчас надета.
+            string equippedSlot = tile.Equipped ? tile.Slot : null;
+            string equippedRuntime = tile.Equipped ? tile.RuntimeId : null;
+            string runtimeId = tile.RuntimeId;
             string equipSlot = RoaInventory.SlotFor(baseId);
 
             if (equippedSlot != null)
@@ -1584,20 +2084,20 @@ namespace RealmOfAshes.Game
                 string slotCaptured = equippedSlot;
                 bool hand = slotCaptured == "weapon" || slotCaptured == "offhand";
                 options.Add(new RoaItemPopups.Option(hand ? "Снять из " + (slotCaptured == "weapon" ? "правой руки" : "левой руки") : "Снять",
-                    () => Submit(Inventory.SubmitEquipmentAction(slotCaptured, string.Empty, OnActionAck), "Снимаю…")));
+                    () => SubmitUnequip(slotCaptured)));
             }
             else if (equipSlot == "weapon")
             {
                 if (info != null && info.Hands == 2)
-                    options.Add(new RoaItemPopups.Option("В обе руки", () => Submit(Inventory.SubmitEquipmentAction("weapon", baseId, OnActionAck), "Экипирую…")));
+                    options.Add(new RoaItemPopups.Option("В обе руки", () => SubmitEquip("weapon", runtimeId)));
                 else
                 {
-                    options.Add(new RoaItemPopups.Option("В правую руку", () => Submit(Inventory.SubmitEquipmentAction("weapon", baseId, OnActionAck), "Экипирую…")));
-                    options.Add(new RoaItemPopups.Option("В левую руку", () => Submit(Inventory.SubmitEquipmentAction("offhand", baseId, OnActionAck), "Экипирую…")));
+                    options.Add(new RoaItemPopups.Option("В правую руку", () => SubmitEquip("weapon", runtimeId)));
+                    options.Add(new RoaItemPopups.Option("В левую руку", () => SubmitEquip("offhand", runtimeId)));
                 }
             }
             else if (equipSlot != null)
-                options.Add(new RoaItemPopups.Option("Надеть", () => Submit(Inventory.SubmitEquipmentAction(equipSlot, baseId, OnActionAck), "Экипирую…")));
+                options.Add(new RoaItemPopups.Option("Надеть", () => SubmitEquip(equipSlot, runtimeId)));
 
             if (info != null && info.Usable && Inventory.IsQuickAssignable(baseId))
                 options.Add(new RoaItemPopups.Option("Использовать", () => Submit(Inventory.ActivateQuickItem(baseId, Combat), "Использую…")));
@@ -1610,18 +2110,12 @@ namespace RealmOfAshes.Game
                 options.Add(new RoaItemPopups.Option("Модификация", OnModifyClicked));
             if (Inventory.IsRepairable(baseId))
             {
-                var runtimeIds = Inventory.RepairableRuntimeIds(baseId);
-                if (runtimeIds.Count > 1)
-                    options.Add(new RoaItemPopups.Option("Ремонт: выбрать экземпляр", () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, 0))));
-                else
-                {
-                    string rt = runtimeIds[0];
-                    bool intact = Inventory.ConditionPercent(rt) >= 99.995f;
-                    options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", rt); Submit(true, "Ремонтирую…"); }, intact));
-                }
+                // Плитка — уже конкретный экземпляр, выбирать его из списка незачем.
+                bool intact = (tile.Equipped ? Inventory.ConditionPercent(runtimeId) : Inventory.BagConditionPercent(runtimeId)) >= 99.995f;
+                options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", runtimeId); Submit(true, "Ремонтирую…"); }, intact));
             }
-            if (Inventory.IsSalvageable(baseId))
-                options.Add(new RoaItemPopups.Option("Разобрать", () => { Inventory.ItemAction("salvage", baseId); Submit(true, "Разбираю…"); }));
+            if (Inventory.IsSalvageable(baseId) && !tile.Equipped)
+                options.Add(new RoaItemPopups.Option("Разобрать", () => { Inventory.ItemAction("salvage", runtimeId); Submit(true, "Разбираю…"); }));
             if (Quickbar != null && Inventory.IsQuickAssignable(baseId))
             {
                 for (int i = 0; i < Mathf.Min(4, Quickbar.Slots.Count); i++)
@@ -1632,32 +2126,13 @@ namespace RealmOfAshes.Game
             }
             bool cantDrop = equippedSlot != null || baseId == "fists";
             options.Add(new RoaItemPopups.Option(equippedSlot != null ? "Выбросить на землю (сначала снять)" : "Выбросить на землю",
-                () => Submit(Inventory.SubmitDropItem(baseId, 1, OnActionAck), "Бросаю…"), cantDrop));
+                () => Submit(Inventory.SubmitDropItem(runtimeId, 1, OnActionAck), "Бросаю…"), cantDrop));
             return options;
         }
 
         private List<RoaItemPopups.Option> BuildArtifactContextOptions(string baseId)
         {
             return BuildArtifactContextPage(baseId, 0);
-        }
-
-        private List<RoaItemPopups.Option> BuildRepairContextPage(string baseId, int page)
-        {
-            var options = new List<RoaItemPopups.Option>();
-            var ids = Inventory.RepairableRuntimeIds(baseId);
-            int start = page * 4;
-            for (int i = start; i < Mathf.Min(start + 4, ids.Count); i++)
-            {
-                string id = ids[i];
-                float condition = Inventory.ConditionPercent(id);
-                options.Add(new RoaItemPopups.Option("Ремонт · экз. " + (i + 1) + " · " + Mathf.RoundToInt(condition) + "%",
-                    () => { Inventory.ItemAction("repair", id); Submit(true, "Ремонтирую…"); }, condition >= 99.995f));
-            }
-            if (page > 0) options.Add(new RoaItemPopups.Option("Предыдущие экземпляры",
-                () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, page - 1))));
-            if (start + 4 < ids.Count) options.Add(new RoaItemPopups.Option("Следующие экземпляры",
-                () => RoaItemPopups.Instance?.ShowMenu(BuildRepairContextPage(baseId, page + 1))));
-            return options;
         }
 
         private List<RoaItemPopups.Option> BuildArtifactContextPage(string baseId, int page)
@@ -1714,13 +2189,14 @@ namespace RealmOfAshes.Game
         private void OnUseClicked()
         {
             if (string.IsNullOrEmpty(_selectedItemId) || Inventory == null) return;
-            Submit(Inventory.ActivateQuickItem(_selectedItemId, Combat), "Использую…");
+            Submit(Inventory.ActivateQuickItem(_selectedRuntimeId, Combat), "Использую…");
         }
 
         private void OnDropClicked()
         {
-            if (string.IsNullOrEmpty(_selectedItemId) || Inventory == null) return;
-            Submit(Inventory.SubmitDropItem(_selectedItemId, 1, OnActionAck), "Бросаю…");
+            // Надетое не выбрасывается: кнопка скрыта, но горячий путь проверяем и здесь.
+            if (string.IsNullOrEmpty(_selectedItemId) || !string.IsNullOrEmpty(_selectedSlot) || Inventory == null) return;
+            Submit(Inventory.SubmitDropItem(_selectedRuntimeId, 1, OnActionAck), "Бросаю…");
         }
 
         private void Submit(bool accepted, string message)

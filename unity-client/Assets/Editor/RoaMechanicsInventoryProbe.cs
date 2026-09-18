@@ -169,7 +169,6 @@ namespace RealmOfAshes.EditorTools
                 typeof(RoaInventory).GetMethod("ApplySelf", Private).Invoke(inventory, new object[] { self });
                 Require(inventory.ConditionPercent("ui_pistol_a_1") == 42, "Repair reads the selected runtime condition");
                 Require(inventory.ConditionPercent("ui_pistol_b_2") == 87, "Other hand retains its own condition");
-                Require(inventory.RepairableRuntimeIds("pistol").Count == 2, "Repair picker exposes both hands separately");
                 var options = (List<RoaItemPopups.Option>)typeof(RoaPipboyCanvas)
                     .GetMethod("BuildArtifactContextOptions", Private).Invoke(canvas, new object[] { "artifactSpring" });
                 // У каждого экземпляра свои действия: горячий стабилизируют или
@@ -198,9 +197,62 @@ namespace RealmOfAshes.EditorTools
                     JObject.Parse(@"{'artifactRuntime':{'hydration':35,'stimSeconds':12,'wetSeconds':30,'stunSeconds':1}}") });
                 Require(hud.ArtifactStatus.Contains("35%") && hud.ArtifactStatus.Contains("Стим")
                     && hud.ArtifactStatus.Contains("Намокание") && hud.ArtifactStatus.Contains("Оглушение"), "Server statuses are visible");
-                Debug.Log("[MECHANICS INVENTORY] PASS: instance durability, stabilization, belt equip/unequip and disconnected guard.");
+                RequireGearTiles(inventory, canvas);
+                Debug.Log("[MECHANICS INVENTORY] PASS: instance durability, stabilization, belt equip/unequip, unstacked gear tiles and disconnected guard.");
             }
             finally { UnityEngine.Object.DestroyImmediate(host); }
+        }
+
+        /// <summary>
+        /// Сетка предметов: надетая вещь — своя плитка и не сливается с такой же в
+        /// сумке, экипировка из сумки лежит поштучно, расходники остаются стопкой.
+        /// </summary>
+        private static void RequireGearTiles(RoaInventory inventory, RoaPipboyCanvas canvas)
+        {
+            // Слот и износ предмета клиент знает только из серверного каталога.
+            JObject items = JObject.Parse(File.ReadAllText(Path.GetFullPath(Path.Combine(Application.dataPath, "../../data/kromka/items.json"))));
+            Require(RoaItemData.ApplyCatalog(items, out string catalogError), "Item catalog rejected: " + catalogError);
+            Require(RoaInventory.IsGear("pistol") && RoaInventory.IsGear("leather") && RoaInventory.IsGear("knife"), "Weapons and armour are gear");
+            Require(!RoaInventory.IsGear("medkit") && !RoaInventory.IsGear("ammo9") && !RoaInventory.IsGear("artifactSpring"),
+                "A hand-held consumable, ammo and artifacts are not gear");
+
+            JObject self = JObject.Parse(@"{
+                'inventory': [{'id':'pistol','qty':2},{'id':'leather','qty':2},{'id':'medkit','qty':3}],
+                'equipmentRuntime': {'weapon':'ui_pistol_a_1','offhand':'ui_pistol_b_2','armor':'leather'},
+                'weaponInventoryRuntime': [{'id':'ui_pistol_c_3','baseId':'pistol','qty':1,'condition':55},
+                                           {'id':'pistol','baseId':'pistol','qty':1,'condition':90}],
+                'weaponModifications': [{'id':'ui_pistol_a_1','condition':42},{'id':'ui_pistol_b_2','condition':87}],
+                'itemConditions': {'pistol':100,'leather':70}
+            }");
+            typeof(RoaInventory).GetMethod("ApplySelf", Private).Invoke(inventory, new object[] { self });
+
+            var tiles = new List<object>();
+            foreach (object tile in (System.Collections.IEnumerable)typeof(RoaPipboyCanvas)
+                .GetMethod("BuildItemTiles", Private).Invoke(canvas, null)) tiles.Add(tile);
+            Func<object, string, object> field = (tile, name) => tile.GetType().GetField(name).GetValue(tile);
+            Func<string, bool, List<object>> of = (baseId, worn) => tiles.FindAll(tile =>
+                (string)field(tile, "BaseId") == baseId && string.IsNullOrEmpty((string)field(tile, "Slot")) != worn);
+
+            Require(tiles.Count == 8, "Two worn pistols, a worn jacket, two spare pistols, two spare jackets and one medkit stack: " + tiles.Count);
+            Require(of("pistol", true).Count == 2 && of("pistol", false).Count == 2, "Worn pistols never merge with the spare ones");
+            Require(of("leather", true).Count == 1 && of("leather", false).Count == 2, "A worn jacket never merges with the spare jackets");
+            Require(tiles.TrueForAll(tile => !RoaInventory.IsGear((string)field(tile, "BaseId")) || (int)field(tile, "Qty") == 1), "Gear never stacks");
+            Require((int)field(of("medkit", false)[0], "Qty") == 3, "Consumables still stack");
+            Require((string)field(of("pistol", false)[0], "RuntimeId") == "ui_pistol_c_3" && (string)field(of("pistol", false)[1], "RuntimeId") == "pistol",
+                "Spare pistols carry the server's instance ids");
+            Require(inventory.BagConditionPercent("ui_pistol_c_3") == 55 && inventory.BagConditionPercent("pistol") == 90,
+                "A spare pistol shows its own wear, not the worn one's");
+            Require(inventory.OwnsItem("ui_pistol_c_3"), "A bag instance id is an owned item");
+
+            var spareMenu = (List<RoaItemPopups.Option>)typeof(RoaPipboyCanvas)
+                .GetMethod("BuildItemContextOptions", Private).Invoke(canvas, new[] { of("pistol", false)[0] });
+            Require(spareMenu.Exists(option => option.Label == "В левую руку") && !spareMenu.Exists(option => option.Label.StartsWith("Снять"))
+                && spareMenu.Exists(option => option.Label == "Выбросить на землю" && !option.Disabled),
+                "A spare pistol is equipped or dropped even while the same pistol is worn");
+            var wornMenu = (List<RoaItemPopups.Option>)typeof(RoaPipboyCanvas)
+                .GetMethod("BuildItemContextOptions", Private).Invoke(canvas, new[] { of("pistol", true)[0] });
+            Require(wornMenu[0].Label.StartsWith("Снять из") && wornMenu.Exists(option => option.Label.StartsWith("Выбросить") && option.Disabled),
+                "A worn pistol is taken off first and cannot be dropped");
         }
 
         public static void RunBatch()

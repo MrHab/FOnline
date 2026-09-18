@@ -2,24 +2,12 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 const {
   DEFAULT_PENDING_LOCATION_TRANSITION_TTL_MS,
   sanitizePendingLocationTransition,
   stagePendingLocationTransition
 } = require('../src/server/global-arrival-transition');
 
-const ROOT = path.resolve(__dirname, '..');
-const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
-const server = read('server.js');
-const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
-const map = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
-const probe = read('unity-client/Assets/Editor/RoaJourneyFlowProbe.cs');
-const meta = read('unity-client/Assets/Editor/RoaJourneyFlowProbe.cs.meta');
-const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
-const docs = read('docs/UNITY_PORT.md');
-const pkg = JSON.parse(read('package.json'));
 
 const now = 10_000;
 const player = { onGlobalMap: false, pendingLocationTransition: null };
@@ -56,50 +44,4 @@ assert.strictEqual(sanitizePendingLocationTransition({
   expiresAt: now + 1000
 }, now), null, 'malformed world point became a valid transition');
 
-[
-  "pendingWorldDrop: sanitizePendingLocationTransition(p.pendingLocationTransition, serverNow)",
-  'stagePendingLocationTransition(member, {',
-  'member.onGlobalMap = true;',
-  'pendingLocationTransition: savedPendingLocationTransition',
-  'if (!p.attachedPartyTaskId && !p.pendingLocationTransition)',
-  'persistActivePlayerStates([p]);',
-  '&& !transitionTicket && !sameLocation'
-].forEach(contract => assert(server.includes(contract),
-  `server journey-flow contract is missing: ${contract}`));
-
-[
-  'public const float GameplayAckTimeoutSeconds = 10f;',
-  'public void EmitWithAck(string eventName, object payload, float timeoutSeconds, Action<JObject> onAck)',
-  'AckFailure(eventName, false, true)',
-  'ExpirePendingAcks();',
-  'FailPendingAcks(false, true);',
-  'if (!_pendingAcks.TryGetValue(requestId, out request)) return;'
-].forEach(contract => assert(socket.includes(contract),
-  `Unity ACK watchdog is missing: ${contract}`));
-
-[
-  'RestorePendingLocationEntry(pendingDrop);',
-  'if (_pendingEntry) ResumePendingLocationEntry();',
-  'ShouldAutoRetryLocationEntry(_locationEntryAttempts, true)',
-  'LocationEntryFailureRetryable(ack)',
-  'roomId = arrival["encounterRoomId"]?.ToString()',
-  'deviceType = Application.isMobilePlatform ? "mobile" : "desktop"',
-  'TokenTrue(ack["ok"])'
-].forEach(contract => assert(map.includes(contract),
-  `Unity arrival recovery is missing: ${contract}`));
-
-assert(probe.includes('[MenuItem("Realm of Ashes/Проверить Journey Flow 5.2")]')
-  && probe.includes('AckRequestExpired')
-  && probe.includes('ShouldAutoRetryLocationEntry'),
-  'Journey Flow 5.2 probe is incomplete');
-assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\s*$/m.test(meta),
-  'Journey Flow probe meta is missing or malformed');
-assert(audit.includes('typeof(RoaJourneyFlowProbe)'),
-  'full Unity audit does not include Journey Flow 5.2');
-assert(docs.includes('## Journey Flow 5.2'),
-  'Journey Flow 5.2 is undocumented');
-assert(pkg.scripts['check:unity-journey-flow']
-  && pkg.scripts.precheck.includes('check:unity-journey-flow'),
-  'Journey Flow checker is not wired into npm precheck');
-
-console.log('Unity Journey Flow 5.2 OK: bounded ACKs, durable arrival ticket, reconnect recovery and idempotent entry');
+console.log('Journey flow OK: durable arrival ticket with a bounded TTL and strict validation');

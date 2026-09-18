@@ -164,7 +164,6 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
 | `unity-client/Tools/build-windows.ps1` | полная Windows-сборка через чистую копию в ASCII-пути (обязательно для кириллического пути проекта) |
 | `unity-client/Tools/sync-ui-prefabs.ps1` | пересборка UI-префабов |
 | `npm run check:unity-parity` | сверка клиента с сервером и авторскими каталогами: события Socket.IO, предметы, рецепты, модификации, стартовые черты |
-| `npm run check:coords` | контракт преобразования координат |
 | `npm run start:unity-assets` | раздача ассетов на loopback для редакторских проб без игрового сервера |
 
 ## Правила изменения клиента

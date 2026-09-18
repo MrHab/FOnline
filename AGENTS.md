@@ -34,6 +34,10 @@
 
 - Run the narrowest relevant `npm run check:*` command while iterating.
 - Run `npm run check` before handing off a substantial change or publishing a branch.
+  It is the whole chain: there is no separate `precheck`.
+- Checks assert behaviour: unit tests of `src/server` modules, scenarios against a
+  real server, authored data and built assets. Do not add checks that only search
+  source files or docs for strings: they break on every refactor and prove nothing.
 - When changing networking, also verify `/health` and a Socket.IO connection.
 - When changing the Unity client, run `unity-client/Tools/compile-check.ps1`,
   the relevant **Realm of Ashes** editor probes (or the batch audit

@@ -43,9 +43,7 @@ Unity-клиента.
 основание и линейный туман за игровым центром, чтобы край диорамы растворялся
 в фоне.
 
-Контракт закреплён пробой **Realm of Ashes → Проверить день и ночь** и
-проверками `npm run check:unity-lighting` и
-`npm run check:unity-visual-cohesion`.
+Контракт закреплён пробой **Realm of Ashes → Проверить день и ночь**.
 
 ## Атмосфера глобальной карты
 
@@ -173,9 +171,6 @@ npm run build:colliders
 
 ```bash
 npm run check:assets
-npm run check:unity-lighting
-npm run check:unity-visual-cohesion
-npm run check:unity-ground-dressing
 npm run check
 ```
 

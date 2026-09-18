@@ -2,8 +2,6 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 const {
   createWorldActivityEncounterLayout,
   selectWorldActivityEncounterWave
@@ -13,18 +11,6 @@ const {
   applyWorldActivityEnemyKill
 } = require('../src/server/world-activity-runtime');
 
-const root = path.resolve(__dirname, '..');
-const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
-const server = read('server.js');
-const runtime = read('src/server/world-activity-runtime.js');
-const navigation = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs');
-const canvas = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs');
-const minimap = read('unity-client/Assets/Scripts/Game/RoaMinimap.cs');
-const mapWindow = read('unity-client/Assets/Scripts/Game/RoaMapWindowCanvas.cs');
-const zoneMarker = read('unity-client/Assets/Scripts/Game/RoaActivityZoneMarker.cs');
-const probe = read('unity-client/Assets/Editor/RoaEncounterLayoutProbe.cs');
-const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
-const pkg = JSON.parse(read('package.json'));
 
 const layout = createWorldActivityEncounterLayout({
   bounds: { minX: 8, minZ: 8, maxX: 47, maxZ: 47 },
@@ -70,40 +56,4 @@ for (let index = 3; index <= 9; index += 1)
 assert.strictEqual(selectWorldActivityEncounterWave(activity, activity.encounter), null,
   'completed maximum still advertises an incoming attack lane');
 
-assert(runtime.includes('encounter: normalizeEncounterLayout(row.encounter)')
-  && runtime.includes('encounter: activity.encounter ?'),
-'authoritative activity snapshots lost the staged encounter layout');
-assert(server.includes('function serverWorldActivityEncounterLayout')
-  && server.includes('function serverWorldActivityFocusScore')
-  && server.includes('scoreFocusTile: (tx, tz) => serverWorldActivityFocusScore(room, tx, tz)')
-  && server.includes('function updateServerWorldActivityEncounter')
-  && server.includes('requirePreferredSpawn: !!candidate')
-  && server.includes('opts.requirePreferredSpawn === true'),
-'server combatants can fall back to an unrelated random location');
-assert(server.includes('serverWorldActivityReconPoints(room, 8, activity.encounter)')
-  && server.includes('serverWorldActivityOperationPoints(room, sabotagePoints, encounter)'),
-'recovered or authored objectives are no longer constrained to the staged operation zone');
-
-assert(canvas.includes('EncounterStatusText(_activity)')
-  && canvas.includes('CreateActivityWorldBeacon("AttackLane:"')
-  && canvas.includes('AddComponent<RoaActivityZoneMarker>().Configure(radius, Accent)')
-  && canvas.includes('новое направление атаки'),
-'Unity HUD/world presentation lost the active attack lane');
-assert(zoneMarker.includes('public sealed class RoaActivityZoneMarker')
-  && zoneMarker.includes('private const int Segments = 72;')
-  && !zoneMarker.includes('AddComponent<Collider>'),
-'staged activity area lost its bounded collider-free world perimeter');
-assert(navigation.includes('new WorldLabelFrame("attack_lane"')
-  && navigation.includes('RoaMinimap.MarkerKind.Threat'),
-'world labels or minimap no longer show the incoming threat direction');
-assert(minimap.includes('Threat,') && minimap.includes('case MarkerKind.Threat:')
-  && mapWindow.includes('case RoaMinimap.MarkerKind.Threat:'),
-'threat lane has no distinct minimap/full-map presentation');
-assert(probe.includes('[ENCOUNTER LAYOUT 5.4] готово')
-  && audit.includes('typeof(RoaEncounterLayoutProbe)'),
-'Encounter Layout 5.4 is not covered by the mandatory Unity audit');
-assert(pkg.scripts['check:unity-encounter-layout']
-  && pkg.scripts.precheck.includes('check:unity-encounter-layout'),
-'Encounter Layout 5.4 is absent from the repository verification chain');
-
-console.log('Encounter Layout 5.4 check passed: compact objectives, directed waves, world labels and threat maps are protected.');
+console.log('Encounter layout OK: compact objectives, four lanes and directed waves');

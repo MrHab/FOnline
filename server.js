@@ -12246,7 +12246,27 @@ function serverLineOfFireClear(room, p, enemy, dist) {
   return serverLineOfFireClearFrom(room, p.x, p.z, enemy, { shooterCrouching: !!p.crouching });
 }
 
-function serverCombatOrigin(p = {}, data = {}) {
+// Заявленная клиентом точка компенсации задержки обязана быть достижима от
+// авторитетной позиции по прямой. Без этой проверки хватало сдвига в пределах
+// допуска, чтобы объявить точку выстрела за стеной: линия огня считалась уже от
+// неё, и пуля проходила сквозь укрытие, а дальность росла на величину допуска.
+function serverLagCompensationPathClear(room, fromX, fromZ, toX, toZ, opts = {}) {
+  if (!room) return true;
+  const dx = Number(toX || 0) - Number(fromX || 0);
+  const dz = Number(toZ || 0) - Number(fromZ || 0);
+  const dist = Math.hypot(dx, dz);
+  if (!Number.isFinite(dist) || dist < 0.1) return true;
+  const len = dist || 1;
+  const reach = roomBlockingDistanceOnRay(room, fromX, fromZ, dx / len, dz / len, dist,
+    { shooterCrouching: !!opts.shooterCrouching });
+  if (reach + 0.2 < dist) return false;
+  return !roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.045, {
+    startPadding: 0.2,
+    endPadding: 0.2
+  });
+}
+
+function serverCombatOrigin(p = {}, data = {}, room = null) {
   const serverX = Number(p.x || 0);
   const serverZ = Number(p.z || 0);
   const clientX = Number(data.x);
@@ -12257,12 +12277,16 @@ function serverCombatOrigin(p = {}, data = {}) {
   // компенсацию сетевой задержки, если она рядом с серверной позицией.
   if (Number.isFinite(clientX) && Number.isFinite(clientZ)) {
     const drift = Math.hypot(clientX - serverX, clientZ - serverZ);
-    if (drift <= 3.2) return { x: clientX, z: clientZ, drift };
+    if (drift <= 3.2
+      && serverLagCompensationPathClear(room, serverX, serverZ, clientX, clientZ,
+        { shooterCrouching: !!p.crouching })) {
+      return { x: clientX, z: clientZ, drift };
+    }
   }
   return { x: serverX, z: serverZ, drift: 0 };
 }
 
-function serverCombatTargetPoint(enemy = {}, data = {}, weapon = SERVER_WEAPONS.fists) {
+function serverCombatTargetPoint(enemy = {}, data = {}, weapon = SERVER_WEAPONS.fists, room = null) {
   const serverX = Number(enemy.x || 0);
   const serverZ = Number(enemy.z || 0);
   const clientX = Number(data.targetX);
@@ -12277,7 +12301,12 @@ function serverCombatTargetPoint(enemy = {}, data = {}, weapon = SERVER_WEAPONS.
   const drift = Math.hypot(clientX - serverX, clientZ - serverZ);
   const ranged = !!weapon?.ammoType || Number(weapon?.range || 0) >= 4;
   const maxDrift = ranged ? 3.2 : 1.25;
-  if (drift <= maxDrift) return { x: clientX, z: clientZ, drift, compensated: drift > 0.01 };
+  // Точка цели тоже должна быть достижима от её настоящей позиции, иначе клиент
+  // «вытаскивал» цель из-за укрытия на величину допуска.
+  if (drift <= maxDrift
+    && serverLagCompensationPathClear(room, serverX, serverZ, clientX, clientZ)) {
+    return { x: clientX, z: clientZ, drift, compensated: drift > 0.01 };
+  }
   return { x: serverX, z: serverZ, drift, compensated: false };
 }
 
@@ -32267,7 +32296,7 @@ io.on('connection', (socket) => {
     if (!Number.isFinite(impactX) || !Number.isFinite(impactZ) || Math.abs(impactX) > roomWorldExtent(room) || Math.abs(impactZ) > roomWorldExtent(room)) {
       return fail('Сервер: неверная точка взрыва.', currentCombat());
     }
-    const origin = serverCombatOrigin(p, data);
+    const origin = serverCombatOrigin(p, data, room);
     const impactDistance = Math.hypot(impactX - origin.x, impactZ - origin.z);
     if (impactDistance > Number(weapon.range || 1) + 0.85) return fail('Точка взрыва слишком далеко.', currentCombat());
     if (!serverLineOfFireClearFrom(room, origin.x, origin.z, { x: impactX, z: impactZ, scale: 0.05 }, { shooterCrouching: !!p.crouching })) {
@@ -32492,8 +32521,8 @@ io.on('connection', (socket) => {
     const weapon = attackPlan.entries[0].weapon;
     if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
     const modeInfo = attackPlan.modeInfo;
-    const origin = serverCombatOrigin(p, data);
-    const targetPoint = serverCombatTargetPoint(enemy, data, weapon);
+    const origin = serverCombatOrigin(p, data, room);
+    const targetPoint = serverCombatTargetPoint(enemy, data, weapon, room);
     const targetProxy = { ...enemy, x: targetPoint.x, z: targetPoint.z };
     const dist = Math.hypot(origin.x - targetPoint.x, origin.z - targetPoint.z);
     const effectiveRange = Math.min(...attackPlan.entries.map(entry => (
@@ -32665,7 +32694,7 @@ io.on('connection', (socket) => {
     if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.');
     const weapon = attackPlan.entries[0].weapon;
     const modeInfo = attackPlan.modeInfo;
-    const origin = serverCombatOrigin(attacker, data);
+    const origin = serverCombatOrigin(attacker, data, room);
     const targetProxy = {
       id: target.id,
       name: target.name || 'Игрок',
@@ -33087,7 +33116,13 @@ io.on('connection', (socket) => {
 
   socket.on('lootEnemy', (data = {}, ack) => {
     const p = players.get(socket.id);
-    if (!p || !p.roomId) return;
+    // Мёртвый игрок обыскивать не может — как при подборе с земли, из контейнера
+    // и при выбросе. Здесь проверки не было, и упавший рядом с трупом персонаж
+    // продолжал забирать добычу до самого возрождения.
+    if (!p || !p.roomId || p.dead) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Игрок недоступен.' });
+      return;
+    }
     const room = rooms.get(p.roomId);
     if (!room) return;
     ensureRoomWorld(room);

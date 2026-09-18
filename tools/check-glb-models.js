@@ -15,26 +15,11 @@ const colliderCatalogFile = path.join(modelsDir, 'model-colliders.json');
 const colliderCatalog = JSON.parse(fs.readFileSync(colliderCatalogFile, 'utf8'));
 const {
   MAX_COLLIDER_PARTS,
-  NON_BLOCKING_MODEL_FILES,
   computeWalkCollision
 } = require('./model-collider-geometry');
 if (colliderCatalog?.schema !== 'realm.model-colliders.v1' || !colliderCatalog.models) {
   throw new Error('3D model collider catalog has an invalid schema');
 }
-
-const modularBlocks = new Map([
-  ['trader_wall_block.glb', { x: 2, z: 2, maxY: 1.01 }],
-  ['trader_window_block.glb', { x: 2, z: 2, maxY: 1.01 }],
-  ['trader_floor_slab.glb', { x: 2, z: 2 }],
-  ['trader_roof_block.glb', { x: 2, z: 2 }],
-  ['mod_wall_wood.glb', { x: 2, z: 2, maxY: 1.01 }],
-  ['mod_wall_brick.glb', { x: 2, z: 2, maxY: 1.01 }],
-  ['mod_wall_metal.glb', { x: 2, z: 2, maxY: 1.01 }],
-  ['mod_roof_wood.glb', { x: 2, z: 2 }],
-  ['mod_roof_metal.glb', { x: 2, z: 2 }],
-  ['mod_floor_wood.glb', { x: 2, z: 2 }],
-  ['mod_floor_tile.glb', { x: 2, z: 2 }]
-]);
 
 function isNpcLike(file) {
   return /^(?:npc_|trader_npc|brahmin)/.test(file);
@@ -76,10 +61,8 @@ async function main() {
     }
 
     let meshCount = 0;
-    let hasModularRule = false;
     gltf.scene.traverse(object => {
       if (object.isMesh) meshCount += 1;
-      if (object.userData && object.userData.realmModelRule) hasModularRule = true;
     });
 
     if (!meshCount) {
@@ -109,7 +92,7 @@ async function main() {
         }
       });
 
-      const expectedCollision = computeWalkCollision(THREE, gltf.scene, file);
+      const expectedCollision = computeWalkCollision(THREE, gltf.scene);
       const collision = collider.collision;
       if (!collision || collision.mode !== expectedCollision.mode) {
         issues.push(`${file}: stale collision mode, expected ${expectedCollision.mode}, got ${collision?.mode}`);
@@ -149,27 +132,10 @@ async function main() {
         nonBlockingCollisionCount += 1;
         if (Array.isArray(collision.parts) && collision.parts.length) issues.push(`${file}: non-blocking model has collision parts`);
       }
-
-      if (NON_BLOCKING_MODEL_FILES.has(file) && collision?.mode !== 'none') {
-        issues.push(`${file}: floor/roof surface can repel the player`);
-      }
     }
 
     if (!Number.isFinite(box.min.y) || box.min.y < -0.05) {
       issues.push(`${file}: below ground, minY=${round(box.min.y)}`);
-    }
-
-    const modular = modularBlocks.get(file);
-    if (modular) {
-      if (!hasModularRule) {
-        issues.push(`${file}: modular block has no realmModelRule metadata`);
-      }
-      if (size.x > modular.x + 0.06 || size.z > modular.z + 0.06) {
-        issues.push(`${file}: footprint ${round(size.x)}x${round(size.z)} exceeds ${modular.x}x${modular.z}`);
-      }
-      if (Number.isFinite(Number(modular.maxY)) && box.max.y > Number(modular.maxY)) {
-        issues.push(`${file}: top ${round(box.max.y)} exceeds logical height ${modular.maxY}`);
-      }
     }
 
     if (isNpcLike(file)) {

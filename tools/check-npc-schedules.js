@@ -285,6 +285,19 @@ if (dialogueCombatCheck < 0 || dialogueFocusWrite < 0 || dialogueCombatCheck >= 
 }
 requireText('npcDialogueFocus combat rejection', dialogueHandler, "dialogueInterruptType === 'combat'");
 requireText('npcDialogueFocus alarm rejection', dialogueHandler, "dialogueInterruptType === 'alarm'");
+// Стационарные торговцы и служебные NPC просто стоят и торгуют: ни бой, ни
+// шум не закрывают их и не сдвигают с места.
+const quietBody = functionBody(server, 'serverNpcIsQuietService');
+[
+  "enemy.hostileToPlayer !== false || enemy.stationary !== true",
+  "role === 'merchant' || role === 'trader' || !!String(enemy.service || '').trim()"
+].forEach(needle => requireText('quiet stationary traders', quietBody, needle));
+requireText('quiet traders stand still before combat and schedules', updateEnemiesBody, 'if (serverNpcIsQuietService(enemy)) {');
+if (updateEnemiesBody.indexOf('if (serverNpcIsQuietService(enemy)) {') > updateEnemiesBody.indexOf('if (factionCombatActors.has(enemy.id))')) {
+  errors.push('quiet traders must be handled before combat interrupts');
+}
+requireText('quiet traders ignore noise', roomNoiseBody, 'if (serverNpcIsQuietService(enemy)) continue;');
+requireText('quiet traders never close', functionBody(server, 'npcRoutineServiceInterrupted'), 'if (serverNpcIsQuietService(enemy)) return false;');
 if ((server.match(/npcScheduledServiceClosed\(room, actor, Date\.now\(\)\)/g) || []).length < 2) {
   errors.push('NPC trade state/exchange do not both reject combat, alarm and investigation interruptions');
 }
@@ -442,10 +455,9 @@ try {
   const caravanCamp = readJson('data/locations/caravanCamp.json', {});
   const slots = buildActivitySlotCatalog(caravanCamp);
   const slotIds = new Set(slots.map(slot => slot.id));
-  if (slots.length < 20) errors.push(`caravanCamp exposes only ${slots.length} activity slots; expected at least 20`);
-  if (!slots.some(slot => slot.id === 'caravan_sayla_bed' && slot.ownerNpcId === 'caravan_sayla')) {
-    errors.push('Sayla personal bed slot is missing or has no owner');
-  }
+  if (slots.length < 11) errors.push(`caravanCamp exposes only ${slots.length} activity slots; expected at least 11`);
+  // Сна у NPC нет: ни коек, ни слотов сна.
+  if (slots.some(slot => ['bed', 'sleep'].includes(slot.type))) errors.push('caravanCamp still has bed or sleep activity slots');
   for (const routinePackage of saylaRoutine.packages) {
     const slotId = String(routinePackage?.target?.slotId || '');
     if (slotId && !slotIds.has(slotId)) errors.push(`Sayla routine target ${slotId} is absent from caravanCamp activity slots`);
@@ -474,17 +486,14 @@ try {
     errors.push('caravanCamp contains duplicate authored activity slot IDs');
   }
   if (slots.some(slot => slot.capacity !== 1)) errors.push('caravanCamp vertical-slice slots must all use capacity 1');
-  const ownedSlots = slots.filter(slot => slot.ownerNpcId);
-  if (ownedSlots.length !== 1 || ownedSlots[0].id !== 'caravan_sayla_bed') {
-    errors.push('only caravan_sayla_bed may be an owned activity slot in caravanCamp');
-  }
+  if (slots.some(slot => slot.ownerNpcId)) errors.push('caravanCamp activity slots are shared: no NPC owns a slot');
   const saylaRow = (Array.isArray(caravanCamp.objects) ? caravanCamp.objects : [])
     .find(row => String(row?.id || '') === 'caravan_sayla');
   if (saylaRow?.entity?.npcId !== 'caravan_sayla' || saylaRow?.entity?.routineId !== 'caravan_sayla') {
     errors.push('Sayla authored actor lacks stable npcId/routineId');
   }
-  if (saylaRow?.entity?.stationary !== false) {
-    errors.push('Sayla must explicitly keep stationary:false so investigate and routine travel can move her');
+  if (saylaRow?.entity?.stationary !== true) {
+    errors.push('Sayla, like every capital trader, must be stationary:true: traders just stand and trade');
   }
 } catch (error) {
   errors.push(`authored routine/activity slot checks failed: ${error?.message || String(error)}`);

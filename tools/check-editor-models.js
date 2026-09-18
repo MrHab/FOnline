@@ -158,7 +158,7 @@ const shopParentRoundTrip = mergeAuthoredObjectMetadata({
 if (saylaRoundTrip.entity?.npcId !== 'caravan_sayla' || saylaRoundTrip.entity?.routineId !== 'caravan_sayla') {
   fail('location editor round-trip drops authored npcId/routineId');
 }
-if (saylaRoundTrip.entity?.faction !== 'caravans' || saylaRoundTrip.entity?.stationary !== false) {
+if (saylaRoundTrip.entity?.faction !== 'caravans' || saylaRoundTrip.entity?.stationary !== true) {
   fail('location editor round-trip overwrites authored NPC metadata with model defaults');
 }
 if (saylaRoundTrip.position?.x !== -6 || saylaRoundTrip.position?.z !== 4) {

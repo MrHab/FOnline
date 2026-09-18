@@ -203,30 +203,30 @@ npm start
 
 ```json
 {
-  "id": "caravan_sayla_cot",
-  "model": "cotBed",
-  "position": { "x": -9, "y": 0, "z": 7 },
+  "id": "capital_station_caravans_chem_station",
+  "model": "craftStationChem",
+  "position": { "x": -6, "y": 0, "z": -4 },
   "activitySlots": [
     {
-      "id": "caravan_sayla_bed",
-      "type": "bed",
+      "id": "caravan_sayla_shop",
+      "type": "shop",
       "capacity": 1,
-      "ownerNpcId": "caravan_sayla",
-      "position": { "x": -9, "y": 0, "z": 7 },
-      "rotationY": 1.5707963267948966,
-      "visualAction": "sleep"
+      "position": { "x": -5, "y": 0, "z": 9 },
+      "rotationY": 0,
+      "visualAction": "shop"
     }
   ]
 }
 ```
 
 - ID слота должен быть уникальным внутри локации и не меняться при пересохранении карты.
-- `type` — семантический тип, например `bed`, `shop`, `social`, `work` или `guard`.
+- `type` — семантический тип: `shop`, `social`, `work` или `guard`. Сна у NPC нет,
+  поэтому слотов `bed`/`sleep` и коек в локациях не бывает.
 - `capacity` ограничивает число NPC, которые могут одновременно зарезервировать точку.
 - `ownerNpcId` задается только для личного слота. Такой слот не должен выбираться другими NPC.
 - `position` — абсолютная точка в метрах локации. Её задают у края объекта, если его центр закрыт коллизией.
 - `rotationY` задает точное направление NPC после достижения точки.
-- `visualAction` задаёт семантическую анимацию: `sleep`, `shop`, `social`, `work` или `guard`.
+- `visualAction` задаёт семантическую анимацию: `shop`, `social`, `work` или `guard`.
 - Слоты нельзя привязывать к синтезируемому объекту столичного хранилища с тегом `capital-storage`:
   сервер заменяет его нормализованным объектом. Для слота выбирают обычный authored-объект локации.
 - При загрузке и повторном экспорте редактор сохраняет `activitySlots` и авторские поля `entity`,

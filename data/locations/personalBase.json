@@ -600,41 +600,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "personalBase-dressing-functional-02",
-      "model": "cot_bed",
-      "name": "personalBase-dressing-functional-02",
-      "position": {
-        "x": 2.534,
-        "y": 0.0,
-        "z": 16.001
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.157,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.02,
-        "y": 1.02,
-        "z": 1.02
-      },
-      "collision": "none",
-      "role": "scenery",
-      "tags": [
-        "personal_base",
-        "functional-dressing"
-      ],
-      "footprint": {
-        "x": 2.084,
-        "z": 1.422
-      },
-      "vision": {
-        "blocks": false
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "personalBase-dressing-functional-03",
       "model": "campfire_rest",
       "name": "personalBase-dressing-functional-03",

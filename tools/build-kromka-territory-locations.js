@@ -160,8 +160,6 @@ function baseDefinition(faction, index) {
     prop('metro_hall', 'Зал платформы метро', 'concrete_wall.glb', 0, 18, { x: 5, y: 1.4, z: 1 }, ['territory-base', 'metro']),
     prop('metro_car', 'Вагон метро — в Сердцевину', 'cargo_stack.glb', 0, 26, { x: 2.6, y: 1.6, z: 1.2 }, ['territory-base', 'metro', 'metro-car', 'landmark'],
       { fields: { interactive: { kind: 'transition', role: 'metro', to: 'coreZone' } } }),
-    // Казарма: личная койка каждому из 9 NPC базы (5 сервисов + 4 охранника).
-    ...Array.from({ length: 9 }, (_, k) => prop(`bunk_${k + 1}`, 'Койка казармы', 'cot_bed.glb', -26 + k * 2, -22, 1, ['territory-base', 'barracks', 'personal-bed'], { vision: { mode: 'none' } })),
     prop('storage_shed', 'Личное хранилище', 'storage_lean_to.glb', 14, 4, 1.4, ['interactive', 'storage', 'container', 'personal-storage', 'territory-storage'], {
       vision: { mode: 'cover' },
       fields: {
@@ -617,8 +615,6 @@ function marketHubDefinition() {
     prop('lamp_west', 'Фонарь рынка', 'utility_pole.glb', -8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
     prop('lamp_east', 'Фонарь рынка', 'utility_pole.glb', 8, -20, 1, ['territory-market', 'light'], { vision: { mode: 'none' } }),
     prop('workbench', 'Верстак скупщика', 'workshop_bench.glb', 0, 16, 1.2, ['territory-market', 'bench'], { vision: { mode: 'cover' } }),
-    // Койки персонала — там же, где казарма на базах фракций.
-    ...Array.from({ length: 3 }, (_, k) => prop(`bunk_${k + 1}`, 'Койка персонала', 'cot_bed.glb', -26 + k * 2, -22, 1, ['territory-market', 'barracks', 'personal-bed'], { vision: { mode: 'none' } })),
     serviceNpc('broker', 'Скупщик Ядра', 'neutral', 'blackMarket', 0, 8, {
       role: 'merchant', model: 'traderNpc', tags: ['merchant', 'trader', 'black-market'],
       entity: { traderProfile: 'blackMarket', tradeProfile: 'blackMarket', dialogueProfile: 'blackMarket' }

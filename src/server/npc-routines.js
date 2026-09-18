@@ -30,9 +30,6 @@ const ROUTINE_TYPE_DEFAULT_STATES = Object.freeze({
   service: 'work',
   craft: 'work',
   work: 'work',
-  // Сна в игре нет: НПС не ложатся. Авторские пакеты с типом sleep
-  // деградируют в обычный отдых, чтобы старые данные не роняли распорядок.
-  sleep: 'rest',
   rest: 'rest',
   social: 'social',
   socialize: 'social',

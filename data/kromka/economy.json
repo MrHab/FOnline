@@ -20,6 +20,10 @@
     "dangerCells": true,
     "accountSin": true
   },
+  "npcTradeHubs": {
+    "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",
+    "locations": ["settlement"]
+  },
   "zones": {
     "brokenBelowCondition": 10,
     "deathWear": { "pve": 5, "pvp": 5, "pvpFullDrop": 20 },

@@ -158,6 +158,10 @@ function normalizeWorldEconomy(input = {}) {
   const src = input && typeof input === 'object' ? input : {};
   return Object.freeze({
     worldModel: normalizeWorldModel(src.worldModel),
+    // Места торговли людей помимо столиц и баз Сердцевины (Ключи).
+    npcTradeHubs: Object.freeze((Array.isArray(src.npcTradeHubs?.locations) ? src.npcTradeHubs.locations : [])
+      .map(id => String(id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64))
+      .filter(Boolean)),
     zones: normalizeZones(src.zones),
     npcRemnants: normalizeNpcRemnants(src.npcRemnants),
     blackMarket: normalizeBlackMarketConfig(src.blackMarket),

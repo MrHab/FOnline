@@ -84,7 +84,7 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     assert.equal(Math.round(sin.focusAt(shown, config, t0 + DAY)), config.focus.perDay);
   }
   const view = sin.publicAccount(account, config, end + 5 * DAY);
-  assert.deepEqual(Object.keys(view).sort(), ['focus', 'focusCap', 'premium', 'premiumDays', 'premiumPriceSin', 'premiumUntil', 'sin']);
+  assert.deepEqual(Object.keys(view).sort(), ['focus', 'focusCap', 'focusCostPerValue', 'focusMinCost', 'premium', 'premiumDays', 'premiumPriceSin', 'premiumUntil', 'sin']);
   assert.equal(view.premium, false);
   assert.equal(view.premiumUntil, 0);
 }
@@ -97,7 +97,7 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     ["serverPremiumMultiplier(p, 'gatherMultiplier')", 'premium gathering'],
     ["serverPremiumMultiplier(p, 'npcMarksMultiplier')", 'premium NPC marks'],
     ["serverPremiumMultiplier(p, 'baseJobSpeedMultiplier')", 'premium base jobs'],
-    ['serverCraftFocusCost(player, plotOutput)', 'focus on plot orders'],
+    ["plot && data.useFocus === true ? serverCraftFocusCost(player, plotOutput)", 'focus only when the player asks for it'],
     ["plotReturnRate(WORLD_ECONOMY.plots, locationId, requiredStation, focusCost > 0)", 'the focus bonus on returns'],
     ['serverNpcHoldsTraderBalance(enemy) ? 1', 'no premium marks from trader cash'],
     ['serverHarvestXp(Math.max(1, Math.round(qty / premiumGather)))', 'harvest XP without a double premium'],

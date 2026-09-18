@@ -2487,6 +2487,7 @@ function createWastelandSimulation(options = {}) {
     npcProduction: true,
     worldCaravans: true,
     visibleWorldParties: true,
+    hostileWorldParties: true,
     ...(options.worldModel && typeof options.worldModel === 'object' ? options.worldModel : {})
   });
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
@@ -11820,11 +11821,38 @@ function createWastelandSimulation(options = {}) {
     return changed;
   }
 
+  /**
+   * Враждебные отряды сняты (worldModel.hostileWorldParties = false): угрозы
+   * пустоши теперь — группы A-Life опасных клеток. Постоянные налётчики, мутанты
+   * и звери возвращаются из defaultParties при каждой загрузке, поэтому их
+   * убирают на каждом шаге вместе с их встречами и боями.
+   */
+  function retireHostileWorldParties() {
+    if (worldModel.hostileWorldParties !== false) return false;
+    const retired = new Set();
+    for (const party of Object.values(state.parties || {})) {
+      const kind = String(party?.kind || '').toLowerCase();
+      if (!party || (kind !== 'raider' && kind !== 'monster')) continue;
+      retired.add(party.id);
+      delete state.parties[party.id];
+    }
+    if (!retired.size) return false;
+    const refersToRetired = zone => [zone?.partyId, zone?.sourceId, zone?.threatPartyId, zone?.details?.partyId, zone?.details?.threatPartyId]
+      .some(id => id && retired.has(String(id)));
+    state.worldZones = (Array.isArray(state.worldZones) ? state.worldZones : []).filter(zone => !refersToRetired(zone));
+    for (const party of Object.values(state.parties || {})) {
+      if (party?.targetPartyId && retired.has(String(party.targetPartyId))) party.targetPartyId = '';
+    }
+    dirty = true;
+    return true;
+  }
+
   function tickWorldSimStep(stepHours = 0) {
     const hours = Math.max(0, Number(stepHours || 0));
     if (hours <= 0) return;
     state.worldHour = Number(Number(state.worldHour || 0) + hours);
     retireWorldCaravans();
+    retireHostileWorldParties();
     Object.values(state.sites || {}).forEach(site => {
       if (!site || Number(site.anomalyPressure || 0) <= 0) return;
       site.anomalyPressure = Number(Math.max(0, Number(site.anomalyPressure || 0) - hours * 2).toFixed(2));

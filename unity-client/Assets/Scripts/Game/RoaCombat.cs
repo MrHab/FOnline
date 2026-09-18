@@ -186,6 +186,7 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect += HandlePlayerStatusEffect;
             Socket.OnEnemyKilled += HandleEnemyKilled;
+            Socket.OnDangerCellNotice += HandleDangerCellNotice;
         }
 
         private void OnDisable()
@@ -201,6 +202,20 @@ namespace RealmOfAshes.Game
             Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect -= HandlePlayerStatusEffect;
             Socket.OnEnemyKilled -= HandleEnemyKilled;
+            Socket.OnDangerCellNotice -= HandleDangerCellNotice;
+        }
+
+        /// <summary>
+        /// A-Life опасных клеток: группа подходит к сцене с края или отступает.
+        /// Строка — в журнал HUD и надписью над персонажем (на телефоне журнала нет).
+        /// </summary>
+        private void HandleDangerCellNotice(JObject payload)
+        {
+            string text = payload?["text"]?.ToString();
+            if (string.IsNullOrWhiteSpace(text)) return;
+            AddLog(text);
+            if (Player != null)
+                Float(text, Player.transform.position + Vector3.up * 0.6f, new Color(0.97f, 0.72f, 0.3f));
         }
 
         private void HandleEnemyAttack(JObject payload)

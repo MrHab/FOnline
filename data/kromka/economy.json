@@ -19,7 +19,9 @@
     "cityAuctions": true,
     "dangerCells": true,
     "accountSin": true,
-    "accountMarks": true
+    "accountMarks": true,
+    "dangerEcology": true,
+    "hostileWorldParties": false
   },
   "npcTradeHubs": {
     "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",
@@ -102,10 +104,6 @@
       "chalk_lowland": "randomAshGrove"
     },
     "sceneModes": ["pvpBlack"],
-    "respawn": {
-      "intervalSeconds": 90,
-      "minHostiles": { "pvp": 2, "pvpFullDrop": 3, "pvpBlack": 4 }
-    },
     "encounters": {
       "pvp": ["raider_ambush", "gecko_pack", "mutant_ant_swarm", "ghoul_pack"],
       "pvpFullDrop": ["raider_ambush", "radscorpion_nest", "fire_gecko_ambush", "gari_pack", "super_mutant_lair"],

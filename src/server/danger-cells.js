@@ -13,7 +13,8 @@
  * Сердцевина) путь по карте не идёт — каждая мелкая клетка там общая сцена,
  * вход с карты ставит отряд на сторону, откуда он пришёл, а выход с края
  * ведёт в соседнюю мелкую клетку: в её сцену или, если сосед не сквозной,
- * на карту к общей границе. Угрозы в занятых сценах сервер досыпает по цвету.
+ * на карту к общей границе. Врагов в сцены приводит A-Life
+ * (src/server/danger-ecology.js): постоянные группы, живущие на этой же сетке.
  *
  * Модуль не знает о сервере: координаты узлов, регион и случайность
  * передаются снаружи.
@@ -35,11 +36,7 @@ const DEFAULT_CONFIG = Object.freeze({
   edgeGraceKm: 3,
   templates: Object.freeze({ default: 'randomRuinedRoad' }),
   encounters: Object.freeze({ pvp: Object.freeze(['raider_ambush']) }),
-  sceneModes: Object.freeze(['pvpBlack']),
-  respawn: Object.freeze({
-    intervalSeconds: 90,
-    minHostiles: Object.freeze({ peaceful: 0, pve: 0, pvp: 2, pvpFullDrop: 3, pvpBlack: 4 })
-  })
+  sceneModes: Object.freeze(['pvpBlack'])
 });
 
 const DIRECTIONS = Object.freeze({
@@ -111,14 +108,7 @@ function normalizeDangerCellConfig(input = {}) {
     templates: Object.freeze(templates),
     encounters: Object.freeze(encounters),
     sceneModes: Object.freeze((Array.isArray(src.sceneModes) ? src.sceneModes : DEFAULT_CONFIG.sceneModes)
-      .filter(mode => DANGER_MODES.includes(mode))),
-    respawn: Object.freeze({
-      intervalSeconds: finite(src.respawn?.intervalSeconds, DEFAULT_CONFIG.respawn.intervalSeconds, 1, 3600),
-      minHostiles: Object.freeze(Object.fromEntries(DANGER_MODES.map(mode => [
-        mode,
-        Math.floor(finite(src.respawn?.minHostiles?.[mode], DEFAULT_CONFIG.respawn.minHostiles[mode], 0, 40))
-      ])))
-    })
+      .filter(mode => DANGER_MODES.includes(mode)))
   });
 }
 
@@ -225,11 +215,6 @@ function boundaryPoint(config, cell = {}, direction = '', pointKm = 1, along = 0
   return { x: step.dx < 0 ? x0 - inset : x0 + size + inset, y: y0 + size * t };
 }
 
-/** Сколько угроз держать в занятой сцене этого цвета. */
-function minHostilesFor(config, mode = '') {
-  return config.respawn.minHostiles[cleanMode(mode)] || 0;
-}
-
 /** Шанс стычки при входе в мелкую клетку; навык странника снижает его. */
 function encounterChance(config, mode = 'pvp', wandererSkill = 0) {
   const base = config.encounterChance[cleanMode(mode)] || 0;
@@ -297,6 +282,5 @@ module.exports = {
   neighbourCell,
   entryKeyForDirection,
   directionBetween,
-  boundaryPoint,
-  minHostilesFor
+  boundaryPoint
 };

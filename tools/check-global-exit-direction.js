@@ -12,8 +12,6 @@ const {
 
 const ROOT = path.resolve(__dirname, '..');
 const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
-const client = fs.readFileSync(path.join(ROOT, 'public/js/game/12b_global_map_panel_window.js'), 'utf8');
-const exitVisuals = fs.readFileSync(path.join(ROOT, 'public/js/game/02d_trader_spawn_props.js'), 'utf8');
 const wasteland = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/locations/wasteland.json'), 'utf8'));
 
 assert.strictEqual(normalizeGlobalExitDirection('NORTH'), 'north');
@@ -73,28 +71,9 @@ assert(server.includes('const exitDirection = serverGlobalExitDirection(leader);
   'server does not derive the exit side from the authoritative player position');
 assert(!server.includes('serverGlobalExitPoint(leader, data.worldPoint'),
   'server still trusts a client world point when leaving a location');
-assert(client.includes('exitDirection,\n        worldPoint: globalMapPlayerPoint()'),
-  'client does not report the local edge used to leave the location');
 assert(Array.isArray(wasteland.worldZones) && wasteland.worldZones.some(row => row?.id === 'world_exit_edges'),
   'wasteland test fixture must expose its authored global-map edge exit');
-assert(!client.includes("if (currentLocation.id === 'wasteland') return false;"),
-  'wasteland edge exits are still disabled on the client');
-assert(!exitVisuals.includes("if (currentLocation.id === 'wasteland') return;"),
-  'wasteland global-map exit bands are still hidden');
-assert(client.includes('const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;'),
-  'client global-map exit trigger does not use the shared two-tile band width');
 assert(server.includes('const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;'),
   'server global-map exit validation does not match the client band width');
-assert(exitVisuals.includes("locationPlayableBounds(currentLocation)"),
-  'global-map exit visuals ignore the current location playable bounds');
-assert(exitVisuals.includes('const mapWidth = bounds.width * TILE;')
-  && exitVisuals.includes('const mapDepth = bounds.height * TILE;'),
-  'global-map exit visuals still use the fixed 38x38 map dimensions');
-assert(exitVisuals.includes('const centerX = (westEdgeX + eastEdgeX) * 0.5;')
-  && exitVisuals.includes('const centerZ = (northEdgeZ + southEdgeZ) * 0.5;'),
-  'global-map exit visuals are not centered on shifted playable bounds');
-assert(!exitVisuals.includes('const mapWidth = MAP_W * TILE;')
-  && !exitVisuals.includes('const mapDepth = MAP_H * TILE;'),
-  'global-map exit visuals regressed to the technical map boundary');
 
-console.log('Global exit direction check passed: direction, trigger width and rendered bands stay aligned with every location playable bound.');
+console.log('Global exit direction check passed: direction and trigger width stay aligned with every location playable bound.');

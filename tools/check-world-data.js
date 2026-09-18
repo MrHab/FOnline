@@ -27,7 +27,6 @@ const warnings = [];
 let explicitStaticVisionCount = 0;
 let wastelandSim = null;
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const clientWorldSyncSource = fs.readFileSync(path.join(root, 'public', 'js', 'game', '05e_ground_items_world_sync.js'), 'utf8');
 const locationEditorFile = path.join(root, 'public', 'dev-location-editor.html');
 const locationEditorSource = fs.existsSync(locationEditorFile) ? fs.readFileSync(locationEditorFile, 'utf8') : '';
 const authoredDataFiles = new Set([
@@ -277,24 +276,15 @@ function readServerItemIds() {
   return new Set(ids);
 }
 
+// Ключи статических моделей — серверный реестр SERVER_MODEL_FILE_BY_KEY (ключ → GLB).
 function readStaticModelKeys() {
-  const source = [
-    '02_renderer_world_map.js',
-    '02a_materials_static_models.js',
-    '02b_lighting_time.js',
-    '02c_map_locations_collision.js',
-    '02d_trader_spawn_props.js',
-    '02d1_building_blocks_roof_setup.js',
-    '02d2_cutaway_geometry_visibility.js',
-    '02d3_cutaway_transparency_warmup.js',
-    '02d4_roof_visibility_batch.js',
-    '02d5_trader_building_interior.js',
-    '02e_trader_yard_world_build.js'
-  ].map(name => fs.readFileSync(path.join(root, 'public', 'js', 'game', name), 'utf8')).join('\n');
-  const match = source.match(/const\s+STATIC_MODEL_URLS\s*=\s*\{([\s\S]*?)\n\s*\};/);
-  if (!match) return new Set();
+  const match = serverSource.match(/const\s+SERVER_MODEL_FILE_BY_KEY\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\}\);/);
+  if (!match) {
+    errors.push('server.js: missing SERVER_MODEL_FILE_BY_KEY model registry');
+    return new Set();
+  }
   const keys = [];
-  const re = /^\s*([a-zA-Z0-9_]+)\s*:/gm;
+  const re = /^\s*,?\s*([a-zA-Z0-9_]+)\s*:/gm;
   let next;
   while ((next = re.exec(match[1]))) keys.push(next[1]);
   return new Set(keys);
@@ -674,8 +664,7 @@ if (claimStart < 0 || claimEnd < 0) {
     errors.push('server.js: a claimed site must rebuild its local occupants from the new owner immediately');
   }
 }
-if (!serverSource.includes('worldSiteOwner: String(controllingSite?.owner')
-  || !clientWorldSyncSource.includes('syncWastelandSiteControlFromWorldState(state)')) {
+if (!serverSource.includes('worldSiteOwner: String(controllingSite?.owner')) {
   errors.push('local world state must synchronize authoritative site control back to the global map state');
 }
 if (!serverSource.includes('SERVER_ENEMY_MODEL_KEY_BY_VISUAL') || !serverSource.includes('serverEnemyModelKeyForType')) {
@@ -803,7 +792,7 @@ locationEditorModels.forEach(model => {
   if (!publicAssetExists(url)) errors.push(`${rel}: editor model "${model.key}" missing asset ${url}`);
   const resolved = resolveLocationEditorModelKey(model.key);
   if (staticModelKeys.size && !staticModelKeys.has(resolved)) {
-    errors.push(`${rel}: editor model "${model.key}" is not registered in STATIC_MODEL_URLS`);
+    errors.push(`${rel}: editor model "${model.key}" is not registered in SERVER_MODEL_FILE_BY_KEY`);
   }
 });
 

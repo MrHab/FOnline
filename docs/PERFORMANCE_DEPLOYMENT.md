@@ -1,8 +1,9 @@
 # Быстрая загрузка rangir.ru
 
-Клиент загружает части игрового кода параллельно, а production-сервер отдаёт
-версионированные ресурсы с долгим кешированием. Для полного эффекта Nginx должен
-раздавать каталог `public` напрямую, не отправляя каждый файл в Node.js.
+Клиент игры — Unity WebGL: его сборка в `public/unity/Build/` названа хэшами
+содержимого, поэтому она, как и модели и прочая статика, отдаётся с долгим
+кешированием. Для полного эффекта Nginx должен раздавать каталог `public`
+напрямую, не отправляя каждый файл в Node.js.
 
 ## Настройка Nginx на VPS
 
@@ -26,7 +27,7 @@ include /etc/nginx/snippets/realm-of-ashes.locations.conf;
 ```bash
 nginx -t
 systemctl reload nginx
-curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.99.49-reconnect-supervisor-v1
+curl -fsSI https://rangir.ru/assets/models/wasteland/brahmin.glb
 curl -fsS https://rangir.ru/health
 curl -fsS -H 'Accept-Encoding: gzip' -D - -o /dev/null https://rangir.ru/api/wasteland
 ```

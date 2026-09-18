@@ -1,35 +1,12 @@
 # GitHub Pages deployment
 
-`MrHab/FOnline` stores the complete Realm of Ashes source: the Node.js server,
-browser client, authored world data, tools and tests.
+GitHub Pages publishing is no longer supported. `MrHab/mrhab.github.io` used to
+host a copy of `public/` with the former static Three.js browser client, whose
+login form accepted the URL of a remote game server. That client has been
+removed from the repository.
 
-`MrHab/mrhab.github.io` stores only the contents of `public/`. GitHub Pages is a
-static host and does not run `server.js`, REST APIs or Socket.IO.
-
-## Browser client
-
-The static client includes its own copies of Three.js, GLTFLoader and the
-Socket.IO browser client under `public/vendor/`. On `github.io`, the login form
-requires a public HTTPS URL for the game server and saves it in browser local
-storage.
-
-## Node.js server
-
-Run the complete repository on a Node.js host with persistent storage. The
-deployment must provide at least:
-
-- `PORT` — normally supplied by the hosting provider;
-- `ORIGINS=https://mrhab.github.io` — permits REST and Socket.IO requests from
-  the Pages client;
-- `DATA_DIR` — a directory on a persistent volume for accounts, characters,
-  saves and wasteland simulation state.
-
-The public server URL must use HTTPS. Enter that URL in the Pages login screen.
-Do not commit `data/users.json`, `data/saves.json`, simulation state, logs,
-backups, `.env` files or hosting credentials.
-
-## Publishing the static tree
-
-Publish the `public/` subtree to the `main` branch of
-`https://github.com/MrHab/mrhab.github.io`. The `.nojekyll` file keeps GitHub
-Pages from applying Jekyll processing to the game assets.
+The only client is the Unity WebGL build (`public/unity/`, produced by
+**Кромка → Build WebGL**, not stored in git). In the browser it always talks to
+the server at its own page origin, so it must be served by `server.js` or by
+Nginx on the game server's domain. VPS deployment is described in
+[`CODEX_WORKFLOW.md`](CODEX_WORKFLOW.md).

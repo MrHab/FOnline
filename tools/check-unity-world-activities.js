@@ -81,7 +81,6 @@ const activityHubProbeMetadata = read('unity-client/Assets/Editor/RoaActivityHub
 const feedbackProbe = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs');
 const feedbackProbeMetadata = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs.meta');
 const hudReadabilityProbe = read('unity-client/Assets/Editor/RoaHudReadabilityProbe.cs');
-const pipboyWorldTasks = read('public/js/game/03a_pipboy_social_world_tasks.js');
 
 requireText(runtime, "const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';",
   'the versioned server activity schema is missing');
@@ -434,13 +433,6 @@ requireText(activityHub, 'case "patrolling": return "Патрулировани�
   'the activity hub lost the active patrol phase');
 requireText(activityHub, 'case "holding": return "Удержание позиции";',
   'the activity hub lost the patrol hold phase');
-for (const fragment of [
-  'function worldTaskPatrolOperationText(task = {})',
-  "String(task.actionMode || '') === 'status_only'",
-  "String(operation?.kind || '').toLowerCase() !== 'patrol_mission'",
-  'Поручение выполняет патруль НПС'
-]) forbidText(pipboyWorldTasks, fragment,
-  'Unity-only patrol operations leaked back into the legacy browser task board');
 requirePattern(interaction,
   /bool statusOnly = type == "patrol_mission"[\s\S]{0,180}"status_only"/,
   'the Unity PIP-ASH page no longer recognizes NPC-only patrol operations');

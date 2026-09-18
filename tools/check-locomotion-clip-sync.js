@@ -1,11 +1,11 @@
 'use strict';
 // Синхронизация клипов локомоции с рантаймом.
 //
-// Рантайм подгоняет темп клипа под скорость актёра по таблице «натуральных»
-// скоростей (CHARACTER_CLIP_NATURAL_SPEEDS в 04b): сколько земли клип покрывает
-// при единичном темпе. Если пин расходится с клипом, опорная стопа скользит —
-// именно так и появлялись «глючащие ноги». Здесь скорость меряется прямо по
-// GLB и сверяется с пином.
+// Рантайм Unity подгоняет темп клипа под скорость актёра по таблице
+// «натуральных» скоростей (ClipNaturalSpeeds в RoaCharacterView.cs): сколько
+// земли клип покрывает при единичном темпе. Если пин расходится с клипом,
+// опорная стопа скользит — именно так и появлялись «глючащие ноги». Здесь
+// скорость меряется прямо по GLB и сверяется с пином.
 //
 // Дополнительно проверяется механика: у здорового клипа ходьбы травел за цикл
 // заметно больше размаха одной стопы (опорная нога метёт монотонно, а
@@ -18,7 +18,6 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const RUNTIME_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'npc', 'npc_humanoid_animations.glb');
 const CHARACTER_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb');
-const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '04b_character_glb_runtime.js');
 const UNITY_CHARACTER_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 
 // Скорости, на которых рантайм реально играет эти клипы (скорость игрока 4.2,
@@ -40,12 +39,12 @@ const FAST_PHASE_OFFSET = -1 / 6;  // run/crouch опережают walk по к
 const MAX_PHASE_HEIGHT_RMS = 0.10;
 const MAX_PHASE_STANCE_MISMATCH = 0.15;
 
-function readPins() {
-  const source = fs.readFileSync(RUNTIME_SOURCE, 'utf8');
-  const block = source.match(/CHARACTER_CLIP_NATURAL_SPEEDS = Object\.freeze\(\{([\s\S]*?)\}\)/);
-  assert(block, '04b: не найдена таблица CHARACTER_CLIP_NATURAL_SPEEDS');
+function readPins(source) {
+  const start = source.indexOf('ClipNaturalSpeeds =');
+  const end = source.indexOf('};', start);
+  assert(start >= 0 && end > start, 'RoaCharacterView: не найдена таблица ClipNaturalSpeeds');
   const pins = {};
-  for (const row of block[1].matchAll(/(\w+):\s*([0-9.]+)/g)) pins[row[1]] = Number(row[2]);
+  for (const row of source.slice(start, end).matchAll(/\{\s*"(\w+)",\s*([0-9.]+)f\s*\}/g)) pins[row[1]] = Number(row[2]);
   return pins;
 }
 
@@ -62,8 +61,8 @@ async function main() {
     return new Promise((resolve, reject) => loader.parse(buffer, '', resolve, reject));
   };
 
-  const pins = readPins();
   const unityCharacterSource = fs.readFileSync(UNITY_CHARACTER_SOURCE, 'utf8');
+  const pins = readPins(unityCharacterSource);
   assert(
     unityCharacterSource.includes('FastGaitPhaseOffset = -1f / 6f')
       && unityCharacterSource.includes('SyncedLocomotionPhase(previous, clip')
@@ -89,7 +88,7 @@ async function main() {
   for (const [name, usage] of Object.entries(CLIP_USAGE)) {
     const clip = clips.get(name);
     assert(clip, `клип локомоции отсутствует: ${name}`);
-    assert(pins[name] !== undefined, `04b: нет пина натуральной скорости для ${name}`);
+    assert(pins[name] !== undefined, `RoaCharacterView: нет пина натуральной скорости для ${name}`);
 
     mixer.stopAllAction();
     const action = mixer.clipAction(clip, root);

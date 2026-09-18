@@ -15,7 +15,7 @@
 
 | Пакет | Зачем |
 |---|---|
-| `com.unity.cloud.gltfast` | загрузка тех же GLB, что у сервера/legacy, без конвертации |
+| `com.unity.cloud.gltfast` | загрузка серверных GLB из `public/assets/models/` без конвертации |
 | `com.unity.nuget.newtonsoft-json` | разбор вложенных объектов протокола |
 | `com.unity.render-pipelines.universal` | URP |
 | `com.unity.inputsystem` | ввод |
@@ -156,7 +156,7 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
 | `unity-client/Tools/compile-check.ps1` (`.sh` для Git Bash) | компиляция тем же Roslyn и reference-сборками, что у Editor |
 | `unity-client/Tools/build-windows.ps1` | полная Windows-сборка через чистую копию в ASCII-пути (обязательно для кириллического пути проекта) |
 | `unity-client/Tools/sync-ui-prefabs.ps1` | пересборка UI-префабов |
-| `npm run check:unity-parity` | чётность с legacy-клиентом: события Socket.IO, предметы, рецепты, модификации, стартовые черты |
+| `npm run check:unity-parity` | сверка клиента с сервером и авторскими каталогами: события Socket.IO, предметы, рецепты, модификации, стартовые черты |
 | `npm run check:coords` | контракт преобразования координат |
 | `npm run start:unity-assets` | раздача ассетов на loopback для редакторских проб без игрового сервера |
 

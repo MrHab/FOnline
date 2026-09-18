@@ -13,7 +13,9 @@ const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
-const CLIENT_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
+// Корень отдаёт сборку Unity WebGL, а без неё (dev, CI) — страницу ожидания.
+const UNITY_INDEX_HTML = path.join(PROJECT_ROOT, 'public', 'unity', 'index.html');
+const UNITY_UNAVAILABLE_HTML = path.join(PROJECT_ROOT, 'public', 'unity-unavailable.html');
 const NGINX_LOCATIONS_FILE = path.join(PROJECT_ROOT, 'deploy', 'nginx', 'realm-of-ashes.locations.conf');
 const MAX_WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 30000);
 const REQUESTED_PORT = Number(process.env.SMOKE_PORT || 0);
@@ -64,24 +66,14 @@ function assertDependenciesInstalled() {
 function assertRequiredFiles() {
   const required = [
     SERVER_FILE,
-    CLIENT_HTML,
-    NGINX_LOCATIONS_FILE,
-    path.join(PROJECT_ROOT, 'public', 'js', 'game.js'),
-    path.join(PROJECT_ROOT, 'public', 'css', 'game.css')
+    UNITY_UNAVAILABLE_HTML,
+    NGINX_LOCATIONS_FILE
   ];
   for (const file of required) {
     if (!fs.existsSync(file)) fail(`required file is missing: ${path.relative(PROJECT_ROOT, file)}`);
   }
   const serverSource = fs.readFileSync(SERVER_FILE, 'utf8');
   const nginxSource = fs.readFileSync(NGINX_LOCATIONS_FILE, 'utf8');
-  const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game.js'), 'utf8');
-  if (clientLoaderSource.includes("open('GET', url, false)")
-    || clientLoaderSource.includes('open("GET", url, false)')) {
-    fail('client loader still uses synchronous XMLHttpRequest');
-  }
-  if (!clientLoaderSource.includes('Promise.all([') || !clientLoaderSource.includes('GAME_SCRIPT_PARTS.map(loadScriptPart)')) {
-    fail('client script parts are not loaded in parallel');
-  }
   if (!serverSource.includes('max-age=31536000, immutable')) {
     fail('versioned static resources do not use immutable caching');
   }
@@ -542,56 +534,23 @@ async function waitForHealth(proc, logs) {
   fail(`/health did not respond within ${MAX_WAIT_MS}ms`, logs.join(''));
 }
 
-async function assertStaticAssets(health) {
-  // Корень — Unity WebGL, если сборка есть, иначе прежний клиент; прежний всегда по /legacy/.
+async function assertStaticAssets() {
+  // Корень — Unity WebGL, если сборка есть, иначе страница ожидания; прежнего клиента нет.
   const rootHtml = await request('/');
   assertStatus(rootHtml, 200, 'GET /');
   if (!rootHtml.body.includes('Кромка')) {
     fail('root page did not return a client HTML', rootHtml.body.slice(0, 500));
   }
-  const html = await request('/legacy/');
-  assertStatus(html, 200, 'GET /legacy/');
-  if (!html.body.includes('Realm of Ashes')) {
-    fail('legacy page did not return the client HTML', html.body.slice(0, 500));
-  }
-  if (health.version && !html.body.includes(`Realm of Ashes v${health.version}`)) {
-    fail('root page version is not synced with /health', html.body.slice(0, 500));
-  }
-  if (html.body.includes('id="server-url-input"')
-    || !html.body.includes('id="register-email-input"')
-    || !html.body.includes('id="password-reset-panel"')
-    || !html.body.includes('/vendor/socket.io.min.js')) {
-    fail('root page server authentication controls are incomplete', html.body.slice(0, 800));
-  }
-  if (html.body.includes('/socket.io/socket.io.js')) {
-    fail('root page still depends on the Node-only Socket.IO client route', html.body.slice(0, 800));
-  }
-  if (!html.body.includes('id="network-ping"')) {
-    fail('root page is missing the network ping HUD indicator', html.body.slice(0, 500));
+  const rootFile = fs.existsSync(UNITY_INDEX_HTML) ? UNITY_INDEX_HTML : UNITY_UNAVAILABLE_HTML;
+  if (rootHtml.body !== fs.readFileSync(rootFile, 'utf8')) {
+    fail(`root page did not serve ${path.relative(PROJECT_ROOT, rootFile)}`, rootHtml.body.slice(0, 500));
   }
 
-  const css = await request('/css/game.css');
-  assertStatus(css, 200, 'GET /css/game.css');
-  if (!css.body.includes('16_mobile_ui_icons.css')) {
-    fail('CSS loader does not include the mobile UI icon layer', css.body.slice(0, 500));
-  }
-
-  const js = await request('/js/game.js');
-  assertStatus(js, 200, 'GET /js/game.js');
-  if (!js.body.includes('GAME_SCRIPT_PARTS')) {
-    fail('client JS loader did not look like the expected loader', js.body.slice(0, 500));
-  }
-
+  // Three.js нужен dev-редакторам локаций и глобальной карты.
   const three = await request('/vendor/three.min.js');
   assertStatus(three, 200, 'GET /vendor/three.min.js');
   if (!three.body.includes('THREE')) {
     fail('Three.js vendor route did not serve the browser bundle', three.body.slice(0, 500));
-  }
-
-  const socketIoClient = await request('/vendor/socket.io.min.js');
-  assertStatus(socketIoClient, 200, 'GET /vendor/socket.io.min.js');
-  if (!socketIoClient.body.includes('Socket.IO')) {
-    fail('vendored Socket.IO browser client was not served', socketIoClient.body.slice(0, 500));
   }
 }
 
@@ -1898,7 +1857,7 @@ async function main() {
     if (!logs.join('').includes('Remapped 1 duplicate legacy character id(s).')) {
       fail('server startup did not report its legacy character-id migration', logs.join(''));
     }
-    await assertStaticAssets(health);
+    await assertStaticAssets();
     await assertRestCorsPreflight();
     await assertEditorAndWorldDataApis();
     await assertGuestAuthLifecycle();

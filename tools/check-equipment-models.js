@@ -5,9 +5,6 @@ const assert = require('assert');
 const root = path.resolve(__dirname, '..');
 const bootsDir = path.join(root, 'public', 'assets', 'models', 'equipment', 'boots');
 const legacyModelFile = path.join(root, 'public', 'assets', 'models', 'equipment', 'service_scout_boots.glb');
-const approvedRuntimeFile = path.join(root, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js');
-const modernRuntimeFile = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
-const visualsFile = path.join(root, 'public', 'js', 'game', '04_player_model_visuals.js');
 const unityEquipmentFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaEquipmentView.cs');
 const unityCharacterFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 const unityInventoryFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
@@ -51,34 +48,19 @@ bodyIds.forEach(bodyId => {
 assert(!fs.existsSync(legacyModelFile),
   'obsolete one-size service_scout_boots.glb returned; use the six approved body-fitted GLBs');
 
-const approvedRuntimeSource = fs.readFileSync(approvedRuntimeFile, 'utf8');
-const modernRuntimeSource = fs.readFileSync(modernRuntimeFile, 'utf8');
-const visualsSource = fs.readFileSync(visualsFile, 'utf8');
 const unityEquipmentSource = fs.readFileSync(unityEquipmentFile, 'utf8');
 const unityCharacterSource = fs.readFileSync(unityCharacterFile, 'utf8');
 const unityInventorySource = fs.readFileSync(unityInventoryFile, 'utf8');
 const unityRemotesSource = fs.readFileSync(unityRemotesFile, 'utf8');
+// Unity composes /assets/models/equipment/boots/equipment_scout_boots_<body>.glb
+// from this definition, i.e. exactly the six body-fitted GLBs checked above.
 [
-  'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
-  'scoutBoots: Object.freeze({',
-  "itemId: 'scoutBoots'",
-  "slot: 'boots'",
-  "urls: approvedEquipmentBodyUrls('boots', 'equipment_scout_boots')",
-  'function loadApprovedEquipmentTemplate(',
-  'function applyApprovedEquipmentSlot('
-].forEach(marker => assert(approvedRuntimeSource.includes(marker),
-  `approved scout-boot runtime integration is missing: ${marker}`));
-assert(
-  visualsSource.includes('refreshCharacterGlbEquipmentLayers(actor, eq)'),
-  'equipment visual switch does not reach the approved GLB equipment loader'
-);
-[
-  'SERVICE_SCOUT_BOOT_MODEL_URL',
-  'preloadServiceScoutBootModel',
-  'installServiceScoutBootInstances',
-  'applyServiceScoutBootVisual'
-].forEach(marker => assert(!modernRuntimeSource.includes(marker) && !visualsSource.includes(marker),
-  `legacy one-size scout-boot runtime returned: ${marker}`));
+  '{ "scoutBoots", new Definition("boots", "equipment_scout_boots") }',
+  '"/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb"'
+].forEach(marker => assert(unityEquipmentSource.includes(marker),
+  `Unity approved scout-boot integration is missing: ${marker}`));
+assert(!unityEquipmentSource.includes('service_scout_boots'),
+  'legacy one-size scout-boot model returned to the Unity equipment view');
 
 [
   'state.BodyKey == bodyKey && state.CharacterRoot == characterRoot',

@@ -85,19 +85,16 @@ assertMatch(
 assertIncludes(path.join('unity-client', 'ProjectSettings', 'ProjectSettings.asset'), 'companyName: Kromka Studio', 'Unity company name');
 assertMatch('server.js', /if \(fs\.existsSync\(UNITY_INDEX_FILE\)\) return res\.sendFile\(UNITY_INDEX_FILE\);\s*return res\.sendFile\(UNITY_UNAVAILABLE_FILE\);/, 'Unity-first root fallback');
 
-// Замороженный клиент проверяется только как версия источника parity на /legacy/.
-assertIncludes(path.join('public', 'index.html'), `<title>Realm of Ashes v${expectedVersion}</title>`, 'HTML title version');
-assertIncludes(path.join('public', 'js', 'game', '01_bootstrap_online_save.js'), `Realm of Ashes v${expectedVersion} client bootstrap`, 'client bootstrap version');
-assertIncludes(path.join('public', 'js', 'game', '13_minimap_hud_loop.js'), `Realm of Ashes v${expectedVersion}.`, 'welcome log version');
-
-const clientLoader = read(path.join('public', 'js', 'game.js'));
-const clientVersionMatch = clientLoader.match(/const\s+GAME_CLIENT_VERSION\s*=\s*['"]([^'"]+)['"]/);
-if (!clientVersionMatch) {
-  fail('GAME_CLIENT_VERSION is missing in public/js/game.js');
+// Проба кеша статики в инструкции деплоя должна указывать на файл, который
+// реально лежит в public/ (прежде она была привязана к версии браузерного клиента).
+const deploymentDoc = path.join('docs', 'PERFORMANCE_DEPLOYMENT.md');
+const cacheProbe = read(deploymentDoc).match(/curl -fsSI https:\/\/rangir\.ru(\/[^\s?]+)/);
+if (!cacheProbe) {
+  fail(`static cache probe is missing in ${deploymentDoc}`);
 }
-const clientVersion = clientVersionMatch[1];
-assertIncludes(path.join('public', 'index.html'), `/js/game.js?v=${clientVersion}`, 'HTML client cache version');
-assertIncludes(path.join('docs', 'PERFORMANCE_DEPLOYMENT.md'), `?v=${clientVersion}`, 'deployment probe cache version');
+if (!fs.existsSync(path.join(root, 'public', ...cacheProbe[1].split('/').filter(Boolean)))) {
+  fail(`static cache probe ${cacheProbe[1]} in ${deploymentDoc} is not a file in public/`);
+}
 
 const readme = read('README.md');
 const readmeVersionPattern = new RegExp(`\\*\\*${escapeRegex(expectedVersion)}(?:[-\\w]+)?\\*\\*`);

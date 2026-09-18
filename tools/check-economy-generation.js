@@ -87,37 +87,6 @@ const errors = [];
 const server = readText('server.js');
 const wastelandSim = readText('src/server/wasteland-sim.js');
 const wastelandPartySpeed = readText('src/server/wasteland-party-speed.js');
-const clientInventory = [
-  '03_items_inventory_core.js',
-  '03a_pipboy_social_world_tasks.js',
-  '03b_inventory_actions_ui.js',
-  '03c_skills_perks_tooltips.js',
-  '03d_item_context_repair_crafting.js'
-].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
-const clientNetwork = [
-  '05_multiplayer_core_state.js',
-  '05a_remote_actor_equipment.js',
-  '05b_remote_player_locomotion.js',
-  '05c_multiplayer_socket_room.js',
-  '05d_world_containers_security.js',
-  '05e_ground_items_world_sync.js',
-  '05f_enemy_models_location_flow.js'
-].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
-const clientTradeStorage = [
-  '07_quantity_confirm_carry.js',
-  '07a_storage_window.js',
-  '07b_trader_market_state.js',
-  '07c_trader_dialogues_quests.js',
-  '07d_trader_barter_ui.js',
-  '07e_loot_interaction.js',
-  '07f_quickbar_drag_slots.js'
-].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
-const clientWorldObjects = readText(path.join('public', 'js', 'game', '02a_materials_static_models.js'));
-const clientWorldBuild = readText(path.join('public', 'js', 'game', '02e_trader_yard_world_build.js'));
-const clientQuickInteraction = readText(path.join('public', 'js', 'game', '08b_interaction_quick_access.js'));
-const clientWorldContext = readText(path.join('public', 'js', 'game', '08d_world_context_targets.js'));
-const clientMobileInteraction = readText(path.join('public', 'js', 'game', '08e_mobile_player_action_menus.js'));
-const clientGlobalMap = readText(path.join('public', 'js', 'game', '10_global_map_state_logs_config.js'));
 const quests = readJson('data/quests.json');
 const locationDir = path.join(ROOT, 'data', 'locations');
 
@@ -138,10 +107,6 @@ requireText('server container restock', functionBody(server, 'restockRoomWorldCo
 requireText('server inventory limits', server, 'SERVER_ITEM_STACK_LIMITS');
 requireText('server save economy sanitizer', functionBody(server, 'safeSaveState'), 'sanitizePersistedEconomyState(state);');
 requireText('server inventory sanitizer', functionBody(server, 'sanitizeServerInventorySnapshot'), 'serverItemStackLimit(id)');
-const clientEnemyLootBody = functionBody(clientNetwork, 'rollEnemyLoot').trim();
-if (clientEnemyLootBody !== 'return [];') {
-  errors.push('client enemy loot: the disabled client-side generator must remain an empty stub');
-}
 const inventoryLimitContext = {
   SERVER_ITEM_IDS: new Set(['water', 'scrap']),
   serverBaseItemId: value => String(value || ''),
@@ -194,29 +159,14 @@ if (weightLimited.items.length !== 1
   || weightLimited.weightBlocked !== true) {
   errors.push('server loot limiter no longer enforces carry weight while applying stack limits');
 }
-requireText('client base storage restock', functionBody(clientTradeStorage, 'restockBaseStorage'), 'return false;');
 const serverNpcQuestAction = functionBody(server, 'performServerNpcQuestAction');
 requireText('server npc quest caps', serverNpcQuestAction, 'const paidSilver = Math.min(requestedSilver, serverNpcInventoryCaps(actor));');
 requireText('server npc quest caps', serverNpcQuestAction, 'serverNpcSetInventoryCaps(actor, serverNpcInventoryCaps(actor) - paidSilver);');
-const clientNpcQuestNegotiation = functionBody(clientTradeStorage, 'attemptTraderDialogueCheck');
-requireText('client npc quest negotiation', clientNpcQuestNegotiation, 'return submitServerNpcQuestAction');
-rejectText('client npc quest negotiation', clientNpcQuestNegotiation, 'Math.random()');
-const clientNpcQuestAdvance = functionBody(clientTradeStorage, 'advanceTraderQuestAction');
-requireText('client npc quest completion', clientNpcQuestAdvance, 'return submitServerNpcQuestAction');
-rejectText('client npc quest completion', clientNpcQuestAdvance, 'removeQuestItems');
-rejectText('client npc quest completion', clientNpcQuestAdvance, 'awardNpcQuest');
-rejectText('client npc quest definitions', functionBody(clientTradeStorage, 'normalizeNpcQuestDefinitions'), 'reward: {');
 const legacyWorldTaskReward = normalizeWorldTask({ id: 'legacy_reward', reward: { silver: 37.9 } }, 0);
 if (legacyWorldTaskReward?.reward?.caps !== 37) {
   errors.push('world task rewards: legacy silver reward is not normalized into integer caps');
 }
 requireText('world task rewards', functionBody(wastelandSim, 'fundWorldTaskCapsRewardFromSite'), 'stock.silver = Math.max(0, available - deducted);');
-requireText('world task reward delivery', functionBody(clientNetwork, 'applyServerWorldTransferState'), 'claimWorldTaskReward(data.completedWorldTaskId)');
-requireText('client crafting station search', functionBody(clientInventory, 'craftRecipe'), 'const station = nearbyCraftingStation(recipe);');
-requireText('client crafting server fee', functionBody(clientInventory, 'craftRecipe'), "multiplayer.socket.emit('craftingStationUsed'");
-requireText('client crafting sends inventory snapshot', functionBody(clientInventory, 'craftRecipe'), 'inventory: multiplayerInventorySnapshot()');
-requireText('client crafting applies server inventory', functionBody(clientInventory, 'craftRecipe'), 'applyServerInventorySnapshot(ack.inventory)');
-requireText('client crafting offline block', functionBody(clientInventory, 'craftRecipe'), 'if (!multiplayer?.socket?.connected)');
 requireText('server authored crafting output index', server, 'const SERVER_CRAFT_RECIPE_OUTPUTS = KROMKA_FIELD_RECIPE_INDEXES.outputs');
 requireText('server crafting inventory transaction', server, 'function serverInventoryApplyCraftTransaction');
 const serverCrafting = functionBody(server, 'recordWastelandCraftingStationFee');
@@ -232,20 +182,11 @@ requireText('server crafting refuses a lower plot fee', serverCrafting, 'if (req
 rejectText('server crafting client-selected location', serverCrafting, 'normalizeLocationId(data.locationId ||');
 requireText('server crafting blocks world-map requests', server, 'if (!p || !p.roomId || p.onGlobalMap || p.dead');
 requireText('server crafting station model guard', functionBody(server, 'serverCraftingObjectMatchesStation'), 'SERVER_CRAFT_STATION_MODELS[key]');
-requireText('client crafting station model guard', functionBody(clientInventory, 'craftingObjectMatchesStation'), 'staticModelFileName(modelUrl) === def.modelFile');
-requireText('client crafting stations render as static interactives', functionBody(clientWorldObjects, 'locationObjectIsEntity'), "entityKind === 'craftingstation'");
-requireText('client crafting station authored registration', functionBody(clientWorldObjects, 'createAuthoredLocationObjects'), 'locationCraftingStations.push(station);');
-requireText('client crafting station world reset', functionBody(clientWorldBuild, 'clearWorld'), 'locationCraftingStations.length = 0;');
-requireText('client crafting station pointer targeting', functionBody(clientWorldContext, 'buildWorldContextTarget'), 'findCraftingStationFromEvent(clientX, clientY)');
-requireText('client crafting station context action', functionBody(clientWorldContext, 'buildWorldContextOptions'), 'openCraftingStationWindow(target.station)');
-requireText('client crafting station keyboard interaction', functionBody(clientQuickInteraction, 'performCursorTargetInteraction'), "target.type === 'craftingStation'");
-requireText('client crafting station mobile interaction', functionBody(clientMobileInteraction, 'buildMobileWorldContextTarget'), 'findNearbyCraftingStation(CRAFTING_STATION_INTERACT_DISTANCE)');
 // Экономика v3: торговых автоматов нет — ни обработчиков на сервере, ни
-// запросов из клиентов. Торгуют только люди в столицах и скупщик Ядра.
-for (const [label, source] of [['server', server], ['legacy trade client', clientTradeStorage], ['legacy world context', clientWorldContext]]) {
-  rejectText(`${label} trade machine`, source, 'tradeMachineMarketState');
-  rejectText(`${label} trade machine`, source, 'tradeMachineExchange');
-}
+// запросов из клиентов (Unity-клиент проверяет check-unity-client-parity).
+// Торгуют только люди в столицах и скупщик Ядра.
+rejectText('server trade machine', server, 'tradeMachineMarketState');
+rejectText('server trade machine', server, 'tradeMachineExchange');
 requireText('world retail stock transaction', functionBody(wastelandSim, 'applyRetailTransaction'), 'site.stockpile = next;');
 requireText('server NPC trade only from capital traders', functionBody(server, 'serverNpcTradeOpen'), 'locationIsFactionCapital(LOCATIONS[id])');
 requireText('world visible production deposit', functionBody(wastelandSim, 'performVisibleSiteWork'), "kind: 'visible_craft'");
@@ -280,24 +221,9 @@ requireText('server resource site room identity', functionBody(server, 'getOrCre
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'wastelandSiteResourceRows(site)');
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'siteOutputResource: true');
 requireText('server camel-case resource aliases', server, "ammoparts: 'ammoParts'");
-requireText('client authoritative resource map', functionBody(clientNetwork, 'applyNetworkWorldState'), 'authoritativeResourceSnapshotLocationId');
-requireText('client authoritative resource map', functionBody(clientNetwork, 'applyNetworkWorldState'), 'map[z] = state.map[z].slice(0, MAP_W)');
-requireText('client resource template filtering', functionBody(clientWorldObjects, 'authoredResourceObjectIsVisible'), 'authoritativeResourceSnapshotLocationId');
-requireText('global map resource labels', functionBody(clientGlobalMap, 'updateGlobalMapCursor'), "['Можно добыть', cursorResourceNames]");
 
-rejectText('client startup inventory', clientInventory, 'inventory.set(id, start)');
-rejectText('client startup inventory', clientInventory, 'ammo9: 42');
-rejectText('client startup inventory', clientInventory, 'rocketAmmo: 6');
-rejectText('client npc quest rewards', clientTradeStorage, 'function awardNpcQuest');
-rejectText('client npc quest rewards', clientTradeStorage, 'function payNpcQuestCaps');
 rejectText('world npc ammo overproduction', functionBody(wastelandSim, 'produceAtSettlements'), '24 * cycles');
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
-rejectText('client crafting local resource removal', functionBody(clientInventory, 'craftRecipe'), 'Object.entries(recipe.cost).forEach(([id, qty]) => removeItem(id, qty))');
-rejectText('client crafting local result creation', functionBody(clientInventory, 'craftRecipe'), 'addCraftedItem(recipe, outQty)');
-const traderBaseStockRows = functionBody(clientTradeStorage, 'traderBaseStockRows');
-if (!traderBaseStockRows.includes('return [];')) {
-  errors.push('client trade: traderBaseStockRows must not fall back to generated stock.');
-}
 
 for (const [questId, quest] of Object.entries(quests.quests || {})) {
   const rewardItems = Array.isArray(quest?.reward?.items) ? quest.reward.items : [];

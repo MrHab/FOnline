@@ -18,10 +18,10 @@ REST API, Socket.IO и статику, включая Unity WebGL-сборку. 
 | Мир клиента | `unity-client/Assets/Scripts/World/` | координаты, загрузка локаций из JSON/GLB, terrain, глобальная карта |
 | Игровой слой клиента | `unity-client/Assets/Scripts/Game/` | персонажи, бой, UI-канвы, fog-of-war, глобальная карта, мобильное управление |
 | Авторские данные | `data/*.json`, `data/locations/*.json` | карта, локации, квесты, встречи, экономика |
-| Общие модели | `public/assets/models/` | GLB, которые без конвертации грузят оба клиента |
+| Общие модели | `public/assets/models/` | GLB, которые отдаёт сервер и без конвертации грузит Unity |
 | Runtime-данные | `DATA_DIR/*.json` | аккаунты, персонажи, состояние симуляции |
 | Инструменты | `tools/*.js`, `unity-client/Tools/` | генераторы, проверки, сборка клиента |
-| Legacy web-клиент | `public/index.html`, `public/js/` | доступен по `/legacy/`, не развивается, источник parity-проверки |
+| Dev-редакторы | `public/dev-location-editor.html`, `public/dev-global-map-editor.html` | локальные редакторы локаций и глобальной карты на Three.js (`public/vendor/`); открыты только при `DEV_API_MODE` |
 
 Единственный серверный entry point — `server.js`. Модули `src/server/*.js`
 активны только когда явно импортированы из него; отдельной копии сервера в

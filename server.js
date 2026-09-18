@@ -555,7 +555,7 @@ const {
 const {
   actorFacingIntent: resolveActorFacingIntent,
   actorFacingYaw: resolveActorFacingYaw
-} = require('./public/js/game/00a_actor_facing');
+} = require('./src/server/actor-facing');
 const {
   criticalShotChanceFromLuck,
   resolveCriticalShot
@@ -2046,21 +2046,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
 
-// Основной клиент — Unity WebGL (public/unity/, собирается при деплое: Кромка → Build WebGL).
-// Пока сборки нет (dev-окружение, CI), корень отдаёт нейтральную страницу ожидания.
-// Замороженный браузерный клиент доступен только по /legacy/ как источник правды
-// для check:unity-parity и не является частью пользовательского бренда «Кромки».
+// Клиент игры — только Unity WebGL (public/unity/, собирается при деплое:
+// Кромка → Build WebGL). Пока сборки нет (dev-окружение, CI), корень отдаёт
+// нейтральную страницу ожидания.
 const UNITY_INDEX_FILE = path.join(__dirname, 'public', 'unity', 'index.html');
-const LEGACY_INDEX_FILE = path.join(__dirname, 'public', 'index.html');
 const UNITY_UNAVAILABLE_FILE = path.join(__dirname, 'public', 'unity-unavailable.html');
 app.get('/', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   if (fs.existsSync(UNITY_INDEX_FILE)) return res.sendFile(UNITY_INDEX_FILE);
   return res.sendFile(UNITY_UNAVAILABLE_FILE);
-});
-app.get(['/legacy', '/legacy/', '/legacy/index.html'], (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache');
-  return res.sendFile(LEGACY_INDEX_FILE);
 });
 
 // Облегчённые GLB (tools/optimize-glb.js → public/assets/models-lite/): если копии нет,
@@ -2100,7 +2094,7 @@ function serverUnityBuildEncodingHead(filePath = '', stat = null) {
   return head;
 }
 
-// Клиент вынесен в public/index.html, CSS и JS лежат в public/css и public/js.
+// Статика: сборка Unity в public/unity/, модели, радио и dev-редакторы.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   lastModified: true,
@@ -2125,7 +2119,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
       if (delivery.encoding) res.setHeader('Content-Encoding', delivery.encoding);
       if (immutableBuild) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); return; }
     }
-    if (requestPath === '/' || requestPath === '/unity' || requestPath === '/unity/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
+    if (requestPath === '/' || requestPath === '/unity' || requestPath === '/unity/' || requestPath.endsWith('/index.html')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (versioned) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -3066,13 +3060,6 @@ app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
 
 
 
-// Локальный запуск идет без SDK Яндекса. Возвращаем JS, чтобы браузер не ругался на MIME,
-// если старая вкладка или кэш всё же запросит /sdk.js.
-app.get('/sdk.js', (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache');
-  res.type('application/javascript').send('window.YaGames=window.YaGames||null;');
-});
-
 app.get('/favicon.ico', (_, res) => {
   res.status(204).end();
 });
@@ -3086,7 +3073,7 @@ function resolveThreeBundlePath() {
   candidates.push(path.join(__dirname, 'node_modules', 'three', 'build', 'three.js'));
 
   // npm dependency fallback. package.json pins three 0.125.2 because it still has
-  // build/three.min.js with the global window.THREE object needed by this HTML game.
+  // build/three.min.js with the global window.THREE object the dev editors need.
   try {
     const threePackage = require.resolve('three/package.json');
     const threeDir = path.dirname(threePackage);
@@ -3142,10 +3129,9 @@ function findClientHtml() {
 function sendClientHtml(_, res) {
   const clientHtml = findClientHtml();
   if (clientHtml) return res.sendFile(clientHtml);
-  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but client HTML was not found. Put the HTML file in public/index.html or set CLIENT_HTML=path/to/game.html. API: /health, /api/auth/login, /api/auth/register, /api/characters.`);
+  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but the Unity build was not found. Build it into public/unity/ or set CLIENT_HTML=path/to/index.html. API: /health, /api/auth/login, /api/auth/register, /api/characters.`);
 }
 
-app.get('/', sendClientHtml);
 app.get('/game', sendClientHtml);
 app.get('/game.html', sendClientHtml);
 

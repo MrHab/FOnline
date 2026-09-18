@@ -44,6 +44,7 @@
 | `room-actor-spatial-index.js` | uniform-grid broad phase для коллизий плотной комнаты |
 | `static-collision-spatial-index.js` | индекс authored static blockers для движения, LOS и A* |
 | `model-colliders.js` | загрузка actor collider-каталога для радиусов персонажей и существ |
+| `actor-facing.js` | передние оси моделей акторов, намерение и yaw поворота (перенесён из прежнего клиента) |
 | `enemy-ai.js` | серверный ИИ NPC: восприятие, преследование, координация ближнего боя |
 | `combat-critical.js` | правила критических попаданий |
 | `kromka-combat-contract.js` | восемь типов урона и единый порядок крит → порог → броня → сопротивление для PvE/PvP |

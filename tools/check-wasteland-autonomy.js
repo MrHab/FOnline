@@ -7,11 +7,6 @@ const os = require('os');
 const path = require('path');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 
-const worldPartyRendererSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '11e_global_map_tasks_dynamic_render.js'), 'utf8');
-const worldPartyStatusSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '12a_global_map_world_status.js'), 'utf8');
-const globalMapPlayerModelSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '11a_global_map_player_models.js'), 'utf8');
-const globalMapDynamicCacheSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '11b_global_map_static_scene_camera.js'), 'utf8');
-const globalMapCanvasSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '12_global_map_canvas_controls.js'), 'utf8');
 const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-autonomy-'));
@@ -1823,42 +1818,6 @@ function assertGlobalMapDoesNotHidePartiesByListPosition() {
   }
   assert.strictEqual(sim.publicState().parties.length, 40,
     'server public state truncates active parties before they reach players');
-
-  const rowsStart = worldPartyRendererSource.indexOf('const allPartyRows');
-  const rowsEnd = worldPartyRendererSource.indexOf('const signature = globalMapWorldParties3DSignature', rowsStart);
-  assert(rowsStart >= 0 && rowsEnd > rowsStart, 'global-map party renderer block is missing');
-  const partyRowsBody = worldPartyRendererSource.slice(rowsStart, rowsEnd);
-  assert(!/\.slice\(0\s*,\s*\d+\)/.test(partyRowsBody),
-    '3D global map still hides parties after a hard list-position limit');
-  const canvasRowsStart = globalMapCanvasSource.indexOf('(Array.isArray(WASTELAND_SIM_STATE.parties)');
-  const canvasRowsEnd = globalMapCanvasSource.indexOf(".filter(row => row && globalMapWorldPartyDestroyed(row)", canvasRowsStart);
-  assert(canvasRowsStart >= 0 && canvasRowsEnd > canvasRowsStart, '2D global-map party renderer block is missing');
-  const canvasPartyRowsBody = globalMapCanvasSource.slice(canvasRowsStart, canvasRowsEnd);
-  assert(!/\.slice\(0\s*,\s*\d+\)/.test(canvasPartyRowsBody),
-    '2D global map still hides active parties after a hard list-position limit');
-  assert(worldPartyStatusSource.includes("if (String(row.state || '').toLowerCase() === 'forming') return true;"),
-    'forming parties are not visible on their home base');
-  assert(partyRowsBody.includes("String(row.state || '').toLowerCase() !== 'forming'"),
-    'forming party would be drawn twice as both a live marker and destroyed aftermath');
-}
-
-function assertGlobalMapDestinationMarkersStayConsistent() {
-  assert(globalMapPlayerModelSource.includes('new THREE.TorusBufferGeometry(globalMapPlayerMarkerCircleRadius()'),
-    'player marker does not use the shared player-circle radius');
-  assert(globalMapDynamicCacheSource.includes('const playerMarkerRadius = globalMapPlayerMarkerCircleRadius();')
-    && globalMapDynamicCacheSource.includes('new THREE.TorusBufferGeometry(playerMarkerRadius,'),
-    'destination marker diameter differs from the player circle');
-  assert(worldPartyRendererSource.includes('dynamic.flag.scale.setScalar(1);'),
-    'destination marker is resized independently from the player circle');
-  assert(!/addGlobalMap3DPointLine\s*\(\s*dynamic\.(?:worldParties|factionFronts)/.test(worldPartyRendererSource),
-    'a 3D squad threat, front, or destination layer still draws a dotted connector');
-  const front2dStart = worldPartyStatusSource.indexOf('function drawGlobalMapFactionFronts2D');
-  const front2dEnd = worldPartyStatusSource.indexOf('\n  function ', front2dStart + 10);
-  assert(front2dStart >= 0 && front2dEnd > front2dStart,
-    '2D faction-front renderer block is missing');
-  const front2dBody = worldPartyStatusSource.slice(front2dStart, front2dEnd);
-  assert(!front2dBody.includes('ctx.setLineDash') && !front2dBody.includes('ctx.lineTo(target.x, target.y)'),
-    'the 2D fallback still draws a dotted connector from a squad to a target');
 }
 
 function assertOnsitePartiesCanMaterializeInSafeLocations() {
@@ -1907,7 +1866,6 @@ try {
   assertOnsiteZoneMigratesToUniqueLocationRoom();
   assertDestroyedPartyFormsVisiblyBeforeReturning();
   assertGlobalMapDoesNotHidePartiesByListPosition();
-  assertGlobalMapDestinationMarkersStayConsistent();
   assertOnsitePartiesCanMaterializeInSafeLocations();
   console.log('Wasteland autonomy check passed: complete party visibility, stable site visits, linked dynamic supply and patrol operations, physical caravan exits, unique onsite rooms, visible party reformation, zone reactivation, side-aware battle outcomes, collisions, routing, situational goals, and backed trade stock.');
 } finally {

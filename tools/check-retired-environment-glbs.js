@@ -84,7 +84,6 @@ assert.deepStrictEqual(collisionLeaks, [],
 
 const runtimeFiles = [
   'server.js',
-  'public/js/game/02a_materials_static_models.js',
   'public/dev-location-editor.html',
   'public/dev-global-map-editor.html',
   'unity-client/Assets/Scripts/World/RoaLocationLoader.cs',

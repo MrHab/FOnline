@@ -14,9 +14,6 @@ const MANIFEST_FILE = path.join(RUNTIME_DIR, 'old-klim-environment-kit-manifest.
 const GENERATOR = path.join(ROOT, 'tools', 'blender', 'build_old_klim_environment_kit.py');
 const COLLIDER_FILE = path.join(RUNTIME_DIR, 'model-colliders.json');
 const LOCATION_FILE = path.join(ROOT, 'data', 'locations', 'settlement.json');
-const CLIENT_MODELS_FILE = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
-const CLIENT_PRELOAD_FILE = path.join(ROOT, 'public', 'js', 'game', '02c_map_locations_collision.js');
-const CLIENT_WORLD_FILE = path.join(ROOT, 'public', 'js', 'game', '02e_trader_yard_world_build.js');
 const EXPECTED = Object.freeze({
   old_klim_trade_hall: { kind: 'hero_structure', maxMaterials: 3, maxPrimitives: 5, maxTriangles: 6500 },
   old_klim_trade_hall_roof: { kind: 'cutaway_roof', maxMaterials: 2, maxPrimitives: 2, maxTriangles: 2200 },
@@ -54,45 +51,6 @@ function sha256(data) {
   return crypto.createHash('sha256').update(data).digest('hex').toUpperCase();
 }
 
-function extractFunctionSource(source, name) {
-  const start = source.indexOf(`function ${name}(`);
-  assert(start >= 0, `${name}: function is missing`);
-  const brace = source.indexOf('{', start);
-  assert(brace >= 0, `${name}: function body is missing`);
-  let depth = 0;
-  let quote = '';
-  let escaped = false;
-  for (let index = brace; index < source.length; index += 1) {
-    const char = source[index];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (char === '\\') escaped = true;
-      else if (char === quote) quote = '';
-      continue;
-    }
-    if (char === "'" || char === '"' || char === '`') {
-      quote = char;
-      continue;
-    }
-    if (char === '{') depth += 1;
-    if (char !== '}') continue;
-    depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  assert.fail(`${name}: unterminated function body`);
-}
-
-function extractStringList(source, declarationName) {
-  const marker = `const ${declarationName} =`;
-  const start = source.indexOf(marker);
-  assert(start >= 0, `${declarationName}: declaration is missing`);
-  const open = source.indexOf('[', start);
-  assert(open >= 0, `${declarationName}: array is missing`);
-  const close = source.indexOf(']', open);
-  assert(close >= 0, `${declarationName}: array is unterminated`);
-  return Array.from(source.slice(open + 1, close).matchAll(/'([^']+)'/g), match => match[1]);
-}
-
 function parseGlb(file) {
   const data = fs.readFileSync(file);
   assert.strictEqual(data.toString('ascii', 0, 4), 'glTF', `${path.basename(file)}: bad GLB signature`);
@@ -118,14 +76,10 @@ assert(fs.existsSync(MANIFEST_FILE), 'Old Klim runtime manifest is missing');
 assert(fs.existsSync(GENERATOR), 'Old Klim Blender generator is missing');
 assert(fs.existsSync(COLLIDER_FILE), 'Model collider catalog is missing');
 assert(fs.existsSync(LOCATION_FILE), 'Old Klim authored location is missing');
-assert(fs.existsSync(CLIENT_PRELOAD_FILE), 'Location texture preload client is missing');
 const report = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'));
 const colliderCatalog = JSON.parse(fs.readFileSync(COLLIDER_FILE, 'utf8'));
 const location = JSON.parse(fs.readFileSync(LOCATION_FILE, 'utf8'));
-const clientModels = fs.readFileSync(CLIENT_MODELS_FILE, 'utf8');
-const clientPreload = fs.readFileSync(CLIENT_PRELOAD_FILE, 'utf8');
-const clientWorld = fs.readFileSync(CLIENT_WORLD_FILE, 'utf8');
 const expectedIds = Object.keys(EXPECTED);
 
 assert.strictEqual(report.schema, 'realm.old-klim-environment-report.v1');
@@ -274,104 +228,8 @@ const caravan = rows.find(row => row?.model === 'oldKlimCaravan');
 assert.strictEqual(caravan?.collision, 'solid', 'Old Klim caravan must block movement');
 const canopy = rows.find(row => row?.model === 'oldKlimLoadingCanopy');
 assert.strictEqual(canopy?.playerCollision, 'none', 'Open Old Klim canopy must remain walk-through');
-for (const runtime of Object.values(manifest.models)) {
-  assert(clientModels.includes(runtime.runtimeFile), `${runtime.runtimeFile}: runtime GLB is not registered by the client`);
-}
-assert(clientModels.includes('OLD_KLIM_INSTANCED_MODEL_KEYS'), 'Old Klim runtime instancing registry is missing');
-assert(clientModels.includes("markNoDistanceCull(group, 'old-klim-authored-glb')"),
-  'Old Klim major GLBs must bypass distance culling without disabling frustum culling');
-
-const legacyTextureUrls = extractStringList(clientPreload, 'LEGACY_TRADER_SURFACE_TEXTURE_URLS');
-const legacyCriticalTextureUrls = extractStringList(clientPreload, 'LEGACY_TRADER_CRITICAL_TEXTURE_URLS');
-const legacyBlockModelKeys = extractStringList(clientPreload, 'LEGACY_TRADER_BLOCK_MODEL_KEYS');
-assert.strictEqual(legacyTextureUrls.length, 42, 'Legacy trader texture list must retain all 42 fallback assets');
-assert.strictEqual(new Set(legacyTextureUrls).size, 42, 'Legacy trader texture list contains duplicates');
-assert.strictEqual(legacyTextureUrls.filter(url => url.includes('/psx_buildings/')).length, 17,
-  'Legacy PSX fallback texture count changed');
-assert.strictEqual(legacyTextureUrls.filter(url => url.includes('/materials_wood_bricks_01/')).length, 25,
-  'Legacy wood/bricks fallback texture count changed');
-assert.strictEqual(legacyCriticalTextureUrls.length, 5, 'Legacy critical fallback texture count changed');
-legacyCriticalTextureUrls.forEach(url => {
-  assert(legacyTextureUrls.includes(url), `${url}: critical fallback is absent from the full legacy list`);
-});
-
-const preloadRuntimeFactory = new Function(
-  'LOCATIONS',
-  'locationUsesAuthoredLayout',
-  'LEGACY_TRADER_BLOCK_MODEL_KEYS',
-  'LEGACY_TRADER_SURFACE_TEXTURE_URLS',
-  'LEGACY_TRADER_CRITICAL_TEXTURE_URLS',
-  'graphicsTextureBudget',
-  'getReliefTexturePath',
-  `${extractFunctionSource(clientPreload, 'uniqueLocationUrls')}\n`
-    + `${extractFunctionSource(clientPreload, 'locationNeedsLegacyTraderSurfaceTextures')}\n`
-    + `${extractFunctionSource(clientPreload, 'getLocationPreloadTextureUrls')}\n`
-    + `${extractFunctionSource(clientPreload, 'getCriticalLocationPreloadTextureUrls')}\n`
-    + 'return { locationNeedsLegacyTraderSurfaceTextures, getLocationPreloadTextureUrls, getCriticalLocationPreloadTextureUrls };'
-);
-const authoredLayoutCheck = new Function(
-  `${extractFunctionSource(clientModels, 'locationUsesAuthoredLayout')}\nreturn locationUsesAuthoredLayout;`
-)();
-function preloadRuntimeFor(settlementConfig, includeConfig = true) {
-  return preloadRuntimeFactory(
-    includeConfig ? { settlement: settlementConfig } : {},
-    authoredLayoutCheck,
-    new Set(legacyBlockModelKeys),
-    legacyTextureUrls,
-    legacyCriticalTextureUrls,
-    () => ({ pbrMaps: true, displacement: true, layerNormals: true }),
-    kind => `assets/test/relief-${kind}.webp`
-  );
-}
-function assertLegacyPreloadState(runtime, expected, label) {
-  assert.strictEqual(runtime.locationNeedsLegacyTraderSurfaceTextures('settlement'), expected, `${label}: wrong legacy predicate`);
-  const fullUrls = runtime.getLocationPreloadTextureUrls('settlement');
-  const criticalUrls = runtime.getCriticalLocationPreloadTextureUrls('settlement');
-  legacyTextureUrls.forEach(url => {
-    assert.strictEqual(fullUrls.includes(url), expected, `${label}: unexpected full preload state for ${url}`);
-  });
-  legacyCriticalTextureUrls.forEach(url => {
-    assert.strictEqual(criticalUrls.includes(url), expected, `${label}: unexpected critical preload state for ${url}`);
-  });
-}
-
-assertLegacyPreloadState(preloadRuntimeFor(location), false, 'authored Old Klim GLB settlement');
-const legacyBlockLocation = JSON.parse(JSON.stringify(location));
-legacyBlockLocation.objects.push({ id: 'legacy-block-check', model: legacyBlockModelKeys[0] });
-assertLegacyPreloadState(preloadRuntimeFor(legacyBlockLocation), true, 'authored settlement with a legacy block');
-const proceduralLocation = JSON.parse(JSON.stringify(location));
-proceduralLocation.runtimeMode = 'procedural';
-assertLegacyPreloadState(preloadRuntimeFor(proceduralLocation), true, 'procedural settlement');
-const otherProfileLocation = JSON.parse(JSON.stringify(location));
-otherProfileLocation.visualProfile.id = 'legacy-or-future-settlement';
-assertLegacyPreloadState(preloadRuntimeFor(otherProfileLocation), true, 'authored settlement with another visual profile');
-assertLegacyPreloadState(preloadRuntimeFor(null, false), true, 'unloaded settlement config');
-
-const lazyFactoryStart = clientModels.indexOf('const LEGACY_WORLD_MATERIAL_FACTORIES = Object.freeze({');
-const lazyFactoryEnd = clientModels.indexOf('\n\n  const groundTextureRepeat', lazyFactoryStart);
-assert(lazyFactoryStart >= 0 && lazyFactoryEnd > lazyFactoryStart, 'Legacy material factory registry is missing');
-const lazyFactoryBody = clientModels.slice(lazyFactoryStart, lazyFactoryEnd);
-const lazyMaterialKeys = Array.from(
-  lazyFactoryBody.matchAll(/^\s{4}([A-Za-z][A-Za-z0-9]*): \(\) =>/gm),
-  match => match[1]
-);
-assert.strictEqual(lazyMaterialKeys.length, 17, 'All 17 legacy materials must remain lazy-loadable');
-assert.strictEqual(new Set(lazyMaterialKeys).size, 17, 'Legacy material factory keys contain duplicates');
-const eagerMaterialBody = extractFunctionSource(clientModels, 'createWorldMaterialSet');
-lazyMaterialKeys.forEach(key => {
-  assert(!new RegExp(`\\b${key}:`).test(eagerMaterialBody), `${key}: legacy material is still created eagerly`);
-});
-const resolverBody = extractFunctionSource(clientModels, 'resolveWorldMaterial');
-assert(resolverBody.includes('LEGACY_WORLD_MATERIAL_FACTORIES[key]') && resolverBody.includes('materialSet[key] = material'),
-  'Legacy material resolver no longer creates and caches factories on first use');
-assert(clientModels.includes('return resolveWorldMaterial(key);'), 'The mats proxy does not use the lazy material resolver');
-
-assert(!/createTraderReliefPebbleField\(\);/.test(clientWorld), 'Old Klim runtime still spawns procedural pebbles');
-assert(!/createTraderInstancedDryGrassField\(\);/.test(clientWorld), 'Old Klim runtime still spawns procedural grass');
-assert(!/createTraderReliefCrackRidges\(\);/.test(clientWorld), 'Old Klim runtime still spawns procedural crack geometry');
 
 console.log(
   `Old Klim environment kit OK: ${expectedIds.length} GLB, `
-  + `${totals.primitives} primitives, ${totals.triangles} triangles, zero raster textures; `
-  + `${legacyTextureUrls.length} legacy preload textures skipped with fail-safe fallback preserved.`
+  + `${totals.primitives} primitives, ${totals.triangles} triangles, zero raster textures.`
 );

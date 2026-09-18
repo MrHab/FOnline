@@ -14,10 +14,7 @@ const ROOT = path.resolve(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 
 const sources = [
-  ['server.js', read('server.js')],
-  ['08d_world_context_targets.js', read('public', 'js', 'game', '08d_world_context_targets.js')],
-  ['05e_ground_items_world_sync.js', read('public', 'js', 'game', '05e_ground_items_world_sync.js')],
-  ['05f_enemy_models_location_flow.js', read('public', 'js', 'game', '05f_enemy_models_location_flow.js')]
+  ['server.js', read('server.js')]
 ];
 
 for (const [name, source] of sources) {
@@ -30,12 +27,6 @@ assert(!server.includes('NPC_PERSONALITY_LINES'), 'реплики по хара�
 for (const label of ['Сдержанный', 'Разговорчивый', 'Настороженный', 'Добродушный', 'Расчетливый']) {
   assert(!server.includes(label), `подпись характера «${label}» вернулась`);
 }
-
-// Подсказка осмотра больше не показывает строку характера.
-const hint = sources[1][1];
-assert(!hint.includes('\\u0425\\u0430\\u0440\\u0430\\u043a\\u0442\\u0435\\u0440'),
-  'подсказка снова показывает «Характер»');
-assert(!/Характер/.test(hint), 'подсказка снова показывает «Характер»');
 
 // Отступление в бою осталось, но одинаковое для всех.
 const retreat = /function enemyRetreatHpRatio\([\s\S]*?\n\}/.exec(server);
@@ -55,4 +46,4 @@ const speech = /function npcSocialSpeechLine\([\s\S]*?\n\}/.exec(server);
 assert(speech, 'НПС перестали переговариваться');
 assert(speech[0].includes('NPC_SOCIAL_LINES'), 'реплики по роли пропали вместе с характером');
 
-console.log('NPC personality removed OK: справочников нет, подсказка чистая, отступление общее и равно прежнему нейтральному, реплики по роли остались.');
+console.log('NPC personality removed OK: справочников нет, отступление общее и равно прежнему нейтральному, реплики по роли остались.');

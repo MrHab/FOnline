@@ -218,7 +218,7 @@ function main() {
     `Weapon runtime models built: ${manifest.files.length} GLB, `
     + `${manifest.files.reduce((sum, row) => sum + row.bytes, 0)} bytes`
   );
-  // Publish the content fingerprint to both clients in the same build. A fixed
+  // Publish the content fingerprint to the Unity client in the same build. A fixed
   // Unity catalog number allowed freshly built GLBs to keep the old cache URL.
   const digest = crypto.createHash('sha256');
   for (const file of fs.readdirSync(DEFAULT_OUTPUT).filter(name => /^weapon_.*\.glb$/.test(name)).sort()) {
@@ -228,8 +228,7 @@ function main() {
   const fingerprint = digest.digest('hex').slice(0, 8);
   if (path.resolve(options.output) === path.resolve(DEFAULT_OUTPUT)) {
     const clients = [
-      ['unity-client/Assets/Scripts/Game/RoaModelUrl.cs', /WeaponCatalogVersion = "[^"]+"/, `WeaponCatalogVersion = "3-${fingerprint}"`],
-      ['public/js/game/04c_weapon_glb_runtime.js', /WEAPON_MODEL_ASSET_VERSION = '[^']+'/, `WEAPON_MODEL_ASSET_VERSION = 'weapon-catalog-3-${fingerprint}'`]
+      ['unity-client/Assets/Scripts/Game/RoaModelUrl.cs', /WeaponCatalogVersion = "[^"]+"/, `WeaponCatalogVersion = "3-${fingerprint}"`]
     ];
     for (const [relative, pattern, replacement] of clients) {
       const file = path.join(ROOT, relative);

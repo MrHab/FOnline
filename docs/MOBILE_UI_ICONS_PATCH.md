@@ -1,5 +1,10 @@
 # v7.74.26 — мобильные иконки UI
 
+> Историческая заметка о прежнем браузерном клиенте. Он удалён вместе с
+> `public/assets/ui/`, своими CSS-слоями и проверками `check-client-js.js` и
+> `check-client-css.js`. Мобильные иконки Unity-клиента лежат в
+> `unity-client/Assets/Resources/RealmUi/mobile/`.
+
 Изменения:
 
 - Добавлены прозрачные PNG-иконки для мобильного UI в `public/assets/ui/mobile/`.

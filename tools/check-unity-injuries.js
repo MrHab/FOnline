@@ -6,8 +6,6 @@ const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
 const server = read('server.js');
-const webActions = read('public/js/game/03b_inventory_actions_ui.js');
-const webVisuals = read('public/js/game/04_player_model_visuals.js');
 const player = read('unity-client/Assets/Scripts/Game/RoaPlayerController.cs');
 const character = read('unity-client/Assets/Scripts/Game/RoaCharacterView.cs');
 const fog = read('unity-client/Assets/Scripts/Game/RoaFogOfWar.cs');
@@ -28,12 +26,6 @@ has(server, '(injuries.concussion ? 0.10 : 0)', 'server concussion accuracy pena
 has(server, '(injuries.infection ? 0.03 : 0)', 'server infection accuracy penalty');
 has(server, "action === 'attack' && injuries.brokenArm", 'server attack AP penalty');
 has(server, "action === 'reload' && injuries.brokenArm", 'server reload AP penalty');
-
-has(webActions, "if (hasInjury('brokenLeg')) mul *= 0.68;", 'web broken-leg speed');
-has(webActions, "if (hasInjury('infection')) mul *= 0.92;", 'web infection speed');
-has(webVisuals, 'state.brokenLeg ? Math.sin(performance.now() / 260) * 0.035 : 0', 'web leg sway');
-has(webVisuals, 'parts.armR.rotation.z += 0.72;', 'web arm pose');
-has(webVisuals, 'Math.sin(performance.now() / 120) * 0.06', 'web concussion wobble');
 
 has(player, '(HasBrokenLeg ? 0.68f : 1f) * (HasInfection ? 0.92f : 1f)', 'Unity movement penalty');
 has(character, 'Mathf.Sin(Time.time / 0.26f) * 0.035f', 'Unity leg sway');

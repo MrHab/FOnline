@@ -6,6 +6,12 @@ const root = path.resolve(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const authoredDataDir = path.join(root, 'data');
 const serverSourceDir = path.join(root, 'src', 'server');
+const unityScriptsDir = path.join(root, 'unity-client', 'Assets', 'Scripts');
+// public/unity — генерируемая сборка WebGL (меню «Кромка → Build WebGL»), в git не
+// входит и локально может отставать от исходников. Её страница проверяется по
+// исходному шаблону в unity-client/Assets/WebGLTemplates.
+const generatedUnityBuildDir = path.join(publicDir, 'unity');
+const unityWebGlTemplatesDir = path.join(root, 'unity-client', 'Assets', 'WebGLTemplates');
 const checkedExtensions = new Set(['.html', '.css', '.js']);
 const manifestListKeys = new Set(['files', 'bundled_files']);
 const manifestAssetKeys = new Set([
@@ -40,13 +46,9 @@ const runtimeAssetExtensions = new Set([
   '.woff2'
 ]);
 const knownDynamicRoutes = new Set([
-  '/sdk.js',
   '/socket.io/socket.io.js',
   '/vendor/three.min.js',
-  '/vendor/GLTFLoader.js',
-  '/legacy',
-  '/legacy/',
-  '/legacy/index.html'
+  '/vendor/GLTFLoader.js'
 ]);
 
 function walkFiles(dir, out = [], extensionFilter = checkedExtensions) {
@@ -104,14 +106,39 @@ function collectRefs(file, source) {
 
   if (ext === '.html') {
     addMatches(/\b(?:src|href)=["']([^"']+)["']/g);
+    // Встроенные <script> dev-редакторов ссылаются на текстуры строковыми литералами.
+    for (const script of source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+      for (const match of script[1].matchAll(/['"`](\/?(?:assets|css|js)\/[^'"`]+)['"`]/g)) {
+        refs.push(cleanUrl(match[1]));
+      }
+    }
   }
 
   if (ext === '.js') {
     addMatches(/['"`](\/?(?:assets|css|js)\/[^'"`]+)['"`]/g);
-    addMatches(/['"`](\/(?:sdk\.js|vendor\/three\.min\.js|vendor\/GLTFLoader\.js|socket\.io\/socket\.io\.js))['"`]/g);
+    addMatches(/['"`](\/(?:vendor\/three\.min\.js|vendor\/GLTFLoader\.js|socket\.io\/socket\.io\.js))['"`]/g);
   }
 
   return refs.filter(shouldCheck);
+}
+
+// Unity C#: полные пути "/assets/…" — литералом или склейкой с константой файла
+// (`private const string Wasteland = "/assets/models/wasteland/";` +
+// `Wasteland + "npc_ghoul.glb"`). Префиксы без расширения
+// ("/assets/models/weapons/weapon_" + id + ".glb") собираются во время игры и
+// здесь не проверяются; их файлы должны быть учтены другими источниками.
+function collectUnityRefs(source) {
+  const constants = new Map();
+  for (const match of source.matchAll(/\bconst\s+string\s+([A-Za-z_]\w*)\s*=\s*"([^"\\]*)"\s*;/g)) {
+    constants.set(match[1], match[2]);
+  }
+  const refs = [...source.matchAll(/"(\/assets\/[^"\\]*)"/g)].map(match => match[1]);
+  for (const match of source.matchAll(/\b([A-Za-z_]\w*)\s*\+\s*"([^"\\]*)"/g)) {
+    if (constants.has(match[1])) refs.push(constants.get(match[1]) + match[2]);
+  }
+  return refs
+    .map(cleanUrl)
+    .filter(url => url.startsWith('/assets/') && /\.[A-Za-z0-9]+$/.test(url));
 }
 
 function shouldCheckManifestRef(url) {
@@ -182,6 +209,7 @@ let refCount = 0;
 let manifestRefCount = 0;
 let authoredRefCount = 0;
 let serverRefCount = 0;
+let unityRefCount = 0;
 
 function rememberAssetReference(target) {
   const resolved = path.resolve(target);
@@ -192,6 +220,7 @@ function rememberAssetReference(target) {
 }
 
 for (const file of walkFiles(publicDir)) {
+  if (file.startsWith(generatedUnityBuildDir + path.sep)) continue;
   const source = fs.readFileSync(file, 'utf8');
   for (const ref of collectRefs(file, source)) {
     refCount += 1;
@@ -217,6 +246,35 @@ for (const file of [
     // /assets/models-lite — виртуальный маршрут (генерируемые копии GLB с фолбэком на оригинал).
     if (/^\/assets\/models-lite(\/|$)/.test(ref)) continue;
     serverRefCount += 1;
+    const target = publicPathFor(ref, file);
+    if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {
+      missing.push(`${path.relative(root, file)} -> ${ref} escapes public/`);
+      continue;
+    }
+    if (!fs.existsSync(target)) {
+      missing.push(`${path.relative(root, file)} -> ${ref}`);
+    } else {
+      rememberAssetReference(target);
+    }
+  }
+}
+
+// Unity-клиент грузит модели по HTTP с того же сервера: его пути тоже ссылки на
+// public/, и GLB, нужные только Unity (NPC пустоши), считаются используемыми.
+// Шаблон WebGL отдаётся как /unity/index.html; относительные пути и {{{ … }}}
+// заполняет сборка Unity, поэтому из него проверяются только абсолютные ссылки.
+const unitySources = [
+  ...walkFiles(unityScriptsDir, [], new Set(['.cs']))
+    .map(file => [file, collectUnityRefs(fs.readFileSync(file, 'utf8'))]),
+  ...walkFiles(unityWebGlTemplatesDir, [], new Set(['.html']))
+    .map(file => [file, collectRefs(file, fs.readFileSync(file, 'utf8'))
+      .filter(url => url.startsWith('/') && !url.includes('{{{'))])
+];
+for (const [file, refs] of unitySources) {
+  for (const ref of refs) {
+    // /assets/models-lite — виртуальный маршрут (генерируемые копии GLB с фолбэком на оригинал).
+    if (/^\/assets\/models-lite(\/|$)/.test(ref)) continue;
+    unityRefCount += 1;
     const target = publicPathFor(ref, file);
     if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {
       missing.push(`${path.relative(root, file)} -> ${ref} escapes public/`);
@@ -305,6 +363,7 @@ if (emptyAssets.length || orphanedRuntimeAssets.length) {
 
 console.log(
   `Static asset references OK: ${refCount} public URL(s), ${serverRefCount} server URL(s), `
+  + `${unityRefCount} Unity URL(s), `
   + `${authoredRefCount} authored-data reference(s), ${manifestRefCount} manifest reference(s), `
   + `${referencedAssets.size} runtime asset file(s) checked`
 );

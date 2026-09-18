@@ -81,15 +81,6 @@ function functionBody(source, name) {
 const errors = [];
 const warnings = [];
 const server = readText('server.js');
-const clientWorld = [
-  '05_multiplayer_core_state.js',
-  '05a_remote_actor_equipment.js',
-  '05b_remote_player_locomotion.js',
-  '05c_multiplayer_socket_room.js',
-  '05d_world_containers_security.js',
-  '05e_ground_items_world_sync.js',
-  '05f_enemy_models_location_flow.js'
-].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
 const scheduleFixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-npc-schedules-'));
 let scheduleFixtureCleaned = false;
 
@@ -135,7 +126,6 @@ function requireText(label, source, needle) {
 const scheduleBody = functionBody(server, 'createNpcSchedule');
 const updateScheduleBody = functionBody(server, 'updateNpcDailySchedule');
 const publicEnemyBody = functionBody(server, 'publicEnemy');
-const animateEnemyBody = functionBody(clientWorld, 'animateEnemyVisual');
 const updateEnemiesBody = functionBody(server, 'updateServerEnemies');
 const dialogueInterruptBody = functionBody(server, 'npcRoutineDialogueInterruptType');
 const ensureSlotsBody = functionBody(server, 'ensureRoomNpcActivitySlots');
@@ -336,20 +326,6 @@ try {
   'serviceAvailable:',
   'speechText,'
 ].forEach(needle => requireText('publicEnemy schedule snapshot', publicEnemyBody, needle));
-
-[
-  'function enemyAnimApplyDialoguePose',
-
-  'const inDialogue = scheduleState ===',
-  'enemyAnimApplyDialoguePose',
-  'enemy.enemyVisualSpeed'
-].forEach(needle => requireText('client NPC animations', clientWorld, needle));
-
-[
-  'enemyAnimRestoreActorParts(parts, animationRestoreK)',
-  'enemyAnimWeaponVisible(mesh, true)'
-].forEach(needle => requireText('client NPC animation cleanup', animateEnemyBody, needle));
-requireText('client NPC weapon restore', clientWorld, 'enemyAnimWeaponVisible(mesh, true)');
 
 const hostileWorkerRoles = new Set([
   'wild_creature',

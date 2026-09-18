@@ -7,9 +7,10 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
-const CLIENT_FILE = path.join(ROOT, 'public', 'js', 'game', '04e_weapon_modification_workbench.js');
 const SERVER_FILE = path.join(ROOT, 'server.js');
-const ITEM_FILE = path.join(ROOT, 'public', 'js', 'game', '03_items_inventory_core.js');
+const ITEM_CATALOG_FILE = path.join(ROOT, 'data', 'kromka', 'items.json');
+const UNITY_FILE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWeaponModificationData.cs');
+const UNITY_INVENTORY_FILE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
 
 function read(file) {
   return fs.readFileSync(file, 'utf8');
@@ -25,14 +26,56 @@ function extractFrozenObject(source, name, nextMarker) {
   return vm.runInNewContext(`(${expression})`, Object.create(null), { timeout: 1000 });
 }
 
+function quotedList(source) {
+  return [...String(source || '').matchAll(/"([^"]+)"/g)].map(match => match[1]);
+}
+
+// RoaWeaponModificationData.cs: Mod(id, slot, name, effect, Cost(...), weaponIds|null, excludeWeaponIds)
+// plus the workbench preview Effects(description, damage×, range×, accuracy+, magazine×, magazine+, rate×, reload AP+).
+function extractUnityCatalog(source) {
+  const catalog = {};
+  const modPattern = /Mod\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*Cost\(([^)]*)\)(?:,\s*(?:null|Only\(([^)]*)\)))?(?:,\s*Only\(([^)]*)\))?\)/g;
+  for (const row of source.matchAll(modPattern)) {
+    const tokens = [...row[5].matchAll(/"([^"]+)"|(-?\d+)/g)].map(token => token[1] ?? Number(token[2]));
+    const cost = {};
+    for (let index = 0; index + 1 < tokens.length; index += 2) cost[tokens[index]] = tokens[index + 1];
+    catalog[row[1]] = {
+      id: row[1],
+      slot: row[2],
+      name: row[3],
+      desc: row[4],
+      cost,
+      weaponIds: row[6] === undefined ? null : quotedList(row[6]),
+      excludeWeaponIds: row[7] === undefined ? null : quotedList(row[7]),
+      effects: null
+    };
+  }
+  const effectPattern = /\{\s*"([^"]+)",\s*new Effects\("((?:[^"\\]|\\.)*)",\s*(-?[\d.]+)f,\s*(-?[\d.]+)f,\s*(-?[\d.]+)f,\s*(-?[\d.]+)f,\s*(-?\d+),\s*(-?[\d.]+)f,\s*(-?\d+)\)\s*\}/g;
+  for (const row of source.matchAll(effectPattern)) {
+    const [damageMul, rangeMul, accuracyBonus, magMul, magazineBonus, fireRateMul, reloadApDelta] = row.slice(3).map(Number);
+    assert(catalog[row[1]], `${row[1]}: Unity preview effects have no modification definition`);
+    catalog[row[1]].effects = { description: row[2], damageMul, rangeMul, accuracyBonus, magMul, magazineBonus, fireRateMul, reloadApDelta };
+  }
+  return catalog;
+}
+
+// Unity previews only these effects; noise and auto-fire penalty stay server-side.
 function contractRow(mod) {
+  const effects = mod.effects || {};
   return {
     id: String(mod.id || ''),
     slot: String(mod.slot || ''),
-    weaponIds: Array.isArray(mod.weaponIds) ? [...mod.weaponIds] : null,
-    excludeWeaponIds: Array.isArray(mod.excludeWeaponIds) ? [...mod.excludeWeaponIds] : null,
+    weaponIds: Array.isArray(mod.weaponIds) ? [...mod.weaponIds].sort() : null,
+    excludeWeaponIds: Array.isArray(mod.excludeWeaponIds) ? [...mod.excludeWeaponIds].sort() : null,
     cost: { ...(mod.cost || {}) },
-    effects: { ...(mod.effects || {}) }
+    effects: {
+      damageMul: Number(effects.damageMul ?? 1),
+      rangeMul: Number(effects.rangeMul ?? 1),
+      accuracyBonus: Number(effects.accuracyBonus ?? 0),
+      magMul: Number(effects.magMul ?? 1),
+      fireRateMul: Number(effects.fireRateMul ?? 1),
+      reloadApDelta: Number(effects.reloadApDelta ?? 0)
+    }
   };
 }
 
@@ -75,37 +118,35 @@ function applyEffects(base, mods) {
   };
 }
 
-const clientSource = read(CLIENT_FILE);
 const serverSource = read(SERVER_FILE);
-const itemSource = read(ITEM_FILE);
-const clientCatalog = extractFrozenObject(
-  clientSource,
-  'WEAPON_MODIFICATION_CATALOG',
-  'const WEAPON_MODIFICATION_BASE_STATS'
-);
+const unitySource = read(UNITY_FILE);
+const unityInventorySource = read(UNITY_INVENTORY_FILE);
+const itemIds = new Set((JSON.parse(read(ITEM_CATALOG_FILE)).items || []).map(item => String(item?.id || '')));
 const serverCatalog = extractFrozenObject(
   serverSource,
   'SERVER_WEAPON_MODIFICATION_CATALOG',
   'function serverWeaponModificationCompatible'
 );
+const unityCatalog = extractUnityCatalog(unitySource);
 
-const clientIds = Object.keys(clientCatalog).sort();
 const serverIds = Object.keys(serverCatalog).sort();
-assert.deepStrictEqual(clientIds, serverIds, 'client/server modification IDs differ');
-assert(clientIds.length >= 12, 'weapon modification catalog is unexpectedly small');
+const unityIds = Object.keys(unityCatalog).sort();
+assert.deepStrictEqual(unityIds, serverIds, 'Unity/server modification IDs differ');
+assert(serverIds.length >= 12, 'weapon modification catalog is unexpectedly small');
 
-for (const id of clientIds) {
-  const clientMod = clientCatalog[id];
+for (const id of serverIds) {
   const serverMod = serverCatalog[id];
-  assert.strictEqual(clientMod.id, id, `${id}: client id field differs from catalog key`);
+  const unityMod = unityCatalog[id];
   assert.strictEqual(serverMod.id, id, `${id}: server id field differs from catalog key`);
-  assert(['barrel', 'scope', 'magazine', 'forend'].includes(clientMod.slot), `${id}: unknown slot`);
-  assert(clientMod.name && clientMod.desc && clientMod.icon, `${id}: client presentation is incomplete`);
-  assert(Object.keys(clientMod.cost || {}).length > 0, `${id}: cost is empty`);
-  assert(Object.keys(clientMod.effects || {}).length > 0, `${id}: effects are empty`);
-  assert.deepStrictEqual(contractRow(clientMod), contractRow(serverMod), `${id}: client/server contract differs`);
-  for (const [materialId, qty] of Object.entries(clientMod.cost || {})) {
-    assert(new RegExp(`\\b${materialId}:\\s*\\{`).test(itemSource), `${id}: unknown material ${materialId}`);
+  assert(['barrel', 'scope', 'magazine', 'forend'].includes(serverMod.slot), `${id}: unknown slot`);
+  assert(unityMod.effects, `${id}: Unity workbench preview effects are missing`);
+  assert(unityMod.name && unityMod.desc && unityMod.effects.description, `${id}: Unity presentation is incomplete`);
+  assert.strictEqual(unityMod.effects.magazineBonus, 0, `${id}: Unity flat magazine bonus has no server counterpart`);
+  assert(Object.keys(serverMod.cost || {}).length > 0, `${id}: cost is empty`);
+  assert(Object.keys(serverMod.effects || {}).length > 0, `${id}: effects are empty`);
+  assert.deepStrictEqual(contractRow(unityMod), contractRow(serverMod), `${id}: Unity/server contract differs`);
+  for (const [materialId, qty] of Object.entries(serverMod.cost || {})) {
+    assert(itemIds.has(materialId), `${id}: unknown material ${materialId}`);
     assert(Number.isInteger(qty) && qty > 0, `${id}: invalid ${materialId} cost`);
   }
 }
@@ -124,15 +165,15 @@ const weapons = [
 
 for (const weapon of weapons) {
   for (const slot of ['barrel', 'scope', 'magazine']) {
-    assert(clientIds.some(id => clientCatalog[id].slot === slot && compatible(clientCatalog[id], weapon)), `${weapon.id}: no ${slot} option`);
+    assert(serverIds.some(id => serverCatalog[id].slot === slot && compatible(serverCatalog[id], weapon)), `${weapon.id}: no ${slot} option`);
   }
-  const forends = clientIds.filter(id => clientCatalog[id].slot === 'forend' && compatible(clientCatalog[id], weapon));
+  const forends = serverIds.filter(id => serverCatalog[id].slot === 'forend' && compatible(serverCatalog[id], weapon));
   assert.strictEqual(forends.length > 0, weapon.hands === 2, `${weapon.id}: forend availability does not match handedness`);
 }
 
 const tunedRifle = applyEffects(
   { dmg: [13, 19], range: 18, magSize: 30, fireRate: 0.42, reloadApCost: 4 },
-  [clientCatalog.barrel_suppressor, clientCatalog.scope_marksman, clientCatalog.mag_extended, clientCatalog.forend_grip]
+  [serverCatalog.barrel_suppressor, serverCatalog.scope_marksman, serverCatalog.mag_extended, serverCatalog.forend_grip]
 );
 assert.deepStrictEqual(tunedRifle, {
   dmg: [13, 19],
@@ -155,18 +196,7 @@ for (const requiredSnippet of [
   assert(serverSource.includes(requiredSnippet), `server authority/persistence hook is missing: ${requiredSnippet}`);
 }
 
-for (const requiredSnippet of [
-  "action: 'modifyWeapon'",
-  "modal.setAttribute('aria-hidden', 'false')",
-  'function weaponModificationMountRoot()',
-  'document.fullscreenElement',
-  "document.getElementById('game-container') || document.body",
-  'root.appendChild(modal)',
-  'loadWeaponModificationModel(itemId)',
-  'applyWeaponModificationStats(target)'
-]) {
-  assert(clientSource.includes(requiredSnippet), `client workbench hook is missing: ${requiredSnippet}`);
-}
-assert(!clientSource.includes('document.body.appendChild(modal)'), 'workbench modal must stay inside the game fullscreen root');
+assert(unityInventorySource.includes('["action"] = "modifyWeapon"'),
+  'Unity workbench does not send the server modifyWeapon action');
 
-console.log(`Weapon modification contract OK (${clientIds.length} modifications, ${weapons.length} weapons).`);
+console.log(`Weapon modification contract OK (${serverIds.length} modifications, ${weapons.length} weapons).`);

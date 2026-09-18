@@ -1637,16 +1637,8 @@ function assertServerWorldTransferFaultRecovery() {
   );
 }
 
-function assertSocketAndClientContract() {
+function assertSocketContract() {
   const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
-  const pipboySource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game', '03a_pipboy_social_world_tasks.js'), 'utf8');
-  const globalMapSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game', '10_global_map_state_logs_config.js'), 'utf8');
-  const multiplayerSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game', '05c_multiplayer_socket_room.js'), 'utf8');
-  const clientSource = `${pipboySource}\n${globalMapSource}`;
-  assert(!clientSource.includes("emit('worldTaskJoinParty'"), 'client still emits the legacy join event');
-  assert(!clientSource.includes("emit('worldTaskLeaveParty'"), 'client still emits the legacy leave event');
-  assert(globalMapSource.includes("emit('worldTaskAction', { action: 'cancel', taskId: leavingTaskId }"),
-    'detaching from a party does not cancel the authoritative task');
   const joinHandler = serverSource.slice(
     serverSource.indexOf("socket.on('worldTaskJoinParty'"),
     serverSource.indexOf("socket.on('worldTaskAction'", serverSource.indexOf("socket.on('worldTaskJoinParty'"))
@@ -1766,28 +1758,6 @@ function assertSocketAndClientContract() {
       && lifecycleSync.includes("emitAuthoritativePlayerState(p, { reason: 'worldTaskLifecycle' })"),
     'accepted players do not receive a personalized self snapshot when a shared task becomes terminal'
   );
-  const attachmentReconcile = globalMapSource.slice(
-    globalMapSource.indexOf('function reconcileGlobalMapWorldPartyAttachment('),
-    globalMapSource.indexOf('function applyWastelandSimState(', globalMapSource.indexOf('function reconcileGlobalMapWorldPartyAttachment('))
-  );
-  assert(
-    attachmentReconcile.includes("task.status === 'active'")
-      && attachmentReconcile.includes("String(task.partyId || '') === attachedPartyId")
-      && !attachmentReconcile.includes('member?.characterId'),
-    'client attachment still depends on globally exposed character identities'
-  );
-  assert(
-    multiplayerSource.includes("completedWorldTaskId === String(globalMapState.attachedPartyTaskId || '').trim()")
-      && multiplayerSource.includes('clearGlobalMapWorldPartyAttachmentLocal(data.worldPoint, { save: false })'),
-    'terminal world transfer leaves the completed task attached on the client'
-  );
-  assert(attachmentReconcile.includes('&& (!task || ('),
-    'a truncated top-30 task list is treated as a terminal attachment state');
-  assert(multiplayerSource.includes('globalMapState.attachedPartyId = String(snapshot.globalMap.attachedPartyId')
-    && multiplayerSource.includes('globalMapState.attachedPartyTaskId = String(snapshot.globalMap.attachedPartyTaskId'),
-  'authoritative attachment is not synchronized while the player is in a local room');
-  assert(pipboySource.includes("if (typeof multiplayer === 'object' && multiplayer?.joined) return false;"),
-    'online reward UI remains fail-open without personalized eligibility');
   assert(serverSource.includes('syncWorldPlayerAmbushTransfers(simState);'),
     'triggered player ambushes are not transferred into their server room');
   assert(serverSource.includes("? 'В засаду вошёл отряд. Локация ожила.'")
@@ -1875,7 +1845,7 @@ try {
   assertServerPersistenceFaultRecovery();
   assertGlobalTravelLeaderDisconnectRecovery();
   assertServerWorldTransferFaultRecovery();
-  assertSocketAndClientContract();
+  assertSocketContract();
   console.log('World-party integrity check passed: authoritative attachment, reconnect-safe travel leaders, motion snapshots, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });

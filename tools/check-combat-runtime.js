@@ -2015,14 +2015,18 @@ async function assertKnownInstanceKeepsItsMagazine(accounts) {
   }, 'legacy-mix worn pistol after the spare was taken off');
 }
 
-async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
+// Экономика v3: оружие и броню у игроков скупает только Чёрный рынок (его
+// проверка — check-black-market-network: там же разряжается проданный пистолет).
+// Торговец Раздолья отказывает, и заряженный пистолет остаётся в сумке как был.
+async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
   const account = accounts.trade;
-  const soldRuntimeId = account.weaponRuntimeIds[1];
+  const keptRuntimeId = account.weaponRuntimeIds[1];
   await connectAndJoin(account);
   invariant(account.join.locationId === 'scrapTown',
     'Trade fixture joined the wrong location', account.join);
-  assertRuntimeWeaponInventory(account.join.self, soldRuntimeId, 5, 'pre-sale loaded pistol');
+  assertRuntimeWeaponInventory(account.join.self, keptRuntimeId, 5, 'loaded pistol before the offer');
   const ammoBefore = inventoryRowQty(account.join.self?.inventory, 'energyCell');
+  const silverBefore = inventoryRowQty(account.join.self?.inventory, 'silver');
   const trader = (Array.isArray(account.join.worldState?.enemies) ? account.join.worldState.enemies : [])
     .find(enemy => enemy?.hostileToPlayer === false
       && enemy?.role === 'merchant'
@@ -2033,29 +2037,26 @@ async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
     Number(account.join.z || 0) - Number(trader.z || 0)
   ) <= 5.2, 'Trade fixture spawned too far from the trader', { player: account.join, trader });
 
-  const sale = await socketAck(account.socket, 'npcTradeExchange', {
+  const view = await socketAck(account.socket, 'syncNpcTradeState', { enemyId: trader.id });
+  invariant(view.ok && Array.isArray(view.market?.refusedCategories)
+    && view.market.refusedCategories.includes('weapons') && view.market.refusedCategories.includes('armor')
+    && !(view.market.buyInterests || []).includes('weapons'),
+  'The trade window must say that the trader leaves weapons and armour to the Black Market', view);
+  const offer = await socketAck(account.socket, 'npcTradeExchange', {
     enemyId: trader.id,
     buys: [],
-    sells: [{ id: 'laserPistol', itemRuntimeId: soldRuntimeId, qty: 1 }],
+    sells: [{ id: 'laserPistol', itemRuntimeId: keptRuntimeId, qty: 1 }],
     skillRanks: {},
     talentRanks: {}
   });
-  invariant(sale.ok === true, 'Trader rejected a loaded bag weapon', sale);
-  invariant(Array.isArray(sale.unloadedAmmo)
-    && sale.unloadedAmmo.length === 1
-    && sale.unloadedAmmo[0]?.id === 'energyCell'
-    && Number(sale.unloadedAmmo[0]?.qty) === 5,
-  'Sale did not acknowledge the five automatically unloaded rounds', sale);
-  invariant(inventoryRowQty(sale.self?.inventory, 'energyCell') === ammoBefore + 5,
-    'Automatically unloaded rounds were not returned to player inventory', {
-      before: ammoBefore,
-      after: sale.self?.inventory,
-      unloadedAmmo: sale.unloadedAmmo
-    });
-  invariant(!(sale.self?.weaponInventoryRuntime || []).some(row => row?.id === soldRuntimeId),
-    'Sold runtime weapon remained in player inventory', sale.self?.weaponInventoryRuntime);
-  invariant(sale.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
-    'Selling a bag weapon changed the equipped weapon', sale.self?.equipmentRuntime);
+  invariant(offer.ok === false && /Чёрного рынка/.test(String(offer.error || '')),
+    'Scrap Town trader bought a weapon that only the Black Market buys', offer);
+  assertRuntimeWeaponInventory(offer.self, keptRuntimeId, 5, 'refused offer keeps the loaded pistol');
+  invariant(inventoryRowQty(offer.self?.inventory, 'energyCell') === ammoBefore
+    && inventoryRowQty(offer.self?.inventory, 'silver') === silverBefore,
+  'A refused weapon offer must not unload the magazine or pay marks', offer.self?.inventory);
+  invariant(offer.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
+    'A refused weapon offer changed the equipped weapon', offer.self?.equipmentRuntime);
   closeSocket(account);
 }
 
@@ -2147,7 +2148,7 @@ async function main() {
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
     await assertKnownInstanceKeepsItsMagazine(accounts);
-    await assertLoadedWeaponAutoUnloadsOnTrade(accounts);
+    await assertTraderLeavesWeaponsToBlackMarket(accounts);
     await assertProgressionAllocationAuthority(accounts);
     // The shooter fixtures intentionally share one combat arena so they can
     // target each other. They must not influence the safe-spawn search for the
@@ -2173,7 +2174,7 @@ async function main() {
       + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
-      + 'loaded bag weapons auto-unloaded into inventory when sold, '
+      + 'NPC traders left weapons to the Black Market and a refused loaded pistol stayed untouched, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
       + 'a known bag instance joined a legacy base-id pistol without taking over its magazine, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '

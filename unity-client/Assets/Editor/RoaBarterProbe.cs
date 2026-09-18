@@ -67,9 +67,9 @@ namespace RealmOfAshes.EditorTools
                 canvas.Interaction = interaction;
                 canvas.Inventory = inventoryComponent;
 
-                // Регрессия со сделки фельдшера Старого Клима: экран должен считать эти
-                // продажи так же, как serverTradeSellPrice с каталогом «Кромки»
-                // (47 и 32; до каталога цены были 56 и 32).
+                // Сделка у фельдшера: экран должен считать эти продажи и покупки так же,
+                // как serverTradeSellPrice и serverTradeBuyPrice с каталогом «Кромки»
+                // (скупка — 30% базы с надбавками и интересом, скидка — до 25%).
                 JObject quoteSelf = JObject.Parse(
                     "{\"special\":{\"cha\":5,\"int\":5},\"skillRanks\":{\"barter\":25},\"talentRanks\":{},\"traits\":[]}");
                 JObject quoteMarket = new JObject
@@ -80,15 +80,15 @@ namespace RealmOfAshes.EditorTools
                         new JObject { ["id"] = "medkit", ["qty"] = 1, ["price"] = 21 },
                         new JObject { ["id"] = "stim", ["qty"] = 1, ["price"] = 11 })
                 };
-                int sellTotal = 2 * CallPrice("TradeSellPrice", "reinforcedBoots", quoteMarket, quoteSelf)
-                    + 2 * CallPrice("TradeSellPrice", "leather", quoteMarket, quoteSelf)
+                int sellTotal = 2 * CallPrice("TradeSellPrice", "antibiotics", quoteMarket, quoteSelf)
+                    + 2 * CallPrice("TradeSellPrice", "electronics", quoteMarket, quoteSelf)
                     + CallPrice("TradeSellPrice", "trophy", quoteMarket, quoteSelf)
                     + CallPrice("TradeSellPrice", "water", quoteMarket, quoteSelf);
                 int buyTotal = CallPrice("TradeBuyPrice", 21, quoteSelf) + CallPrice("TradeBuyPrice", 11, quoteSelf);
-                report.Append("Old Klim quote: sells=").Append(sellTotal).Append(" buys=").Append(buyTotal)
+                report.Append("medic quote: sells=").Append(sellTotal).Append(" buys=").Append(buyTotal)
                       .Append(" payout=").Append(sellTotal - buyTotal).Append('\n');
-                Require(sellTotal == 47 && buyTotal == 32 && sellTotal - buyTotal == 15,
-                    "цены Unity снова расходятся с серверной сделкой фельдшера Старого Клима");
+                Require(sellTotal == 28 && buyTotal == 32 && sellTotal - buyTotal == -4,
+                    "цены Unity снова расходятся с серверной сделкой у фельдшера");
 
                 // Торговец личной базы: доля входит в обе цены, как на сервере,
                 // и перепродажа по-прежнему не выгоднее покупки.
@@ -96,13 +96,15 @@ namespace RealmOfAshes.EditorTools
                 residentSelf["residentTradePricePct"] = 0.08;
                 int residentBuy = CallPrice("TradeBuyPrice", 21, residentSelf) + CallPrice("TradeBuyPrice", 11, residentSelf);
                 report.Append("resident quote: buys=").Append(residentBuy).Append('\n');
-                Require(residentBuy == 30, "скидка Торговца базы не вошла в цену покупки: " + residentBuy);
-                int leather = CallPrice("TradeSellPrice", "leather", quoteMarket, quoteSelf);
-                int residentLeather = CallPrice("TradeSellPrice", "leather", quoteMarket, residentSelf);
-                Require(leather == 11 && residentLeather == 12, "надбавка Торговца базы не вошла в цену продажи: " + leather + " → " + residentLeather);
+                Require(residentBuy == 31, "скидка Торговца базы не вошла в цену покупки: " + residentBuy);
+                int doctorBag = CallPrice("TradeSellPrice", "doctorBag", quoteMarket, quoteSelf);
+                int residentDoctorBag = CallPrice("TradeSellPrice", "doctorBag", quoteMarket, residentSelf);
+                Require(doctorBag == 14 && residentDoctorBag == 15, "надбавка Торговца базы не вошла в цену продажи: " + doctorBag + " → " + residentDoctorBag);
                 Require(CallPrice("TradeSellPrice", "medkit", quoteMarket, residentSelf) < CallPrice("TradeBuyPrice", 21, residentSelf),
                     "со скидкой Торговца перепродажа стала выгоднее покупки");
-                // Опытный торговец упирается в потолок продажи: житель не должен его опускать.
+                // Опытный торговец упирается в потолок скупки — один для всех: на марку ниже
+                // самой дешёвой покупки в мире (аптечка: полка не ниже 22 × 0,75 → 17, со
+                // скидкой 25% — 13), поэтому житель его не опускает, а навык не удешевляет продажу.
                 JObject traderSelf = JObject.Parse(
                     "{\"special\":{\"cha\":10,\"int\":5},\"skillRanks\":{\"barter\":100},\"talentRanks\":{\"merchant\":3},\"traits\":[]}");
                 JObject traderResident = (JObject)traderSelf.DeepClone();
@@ -110,9 +112,33 @@ namespace RealmOfAshes.EditorTools
                 int capped = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderSelf);
                 int cappedResident = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderResident);
                 report.Append("capped medkit: ").Append(capped).Append(" → ").Append(cappedResident).Append('\n');
-                Require(capped == 14 && cappedResident == 14, "Торговец базы удешевил продажу у опытного торговца: " + capped + " → " + cappedResident);
-                Require(CallPrice("TradeBuyPrice", 21, traderResident) == 12 && CallPrice("TradeBuyPriceCore", 21, traderResident, false) == 13,
-                    "потолок продажи считается не от цены покупки без доли жителя");
+                Require(capped == 12 && cappedResident == 12 && CallPrice("TradeSellCeiling", "medkit") == 12,
+                    "Торговец базы удешевил продажу у опытного торговца: " + capped + " → " + cappedResident);
+                Require(CallPrice("TradeBuyPrice", 21, traderSelf) == 16 && CallPrice("TradeBuyPrice", 21, traderResident) == 16
+                        && CallPrice("TradeBuyPrice", 100, traderResident) == 75,
+                    "скидка покупки больше 25% или не складывается из Бартера, «Торговца» и жителя");
+                // Надбавка за интерес идёт до потолка: заинтересованный торговец платит мастеру
+                // потолок, другой — меньше; новичок получает меньше мастера, и никто не
+                // продаёт дороже покупки на самой дешёвой полке (38 × 0,75 → 29).
+                JObject aidMarket = new JObject { ["caps"] = 500, ["buyInterests"] = new JArray("aid"), ["stock"] = new JArray() };
+                JObject toolsMarket = new JObject { ["caps"] = 500, ["buyInterests"] = new JArray("tools"), ["stock"] = new JArray() };
+                int bagFloor = CallPrice("ShelfFloorPrice", "doctorBag");
+                int bagHere = CallPrice("TradeSellPrice", "doctorBag", aidMarket, traderResident);
+                int bagElsewhere = CallPrice("TradeSellPrice", "doctorBag", toolsMarket, traderResident);
+                int bagNovice = CallPrice("TradeSellPrice", "doctorBag", aidMarket, quoteSelf);
+                report.Append("doctor bag resale: floor=").Append(bagFloor).Append(" here=").Append(bagHere)
+                      .Append(" elsewhere=").Append(bagElsewhere).Append(" novice=").Append(bagNovice).Append('\n');
+                Require(bagFloor == 29 && bagHere == 21 && bagElsewhere == 17 && bagNovice == 14
+                        && bagHere < CallPrice("TradeBuyPrice", bagFloor, traderResident),
+                    "потолок скупки сумки доктора не совпадает с сервером: " + bagHere + " / " + bagElsewhere + " / " + bagNovice);
+                // Оружие и броню у игроков покупает только Чёрный рынок: торговец, который
+                // прислал refusedCategories, называет им цену 0, остальное берёт как обычно.
+                JObject refusingMarket = JObject.Parse(
+                    "{\"stock\":[],\"caps\":500,\"buyInterests\":[\"aid\"],\"refusedCategories\":[\"weapons\",\"armor\"]}");
+                Require(CallPrice("TradeSellPrice", "rifle", refusingMarket, traderSelf) == 0
+                        && CallPrice("TradeSellPrice", "leather", refusingMarket, traderSelf) == 0
+                        && CallPrice("TradeSellPrice", "medkit", refusingMarket, traderSelf) == 12,
+                    "торговец называет цену оружию или броне, которые покупает только Чёрный рынок");
                 // Чёрный рынок: цену каждого предмета называет сервер, без цены — не берёт.
                 JObject blackMarket = JObject.Parse("{\"stock\":[],\"caps\":900,\"blackMarket\":{\"treasury\":900},\"sellPrices\":{\"pistol\":17,\"food\":0}}");
                 Require(RoaBarterCanvas.IsBlackMarket(blackMarket) && !RoaBarterCanvas.IsBlackMarket(quoteMarket), "витрина скупщика не распознана");
@@ -201,6 +227,19 @@ namespace RealmOfAshes.EditorTools
                 Require(title.EndsWith("ТОЛЬКО СКУПКА", StringComparison.Ordinal), "окно скупщика не подписано «Только скупка»: " + title);
                 Require(skill.StartsWith("Касса скупщика: 900", StringComparison.Ordinal), "окно скупщика не показывает кассу: " + skill);
                 Require(warning.StartsWith("Скупщик не берёт", StringComparison.Ordinal), "отказ скупщика не объяснён: " + warning);
+                sells.Clear();
+                ClearRowsImmediate(canvas, player, vendor);
+
+                // Обычный торговец не берёт оружие: окно говорит, кто его покупает.
+                Set(interaction, "_market", JObject.Parse(
+                    "{\"stock\":[],\"caps\":900,\"buyInterests\":[\"aid\"],\"refusedCategories\":[\"weapons\",\"armor\"]}"));
+                sells["knife"] = 1;
+                Call(canvas, "Refresh");
+                string traderWarning = ((Text)Get(canvas, "_warning")).text;
+                report.Append("trader refusal: ").Append(traderWarning).Append('\n');
+                Require(traderWarning.StartsWith("Торговец не берёт", StringComparison.Ordinal)
+                        && traderWarning.Contains("Чёрный рынок"),
+                    "отказ торговца в оружии не объяснён: " + traderWarning);
                 sells.Clear();
                 ClearRowsImmediate(canvas, player, vendor);
 

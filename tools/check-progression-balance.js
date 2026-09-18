@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { normalizeItemCatalog, itemCatalogIndexes } = require('../src/server/kromka-items');
+const { loadWorldEconomy } = require('../src/server/world-economy');
 
 const root = path.resolve(__dirname, '..');
 const progressionCatalog = JSON.parse(fs.readFileSync(
@@ -43,22 +45,44 @@ function securityDifficulty(value = 'medium') {
   return SECURITY_DIFFICULTY_TIERS.veryHard.difficulty;
 }
 
-function buyPrice(stockPrice, barter, merchant) {
-  const discount = Math.min(0.48, skillNorm(barter) * 0.24 + Number(merchant || 0) * 0.05);
-  return Math.max(1, Math.ceil(Number(stockPrice || 1) * (1 - discount)));
+function serverDeclaration(source, head) {
+  const start = source.indexOf(`\n${head}`);
+  if (start < 0) fail(`server.js has no ${head.trim()}`);
+  const end = head.startsWith('function ') ? source.indexOf('\n}', start) + 2 : source.indexOf(';\n', start) + 1;
+  return source.slice(start + 1, end);
 }
 
-function sellPrice({ stockEntry = null, base = 1, cha = 5, barter = 20, merchant = 0, traderTrait = false }) {
-  const sellMul = 1 +
-    (Number(cha || 5) - 5) * 0.04 +
-    (traderTrait ? 0.15 : 0) +
-    skillNorm(barter) * 0.30 +
-    Number(merchant || 0) * 0.08;
-  let price = Math.max(1, Math.floor(Number(base || 1) * sellMul));
-  if (stockEntry) {
-    price = Math.min(price, Math.max(1, Math.floor(buyPrice(stockEntry.price, barter, merchant) * 0.85)));
-  }
-  return price;
+// Цены торговли с NPC — настоящие функции server.js в песочнице: прежняя копия
+// формулы в этой проверке отстала от сервера (без надбавки за интерес, без
+// доли жителя, только «у того же торговца») и не заметила заработка на перепродаже.
+function serverTradePricing(source, itemIndexes, worldEconomy) {
+  const stubs = {
+    clamp: (v, min, max) => Math.max(min, Math.min(max, v)),
+    SERVER_ITEM_BASE_PRICES: itemIndexes.basePrices,
+    SERVER_ITEM_CATEGORIES: itemIndexes.categories,
+    SERVER_ITEM_IDS: new Set(Object.keys(itemIndexes.byId)),
+    WORLD_ECONOMY: worldEconomy,
+    serverSkillNorm: (p, id) => id === 'barter' ? skillNorm(p.barter) : 0,
+    serverTalentLevel: (p, id) => id === 'merchant' ? Number(p.merchant || 0) : 0,
+    serverStatValue: (p, key) => key === 'cha' ? Number(p.cha || 5) : 5,
+    serverHasTrait: (p, id) => id === 'traderStart' && p.traderTrait === true,
+    serverResidentTradePct: p => clamp(p.resident, 0, 0.2),
+    // Окно торговли личного торговца: без симуляции узла, полка — его стопки.
+    ensureServerFriendlyNpcSocialState: () => true,
+    serverRefreshPersonalNpcTradeStock: actor => actor.traderStock,
+    serverNpcInventoryCaps: () => 500,
+    WASTELAND_SIM: {}
+  };
+  const declarations = [
+    'const SERVER_TRADE_SELL_SHARE_PCT =', 'const SERVER_TRADE_SELL_PRICE_BASE =', 'const SERVER_TRADE_MAX_BUY_DISCOUNT =',
+    'const SERVER_TRADE_SHELF_FLOOR_SHARE =', 'function serverBaseItemId(', 'function serverTradeItemCategory(',
+    'function serverTradeShelfFloor(', 'function serverTradeShelfPrice(', 'function serverTradeBuyPrice(',
+    'function serverTradeSellCeiling(', 'function serverNpcTradeRefusedCategories(', 'function serverTradeSellPrice(',
+    'function serverNpcTradeResalePrice(', 'function serverNpcTradeMarket('
+  ].map(head => serverDeclaration(source, head));
+  return new Function(...Object.keys(stubs), `${declarations.join('\n')}
+return { serverTradeShelfFloor, serverTradeShelfPrice, serverTradeBuyPrice, serverTradeSellCeiling, serverTradeSellPrice,
+  serverNpcTradeResalePrice, serverNpcTradeMarket };`)(...Object.values(stubs));
 }
 
 function securityLockChance({ skill = 20, agi = 5, luck = 5, quickHands = 0, difficulty = 40 }) {
@@ -122,34 +146,125 @@ function crouchDetectionMultiplier({ stealth = 20, ghost = 0 }) {
   return Math.max(0.35, 1 - reduction);
 }
 
-// Trade offers come from the authored trader shelves (data/traders.json); the
-// resale base is 45% of the catalog base price, as in SERVER_TRADE_SELL_PRICE_BASE.
-const stock = Object.entries(traderData.profiles || {}).flatMap(([trader, profile]) =>
-  (Array.isArray(profile?.stock) ? profile.stock : []).map(entry => ({ trader, id: entry.id, price: entry.price })));
-if (!stock.length) fail('Trader profiles have no stock to audit for arbitrage');
-const sellOverrides = Object.fromEntries((itemCatalog.items || [])
-  .filter(item => item.id !== 'silver' && Number(item.basePrice || 0) > 0)
-  .map(item => [item.id, Math.max(1, Math.floor(Number(item.basePrice) * 0.45))]));
+// Торговля с NPC (экономика v3, библия 14.5: марки приходят только из карманов
+// NPC и наград). Настоящие функции цен сервера на всех профилях торговцев,
+// предметах каталога и сборках персонажа:
+// - никакая скупка не дороже самой дешёвой покупки того же предмета в мире — ни у
+//   того же торговца, ни у другого, ни на колебаниях рынка узла, ни на чужой
+//   перепродаже, ни через второго персонажа с другим навыком;
+// - Влияние, «Барыга», Бартер, «Торговец» и житель не удешевляют продажу и не
+//   дорожат покупку, а скупка новичка остаётся ниже потолка — навыку есть куда расти;
+// - оружие и броню торговцы не покупают: их скупает только Чёрный рынок.
 const serverSource = read('server.js');
+const itemIndexes = itemCatalogIndexes(normalizeItemCatalog(itemCatalog));
+const worldEconomy = loadWorldEconomy(path.join(root, 'data', 'kromka', 'economy.json'));
+const pricing = serverTradePricing(serverSource, itemIndexes, worldEconomy);
+const refusedCategories = worldEconomy.worldModel.blackMarket ? worldEconomy.blackMarket.categories : [];
+if (!refusedCategories.includes('weapons') || !refusedCategories.includes('armor')) fail('NPC traders must leave weapons and armour to the Black Market');
+const tradeItemIds = Object.keys(itemIndexes.byId).filter(id => id !== 'silver' && id !== 'fists');
+const allCategories = [...new Set(Object.values(itemIndexes.categories))];
+const tradeMarkets = [
+  ...Object.entries(traderData.profiles || {}).map(([id, profile]) => ({ name: `profile:${id}`, stock: profile.stock || [], buyInterests: profile.buyInterests || [] })),
+  ...fs.readdirSync(path.join(root, 'data', 'locations')).filter(file => file.endsWith('.json'))
+    .map(file => JSON.parse(read(path.join('data', 'locations', file))))
+    .filter(loc => Array.isArray(loc.trader?.stock) && loc.trader.stock.length)
+    .map(loc => ({ name: `location:${loc.id}`, stock: loc.trader.stock, buyInterests: loc.trader.buyInterests || [] })),
+  // Торговец без полки, которому интересно всё, и равнодушный ко всему.
+  { name: 'stockless:all', stock: [], buyInterests: allCategories },
+  { name: 'stockless:none', stock: [], buyInterests: [] }
+].map(market => ({
+  ...market,
+  refusedCategories,
+  stock: market.stock.map(row => ({ id: row.id, qty: Math.max(1, Number(row.qty || 1)), price: pricing.serverTradeShelfPrice(row.id, row.price) }))
+}));
+if (tradeMarkets.filter(market => market.stock.length).length < 4) fail('Trader profiles have no stock to audit for arbitrage');
 
-const tradeBuilds = [
-  { name: 'start', cha: 5, barter: 20, merchant: 0, traderTrait: false },
-  { name: 'mid', cha: 8, barter: 60, merchant: 1, traderTrait: false },
-  { name: 'maxNoTrait', cha: 15, barter: 100, merchant: 3, traderTrait: false },
-  { name: 'maxTrait', cha: 15, barter: 100, merchant: 3, traderTrait: true }
-];
-
-const arbitrage = [];
-for (const build of tradeBuilds) {
-  for (const entry of stock) {
-    const fallbackBase = Math.max(1, Math.floor(Number(entry.price || 1) * 0.45));
-    const base = sellOverrides[entry.id] || fallbackBase;
-    const buy = buyPrice(entry.price, build.barter, build.merchant);
-    const sell = sellPrice({ stockEntry: entry, base, ...build });
-    if (sell > buy) arbitrage.push({ build: build.name, trader: entry.trader, id: entry.id, buy, sell, diff: sell - buy });
+{
+  const window = pricing.serverNpcTradeMarket({ personalTrade: true, traderStock: [], traderBuyInterests: ['weapons', 'armor', 'aid'] });
+  if (JSON.stringify(window.refusedCategories) !== JSON.stringify(refusedCategories) || JSON.stringify(window.buyInterests) !== '["aid"]') {
+    fail('The trade window must name the refused categories and drop them from the trader interests', window);
   }
 }
-if (arbitrage.length) fail('Trade arbitrage detected: vendor item can be resold for profit', arbitrage.slice(0, 20));
+
+// Сборки перебираются смешанным основанием: шаг по одной оси — соседняя сборка,
+// у которой ровно одна характеристика выше.
+const tradeAxes = [['cha', [1, 5, 10, 13, 15]], ['barter', [20, 50, 80, 100]], ['merchant', [0, 1, 2, 3]],
+  ['traderTrait', [false, true]], ['resident', [0, 0.08, 0.2]]];
+const tradeBuilds = tradeAxes.reduce((builds, [axis, values]) =>
+  builds.flatMap(build => values.map(value => ({ ...build, [axis]: value }))), [{}]);
+const axisSteps = tradeAxes.map(([axis, values], index) => ({
+  axis,
+  size: values.length,
+  stride: tradeAxes.slice(index + 1).reduce((product, [, next]) => product * next.length, 1)
+}));
+const cheapSeller = { cha: 1, barter: 20, merchant: 0, traderTrait: false, resident: 0 };
+const maxDiscountBuyer = { cha: 15, barter: 100, merchant: 3, traderTrait: true, resident: 0.2 };
+const novice = { cha: 5, barter: 20, merchant: 0, traderTrait: false, resident: 0 };
+
+const arbitrage = [];
+const inversions = [];
+let tradeQuotes = 0;
+let skillRoom = 0;
+for (const id of tradeItemIds) {
+  // Рынок узла, затоваренная полка или дешёвая перепродажа могут опустить цену
+  // полки как угодно низко, но сервер читает её не ниже нижней границы.
+  const floor = pricing.serverTradeShelfFloor(id);
+  if (pricing.serverTradeShelfPrice(id, 1) !== floor || pricing.serverTradeShelfPrice(id, -5) !== floor) {
+    fail(`NPC shelf price of ${id} drops below its floor ${floor}`);
+  }
+  const personal = pricing.serverNpcTradeMarket({ personalTrade: true, traderStock: [{ id, qty: 1, price: 1 }] }).stock[0];
+  if (!personal || personal.price !== floor) fail(`serverNpcTradeMarket shows ${id} below its shelf floor`, personal);
+  const refused = refusedCategories.includes(itemIndexes.categories[id]);
+  const markets = tradeMarkets.concat([
+    { name: 'shelf:floor', stock: [{ id, qty: 1, price: floor }], buyInterests: allCategories, refusedCategories },
+    { name: 'shelf:max', stock: [{ id, qty: 1, price: 9999 }], buyInterests: allCategories, refusedCategories }
+  ]);
+  for (const market of markets) {
+    if (refused || market.stock.some(row => row.id === id)) continue;
+    const resale = pricing.serverNpcTradeResalePrice(id, market, cheapSeller);
+    if (resale < floor) fail(`Resale price of ${id} at ${market.name} is below the shelf floor: ${resale} < ${floor}`);
+  }
+  // Самая дешёвая покупка в мире: полка у нижней границы и наибольшая скидка.
+  const cheapestBuy = pricing.serverTradeBuyPrice({ price: floor }, maxDiscountBuyer);
+  const buys = tradeBuilds.map(build => pricing.serverTradeBuyPrice({ price: floor }, build));
+  let noviceTop = 0;
+  let top = 0;
+  for (const market of markets) {
+    const sells = tradeBuilds.map(build => pricing.serverTradeSellPrice(id, market, build));
+    tradeQuotes += sells.length;
+    if (refused) {
+      if (sells.some(price => price !== 0)) fail(`NPC trader ${market.name} quotes a price for ${id}, which only the Black Market buys`);
+      continue;
+    }
+    sells.forEach((sell, index) => {
+      // Продажа хотя бы на марку дешевле покупки; поровну — только когда и то и другое стоит марку.
+      if (sell >= cheapestBuy && cheapestBuy > 1) arbitrage.push({ build: tradeBuilds[index], id, market: market.name, cheapestBuy, sell });
+      for (const { axis, size, stride } of axisSteps) {
+        if (Math.floor(index / stride) % size === size - 1) continue;
+        if (sells[index + stride] < sell) inversions.push({ id, market: market.name, axis, from: tradeBuilds[index], sell, next: sells[index + stride] });
+        if (buys[index + stride] > buys[index]) inversions.push({ id, axis, from: tradeBuilds[index], buy: buys[index], next: buys[index + stride] });
+      }
+    });
+    top = Math.max(top, ...sells);
+    noviceTop = Math.max(noviceTop, pricing.serverTradeSellPrice(id, market, novice));
+  }
+  if (refused || Number(itemIndexes.basePrices[id] || 0) < 20) continue;
+  if (noviceTop >= top) fail(`A novice already sells ${id} at the ceiling ${top}: skill gives nothing`);
+  skillRoom++;
+}
+if (arbitrage.length) fail(`Trade arbitrage detected: ${arbitrage.length} NPC resale quote(s) are not cheaper than the cheapest NPC purchase`, arbitrage.slice(0, 12));
+if (inversions.length) fail(`Trade skill inversion: ${inversions.length} step(s) where a better trader sells cheaper or buys dearer`, inversions.slice(0, 12));
+
+// Чёрный рынок платит за снаряжение не больше npcResaleCapShare базы: это должно
+// быть дешевле самой низкой цены NPC-торговца при наибольшей скидке.
+for (const id of tradeItemIds) {
+  const base = Number(itemIndexes.basePrices[id] || 0);
+  if (base <= 0 || !worldEconomy.blackMarket.categories.includes(itemIndexes.categories[id])) continue;
+  const cheapestNpc = pricing.serverTradeBuyPrice({ price: pricing.serverTradeShelfFloor(id) }, maxDiscountBuyer);
+  if (Math.floor(base * worldEconomy.blackMarket.npcResaleCapShare) >= cheapestNpc) {
+    fail(`Black market cap for ${id} (${Math.floor(base * worldEconomy.blackMarket.npcResaleCapShare)}) reaches the cheapest NPC price ${cheapestNpc}`);
+  }
+}
 
 const lockLow = securityLockChance({ skill: 20, agi: 5, luck: 5, quickHands: 0, difficulty: 'hard' });
 const lockHigh = securityLockChance({ skill: 100, agi: 15, luck: 15, quickHands: 3, difficulty: 'hard' });
@@ -207,4 +322,4 @@ for (const snippet of [
   if (!serverSource.includes(snippet)) fail(`Combat hit sync formula missing: ${snippet}`);
 }
 
-console.log(`Progression balance OK: ${tradeBuilds.length} trade builds, ${stock.length} stock item(s), lock ${Math.round(lockLow * 100)}-${Math.round(lockHigh * 100)}%, terminal ${Math.round(terminalLow * 100)}-${Math.round(terminalHigh * 100)}%, stealth ${Math.round(stealthStart * 100)}-${Math.round(stealthMax * 100)}%, medkit max ${medkitMax}, harvest ${Math.round(harvestLow * 100)}-${Math.round(harvestHigh * 100)}%, rocket radius max ${rocketRadiusMax.toFixed(2)}m`);
+console.log(`Progression balance OK: ${tradeBuilds.length} trade builds × ${tradeItemIds.length} items, ${tradeQuotes} NPC resale quotes below the cheapest NPC purchase and monotonic in skill (${skillRoom} items with room to grow), lock ${Math.round(lockLow * 100)}-${Math.round(lockHigh * 100)}%, terminal ${Math.round(terminalLow * 100)}-${Math.round(terminalHigh * 100)}%, stealth ${Math.round(stealthStart * 100)}-${Math.round(stealthMax * 100)}%, medkit max ${medkitMax}, harvest ${Math.round(harvestLow * 100)}-${Math.round(harvestHigh * 100)}%, rocket radius max ${rocketRadiusMax.toFixed(2)}m`);

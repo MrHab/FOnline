@@ -404,16 +404,6 @@ function locationObjectPosition(row = {}) {
   };
 }
 
-function locationSleepRows(loc = {}) {
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  return objects.filter(row => {
-    const role = String(row.role || row.entity?.role || row.interactive?.role || '').toLowerCase();
-    const tags = locationTags(row);
-    const text = locationModelText(row);
-    return role === 'bed' || tags.includes('personal-bed') || text.includes('cot_bed') || text.includes('bedroll');
-  });
-}
-
 function locationAuthoredNpcRows(loc = {}) {
   const objects = Array.isArray(loc.objects) ? loc.objects : [];
   return objects.filter(row => {
@@ -427,53 +417,7 @@ function locationAuthoredNpcRows(loc = {}) {
   });
 }
 
-function locationSleepModuleRows(loc = {}, kind = '') {
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  return objects.filter(row => {
-    const text = locationModelText(row);
-    const tags = locationTags(row);
-    const inSleepGroup = tags.includes('sleep-house')
-      || tags.includes('sleep-quarters')
-      || text.includes('sleep_house')
-      || text.includes('sleep_quarters');
-    if (!inSleepGroup) return false;
-    if (kind === 'floor') return text.includes('mod_floor') || text.includes('trader_floor');
-    if (kind === 'wall') return text.includes('mod_wall') || text.includes('trader_wall');
-    if (kind === 'roof') return text.includes('mod_roof') || text.includes('trader_roof');
-    return false;
-  });
-}
-
-function sameGridCell(a = {}, b = {}) {
-  const pa = locationObjectPosition(a);
-  const pb = locationObjectPosition(b);
-  return Math.abs(pa.x - pb.x) <= 0.35 && Math.abs(pa.z - pb.z) <= 0.35;
-}
-
-function locationSleepShelterProblem(loc = {}) {
-  const beds = locationSleepRows(loc);
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  const prefab = objects.find(row => {
-    const text = locationModelText(row);
-    return text.includes('bunkhouse_shack') || text.includes('bunkhouse') || text.includes('barrack');
-  });
-  if (prefab) return `sleep prefab is forbidden (${prefab.id || prefab.model || prefab.url || 'unknown object'})`;
-  const floors = locationSleepModuleRows(loc, 'floor');
-  const walls = locationSleepModuleRows(loc, 'wall');
-  const roofs = locationSleepModuleRows(loc, 'roof');
-  if (!beds.length && !floors.length && !walls.length && !roofs.length) return '';
-  if (!floors.length && !walls.length && !roofs.length) return '';
-  if (!floors.length) return 'missing modular sleep floor blocks';
-  if (walls.length < 4) return 'missing modular sleep wall blocks';
-  if (!roofs.length) return 'missing modular sleep roof blocks';
-  const uncovered = beds.find(bed => !floors.some(floor => sameGridCell(bed, floor)) || !roofs.some(roof => sameGridCell(bed, roof)));
-  if (uncovered) return `bed ${uncovered.id || uncovered.model || uncovered.url || 'unknown'} is not placed on a modular sleep floor under a modular roof`;
-  return '';
-}
-
 const defaultSitesList = defaultSiteRows();
-const workerSleepersByLocation = new Map();
-const hostileOwners = new Set(['raiders', 'mutants', 'wild', 'wildlife', 'ghouls', 'radscorpions', 'mutant_ants', 'geckos', 'super_mutants']);
 const harvestableSiteResources = new Set(['ore', 'wood', 'scrap', 'water', 'oil', 'chemicals', 'medicine', 'food', 'electronics', 'ammoParts', 'weaponParts']);
 
 for (const site of defaultSitesList) {
@@ -491,9 +435,6 @@ for (const site of defaultSitesList) {
 }
 
 for (const site of defaultSitesList) {
-  if (site.locationId && site.workerSpawnCount > 0 && !hostileOwners.has(site.owner)) {
-    workerSleepersByLocation.set(site.locationId, (workerSleepersByLocation.get(site.locationId) || 0) + site.workerSpawnCount);
-  }
   const economic = ['resource', 'production', 'outpost', 'pointofinterest'].includes(site.type);
   if (!economic) continue;
   const relPath = path.join('data', 'locations', `${site.locationId}.json`);
@@ -516,10 +457,6 @@ for (const site of defaultSitesList) {
   // лишь игровой лавкой над складом площадки (tradeMachineMarketState), а не
   // участником симуляции экономики, поэтому производственная площадка
   // больше не обязана его иметь.
-  const sleepProblem = locationSleepShelterProblem(loc);
-  if (sleepProblem) {
-    errors.push(`world economy site ${site.id}: invalid modular sleep building in ${relPath}: ${sleepProblem}`);
-  }
 }
 
 const capitalStorageFactions = {
@@ -615,20 +552,13 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
       errors.push(`capital ${loc.id}: expected all dedicated crafting stations; missing ${missingStations.join(', ') || 'none'} (${relPath})`);
     }
   }
-  const sleepProblem = locationSleepShelterProblem(loc);
-  if (sleepProblem) {
-    errors.push(`location ${loc.id || file}: invalid modular sleep building in ${relPath}: ${sleepProblem}`);
-  }
-  // Сердцевина и лаборатории — боевые объекты: гарнизоны стоят на постах,
-  // а мутанты не спят по расписанию, поэтому личные кровати им не нужны.
-  const postedGarrison = ['territoryZone', 'territoryLab'].includes(String(loc.kind || ''));
-  const authoredNpcCount = postedGarrison ? 0 : locationAuthoredNpcRows(loc).length;
-  const workerNpcCount = Math.min(workerSleepersByLocation.get(loc.id) || 0, loc.safe ? 14 : 10);
-  const expectedSleepers = authoredNpcCount + workerNpcCount;
-  const beds = locationSleepRows(loc).length;
-  if (expectedSleepers > 0 && beds < expectedSleepers) {
-    errors.push(`location ${loc.id || file}: not enough personal beds in ${relPath}: ${beds} beds for ${expectedSleepers} NPCs`);
-  }
+  // Сна у NPC нет: личных коек и спальных корпусов в локациях не бывает.
+  const bed = (loc.objects || []).find(row => {
+    const role = String(row.role || row.entity?.role || row.interactive?.role || '').toLowerCase();
+    const tags = locationTags(row);
+    return role === 'bed' || role === 'sleep' || tags.includes('personal-bed') || tags.includes('sleep');
+  });
+  if (bed) errors.push(`location ${loc.id || file}: NPCs do not sleep, remove the bed ${bed.id || bed.model} from ${relPath}`);
 }
 
 // Награда лаборатории тематическая: её сейфы гарантируют компонент своей семьи,

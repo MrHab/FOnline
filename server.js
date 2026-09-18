@@ -13467,6 +13467,8 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
 
   for (const enemy of room.enemies.values()) {
     if (!enemy || enemy.dead) continue;
+    // Торговец за прилавком шум не проверяет.
+    if (serverNpcIsQuietService(enemy)) continue;
     ensureEnemyHome(enemy);
     const wasActiveInvestigatorHere = enemy.aiState === 'investigate'
       && Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ))
@@ -15340,8 +15342,9 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   }
   // Станок участка возвращает часть материалов — если они влезают в
   // грузоподъёмность; случайный возврат не должен срывать сам заказ.
-  // Премиум тратит фокус на бонус возврата — если возврат не выброшен весом.
-  const focusCost = plot ? serverCraftFocusCost(player, plotOutput) : 0;
+  // Фокус тратится по выбору игрока (переключатель в окне станка) и даёт бонус
+  // возврата — если возврат не выброшен весом.
+  const focusCost = plot && data.useFocus === true ? serverCraftFocusCost(player, plotOutput) : 0;
   let plotReturns = plot
     ? rollPlotReturns(
       Object.entries(crafted.requirements || {}).map(([id, qty]) => ({ id, qty })),
@@ -15359,7 +15362,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       returnsDropped = true;
     }
   }
-  if (focusCost > 0 && !returnsDropped) serverSpendCraftFocus(player, focusCost);
+  const focusSpent = focusCost > 0 && !returnsDropped && serverSpendCraftFocus(player, focusCost) ? focusCost : 0;
   if (clanContext && clanPreview) {
     serverCommitClanCraftBenefit(clanContext.runtime, clanPreview);
     clanContext.runtime.lastCraftBenefit = {
@@ -15405,6 +15408,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
       output: crafted.output,
       requirements: crafted.requirements,
       returned: plotReturns,
+      focusSpent,
       plot: publicPlot(plot, WORLD_ECONOMY.plots, player.characterId, plotNow),
       self: publicAuthoritativePlayerState(player)
     };
@@ -15699,7 +15703,8 @@ function serverNpcTradeOpen(actor = null, locationId = '') {
   const role = String(actor.role || '').toLowerCase();
   if (role !== 'merchant' && role !== 'trader') return false;
   const id = normalizeLocationId(locationId || actor.authoredLocationId || actor.wastelandSiteWorkerLocationId || '');
-  return !!LOCATIONS[id] && locationIsFactionCapital(LOCATIONS[id]);
+  // Столицы фракций, базы Сердцевины и отдельные торговые места (Ключи).
+  return !!LOCATIONS[id] && (locationIsFactionCapital(LOCATIONS[id]) || WORLD_ECONOMY.npcTradeHubs.includes(id));
 }
 
 function performServerNpcTradeExchange(room = null, actor = null, data = {}, player = null) {
@@ -17326,23 +17331,13 @@ function wastelandObjectLooksLikeProduction(row = {}) {
   return ['workshop', 'workbench', 'bench', 'forge', 'foundry', 'factory', 'press', 'lathe', 'relay', 'solar', 'lab', 'ammo', 'armory'].some(part => model.includes(part));
 }
 
-function wastelandObjectLooksLikeSleep(row = {}) {
-  const tags = locationObjectTags(row);
-  const model = String(row.model || row.url || row.name || '').toLowerCase();
-  const role = String(locationDefinitionObjectRole(row) || '').toLowerCase();
-  if (['sleep', 'bed'].includes(role)) return true;
-  if (tags.some(tag => ['sleep', 'bed', 'personal-bed'].includes(tag))) return true;
-  return ['cot_bed', 'cot-bed', 'bedroll', 'sleep_bed'].some(part => model.includes(part));
-}
-
 function wastelandObjectLooksLikeRest(row = {}) {
   const tags = locationObjectTags(row);
   const model = String(row.model || row.url || row.name || '').toLowerCase();
   const role = String(locationDefinitionObjectRole(row) || '').toLowerCase();
   if (['rest', 'social', 'camp', 'campfire', 'canteen', 'lounge'].includes(role)) return true;
   if (tags.some(tag => ['rest', 'social', 'camp', 'campfire', 'firepit', 'canteen', 'lounge'].includes(tag))) return true;
-  return wastelandObjectLooksLikeSleep(row)
-    || ['campfire', 'camp', 'rest', 'firepit', 'canteen', 'bench', 'lounge'].some(part => model.includes(part));
+  return ['campfire', 'camp', 'rest', 'firepit', 'canteen', 'bench', 'lounge'].some(part => model.includes(part));
 }
 
 function wastelandSafePointNearTile(room, tx, tz, maxRadius = 5) {
@@ -17377,11 +17372,7 @@ function npcScheduleActorSortKey(actor = {}) {
 
 function npcScheduleObjectAnchor(room, loc = {}, enemy = {}, state = 'rest') {
   const rows = wastelandLocationRows(loc)
-    .filter(row => {
-      if (!row || locationDefinitionObjectIsNpc(row)) return false;
-      if (state === 'social') return wastelandObjectLooksLikeRest(row);
-      return wastelandObjectLooksLikeRest(row) || wastelandObjectLooksLikeSleep(row);
-    });
+    .filter(row => row && !locationDefinitionObjectIsNpc(row) && wastelandObjectLooksLikeRest(row));
   if (!rows.length) return null;
   const seed = `${loc.id || room?.locationId || ''}:${enemy.npcProfile?.id || enemy.id || ''}:${state}:schedule-object`;
   const index = Math.floor(stableEnemyUnit(seed) * rows.length) % rows.length;
@@ -17794,7 +17785,53 @@ function npcRoutineUnderlyingServiceAvailable(enemy = {}, now = Date.now()) {
 }
 
 function npcRoutineServiceInterrupted(room, enemy = {}, now = Date.now()) {
+  // Стационарный торговец не закрывается ни на бой, ни на шум.
+  if (serverNpcIsQuietService(enemy)) return false;
   return routineInterruptBlocksService(npcRoutineInterruptContext(room, enemy, now));
+}
+
+/**
+ * Стационарный торговец или служебный NPC (аукцион, ремонт, медик,
+ * регистратор, скупщик) просто стоит и торгует: без расписания, без боя, без
+ * бегства и без реакции на шум и стрельбу. Нападение на него по-прежнему
+ * делает фракцию враждебной — тогда он уже не мирный и живёт по общим правилам.
+ */
+function serverNpcIsQuietService(enemy = null) {
+  if (!enemy || enemy.dead || enemy.hostileToPlayer !== false || enemy.stationary !== true) return false;
+  if (serverNpcIsNaturalCreature(enemy, enemy)) return false;
+  const role = String(enemy.role || '').toLowerCase();
+  return role === 'merchant' || role === 'trader' || !!String(enemy.service || '').trim();
+}
+
+/** Торговец стоит на своём месте; в разговоре только поворачивается к игроку. */
+function holdQuietServiceNpc(room, enemy, now = Date.now()) {
+  clearEnemyTarget(enemy);
+  enemy.factionTargetId = '';
+  enemy.investigateUntil = 0;
+  enemy.searchUntil = 0;
+  enemy.vx = 0;
+  enemy.vz = 0;
+  enemy.wanderTimer = 1.5;
+  clearEnemyTacticalGoal(enemy);
+  invalidateEnemyPath(enemy);
+  const focusPlayer = players.get(enemy.dialoguePlayerId || '');
+  const talking = Number(enemy.dialogueFocusUntil || 0) > now && !!focusPlayer
+    && focusPlayer.roomId === room.id && !focusPlayer.dead
+    && Math.hypot(Number(focusPlayer.x || 0) - Number(enemy.x || 0), Number(focusPlayer.z || 0) - Number(enemy.z || 0)) <= 6.2;
+  if (talking) {
+    enemy.aiState = 'dialogue';
+    enemy.lookX = Number(focusPlayer.x || enemy.x || 0);
+    enemy.lookZ = Number(focusPlayer.z || enemy.z || 0);
+  } else {
+    enemy.dialogueFocusUntil = 0;
+    enemy.dialoguePlayerId = '';
+    enemy.aiState = 'idle';
+    clearEnemyLook(enemy);
+  }
+  const state = talking ? 'dialogue' : 'shop';
+  enemy.npcScheduleState = state;
+  enemy.npcScheduleLabel = npcScheduleLabel(state);
+  setNpcActivityState(enemy, { phase: 'use', serviceAvailable: true, interruptReason: '' });
 }
 
 function npcRoutineHasScheduledService(enemy = {}) {
@@ -24892,6 +24929,11 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
     ensureEnemyHome(enemy);
+    // Стационарные торговцы и служебные NPC просто стоят и торгуют.
+    if (serverNpcIsQuietService(enemy)) {
+      holdQuietServiceNpc(room, enemy, now);
+      continue;
+    }
     if (factionCombatActors.has(enemy.id)) {
       enemy.dialogueFocusUntil = 0;
       enemy.dialoguePlayerId = '';
@@ -31061,7 +31103,7 @@ io.on('connection', (socket) => {
         p,
         'craftingStationUsed',
         data,
-        ['recipeId', 'station', 'fee', 'locationId', 'stationObjectId']
+        ['recipeId', 'station', 'fee', 'locationId', 'stationObjectId', 'useFocus']
       );
       if (!transaction.ok) return fail(transaction.error);
       if (transaction.replay) {

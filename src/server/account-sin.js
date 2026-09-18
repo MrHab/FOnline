@@ -193,7 +193,10 @@ function publicAccount(account, config, now = Date.now()) {
     premiumPriceSin: config.premium.priceSin,
     premiumDays: config.premium.days,
     focus: Math.floor(focusAt(account, config, now)),
-    focusCap: config.focus.cap
+    focusCap: config.focus.cap,
+    // Цена фокуса заказа считается и в клиенте: 10 за марку стоимости изделия.
+    focusCostPerValue: config.focus.costPerValue,
+    focusMinCost: config.focus.minCost
   };
 }
 

@@ -148,9 +148,7 @@
       "role": "tutorial",
       "tags": [
         "tutorial",
-        "sleep",
-        "bed",
-        "personal-bed"
+        "cot"
       ],
       "footprint": {
         "x": 2.001,

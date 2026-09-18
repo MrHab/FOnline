@@ -75,22 +75,22 @@ namespace Kromka.EditorTools
                     return new[] { "job_board", "workshop_bench", "craft_station_weapon", "brahmin_pen", "cargo_stack", "armory_rack" };
                 case "settlement":
                 case "faction_capital":
-                    return new[] { "wasteland_shack", "trader_awning", "job_board", "garden_patch", "storage_lean_to", "barrel_cluster", "watch_post", "cot_bed", "cot_bed", "cot_bed" };
+                    return new[] { "wasteland_shack", "trader_awning", "job_board", "garden_patch", "storage_lean_to", "barrel_cluster", "watch_post" };
                 case "caravan_hub":
                     // Торговых автоматов в экономике v3 нет.
-                    return new[] { "cargo_stack", "trader_awning", "car_wreck", "tire_stack", "workshop_bench", "storage_lean_to", "cot_bed", "cot_bed" };
+                    return new[] { "cargo_stack", "trader_awning", "car_wreck", "tire_stack", "workshop_bench", "storage_lean_to" };
                 case "road_outpost":
-                    return new[] { "roadblock_barricade", "watch_post", "scrap_watch_tower", "highway_sign", "barrel_cluster", "cot_bed" };
+                    return new[] { "roadblock_barricade", "watch_post", "scrap_watch_tower", "highway_sign", "barrel_cluster" };
                 case "resource_site":
                     return id.IndexOf("Oil", StringComparison.OrdinalIgnoreCase) >= 0
                         ? new[] { "oil_pump_jack", "rust_barrel_v1", "cargo_stack", "storage_lean_to" }
                         : new[] { "ore_outcrop", "scrap_heap", "cargo_stack", "workshop_bench" };
                 case "industrial_site":
-                    return new[] { "scrap_heap", "cargo_stack", "rust_barrel_v1", "craft_station_tools", "workshop_bench", "scrap_wall_segment", "cot_bed" };
+                    return new[] { "scrap_heap", "cargo_stack", "rust_barrel_v1", "craft_station_tools", "workshop_bench", "scrap_wall_segment" };
                 case "clan_base":
                     return new[] { "scrap_watch_tower", "scrap_wall_segment", "roadblock_barricade", "armory_rack", "storage_chest", "craft_station_repair" };
                 case "personal_base":
-                    return new[] { "storage_chest", "cot_bed", "campfire_rest", "craft_station_tools", "garden_patch", "fence_segment" };
+                    return new[] { "storage_chest", "campfire_rest", "craft_station_tools", "garden_patch", "fence_segment" };
                 case "mutant_lair":
                     return new[] { "dead_tree_a", "deadwood", "rubble_rock", "car_wreck", "perimeter_debris" };
                 case "story_complex":

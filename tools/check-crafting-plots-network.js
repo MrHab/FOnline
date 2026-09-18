@@ -55,8 +55,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   };
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
-  const craft = (role, fee, requestId) => h.socketAck(accounts[role].socket, 'craftingStationUsed', {
-    requestId, recipeId: 'knifecraft', station: 'weapon_bench', fee, locationId: LOCATION, stationObjectId: BENCH
+  const craft = (role, fee, requestId, extra = {}) => h.socketAck(accounts[role].socket, 'craftingStationUsed', {
+    requestId, recipeId: 'knifecraft', station: 'weapon_bench', fee, locationId: LOCATION, stationObjectId: BENCH, ...extra
   });
   const plotAction = (role, data) => h.socketAck(accounts[role].socket, 'craftingPlotAction', data);
   const plotOf = state => (state.plots || []).find(row => row.plotId === PLOT_ID);
@@ -78,14 +78,22 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     const settlementFee = feeFor(knifePrice, 0.15);
     const tooCheap = await craft('harvest', 1, 'craft-cheap');
     assert(!tooCheap.ok && tooCheap.requiredFee === settlementFee, 'старая комиссия не проходит: ' + JSON.stringify(tooCheap).slice(0, 200));
-    const guestCraft = await craft('harvest', settlementFee, 'craft-free');
+    // Без переключателя фокус не тратится.
+    const plainCraft = await craft('harvest', settlementFee, 'craft-plain');
+    assert(plainCraft.ok, JSON.stringify(plainCraft).slice(0, 300));
+    assert.equal(plainCraft.focusSpent, 0);
+    assert.equal(plainCraft.self.account.focus, focusCap.cap, 'focus is spent only when the player turns it on');
+    const guestCraft = await craft('harvest', settlementFee, 'craft-free', { useFocus: true });
     assert(guestCraft.ok, JSON.stringify(guestCraft).slice(0, 300));
     assert.equal(guestCraft.fee, settlementFee, 'свободный участок берёт плату поселения');
-    assert.equal(qty(guestCraft.self, 'silver'), 1000 - settlementFee);
-    assert.equal(qty(guestCraft.self, 'knife'), qty(accounts.harvest.join.self, 'knife') + 1);
+    assert.equal(qty(guestCraft.self, 'silver'), 1000 - 2 * settlementFee);
+    assert.equal(qty(guestCraft.self, 'knife'), qty(accounts.harvest.join.self, 'knife') + 2);
     assert.equal(guestCraft.self.account.premium, true);
-    assert.equal(guestCraft.self.account.focus, focusCap.cap - Math.max(focusCap.minCost, Math.ceil(knifePrice * focusCap.costPerValue)),
+    const focusCost = Math.max(focusCap.minCost, Math.ceil(knifePrice * focusCap.costPerValue));
+    assert.equal(guestCraft.focusSpent, focusCost);
+    assert.equal(guestCraft.self.account.focus, focusCap.cap - focusCost,
       'премиум тратит фокус на заказ: ' + JSON.stringify(guestCraft.self.account));
+    assert.equal(guestCraft.self.account.focusCostPerValue, focusCap.costPerValue, 'клиент получает цену фокуса');
     console.log('PASS free plot charges the settlement fee (' + settlementFee + ') and premium spends focus');
 
     // --- торги --------------------------------------------------------------------

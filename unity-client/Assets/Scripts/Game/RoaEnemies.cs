@@ -383,7 +383,6 @@ namespace RealmOfAshes.Game
                 case "socialize": return "ОБЩАЕТСЯ";
                 case "eat": return "ЕСТ";
                 case "rest":
-                case "sleep": return "ОТДЫХАЕТ";
                 case "dialogue": return "РАЗГОВАРИВАЕТ";
                 default: return string.Empty;
             }
@@ -419,7 +418,6 @@ namespace RealmOfAshes.Game
                 case "dialogue": return "social";
                 case "eat": return "eat";
                 case "rest":
-                case "sleep": return "rest";
                 default: return string.Empty;
             }
         }

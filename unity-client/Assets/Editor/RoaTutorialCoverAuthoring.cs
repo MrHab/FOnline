@@ -15,11 +15,23 @@ namespace RealmOfAshes.EditorTools
     {
         public const string ModelKey = "tutorialRoadBarrier";
         public const string ModelPath = "Assets/ThirdParty/AtomicRealmPostApocalyptic/Starter/Models/wall_concrete_metal.fbx";
+        // Scenes instance this tracked prefab, never the model: Atomic Realm files are installed locally and stay out
+        // of Git, so a scene instance of the FBX is an unresolved reference in every clean checkout, CI included.
+        public const string PrefabPath = "Assets/Prefabs/Kromka/TutorialRoadBarrier.prefab";
         private const string TexturePath = "Assets/ThirdParty/AtomicRealmPostApocalyptic/Starter/Models/post-apocalyptic_texture.png";
         private const string MaterialPath = "Assets/Art/Kromka/Materials/TutorialRoadBarrier.mat";
         private static readonly Vector3 Size = new Vector3(3.2f, 1.16f, .8f);
 
         public static GameObject Build(Transform parent)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) ?? BuildPrefab();
+            var root = new GameObject("Tutorial_cover");
+            root.transform.SetParent(parent, false);
+            PrefabUtility.InstantiatePrefab(prefab, root.transform);
+            return root;
+        }
+
+        public static GameObject BuildPrefab()
         {
             var source = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturePath);
@@ -36,30 +48,38 @@ namespace RealmOfAshes.EditorTools
             material.mainTexture = texture;
             material.color = new Color(.65f, .65f, .65f);
             EditorUtility.SetDirty(material);
-            var root = new GameObject("Tutorial_cover");
-            root.transform.SetParent(parent, false);
-            var visual = (GameObject)PrefabUtility.InstantiatePrefab(source, root.transform);
-            visual.name = "RoadBarrier_Imported";
-            visual.transform.localPosition = Vector3.zero;
-            visual.transform.localRotation = Quaternion.identity;
-            visual.transform.localScale = Vector3.one;
-            // Fit in the established gameplay envelope; do not move the objective or change server blockers.
-            var bounds = LocalBounds(root);
-            if (bounds.size.x < .001f || bounds.size.y < .001f || bounds.size.z < .001f)
-                throw new InvalidOperationException("Degenerate tutorial barrier mesh.");
-            visual.transform.localScale = new Vector3(Size.x / bounds.size.x, Size.y / bounds.size.y, Size.z / bounds.size.z);
-            bounds = LocalBounds(root);
-            visual.transform.localPosition -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
-            foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
-                UnityEngine.Object.DestroyImmediate(collider);
-            foreach (var renderer in visual.GetComponentsInChildren<Renderer>(true))
+            var root = new GameObject(Path.GetFileNameWithoutExtension(PrefabPath));
+            try
             {
-                int slots = Math.Max(1, renderer.sharedMaterials.Length);
-                renderer.sharedMaterials = Enumerable.Repeat(material, slots).ToArray();
-                PrefabUtility.RecordPrefabInstancePropertyModifications(renderer);
+                // Native copy of the model's meshes, without colliders: the prefab keeps no link to the FBX model prefab.
+                var visual = new GameObject("Visual");
+                visual.transform.SetParent(root.transform, false);
+                foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (filter.sharedMesh == null) continue;
+                    var part = new GameObject(filter.name);
+                    part.transform.SetParent(visual.transform, false);
+                    Matrix4x4 local = source.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                    part.transform.localPosition = local.GetColumn(3);
+                    part.transform.localRotation = local.rotation;
+                    part.transform.localScale = local.lossyScale;
+                    part.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+                    var renderer = filter.GetComponent<Renderer>();
+                    int slots = renderer != null ? Math.Max(1, renderer.sharedMaterials.Length) : 1;
+                    part.AddComponent<MeshRenderer>().sharedMaterials = Enumerable.Repeat(material, slots).ToArray();
+                }
+                // Fit in the established gameplay envelope; do not move the objective or change server blockers.
+                var bounds = LocalBounds(root);
+                if (bounds.size.x < .001f || bounds.size.y < .001f || bounds.size.z < .001f)
+                    throw new InvalidOperationException("Degenerate tutorial barrier mesh.");
+                visual.transform.localScale = new Vector3(Size.x / bounds.size.x, Size.y / bounds.size.y, Size.z / bounds.size.z);
+                bounds = LocalBounds(root);
+                visual.transform.localPosition -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
+                var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                if (prefab == null) throw new InvalidOperationException("Could not save " + PrefabPath);
+                return prefab;
             }
-            PrefabUtility.RecordPrefabInstancePropertyModifications(visual.transform);
-            return root;
+            finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
         [MenuItem("Realm of Ashes/Onboarding/Replace retired tutorial cover")]
@@ -91,13 +111,17 @@ namespace RealmOfAshes.EditorTools
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             if (opened) EditorSceneManager.CloseScene(scene, true);
-            Debug.Log("[TUTORIAL COVER] PASS: imported textured barrier saved; ID, position and solid collision preserved.");
+            Debug.Log("[TUTORIAL COVER] PASS: imported textured barrier saved as the tracked prefab; ID, position and solid collision preserved.");
         }
 
         public static void Validate(KromkaPlacedObjectAuthoring marker)
         {
             if (marker.ServerArchetypeId != ModelKey || !marker.BlocksMovement || !marker.BlocksVision)
                 throw new InvalidOperationException("Tutorial cover lost its authored gameplay flags.");
+            // Play Mode copies carry no prefab link, so the saved scene is checked in edit mode only.
+            if (!EditorApplication.isPlaying
+                && marker.transform.Cast<Transform>().Any(child => PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child.gameObject) != PrefabPath))
+                throw new InvalidOperationException("Tutorial cover must instance " + PrefabPath + ", not the local model.");
             var filters = marker.GetComponentsInChildren<MeshFilter>();
             if (filters.Length == 0 || filters.Any(filter => AssetDatabase.GetAssetPath(filter.sharedMesh) != ModelPath))
                 throw new InvalidOperationException("Tutorial cover still uses a proxy or incorrect imported model.");

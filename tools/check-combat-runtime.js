@@ -549,6 +549,9 @@ function seedCombatFixtures(accounts) {
       runtimeId: 'ui_laserPistol_legacymix_2',
       loaded: 2
     }],
+    // A third pistol the server has no row for: in the bag it is presented
+    // under the bare base id, the same key as the worn one.
+    carriedItems: [{ id: 'laserPistol', qty: 2 }],
     ammoType: 'energyCell',
     loaded: 5,
     reserveAmmo: 4
@@ -2013,6 +2016,26 @@ async function assertKnownInstanceKeepsItsMagazine(accounts) {
     loaded: 5,
     reserveAmmo: 4
   }, 'legacy-mix worn pistol after the spare was taken off');
+
+  // Two identical pistols, one per hand. The anonymous spare shares the worn
+  // pistol's key, so the base id is refused; the client then names it with a new
+  // instance id (RoaInventory.NewInstanceId), which must be accepted without
+  // renaming the worn pistol's legacy row onto it.
+  const sameKey = await sendEquipmentAction(account, 'laserPistol', { slot: 'offhand' });
+  invariant(sameKey.ack.ok === false && !sameKey.ack.self?.equipmentRuntime?.offhand,
+    'One runtime key was accepted in both hands', sameKey.ack);
+  const minted = `ui_laserPistol_${Date.now().toString(36)}_0badcafe`;
+  const second = await sendEquipmentAction(account, minted, { slot: 'offhand' });
+  invariant(second.ack.ok === true
+    && second.ack.self?.equipmentRuntime?.weapon === 'laserPistol'
+    && second.ack.self?.equipmentRuntime?.offhand === minted,
+  'A second identical pistol could not be equipped under a new instance id', second.ack);
+  assertCombat(second.ack.combat, {
+    weaponRuntimeId: 'laserPistol',
+    loaded: 5,
+    reserveAmmo: 4
+  }, 'legacy-mix worn pistol after an identical second pistol was equipped');
+  assertRuntimeWeaponInventory(second.ack.self, spare, 2, 'legacy-mix known spare stays in the bag');
 }
 
 async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
@@ -2176,6 +2199,7 @@ async function main() {
       + 'loaded bag weapons auto-unloaded into inventory when sold, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
       + 'a known bag instance joined a legacy base-id pistol without taking over its magazine, '
+      + 'a second identical pistol was equipped under a new instance id, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );

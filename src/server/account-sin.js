@@ -33,7 +33,8 @@ const DEFAULT_CONFIG = Object.freeze({
     minCost: 50
   }),
   ledgerLimit: 40,
-  maxSin: 1000000000
+  maxSin: 1000000000,
+  maxMarks: 1000000000
 });
 
 function finite(value, fallback, min, max) {
@@ -69,7 +70,8 @@ function normalizeAccountSinConfig(input = {}) {
       minCost: Math.floor(finite(focus.minCost, DEFAULT_CONFIG.focus.minCost, 0, 1e7))
     }),
     ledgerLimit: Math.floor(finite(src.ledgerLimit, DEFAULT_CONFIG.ledgerLimit, 0, 1000)),
-    maxSin: Math.floor(finite(src.maxSin, DEFAULT_CONFIG.maxSin, 1, 9e15))
+    maxSin: Math.floor(finite(src.maxSin, DEFAULT_CONFIG.maxSin, 1, 9e15)),
+    maxMarks: Math.floor(finite(src.maxMarks, DEFAULT_CONFIG.maxMarks, 1, 9e15))
   });
 }
 
@@ -86,6 +88,8 @@ function sanitizeAccount(input = {}, config = DEFAULT_CONFIG) {
   return {
     version: ACCOUNT_SIN_VERSION,
     sin: Math.floor(finite(src.sin, 0, 0, config.maxSin)),
+    // Марки аккаунта: пока персонаж в игре, живое значение — его строка марок.
+    marks: Math.floor(finite(src.marks, 0, 0, config.maxMarks)),
     premiumUntil: Math.max(0, Math.floor(Number(src.premiumUntil) || 0)),
     focus: finite(src.focus, 0, 0, config.focus.cap),
     focusUpdatedAt: Math.max(0, Math.floor(Number(src.focusUpdatedAt) || 0)),
@@ -188,6 +192,7 @@ function publicAccount(account, config, now = Date.now()) {
   const active = premiumActive(account, now);
   return {
     sin: account ? account.sin : 0,
+    marks: account ? account.marks || 0 : 0,
     premium: active,
     premiumUntil: active ? account.premiumUntil : 0,
     premiumPriceSin: config.premium.priceSin,

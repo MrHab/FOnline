@@ -4,7 +4,7 @@
   "currency": {
     "itemId": "silver",
     "displayName": "Марки Тракта",
-    "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками."
+    "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками. Лежат на счёте аккаунта, общие для его персонажей, не выпадают и не выбрасываются."
   },
   "worldModel": {
     "settlementLife": false,
@@ -18,7 +18,8 @@
     "blackMarket": true,
     "cityAuctions": true,
     "dangerCells": true,
-    "accountSin": true
+    "accountSin": true,
+    "accountMarks": true
   },
   "npcTradeHubs": {
     "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",
@@ -99,6 +100,11 @@
       "zero_basin": "randomDryBasin",
       "glasslands": "randomAshGrove",
       "chalk_lowland": "randomAshGrove"
+    },
+    "sceneModes": ["pvpBlack"],
+    "respawn": {
+      "intervalSeconds": 90,
+      "minHostiles": { "pvp": 2, "pvpFullDrop": 3, "pvpBlack": 4 }
     },
     "encounters": {
       "pvp": ["raider_ambush", "gecko_pack", "mutant_ant_swarm", "ghoul_pack"],

@@ -366,17 +366,9 @@ const recipeMechanics = rows => rows.map(({ id, outputId, outputQty, station, co
 }));
 assert.deepStrictEqual(recipeMechanics(actualRecipes), recipeMechanics(authoredRecipes),
   'Unity crafting mechanics drifted from data/kromka/field-recipes.json');
-// Запасной каталог Unity подписывает два рецепта прежними именами (их и
-// закрепляла прежняя сверка с браузерным клиентом); после ответа
-// /api/kromka/items игрок видит авторские. Исправление в RoaCraftingData.cs
-// должно убрать и эти исключения — иначе проверка упадёт.
-const bakedRecipeNameExceptions = {
-  ammo9craft: 'Самодельные патроны 9mm',
-  reagentcraft: 'Промышленные реагенты'
-};
 assert.deepStrictEqual(
   actualRecipes.map(({ id, name }) => ({ id, name })),
-  authoredRecipes.map(({ id, name }) => ({ id, name: bakedRecipeNameExceptions[id] ?? name })),
+  authoredRecipes.map(({ id, name }) => ({ id, name })),
   'Unity crafting names drifted from data/kromka/field-recipes.json');
 
 // Every character-slot item (except the intrinsic fists), all ammo and all aid

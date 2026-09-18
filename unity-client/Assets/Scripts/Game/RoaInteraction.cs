@@ -2462,7 +2462,8 @@ namespace RealmOfAshes.Game
                 ["station"] = recipe.Station,
                 ["fee"] = recipe.Fee,
                 ["locationId"] = _locationId,
-                ["stationObjectId"] = stationObjectId
+                ["stationObjectId"] = stationObjectId,
+                ["useFocus"] = RoaCraftingPlots.WantsFocus(recipe, _self?["account"] as JObject)
             }, ack =>
             {
                 _craftPending = false;
@@ -2476,8 +2477,10 @@ namespace RealmOfAshes.Game
                 }
 
                 JObject output = ack["output"] as JObject;
+                int focusSpent = ack["focusSpent"]?.ToObject<int>() ?? 0;
                 Show("Создано: " + RoaItemData.Name(output?["id"]?.ToString() ?? recipe.OutputId)
-                    + " x" + (output?["qty"]?.ToObject<int>() ?? recipe.OutputQty));
+                    + " x" + (output?["qty"]?.ToObject<int>() ?? recipe.OutputQty)
+                    + (focusSpent > 0 ? " · фокус −" + focusSpent : string.Empty));
             });
         }
 
@@ -3240,7 +3243,9 @@ namespace RealmOfAshes.Game
         {
             string station = _active?["station"]?.ToString() ?? string.Empty;
             JObject plot = RoaCraftingPlots.ForObject(_active?["id"]?.ToString());
+            JObject account = _self?["account"] as JObject;
             if (plot != null) DrawPlot(plot);
+            if (plot != null) DrawFocus(plot, account);
             GUILayout.Label(plot != null
                 ? "Состав рюкзака и результат повторно проверяет сервер. Комиссия уходит арендатору участка; свободный участок берёт плату поселения."
                 : "Состав рюкзака и результат повторно проверяет сервер. Комиссия поступает владельцу мастерской.", Dim());
@@ -3256,6 +3261,12 @@ namespace RealmOfAshes.Game
                 GUILayout.Label("<b>" + recipe.Name + "</b>  → " + RoaItemData.Name(recipe.OutputId) + " x" + recipe.OutputQty, Rich());
                 GUILayout.Label("Материалы: " + CraftCostText(recipe) + " · комиссия: " + recipe.Fee + " марок"
                     + (recipe.WorkSeconds > 0 ? " · работа: " + recipe.WorkSeconds + " с" : string.Empty), Dim());
+                if (plot != null && RoaCraftingPlots.WantsFocus(recipe, account))
+                {
+                    int focusCost = RoaCraftingPlots.FocusCostFor(recipe, account);
+                    GUILayout.Label("Фокус на заказ: " + focusCost
+                        + (RoaCraftingPlots.Focus(account) >= focusCost ? string.Empty : " — не хватает, заказ пройдёт без фокуса"), Dim());
+                }
                 GUI.enabled = available && !_craftPending;
                 if (GUILayout.Button(_craftPending ? "Станок занят…" : "Создать", GUILayout.Height(30f))) Craft(recipe);
                 GUI.enabled = true;
@@ -3264,6 +3275,29 @@ namespace RealmOfAshes.Game
             }
 
             if (!any) GUILayout.Label("Для этого станка рецепты не найдены.");
+        }
+
+        /// <summary>
+        /// Фокус премиума у станка участка: переключатель «тратить фокус» и
+        /// остаток — заказ с фокусом возвращает больше материалов.
+        /// </summary>
+        private void DrawFocus(JObject plot, JObject account)
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            if (RoaCraftingPlots.Premium(account))
+            {
+                double focusRate = plot["focusReturnRate"]?.ToObject<double>() ?? 0d;
+                bool next = GUILayout.Toggle(RoaCraftingPlots.UseFocus,
+                    " Тратить фокус: возврат материалов " + Mathf.RoundToInt((float)(focusRate * 100d)) + "%");
+                if (next != RoaCraftingPlots.UseFocus) RoaCraftingPlots.UseFocus = next;
+                GUILayout.Label("Фокус: " + RoaCraftingPlots.FocusText(account) + " · копится, пока действует премиум.", Dim());
+            }
+            else
+            {
+                GUILayout.Label("Фокус — только с премиумом: заказ с фокусом возвращает больше материалов.", Dim());
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(6f);
         }
 
         /// <summary>Участок станка: арендатор, плата, торги за аренду.</summary>

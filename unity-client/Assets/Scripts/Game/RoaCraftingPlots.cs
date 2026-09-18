@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using UnityEngine;
 
 namespace RealmOfAshes.Game
 {
@@ -62,6 +63,69 @@ namespace RealmOfAshes.Game
             foreach (JObject plot in All)
                 if (plot["objectId"]?.ToString() == objectId) return plot;
             return null;
+        }
+
+        private const string UseFocusPref = "roa.craft.useFocus";
+
+        /// <summary>
+        /// Переключатель «тратить фокус» у станка участка: общий для окна
+        /// станка и страницы крафта, запоминается между сессиями. В запрос
+        /// уходит, только если есть премиум и у станка есть участок.
+        /// </summary>
+        public static bool UseFocus
+        {
+            get { return PlayerPrefs.GetInt(UseFocusPref, 0) == 1; }
+            set
+            {
+                PlayerPrefs.SetInt(UseFocusPref, value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
+        }
+
+        /// <summary>Премиум по снимку счёта игрока (self.account).</summary>
+        public static bool Premium(JObject account)
+        {
+            return account?["premium"]?.Type == JTokenType.Boolean && account["premium"].Value<bool>();
+        }
+
+        public static int Focus(JObject account) { return IntOf(account?["focus"], 0); }
+
+        public static int FocusCap(JObject account) { return IntOf(account?["focusCap"], 0); }
+
+        /// <summary>
+        /// Цена фокуса заказа — как на сервере (focusCostFor): столько-то за
+        /// марку стоимости изделия, не меньше минимума.
+        /// </summary>
+        public static int FocusCostFor(RoaCraftRecipe recipe, JObject account)
+        {
+            if (recipe == null) return 0;
+            JToken perValueToken = account?["focusCostPerValue"];
+            double perValue = perValueToken != null && (perValueToken.Type == JTokenType.Float || perValueToken.Type == JTokenType.Integer)
+                ? perValueToken.Value<double>()
+                : 10d;
+            int minCost = IntOf(account?["focusMinCost"], 50);
+            double worth = (double)RoaItemData.BasePrice(recipe.OutputId) * Math.Max(1, recipe.OutputQty);
+            return Math.Max(minCost, (int)Math.Ceiling(worth * perValue));
+        }
+
+        /// <summary>Уйдёт ли заказ с фокусом: переключатель, премиум и участок у станка.</summary>
+        public static bool WantsFocus(RoaCraftRecipe recipe, JObject account)
+        {
+            return recipe != null && UseFocus && Premium(account) && ForStation(recipe.Station) != null;
+        }
+
+        /// <summary>Строка запаса фокуса для окон крафта и экрана персонажа.</summary>
+        public static string FocusText(JObject account)
+        {
+            if (!Premium(account)) return "нет (только с премиумом)";
+            return Focus(account) + " / " + FocusCap(account);
+        }
+
+        private static int IntOf(JToken token, int fallback)
+        {
+            return token != null && (token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+                ? (int)Math.Floor(token.Value<double>())
+                : fallback;
         }
 
         /// <summary>Комиссия заказа с учётом участка станка этого рецепта.</summary>

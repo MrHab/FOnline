@@ -84,7 +84,7 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     assert.equal(Math.round(sin.focusAt(shown, config, t0 + DAY)), config.focus.perDay);
   }
   const view = sin.publicAccount(account, config, end + 5 * DAY);
-  assert.deepEqual(Object.keys(view).sort(), ['focus', 'focusCap', 'focusCostPerValue', 'focusMinCost', 'premium', 'premiumDays', 'premiumPriceSin', 'premiumUntil', 'sin']);
+  assert.deepEqual(Object.keys(view).sort(), ['focus', 'focusCap', 'focusCostPerValue', 'focusMinCost', 'marks', 'premium', 'premiumDays', 'premiumPriceSin', 'premiumUntil', 'sin']);
   assert.equal(view.premium, false);
   assert.equal(view.premiumUntil, 0);
 }
@@ -105,7 +105,9 @@ assert.equal(economy.auctions.premiumTaxPct, config.premium.auctionTaxPct, 'the 
     ['saved = persistActivePlayerState(player) === true', 'cassettes saved with the account'],
     ['return !!account && sinPremiumActive(account, Date.now())', 'the auction premium tax'],
     ['serverConvertSinCassettes(p);', 'cassettes onto the account'],
-    ['const sinCost = account ?', 'sin prices paid from the account']
+    ['const sinCost = account ?', 'sin prices paid from the account'],
+    ['else delete view.marks;', 'no account marks balance without marks on the account'],
+    ['player.marksOnAccount = false;\n  return false;', 'a failed marks migration keeps the account untouched']
   ]) assert(server.includes(hook), `server.js wires ${label}`);
 }
 

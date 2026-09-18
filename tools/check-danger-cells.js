@@ -96,4 +96,34 @@ assert.equal(cells.encounterChance(config, 'pvpBlack', 1), config.encounterChanc
   'a skilled wanderer meets less');
 assert.equal(cells.encounterChance(config, 'peaceful', 0), 0);
 
-console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, and encounter chances by colour and wanderer skill.');
+// --- итерация 2: сквозные клетки ------------------------------------------------------
+{
+  assert.deepEqual([...config.sceneModes], ['pvpBlack'], 'the black core is walked on foot, red stays a chance');
+  assert.equal(cells.isSceneMode(config, 'pvpBlack'), true);
+  assert.equal(cells.isSceneMode(config, 'pvpFullDrop'), false);
+  assert.equal(cells.minHostilesFor(config, 'pvpBlack'), 4);
+  assert.equal(config.respawn.intervalSeconds, 90);
+  const base = cells.subCellAt(config, { x: 170, y: 150 }, pointKm);
+  const north = cells.neighbourCell(config, base, 'north', pointKm);
+  assert.deepEqual([north.sx, north.sy], [base.sx, base.sy - 1]);
+  assert.deepEqual([cells.neighbourCell(config, base, 'east', pointKm).sx], [base.sx + 1]);
+  assert.equal(cells.neighbourCell(config, base, 'up', pointKm), null);
+  // Движение на север — вход с юга; сторона считается по смещению.
+  assert.equal(cells.entryKeyForDirection('north'), 'entryFromSouth');
+  assert.equal(cells.entryKeyForDirection('west'), 'entryFromEast');
+  assert.equal(cells.directionBetween({ x: 0, y: 10 }, { x: 0.2, y: 8 }), 'north');
+  assert.equal(cells.directionBetween({ x: 0, y: 0 }, { x: -3, y: 1 }), 'west');
+  // Точка у общей границы лежит в соседней клетке и держит положение вдоль края.
+  const size = config.subCellKm / pointKm;
+  const edge = cells.boundaryPoint(config, base, 'east', pointKm, 0.25);
+  assert.equal(cells.subCellAt(config, edge, pointKm).key, cells.neighbourCell(config, base, 'east', pointKm).key);
+  assert(Math.abs(edge.y - (base.sy + 0.25) * size) < 1e-9, JSON.stringify(edge));
+  const top = cells.boundaryPoint(config, base, 'north', pointKm, 0.5);
+  assert.equal(cells.subCellAt(config, top, pointKm).key, north.key);
+  const custom = cells.normalizeDangerCellConfig({ sceneModes: ['pvpBlack', 'pvpFullDrop', 'bogus'], respawn: { intervalSeconds: 0, minHostiles: { pvp: 99 } } });
+  assert.deepEqual([...custom.sceneModes], ['pvpBlack', 'pvpFullDrop']);
+  assert.equal(custom.respawn.intervalSeconds, 1);
+  assert.equal(custom.respawn.minHostiles.pvp, 40);
+}
+
+console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, encounter chances by colour and wanderer skill, and walk cells with neighbours, entry sides, border points and threat respawn.');

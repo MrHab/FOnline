@@ -9,6 +9,12 @@
  * все, кого стычка застала в одной мелкой клетке, попадают в одну общую
  * сцену — там и встречаются.
  *
+ * Итерация 2: в клетках «сквозных» цветов (sceneModes, сейчас чёрная
+ * Сердцевина) путь по карте не идёт — каждая мелкая клетка там общая сцена,
+ * вход с карты ставит отряд на сторону, откуда он пришёл, а выход с края
+ * ведёт в соседнюю мелкую клетку: в её сцену или, если сосед не сквозной,
+ * на карту к общей границе. Угрозы в занятых сценах сервер досыпает по цвету.
+ *
  * Модуль не знает о сервере: координаты узлов, регион и случайность
  * передаются снаружи.
  */
@@ -28,7 +34,19 @@ const DEFAULT_CONFIG = Object.freeze({
   wandererReduction: 0.5,
   edgeGraceKm: 3,
   templates: Object.freeze({ default: 'randomRuinedRoad' }),
-  encounters: Object.freeze({ pvp: Object.freeze(['raider_ambush']) })
+  encounters: Object.freeze({ pvp: Object.freeze(['raider_ambush']) }),
+  sceneModes: Object.freeze(['pvpBlack']),
+  respawn: Object.freeze({
+    intervalSeconds: 90,
+    minHostiles: Object.freeze({ peaceful: 0, pve: 0, pvp: 2, pvpFullDrop: 3, pvpBlack: 4 })
+  })
+});
+
+const DIRECTIONS = Object.freeze({
+  north: Object.freeze({ dx: 0, dy: -1, entry: 'entryFromSouth', opposite: 'south' }),
+  south: Object.freeze({ dx: 0, dy: 1, entry: 'entryFromNorth', opposite: 'north' }),
+  west: Object.freeze({ dx: -1, dy: 0, entry: 'entryFromEast', opposite: 'east' }),
+  east: Object.freeze({ dx: 1, dy: 0, entry: 'entryFromWest', opposite: 'west' })
 });
 
 function finite(value, fallback, min, max) {
@@ -91,7 +109,16 @@ function normalizeDangerCellConfig(input = {}) {
     wandererReduction: finite(src.wandererReduction, DEFAULT_CONFIG.wandererReduction, 0, 1),
     edgeGraceKm: finite(src.edgeGraceKm, DEFAULT_CONFIG.edgeGraceKm, 0, 1000),
     templates: Object.freeze(templates),
-    encounters: Object.freeze(encounters)
+    encounters: Object.freeze(encounters),
+    sceneModes: Object.freeze((Array.isArray(src.sceneModes) ? src.sceneModes : DEFAULT_CONFIG.sceneModes)
+      .filter(mode => DANGER_MODES.includes(mode))),
+    respawn: Object.freeze({
+      intervalSeconds: finite(src.respawn?.intervalSeconds, DEFAULT_CONFIG.respawn.intervalSeconds, 1, 3600),
+      minHostiles: Object.freeze(Object.fromEntries(DANGER_MODES.map(mode => [
+        mode,
+        Math.floor(finite(src.respawn?.minHostiles?.[mode], DEFAULT_CONFIG.respawn.minHostiles[mode], 0, 40))
+      ])))
+    })
   });
 }
 
@@ -137,6 +164,70 @@ function subCellAt(config, point = {}, pointKm = 1) {
     key: `${sx}_${sy}`,
     center: { x: (sx + 0.5) * size / km, y: (sy + 0.5) * size / km }
   };
+}
+
+/** Мелкая клетка по индексам (для соседей). */
+function subCellByIndex(config, sx, sy, pointKm = 1) {
+  const size = config.subCellKm;
+  const km = Number(pointKm) > 0 ? Number(pointKm) : 1;
+  return {
+    sx,
+    sy,
+    key: `${sx}_${sy}`,
+    center: { x: (sx + 0.5) * size / km, y: (sy + 0.5) * size / km }
+  };
+}
+
+/** Сквозной ли цвет: в таких клетках путь идёт пешком по сценам. */
+function isSceneMode(config, mode = '') {
+  return config.sceneModes.includes(cleanMode(mode, ''));
+}
+
+/** Соседняя мелкая клетка по стороне выхода (north/south/west/east). */
+function neighbourCell(config, cell = {}, direction = '', pointKm = 1) {
+  const step = DIRECTIONS[String(direction || '').toLowerCase()];
+  if (!step) return null;
+  return subCellByIndex(config, Number(cell.sx) + step.dx, Number(cell.sy) + step.dy, pointKm);
+}
+
+/** Точка входа в сцену при движении в сторону direction: входят с противоположной стороны. */
+function entryKeyForDirection(direction = '') {
+  return DIRECTIONS[String(direction || '').toLowerCase()]?.entry || 'entryFromWorld';
+}
+
+/**
+ * Сторона движения между двумя точками карты: вход в клетку идёт с той стороны,
+ * откуда пришёл отряд (движение на север — вход с юга).
+ */
+function directionBetween(from = {}, to = {}) {
+  const dx = Number(to.x || 0) - Number(from.x || 0);
+  const dy = Number(to.y || 0) - Number(from.y || 0);
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'east' : 'west';
+  return dy >= 0 ? 'south' : 'north';
+}
+
+/**
+ * Точка карты сразу за общей границей клетки cell в сторону direction: along
+ * (0…1) — положение вдоль границы, как стоял игрок у края сцены. Точка лежит
+ * внутри соседней клетки, чтобы путь дальше начинался уже там.
+ */
+function boundaryPoint(config, cell = {}, direction = '', pointKm = 1, along = 0.5) {
+  const size = config.subCellKm / (Number(pointKm) > 0 ? Number(pointKm) : 1);
+  const step = DIRECTIONS[String(direction || '').toLowerCase()];
+  if (!step) return { x: cell.center?.x || 0, y: cell.center?.y || 0 };
+  const inset = size * 0.08;
+  const t = finite(along, 0.5, 0.05, 0.95);
+  const x0 = Number(cell.sx) * size;
+  const y0 = Number(cell.sy) * size;
+  if (step.dy !== 0) {
+    return { x: x0 + size * t, y: step.dy < 0 ? y0 - inset : y0 + size + inset };
+  }
+  return { x: step.dx < 0 ? x0 - inset : x0 + size + inset, y: y0 + size * t };
+}
+
+/** Сколько угроз держать в занятой сцене этого цвета. */
+function minHostilesFor(config, mode = '') {
+  return config.respawn.minHostiles[cleanMode(mode)] || 0;
 }
 
 /** Шанс стычки при входе в мелкую клетку; навык странника снижает его. */
@@ -200,5 +291,12 @@ module.exports = {
   subCellAt,
   encounterChance,
   cellEncounter,
-  cellDangerModes
+  cellDangerModes,
+  subCellByIndex,
+  isSceneMode,
+  neighbourCell,
+  entryKeyForDirection,
+  directionBetween,
+  boundaryPoint,
+  minHostilesFor
 };

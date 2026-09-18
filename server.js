@@ -254,7 +254,13 @@ const {
   subCellAt: dangerSubCellAt,
   encounterChance: dangerEncounterChance,
   cellEncounter: dangerCellEncounter,
-  cellDangerModes
+  cellDangerModes,
+  isSceneMode: dangerIsSceneMode,
+  neighbourCell: dangerNeighbourCell,
+  entryKeyForDirection: dangerEntryKeyForDirection,
+  directionBetween: dangerDirectionBetween,
+  boundaryPoint: dangerBoundaryPoint,
+  minHostilesFor: dangerMinHostilesFor
 } = require('./src/server/danger-cells');
 const {
   normalizeAccountStore,
@@ -2294,13 +2300,27 @@ function serverDangerModeAtPoint(point = {}) {
 
 /**
  * Стычка в мелкой клетке: общая сцена клетки (шаблон по региону, встреча из
- * пула цвета), весь отряд путешествия переносится туда сервером. Выход с
- * края сцены возвращает на карту в ту же точку.
+ * пула цвета), весь отряд путешествия переносится туда сервером со стороны
+ * прихода. Выход с края сцены ведёт в соседнюю мелкую клетку.
  */
-function serverStartDangerCellEncounter(session, leader, point, cell, mode) {
+function serverStartDangerCellEncounter(session, leader, point, cell, mode, entryKey = 'entryFromWorld') {
+  const memberIds = [...new Set([String(session.leaderId || leader.id || ''), ...(Array.isArray(session.memberIds) ? session.memberIds : [])]
+    .map(id => String(id || '')).filter(Boolean))];
+  const members = memberIds.map(id => players.get(id)).filter(player => player && player.onGlobalMap && !player.dead);
+  return serverEnterDangerCell(members, point, cell, mode, entryKey, 'dangerCell') > 0;
+}
+
+/**
+ * Перенос группы в общую сцену мелкой клетки: шаблон по макрорегиону, угроза
+ * из пула цвета, правила зоны по центру клетки. Опустевшая сцена
+ * начинается заново; точка карты каждого — место входа, выход с края ведёт
+ * к соседней клетке.
+ */
+function serverEnterDangerCell(members = [], point = null, cell = null, mode = 'pvp', entryKey = 'entryFromWorld', reason = 'dangerCell') {
+  if (!cell || !members.length) return 0;
   const region = GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(cell.center || point)]?.macroRegion || '';
   const encounter = dangerCellEncounter(WORLD_ECONOMY.dangerCells, mode, region, cell);
-  if (!encounter || !LOCATIONS[encounter.locationId]) return false;
+  if (!encounter || !LOCATIONS[encounter.locationId]) return 0;
   const roomId = canonicalLocationRealityId(encounter.roomId, encounter.locationId);
   // Опустевшая сцена начинается заново: следующий отряд не попадает в уже
   // зачищенную и обобранную стычку.
@@ -2311,29 +2331,32 @@ function serverStartDangerCellEncounter(session, leader, point, cell, mode) {
     // Правила сцены ставятся один раз: игроки внутри не видят смены цвета.
     const loc = roomLocation(room);
     room.pvpModeOverride = normalizeLocationPvpMode(encounter.pvpMode, loc.safe !== false);
-    room.encounterWorldPoint = { x: Number(point.x), y: Number(point.y) };
+    room.encounterWorldPoint = { x: Number(point?.x || cell.center.x), y: Number(point?.y || cell.center.y) };
     room.dangerCellKey = cell.key;
+    room.dangerCell = { sx: cell.sx, sy: cell.sy, key: cell.key, center: { ...cell.center } };
+    room.dangerMode = encounter.pvpMode;
+    room.dangerRespawnAt = Date.now() + WORLD_ECONOMY.dangerCells.respawn.intervalSeconds * 1000;
     setupRandomEncounterRoom(room, encounter.encounterId, { pvpMode: room.pvpModeOverride });
   }
   refreshRoomWorldState(room);
-  const memberIds = [...new Set([String(session.leaderId || leader.id || ''), ...(Array.isArray(session.memberIds) ? session.memberIds : [])]
-    .map(id => String(id || '')).filter(Boolean))];
   const title = zoneRules(room.pvpModeOverride).label || 'опасная клетка';
+  const walk = dangerIsSceneMode(WORLD_ECONOMY.dangerCells, room.dangerMode);
+  const worldPoint = sanitizeServerGlobalMapPoint(point || cell.center);
   let moved = 0;
-  const worldPoint = sanitizeServerGlobalMapPoint(point);
-  for (const id of memberIds) {
-    const player = players.get(id);
-    if (!player || !player.onGlobalMap || player.dead) continue;
-    // Выход со сцены возвращает на карту в точку стычки, а не в начало пути.
+  for (const player of members) {
+    if (!player || player.dead) continue;
+    // Выход со сцены ведёт к соседней клетке, а не в начало пути.
     const previousPoint = player.globalWorldPoint;
     const previousSiteId = player.currentWorldSiteId;
     player.globalWorldPoint = worldPoint;
     player.currentWorldSiteId = '';
     if (transferPlayerToServerRoom(player, room, {
-      reason: 'dangerCell',
-      message: `Стычка в пути: ${title}. Уйти можно через край локации.`,
+      reason,
+      message: walk
+        ? `Сердцевина: ${title}. Путь идёт пешком — выход с края ведёт в соседнюю клетку.`
+        : `Стычка в пути: ${title}. Уйти можно через край локации.`,
       worldPoint,
-      entryKey: 'entryFromWorld'
+      entryKey
     })) {
       player.dangerCellKey = cell.key;
       moved += 1;
@@ -2342,7 +2365,69 @@ function serverStartDangerCellEncounter(session, leader, point, cell, mode) {
       player.currentWorldSiteId = previousSiteId;
     }
   }
-  return moved > 0;
+  return moved;
+}
+
+/** Места карты (узлы и площадки): у них сквозных сцен нет — туда можно дойти. */
+let serverDangerPlacesCache = null;
+function serverDangerPlaces() {
+  if (serverDangerPlacesCache?.map === GLOBAL_MAP) return serverDangerPlacesCache.places;
+  const places = [];
+  for (const node of Array.isArray(GLOBAL_MAP.nodes) ? GLOBAL_MAP.nodes : []) {
+    const point = sanitizeServerGlobalMapPoint(node);
+    if (point && LOCATIONS[normalizeLocationId(node?.locationId || node?.id || '')]) places.push(point);
+  }
+  serverDangerPlacesCache = { map: GLOBAL_MAP, places };
+  return places;
+}
+
+function serverDangerCellNearPlace(cell = null) {
+  if (!cell?.center) return false;
+  const config = WORLD_ECONOMY.dangerCells;
+  const reach = (config.edgeGraceKm + config.subCellKm / 2) / serverGlobalMapPointKm();
+  return serverDangerPlaces().some(place => serverGlobalPointDistance(place, cell.center) <= reach);
+}
+
+/** Мелкая клетка, где путь идёт только пешком по сценам (чёрная Сердцевина). */
+function serverDangerWalkCell(cell = null) {
+  if (!cell) return false;
+  const mode = serverDangerModeAtPoint(cell.center);
+  return dangerIsSceneMode(WORLD_ECONOMY.dangerCells, mode) && !serverDangerCellNearPlace(cell) ? mode : false;
+}
+
+/** Положение игрока вдоль края сцены (0…1) — туда же он выйдет на границе клетки. */
+function serverDangerExitAlong(player = {}, direction = '') {
+  const loc = LOCATIONS[normalizeLocationId(player.locationId || '')] || {};
+  const bounds = normalizedLocationPlayableBounds(loc);
+  const tile = worldToTile(Number(player.x || 0), Number(player.z || 0), locationTileDims(loc));
+  if (direction === 'north' || direction === 'south') {
+    return clamp((tile.tx - bounds.minX) / Math.max(1, bounds.width), 0, 1);
+  }
+  return clamp((tile.tz - bounds.minZ) / Math.max(1, bounds.height), 0, 1);
+}
+
+/** Угрозы в занятых сценах клеток: сервер досыпает их по цвету клетки. */
+function serverRespawnDangerThreats(now = Date.now()) {
+  const config = WORLD_ECONOMY.dangerCells;
+  let spawned = 0;
+  for (const room of rooms.values()) {
+    if (!room?.dangerCell || !room.encounterSetupDone || now < Number(room.dangerRespawnAt || 0)) continue;
+    room.dangerRespawnAt = now + config.respawn.intervalSeconds * 1000;
+    if (!livePlayersInRoom(room).length) continue;
+    const alive = [...(room.enemies instanceof Map ? room.enemies.values() : [])]
+      .filter(enemy => enemy && !enemy.dead && enemy.hostileToPlayer !== false).length;
+    if (alive >= dangerMinHostilesFor(config, room.dangerMode)) continue;
+    const pool = config.encounters[room.dangerMode] || config.encounters.pvp || [];
+    if (!pool.length) continue;
+    const wave = Math.floor(now / (config.respawn.intervalSeconds * 1000));
+    const encounterId = pool[(wave + Number(room.dangerCell.sx) * 7 + Number(room.dangerCell.sy) * 13) % pool.length];
+    room.encounterSetupDone = false;
+    setupRandomEncounterRoom(room, encounterId, { pvpMode: room.pvpModeOverride, preserveExisting: true });
+    refreshRoomWorldState(room);
+    emitEnemySnapshot(room, true);
+    spawned += 1;
+  }
+  return spawned;
 }
 
 /** Окрестность, где стычек нет: только у настоящих мест, не у точки в пустоши. */
@@ -2391,10 +2476,13 @@ function serverTickDangerCells(now = Date.now()) {
     const to = sanitizeServerGlobalMapPoint(session.dangerGraceTo || null);
     let t = Number.isFinite(Number(session.dangerCheckedAt)) ? Number(session.dangerCheckedAt) : startedAt;
     let hit = null;
+    let previousPoint = serverGlobalTravelCurrentPoint(session, t) || from;
     for (let guard = 0; guard < 400 && t < endAt && !hit; guard += 1) {
       t = Math.min(endAt, t + stepMs);
       const point = serverGlobalTravelCurrentPoint(session, t);
       if (!point) break;
+      const cameFrom = previousPoint || point;
+      previousPoint = point;
       const cell = dangerSubCellAt(config, point, pointKm);
       if (session.dangerCellKey === cell.key) continue;
       const firstCell = !session.dangerCellKey;
@@ -2402,14 +2490,24 @@ function serverTickDangerCells(now = Date.now()) {
       leader.dangerCellKey = cell.key;
       // Клетка, где путь начался после входа в игру, и окрестности мест не нападают.
       if (firstCell) continue;
+      // Сквозная клетка (чёрная Сердцевина): по карте её не пройти — вход в
+      // её сцену обязателен, со стороны, откуда пришёл отряд.
+      const walkMode = serverDangerWalkCell(cell);
+      if (walkMode) {
+        hit = { point, cell, mode: walkMode, entryKey: dangerEntryKeyForDirection(dangerDirectionBetween(cameFrom, point)) };
+        break;
+      }
       if ((from && serverGlobalPointDistance(point, from) < grace) || (to && serverGlobalPointDistance(point, to) < grace)) continue;
       const mode = serverDangerModeAtPoint(cell.center);
       const chance = dangerEncounterChance(config, mode, serverSkillNorm(leader, 'wanderer'));
-      if (chance > 0 && Math.random() < chance) hit = { point, cell, mode };
+      if (chance > 0 && Math.random() < chance) {
+        hit = { point, cell, mode, entryKey: dangerEntryKeyForDirection(dangerDirectionBetween(cameFrom, point)) };
+      }
     }
     session.dangerCheckedAt = t;
-    if (hit && serverStartDangerCellEncounter(session, leader, hit.point, hit.cell, hit.mode)) started += 1;
+    if (hit && serverStartDangerCellEncounter(session, leader, hit.point, hit.cell, hit.mode, hit.entryKey)) started += 1;
   }
+  started += serverRespawnDangerThreats(now);
   return started;
 }
 
@@ -20062,9 +20160,13 @@ function serverAccountSinActive() {
   return WORLD_ECONOMY.worldModel.accountSin === true;
 }
 
+function serverAccountMarksActive() {
+  return WORLD_ECONOMY.worldModel.accountMarks === true;
+}
+
 function serverSinAccountFor(player = null, options = {}) {
   const id = String(player?.userId || '');
-  if (!serverAccountSinActive() || !id) return null;
+  if (!(serverAccountSinActive() || serverAccountMarksActive()) || !id) return null;
   if (!savesDb.accounts || typeof savesDb.accounts !== 'object') savesDb.accounts = {};
   // Чтение не заводит пустых счетов: запись появляется с первой операцией.
   if (options.create === false) return savesDb.accounts[id] || null;
@@ -20115,8 +20217,50 @@ function serverSinTradedOnlyInExchange(itemId = '') {
 }
 
 function serverPublicSinAccount(player = null) {
-  if (!serverAccountSinActive() || !player?.userId) return null;
-  return publicSinAccount(serverSinAccountFor(player, { create: false }), WORLD_ECONOMY.accountSin, Date.now());
+  if (!(serverAccountSinActive() || serverAccountMarksActive()) || !player?.userId) return null;
+  const view = publicSinAccount(serverSinAccountFor(player, { create: false }), WORLD_ECONOMY.accountSin, Date.now());
+  // Пока персонаж в игре, марки аккаунта живут в его строке марок. Без марок
+  // на счёте (флаг выключен или перенос не записался) баланса счёта клиент не
+  // получает и считает марки по рюкзаку.
+  if (player.marksOnAccount) view.marks = serverInventoryQty(player.inventory || [], 'silver');
+  else delete view.marks;
+  return view;
+}
+
+/**
+ * Марки — счёт аккаунта (экономика v3): общие для персонажей аккаунта, не
+ * выпадают и не выбрасываются. В аккаунт одновременно входит один персонаж;
+ * пока он в игре, его строка марок в рюкзаке — живое значение счёта, её видят
+ * все расчёты сервера, а сохранение переносит её обратно на счёт и в
+ * сохранении персонажа не оставляет. При входе марки, оставшиеся в
+ * сохранении персонажа со старых версий, добавляются к счёту.
+ */
+function serverLoadAccountMarks(player = null) {
+  if (!serverAccountMarksActive() || !player?.userId || !player?.characterId) return false;
+  const account = serverSinAccountFor(player);
+  if (!account) return false;
+  const legacy = serverInventoryQty(player.inventory || [], 'silver');
+  const before = account.marks || 0;
+  const marks = Math.min(WORLD_ECONOMY.accountSin.maxMarks, before + legacy);
+  account.marks = marks;
+  player.inventory = serverInventorySetRows(player.inventory || [], 'silver', marks);
+  player.marksOnAccount = true;
+  if (legacy <= 0) return true;
+  // Перенос старых марок уходит на диск одной записью с персонажем.
+  let saved = false;
+  try {
+    saved = persistActivePlayerState(player) === true;
+  } catch (error) {
+    console.error('Account marks migration was not saved:', player.id, error);
+  }
+  if (saved) return true;
+  // Запись не прошла: счёт не тронут, персонаж до выхода играет со своими
+  // марками, перенос повторится при следующем входе. Оставить марки «на
+  // счёте» нельзя — первое же сохранение записало бы на счёт одни старые.
+  account.marks = before;
+  player.inventory = serverInventorySetRows(player.inventory || [], 'silver', legacy);
+  player.marksOnAccount = false;
+  return false;
 }
 
 function serverPremiumMultiplier(player = null, key = '') {
@@ -26840,8 +26984,14 @@ function persistActivePlayerStates(playerList = []) {
         updatedAt: row.updatedAt,
         summary: row.summary
       };
-      staged.push({ row, previous });
+      const marksAccount = p.marksOnAccount && serverAccountMarksActive() ? serverSinAccountFor(p, { create: false }) : null;
+      staged.push({ row, previous, marksAccount, previousMarks: marksAccount ? marksAccount.marks : 0 });
       const state = mergeAuthoritativeCharacterState(row.state, row.state, p, characterId);
+      if (marksAccount) {
+        // Марки живут на счёте аккаунта, а не в сохранении персонажа.
+        marksAccount.marks = serverInventoryQty(p.inventory || [], 'silver');
+        state.inventory = serverStateInventoryWithout(state.inventory, 'silver');
+      }
       const now = Date.now();
       row.state = state;
       row.updatedAt = now;
@@ -26870,10 +27020,11 @@ function persistActivePlayerStates(playerList = []) {
     }
     // A failed atomic write must not make any staged row look newer than the
     // durable save. Callers may safely retry the whole group transition.
-    for (const { row, previous } of staged) {
+    for (const { row, previous, marksAccount, previousMarks } of staged) {
       row.state = previous.state;
       row.updatedAt = previous.updatedAt;
       row.summary = previous.summary;
+      if (marksAccount) marksAccount.marks = previousMarks;
     }
     throw error;
   }
@@ -26881,6 +27032,15 @@ function persistActivePlayerStates(playerList = []) {
 
 function persistActivePlayerState(p = {}) {
   return persistActivePlayerStates([p]);
+}
+
+/** Инвентарь сохранения без предмета: словарь «предмет → количество» или строки. */
+function serverStateInventoryWithout(inventory, itemId = '') {
+  if (Array.isArray(inventory)) return inventory.filter(row => serverBaseItemId(row?.id || '') !== itemId);
+  if (!inventory || typeof inventory !== 'object') return inventory;
+  const next = { ...inventory };
+  delete next[itemId];
+  return next;
 }
 
 function publicTravelPartyMember(p, leaderId = '') {
@@ -28218,6 +28378,7 @@ io.on('connection', (socket) => {
     serverUpdateFreeProgressionPoints(p);
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
+    serverLoadAccountMarks(p);
     serverConvertSinCassettes(p);
     players.set(socket.id, p);
     if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());
@@ -29505,6 +29666,7 @@ io.on('connection', (socket) => {
         const itemId = serverBaseItemId(data.itemId);
         const qty = Math.max(1, Math.min(999, Math.floor(Number(data.qty || 1))));
         if (!itemId || itemId === 'fists' || serverInventoryQty(p.inventory, itemId) < qty) return fail('В рюкзаке нет такого количества.');
+        if (itemId === 'silver' && p.marksOnAccount) return fail('Марки лежат на счёте аккаунта — на склад их класть не нужно.');
         if (Number(base.inventory[itemId] || 0) + qty > serverItemStackLimit(itemId)) return fail('На складе достигнут предел этого стека.');
         const storageBonus = Math.max(0, Number(calculateResidentBonuses(base, KROMKA_BASE_RESIDENT_CATALOG).storageCapacityPct || 0));
         const storageLimit = Math.floor(500 * (1 + storageBonus));
@@ -30277,8 +30439,35 @@ io.on('connection', (socket) => {
     if (!serverPlayerAtGlobalMapExit(leader)) return fail('Сначала дойдите до границы локации.');
     const fromLocationId = normalizeLocationId(leader.locationId || 'settlement');
     const exitDirection = serverGlobalExitDirection(leader);
-    const worldPoint = serverGlobalExitPoint(leader, exitDirection);
-    const fromDangerCell = !!rooms.get(leader.roomId || '')?.dangerCellKey;
+    const dangerRoom = rooms.get(leader.roomId || '');
+    const fromDangerCell = !!dangerRoom?.dangerCellKey;
+    let worldPoint = serverGlobalExitPoint(leader, exitDirection);
+    let exitCellKey = '';
+    if (fromDangerCell && dangerRoom.dangerCell && WORLD_ECONOMY.worldModel.dangerCells) {
+      // Край сцены клетки ведёт в соседнюю мелкую клетку в сторону выхода.
+      const config = WORLD_ECONOMY.dangerCells;
+      const pointKm = serverGlobalMapPointKm();
+      const neighbour = dangerNeighbourCell(config, dangerRoom.dangerCell, exitDirection, pointKm);
+      const boundary = neighbour
+        ? sanitizeServerGlobalMapPoint(dangerBoundaryPoint(config, dangerRoom.dangerCell, exitDirection, pointKm,
+          serverDangerExitAlong(leader, exitDirection)))
+        : null;
+      const walkMode = neighbour ? serverDangerWalkCell(neighbour) : false;
+      if (walkMode && boundary) {
+        const walkers = nearbyGlobalTravelParty(leader).filter(member => serverPlayerAtGlobalMapExit(member));
+        if (!walkers.some(member => member.id === leader.id)) walkers.unshift(leader);
+        const moved = serverEnterDangerCell(walkers, boundary, neighbour, walkMode,
+          dangerEntryKeyForDirection(exitDirection), 'dangerCellWalk');
+        if (moved > 0) {
+          if (typeof ack === 'function') ack({ ok: true, transferred: true, reason: 'dangerCellWalk', worldPoint: boundary });
+          return;
+        }
+      }
+      if (neighbour && boundary) {
+        worldPoint = boundary;
+        exitCellKey = neighbour.key;
+      }
+    }
     if (!worldPoint) return fail('Сервер не смог определить выход на глобальную карту.');
     const party = nearbyGlobalTravelParty(leader).filter(member => serverPlayerAtGlobalMapExit(member));
     if (!party.some(member => member.id === leader.id)) party.unshift(leader);
@@ -30304,8 +30493,8 @@ io.on('connection', (socket) => {
       distanceKm: 0,
       speedKmh: serverGlobalTravelSpeedKmh(leader),
       worldHours: 0,
-      // Со сцены опасной клетки уходят в ту же клетку, без окрестности места.
-      dangerCellKey: fromDangerCell ? leader.dangerCellKey || '' : '',
+      // Со сцены опасной клетки выходят к соседней клетке, без окрестности места.
+      dangerCellKey: fromDangerCell ? exitCellKey || leader.dangerCellKey || '' : '',
       dangerGraceFrom: fromDangerCell ? null : worldPoint
     };
     globalTravelSessions.set(socket.id, session);
@@ -32216,6 +32405,10 @@ io.on('connection', (socket) => {
     const qty = clamp(Math.floor(Number(data.qty || 1)), 1, 9999);
     if (!SERVER_ITEM_IDS.has(itemId) || itemId === 'fists') {
       if (typeof ack === 'function') ack({ ok: false, error: 'Этот предмет нельзя выбросить.' });
+      return;
+    }
+    if (itemId === 'silver' && p.marksOnAccount) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Марки лежат на счёте аккаунта и не выбрасываются.' });
       return;
     }
     if (serverInventoryQty(p.inventory || [], itemId) < qty) {

@@ -96,7 +96,7 @@ namespace RealmOfAshes.Game
 
         private static IReadOnlyList<RoaCraftRecipe> _recipes = new[]
         {
-            Recipe("ammo9craft", "Самодельные патроны 9mm", "ammo9", 8, "ammo_bench", "ore", 1, "wood", 1),
+            Recipe("ammo9craft", "Патроны 9mm", "ammo9", 8, "ammo_bench", "ore", 1, "wood", 1),
             Recipe("ammo556craft", "Патроны .223", "ammo556", 5, "ammo_bench", "ore", 2, "wood", 1),
             Recipe("energycellcraft", "Энергозаряды", "energyCell", 8, "energy_bench", "ore", 2, "wood", 1),
             Recipe("napalmcraft", "Напалм", "napalm", 12, "chem_station", "oil", 2, "scrap", 1, "wood", 1),
@@ -107,7 +107,7 @@ namespace RealmOfAshes.Game
             Recipe("doctorbagcraft", "Набор доктора", "doctorBag", 1, "chem_station", "medicine", 5, "electronics", 1, "scrap", 2),
             Recipe("antibioticscraft", "Антибиотики", "antibiotics", 2, "chem_station", "medicine", 3, "chemicals", 2),
             Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
-            Recipe("reagentcraft", "Промышленные реагенты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
+            Recipe("reagentcraft", "Химикаты", "chemicals", 3, "chem_station", "oil", 2, "water", 1, "scrap", 1),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
             Recipe("knifecraft", "Боевой нож", "knife", 1, "weapon_bench", "ore", 2, "wood", 1),
             Recipe("pistolcraft", "9mm пистолет", "pistol", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),

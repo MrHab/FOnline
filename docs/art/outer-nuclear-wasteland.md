@@ -4,7 +4,7 @@ The playable world, global IDs, route definitions and authoritative multiplayer 
 
 ## Reproduction and incremental authoring
 
-`KromkaGlobalMapOuterWastelandPerimeterAuthoring` owns stages 04–20. The first three source authoring passes remain in their original files. `Assets/Art/Kromka/OuterWastelandProgress.json` records the number of completed 18-degree sectors. The full scene composer honours this count.
+`KromkaGlobalMapOuterWastelandPerimeterAuthoring` owns stages 04–20; stages 01–03 live in `KromkaGlobalMapOuterWastelandAuthoring`. `Assets/Art/Kromka/OuterWastelandProgress.json` records the number of completed 18-degree sectors, and the full scene composer honours this count. All twenty sectors are complete.
 
 Use **Realm of Ashes → Authoring → Outer wasteland → Add next 5 percent** to add exactly one sector. It refuses Play Mode and unsaved scenes, preserves the existing map, validates geometry, and saves the scene and stage count only after passing checks. Do not rebuild the whole map from seed just to add an exterior sector.
 

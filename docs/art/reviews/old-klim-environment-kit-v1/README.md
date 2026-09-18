@@ -1,7 +1,7 @@
 # Old Klim environment kit v1
 
-This review set turns the `old-klim-caravan-yard-v1` concept into an original,
-runtime-ready GLB kit for the Old Klim vertical slice.
+This review set turns the `old-klim-caravan-yard-v1` concept into an original
+GLB kit for the archived Old Klim vertical slice.
 
 ## Contents
 
@@ -20,13 +20,10 @@ The authoritative location collision remains unchanged. The GLB roots declare
 `realm_collision_policy=authored_location_unchanged`; these assets are visual
 replacements for the vertical slice, not a new navigation layout.
 
-## Rebuild and verify
+## Status
 
-```powershell
-npm run build:old-klim-environment
-npm run check:old-klim-environment
-```
-
-Set `REALM_BLENDER_EXE` or pass `--blender <path>` if Blender 4.5 is installed
-outside the bundled tool-cache location. `catalog.png` shows the complete hero
-structure; `cutaway.png` renders the same kit with its roof group hidden.
+No runtime GLB ships from this kit: `npm run check:old-klim-unity-scene`
+requires that neither this directory nor `public/assets/models/wasteland/`
+contains an `old_klim_*.glb`. What is kept here is the Blender source, the
+technical report and the renders — `catalog.png` shows the complete hero
+structure, `cutaway.png` the same kit with its roof group hidden.

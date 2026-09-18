@@ -1,4 +1,4 @@
-# Realm of Ashes
+# Кромка (Realm of Ashes)
 
 Текущая версия проекта: **7.76.6-approved-humanoid-assets**.
 
@@ -7,8 +7,7 @@
 Игра — это авторитетный Node.js-сервер (`server.js`, `src/server/`) и
 **Unity-клиент** (`unity-client/`, Unity 6000.5.8f1, URP). Для игроков игра
 поставляется как Unity WebGL с корня сайта; Windows-сборка собирается
-`unity-client/Tools/build-windows.ps1`. Unity — единственный клиент: прежний
-браузерный Three.js-клиент удалён из репозитория.
+`unity-client/Tools/build-windows.ps1`. Unity — единственный клиент.
 
 Для работы с проектом через Codex на локальном компьютере или в облачной среде
 используйте [инструкцию Codex](docs/CODEX_WORKFLOW.md). Постоянные правила для

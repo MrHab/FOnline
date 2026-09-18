@@ -1,3 +1,8 @@
-# Mobile UI assets v7.75.70
+# Mobile UI assets
 
-UI assets were rebuilt from the uploaded archive `UI webp.rar`. Button images are optimized to 256x256 WebP for mobile performance; weapon panels are optimized to a larger WebP size.
+Touch-control icons of the Unity client. `RoaMobileControls` and `RoaMobileControlsCanvas`
+load the 256x256 PNG files from `left/`, `right/` and `top/` through `Resources.Load`, by path
+without extension (for example `RealmUi/mobile/right/attack`).
+
+The `.webp` files next to them are not imported by Unity as textures and no script references
+them. The weapon console art of the HUD is `RealmUi/weapon_ui.png`, one folder up.

@@ -556,6 +556,22 @@ function seedCombatFixtures(accounts) {
     loaded: 5,
     reserveAmmo: 4
   }, usersDb, savesDb);
+  seedCharacterState(accounts.pairedMix, {
+    // A revolver and a sawed-off: one-handed firearms with different ammo.
+    level: 50,
+    special: { str: 5, per: 5, end: 10, cha: 5, int: 5, agi: 10, luck: 5 },
+    weapon: 'revolver',
+    weaponRuntimeId: 'ui_revolver_pairedmix_1',
+    additionalWeapons: [{
+      baseId: 'sawedOffShotgun',
+      runtimeId: 'ui_sawedOffShotgun_pairedmix_2',
+      loaded: 1
+    }],
+    carriedItems: [{ id: 'shotgunShell', qty: 6 }],
+    ammoType: 'ammo9',
+    loaded: 2,
+    reserveAmmo: 6
+  }, usersDb, savesDb);
   seedCharacterState(accounts.harvest, {
     // Фикстура добычи стоит у лома в опасной локации всё время проверки
     // возрождения, поэтому ей нужен запас здоровья, чтобы не погибнуть и не
@@ -838,6 +854,7 @@ async function bootstrapCharacters(accounts) {
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
     ['legacyMix', 'legacymix'],
+    ['pairedMix', 'pairedmix'],
     ['harvest', 'harvest'],
     ['progression', 'progression'],
     ['trade', 'trade'],
@@ -1482,6 +1499,54 @@ async function assertDualPistolRuntime(accounts) {
     && Number(reloadedLeft?.reserveAmmo) === 0,
   'Shared dual-pistol reload did not charge per magazine and conserve the common reserve', reload);
 
+  closeSocket(account);
+}
+
+async function assertPairedVolleyCoversRevolversAndSawedOffs(accounts) {
+  // The paired volley is a rule of every one-handed firearm flagged dualWield,
+  // not of two pistol ids: a revolver and a sawed-off fire one round per hand,
+  // each from its own magazine and ammo type.
+  const account = accounts.pairedMix;
+  const right = 'ui_revolver_pairedmix_1';
+  const left = 'ui_sawedOffShotgun_pairedmix_2';
+  await connectAndJoin(account);
+  const equippedLeft = await sendEquipmentAction(account, left, { slot: 'offhand' });
+  invariant(equippedLeft.ack.ok === true
+    && equippedLeft.ack.self?.equipmentRuntime?.weapon === right
+    && equippedLeft.ack.self?.equipmentRuntime?.offhand === left,
+  'A sawed-off could not join a revolver in the other hand', equippedLeft.ack);
+
+  const token = `combat_runtime_pairedmix_${Date.now().toString(36)}_${++attackSequence}`;
+  const volley = await socketAck(account.socket, 'combatAttack', {
+    weapon: 'revolver',
+    weaponRuntimeId: right,
+    handSlot: 'weapon',
+    mode: 'dual',
+    attackToken: token,
+    combat: {
+      token,
+      weapon: 'revolver',
+      weaponRuntimeId: right,
+      handSlot: 'weapon',
+      mode: 'dual',
+      hands: [
+        { handSlot: 'weapon', weapon: 'revolver', weaponRuntimeId: right },
+        { handSlot: 'offhand', weapon: 'sawedOffShotgun', weaponRuntimeId: left }
+      ]
+    },
+    skillRanks: {},
+    talentRanks: {}
+  });
+  const rightAfter = volley.combats?.find(row => row.weaponRuntimeId === right);
+  const leftAfter = volley.combats?.find(row => row.weaponRuntimeId === left);
+  invariant(volley.ok === true
+    && volley.mode === 'dual'
+    && volley.fallback === false
+    && Number(volley.shots) === 2
+    && Number(volley.apCost) === 6
+    && Number(rightAfter?.loaded) === 1
+    && Number(leftAfter?.loaded) === 0,
+  'A revolver and a sawed-off did not fire a paired volley from their own magazines', volley);
   closeSocket(account);
 }
 
@@ -2166,6 +2231,7 @@ async function main() {
     await assertWeaponModificationAuthority(accounts);
     await assertUntargetedAttack(accounts);
     await assertDualPistolRuntime(accounts);
+    await assertPairedVolleyCoversRevolversAndSawedOffs(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
@@ -2194,6 +2260,7 @@ async function main() {
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '
+      + 'a revolver and a sawed-off fired a paired volley from their own magazines, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
       + 'loaded bag weapons auto-unloaded into inventory when sold, '

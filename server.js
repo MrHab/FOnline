@@ -7051,8 +7051,8 @@ function serverPveAreaRewardIds(area = {}) {
 
 const SERVER_WEAPONS = {
   pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 1, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
-  revolver: { id: 'revolver', name: 'Ржавый револьвер', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 3, dmg: [22, 32], range: 14, ammoType: 'ammo9', magSize: 6, fireRate: 0.55, apCost: 3, reloadApCost: 3 },
-  sawedOffShotgun: { id: 'sawedOffShotgun', name: 'Обрез', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [30, 44], range: 7, ammoType: 'shotgunShell', magSize: 2, fireRate: 0.6, apCost: 4, reloadApCost: 3 },
+  revolver: { id: 'revolver', name: 'Ржавый револьвер', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 3, dmg: [22, 32], range: 14, ammoType: 'ammo9', magSize: 6, fireRate: 0.55, apCost: 3, reloadApCost: 3 },
+  sawedOffShotgun: { id: 'sawedOffShotgun', name: 'Обрез', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [30, 44], range: 7, ammoType: 'shotgunShell', magSize: 2, fireRate: 0.6, apCost: 4, reloadApCost: 3 },
   smg: { id: 'smg', name: 'Самодельный ПП', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [12, 17], range: 14, ammoType: 'ammo9', magSize: 24, fireRate: 0.26, apCost: 4, reloadApCost: 3, automatic: true },
   rifle: { id: 'rifle', name: 'Охотничья винтовка', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
   assaultRifle: { id: 'assaultRifle', name: 'Ржавый автомат', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
@@ -12660,7 +12660,7 @@ function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
   const requestedMode = String(data.mode || data.combat?.mode || 'single');
   const pair = serverDualWieldPistolPair(p);
   if (requestedMode === 'dual') {
-    if (!pair) return { ok: false, error: 'Сервер: для парного залпа нужны два одноручных пистолета.' };
+    if (!pair) return { ok: false, error: 'Сервер: для парного залпа нужно парное оружие в обеих руках — пистолет, револьвер или обрез.' };
     const loadedEntries = pair.entries.filter(entry => Number(serverWeaponState(p, entry.weapon, {}, now, entry.slot).loaded || 0) > 0);
     if (!loadedEntries.length) return { ok: false, error: 'Сервер: оба магазина пусты. Перезарядитесь.' };
     if (loadedEntries.length === 1) {

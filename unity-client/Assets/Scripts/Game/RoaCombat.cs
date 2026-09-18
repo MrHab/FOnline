@@ -1646,9 +1646,15 @@ namespace RealmOfAshes.Game
             return -1;
         }
 
+        /// <summary>
+        /// Парное одноручное оружие: пистолет, револьвер, обрез, лазерный пистолет —
+        /// флаг dualWield в SERVER_WEAPONS (server.js) и в RoaWeaponData. Раньше здесь
+        /// стояли два id, и пара револьверов или обрезов бралась в руки и вставала в
+        /// парную стойку, но залпа не получала.
+        /// </summary>
         private static bool IsDualPistol(string id)
         {
-            return id == "pistol" || id == "laserPistol";
+            return !string.IsNullOrEmpty(id) && RoaWeaponData.Get(id).Id == id && RoaWeaponData.Get(id).DualWield;
         }
 
         private static string ModeLabel(string mode)

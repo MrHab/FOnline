@@ -64,11 +64,30 @@ for (const [id, hands] of Object.entries(expectedHands)) {
   assert(weaponLine.test(serverSource), `Server weapon ${id} must declare hands: ${hands}`);
 }
 
-for (const id of ['pistol', 'laserPistol']) {
+const pairedWeaponIds = ['pistol', 'revolver', 'sawedOffShotgun', 'laserPistol'];
+for (const id of pairedWeaponIds) {
   const dualLine = new RegExp(`\\n\\s*${id}: \\{[^\\n]*hands: 1, dualWield: true`);
   assert(dualLine.test(serverSource), `Server weapon ${id} must allow dual-pistol use`);
 }
 assert(!/\n\s*knife: \{[^\n]*dualWield: true/.test(serverSource), 'A knife must not unlock paired pistol fire');
+
+// The paired list lives in three places: server combat rules, the client's fire modes and the
+// dual-gun pose. A weapon that poses as a pair but gets no volley (revolvers and sawed-offs did)
+// reads to the player as a broken mechanic.
+const serverPaired = [...serverSource.matchAll(/\n\s*(\w+): \{[^\n]*hands: 1, dualWield: true/g)]
+  .map(match => match[1]).sort();
+assert.deepStrictEqual(serverPaired, [...pairedWeaponIds].sort(),
+  'Server paired weapons changed: update the client lists and this check');
+const clientWeaponData = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaWeaponData.cs'), 'utf8');
+const clientPaired = [...clientWeaponData.matchAll(/Add\("(\w+)",[^\n]*?, (?:true|false), true(?:, "\w+")?\);/g)]
+  .map(match => match[1]).sort();
+assert.deepStrictEqual(clientPaired, serverPaired,
+  'Unity RoaWeaponData.DualWield must mirror the server dualWield flags');
+const clientCombat = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaCombat.cs'), 'utf8');
+assert(/IsDualPistol\(string id\)[\s\S]{0,160}RoaWeaponData\.Get\(id\)\.DualWield/.test(clientCombat),
+  'Unity paired fire mode must read RoaWeaponData.DualWield, not its own id list');
+const offhandView = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaOffhandWeaponView.cs'), 'utf8');
+for (const id of serverPaired) assert(offhandView.includes(`"${id}"`), `Unity dual-gun pose must support ${id}`);
 assert(serverSource.includes("id: 'dual'")
   && serverSource.includes('hitBonus: -0.15')
   && serverSource.includes('hitCap: 0.78')

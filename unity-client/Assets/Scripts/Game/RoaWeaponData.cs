@@ -40,8 +40,8 @@ namespace RealmOfAshes.Game
         static RoaWeaponData()
         {
             Add("pistol", "9mm пистолет", 18, 26, 3, "ammo9", false, true);
-            Add("revolver", "Ржавый револьвер", 22, 32, 3, "ammo9", false, false);
-            Add("sawedOffShotgun", "Обрез", 30, 44, 4, "shotgunShell", false, false);
+            Add("revolver", "Ржавый револьвер", 22, 32, 3, "ammo9", false, true);
+            Add("sawedOffShotgun", "Обрез", 30, 44, 4, "shotgunShell", false, true);
             Add("smg", "Самодельный ПП", 12, 17, 4, "ammo9", true, false);
             Add("rifle", "Охотничья винтовка", 28, 40, 4, "ammo556", false, false);
             Add("assaultRifle", "Ржавый автомат", 13, 19, 4, "ammo556", true, false);

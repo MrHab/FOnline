@@ -409,6 +409,7 @@ namespace RealmOfAshes.Game
             if (Socket == null || Socket.Phase != RoaSocketClient.ConnectionPhase.Joined) return false;
 
             _status = "…";
+            itemRuntimeId = DistinctHandInstanceId(slot, itemRuntimeId);
 
             Socket.EmitWithAck("equipmentAction", new Dictionary<string, object>
             {
@@ -438,6 +439,36 @@ namespace RealmOfAshes.Game
                 completed?.Invoke(ack);
             });
             return true;
+        }
+
+        /// <summary>
+        /// Сервер различает оружие в руках по id экземпляра и один ключ в обеих руках
+        /// отклоняет («один экземпляр оружия нельзя держать сразу в двух руках»). Второй
+        /// такой же ствол из сумки без собственной записи приходит под базовым id — тем
+        /// же, что у надетого, — и пара одинаковых пистолетов не собиралась. Такому
+        /// стволу выдаётся новый id экземпляра в серверном формате ui_{base}_{a}_{b}.
+        /// </summary>
+        private string DistinctHandInstanceId(string slot, string itemRuntimeId)
+        {
+            if (string.IsNullOrEmpty(itemRuntimeId) || (slot != "weapon" && slot != "offhand")) return itemRuntimeId;
+            string held;
+            if (!_equipment.TryGetValue(slot == "weapon" ? "offhand" : "weapon", out held) || held != itemRuntimeId)
+                return itemRuntimeId;
+            // Собственный id (ui_…) в другой руке — это тот же самый предмет, его
+            // перекладывают из руки в руку. Новый экземпляр нужен только запасному.
+            string baseId = BaseId(itemRuntimeId);
+            if (itemRuntimeId != baseId || InventoryQty(baseId) <= 0) return itemRuntimeId;
+            return NewInstanceId(baseId);
+        }
+
+        /// <summary>Формат serverNewWeaponRuntimeId (server.js): ui_{base}_{время base36}_{8 hex}.</summary>
+        public static string NewInstanceId(string baseId)
+        {
+            const string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+            long value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var time = new System.Text.StringBuilder();
+            do { time.Insert(0, digits[(int)(value % 36)]); value /= 36; } while (value > 0);
+            return "ui_" + baseId + "_" + time + "_" + Guid.NewGuid().ToString("N").Substring(0, 8);
         }
 
         private void HealSelf(string itemId)

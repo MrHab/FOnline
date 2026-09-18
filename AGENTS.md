@@ -45,6 +45,14 @@
 - When changing visuals or interaction, test the running Unity client at
   desktop and mobile landscape sizes.
 
+## Documentation
+
+- `docs/wiki/` describes the game as it is now. Do not add patch-note files or dated
+  fix diaries: history lives in git.
+- Player-facing release notes go to the top of `docs/wiki/CHANGELOG.md`; read only its
+  first lines before editing. It holds the current month; when a new month starts, move
+  the older entries to `docs/wiki/CHANGELOG_ARCHIVE.md`.
+
 ## Git and delivery
 
 - Start work from the latest `main`.

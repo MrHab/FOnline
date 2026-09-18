@@ -1,5 +1,11 @@
 # Old Klim environment kit v1
 
+> **Retired.** The kit no longer ships. Its runtime and review GLBs, the runtime
+> manifest and its build and check commands were removed; the settlement is now
+> the Kromka Unity scene «Ключи»
+> (`unity-client/Assets/Scenes/Kromka/Locations/settlement.unity`), and
+> `npm run check:old-klim-unity-scene` keeps the retired GLBs from coming back.
+
 This review set turns the `old-klim-caravan-yard-v1` concept into an original,
 runtime-ready GLB kit for the Old Klim vertical slice.
 
@@ -20,13 +26,8 @@ The authoritative location collision remains unchanged. The GLB roots declare
 `realm_collision_policy=authored_location_unchanged`; these assets are visual
 replacements for the vertical slice, not a new navigation layout.
 
-## Rebuild and verify
+## What is left here
 
-```powershell
-npm run build:old-klim-environment
-npm run check:old-klim-environment
-```
-
-Set `REALM_BLENDER_EXE` or pass `--blender <path>` if Blender 4.5 is installed
-outside the bundled tool-cache location. `catalog.png` shows the complete hero
-structure; `cutaway.png` renders the same kit with its roof group hidden.
+The `.blend` source, the renders and `technical-report.json` stay as art
+history. `catalog.png` shows the complete hero structure; `cutaway.png` renders
+the same kit with its roof group hidden.

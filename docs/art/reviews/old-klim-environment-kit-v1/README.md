@@ -1,8 +1,8 @@
 # Old Klim environment kit v1
 
 > **Retired.** The kit no longer ships. Its runtime and review GLBs, the runtime
-> manifest and its build and check commands were removed; the settlement is now
-> the Kromka Unity scene «Ключи»
+> manifest, the Blender generator and its build and check commands were
+> removed; the settlement is now the Kromka Unity scene «Ключи»
 > (`unity-client/Assets/Scenes/Kromka/Locations/settlement.unity`), and
 > `npm run check:old-klim-unity-scene` keeps the retired GLBs from coming back.
 
@@ -31,3 +31,8 @@ replacements for the vertical slice, not a new navigation layout.
 The `.blend` source, the renders and `technical-report.json` stay as art
 history. `catalog.png` shows the complete hero structure; `cutaway.png` renders
 the same kit with its roof group hidden.
+
+The report still names its generator,
+`tools/blender/build_old_klim_environment_kit.py`, which is no longer in the
+tree; `git log --diff-filter=D -- tools/blender/build_old_klim_environment_kit.py`
+finds the commit that removed it.

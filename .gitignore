@@ -5,6 +5,7 @@ node_modules/
 data/users.json
 data/saves.json
 data/wasteland-sim.json
+data/danger-ecology.json
 data/*.json.tmp
 data/*.corrupt-*
 wasteland-sim.json

@@ -22,8 +22,11 @@ The repository is public. Raw models, textures and other asset payloads are
 therefore excluded from Git. Only this documentation, license notices and Unity
 import metadata are versioned. Download the free packs from the source page and
 copy the selected files into the paths described by the existing `.meta` files;
-preserve those metadata files so authored scene references keep their GUIDs.
-The tutorial cover requires `Starter/Models/wall_concrete_metal.fbx` and
+preserve those metadata files so authored references keep their GUIDs.
+Scenes never instance these models directly (`check:unity-local-prefabs`
+rejects that): the tutorial cover uses the tracked prefab
+`Assets/Prefabs/Kromka/TutorialRoadBarrier.prefab`, whose mesh comes from
+`Starter/Models/wall_concrete_metal.fbx` and whose material uses
 `Starter/Models/post-apocalyptic_texture.png`. A source checkout without this
 local import is not a complete Unity build environment (the MEP and terrain
 packs are also installed separately).

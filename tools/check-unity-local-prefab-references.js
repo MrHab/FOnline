@@ -3,14 +3,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-function files(dir) {
+// Store packs installed per machine and ignored by Git: a clean checkout, CI included, has none of their models.
+// Scenes must not instance them even where they are installed; wrap the model in a tracked prefab instead.
+const LOCAL_PACKS = ['unity-client/Assets/MEP', 'unity-client/Assets/TerrainSampleAssets',
+  'unity-client/Assets/ThirdParty/AtomicRealmPostApocalyptic'];
+const localPack = file => LOCAL_PACKS.find(pack => `${path.relative(root, file).replaceAll('\\', '/')}/`.startsWith(`${pack}/`));
+function files(dir, skip = () => false) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory()
-    ? files(path.join(dir, e.name)) : [path.join(dir, e.name)]);
+    ? (skip(path.join(dir, e.name)) ? [] : files(path.join(dir, e.name), skip)) : [path.join(dir, e.name)]);
 }
 function inventory() {
   const metas = new Map();
   for (const dir of ['unity-client/Assets', 'public/assets/models']) {
-    for (const file of files(path.join(root, dir)).filter(f => f.endsWith('.meta'))) {
+    for (const file of files(path.join(root, dir), localPack).filter(f => f.endsWith('.meta'))) {
       const guid = fs.readFileSync(file, 'utf8').match(/^guid:\s*(\w+)/m)?.[1];
       if (guid && fs.existsSync(file.slice(0, -5))) metas.set(guid, path.relative(root, file.slice(0,-5)).replaceAll('\\','/'));
     }
@@ -45,6 +50,7 @@ function inventory() {
 function validateRecovery(result) {
   const manifest = require('./data/local-prefab-recovery.json');
   const guids = new Set();
+  let uninstalled = 0;
   for (const row of manifest.prefabs) {
     assert(!guids.has(row.guid), `Duplicate recovery GUID: ${row.guid}`);
     guids.add(row.guid);
@@ -58,7 +64,12 @@ function validateRecovery(result) {
     const anchors = new Set([...yaml.matchAll(/^--- !u!\d+ &(-?\d+)/gm)].map(m => m[1]));
     for (const match of yaml.matchAll(/\{fileID: (-?\d+)\}/g))
       assert(match[1] === '0' || anchors.has(match[1]), `${row.key}: dangling internal fileID ${match[1]}`);
-    for (const part of row.parts) assert(fs.existsSync(path.join(root, 'unity-client', part.asset)), `${row.key}: missing source ${part.asset}`);
+    for (const part of row.parts) {
+      const source = path.join(root, 'unity-client', part.asset), pack = localPack(source);
+      // Recovered prefabs may be built from store-pack meshes; without the pack (CI) only the committed prefab is checked.
+      if (pack && !fs.existsSync(path.join(root, pack))) { uninstalled++; continue; }
+      assert(fs.existsSync(source), `${row.key}: missing source ${part.asset}`);
+    }
   }
   // Scene overrides can target the old root IDs only; deleting or renumbering them loses added gameplay components.
   for (const scene of files(path.join(root, 'unity-client/Assets/Scenes/Kromka/Locations')).filter(f => f.endsWith('.unity'))) {
@@ -68,7 +79,8 @@ function validateRecovery(result) {
       if (row) assert([row.rootGameObjectId, row.rootTransformId].includes(match[1]), `${path.basename(scene)}: unsupported recovered prefab sub-object ${match[1]}`);
     }
   }
-  console.log(`Recovery integrity: ${guids.size} native prefabs, root IDs and scene override targets intact`);
+  console.log(`Recovery integrity: ${guids.size} native prefabs, root IDs and scene override targets intact`
+    + (uninstalled ? `; ${uninstalled} sources in store packs not installed here were not checked` : ''));
 }
 if(require.main===module){
   const result=inventory();

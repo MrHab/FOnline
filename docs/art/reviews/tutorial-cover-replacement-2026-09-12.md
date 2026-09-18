@@ -52,3 +52,19 @@ was not rebuilt. Its existing blue ground material was left unchanged.
 
 No production data, deployment or commits were involved. The live journey used
 the existing isolated local-server harness and its temporary test data.
+
+## Follow-up 2026-09-18: tracked prefab
+
+The saved scene instanced the FBX itself. Atomic Realm payloads are not
+committed, so every clean checkout, CI included, failed
+`check:unity-local-prefabs` on the unresolved GUID of
+`wall_concrete_metal.fbx`, and `npm run check` stopped there.
+`RoaTutorialCoverAuthoring` now saves the fitted mesh and its material as the
+tracked native prefab `Assets/Prefabs/Kromka/TutorialRoadBarrier.prefab`, and
+`yard_cover_a` instances that prefab. Mesh, material, fitted transform,
+collider, stable ID and the server row are unchanged; renders of the cover
+before and after the swap are pixel-identical. The existing tracked barrier
+prefabs were not used: `roadblock_barricade`, `fence_segment` and
+`scrap_wall_segment` are see-through MEP rail fences, and `concrete_wall` is a
+wooden palisade. Rendering still needs the local Atomic Realm import, just as
+the recovered environment prefabs need MEP.

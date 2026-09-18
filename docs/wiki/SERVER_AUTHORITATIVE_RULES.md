@@ -241,6 +241,20 @@ Callback меняет локальное состояние только есл�
   стычки нет. Досыпки угроз нет. Для разработчика: `GET /api/dev/danger-ecology`
   (сводка, группы вокруг `?sx=&sy=&radius=`) и `POST
   /api/dev/danger-ecology/kill` (`{groupId, count}`).
+- Видимость на глобальной карте (`serverTickSightings`, такт 2 с, настройки —
+  `sightings` в `data/kromka/danger-ecology.json`): только игрокам на карте,
+  адресно, при изменении списка и не реже раза в 6 с. Радиус смотрящего —
+  `baseKm + wandererKm × норма «Странника»`; чужого игрока видно, только
+  если он ближе радиуса, умноженного на
+  `1 − stealthShare × его норму «Странника»`. Клиент не решает, кого видно:
+  он рисует ровно присланный список (группы A-Life в радиусе — до `maxGroups`,
+  игроки — до `maxPlayers`).
+- Клетки Сердцевины публикует `/api/global-map` → `dangerWalkCells`
+  (`subCellKm`, `names`, `cells: [[sx, sy, номер, индекс имени]]`); номер
+  постоянен при той же карте: порядок — север→юг, запад→восток. Там же
+  `playableContour` — играбельный контур для обзора карты. Клетку, где стоит
+  игрок, сервер кладёт в собственное состояние
+  (`authoritativePlayerState.dangerCell`, заголовок `title` — «Имя №N»).
 - Синь (`worldModel.accountSin`, `src/server/account-sin.js`) — счёт
   аккаунта в `saves.json` → `accounts`, ключ — id пользователя. Зачисление,
   списание, премиум, фокус и книгу обменника (`saves.json` → `sinExchange`)

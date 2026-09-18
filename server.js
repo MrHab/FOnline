@@ -2285,7 +2285,14 @@ function publicGlobalMap(map = null) {
   for (const [key, cell] of Object.entries(src.cells || {})) {
     cells[key] = modes[key] ? { ...cell, pvpMode: modes[key] } : cell;
   }
-  return { ...src, nodes, cells };
+  return {
+    ...src,
+    nodes,
+    cells,
+    dangerWalkCells: serverPublicDangerWalkCells(),
+    // Играбельный контур (точки карты): клиент рисует край мира и в локальной сцене.
+    playableContour: GLOBAL_MAP_PLAYABLE_POINTS
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -2900,6 +2907,188 @@ function serverEcologyEncounterGroup(cell = null, mode = '') {
   near.state = 'hunt';
   near.target = { sx: cell.sx, sy: cell.sy };
   return near;
+}
+
+/** Имя локации, как его видит игрок (лор Кромки поверх файла локации). */
+function serverLocationPublicName(locationId = '') {
+  const id = normalizeLocationId(locationId);
+  const loc = LOCATIONS[id];
+  if (!loc) return id;
+  try {
+    return String(kromkaPublicLocationDefinition(loc)?.name || loc.name || id);
+  } catch (_) {
+    return String(loc.name || id);
+  }
+}
+
+/**
+ * Клетки Сердцевины (сквозные мелкие клетки) с постоянными номерами: игрок
+ * видит на карте и в сцене, где он — «Меловая чаша №47». Номера идут по
+ * строкам карты с севера на юг, внутри строки — с запада на восток.
+ */
+let serverDangerWalkCellCache = null;
+function serverDangerWalkCellIndex() {
+  if (serverDangerWalkCellCache?.map === GLOBAL_MAP) return serverDangerWalkCellCache;
+  const config = WORLD_ECONOMY.dangerCells;
+  const size = config.subCellKm / serverGlobalMapPointKm();
+  const bounds = serverGlobalMapBounds();
+  const rows = [];
+  if (WORLD_ECONOMY.worldModel.dangerCells) {
+    for (let sy = 0; sy < Math.floor(bounds.height / size); sy += 1) {
+      for (let sx = 0; sx < Math.floor(bounds.width / size); sx += 1) {
+        const mode = serverEcologyModeAt(sx, sy);
+        if (!mode || !dangerIsSceneMode(config, mode)) continue;
+        const center = serverEcologyCellCenter(sx, sy);
+        const cell = { sx, sy, key: `${sx}_${sy}`, center };
+        if (serverDangerCellNearPlace(cell)) continue;
+        const region = GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(center)]?.macroRegion || '';
+        const encounter = dangerCellEncounter(config, mode, region, cell);
+        rows.push({ sx, sy, key: cell.key, mode, locationId: encounter?.locationId || '' });
+      }
+    }
+  }
+  const names = [];
+  const nameIndex = new Map();
+  const nameByLocation = new Map();
+  const byKey = new Map();
+  rows.forEach((row, index) => {
+    row.n = index + 1;
+    if (!nameByLocation.has(row.locationId)) nameByLocation.set(row.locationId, serverLocationPublicName(row.locationId));
+    row.name = nameByLocation.get(row.locationId);
+    if (!nameIndex.has(row.name)) {
+      nameIndex.set(row.name, names.length);
+      names.push(row.name);
+    }
+    row.nameIndex = nameIndex.get(row.name);
+    byKey.set(row.key, row);
+  });
+  serverDangerWalkCellCache = { map: GLOBAL_MAP, rows, names, byKey };
+  return serverDangerWalkCellCache;
+}
+
+/** Клетки Сердцевины для клиента: [sx, sy, номер, индекс имени]. */
+function serverPublicDangerWalkCells() {
+  const index = serverDangerWalkCellIndex();
+  return {
+    subCellKm: WORLD_ECONOMY.dangerCells.subCellKm,
+    names: index.names,
+    cells: index.rows.map(row => [row.sx, row.sy, row.n, row.nameIndex])
+  };
+}
+
+/** Опасная клетка сцены игрока: где это на карте и как её зовут. */
+function serverDangerCellView(p = {}) {
+  const room = p?.roomId ? rooms.get(String(p.roomId)) : null;
+  const cell = room?.dangerCell;
+  if (!cell) return null;
+  const entry = serverDangerWalkCellIndex().byKey.get(ecologyCellKey(cell.sx, cell.sy)) || null;
+  const name = entry?.name || serverLocationPublicName(room.locationId);
+  return {
+    key: String(cell.key || ''),
+    sx: cell.sx,
+    sy: cell.sy,
+    x: Number(Number(cell.center?.x || 0).toFixed(2)),
+    y: Number(Number(cell.center?.y || 0).toFixed(2)),
+    mode: String(room.dangerMode || ''),
+    walk: !!entry,
+    number: entry?.n || 0,
+    name,
+    title: entry ? `${name} №${entry.n}` : name
+  };
+}
+
+/** Радиус, на котором игрок видит группы и других игроков на карте. */
+function serverSightingsRadiusKm(p = {}) {
+  const cfg = DANGER_ECOLOGY.sightings;
+  return cfg.baseKm + cfg.wandererKm * serverSkillNorm(p, 'wanderer');
+}
+
+/** Доля чужого радиуса, на которой видно этого игрока: «Странник» прячет. */
+function serverSightingsExposure(p = {}) {
+  return 1 - DANGER_ECOLOGY.sightings.stealthShare * serverSkillNorm(p, 'wanderer');
+}
+
+const serverSightingsSent = new Map();
+
+/**
+ * Наблюдения на глобальной карте: каждому игроку на карте — группы A-Life и
+ * другие игроки в пределах его радиуса. Сервер решает, кого видно; клиент
+ * только рисует. Одинаковый ответ не повторяется чаще раза в 6 с.
+ */
+function serverTickSightings(now = Date.now()) {
+  if (!WORLD_ECONOMY.worldModel.dangerCells) return 0;
+  const cfg = DANGER_ECOLOGY.sightings;
+  const pointKm = serverGlobalMapPointKm();
+  const viewers = [...players.values()].filter(p => p?.onGlobalMap && !p.dead && socketIsLive(p.id));
+  const live = new Set(viewers.map(p => p.id));
+  for (const id of [...serverSightingsSent.keys()]) if (!live.has(id)) serverSightingsSent.delete(id);
+  if (!viewers.length) return 0;
+  const positions = new Map(viewers.map(p => {
+    const state = serverAuthoritativeGlobalMapState(p);
+    return [p.id, { x: Number(state.playerX || 0), y: Number(state.playerY || 0) }];
+  }));
+  const ecology = serverEcologyActive() ? serverEcologyState() : null;
+  const subPoints = WORLD_ECONOMY.dangerCells.subCellKm / pointKm;
+  let sent = 0;
+  for (const viewer of viewers) {
+    const at = positions.get(viewer.id);
+    const radiusKm = serverSightingsRadiusKm(viewer);
+    const radius = radiusKm / pointKm;
+    const groups = [];
+    if (ecology && cfg.maxGroups > 0) {
+      const cx = Math.floor(at.x / subPoints);
+      const cy = Math.floor(at.y / subPoints);
+      const reach = Math.ceil(radius / subPoints) + 1;
+      for (let dy = -reach; dy <= reach; dy += 1) {
+        for (let dx = -reach; dx <= reach; dx += 1) {
+          for (const group of ecologyGroupsAt(ecology, cx + dx, cy + dy)) {
+            const x = (group.sx + 0.5) * subPoints;
+            const y = (group.sy + 0.5) * subPoints;
+            const distance = Math.hypot(x - at.x, y - at.y);
+            if (distance > radius) continue;
+            const species = DANGER_ECOLOGY.speciesById[group.speciesId];
+            groups.push({
+              id: group.id,
+              name: species?.name || group.speciesId,
+              kind: species?.kind || 'monster',
+              faction: species?.faction || '',
+              creatureTypeId: group.members[0]?.type || '',
+              hostile: species?.hostile !== false,
+              x: Number(x.toFixed(2)),
+              y: Number(y.toFixed(2)),
+              size: group.members.length,
+              engaged: !!group.online,
+              distance
+            });
+          }
+        }
+      }
+    }
+    groups.sort((a, b) => a.distance - b.distance);
+    const others = [];
+    for (const other of viewers) {
+      if (other.id === viewer.id) continue;
+      const pos = positions.get(other.id);
+      const distance = Math.hypot(pos.x - at.x, pos.y - at.y);
+      if (distance > radius * serverSightingsExposure(other)) continue;
+      others.push({ id: other.id, name: String(other.name || 'Игрок').slice(0, 40), x: Number(pos.x.toFixed(2)), y: Number(pos.y.toFixed(2)), distance });
+    }
+    others.sort((a, b) => a.distance - b.distance);
+    const payload = {
+      radiusKm: Number(radiusKm.toFixed(1)),
+      groups: groups.slice(0, cfg.maxGroups).map(({ distance, ...row }) => row),
+      players: others.slice(0, cfg.maxPlayers).map(({ distance, ...row }) => row)
+    };
+    const json = JSON.stringify(payload);
+    const last = serverSightingsSent.get(viewer.id);
+    if (last?.json === json && now - last.at < 6000) continue;
+    const socket = io.sockets.sockets.get(viewer.id);
+    if (!socket) continue;
+    serverSightingsSent.set(viewer.id, { json, at: now });
+    socket.emit('globalMapSightings', { ...payload, t: now });
+    sent += 1;
+  }
+  return sent;
 }
 
 /** Такт A-Life: сцены без игроков отпускают группы, мир живёт, группы входят в занятые сцены. */
@@ -27338,7 +27527,9 @@ function publicAuthoritativePlayerState(p = {}) {
     onGlobalMap: !!p.onGlobalMap,
     globalWorldPoint: { x: globalMap.playerX, y: globalMap.playerY },
     currentWorldSiteId: globalMap.currentWorldSiteId,
-    globalMap
+    globalMap,
+    // Сцена опасной клетки: какая это клетка карты и как её зовут («Меловая чаша №47»).
+    dangerCell: serverDangerCellView(p)
   };
 }
 
@@ -33748,6 +33939,11 @@ setInterval(() => {
     serverTickDangerCells(Date.now());
   } catch (error) {
     console.error('Danger cell tick failed:', error);
+  }
+  try {
+    serverTickSightings(Date.now());
+  } catch (error) {
+    console.error('Global map sightings tick failed:', error);
   }
 }, 2000);
 

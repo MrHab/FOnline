@@ -190,6 +190,7 @@ namespace RealmOfAshes.Game
         {
             if (_root == null || !_root.activeInHierarchy) return;
             RefreshHoverCard();
+            RefreshCoreCellLabels();
             RefreshRegionLabels();
             RefreshMapLabels();
             UpdateWorldChangeToastVisual();
@@ -224,6 +225,144 @@ namespace RealmOfAshes.Game
         }
 
         private readonly List<Rect> _occupiedRegionRects = new List<Rect>();
+
+        private RectTransform _coreLabelLayer;
+        private readonly List<Text> _coreLabelPool = new List<Text>();
+        private readonly List<Rect> _coreLabelReserved = new List<Rect>();
+        private readonly Vector3[] _cornerBuffer = new Vector3[4];
+        private bool _coreLabelsShown;
+        public int ActiveCoreLabelCount { get; private set; }
+
+        /// <summary>
+        /// Номера клеток Сердцевины поверх её сетки: на ближнем ярусе — номер,
+        /// а когда клетка крупная — «Разбитый тракт №47». Клетка, где игрок,
+        /// подписана полностью и ярче на любом видимом ярусе. Под легендой,
+        /// сайдбаром и подсказкой номеров нет. У каждой клетки своя подпись
+        /// (индекс в списке клеток): при движении камеры текст не меняется,
+        /// и WebGL не пересобирает сотни строк за кадр — едут только позиции.
+        /// </summary>
+        private void RefreshCoreCellLabels()
+        {
+            int visible = 0;
+            Camera camera = Camera.main;
+            if (Map != null && Map.CoreGridVisible && camera != null && _coreLabelLayer != null)
+            {
+                float scale = Mathf.Max(0.01f, _canvas.scaleFactor);
+                // Размер кадра камеры: в игре это экран, в пробе — её текстура.
+                int frameWidth = camera.pixelWidth;
+                int frameHeight = camera.pixelHeight;
+                float cellUnits = Map.CoreCellScreenSize(camera) / scale;
+                bool numbers = cellUnits >= 20f;
+                bool names = cellUnits >= 92f;
+                ReserveCoreLabelRects(scale);
+                RoaGlobalMap.CoreCellInfo playerCell = Map.PlayerCoreCell;
+                int count = Map.CoreCells.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    RoaGlobalMap.CoreCellInfo cell = Map.CoreCells[i];
+                    bool mine = cell == playerCell;
+                    if ((numbers || mine) && PlaceCoreLabel(camera, i, cell, mine, names || mine, cellUnits,
+                            frameWidth, frameHeight, scale))
+                        visible++;
+                    else if (i < _coreLabelPool.Count && _coreLabelPool[i].gameObject.activeSelf)
+                        _coreLabelPool[i].gameObject.SetActive(false);
+                }
+                for (int i = count; i < _coreLabelPool.Count; i++)
+                    if (_coreLabelPool[i].gameObject.activeSelf) _coreLabelPool[i].gameObject.SetActive(false);
+                _coreLabelsShown = true;
+            }
+            else if (_coreLabelsShown)
+            {
+                for (int i = 0; i < _coreLabelPool.Count; i++)
+                    if (_coreLabelPool[i].gameObject.activeSelf) _coreLabelPool[i].gameObject.SetActive(false);
+                _coreLabelsShown = false;
+            }
+            ActiveCoreLabelCount = visible;
+        }
+
+        private bool PlaceCoreLabel(Camera camera, int index, RoaGlobalMap.CoreCellInfo cell, bool mine, bool full,
+                                    float cellUnits, int frameWidth, int frameHeight, float scale)
+        {
+            Vector3 projected = camera.WorldToScreenPoint(cell.World);
+            if (projected.z <= 0f || projected.x < -40f || projected.x > frameWidth + 40f
+                || projected.y < -40f || projected.y > frameHeight + 40f) return false;
+            // Подпись своей клетки — под ногами фигурки игрока, а не поверх неё.
+            var point = new Vector2(projected.x, frameHeight - projected.y + (mine ? 22f * scale : 0f));
+            for (int i = 0; i < _coreLabelReserved.Count; i++)
+                if (_coreLabelReserved[i].Contains(point)) return false;
+            Text label = EnsureCoreLabel(index);
+            if (!label.gameObject.activeSelf) label.gameObject.SetActive(true);
+            label.text = full ? cell.Name + "\n№" + cell.Number : cell.Number.ToString();
+            label.fontSize = full ? 11 : Mathf.Clamp(Mathf.RoundToInt(cellUnits * 0.34f), 9, 15);
+            label.fontStyle = mine ? FontStyle.Bold : FontStyle.Normal;
+            label.color = mine ? new Color(1f, 0.9f, 0.97f, 1f)
+                               : new Color(0.98f, 0.72f, 0.88f, full ? 0.92f : 0.8f);
+            var rect = new Rect(point.x - 80f, point.y - 18f, 160f, 36f);
+            label.rectTransform.anchoredPosition = CanvasPositionForScreenRect(rect, frameWidth, frameHeight, scale);
+            return true;
+        }
+
+        /// <summary>Где номера не пишем: угол с заголовком и легендой, сайдбар, подсказка, карточка.</summary>
+        private void ReserveCoreLabelRects(float scale)
+        {
+            _coreLabelReserved.Clear();
+            const float margin = 8f;
+            if (_dangerLegend != null && _dangerLegend.gameObject.activeInHierarchy)
+            {
+                Rect legend = FrameRect(_dangerLegend, scale);
+                _coreLabelReserved.Add(Rect.MinMaxRect(0f, 0f, legend.xMax + margin, legend.yMax + margin));
+            }
+            ReserveFrameRect(_side, scale, margin);
+            ReserveFrameRect(_gestureHelp != null ? _gestureHelp.rectTransform : null, scale, margin);
+            ReserveFrameRect(_hoverCard, scale, margin);
+        }
+
+        private void ReserveFrameRect(RectTransform rect, float scale, float margin)
+        {
+            if (rect == null || !rect.gameObject.activeInHierarchy) return;
+            Rect frame = FrameRect(rect, scale);
+            _coreLabelReserved.Add(new Rect(frame.x - margin, frame.y - margin,
+                frame.width + margin * 2f, frame.height + margin * 2f));
+        }
+
+        /// <summary>
+        /// Прямоугольник элемента окна в пикселях кадра от левого верхнего угла.
+        /// Считается через корень окна, а не мировые углы: так верно и для
+        /// оверлейной канвы в игре, и для канвы с камерой в пробе.
+        /// </summary>
+        private Rect FrameRect(RectTransform rect, float scale)
+        {
+            var root = (RectTransform)_root.transform;
+            Rect bounds = root.rect;
+            rect.GetWorldCorners(_cornerBuffer);
+            Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
+            Vector2 max = new Vector2(float.MinValue, float.MinValue);
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2 local = root.InverseTransformPoint(_cornerBuffer[i]);
+                min = Vector2.Min(min, local);
+                max = Vector2.Max(max, local);
+            }
+            return new Rect((min.x - bounds.xMin) * scale, (bounds.yMax - max.y) * scale,
+                (max.x - min.x) * scale, (max.y - min.y) * scale);
+        }
+
+        private Text EnsureCoreLabel(int index)
+        {
+            while (_coreLabelPool.Count <= index)
+            {
+                Text label = Label("CoreCell" + _coreLabelPool.Count, _coreLabelLayer, 11,
+                    TextAnchor.MiddleCenter, Color.white);
+                RectTransform rect = label.rectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = new Vector2(160f, 36f);
+                label.lineSpacing = 0.9f;
+                label.gameObject.SetActive(false);
+                _coreLabelPool.Add(label);
+            }
+            return _coreLabelPool[index];
+        }
 
         private void RefreshRegionLabels()
         {
@@ -333,6 +472,11 @@ namespace RealmOfAshes.Game
             var rootRect = (RectTransform)_root.transform;
             rootRect.SetParent(canvasGo.transform, false);
             Stretch(rootRect, 0f);
+
+            // Номера клеток Сердцевины — самый нижний слой окна: легенда,
+            // плашки мест и карточки ложатся поверх.
+            _coreLabelLayer = Child("CoreCellLabels", rootRect);
+            Stretch(_coreLabelLayer, 0f);
 
             // .panel-title: «ГЛОБАЛЬНАЯ КАРТА» слева сверху.
             Text title = Label("Title", rootRect, 12, TextAnchor.MiddleLeft, TitleInk, FontStyle.Bold);

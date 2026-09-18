@@ -113,7 +113,7 @@ namespace RealmOfAshes.Game
             _title.rectTransform.anchorMax = new Vector2(1f, 1f);
             _title.rectTransform.pivot = new Vector2(0.5f, 1f);
             _title.rectTransform.offsetMin = new Vector2(16f, -44f);
-            _title.rectTransform.offsetMax = new Vector2(-56f, -8f);
+            _title.rectTransform.offsetMax = new Vector2(-176f, -8f);
 
             Button close = TextButton("Close", panel, "×", 24, out Text closeText);
             var closeRect = (RectTransform)close.transform;
@@ -123,6 +123,19 @@ namespace RealmOfAshes.Game
             closeRect.sizeDelta = new Vector2(36f, 32f);
             closeText.color = Accent;
             close.onClick.AddListener(Close);
+
+            // Отсюда же — карта мира с флажком там, где игрок.
+            Button world = TextButton("WorldMap", panel, "КАРТА МИРА", 12, out _);
+            var worldRect = (RectTransform)world.transform;
+            worldRect.anchorMin = worldRect.anchorMax = new Vector2(1f, 1f);
+            worldRect.pivot = new Vector2(1f, 1f);
+            worldRect.anchoredPosition = new Vector2(-52f, -8f);
+            worldRect.sizeDelta = new Vector2(118f, 32f);
+            world.onClick.AddListener(() =>
+            {
+                Close();
+                RoaGameBootstrap.Active?.WorldOverview?.Open();
+            });
 
             RectTransform map = Child("Map", panel);
             map.anchorMin = new Vector2(0.5f, 1f);

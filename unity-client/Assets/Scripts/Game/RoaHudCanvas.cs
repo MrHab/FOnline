@@ -516,7 +516,7 @@ namespace RealmOfAshes.Game
         private void BuildMinimapPanel()
         {
             RectTransform panel = PanelRect("Minimap", _safeRoot, new Vector2(1f, 1f),
-                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(190f, 202f));
+                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(190f, 230f));
             _mapPanel = panel.gameObject;
             _mapGroup = panel.gameObject.AddComponent<CanvasGroup>();
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
@@ -548,6 +548,22 @@ namespace RealmOfAshes.Game
             _cellText = Label("Cell", panel, new Vector2(13f, -190f), new Vector2(164f, 10f), 10,
                               TextAnchor.MiddleLeft, MutedInk);
             _cellText.gameObject.SetActive(false);
+
+            // Карта мира: обзор глобальной карты с флажком там, где игрок.
+            RectTransform world = Rect("WorldMap", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                       new Vector2(0f, 1f), new Vector2(13f, -201f), new Vector2(MinimapPixels, 24f));
+            Image worldImage = world.gameObject.AddComponent<Image>();
+            worldImage.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);
+            Button worldButton = world.gameObject.AddComponent<Button>();
+            worldButton.targetGraphic = worldImage;
+            ColorBlock worldColors = worldButton.colors;
+            worldColors.highlightedColor = new Color(0.30f, 0.24f, 0.11f, 1f);
+            worldColors.pressedColor = new Color(0.48f, 0.35f, 0.13f, 1f);
+            worldButton.colors = worldColors;
+            worldButton.onClick.AddListener(() => RoaGameBootstrap.Active?.WorldOverview?.Toggle());
+            Text worldLabel = Label("Label", world, Vector2.zero, new Vector2(MinimapPixels, 24f), 11,
+                                    TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
+            worldLabel.text = "КАРТА МИРА";
         }
 
         /// <summary>
@@ -1340,7 +1356,10 @@ namespace RealmOfAshes.Game
             }
             _mapImage.enabled = true;
             _mapImage.texture = _minimap.StaticTexture;
-            _mapTitle.text = string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName;
+            // В клетке опасных земель — её имя с номером («Меловая чаша №47»).
+            string cellTitle = _hud?.Socket?.Session?.Self?["dangerCell"]?["title"]?.ToString();
+            _mapTitle.text = !string.IsNullOrEmpty(cellTitle) ? cellTitle
+                : (string.IsNullOrEmpty(_minimap.LocationName) ? "\u041a\u0430\u0440\u0442\u0430" : _minimap.LocationName);
             _cellText.text = _minimap.CellLabel;
             int count = Mathf.Min(_markers.Length, _minimap.Markers.Count);
             for (int i = 0; i < count; i++)

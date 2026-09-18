@@ -24,9 +24,9 @@ const DEFAULT_CONFIG = Object.freeze({
   treasuryShare: 0.2,
   startingTreasury: 3000,
   priceShare: 0.45,
-  // Самая низкая цена NPC-торговца — 0,39 базы: полку сервер не опускает ниже
-  // 0,75 базы (SERVER_TRADE_SHELF_FLOOR_SHARE), наибольшая скидка — 0,48.
-  npcResaleCapShare: 0.38,
+  // Самая низкая цена NPC-торговца — 0,5625 базы: полку сервер не опускает ниже
+  // 0,75 базы (SERVER_TRADE_SHELF_FLOOR_SHARE), наибольшая скидка — 0,25.
+  npcResaleCapShare: 0.55,
   minCondition: 10,
   bands: Object.freeze([
     Object.freeze({ id: 'cheap', maxValue: 20 }),

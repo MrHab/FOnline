@@ -106,13 +106,18 @@ assert.equal(bandIndex(config, 900), 4);
 // --- потолок цены, пока работают NPC-торговцы ----------------------------------------
 {
   const state = normalizeBlackMarketState({ bands: { common: { multiplier: 2.5 } } }, config, 0);
-  assert.equal(config.npcResaleCapShare, 0.38);
+  assert.equal(config.npcResaleCapShare, 0.55);
   assert.equal(blackMarketUnitPrice(state, config, 40, 100), Math.floor(40 * config.priceShare * 2.5), 'no cap without NPC traders');
-  assert.equal(blackMarketUnitPrice(state, config, 40, 100, config.npcResaleCapShare), Math.floor(40 * 0.38),
+  assert.equal(blackMarketUnitPrice(state, config, 40, 100, config.npcResaleCapShare), Math.floor(40 * 0.55),
     'NPC-bought gear never sells to the market above the cheapest NPC price');
-  assert.equal(blackMarketUnitPrice(state, config, 40, 50, config.npcResaleCapShare), Math.floor(40 * 0.38 * 0.5));
+  assert.equal(blackMarketUnitPrice(state, config, 40, 50, config.npcResaleCapShare), Math.floor(40 * 0.55 * 0.5));
   const capped = quoteBlackMarketSale(state, config, [{ id: 'pistol', qty: 1 }], priceOf, accepts, config.npcResaleCapShare);
-  assert.equal(capped.total, Math.floor(40 * 0.38));
+  assert.equal(capped.total, Math.floor(40 * 0.55));
+  // При обычном спросе потолок не мешает: скупщик платит свою долю базы, а
+  // спрос полосы снова поднимает цену (прежний потолок 38% съедал весь рост).
+  const calm = normalizeBlackMarketState({}, config, 0);
+  assert.equal(blackMarketUnitPrice(calm, config, 40, 100, config.npcResaleCapShare), Math.floor(40 * config.priceShare),
+    'at normal demand the broker pays its own share');
 }
 
 // --- время: цены возвращаются, дешёвый склад уничтожается -------------------------------

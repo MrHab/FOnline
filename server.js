@@ -15529,10 +15529,13 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   };
 }
 
+// Скупка у игрока начинается с этой доли базовой цены каталога (в процентах,
+// чтобы сервер и смета Unity считали её целыми числами одинаково).
+const SERVER_TRADE_SELL_SHARE_PCT = 30;
 const SERVER_TRADE_SELL_PRICE_BASE = Object.freeze(Object.fromEntries(
   Object.entries(SERVER_ITEM_BASE_PRICES)
     .filter(([id, price]) => id !== 'silver' && Number(price || 0) > 0)
-    .map(([id, price]) => [id, Math.max(1, Math.floor(Number(price) * 0.45))])
+    .map(([id, price]) => [id, Math.max(1, Math.floor(Number(price) * SERVER_TRADE_SELL_SHARE_PCT / 100))])
 ));
 
 function serverTradeRequestRows(rows = []) {
@@ -15582,14 +15585,15 @@ function serverResidentTradePct(player = {}) {
   return clamp(Number(serverCachedResidentBonuses(player).commonTradePricePct || 0), 0, 0.2);
 }
 
-// Больше этой скидки не даёт ничто; от неё же считается нижняя граница цены
-// перепродажи, чтобы «продать и сразу выкупить» не приносило марок.
-const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;
+// Скидка покупки: Бартер до 15%, талант «Торговец» 3 п.п. за ранг и доля
+// Торговца базы. Больше этой скидки не даёт ничто; от неё считаются потолок
+// скупки и цена перепродажи.
+const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.25;
 // Нижняя граница цены на полке NPC-торговца — доля базовой цены каталога. Ниже
 // неё полку не опускают ни рынок узла, ни затоваривание, ни дешёвая
-// перепродажа, поэтому самая дешёвая покупка предмета у любого торговца — эта
-// граница со скидкой игрока. От неё считается потолок продажи, и на неё же
-// опирается потолок Чёрного рынка: 0,75 × (1 − 0,48) = 0,39 базы > 0,38.
+// перепродажа, поэтому самая дешёвая покупка предмета в мире — эта граница с
+// наибольшей скидкой. На неё опирается и потолок Чёрного рынка:
+// 0,75 × (1 − 0,25) = 0,5625 базы > 0,55.
 const SERVER_TRADE_SHELF_FLOOR_SHARE = 0.75;
 
 function serverTradeShelfFloor(itemId = '') {
@@ -15603,34 +15607,37 @@ function serverTradeShelfPrice(itemId = '', price = 1) {
   return clamp(Number.isFinite(value) ? value : 1, serverTradeShelfFloor(itemId), 9999);
 }
 
-function serverTradeBuyPrice(entry = {}, player = {}, includeResident = true) {
-  const discount = Math.min(SERVER_TRADE_MAX_BUY_DISCOUNT, serverSkillNorm(player, 'barter') * 0.24 + serverTalentLevel(player, 'merchant') * 0.05
-    + (includeResident ? serverResidentTradePct(player) : 0));
+function serverTradeBuyPrice(entry = {}, player = {}) {
+  const discount = Math.min(SERVER_TRADE_MAX_BUY_DISCOUNT, serverSkillNorm(player, 'barter') * 0.15
+    + serverTalentLevel(player, 'merchant') * 0.03 + serverResidentTradePct(player));
   return Math.max(1, Math.ceil(Math.max(1, Number(entry.price || 1)) * (1 - discount)));
 }
 
-// Потолок продажи — от самой дешёвой полки, где игрок может купить тот же
-// предмет: у этого торговца или у любого другого (нижняя граница полки). Не
-// больше 85% цены покупки без доли Торговца базы, чтобы житель не опускал
-// потолок опытного торговца, и всегда хотя бы на марку дешевле покупки с этой
-// долей — иначе доля жителя делала бы перепродажу выгодной.
-function serverTradeSellCap(itemId = '', stockEntry = null, player = {}) {
-  const floor = serverTradeShelfFloor(itemId);
-  const cheapest = { price: stockEntry ? Math.min(floor, Math.max(1, Number(stockEntry.price || 1))) : floor };
-  return Math.min(
-    Math.floor(serverTradeBuyPrice(cheapest, player, false) * 0.85),
-    serverTradeBuyPrice(cheapest, player, true) - 1);
+// Потолок скупки — на марку ниже самой дешёвой покупки этого предмета в мире:
+// полка у нижней границы и наибольшая скидка. Он один для всех игроков: навык,
+// Влияние и житель поднимают цену только до него, поэтому она не падает с ростом
+// навыка, а купить у торговца и продать торговцу с выгодой нельзя ни самому, ни
+// через второго персонажа.
+function serverTradeSellCeiling(itemId = '') {
+  return Math.ceil(serverTradeShelfFloor(itemId) * (1 - SERVER_TRADE_MAX_BUY_DISCOUNT)) - 1;
 }
+
+// Экономика v3: снаряжение — оружие и броню — у игроков скупает только Чёрный
+// рынок (библия 14.5). Пока он открыт, NPC-торговцы такие вещи не покупают.
+function serverNpcTradeRefusedCategories() {
+  return WORLD_ECONOMY.worldModel.blackMarket ? WORLD_ECONOMY.blackMarket.categories.slice() : [];
+}
+
+const SERVER_NPC_TRADE_GEAR_REFUSED_ERROR = 'Оружие и броню у игроков покупает только скупщик Чёрного рынка на Рынке Ядра.';
 
 function serverTradeSellPrice(itemId = '', market = {}, player = {}) {
   const id = serverBaseItemId(itemId);
+  if ((market.refusedCategories || []).includes(String(SERVER_ITEM_CATEGORIES[id] || ''))) return 0;
   const stockEntry = (market.stock || []).find(entry => entry.id === id) || null;
   let base = SERVER_TRADE_SELL_PRICE_BASE[id];
   if (!Number.isFinite(Number(base))) {
-    if (stockEntry) base = Math.max(1, Math.floor(Number(stockEntry.price || 1) * 0.45));
-    else {
-      base = Math.max(1, Math.floor(Number(SERVER_ITEM_BASE_PRICES[id] || 1) * 0.45));
-    }
+    const fallback = stockEntry ? Number(stockEntry.price || 1) : Number(SERVER_ITEM_BASE_PRICES[id] || 1);
+    base = Math.max(1, Math.floor(fallback * SERVER_TRADE_SELL_SHARE_PCT / 100));
   }
   const charismaBonus = 1
     + (serverStatValue(player, 'cha') - 5) * 0.04
@@ -15643,7 +15650,7 @@ function serverTradeSellPrice(itemId = '', market = {}, player = {}) {
   if (interests.length) price = Math.max(1, Math.round(price * (interests.includes(serverTradeItemCategory(id)) ? 1.24 : 0.84)));
   // Потолок — последним: надбавка за интерес торговца, наложенная после него,
   // поднимала продажу выше покупки.
-  return Math.max(1, Math.min(price, serverTradeSellCap(id, stockEntry, player)));
+  return Math.max(1, Math.min(price, serverTradeSellCeiling(id)));
 }
 
 function serverInventoryWeightWithEquipment(rows = [], equipment = {}) {
@@ -15681,9 +15688,12 @@ function serverCommitArtifactMarketTransfer(player, marketKey, buys, removals) {
   serverRestoreWeaponRuntimeRecords(player, incoming);
 }
 
+// Цена личного запаса NPC — от каталога (45% × 2,1 ≈ 95% базы), а не от доли
+// скупки у игрока: это цена полки, а не выкупа.
 function serverNpcPersonalTradePrice(itemId = '') {
   const id = serverBaseItemId(itemId);
-  let base = Number(SERVER_TRADE_SELL_PRICE_BASE[id]);
+  const catalogPrice = id === 'silver' ? 0 : Number(SERVER_ITEM_BASE_PRICES[id] || 0);
+  let base = catalogPrice > 0 ? Math.max(1, Math.floor(catalogPrice * 0.45)) : NaN;
   if (!Number.isFinite(base)) {
     const category = serverTradeItemCategory(id);
     base = category === 'weapons' ? 12
@@ -15762,10 +15772,14 @@ function serverNpcTradeMarket(actor = {}) {
       qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
     };
   }).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
+  const refusedCategories = serverNpcTradeRefusedCategories();
   return {
     stock,
     caps: serverNpcInventoryCaps(actor),
-    buyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests.map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24) : [],
+    // Интерес — только к тому, что торговец вообще покупает.
+    buyInterests: (Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests : [])
+      .map(value => String(value || '').toLowerCase()).filter(value => value && !refusedCategories.includes(value)).slice(0, 24),
+    refusedCategories,
     marketKey: String(actor.traderMarketKey || ''),
     siteId: String(actor.traderMarket?.siteId || actor.wastelandSiteId || '')
   };
@@ -15799,7 +15813,7 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
   const sellPrice = serverTradeSellPrice(id, market, player);
   const category = serverTradeItemCategory(id);
   const markup = category === 'ammo' ? 2 : (category === 'materials' ? 1.4 : 1.75);
-  // Даже при наибольшей скидке выкуп дороже проданного: ceil(R × (1 − 0,48)) > S.
+  // Даже при наибольшей скидке выкуп дороже проданного: ceil(R × (1 − 0,25)) > S.
   return serverTradeShelfPrice(id, Math.max(sellPrice + 1, Math.round(sellPrice * markup),
     Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))));
 }
@@ -15835,6 +15849,7 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
   const runtimeRemovals = [];
   for (const row of sells) {
+    if (market.refusedCategories.includes(String(SERVER_ITEM_CATEGORIES[row.id] || ''))) return { ok: false, error: SERVER_NPC_TRADE_GEAR_REFUSED_ERROR };
     if (serverInventoryQty(nextInventory, row.id) < row.qty) return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.' };
     const validation = serverValidateWeaponRuntimeRemoval(player, row, { releaseLoadedAmmo: true });
     if (!validation.ok) return { ok: false, error: validation.error };

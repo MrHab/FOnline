@@ -87,6 +87,9 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     console.log('PASS broker refusals');
 
     // --- продажа -------------------------------------------------------------------------
+    // Оружие и броню у игроков покупает только скупщик: заряженный запасной пистолет
+    // продаётся ему, а пять зарядов возвращаются в сумку.
+    const cellsBefore = qty(medicine.self, 'energyCell');
     const sale = await h.socketAck(accounts.trade.socket, 'npcTradeExchange', {
       enemyId: broker.id,
       buys: [],
@@ -94,6 +97,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     });
     assert(sale.ok, 'The broker buys a whole weapon: ' + JSON.stringify(sale.error || sale).slice(0, 400));
     assert.equal(qty(sale.self, 'silver'), pistolPrice, 'The seller receives the quoted price.');
+    assert.deepEqual(sale.unloadedAmmo, [{ id: 'energyCell', qty: 5 }], 'The sold pistol is unloaded first.');
+    assert.equal(qty(sale.self, 'energyCell'), cellsBefore + 5, 'The unloaded cells return to the bag.');
     assert(!(sale.self?.weaponInventoryRuntime || []).some(row => row?.id === 'ui_laserPistol_trade_2'),
       'The sold weapon leaves the bag.');
     assert.equal(sale.self?.equipmentRuntime?.weapon, 'ui_laserPistol_trade_1', 'Selling a bag weapon keeps the equipped one.');

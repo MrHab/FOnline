@@ -202,54 +202,64 @@ assert(interaction.includes('Socket.EmitWithAck("npcTradeExchange", payload')
   && !interaction.includes('tradeMachine') && !interaction.includes('TradeMachine'),
   'Unity trade must talk only to NPC traders: trade machines are gone');
 
-assert(server.includes('Object.entries(SERVER_ITEM_BASE_PRICES)')
-  && server.includes('Math.floor(Number(price) * 0.45)'),
-  'server barter sell prices must derive from the authoritative item catalog');
-assert(barterCanvas.includes('int catalogPrice = RoaItemData.BasePrice(baseId);')
-  && barterCanvas.includes('Mathf.FloorToInt(catalogPrice * 0.45f)'),
-  'Unity barter previews must derive from the downloaded item catalog');
-assert(barterCanvas.includes('TradeSkillNorm(self) * 0.24d')
-  && barterCanvas.includes('TalentLevel(self, "merchant", 3) * 0.05d')
-  && barterCanvas.includes('TradeSkillNorm(self) * 0.30d')
-  && barterCanvas.includes('TalentLevel(self, "merchant", 3) * 0.08d')
-  && barterCanvas.includes('HasTrait(self, "traderStart") ? 0.15d')
-  && barterCanvas.includes('interested ? 1.24d : 0.84d'),
-  'Unity barter totals no longer mirror the server discount, bonus, cap, or interest formula');
-// Доля Торговца базы входит в обе цены и на сервере, и в смете клиента. Потолок
-// продажи — не больше 85% покупки без неё (житель не опускает потолок опытного
-// торговца) и хотя бы на марку дешевле покупки с ней.
-assert(/TalentLevel\(self, "merchant", 3\) \* 0\.05d\s*\+ \(includeResident \? ResidentTradePct\(self\) : 0d\)/.test(barterCanvas)
-  && /TalentLevel\(self, "merchant", 3\) \* 0\.08d\s*\+ ResidentTradePct\(self\);/.test(barterCanvas)
-  && barterCanvas.includes('TradeBuyPriceCore(cheapest, self, false) * 0.85d')
-  && barterCanvas.includes('TradeBuyPriceCore(cheapest, self, true) - 1')
-  && /serverTalentLevel\(player, 'merchant'\) \* 0\.05\s*\+ \(includeResident \? serverResidentTradePct\(player\) : 0\)/.test(server)
-  && /serverTalentLevel\(player, 'merchant'\) \* 0\.08\s*\+ serverResidentTradePct\(player\);/.test(server)
-  && server.includes('serverTradeBuyPrice(cheapest, player, false) * 0.85')
-  && server.includes('serverTradeBuyPrice(cheapest, player, true) - 1')
-  && /Math\.Min\(0\.48d/.test(barterCanvas) && server.includes('const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;'),
-  'Unity barter no longer mirrors the base trader share or the resident-aware sell cap');
-// Перепродажа без выгоды: потолок считается от самой дешёвой полки, где предмет
-// можно купить (нижняя граница полки — одна доля базы на сервере и в клиенте), и
-// ставится после надбавки за интерес торговца, иначе надбавка поднимала продажу
-// выше покупки. Цену полки ниже границы не показывают ни окно торговли, ни снимок
-// NPC, которым клиент обновляет открытое окно, ни цена перепродажи.
+// Цены бартера: смета Unity повторяет серверную формулу. Доли и наибольшая скидка
+// сверяются по значениям, поэтому правка одной стороны без другой падает.
 {
-  const serverFloorShare = Number((server.match(/const SERVER_TRADE_SHELF_FLOOR_SHARE = ([0-9.]+);/) || [])[1]);
-  const unityFloorShare = Number((barterCanvas.match(/Math\.Max\(0, catalogPrice\) \* ([0-9.]+)d\)\);/) || [])[1]);
-  assert(serverFloorShare > 0 && serverFloorShare === unityFloorShare,
-    `Unity shelf floor share ${unityFloorShare} differs from the server ${serverFloorShare}`);
+  const number = (source, pattern, label) => {
+    const match = source.match(pattern);
+    assert(match, `${label} is missing`);
+    return Number(match[1]);
+  };
+  const sellShare = number(server, /const SERVER_TRADE_SELL_SHARE_PCT = (\d+);/, 'server sell share');
+  assert(sellShare > 0 && sellShare === number(barterCanvas, /catalogPrice > 0 \? Mathf\.Max\(1, catalogPrice \* (\d+) \/ 100\)/, 'Unity sell share'),
+    'Unity barter sell share differs from the server');
+  assert(server.includes('Object.entries(SERVER_ITEM_BASE_PRICES)')
+    && server.includes('Math.floor(Number(price) * SERVER_TRADE_SELL_SHARE_PCT / 100)')
+    && barterCanvas.includes('int catalogPrice = RoaItemData.BasePrice(baseId);'),
+    'server sell prices and Unity barter previews must derive from the authoritative item catalog');
+  const maxDiscount = number(server, /const SERVER_TRADE_MAX_BUY_DISCOUNT = ([0-9.]+);/, 'server max discount');
+  assert(maxDiscount > 0 && maxDiscount === number(barterCanvas, /const double MaxBuyDiscount = ([0-9.]+)d;/, 'Unity max discount'),
+    'Unity barter max buy discount differs from the server');
+  const floorShare = number(server, /const SERVER_TRADE_SHELF_FLOOR_SHARE = ([0-9.]+);/, 'server shelf floor share');
+  assert(floorShare > 0 && floorShare === number(barterCanvas, /Math\.Max\(0, catalogPrice\) \* ([0-9.]+)d\)\);/, 'Unity shelf floor share'),
+    'Unity shelf floor share differs from the server');
+  // Скидка: Бартер, «Торговец» и доля Торговца базы; надбавка скупки — Влияние, «Барыга»,
+  // Бартер, «Торговец» и житель; интерес торговца ×1,24 или ×0,84.
+  assert(server.includes("serverSkillNorm(player, 'barter') * 0.15")
+    && /serverTalentLevel\(player, 'merchant'\) \* 0\.03 \+ serverResidentTradePct\(player\)\)/.test(server)
+    && barterCanvas.includes('TradeSkillNorm(self) * 0.15d + TalentLevel(self, "merchant", 3) * 0.03d')
+    && /TalentLevel\(self, "merchant", 3\) \* 0\.03d\s*\+ ResidentTradePct\(self\)\);/.test(barterCanvas),
+    'Unity barter discount no longer mirrors the server');
+  assert(/\(serverStatValue\(player, 'cha'\) - 5\) \* 0\.04/.test(server) && barterCanvas.includes('(StatValue(self, "cha") - 5) * 0.04d')
+    && server.includes("serverHasTrait(player, 'traderStart') ? 0.15") && barterCanvas.includes('HasTrait(self, "traderStart") ? 0.15d')
+    && server.includes("serverSkillNorm(player, 'barter') * 0.30") && barterCanvas.includes('TradeSkillNorm(self) * 0.30d')
+    && /serverTalentLevel\(player, 'merchant'\) \* 0\.08\s*\+ serverResidentTradePct\(player\);/.test(server)
+    && /TalentLevel\(self, "merchant", 3\) \* 0\.08d\s*\+ ResidentTradePct\(self\);/.test(barterCanvas)
+    && server.includes('? 1.24 : 0.84') && barterCanvas.includes('interested ? 1.24d : 0.84d'),
+    'Unity barter sale bonus or trader interest no longer mirrors the server');
+  // Потолок скупки — один для всех: на марку ниже самой дешёвой покупки в мире
+  // (нижняя граница полки с наибольшей скидкой), и ставится после надбавки за
+  // интерес торговца, иначе надбавка поднимала продажу выше покупки.
   const serverSell = functionSource(server, 'serverTradeSellPrice');
   const unitySell = barterCanvas.slice(barterCanvas.indexOf('private static int TradeSellPrice('),
     barterCanvas.indexOf('private bool IsEquipped('));
-  assert(serverSell.indexOf("? 1.24 : 0.84") > 0
-    && serverSell.indexOf("? 1.24 : 0.84") < serverSell.indexOf('serverTradeSellCap(id, stockEntry, player)')
+  assert(serverSell.indexOf('? 1.24 : 0.84') > 0
+    && serverSell.indexOf('? 1.24 : 0.84') < serverSell.indexOf('Math.min(price, serverTradeSellCeiling(id))')
     && unitySell.indexOf('interested ? 1.24d : 0.84d') > 0
-    && unitySell.indexOf('interested ? 1.24d : 0.84d') < unitySell.indexOf('TradeSellCap(baseId, StockPrice(market, baseId), self)'),
-    'The sell cap must come after the trader interest bonus on the server and in Unity');
-  assert(functionSource(server, 'serverTradeSellCap').includes('Math.min(floor, Math.max(1, Number(stockEntry.price || 1))) : floor')
-    && barterCanvas.includes('int cheapest = ShelfFloorPrice(baseId);')
-    && barterCanvas.includes('if (stockPrice > 0) cheapest = System.Math.Min(cheapest, stockPrice);'),
-    'The sell cap must start from the cheapest shelf anywhere, not only from this trader');
+    && unitySell.indexOf('interested ? 1.24d : 0.84d') < unitySell.indexOf('Math.Min(price, TradeSellCeiling(baseId))'),
+    'The sell ceiling must come after the trader interest bonus on the server and in Unity');
+  assert(functionSource(server, 'serverTradeSellCeiling').includes('Math.ceil(serverTradeShelfFloor(itemId) * (1 - SERVER_TRADE_MAX_BUY_DISCOUNT)) - 1')
+    && barterCanvas.includes('(int)System.Math.Ceiling(ShelfFloorPrice(baseId) * (1d - MaxBuyDiscount)) - 1'),
+    'The sell ceiling must sit one mark below the cheapest purchase anywhere, the same for every player');
+  // Оружие и броню у игроков покупает только Чёрный рынок: торговец присылает
+  // refusedCategories, сервер отклоняет такую продажу, смета показывает отказ.
+  assert(functionSource(server, 'serverNpcTradeMarket').includes('refusedCategories,')
+    && serverSell.includes('(market.refusedCategories || []).includes(')
+    && functionSource(server, 'performServerNpcTradeExchange').includes('return { ok: false, error: SERVER_NPC_TRADE_GEAR_REFUSED_ERROR }')
+    && barterCanvas.includes('market?["refusedCategories"] is JArray refused')
+    && unitySell.includes('if (TradeRefuses(market, baseId)) return 0;')
+    && barterCanvas.includes('"Торговец не берёт: "'),
+    'NPC traders must refuse weapons and armour on the server and in the Unity estimate');
   assert(functionSource(server, 'serverNpcTradeMarket').includes('price: serverTradeShelfPrice(id, entry?.price)')
     && functionSource(server, 'publicEnemy').includes('price: serverTradeShelfPrice(row.id, row.price)')
     && functionSource(server, 'serverNpcTradeResalePrice').includes('return serverTradeShelfPrice(id, Math.max(sellPrice + 1'),

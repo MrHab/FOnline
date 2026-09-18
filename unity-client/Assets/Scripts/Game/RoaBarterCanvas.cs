@@ -196,16 +196,14 @@ namespace RealmOfAshes.Game
             return RoaItemCategories.Category(baseId);
         }
 
+        /// <summary>Наибольшая скидка покупки, как SERVER_TRADE_MAX_BUY_DISCOUNT.</summary>
+        private const double MaxBuyDiscount = 0.25d;
+
+        /// <summary>Цена покупки: Бартер до 15%, «Торговец» 3 п.п. за ранг и доля Торговца базы, всего не больше 25%.</summary>
         private static int TradeBuyPrice(int stockPrice, JObject self)
         {
-            return TradeBuyPriceCore(stockPrice, self, true);
-        }
-
-        /// <summary>Цена покупки; без доли жителя она нужна для потолка продажи, как на сервере.</summary>
-        private static int TradeBuyPriceCore(int stockPrice, JObject self, bool includeResident)
-        {
-            double discount = System.Math.Min(0.48d, TradeSkillNorm(self) * 0.24d + TalentLevel(self, "merchant", 3) * 0.05d
-                + (includeResident ? ResidentTradePct(self) : 0d));
+            double discount = System.Math.Min(MaxBuyDiscount, TradeSkillNorm(self) * 0.15d + TalentLevel(self, "merchant", 3) * 0.03d
+                + ResidentTradePct(self));
             return System.Math.Max(1, (int)System.Math.Ceiling(System.Math.Max(1, stockPrice) * (1d - discount)));
         }
 
@@ -224,15 +222,22 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Потолок продажи, как serverTradeSellCap: от самой дешёвой полки, где этот предмет
-        /// можно купить, — не больше 85% покупки без доли жителя и хотя бы на марку дешевле покупки с ней.
+        /// Потолок скупки, как serverTradeSellCeiling: на марку ниже самой дешёвой покупки этого
+        /// предмета в мире (нижняя граница полки с наибольшей скидкой). Один для всех игроков.
         /// </summary>
-        private static int TradeSellCap(string baseId, int stockPrice, JObject self)
+        private static int TradeSellCeiling(string baseId)
         {
-            int cheapest = ShelfFloorPrice(baseId);
-            if (stockPrice > 0) cheapest = System.Math.Min(cheapest, stockPrice);
-            return System.Math.Min((int)System.Math.Floor(TradeBuyPriceCore(cheapest, self, false) * 0.85d),
-                TradeBuyPriceCore(cheapest, self, true) - 1);
+            return (int)System.Math.Ceiling(ShelfFloorPrice(baseId) * (1d - MaxBuyDiscount)) - 1;
+        }
+
+        /// <summary>Категории, которые торговец не покупает вовсе (оружие и броню берёт только Чёрный рынок).</summary>
+        private static bool TradeRefuses(JObject market, string baseId)
+        {
+            if (!(market?["refusedCategories"] is JArray refused) || refused.Count == 0) return false;
+            string category = RoaItemData.Category(baseId);
+            foreach (JToken token in refused)
+                if (token?.ToString() == category) return true;
+            return false;
         }
 
         /// <summary>Персональная цена выкупа, полностью повторяющая серверную формулу.</summary>
@@ -256,17 +261,14 @@ namespace RealmOfAshes.Game
             // спрос и состояние известны только серверу. Нет цены — не берёт.
             if (market?["sellPrices"] is JObject serverPrices)
                 return Mathf.Max(0, serverPrices[baseId]?.Value<int?>() ?? 0);
+            if (TradeRefuses(market, baseId)) return 0;
+            // Скупка начинается с 30% базовой цены каталога — целыми числами, как SERVER_TRADE_SELL_SHARE_PCT.
             int catalogPrice = RoaItemData.BasePrice(baseId);
-            int basePrice = catalogPrice > 0 ? Mathf.Max(1, Mathf.FloorToInt(catalogPrice * 0.45f)) : 0;
+            int basePrice = catalogPrice > 0 ? Mathf.Max(1, catalogPrice * 30 / 100) : 0;
             if (basePrice <= 0)
             {
                 int stockPrice = StockPrice(market, baseId);
-                if (stockPrice > 0) basePrice = Mathf.Max(1, Mathf.FloorToInt(stockPrice * 0.45f));
-                else
-                {
-                    string category = TradeItemCategory(baseId);
-                    basePrice = category == "weapons" ? 12 : (category == "armor" ? 8 : (category == "materials" ? 2 : (baseId == "trophy" ? 10 : 1)));
-                }
+                basePrice = Mathf.Max(1, (stockPrice > 0 ? stockPrice : 1) * 30 / 100);
             }
 
             double bonus = 1d
@@ -287,7 +289,7 @@ namespace RealmOfAshes.Game
                 price = System.Math.Max(1, (int)System.Math.Floor(price * (interested ? 1.24d : 0.84d) + 0.5d));
             }
             // Потолок — после надбавки за интерес, как на сервере.
-            return System.Math.Max(1, System.Math.Min(price, TradeSellCap(baseId, StockPrice(market, baseId), self)));
+            return System.Math.Max(1, System.Math.Min(price, TradeSellCeiling(baseId)));
         }
 
         private bool IsEquipped(string runtimeId, string baseId)
@@ -354,21 +356,22 @@ namespace RealmOfAshes.Game
             int net = buyTotal - sellTotal;
             bool hasTrade = sellEntries.Count > 0 || buyEntries.Count > 0;
             bool overweight = projectedWeight > capacity + 0.0001f;
+            // Цена 0 — вещь не берут: скупщик — всё, кроме целого оружия и брони,
+            // торговец — оружие и броню (их покупает только Чёрный рынок).
             string refused = string.Empty;
-            if (blackMarket)
+            foreach (Entry entry in sellEntries)
             {
-                foreach (Entry entry in sellEntries)
-                {
-                    if (entry.Price > 0) continue;
-                    refused = RoaItemData.Name(entry.BaseId);
-                    break;
-                }
+                if (entry.Price > 0) continue;
+                refused = RoaItemData.Name(entry.BaseId);
+                break;
             }
             string reason = string.Empty;
             if (Interaction.TradePending) reason = "Сервер проводит обмен.";
             else if (!hasTrade) reason = "Выберите предметы для обмена.";
             else if (blackMarket && buyEntries.Count > 0) reason = "Скупщик ничего не продаёт.";
-            else if (!string.IsNullOrEmpty(refused)) reason = "Скупщик не берёт: " + refused + " (только целое оружие и броня).";
+            else if (!string.IsNullOrEmpty(refused)) reason = blackMarket
+                ? "Скупщик не берёт: " + refused + " (только целое оружие и броня)."
+                : "Торговец не берёт: " + refused + ". Оружие и броню покупает только Чёрный рынок.";
             else if (net > money) reason = "Не хватает марок: нужно " + net + ", у вас " + money + ".";
             else if (net < 0 && Mathf.Abs(net) > traderCaps) reason = "У торговца не хватает марок: нужно " + Mathf.Abs(net) + ", у него " + traderCaps + ".";
             else if (overweight) reason = "Перегруз: " + projectedWeight.ToString("0.0") + "/" + capacity.ToString("0.0") + " кг.";
@@ -443,13 +446,13 @@ namespace RealmOfAshes.Game
                 Entry captured = e;
                 int capturedFree = free;
                 AddRow(_player, index++, e.BaseId, ItemName(e.BaseId), equipped ? "ЭКИПИРОВАНО" : null,
-                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · продажа " + e.Price + " мар.",
+                    RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · " + (e.Price > 0 ? "продажа " + e.Price + " мар." : "не берут"),
                     onBody ? "на теле" : "x" + free, queued > 0 ? "в обмене " + queued : null,
                     queued > 0 ? RowQueued : (equipped ? RowEquipped : RowBorder), free <= 0 || onBody,
                     () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
                     (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. "
                             : (equipped ? "Предмет сейчас на персонаже. Продавайте его только если точно хотите с ним расстаться. " : string.Empty))
-                    + "Продажа: " + e.Price + " марок за 1 шт.");
+                    + (e.Price > 0 ? "Продажа: " + e.Price + " марок за 1 шт." : "Этот покупатель такую вещь не берёт."));
             }
             SetEmpty(_player, index == 0, _player.Category == "all"
                 ? "Нет предметов для продажи."

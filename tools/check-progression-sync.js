@@ -190,7 +190,7 @@ if (!enemyHitServerBody.includes('syncServerActionProgressionPlayer(p, data)')) 
 if (!enemyHitServerBody.includes('data.combat') || !enemyHitServerBody.includes('serverHitChance(p, enemy')) {
   fail('enemyHit must pass combat snapshot data into server hit chance');
 }
-if (!enemyHitServerBody.includes('serverCombatTargetPoint(enemy, data, weapon)')
+if (!enemyHitServerBody.includes('serverCombatTargetPoint(enemy, data, weapon, room)')
   || !enemyHitServerBody.includes('serverLineOfFireClearFrom(room, origin.x, origin.z, targetProxy')
   || !enemyHitServerBody.includes('serverShotgunSpreadSample(weapon, origin, targetProxy')) {
   fail('enemyHit must validate moving NPCs against the bounded client-observed target position');

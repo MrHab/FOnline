@@ -15585,11 +15585,41 @@ function serverResidentTradePct(player = {}) {
 // Больше этой скидки не даёт ничто; от неё же считается нижняя граница цены
 // перепродажи, чтобы «продать и сразу выкупить» не приносило марок.
 const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;
+// Нижняя граница цены на полке NPC-торговца — доля базовой цены каталога. Ниже
+// неё полку не опускают ни рынок узла, ни затоваривание, ни дешёвая
+// перепродажа, поэтому самая дешёвая покупка предмета у любого торговца — эта
+// граница со скидкой игрока. От неё считается потолок продажи, и на неё же
+// опирается потолок Чёрного рынка: 0,75 × (1 − 0,48) = 0,39 базы > 0,38.
+const SERVER_TRADE_SHELF_FLOOR_SHARE = 0.75;
+
+function serverTradeShelfFloor(itemId = '') {
+  const base = Number(SERVER_ITEM_BASE_PRICES[serverBaseItemId(itemId)] || 0);
+  return Math.max(1, Math.ceil(base * SERVER_TRADE_SHELF_FLOOR_SHARE));
+}
+
+// Цена полки, которую видит и платит игрок: не ниже нижней границы.
+function serverTradeShelfPrice(itemId = '', price = 1) {
+  const value = Math.round(Number(price || 1));
+  return clamp(Number.isFinite(value) ? value : 1, serverTradeShelfFloor(itemId), 9999);
+}
 
 function serverTradeBuyPrice(entry = {}, player = {}, includeResident = true) {
   const discount = Math.min(SERVER_TRADE_MAX_BUY_DISCOUNT, serverSkillNorm(player, 'barter') * 0.24 + serverTalentLevel(player, 'merchant') * 0.05
     + (includeResident ? serverResidentTradePct(player) : 0));
   return Math.max(1, Math.ceil(Math.max(1, Number(entry.price || 1)) * (1 - discount)));
+}
+
+// Потолок продажи — от самой дешёвой полки, где игрок может купить тот же
+// предмет: у этого торговца или у любого другого (нижняя граница полки). Не
+// больше 85% цены покупки без доли Торговца базы, чтобы житель не опускал
+// потолок опытного торговца, и всегда хотя бы на марку дешевле покупки с этой
+// долей — иначе доля жителя делала бы перепродажу выгодной.
+function serverTradeSellCap(itemId = '', stockEntry = null, player = {}) {
+  const floor = serverTradeShelfFloor(itemId);
+  const cheapest = { price: stockEntry ? Math.min(floor, Math.max(1, Number(stockEntry.price || 1))) : floor };
+  return Math.min(
+    Math.floor(serverTradeBuyPrice(cheapest, player, false) * 0.85),
+    serverTradeBuyPrice(cheapest, player, true) - 1);
 }
 
 function serverTradeSellPrice(itemId = '', market = {}, player = {}) {
@@ -15609,12 +15639,11 @@ function serverTradeSellPrice(itemId = '', market = {}, player = {}) {
     + serverTalentLevel(player, 'merchant') * 0.08
     + serverResidentTradePct(player);
   let price = Math.max(1, Math.floor(Number(base || 1) * charismaBonus));
-  // Потолок продажи — от цены покупки без доли Торговца базы: иначе житель,
-  // который улучшает обе цены, опускал бы потолок и продажа дешевела.
-  if (stockEntry) price = Math.min(price, Math.max(1, Math.floor(serverTradeBuyPrice(stockEntry, player, false) * 0.85)));
   const interests = Array.isArray(market.buyInterests) ? market.buyInterests : [];
   if (interests.length) price = Math.max(1, Math.round(price * (interests.includes(serverTradeItemCategory(id)) ? 1.24 : 0.84)));
-  return price;
+  // Потолок — последним: надбавка за интерес торговца, наложенная после него,
+  // поднимала продажу выше покупки.
+  return Math.max(1, Math.min(price, serverTradeSellCap(id, stockEntry, player)));
 }
 
 function serverInventoryWeightWithEquipment(rows = [], equipment = {}) {
@@ -15725,11 +15754,14 @@ function serverNpcTradeMarket(actor = {}) {
       serverNpcSetInventoryCaps(actor, supplied.caps);
     }
   }
-  const stock = (Array.isArray(actor.traderStock) ? actor.traderStock : []).slice(0, 80).map(entry => ({
-    id: serverBaseItemId(entry?.id || ''),
-    price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
-    qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
-  })).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
+  const stock = (Array.isArray(actor.traderStock) ? actor.traderStock : []).slice(0, 80).map(entry => {
+    const id = serverBaseItemId(entry?.id || '');
+    return {
+      id,
+      price: serverTradeShelfPrice(id, entry?.price),
+      qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
+    };
+  }).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
   return {
     stock,
     caps: serverNpcInventoryCaps(actor),
@@ -15768,8 +15800,8 @@ function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
   const category = serverTradeItemCategory(id);
   const markup = category === 'ammo' ? 2 : (category === 'materials' ? 1.4 : 1.75);
   // Даже при наибольшей скидке выкуп дороже проданного: ceil(R × (1 − 0,48)) > S.
-  return Math.max(sellPrice + 1, Math.round(sellPrice * markup),
-    Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT)));
+  return serverTradeShelfPrice(id, Math.max(sellPrice + 1, Math.round(sellPrice * markup),
+    Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))));
 }
 
 const SERVER_NPC_TRADE_CLOSED_ERROR = 'Этот человек не торгует. Торговцы есть в столицах фракций и на базах Сердцевины, остальное — на аукционе.';
@@ -18830,7 +18862,9 @@ function publicEnemy(e, viewer = null) {
     lookZ: e.lookZ !== null && e.lookZ !== undefined && Number.isFinite(Number(e.lookZ)) ? Number(Number(e.lookZ).toFixed(3)) : null,
     traderStock: naturalCreature ? [] : (Array.isArray(e.traderStock) ? e.traderStock.map(row => ({
       id: String(row.id || '').slice(0, 64),
-      price: Math.max(1, Math.round(Number(row.price || 1))),
+      // Та же цена, что в окне торговли (serverNpcTradeMarket): клиент
+      // подменяет ею полку открытого окна после чужой сделки.
+      price: serverTradeShelfPrice(row.id, row.price),
       qty: Math.max(1, Math.round(Number(row.qty || 1)))
     })) : []),
     traderBuyInterests: naturalCreature ? [] : (Array.isArray(e.traderBuyInterests)

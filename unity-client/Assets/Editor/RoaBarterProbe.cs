@@ -103,6 +103,8 @@ namespace RealmOfAshes.EditorTools
                 Require(CallPrice("TradeSellPrice", "medkit", quoteMarket, residentSelf) < CallPrice("TradeBuyPrice", 21, residentSelf),
                     "со скидкой Торговца перепродажа стала выгоднее покупки");
                 // Опытный торговец упирается в потолок продажи: житель не должен его опускать.
+                // Потолок считается от нижней границы полки (аптечка: 22 × 0,75 → 17), а не от
+                // цены этого торговца (21): дешевле 17 аптечку не продаст ни один торговец.
                 JObject traderSelf = JObject.Parse(
                     "{\"special\":{\"cha\":10,\"int\":5},\"skillRanks\":{\"barter\":100},\"talentRanks\":{\"merchant\":3},\"traits\":[]}");
                 JObject traderResident = (JObject)traderSelf.DeepClone();
@@ -110,9 +112,26 @@ namespace RealmOfAshes.EditorTools
                 int capped = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderSelf);
                 int cappedResident = CallPrice("TradeSellPrice", "medkit", quoteMarket, traderResident);
                 report.Append("capped medkit: ").Append(capped).Append(" → ").Append(cappedResident).Append('\n');
-                Require(capped == 14 && cappedResident == 14, "Торговец базы удешевил продажу у опытного торговца: " + capped + " → " + cappedResident);
+                Require(capped == 9 && cappedResident == 9, "Торговец базы удешевил продажу у опытного торговца: " + capped + " → " + cappedResident);
                 Require(CallPrice("TradeBuyPrice", 21, traderResident) == 12 && CallPrice("TradeBuyPriceCore", 21, traderResident, false) == 13,
                     "потолок продажи считается не от цены покупки без доли жителя");
+                // Перепродажа: надбавка за интерес идёт до потолка, а торговец, у которого
+                // винтовки нет, платит не больше того, у кого она есть, — иначе купить
+                // на самой дешёвой полке (80 × 0,75 = 60) и продать было бы выгодно.
+                JObject weaponsMarket = new JObject
+                {
+                    ["caps"] = 500,
+                    ["buyInterests"] = new JArray("weapons"),
+                    ["stock"] = new JArray(new JObject { ["id"] = "rifle", ["qty"] = 1, ["price"] = 80 })
+                };
+                int rifleFloor = CallPrice("ShelfFloorPrice", "rifle");
+                int rifleHere = CallPrice("TradeSellPrice", "rifle", weaponsMarket, traderResident);
+                int rifleElsewhere = CallPrice("TradeSellPrice", "rifle", quoteMarket, traderResident);
+                report.Append("rifle resale: floor=").Append(rifleFloor).Append(" here=").Append(rifleHere)
+                      .Append(" elsewhere=").Append(rifleElsewhere).Append('\n');
+                Require(rifleFloor == 60 && rifleHere == 31 && rifleElsewhere == 31
+                        && rifleHere < CallPrice("TradeBuyPrice", rifleFloor, traderResident),
+                    "перепродажа винтовки выгоднее покупки на самой дешёвой полке: " + rifleHere + " / " + rifleElsewhere);
                 // Чёрный рынок: цену каждого предмета называет сервер, без цены — не берёт.
                 JObject blackMarket = JObject.Parse("{\"stock\":[],\"caps\":900,\"blackMarket\":{\"treasury\":900},\"sellPrices\":{\"pistol\":17,\"food\":0}}");
                 Require(RoaBarterCanvas.IsBlackMarket(blackMarket) && !RoaBarterCanvas.IsBlackMarket(quoteMarket), "витрина скупщика не распознана");

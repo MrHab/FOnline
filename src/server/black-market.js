@@ -24,8 +24,8 @@ const DEFAULT_CONFIG = Object.freeze({
   treasuryShare: 0.2,
   startingTreasury: 3000,
   priceShare: 0.45,
-  // Самая низкая цена NPC-торговца — около 0,395 базы (цена профиля от 0,93
-  // базы × рынок узла от 0,816 × максимальная скидка 0,52).
+  // Самая низкая цена NPC-торговца — 0,39 базы: полку сервер не опускает ниже
+  // 0,75 базы (SERVER_TRADE_SHELF_FLOOR_SHARE), наибольшая скидка — 0,48.
   npcResaleCapShare: 0.38,
   minCondition: 10,
   bands: Object.freeze([

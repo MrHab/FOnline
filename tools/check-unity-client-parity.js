@@ -67,6 +67,12 @@ function extractExpression(source, marker) {
   throw new Error(`unclosed JavaScript constant ${marker}`);
 }
 
+function functionSource(source, name) {
+  const start = source.indexOf(`\nfunction ${name}(`);
+  assert(start >= 0, `server.js has no function ${name}`);
+  return source.slice(start + 1, source.indexOf('\n}', start) + 2);
+}
+
 function normalizeCost(cost) {
   return Object.fromEntries(Object.entries(cost || {})
     .map(([id, qty]) => [id, Number(qty)])
@@ -209,16 +215,46 @@ assert(barterCanvas.includes('TradeSkillNorm(self) * 0.24d')
   && barterCanvas.includes('HasTrait(self, "traderStart") ? 0.15d')
   && barterCanvas.includes('interested ? 1.24d : 0.84d'),
   'Unity barter totals no longer mirror the server discount, bonus, cap, or interest formula');
-// Доля Торговца базы входит в обе цены и на сервере, и в смете клиента, а потолок
-// продажи считается от цены покупки без неё — иначе житель удешевлял бы продажу.
+// Доля Торговца базы входит в обе цены и на сервере, и в смете клиента. Потолок
+// продажи — не больше 85% покупки без неё (житель не опускает потолок опытного
+// торговца) и хотя бы на марку дешевле покупки с ней.
 assert(/TalentLevel\(self, "merchant", 3\) \* 0\.05d\s*\+ \(includeResident \? ResidentTradePct\(self\) : 0d\)/.test(barterCanvas)
   && /TalentLevel\(self, "merchant", 3\) \* 0\.08d\s*\+ ResidentTradePct\(self\);/.test(barterCanvas)
-  && barterCanvas.includes('TradeBuyPriceCore(stockPriceForItem, self, false) * 0.85d')
+  && barterCanvas.includes('TradeBuyPriceCore(cheapest, self, false) * 0.85d')
+  && barterCanvas.includes('TradeBuyPriceCore(cheapest, self, true) - 1')
   && /serverTalentLevel\(player, 'merchant'\) \* 0\.05\s*\+ \(includeResident \? serverResidentTradePct\(player\) : 0\)/.test(server)
   && /serverTalentLevel\(player, 'merchant'\) \* 0\.08\s*\+ serverResidentTradePct\(player\);/.test(server)
-  && server.includes('serverTradeBuyPrice(stockEntry, player, false) * 0.85')
+  && server.includes('serverTradeBuyPrice(cheapest, player, false) * 0.85')
+  && server.includes('serverTradeBuyPrice(cheapest, player, true) - 1')
   && /Math\.Min\(0\.48d/.test(barterCanvas) && server.includes('const SERVER_TRADE_MAX_BUY_DISCOUNT = 0.48;'),
-  'Unity barter no longer mirrors the base trader share or the resident-free sell cap');
+  'Unity barter no longer mirrors the base trader share or the resident-aware sell cap');
+// Перепродажа без выгоды: потолок считается от самой дешёвой полки, где предмет
+// можно купить (нижняя граница полки — одна доля базы на сервере и в клиенте), и
+// ставится после надбавки за интерес торговца, иначе надбавка поднимала продажу
+// выше покупки. Цену полки ниже границы не показывают ни окно торговли, ни снимок
+// NPC, которым клиент обновляет открытое окно, ни цена перепродажи.
+{
+  const serverFloorShare = Number((server.match(/const SERVER_TRADE_SHELF_FLOOR_SHARE = ([0-9.]+);/) || [])[1]);
+  const unityFloorShare = Number((barterCanvas.match(/Math\.Max\(0, catalogPrice\) \* ([0-9.]+)d\)\);/) || [])[1]);
+  assert(serverFloorShare > 0 && serverFloorShare === unityFloorShare,
+    `Unity shelf floor share ${unityFloorShare} differs from the server ${serverFloorShare}`);
+  const serverSell = functionSource(server, 'serverTradeSellPrice');
+  const unitySell = barterCanvas.slice(barterCanvas.indexOf('private static int TradeSellPrice('),
+    barterCanvas.indexOf('private bool IsEquipped('));
+  assert(serverSell.indexOf("? 1.24 : 0.84") > 0
+    && serverSell.indexOf("? 1.24 : 0.84") < serverSell.indexOf('serverTradeSellCap(id, stockEntry, player)')
+    && unitySell.indexOf('interested ? 1.24d : 0.84d') > 0
+    && unitySell.indexOf('interested ? 1.24d : 0.84d') < unitySell.indexOf('TradeSellCap(baseId, StockPrice(market, baseId), self)'),
+    'The sell cap must come after the trader interest bonus on the server and in Unity');
+  assert(functionSource(server, 'serverTradeSellCap').includes('Math.min(floor, Math.max(1, Number(stockEntry.price || 1))) : floor')
+    && barterCanvas.includes('int cheapest = ShelfFloorPrice(baseId);')
+    && barterCanvas.includes('if (stockPrice > 0) cheapest = System.Math.Min(cheapest, stockPrice);'),
+    'The sell cap must start from the cheapest shelf anywhere, not only from this trader');
+  assert(functionSource(server, 'serverNpcTradeMarket').includes('price: serverTradeShelfPrice(id, entry?.price)')
+    && functionSource(server, 'publicEnemy').includes('price: serverTradeShelfPrice(row.id, row.price)')
+    && functionSource(server, 'serverNpcTradeResalePrice').includes('return serverTradeShelfPrice(id, Math.max(sellPrice + 1'),
+    'NPC shelf prices shown to Unity must never drop below the shelf floor');
+}
 // Перепродажа проданного товара: даже наибольшая скидка не делает выкуп дешевле продажи.
 assert(server.includes('Math.ceil((sellPrice + 1) / (1 - SERVER_TRADE_MAX_BUY_DISCOUNT))'),
   'NPC resale price no longer outruns the largest buy discount');

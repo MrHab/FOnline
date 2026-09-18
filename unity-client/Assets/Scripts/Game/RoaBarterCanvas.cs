@@ -216,6 +216,25 @@ namespace RealmOfAshes.Game
             return System.Math.Max(0d, System.Math.Min(0.2d, value));
         }
 
+        /// <summary>Нижняя граница цены на полке любого торговца — доля базовой цены каталога, как SERVER_TRADE_SHELF_FLOOR_SHARE.</summary>
+        private static int ShelfFloorPrice(string baseId)
+        {
+            int catalogPrice = RoaItemData.BasePrice(baseId);
+            return System.Math.Max(1, (int)System.Math.Ceiling(System.Math.Max(0, catalogPrice) * 0.75d));
+        }
+
+        /// <summary>
+        /// Потолок продажи, как serverTradeSellCap: от самой дешёвой полки, где этот предмет
+        /// можно купить, — не больше 85% покупки без доли жителя и хотя бы на марку дешевле покупки с ней.
+        /// </summary>
+        private static int TradeSellCap(string baseId, int stockPrice, JObject self)
+        {
+            int cheapest = ShelfFloorPrice(baseId);
+            if (stockPrice > 0) cheapest = System.Math.Min(cheapest, stockPrice);
+            return System.Math.Min((int)System.Math.Floor(TradeBuyPriceCore(cheapest, self, false) * 0.85d),
+                TradeBuyPriceCore(cheapest, self, true) - 1);
+        }
+
         /// <summary>Персональная цена выкупа, полностью повторяющая серверную формулу.</summary>
         /// <summary>Скупщик Чёрного рынка: витрина без полки, цены считает сервер.</summary>
         public static bool IsBlackMarket(JObject market)
@@ -258,10 +277,6 @@ namespace RealmOfAshes.Game
                 + ResidentTradePct(self);
             int price = System.Math.Max(1, (int)System.Math.Floor(basePrice * bonus));
 
-            int stockPriceForItem = StockPrice(market, baseId);
-            if (stockPriceForItem > 0)
-                price = System.Math.Min(price, System.Math.Max(1, (int)System.Math.Floor(TradeBuyPriceCore(stockPriceForItem, self, false) * 0.85d)));
-
             JArray interests = market?["buyInterests"] as JArray;
             if (interests != null && interests.Count > 0)
             {
@@ -271,7 +286,8 @@ namespace RealmOfAshes.Game
                     if (token?.ToString() == category) { interested = true; break; }
                 price = System.Math.Max(1, (int)System.Math.Floor(price * (interested ? 1.24d : 0.84d) + 0.5d));
             }
-            return price;
+            // Потолок — после надбавки за интерес, как на сервере.
+            return System.Math.Max(1, System.Math.Min(price, TradeSellCap(baseId, StockPrice(market, baseId), self)));
         }
 
         private bool IsEquipped(string runtimeId, string baseId)

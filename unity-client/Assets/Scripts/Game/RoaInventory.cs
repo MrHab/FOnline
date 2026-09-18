@@ -103,6 +103,7 @@ namespace RealmOfAshes.Game
         }
 
         private readonly List<Row> _items = new List<Row>();
+        private int _marks;
         private readonly Dictionary<string, string> _equipment = new Dictionary<string, string>();
         private readonly Dictionary<string, JObject> _weaponModifications = new Dictionary<string, JObject>();
 
@@ -127,8 +128,14 @@ namespace RealmOfAshes.Game
         /// <summary>Новый Pip-Boy на канве рисует и обслуживает окно сам; IMGUI и клавиша выключаются.</summary>
         public bool CanvasDriven { get; set; }
 
-        /// <summary>Строки инвентаря: базовые id и количество, как отдал сервер.</summary>
+        /// <summary>
+        /// Строки рюкзака: базовые id и количество, как отдал сервер. Марок
+        /// среди них нет: марки — счёт аккаунта (Marks, CountOf("silver")).
+        /// </summary>
         public System.Collections.Generic.IReadOnlyList<Row> Items { get { return _items; } }
+
+        /// <summary>Марки на счёте аккаунта — не предмет рюкзака.</summary>
+        public int Marks { get { return _marks; } }
 
         /// <summary>Слоты экипировки: slot → runtime id предмета.</summary>
         public System.Collections.Generic.IReadOnlyDictionary<string, string> EquipmentSlots { get { return _equipment; } }
@@ -246,14 +253,21 @@ namespace RealmOfAshes.Game
             if (self["inventory"] is JArray inventory)
             {
                 _items.Clear();
+                _marks = 0;
                 foreach (JToken row in inventory)
                 {
                     string id = row["id"]?.ToString();
                     if (string.IsNullOrEmpty(id)) continue;
+                    int qty = row["qty"]?.ToObject<int>() ?? 0;
+                    // Марки лежат на счёте аккаунта: в сетках рюкзака их нет.
+                    if (id == "silver") { _marks += Mathf.Max(0, qty); continue; }
 
-                    _items.Add(new Row { Id = id, Qty = row["qty"]?.ToObject<int>() ?? 0 });
+                    _items.Add(new Row { Id = id, Qty = qty });
                 }
             }
+            JToken accountMarks = self["account"]?["marks"];
+            if (accountMarks != null && (accountMarks.Type == JTokenType.Integer || accountMarks.Type == JTokenType.Float))
+                _marks = Mathf.Max(0, accountMarks.ToObject<int>());
 
             if (self["equipmentRuntime"] is JObject runtime)
             {
@@ -892,6 +906,7 @@ namespace RealmOfAshes.Game
         {
             var sb = new System.Text.StringBuilder();
             foreach (Row row in _items) sb.Append(row.Id).Append(':').Append(row.Qty).Append(';');
+            sb.Append("marks:").Append(_marks);
             return sb.ToString();
         }
 
@@ -988,6 +1003,7 @@ namespace RealmOfAshes.Game
 
         private int InventoryQty(string itemId)
         {
+            if (itemId == "silver") return _marks;
             int total = 0;
             foreach (Row row in _items)
                 if (BaseId(row.Id) == itemId) total += Mathf.Max(0, row.Qty);

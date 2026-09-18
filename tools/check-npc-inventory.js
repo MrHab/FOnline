@@ -325,9 +325,6 @@ assert.strictEqual(rowQty(migratedOnsiteActor.inventory, 'silver'), 12, 'Onsite 
 
 const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 const wastelandSimSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'server', 'wasteland-sim.js'), 'utf8');
-const traderStateSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07b_trader_market_state.js'), 'utf8');
-const dialogueSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07c_trader_dialogues_quests.js'), 'utf8');
-const contextSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '08d_world_context_targets.js'), 'utf8');
 const roomActorSnapshotSource = serverSource.match(/function worldZoneActorSnapshotsFromRoom\(room\) \{[\s\S]*?\n\}/)?.[0] || '';
 assert(serverSource.includes('function ensureServerFriendlyNpcSocialState'), 'Server must centralize friendly NPC dialogue and trade initialization');
 assert(serverSource.includes('ensureServerFriendlyNpcSocialState(enemy);'), 'Every spawned friendly NPC must receive social initialization');
@@ -372,16 +369,6 @@ assert(!wastelandSimSource.includes('caps: Number.isFinite(Number(input.caps))')
   'Autonomous NPC actors must not retain a shadow caps field');
 assert(wastelandSimSource.includes('inventory: Array.isArray(previous.inventory) ? previous.inventory : template.inventory'),
   'Refreshing a caravan merchant must preserve the physical wallet after trade');
-assert(traderStateSource.includes("multiplayer.socket.emit('syncNpcTradeState', { enemyId: trader.id }"),
-  'The client must request NPC trade state without uploading a shadow wallet or inventory');
-assert(!traderStateSource.includes('if (actor) actor.traderCaps'),
-  'Client NPC currency updates must write only the silver inventory row');
-assert(traderStateSource.split('        caps: physicalCaps,').length - 1 === 2 && !traderStateSource.includes('isTradeMachine'),
-  'Client market cache must take NPC caps from physical inventory on create, reload and day rollover');
-assert(traderStateSource.includes("return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);"), 'Client must recognize every friendly sapient NPC as a barter partner');
-assert(dialogueSource.includes('function renderFriendlyNpcDialogue'), 'Client must provide a generic non-quest dialogue for friendly NPCs');
-assert(dialogueSource.includes('return renderFriendlyNpcDialogue(trader);'), 'Unknown friendly profiles must not fall through to Old Klim quests');
-assert(contextSource.includes("if (neutral) {\n        const options = ["), 'Friendly NPC context menu must always contain social actions');
 
 cleanupTemp();
 console.log('NPC inventory checks passed.');

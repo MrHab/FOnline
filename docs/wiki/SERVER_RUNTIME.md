@@ -201,11 +201,12 @@ simulation tick. Production Nginx сжимает `application/json` через g
 Сохранение sim state coalesced: dirty-state не записывается чаще
 `WASTELAND_SIM_SAVE_INTERVAL_MS`, кроме явно принудительных операций.
 
-## Раздача клиентов
+## Раздача клиента
 
 Корень сайта отдаёт Unity WebGL-сборку `public/unity/index.html`; если сборки
-нет (dev/CI без Unity), сервер отдаёт legacy-клиент. Прежний Three.js-клиент
-всегда доступен по `/legacy/`.
+нет (dev/CI без Unity), сервер отдаёт страницу ожидания
+`public/unity-unavailable.html`. Прежний Three.js-клиент удалён вместе с
+маршрутами `/legacy/`, `/sdk.js`, `/js/game.js` и `/css/game.css`.
 
 Для `/unity/*`:
 
@@ -226,8 +227,7 @@ simulation tick. Production Nginx сжимает `application/json` через g
 
 Express выставляет:
 
-- `no-cache` для `/`, `index.html`, `/unity/index.html`, `js/game.js` и
-  `css/game.css`;
+- `no-cache` для `/`, `/unity/` и любых `index.html`;
 - `public, max-age=31536000, immutable` для `/unity/Build/*` и ресурсов с
   query `?v=...`;
 - `public, max-age=86400` для остальных static assets;
@@ -290,22 +290,12 @@ Smoke дополнительно фиксирует архитектурные �
 переэкипировки через `state`/бой, атомарный отказ для отсутствующего runtime-id,
 а также отказ без расхода ресурсов при слишком ранней атаке или недостатке AP.
 
-Проверки `check-client-js.js` и `check-client-state-integrity.js` покрывают
-**legacy** браузерный клиент (`/legacy/`); Unity-клиент проверяется
-редакторскими пробами, `check:unity-*` и `check:unity-parity`.
-
-`check-client-js.js` исполняет generation-drain сохранений: single-flight,
-coalescing новых поколений, максимум две записи при непрерывном producer, dirty
-после ошибки, bounded retry и смену полного save-контекста. Там же исполняются
-отказ logout/switch после неподтверждённого финального save и блокировка
-параллельного выбора персонажей.
-
-`check-client-state-integrity.js` исполняет режимы authority и очистку,
-same-room gameplay ack guard, context-aware join-waiters (включая глобальную
-карту с пустым `roomId`), сохранение/коррекцию позиции, полный lifecycle-сброс
-input и камеры, single-flight join, поздние socket callback/timeout,
-управляемый reconnect, однократный клиентский износ инструмента и server
-deadman. Ранние action guards дополнительно закреплены source-contract
-утверждениями; это не полная эмуляция браузера. Реальный серверный
-идемпотентный/конфликтующий повтор `join` и строгий harvest с экипированным
-инструментом выполняет `check-combat-runtime.js`.
+Unity-клиент проверяется редакторскими пробами, `check:unity-*` и
+`check:unity-parity`. Серверные утверждения из удалённых проверок прежнего
+браузерного клиента собраны в `npm run check:server-contracts`
+(`tools/check-server-contracts.js`, входит в `npm run check`): сервер не
+принимает клиентский `worldState`, отказ `join` несёт код причины
+(`character-busy`, `session-busy`), а выход на глобальную карту требует дойти
+до края локации. Реальный серверный идемпотентный/конфликтующий повтор `join`
+и строгий harvest с экипированным инструментом выполняет
+`check-combat-runtime.js`.

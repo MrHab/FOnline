@@ -96,6 +96,8 @@ namespace RealmOfAshes.Game
         // CRAFT
         private RectTransform _craftList;
         private Text _craftStatus;
+        private Button _craftFocus;
+        private Text _craftFocusLabel;
         private readonly List<GameObject> _craftRows = new List<GameObject>();
         private readonly HashSet<string> _pendingRecipes = new HashSet<string>();
 
@@ -500,7 +502,7 @@ namespace RealmOfAshes.Game
             }
 
             _statLines.Clear();
-            for (int i = 0; i < 17; i++)
+            for (int i = 0; i < 18; i++)
             {
                 Text line = Label("Stat" + i, right, 11, TextAnchor.MiddleLeft, ScreenInkDim);
                 line.supportRichText = true;
@@ -509,7 +511,7 @@ namespace RealmOfAshes.Game
             }
 
             RectTransform injury = Panel_(right, SlotBg, SlotBorder);
-            Place_(injury, 0f, 1f, 1f, 1f, new Vector2(0f, -98f - 17 * 15f - 8f - 56f), new Vector2(0f, -98f - 17 * 15f - 8f));
+            Place_(injury, 0f, 1f, 1f, 1f, new Vector2(0f, -98f - 18 * 15f - 8f - 56f), new Vector2(0f, -98f - 18 * 15f - 8f));
             Text injuryTitle = Label("Title", injury, 12, TextAnchor.UpperLeft, SlotName, FontStyle.Bold);
             injuryTitle.text = "СОСТОЯНИЕ";
             Place_(injuryTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -24f), new Vector2(-8f, -6f));
@@ -625,7 +627,8 @@ namespace RealmOfAshes.Game
                 "Свободные очки навыков: <b>" + (self["skillPoints"]?.ToObject<int>() ?? 0) + "</b>",
                 "Свободные перки: <b>" + (self["talentPoints"]?.ToObject<int>() ?? self["perkPoints"]?.ToObject<int>() ?? 0) + "</b>",
                 "Навыки выше базы: <b>" + skillsAboveBase + "</b>",
-                "Изучено перков: <b>" + learnedPerks + "</b>"
+                "Изучено перков: <b>" + learnedPerks + "</b>",
+                "Фокус: <b>" + RoaCraftingPlots.FocusText(self["account"] as JObject) + "</b>"
             };
             for (int i = 0; i < _statLines.Count && i < lines.Length; i++)
                 _statLines[i].text = lines[i].Replace("<b>", "<b><color=#d3ee8a>").Replace("</b>", "</color></b>");
@@ -899,12 +902,10 @@ namespace RealmOfAshes.Game
             return "<color=#6f9c5a>" + label + "</color> <color=#d8f5b8>" + value + "</color>    ";
         }
 
+        /// <summary>Марки на счёте аккаунта (не строка рюкзака).</summary>
         private int CapsCount()
         {
-            if (Inventory == null) return 0;
-            foreach (RoaInventory.Row row in Inventory.Items)
-                if (row.Id == "silver") return row.Qty;
-            return 0;
+            return Inventory != null ? Inventory.Marks : 0;
         }
 
         private void AppendEquipment(System.Text.StringBuilder into)
@@ -1789,6 +1790,20 @@ namespace RealmOfAshes.Game
             SectionTitle(page, "КРАФТ");
             _craftList = ListArea(page, out _);
 
+            // Фокус премиума: переключатель, общий с окном станка участка.
+            _craftFocus = TextButton("CraftFocus", page, string.Empty, 11, out _craftFocusLabel);
+            var focusRect = (RectTransform)_craftFocus.transform;
+            focusRect.anchorMin = focusRect.anchorMax = new Vector2(1f, 1f);
+            focusRect.pivot = new Vector2(1f, 1f);
+            focusRect.anchoredPosition = new Vector2(-4f, 0f);
+            focusRect.sizeDelta = new Vector2(300f, 22f);
+            _craftFocus.onClick.AddListener(() =>
+            {
+                if (!RoaCraftingPlots.Premium(Pipboy?.Self?["account"] as JObject)) return;
+                RoaCraftingPlots.UseFocus = !RoaCraftingPlots.UseFocus;
+                _refreshAt = 0f;
+            });
+
             _craftStatus = Label("CraftStatus", page, 13, TextAnchor.LowerLeft, ScreenInkDim);
             _craftStatus.rectTransform.anchorMin = new Vector2(0f, 0f);
             _craftStatus.rectTransform.anchorMax = new Vector2(1f, 0f);
@@ -1814,6 +1829,15 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void RefreshCraft()
         {
+            JObject account = Pipboy?.Self?["account"] as JObject;
+            if (_craftFocusLabel != null)
+            {
+                bool premium = RoaCraftingPlots.Premium(account);
+                _craftFocus.interactable = premium;
+                _craftFocusLabel.text = premium
+                    ? "ФОКУС " + RoaCraftingPlots.FocusText(account) + " · " + (RoaCraftingPlots.UseFocus ? "ТРАТИТЬ ✓" : "НЕ ТРАТИТЬ")
+                    : "ФОКУС — ТОЛЬКО С ПРЕМИУМОМ";
+            }
             RebuildRows(_craftRows, _craftList, () =>
             {
                 _craftPairRow = null;
@@ -1913,11 +1937,15 @@ namespace RealmOfAshes.Game
             Place_(station.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -110f), new Vector2(-8f, -88f));
             station.horizontalOverflow = HorizontalWrapMode.Wrap;
             station.verticalOverflow = VerticalWrapMode.Truncate;
+            JObject account = Pipboy?.Self?["account"] as JObject;
+            string focusNote = RoaCraftingPlots.WantsFocus(recipe, account)
+                ? " · фокус " + RoaCraftingPlots.FocusCostFor(recipe, account)
+                : string.Empty;
             station.text = pending ? "Сервер создаёт предмет…" : (stationNear
                 ? RoaCraftingData.StationLabel(recipe.Station) + " рядом · комиссия " + recipe.Fee
-                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty)
+                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty) + focusNote
                 : "нужен станок: " + RoaCraftingData.StationLabel(recipe.Station) + " · комиссия " + recipe.Fee
-                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty));
+                    + (recipe.WorkSeconds > 0 ? " · " + recipe.WorkSeconds + " с" : string.Empty) + focusNote);
 
             var button = card.AddComponent<Button>();
             button.targetGraphic = back;
@@ -2043,7 +2071,8 @@ namespace RealmOfAshes.Game
                 ["station"] = recipe.Station,
                 ["fee"] = recipe.Fee,
                 ["locationId"] = Socket.Session != null ? Socket.Session.LocationId : string.Empty,
-                ["stationObjectId"] = stationObjectId
+                ["stationObjectId"] = stationObjectId,
+                ["useFocus"] = RoaCraftingPlots.WantsFocus(recipe, Pipboy?.Self?["account"] as JObject)
             }, ack =>
             {
                 _pendingRecipes.Remove(recipe.Id);
@@ -2060,7 +2089,9 @@ namespace RealmOfAshes.Game
                 JObject output = ack["output"] as JObject;
                 string outId = output?["id"]?.ToString() ?? recipe.OutputId;
                 int outQty = output?["qty"]?.ToObject<int>() ?? recipe.OutputQty;
-                _craftStatus.text = "Создано: " + ItemName(outId) + " ×" + outQty + ".";
+                int focusSpent = ack["focusSpent"]?.ToObject<int>() ?? 0;
+                _craftStatus.text = "Создано: " + ItemName(outId) + " ×" + outQty
+                    + (focusSpent > 0 ? " · фокус −" + focusSpent : string.Empty) + ".";
             });
         }
 

@@ -17,8 +17,6 @@ const fxFactory = read(game, 'RoaCombatPresentationFx.Factory.cs');
 const fxMotion = read(game, 'RoaCombatPresentationFx.Motion.cs');
 const combat = read(game, 'RoaCombat.cs');
 const bootstrap = read(game, 'RoaGameBootstrap.cs');
-const webInput = read('public', 'js', 'game', '08f_input_events_proximity.js');
-const webWindows = read('public', 'js', 'game', '08c_hud_edit_windows_touch.js');
 const server = read('server.js');
 const probe = read('unity-client', 'Assets', 'Editor', 'RoaCombatFlowProbe.cs');
 const probeMeta = read('unity-client', 'Assets', 'Editor', 'RoaCombatFlowProbe.cs.meta');
@@ -90,14 +88,6 @@ assert(combat.includes('public RoaPipboyCanvas PipboyCanvas;')
   && bootstrap.includes('Combat.GlobalMap = GlobalMap;')
   && bootstrap.includes('Combat.PipboyCanvas = PipboyCanvas;'),
 'PIP-ASH or global-map state is no longer wired into authoritative combat input gating');
-assert(webInput.includes('if (anyWindowOpen()) {')
-  && webInput.includes('stopAutoFire();')
-  && webInput.includes('e.stopPropagation();')
-  && webWindows.includes('if (paused || anyWindowOpen()) {')
-  && webWindows.includes("setTouchButtonActive('touch-fire', false);")
-  && webWindows.includes("uiWindows.globalMap.classList.contains('visible')")
-  && webWindows.includes("Object.values(uiWindows).some(w => w && w.classList.contains('visible'))"),
-'The browser combat surface can attack through an open PIP-ASH or global-map window');
 
 assert(probe.includes('RoaCharacterView.ResolveCombatPresentationPhase(')
   && probe.includes('RoaMeleeGrip.SwingSecondsForImpact(deadline)')

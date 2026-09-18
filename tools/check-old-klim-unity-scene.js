@@ -115,9 +115,6 @@ const materialsDirectory = path.join(root, 'unity-client', 'Assets', 'Scenes', '
 const materialCount = fs.readdirSync(materialsDirectory).filter(file => file.endsWith('.mat')).length;
 assert(materialCount >= 10, 'Curated MEP URP material set is incomplete');
 
-const browserModels = read('public', 'js', 'game', '02a_materials_static_models.js');
-assert(!/oldKlim\w+:\s*['"]\/assets\/models\/wasteland\/old_klim_/i.test(browserModels),
-  'Retired browser model map still points at Old Klim GLBs');
 const colliderCatalog = read('public', 'assets', 'models', 'wasteland', 'model-colliders.json');
 assert(!/"old_klim_.*\.glb"/i.test(colliderCatalog),
   'Collider catalog still contains removed Old Klim GLBs');

@@ -12,10 +12,11 @@
 - `server.js` is the production entry point and authoritative multiplayer server.
 - `src/server/` contains extracted server-side systems.
 - `unity-client/` is the game client (Unity 6000.5.8f1, URP). Players get the
-  Unity WebGL build served from the site root; new client work happens here.
-- `public/` contains shipped static assets (GLB models, textures) and the
-  legacy Three.js client, which is frozen and served only at `/legacy/` as the
-  parity source for `npm run check:unity-parity`.
+  Unity WebGL build served from the site root; all client work happens here.
+- `public/` holds the static files the server serves: GLB models and textures
+  (`public/assets/`), the generated Unity WebGL build (`public/unity/`, not in
+  git) with its fallback page `unity-unavailable.html`, and the local dev
+  editors. The old Three.js browser client has been removed.
 - `data/` contains authored world data. Runtime account, save and simulation files are ignored.
 - `tools/` contains generators and verification scripts.
 - `docs/wiki/` documents the current game architecture.

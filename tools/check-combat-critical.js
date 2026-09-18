@@ -8,9 +8,6 @@ const {
 
 const root = path.resolve(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const clientStatsSource = fs.readFileSync(path.join(root, 'public/js/game/06c_combat_stats_modes.js'), 'utf8');
-const clientExplosionSource = fs.readFileSync(path.join(root, 'public/js/game/06b_explosions_speech.js'), 'utf8');
-const clientDamageSource = fs.readFileSync(path.join(root, 'public/js/game/06d_combat_damage_shooting.js'), 'utf8');
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -45,28 +42,6 @@ for (const snippet of [
   'criticalChance: Math.round(dmgInfo.criticalChance * 100)'
 ]) {
   invariant(serverSource.includes(snippet), `Server critical-shot integration missing: ${snippet}`);
-}
-for (const snippet of [
-  'function criticalShotChance',
-  "Number(statValue('luck') || 5)",
-  'return luck / 100;',
-  'CRITICAL_SHOT_DAMAGE_MULTIPLIER'
-]) {
-  invariant(clientStatsSource.includes(snippet), `Client critical-shot formula missing: ${snippet}`);
-}
-for (const snippet of [
-  'rollCriticalShot(raw, w)',
-  'ack.critical === true',
-  'КРИТ'
-]) {
-  invariant(clientDamageSource.includes(snippet), `Client critical-shot feedback missing: ${snippet}`);
-}
-for (const snippet of [
-  'rollCriticalShot(rawBaseRoll, w)',
-  "critical ? `КРИТ! -${damage}`",
-  "explosionCritical.critical ? `КРИТ! -${dmg}`"
-]) {
-  invariant(clientExplosionSource.includes(snippet), `Client explosion critical-shot integration missing: ${snippet}`);
 }
 
 console.log('Combat critical OK: Luck 1–15 gives 1–15% firearm critical chance for bullets and rocket explosions, including per-shot dual-pistol rolls, and critical hits deal x2 raw damage.');

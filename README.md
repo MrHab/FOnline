@@ -7,9 +7,8 @@
 Игра — это авторитетный Node.js-сервер (`server.js`, `src/server/`) и
 **Unity-клиент** (`unity-client/`, Unity 6000.5.8f1, URP). Для игроков игра
 поставляется как Unity WebGL с корня сайта; Windows-сборка собирается
-`unity-client/Tools/build-windows.ps1`. Прежний браузерный Three.js-клиент
-(`public/js/`) не развивается и доступен только по `/legacy/` как источник
-parity-проверки `npm run check:unity-parity`.
+`unity-client/Tools/build-windows.ps1`. Unity — единственный клиент: прежний
+браузерный Three.js-клиент удалён из репозитория.
 
 Для работы с проектом через Codex на локальном компьютере или в облачной среде
 используйте [инструкцию Codex](docs/CODEX_WORKFLOW.md). Постоянные правила для
@@ -25,6 +24,14 @@ parity-проверки `npm run check:unity-parity`.
 - `docs/wiki/GRAPHICS_SETTINGS.md` — пресеты качества URP и WebGL-поставка;
 - `docs/wiki/SERVER_FILES.md` — структура серверного кода;
 - `unity-client/README.md` — запуск, сборка и редакторские пробы клиента.
+
+
+## История версий 7.75–7.76
+
+Ниже — исторические заметки к версиям 7.75–7.76. Большая часть касается
+прежнего браузерного Three.js-клиента, удалённого вместе с `public/js/`,
+`public/css/` и `public/assets/ui/`: описанные там HUD, CSS-слои и клиентские
+проверки больше не существуют. Текущее устройство игры — в `docs/wiki/`.
 
 
 ## Пустой задний фон торговой локации

@@ -16,10 +16,6 @@ const { isArtifactStunned } = require('../src/server/artifact-runtime');
 
 const ROOT = path.join(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
-const multiplayerClientSource = fs.readFileSync(
-  path.join(ROOT, 'public', 'js', 'game', '05c_multiplayer_socket_room.js'),
-  'utf8'
-);
 
 function extractFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -397,8 +393,6 @@ function assertStructuralEnemyChangesStayReliable() {
 }
 
 function assertEnemyFrameCompatibilityFallback() {
-  assert(multiplayerClientSource.includes('enemyFrameVersion: 1,'),
-    'current clients no longer advertise enemyFrame support during join');
   assert(serverSource.includes('const enemyFrameVersion = Number(data.enemyFrameVersion || 0) >= 1 ? 1 : 0;')
     && serverSource.includes('enemyFrameVersion,'),
   'join no longer records the negotiated enemyFrame capability');
@@ -608,13 +602,6 @@ function assertMotionPacketContract() {
 }
 
 function assertMovementIngressBudgetAndMetrics() {
-  assert(multiplayerClientSource.includes('const stateSendInterval = movingNow ? 0.050'),
-    'moving clients no longer align their hot packet cadence with the 20Hz server relay');
-  assert(multiplayerClientSource.includes('|| justStarted || justStopped)'),
-    'the 20Hz cadence can delay immediate movement start/stop transitions');
-  assert(multiplayerClientSource.includes('multiplayer.movementSendAccumulator - stateSendInterval'),
-    'low-FPS clients quantize the 20Hz cadence down to every second rendered frame');
-
   const positionSource = extractFunction(serverSource, 'serverStateHasFiniteMovementPosition');
   const transitionSource = extractFunction(serverSource, 'serverMovementPacketHasReliableTransition');
   const consumeSource = extractFunction(serverSource, 'serverConsumeMovementRateToken');

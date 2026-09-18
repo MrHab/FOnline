@@ -10,7 +10,6 @@ const ROOT = path.resolve(__dirname, '..');
 const MODELS_DIR = path.join(ROOT, 'public', 'assets', 'models', 'wasteland');
 const MANIFEST_FILE = path.join(MODELS_DIR, 'priority-environment-manifest.json');
 const COLLIDER_FILE = path.join(MODELS_DIR, 'model-colliders.json');
-const STATIC_RUNTIME = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
 const GENERIC_BUILDER = path.join(ROOT, 'tools', 'build-wasteland-models.js');
 const EXPECTED_IDS = [
   'car_wreck', 'dead_tree_a', 'dead_tree_b', 'dead_tree_c',
@@ -83,15 +82,6 @@ for (const entry of Object.values(manifest.models)) {
   const fileName = path.basename(entry.file);
   assert(colliders.models?.[fileName], `${fileName}: не пересобран каталог коллайдеров`);
 }
-
-const runtime = fs.readFileSync(STATIC_RUNTIME, 'utf8');
-[
-  "const PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION = '7.79.0-priority-environment-bc-v1'",
-  'PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS.has(key)',
-  "carWreck: '/assets/models/wasteland/car_wreck.glb'",
-  "wastelandShack: '/assets/models/wasteland/wasteland_shack.glb'",
-  "dryBush: '/assets/models/wasteland/dry_bush.glb'"
-].forEach(marker => assert(runtime.includes(marker), `Нет runtime-маркера: ${marker}`));
 
 const genericBuilder = fs.readFileSync(GENERIC_BUILDER, 'utf8');
 assert(genericBuilder.includes('APPROVED_PRIORITY_ENVIRONMENT_FILES'), 'Общий генератор может затереть утверждённые модели');

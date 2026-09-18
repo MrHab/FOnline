@@ -4,24 +4,12 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const editorFile = path.join(root, 'public', 'dev-location-editor.html');
-const rendererFiles = [
-  '02_renderer_world_map.js',
-  '02a_materials_static_models.js',
-  '02b_lighting_time.js',
-  '02c_map_locations_collision.js',
-  '02d_trader_spawn_props.js',
-  '02d1_building_blocks_roof_setup.js',
-  '02d2_cutaway_geometry_visibility.js',
-  '02d3_cutaway_transparency_warmup.js',
-  '02d4_roof_visibility_batch.js',
-  '02d5_trader_building_interior.js',
-  '02e_trader_yard_world_build.js'
-].map(name => path.join(root, 'public', 'js', 'game', name));
+const unityModelsFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemyModels.cs');
 const serverFile = path.join(root, 'server.js');
 const modelsDir = path.join(root, 'public', 'assets', 'models', 'wasteland');
 
 const editor = fs.readFileSync(editorFile, 'utf8');
-const renderer = rendererFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const unityModels = fs.readFileSync(unityModelsFile, 'utf8');
 const server = fs.readFileSync(serverFile, 'utf8');
 const issues = [];
 
@@ -115,8 +103,14 @@ function extractNamedFunction(source, name) {
   throw new Error(`Unclosed body for ${marker}`);
 }
 
-function readStaticModelUrls() {
-  return evalExpression(renderer, 'STATIC_MODEL_URLS');
+// The Unity client renders editor actor models through RoaEnemyModels.Urls.
+function readUnityModelUrls() {
+  const base = unityModels.match(/const string Wasteland = "([^"]+)";/)?.[1];
+  if (!base) throw new Error('Missing RoaEnemyModels.Wasteland base URL');
+  return Object.fromEntries(Array.from(
+    unityModels.matchAll(/\{\s*"(\w+)",\s*Wasteland\s*\+\s*"([^"]+\.glb)"\s*\}/g),
+    match => [match[1], `${base}${match[2]}`]
+  ));
 }
 
 function hasTag(row, tag) {
@@ -135,7 +129,7 @@ const modelLibrary = evalExpression(editor, 'MODEL_LIBRARY').map(row => ({
 const entityRules = evalExpression(editor, 'MODEL_ENTITY_RULES');
 const placementRules = evalExpression(editor, 'MODEL_PLACEMENT_RULES');
 const generationProfiles = evalExpression(editor, 'NPC_AUTO_GENERATION_PROFILES');
-const staticModelUrls = readStaticModelUrls();
+const unityModelUrls = readUnityModelUrls();
 const mergeAuthoredObjectMetadata = vm.runInNewContext(
   `(${extractNamedFunction(editor, 'mergeAuthoredObjectMetadata')})`,
   {}
@@ -182,9 +176,9 @@ for (const model of modelLibrary) {
   libraryByKey.set(model.key, model);
   if (!model.file) fail(`MODEL_LIBRARY.${model.key} has no file`);
   else if (!fs.existsSync(path.join(modelsDir, model.file))) fail(`MODEL_LIBRARY.${model.key} points to missing ${model.file}`);
-  if (!staticModelUrls[model.key]) fail(`STATIC_MODEL_URLS has no renderer entry for editor model "${model.key}"`);
-  else if (path.basename(staticModelUrls[model.key]) !== model.file) {
-    fail(`STATIC_MODEL_URLS.${model.key} uses ${path.basename(staticModelUrls[model.key])}, editor uses ${model.file}`);
+  if (!unityModelUrls[model.key]) fail(`RoaEnemyModels has no Unity entry for editor model "${model.key}"`);
+  else if (path.basename(unityModelUrls[model.key]) !== model.file) {
+    fail(`RoaEnemyModels.${model.key} uses ${path.basename(unityModelUrls[model.key])}, editor uses ${model.file}`);
   }
   if (!fs.existsSync(publicAssetPath(model.url))) fail(`MODEL_LIBRARY.${model.key} url points to missing ${model.url}`);
 }

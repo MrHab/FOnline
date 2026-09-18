@@ -52,7 +52,7 @@ const postJson = (route, body) => new Promise((resolve, reject) => {
   };
   // У продавца 340 сини на счёте и полная стопка кассет в рюкзаке —
   // наследие старых сохранений.
-  // Марок у него почти предел стопки (200 000): выручка сверх неё ляжет на полку.
+  // Марок у него больше прежнего предела стопки в рюкзаке (200 000).
   nearAuctioneer('trade', -2, { silver: 199000, blue: 60 });
   saves.accounts = { [userId('trade')]: { sin: 340, ledger: [{ at: 1, delta: 340, reason: 'grant' }] } };
   nearAuctioneer('harvest', 2, { silver: 5000 });
@@ -148,15 +148,15 @@ const postJson = (route, body) => new Promise((resolve, reject) => {
     const later = await sin('harvest', { action: 'state' });
     assert.equal(later.account.sin, 35, 'sin bought by a resting order reaches the account');
 
-    // Выручка сверх стопки марок не пропадает, а ждёт на полке.
+    // Марки на счёте аккаунта: прежний предел стопки в 200 000 их не режет.
     const richBid = await sin('harvest', { action: 'buy', qty: 5, price: 100, durationHours: 24, requestId: 'x-rich-bid' });
     assert.equal(richBid.restingQty, 5);
     const overflow = await sin('trade', { action: 'sell', qty: 5, price: 90, durationHours: 24, requestId: 'x-overflow' });
     assert.equal(overflow.soldQty, 5);
     assert.equal(overflow.proceeds, 500, 'the resting bid price is paid');
-    assert.equal(qty(overflow.self, 'silver'), 200000, 'marks fill the stack');
-    assert.equal(overflow.shelvedSilver, 155, 'the rest (500 - 345 of room after the fee) waits on the shelf');
-    assert.equal(overflow.exchange.shelf.silver, 155);
+    assert.equal(qty(overflow.self, 'silver'), 200155, 'marks on the account have no 200 000 cap');
+    assert.equal(overflow.account.marks, 200155, 'the account view shows the live marks');
+    assert.equal(overflow.shelvedSilver, 0, 'nothing waits on the shelf');
     assert.equal(overflow.account.sin, 60);
     await sin('trade', { action: 'claim', requestId: 'x-claim-full' }, false);
     assert.equal((await sin('harvest', { action: 'state' })).account.sin, 40);

@@ -6,10 +6,6 @@ const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
 
 const ROOT = path.resolve(__dirname, '..');
 
-function readText(relPath) {
-  return fs.readFileSync(path.join(ROOT, relPath), 'utf8');
-}
-
 function readJson(relPath, fallback = null) {
   const file = path.join(ROOT, relPath);
   if (!fs.existsSync(file)) return fallback;
@@ -35,24 +31,13 @@ function listFiles(dirRel, matcher = () => true) {
   return result;
 }
 
-function clientInventorySource() {
-  return [
-    '03_items_inventory_core.js',
-    '03a_pipboy_social_world_tasks.js',
-    '03b_inventory_actions_ui.js',
-    '03c_skills_perks_tooltips.js',
-    '03d_item_context_repair_crafting.js'
-  ].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
-}
-
-function itemIdsFromClient() {
-  const source = clientInventorySource();
-  const block = source.match(/const ITEMS\s*=\s*\{([\s\S]*?)\n\s*\};/);
+function itemIdsFromCatalog() {
+  const catalog = readJson('data/kromka/items.json', { items: [] });
   const ids = new Set(['silver']);
-  if (!block) return ids;
-  const re = /^\s*([A-Za-z0-9_]+)\s*:\s*\{/gm;
-  let match;
-  while ((match = re.exec(block[1]))) ids.add(match[1]);
+  for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
+    const id = String(item?.id || '').trim();
+    if (id) ids.add(id);
+  }
   return ids;
 }
 
@@ -64,7 +49,7 @@ function asArray(value) {
 
 const errors = [];
 const warnings = [];
-const itemIds = itemIdsFromClient();
+const itemIds = itemIdsFromCatalog();
 const questsData = readJson('data/quests.json', { quests: {} });
 const quests = questsData && typeof questsData.quests === 'object' ? questsData.quests : {};
 const questIds = Object.keys(quests);
@@ -97,21 +82,12 @@ for (const [questId, quest] of Object.entries(quests)) {
 const referenceFiles = [
   path.join(ROOT, 'server.js'),
   ...listFiles('src/server', file => file.endsWith('.js')),
-  ...listFiles('public/js/game', file => file.endsWith('.js')),
   ...listFiles('data/locations', file => file.endsWith('.json'))
 ];
 
 for (const questId of questIds) {
   const hits = referenceFiles.filter(file => fs.readFileSync(file, 'utf8').includes(questId));
   if (!hits.length) errors.push(`${questId}: квест нигде не привязан к НПС, торговцу или локации.`);
-}
-
-const clientProgress = clientInventorySource();
-const groupsBlock = clientProgress.match(/function currentNpcQuestGroups\(\)\s*\{([\s\S]*?)\n\s*function renderPipboyInfoPanels/);
-for (const questId of questIds) {
-  if (!groupsBlock || !groupsBlock[1].includes(`state.${questId}`)) {
-    errors.push(`${questId}: квест не отображается в журнале заданий пип-боя.`);
-  }
 }
 
 const taskCheckDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-quest-world-task-'));

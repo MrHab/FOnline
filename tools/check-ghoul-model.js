@@ -23,8 +23,7 @@ const REVIEW_DIRECTORY = path.join(
 const REVIEW_FILE = path.join(REVIEW_DIRECTORY, 'creature_ghoul_unified_v3.glb');
 const REVIEW_REPORT_FILE = path.join(REVIEW_DIRECTORY, 'technical-report.json');
 const APPROVAL_FILE = path.join(REVIEW_DIRECTORY, 'CRITIC_APPROVAL_V3.md');
-const STATIC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
-const ENEMY_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js');
+const UNITY_ENEMY_MODELS_FILE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemyModels.cs');
 const REQUIRED_ACTIONS = ['attack', 'death', 'hurt', 'idle', 'run', 'walk'];
 
 function sha256(file) {
@@ -149,32 +148,18 @@ assert.strictEqual(collider.collision?.mode, 'solid');
 assert.deepStrictEqual(collider.collision?.center, { x: 0, y: 0.565, z: -0.022164 });
 assert.deepStrictEqual(collider.collision?.size, { x: 0.355851, y: 0.77, z: 0.19376 });
 
-const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
-[
-  "const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.10-ghoul-bc-v3-death-v2';",
-  'function cloneStaticModelSource(source)',
-  'new THREE.Skeleton(bones, inverses)',
-  'function staticModelAnimations(key)',
-  'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];',
-  'const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([',
-  "'enemyGhoul'",
-  'function staticModelKeysForLocation(',
-  '&& (options.includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))'
-].forEach(marker => assert(staticRuntime.includes(marker), `ghoul loader integration is missing: ${marker}`));
-
-const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
-[
-  'function configureEnemyStaticGlbAnimation(actorGroup, model, modelKey)',
-  "modelKey !== 'enemyGhoul'",
-  "function setEnemyStaticGlbAction(runtime, requested = 'idle'",
-  'function updateEnemyStaticGlbAnimation(enemy, dt = 0.016, state = {})',
-  'characterOneShotRestart(runtime, action, state.attackToken)',
-  'attackActive: attackAnimation.active',
-  'attackToken: attackAnimation.token',
-  "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
-  'updateEnemyStaticGlbAnimation(enemy, animationDt, {',
-  'updateEnemyStaticGlbAnimation(enemy, animationDt, { dead: true });'
-].forEach(marker => assert(enemyRuntime.includes(marker), `ghoul animation integration is missing: ${marker}`));
+// Unity resolves creature model keys to runtime GLBs through RoaEnemyModels.Urls.
+const unityEnemyModels = fs.readFileSync(UNITY_ENEMY_MODELS_FILE, 'utf8');
+assert(unityEnemyModels.includes('private const string Wasteland = "/assets/models/wasteland/";'),
+  'Unity creature models no longer load from the runtime wasteland directory');
+const unityModelFileByKey = new Map(Array.from(
+  unityEnemyModels.matchAll(/\{\s*"(\w+)",\s*Wasteland\s*\+\s*"([^"]+\.glb)"\s*\}/g),
+  match => [match[1], match[2]]
+));
+for (const key of ['enemyGhoul', 'kromkaBurned']) {
+  assert.strictEqual(unityModelFileByKey.get(key), 'npc_ghoul.glb',
+    `ghoul loader integration is missing: Unity key ${key}`);
+}
 
 async function verifyThreeRuntime() {
   global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};

@@ -7,14 +7,10 @@ const root = path.resolve(__dirname, '..');
 const modelDirectory = path.join(root, 'public', 'assets', 'models', 'weapons');
 const liteModelDirectory = path.join(root, 'public', 'assets', 'models-lite', 'weapons');
 const manifestPath = path.join(modelDirectory, 'manifest.json');
-const clientItemsPath = path.join(root, 'public', 'js', 'game', '03_items_inventory_core.js');
-const runtimePath = path.join(root, 'public', 'js', 'game', '04c_weapon_glb_runtime.js');
-const visualsPath = path.join(root, 'public', 'js', 'game', '04_player_model_visuals.js');
-const modernRuntimePath = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
-const remotePath = path.join(root, 'public', 'js', 'game', '05a_remote_actor_equipment.js');
-const globalMapPath = path.join(root, 'public', 'js', 'game', '11a_global_map_player_models.js');
-const loaderPath = path.join(root, 'public', 'js', 'game.js');
-const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop.js');
+const itemsPath = path.join(root, 'data', 'kromka', 'items.json');
+const unityWeaponDataPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWeaponData.cs');
+const unityWeaponViewPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWeaponView.cs');
+const unityModelUrlPath = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaModelUrl.cs');
 
 const expected = new Map([
   ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'breech_cap'], reloadKind: 'shells', reloadPart: 'breech_cap' }],
@@ -303,75 +299,39 @@ for (const [id, config] of expected) {
 }
 assert(totalBytes < 5_000_000, `weapon library exceeds the 5 MB budget: ${totalBytes}`);
 
-const clientItems = fs.readFileSync(clientItemsPath, 'utf8');
-const physicalClientIds = [...clientItems.matchAll(
-  /^\s{4}([A-Za-z][A-Za-z0-9]*): \{[^\n]+(?:type: 'weapon'|equipSlot: 'weapon')[^\n]+dmg: \[[^\n]+\},$/gm
-)].map(match => match[1]).filter(id => id !== 'fists');
+// Every hand-held weapon or tool in the item catalog must have a physical GLB.
+const kromkaItems = JSON.parse(fs.readFileSync(itemsPath, 'utf8')).items || [];
+const physicalItemIds = kromkaItems
+  .filter(item => item.slot === 'weapon' && ['weapons', 'tools'].includes(item.category))
+  .map(item => item.id)
+  .filter(id => id !== 'fists');
 assert.deepStrictEqual(
-  [...new Set(physicalClientIds)].sort(),
+  [...new Set(physicalItemIds)].sort(),
   [...expected.keys()].sort(),
-  'a client weapon/tool has no physical GLB model'
+  'a weapon/tool item has no physical GLB model'
 );
 
-const runtime = fs.readFileSync(runtimePath, 'utf8');
-for (const [id, config] of expected) {
-  assert(runtime.includes(`${id}: { file: '/assets/models/weapons/weapon_${id}.glb', family: '${config.family}' }`),
-    `${id}: runtime catalog entry is missing`);
-}
-[
-  'function preloadWeaponModels(',
-  'function preloadWeaponModelLibrary()',
-  'function makeWeaponModelMesh(',
-  'function requestWeaponGlbForGroup(',
-  'WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS',
-  'WEAPON_GLB_GROUP_RETRY_MAX_DELAY_MS',
-  'function cancelWeaponGlbForGroup(',
-  'function triggerWeaponModelAction(',
-  'function updateWeaponModelAnimation(',
-  'const WEAPON_MODEL_ASSET_VERSION = ',
-  "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
-  'Number(clip.duration) / requestedDuration',
-  "action.setLoop(THREE.LoopOnce, 1)"
-].forEach(marker => assert(runtime.includes(marker), `weapon runtime integration is missing: ${marker}`));
-assert(!runtime.includes('WEAPON_GLB_GROUP_RETRY_ROUNDS'),
-  'live weapon slots still stop retrying after a finite number of failures');
+// Unity loads /assets/models/weapons/weapon_<id>.glb for every weapon id in
+// its catalog, so the catalog and the physical library must stay identical.
+const unityWeaponData = fs.readFileSync(unityWeaponDataPath, 'utf8');
+const unityWeaponIds = [...unityWeaponData.matchAll(/^\s*Add\("([A-Za-z][A-Za-z0-9]*)"/gm)]
+  .map(match => match[1])
+  .filter(id => id !== 'fists');
+assert.deepStrictEqual(
+  [...new Set(unityWeaponIds)].sort(),
+  [...expected.keys()].sort(),
+  'a Unity weapon catalog entry has no physical GLB model'
+);
+const unityWeaponView = fs.readFileSync(unityWeaponViewPath, 'utf8');
+assert(unityWeaponView.includes('"/assets/models/weapons/weapon_" + weaponId + ".glb"'),
+  'Unity weapon view no longer loads the physical weapon GLB library');
 
-const visuals = fs.readFileSync(visualsPath, 'utf8');
-assert(visuals.includes("triggerWeaponModelAction(weaponGroup, 'attack')"));
-assert(visuals.includes('updateWeaponModelAnimation(weaponGroup, dt)'));
-assert(visuals.includes('makeWeaponModelMesh(weaponId)'));
-assert(!visuals.includes("if (!mesh && weaponId === 'pistol')"),
-  'player weapon rendering still falls back to a generated mesh');
-const modernRuntime = fs.readFileSync(modernRuntimePath, 'utf8');
-assert(modernRuntime.includes("triggerWeaponModelAction(weaponGroup, 'reload', { duration: reloadDuration })"));
-assert(modernRuntime.includes('applyApprovedWeaponGrip(actor, weaponId)'));
-const remote = fs.readFileSync(remotePath, 'utf8');
-assert(remote.includes('makeWeaponModelMesh(weaponId)'));
-assert(remote.includes('!obj.userData?.weaponSharedAsset'));
-assert(!remote.includes("if (weaponId === 'pistol') return makePistolMesh()"),
-  'remote/NPC weapon rendering still falls back to a generated mesh');
-assert(remote.includes('requestWeaponGlbForGroup(weaponGroup, weaponId')
-  && remote.includes('requestWeaponGlbForGroup(weaponGroup, eq.weapon'),
-  'remote players or NPCs do not attach a delayed GLB weapon after preload');
-const globalMap = fs.readFileSync(globalMapPath, 'utf8');
-assert(!globalMap.includes('buildGlobalMapFallbackPlayerModel'),
-  'global-map marker still contains the generated humanoid fallback');
-assert(!globalMap.includes("return makePistolMesh()"),
-  'global-map marker still contains generated weapon fallbacks');
-assert(globalMap.includes('requestWeaponGlbForGroup(weaponGroup, slotWeaponId'),
-  'global-map marker does not attach delayed GLB weapons');
-const loader = fs.readFileSync(loaderPath, 'utf8');
-assert(loader.includes("'/js/game/04c_weapon_glb_runtime.js'"));
-const loading = fs.readFileSync(loadingPath, 'utf8');
-assert(loading.includes('preloadWeaponModels(weaponIds)'));
-assert(!loading.includes('await preloadWeaponModelLibrary();'),
-  'character startup still blocks on every weapon model instead of equipped weapon IDs');
-
-// Nginx отдаёт модели с max-age 30 дней и immutable, а URL версионируется
-// только строкой WEAPON_MODEL_ASSET_VERSION. Пересборка GLB без её подъёма
-// оставляет игрокам старые модели: так после добавления socket_muzzle доворот
-// оружия месяц работал бы только на автомате, чей файл не изменился. Поэтому
-// строка обязана содержать отпечаток самих моделей — забыть его нельзя.
+// Nginx отдаёт модели с max-age 30 дней и immutable, а Unity версионирует URL
+// оружия только строкой WeaponCatalogVersion (RoaModelUrl.Lite добавляет
+// ?v=weapon-catalog-…). Пересборка GLB без её подъёма оставляет игрокам старые
+// модели: так после добавления socket_muzzle доворот оружия месяц работал бы
+// только на автомате, чей файл не изменился. Поэтому строка обязана содержать
+// отпечаток самих моделей — его публикует tools/build-weapon-runtime-models.js.
 const weaponModelDigest = (() => {
   const hash = crypto.createHash('sha256');
   for (const file of fs.readdirSync(modelDirectory).filter(name => /^weapon_.*\.glb$/.test(name)).sort()) {
@@ -380,19 +340,10 @@ const weaponModelDigest = (() => {
   }
   return hash.digest('hex').slice(0, 8);
 })();
-const declaredAssetVersion = runtime.match(/WEAPON_MODEL_ASSET_VERSION\s*=\s*'([^']+)'/)?.[1] || '';
-const unityModelUrl = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/Game/RoaModelUrl.cs'), 'utf8');
+const unityModelUrl = fs.readFileSync(unityModelUrlPath, 'utf8');
 const unityAssetVersion = unityModelUrl.match(/WeaponCatalogVersion\s*=\s*"([^"]+)"/)?.[1] || '';
 assert.strictEqual(unityAssetVersion, `3-${weaponModelDigest}`,
   'Unity must request the current content fingerprint, not a fixed catalog version');
-assert(
-  declaredAssetVersion.endsWith(`-${weaponModelDigest}`),
-  `WEAPON_MODEL_ASSET_VERSION должна оканчиваться отпечатком моделей -${weaponModelDigest}, `
-  + `сейчас '${declaredAssetVersion}'. Модели пересобраны — поднимите версию в `
-  + `public/js/game/04c_weapon_glb_runtime.js и в этой проверке, иначе браузеры `
-  + `продолжат брать старые GLB из immutable-кэша.`
-);
 
 console.log(
   `Weapon models OK: ${expected.size} GLB, ${totalMeshes} meshes, `

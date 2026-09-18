@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const progressionCatalog = JSON.parse(fs.readFileSync(
   path.join(root, 'data', 'kromka', 'character-progression.json'), 'utf8'
 ));
+const itemCatalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'items.json'), 'utf8'));
+const traderData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'traders.json'), 'utf8'));
 
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf8');
@@ -14,17 +15,6 @@ function read(relPath) {
 function fail(message, details = null) {
   if (details) console.error(details);
   throw new Error(message);
-}
-
-function evalConstBlock(source, marker, constName) {
-  const start = source.indexOf(marker);
-  if (start < 0) fail(`Missing block: ${marker}`);
-  const end = source.indexOf(constName === 'SELL_PRICE_OVERRIDES' ? '};' : '];', start);
-  if (end < 0) fail(`Unclosed block: ${marker}`);
-  const block = source.slice(start, end + 2).replace(`const ${constName}`, `var ${constName}`);
-  const sandbox = {};
-  vm.runInNewContext(block, sandbox);
-  return sandbox[constName];
 }
 
 function clamp(v, min, max) {
@@ -132,44 +122,14 @@ function crouchDetectionMultiplier({ stealth = 20, ghost = 0 }) {
   return Math.max(0.35, 1 - reduction);
 }
 
-const rendererSource = [
-  '02_renderer_world_map.js',
-  '02a_materials_static_models.js',
-  '02b_lighting_time.js',
-  '02c_map_locations_collision.js',
-  '02d_trader_spawn_props.js',
-  '02d1_building_blocks_roof_setup.js',
-  '02d2_cutaway_geometry_visibility.js',
-  '02d3_cutaway_transparency_warmup.js',
-  '02d4_roof_visibility_batch.js',
-  '02d5_trader_building_interior.js',
-  '02e_trader_yard_world_build.js'
-].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
-const stock = evalConstBlock(rendererSource, 'const TRADER_STOCK = [', 'TRADER_STOCK');
-const tradeStorageSource = [
-  '07_quantity_confirm_carry.js',
-  '07a_storage_window.js',
-  '07b_trader_market_state.js',
-  '07c_trader_dialogues_quests.js',
-  '07d_trader_barter_ui.js',
-  '07e_loot_interaction.js',
-  '07f_quickbar_drag_slots.js'
-].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
-const sellOverrides = evalConstBlock(tradeStorageSource, 'const SELL_PRICE_OVERRIDES = {', 'SELL_PRICE_OVERRIDES');
-const combatSource = [
-  '06a_combat_visual_fx.js',
-  '06b_explosions_speech.js',
-  '06c_combat_stats_modes.js',
-  '06d_combat_damage_shooting.js',
-  '06e_combat_targeting_loot_resources.js'
-].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
-const craftingSource = [
-  '03_items_inventory_core.js',
-  '03a_pipboy_social_world_tasks.js',
-  '03b_inventory_actions_ui.js',
-  '03c_skills_perks_tooltips.js',
-  '03d_item_context_repair_crafting.js'
-].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
+// Trade offers come from the authored trader shelves (data/traders.json); the
+// resale base is 45% of the catalog base price, as in SERVER_TRADE_SELL_PRICE_BASE.
+const stock = Object.entries(traderData.profiles || {}).flatMap(([trader, profile]) =>
+  (Array.isArray(profile?.stock) ? profile.stock : []).map(entry => ({ trader, id: entry.id, price: entry.price })));
+if (!stock.length) fail('Trader profiles have no stock to audit for arbitrage');
+const sellOverrides = Object.fromEntries((itemCatalog.items || [])
+  .filter(item => item.id !== 'silver' && Number(item.basePrice || 0) > 0)
+  .map(item => [item.id, Math.max(1, Math.floor(Number(item.basePrice) * 0.45))]));
 const serverSource = read('server.js');
 
 const tradeBuilds = [
@@ -186,7 +146,7 @@ for (const build of tradeBuilds) {
     const base = sellOverrides[entry.id] || fallbackBase;
     const buy = buyPrice(entry.price, build.barter, build.merchant);
     const sell = sellPrice({ stockEntry: entry, base, ...build });
-    if (sell > buy) arbitrage.push({ build: build.name, id: entry.id, buy, sell, diff: sell - buy });
+    if (sell > buy) arbitrage.push({ build: build.name, trader: entry.trader, id: entry.id, buy, sell, diff: sell - buy });
   }
 }
 if (arbitrage.length) fail('Trade arbitrage detected: vendor item can be resold for profit', arbitrage.slice(0, 20));
@@ -212,17 +172,14 @@ if (rocketRadiusMax > 5.2) fail(`Explosive radius too high: ${rocketRadiusMax}`)
 const harvestLow = harvestBonusChance({ int: 5, luck: 5, craftsman: false, wanderer: 20, repair: 20, engineer: 0, recycler: 0 });
 const harvestHigh = harvestBonusChance({ int: 15, luck: 15, craftsman: true, wanderer: 100, repair: 100, engineer: 2, recycler: 2 });
 if (harvestLow < 0.05 || harvestHigh > 0.78) fail(`Harvest bonus chance out of balance: low=${harvestLow}, high=${harvestHigh}`);
-for (const snippet of ["skillNorm('wanderer') * 0.12", "skillNorm('repair') * 0.08", "talentLevel('engineer') * 0.025", "talentLevel('recycler') * 0.02"]) {
-  if (!combatSource.includes(snippet)) fail(`Client harvest formula missing: ${snippet}`);
-}
 for (const snippet of ["serverSkillNorm(p, 'wanderer') * 0.12", "serverSkillNorm(p, 'repair') * 0.08", "serverTalentLevel(p, 'engineer') * 0.025", "serverTalentLevel(p, 'recycler') * 0.02"]) {
   if (!serverSource.includes(snippet)) fail(`Server harvest formula missing: ${snippet}`);
 }
 for (const snippet of ["const intVal = serverStatValue(p, 'int')", "const luckVal = serverStatValue(p, 'luck')"]) {
   if (!serverSource.includes(snippet)) fail(`Server harvest SPECIAL formula must include perk-adjusted stats: ${snippet}`);
 }
-if (!craftingSource.includes("effectiveSpecialStats(characterProfile)") || !serverSource.includes("30 + serverStatValue(p, 'str') * 8")) {
-  fail('Carry capacity must use perk-adjusted Strength on both client and server');
+if (!serverSource.includes("30 + serverStatValue(p, 'str') * 8")) {
+  fail('Carry capacity must use perk-adjusted Strength on the server');
 }
 if (progressionCatalog.special.max !== 10 || progressionCatalog.special.budget !== 40
   || progressionCatalog.special.effectiveMax !== 15
@@ -241,16 +198,13 @@ if (stealthStart !== 1 || stealthMax < 0.35 || stealthMax > 0.36) fail(`Crouch s
 for (const snippet of ["serverSkillNorm(p, 'stealth') * 0.44", "serverTalentLevel(p, 'ghost') * 0.11", 'Math.max(0.35, 1 - stealthReduction)']) {
   if (!serverSource.includes(snippet)) fail(`Server stealth formula missing: ${snippet}`);
 }
-if (!combatSource.includes('rawBase * falloff * ambushDamageMultiplier(enemy)')) fail('Local explosion damage must include Ambush multiplier like server damage');
 for (const snippet of [
-  'conditionBefore',
-  'conditionAfter',
   "const conditionPenalty = w.ammoType && condition !== null ? Math.max(0, 70 - condition) * 0.0025 : 0",
   "const movementPenalty = p.moving && !p.crouching ? 0.035 : 0",
   "injuries.concussion ? 0.10 : 0",
   "serverAutomaticAccuracyPenalty(p, w, client)"
 ]) {
-  if (!serverSource.includes(snippet) && !combatSource.includes(snippet)) fail(`Combat hit sync formula missing: ${snippet}`);
+  if (!serverSource.includes(snippet)) fail(`Combat hit sync formula missing: ${snippet}`);
 }
 
 console.log(`Progression balance OK: ${tradeBuilds.length} trade builds, ${stock.length} stock item(s), lock ${Math.round(lockLow * 100)}-${Math.round(lockHigh * 100)}%, terminal ${Math.round(terminalLow * 100)}-${Math.round(terminalHigh * 100)}%, stealth ${Math.round(stealthStart * 100)}-${Math.round(stealthMax * 100)}%, medkit max ${medkitMax}, harvest ${Math.round(harvestLow * 100)}-${Math.round(harvestHigh * 100)}%, rocket radius max ${rocketRadiusMax.toFixed(2)}m`);

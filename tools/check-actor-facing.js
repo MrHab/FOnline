@@ -11,7 +11,7 @@ const {
   actorFacingIntent,
   actorFacingModelKey,
   actorFacingYaw
-} = require('../public/js/game/00a_actor_facing');
+} = require('../src/server/actor-facing');
 
 const EXPECTED_ACTOR_MODELS = Object.freeze({
   traderNpc: '-Z',
@@ -144,19 +144,11 @@ assert.strictEqual(actorFacingIntent({ aiState: 'idle', x: 1, z: 1 }, 0, 0), nul
 
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 [
-  "require('./public/js/game/00a_actor_facing')",
+  "require('./src/server/actor-facing')",
   'resolveActorFacingIntent(enemy, enemy.vx, enemy.vz)',
   'resolveActorFacingYaw(enemy, intent.dx, intent.dz)',
   'enemy.facingY = yaw;',
   'return Number.isFinite(heldYaw) ? heldYaw : 0;'
 ].forEach(marker => assert(serverSource.includes(marker), `server facing integration is missing: ${marker}`));
-
-const clientSource = fs.readFileSync(path.join(ROOT, 'public/js/game/09_update_fog_movement_ai.js'), 'utf8');
-[
-  'RealmActorFacing.actorFacingIntent(enemy, movementDx, movementDz',
-  'RealmActorFacing.actorFacingYaw(enemy, dx, dz)',
-  'const actualDx = nx - Number(e.prevVisualX ?? nx);',
-  "const fallbackTarget = (e.aiState === 'chase' || e.aiState === 'attack') ? player : null;"
-].forEach(marker => assert(clientSource.includes(marker), `client facing integration is missing: ${marker}`));
 
 console.log(`Actor facing OK: ${Object.keys(EXPECTED_ACTOR_MODELS).length} model axes, Unity +Z character face (${eyeForwardZ.toFixed(3)}m eyes), movement and attack priorities.`);

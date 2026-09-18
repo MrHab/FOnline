@@ -2069,8 +2069,67 @@ namespace RealmOfAshes.Game
             _factionSummary = ComposeFactionSummary();
         }
 
-        private static readonly Color RedZoneColor = new Color(0.82f, 0.16f, 0.12f, 1f);
-        private static readonly Color BlackZoneColor = new Color(0.07f, 0.03f, 0.09f, 1f);
+        // Опасность земель (экономика v3): заливка полупрозрачная, чтобы рельеф
+        // читался; граница двух зон — цветом более опасной стороны.
+        public static readonly Color PeacefulZoneColor = new Color(0.36f, 0.82f, 0.46f, 1f);
+        public static readonly Color BlueZoneColor = new Color(0.33f, 0.62f, 1f, 1f);
+        public static readonly Color YellowZoneColor = new Color(0.97f, 0.8f, 0.3f, 1f);
+        public static readonly Color RedZoneColor = new Color(0.9f, 0.2f, 0.14f, 1f);
+        public static readonly Color BlackZoneColor = new Color(0.12f, 0.02f, 0.14f, 1f);
+        /// <summary>Граница чёрной зоны: тёмно-багровая, чтобы читалась на тёмной земле.</summary>
+        public static readonly Color BlackZoneRim = new Color(0.62f, 0.08f, 0.32f, 1f);
+
+        /// <summary>Порядок опасности: 0 мирная … 4 чёрная, -1 — вне карты.</summary>
+        public static int DangerRank(string mode)
+        {
+            switch ((mode ?? string.Empty).ToLowerInvariant())
+            {
+                case "peaceful": return 0;
+                case "pve": return 1;
+                case "pvp": return 2;
+                case "pvpfulldrop": return 3;
+                case "pvpblack": return 4;
+                default: return -1;
+            }
+        }
+
+        public static Color DangerZoneColor(string mode)
+        {
+            switch (DangerRank(mode))
+            {
+                case 0: return PeacefulZoneColor;
+                case 1: return BlueZoneColor;
+                case 3: return RedZoneColor;
+                case 4: return BlackZoneColor;
+                default: return YellowZoneColor;
+            }
+        }
+
+        /// <summary>
+        /// Прозрачность заливки: жёлтая — обычная земля, её не заливаем; чёрная
+        /// гуще остальных, но рельеф под ней виден.
+        /// </summary>
+        public static float DangerFillAlpha(string mode)
+        {
+            switch (DangerRank(mode))
+            {
+                case 0: return 0.2f;
+                case 1: return 0.16f;
+                case 3: return 0.24f;
+                case 4: return 0.46f;
+                default: return 0f;
+            }
+        }
+
+        /// <summary>Легенда опасности земель для окна карты.</summary>
+        public static string DangerLegendText()
+        {
+            return "<color=#5cd175>■</color> МИРНАЯ — стычек и PvP нет\n"
+                + "<color=#549eff>■</color> СИНЯЯ — только NPC, предметы сохраняются\n"
+                + "<color=#f7cc4d>■</color> ЖЁЛТАЯ — PvP, стычки в пути, предметы сохраняются\n"
+                + "<color=#e63324>■</color> КРАСНАЯ — стычки чаще, при смерти выпадает инвентарь\n"
+                + "<color=#9e1452>■</color> ЧЁРНАЯ — Сердцевина: пешком по сценам клеток, при смерти выпадает всё";
+        }
 
         /// <summary>
         /// Опасные клетки (экономика v3): сервер красит клетки карты по правилам
@@ -2085,22 +2144,25 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, GlobalMapCell> pair in _map.Cells)
             {
                 string mode = DangerModeOf(pair.Value);
-                bool black = mode == "pvpblack";
-                if (!black && mode != "pvpfulldrop") continue;
+                int rank = DangerRank(mode);
+                if (rank < 0) continue;
                 string[] parts = pair.Key.Split(':');
                 if (parts.Length != 2 || !int.TryParse(parts[0], out int cx) || !int.TryParse(parts[1], out int cy)) continue;
-                if (IsWaterCell(cx, cy)) continue;
-                Color color = black ? BlackZoneColor : RedZoneColor;
-                if (black)
+                if (IsWaterCell(cx, cy) || !DangerCellPlayable(cx, cy)) continue;
+                Color color = DangerZoneColor(mode);
+                float fill = DangerFillAlpha(mode);
+                if (fill > 0f)
                 {
                     GameObject cell = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell,
                         "DangerCell:" + cx + ":" + cy);
                     if (cell != null)
                     {
                         cell.transform.localPosition = PointToWorld((cx + 0.5f) * cellPoints,
-                                                                     (cy + 0.5f) * cellPoints, 0.05f);
-                        cell.transform.localScale = new Vector3(cellWorld * 1.005f, 1f, cellWorld * 1.005f);
-                        TintLivePrefab(cell, new Color(color.r, color.g, color.b, 0.34f));
+                                                                     (cy + 0.5f) * cellPoints,
+                                                                     DangerCellLift(cx, cy, cellPoints));
+                        // Ровно клетка: соседние плитки не перекрываются и не дают тёмных швов.
+                        cell.transform.localScale = new Vector3(cellWorld, 1f, cellWorld);
+                        TintLivePrefab(cell, new Color(color.r, color.g, color.b, fill));
                         RegisterDynamicVisual(cell, DynamicVisualLayer.DangerZone,
                             new GlobalMapPoint { X = (cx + 0.5f) * cellPoints, Y = (cy + 0.5f) * cellPoints });
                         DangerCellCount++;
@@ -2108,13 +2170,58 @@ namespace RealmOfAshes.Game
                 }
                 foreach (char side in "NESW")
                 {
-                    if (DangerModeAtCell(cx, cy, side) == mode) continue;
+                    string neighbour = DangerModeAtCell(cx, cy, side);
+                    if (neighbour == mode) continue;
+                    int neighbourRank = DangerRank(neighbour);
+                    bool neighbourPlayable = neighbourRank >= 0 && DangerNeighbourPlayable(cx, cy, side);
+                    // Каждую границу рисует более опасная сторона — цветом той
+                    // опасности, в которую входишь. Край карты не обводится.
+                    if (!neighbourPlayable || neighbourRank > rank) continue;
                     if (TerritoryBorderTouchesWater(cx, cy, side)) continue;
+                    Color rim = rank == 4 ? BlackZoneRim : color;
                     if (PlaceTerritoryBorder(cx, cy, side, cellPoints, cellWorld,
-                            new Color(color.r, color.g, color.b, 0.85f), DynamicVisualLayer.DangerZone) != null)
+                            new Color(rim.r, rim.g, rim.b, rank >= 3 ? 0.92f : 0.8f), DynamicVisualLayer.DangerZone,
+                            DangerCellLift(cx, cy, cellPoints) + 0.03f) != null)
                         DangerBorderCount++;
                 }
             }
+        }
+
+        /// <summary>
+        /// Плоская плитка клетки поднимается над самой высокой точкой рельефа в
+        /// клетке: иначе склоны прорезают заливку рябью треугольников.
+        /// </summary>
+        private float DangerCellLift(int cx, int cy, float cellPoints)
+        {
+            float x0 = cx * cellPoints;
+            float y0 = cy * cellPoints;
+            float center = ReliefHeightAt(x0 + cellPoints * 0.5f, y0 + cellPoints * 0.5f);
+            float highest = center;
+            for (int ix = 0; ix <= 4; ix++)
+            {
+                for (int iy = 0; iy <= 4; iy++)
+                    highest = Mathf.Max(highest, ReliefHeightAt(x0 + cellPoints * ix / 4f, y0 + cellPoints * iy / 4f));
+            }
+            return 0.05f + Mathf.Max(0f, highest - center);
+        }
+
+        /// <summary>Центр клетки внутри играбельной границы карты (за ней пути нет).</summary>
+        private bool DangerCellPlayable(int cx, int cy)
+        {
+            if (_playableBoundary == null || _playableBoundary.PointCount < 3 || _dynamicRoot == null) return true;
+            float cellPoints = _map.Grid.CellPoints;
+            Vector3 local = PointToWorld((cx + 0.5f) * cellPoints, (cy + 0.5f) * cellPoints, 0f);
+            return _playableBoundary.ContainsWorldPoint(_dynamicRoot.transform.TransformPoint(local));
+        }
+
+        private bool DangerNeighbourPlayable(int cx, int cy, char side)
+        {
+            if (side == 'N') cy--;
+            else if (side == 'E') cx++;
+            else if (side == 'S') cy++;
+            else if (side == 'W') cx--;
+            if (_map?.Grid == null || cx < 0 || cy < 0 || cx >= _map.Grid.Cols || cy >= _map.Grid.Rows) return false;
+            return !IsWaterCell(cx, cy) && DangerCellPlayable(cx, cy);
         }
 
         private static string DangerModeOf(GlobalMapCell cell)
@@ -2134,7 +2241,8 @@ namespace RealmOfAshes.Game
 
         private GameObject PlaceTerritoryBorder(int cx, int cy, char side, float cellPoints,
                                                 float cellWorld, Color color,
-                                                DynamicVisualLayer layer = DynamicVisualLayer.TerritoryBorder)
+                                                DynamicVisualLayer layer = DynamicVisualLayer.TerritoryBorder,
+                                                float height = 0.078f)
         {
             float pointX = (cx + 0.5f) * cellPoints;
             float pointY = (cy + 0.5f) * cellPoints;
@@ -2147,7 +2255,7 @@ namespace RealmOfAshes.Game
             GameObject border = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryBorder,
                 (layer == DynamicVisualLayer.DangerZone ? "DangerBorder:" : "TerritoryBorder:") + cx + ":" + cy + ":" + side);
             if (border == null) return null;
-            border.transform.localPosition = PointToWorld(pointX, pointY, 0.078f);
+            border.transform.localPosition = PointToWorld(pointX, pointY, height);
             border.transform.localRotation = Quaternion.Euler(0f, horizontal ? 90f : 0f, 0f);
             border.transform.localScale = new Vector3(1f, 1f, cellWorld * 0.98f);
             TintLivePrefab(border, color);
@@ -2479,8 +2587,11 @@ namespace RealmOfAshes.Game
                     }
                 }
 
-                float scale = tier == MapDetailTier.Far ? 1.18f
-                            : (tier == MapDetailTier.Medium ? 1.08f : 1f);
+                // Клетки опасности лежат впритык: крупнее их не рисуем, иначе
+                // плитки налезают друг на друга и дают тёмные швы.
+                float scale = state.Layer == DynamicVisualLayer.DangerZone ? 1f
+                            : (tier == MapDetailTier.Far ? 1.18f
+                            : (tier == MapDetailTier.Medium ? 1.08f : 1f));
                 state.TargetVisible = visible;
                 state.DetailScale = scale;
                 bool immediate = force || state.Layer == DynamicVisualLayer.TerritoryFill;
@@ -3736,6 +3847,14 @@ namespace RealmOfAshes.Game
                 }
 
                 _enterWorldRetryAt = 0f;
+                // Край сцены сквозной клетки ведёт в соседнюю клетку: сервер
+                // уже перенёс отряд в её сцену (serverWorldTransfer), карта не
+                // открывается.
+                if (ack["transferred"]?.ToObject<bool>() == true)
+                {
+                    StatusText = "Соседняя клетка Сердцевины — дальше пешком.";
+                    return;
+                }
                 Socket.ApplyGlobalMapTransitionAck(ack);
                 JObject point = ack["worldPoint"] as JObject;
                 JObject state = StateFromWorldPoint(point, ack["fromLocationId"]?.ToString());

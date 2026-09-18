@@ -345,6 +345,21 @@ namespace RealmOfAshes.Game
             Place(_mapContext.rectTransform, 0f, 1f, 0f, 1f,
                 new Vector2(18f, -58f), new Vector2(520f, -39f));
 
+            // Легенда опасности земель: цвет клетки — правила пути и потери при смерти.
+            _dangerLegend = Child("DangerLegend", rootRect);
+            Place(_dangerLegend, 0f, 1f, 0f, 1f, new Vector2(18f, -172f), new Vector2(360f, -64f));
+            Image legendBack = _dangerLegend.gameObject.AddComponent<Image>();
+            legendBack.color = new Color(0.02f, 0.04f, 0.03f, 0.72f);
+            legendBack.raycastTarget = false;
+            Text legendTitle = Label("Title", _dangerLegend, 10, TextAnchor.UpperLeft, Kicker, FontStyle.Bold);
+            legendTitle.text = "ОПАСНОСТЬ ЗЕМЕЛЬ";
+            Place(legendTitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -20f), new Vector2(-8f, -5f));
+            Text legendRows = Label("Rows", _dangerLegend, 10, TextAnchor.UpperLeft, Mono);
+            legendRows.supportRichText = true;
+            legendRows.horizontalOverflow = HorizontalWrapMode.Wrap;
+            legendRows.text = RoaGlobalMap.DangerLegendText();
+            Place(legendRows.rectTransform, 0f, 0f, 1f, 1f, new Vector2(8f, 5f), new Vector2(-8f, -21f));
+
             _gestureHelp = Label("TouchGestureHelp", rootRect, 11, TextAnchor.MiddleCenter, Mono, FontStyle.Bold);
             _gestureHelp.text = "ЛКМ — МАРШРУТ  ·  WASD/ТЯНУТЬ — ОБЗОР  ·  ПКМ — ИНВ. Y  ·  КОЛЕСО — МАСШТАБ  ·  ЗАЖАТЬ КОЛЕСО — УГОЛ";
             Place(_gestureHelp.rectTransform, 0f, 0f, 1f, 0f,
@@ -858,6 +873,8 @@ namespace RealmOfAshes.Game
             if (_detailsToggleLabel != null)
                 _detailsToggleLabel.text = _detailsExpanded ? "СВЕРНУТЬ" : "ПОДРОБНО";
         }
+
+        private RectTransform _dangerLegend;
 
         private bool MobileLayout()
         {

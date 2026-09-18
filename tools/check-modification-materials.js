@@ -14,7 +14,7 @@ const ROOT = path.resolve(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 
 const server = read('server.js');
-const items = read('public', 'js', 'game', '03_items_inventory_core.js');
+const fieldRecipes = JSON.parse(read('data', 'kromka', 'field-recipes.json'));
 const loot = read('data', 'loot-tables.json');
 const traders = read('data', 'traders.json');
 
@@ -31,9 +31,10 @@ for (const match of catalog[1].matchAll(/cost: \{([^}]*)\}/g)) {
 assert(required.size > 0, 'у модификаций не осталось стоимости — проверьте каталог');
 
 // --- Что игрок может получить ---
-const recipeBlock = /const CRAFT_RECIPES = \[([\s\S]*?)\n  \];/.exec(items);
-assert(recipeBlock, 'список рецептов игрока не найден');
-const crafted = new Set([...recipeBlock[1].matchAll(/out: \{ id: '([^']+)'/g)].map(m => m[1]));
+// Рецепты игрока — полевой каталог Кромки (data/kromka/field-recipes.json).
+const recipes = Array.isArray(fieldRecipes.recipes) ? fieldRecipes.recipes : [];
+assert(recipes.length > 0, 'список рецептов игрока не найден');
+const crafted = new Set(recipes.map(row => row?.output?.id).filter(Boolean));
 
 const harvested = new Set();
 const locationsDir = path.join(ROOT, 'data', 'locations');
@@ -66,10 +67,8 @@ assert(unreachable.length === 0,
   `модификации требуют материалы, которых игроку негде взять: ${unreachable.join(', ')}`);
 
 // --- Крафт деталей идёт на профильных станках ---
-const stationBlock = /const CRAFT_RECIPE_STATIONS = \{([\s\S]*?)\n  \};/.exec(items);
-assert(stationBlock, 'список станков не найден');
 for (const [recipe, station] of [['weaponpartscraft', 'weapon_bench'], ['electronicscraft', 'energy_bench']]) {
-  assert(new RegExp(`${recipe}:\\s*'${station}'`).test(stationBlock[1]),
+  assert(recipes.find(row => row.id === recipe)?.station === station,
     `рецепт ${recipe} должен быть привязан к станку ${station}`);
 }
 
@@ -82,16 +81,12 @@ const economyRows = Array.isArray(economy.recipes)
 for (const [recipeId, material] of [['weaponpartscraft', 'weaponParts'], ['electronicscraft', 'electronics']]) {
   const economyRow = economyRows.find(row => row.id === material);
   assert(economyRow, `в экономике поселений нет рецепта ${material}`);
-  const clientRow = new RegExp(`id: '${recipeId}'[^\\n]*cost: \\{([^}]*)\\}`).exec(recipeBlock[1]);
-  assert(clientRow, `рецепт ${recipeId} не найден у игрока`);
-  const clientCost = {};
-  for (const pair of clientRow[1].split(',')) {
-    const [key, value] = pair.split(':').map(part => part.trim());
-    if (key) clientCost[key] = Number(value);
-  }
+  const playerRow = recipes.find(row => row.id === recipeId);
+  assert(playerRow, `рецепт ${recipeId} не найден у игрока`);
+  const playerCost = playerRow.inputs || {};
   for (const [key, value] of Object.entries(economyRow.inputs || {})) {
-    assert(clientCost[key] === value,
-      `${recipeId}: ${key} стоит ${clientCost[key]} у игрока и ${value} в экономике поселений`);
+    assert(playerCost[key] === value,
+      `${recipeId}: ${key} стоит ${playerCost[key]} у игрока и ${value} в экономике поселений`);
   }
 }
 

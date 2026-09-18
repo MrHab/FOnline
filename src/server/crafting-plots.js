@@ -313,6 +313,8 @@ function publicPlot(plot, config, viewerCharacterId = '', now = Date.now()) {
     unleasedFeePct: config.unleasedFeePct,
     maxFeePct: config.maxFeePct,
     returnRate: Number(plotReturnRate(config, plot.locationId, plot.station).toFixed(4)),
+    // Возврат заказа с фокусом премиума — для переключателя в окне станка.
+    focusReturnRate: Number(plotReturnRate(config, plot.locationId, plot.station, true).toFixed(4)),
     auction: {
       open: auctionOpen(plot, config, now),
       highestBid: plot.bid ? plot.bid.amount : 0,

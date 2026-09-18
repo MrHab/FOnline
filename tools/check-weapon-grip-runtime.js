@@ -67,26 +67,47 @@ const ASSAULT_PRIMARY_SOCKET = Object.freeze([0.03, -0.02, 0.025]);
 const ASSAULT_SUPPORT_SOCKET = Object.freeze([-0.01, 0.105, -0.33]);
 
 async function main() {
-  const runtimeSource = fs.readFileSync(path.join(
-    ROOT, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js'
+  // Unity keeps the same authored melee stances in RoaMeleeGrip (three.js
+  // coordinates, mirrored by V()), so the poses proven reachable below must be
+  // exactly the ones the client plays.
+  const unityMeleeSource = fs.readFileSync(path.join(
+    ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaMeleeGrip.cs'
   ), 'utf8');
-  [
-    'APPROVED_MELEE_GRIP_PROFILES',
-    'applyApprovedMeleeGrip',
-    'approvedMeleePrimaryHandTarget',
-    "solveApprovedArm(characterRuntime.root, 'r', primaryTarget)",
-    "solveApprovedArm(characterRuntime.root, 'l', supportTarget)"
-  ].forEach(marker => assert(runtimeSource.includes(marker), `melee runtime marker is missing: ${marker}`));
-  Object.keys(MELEE_WEAPONS).forEach(id => {
-    assert(runtimeSource.includes(`${id}: Object.freeze({`), `melee runtime profile is missing: ${id}`);
+  const unityVector = text => String(text || '').split(',')
+    .map(value => Number(value.trim().replace(/f$/i, '')) + 0);
+  const unityMeleeIds = Array.from(unityMeleeSource.matchAll(/"(\w+)",\s*new Profile\b/g), match => match[1]);
+  assert.deepStrictEqual([...unityMeleeIds].sort(), Object.keys(MELEE_WEAPONS).sort(),
+    'Unity melee profiles differ from the physically checked melee weapons');
+  unityMeleeIds.forEach((id, index) => {
+    const start = unityMeleeSource.indexOf(`"${id}", new Profile`);
+    const next = unityMeleeIds[index + 1];
+    const end = next
+      ? unityMeleeSource.indexOf(`"${next}", new Profile`, start)
+      : unityMeleeSource.indexOf('};', start);
+    const body = unityMeleeSource.slice(start, end);
+    const profile = MELEE_WEAPONS[id];
+    assert.strictEqual(body.match(/TwoHanded = (true|false)/)?.[1], String(profile.twoHanded),
+      `${id}: Unity melee hand count drifted`);
+    assert.strictEqual(Number(body.match(/Roll = (-?[\d.]+)f/)?.[1]), profile.roll,
+      `${id}: Unity melee roll drifted`);
+    if (profile.sourceAxis) {
+      assert.deepStrictEqual(unityVector(body.match(/SourceAxis = V\(([^)]*)\)/)?.[1]), profile.sourceAxis,
+        `${id}: Unity melee source axis drifted`);
+    }
+    if (profile.supportRotation) {
+      assert.deepStrictEqual(unityVector(body.match(/SupportRotation = V\(([^)]*)\)/)?.[1]), profile.supportRotation,
+        `${id}: Unity melee support rotation drifted`);
+    }
+    for (const [phaseName, pose] of Object.entries(profile.poses)) {
+      const stanceName = phaseName[0].toUpperCase() + phaseName.slice(1);
+      const stance = body.match(new RegExp(
+        `${stanceName} = new Stance \\{ Primary = V\\(([^)]*)\\), Direction = V\\(([^)]*)\\) \\}`
+      ));
+      assert(stance, `${id}/${phaseName}: Unity melee stance is missing`);
+      assert.deepStrictEqual(unityVector(stance[1]), pose.primary, `${id}/${phaseName}: Unity melee grip point drifted`);
+      assert.deepStrictEqual(unityVector(stance[2]), pose.direction, `${id}/${phaseName}: Unity melee direction drifted`);
+    }
   });
-  const visualSource = fs.readFileSync(path.join(
-    ROOT, 'public', 'js', 'game', '04_player_model_visuals.js'
-  ), 'utf8');
-  assert(
-    visualSource.includes('approvedPhysicalMeleeGripActive'),
-    'legacy procedural melee animation still lacks the physical GLB grip gate'
-  );
   global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
   global.self = global.self || global;
   global.createImageBitmap = global.createImageBitmap || (async () => ({
@@ -448,7 +469,8 @@ async function main() {
   console.log(
     `Weapon interaction runtime OK: ${restChecks} two-hand grips and `
     + `${reloadChecks} physical reload poses; ${meleePrimaryChecks} melee primary grips and `
-    + `${meleeSupportChecks} melee support grips across ${BODY_IDS.length} bodies`
+    + `${meleeSupportChecks} melee support grips across ${BODY_IDS.length} bodies; `
+    + `${unityMeleeIds.length} Unity melee profiles aligned`
   );
 }
 

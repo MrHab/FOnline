@@ -15,13 +15,19 @@ const ROOT = path.resolve(__dirname, '..');
 const MODEL_DIRECTORY = path.join(ROOT, 'public', 'assets', 'models', 'wasteland');
 const MANIFEST_FILE = path.join(MODEL_DIRECTORY, MANIFEST_NAME);
 const COLLIDER_FILE = path.join(MODEL_DIRECTORY, 'model-colliders.json');
-const STATIC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
-const WORLD_SYNC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05e_ground_items_world_sync.js');
-const ENEMY_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js');
-const EQUIPMENT_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05a_remote_actor_equipment.js');
-const HUMANOID_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js');
+const UNITY_ENEMY_MODELS_FILE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemyModels.cs');
 const SERVER_RUNTIME_FILE = path.join(ROOT, 'server.js');
 const REQUIRED_ACTIONS = ['attack', 'death', 'hurt', 'idle', 'run', 'walk'];
+// Unity model keys that must render each approved creature GLB.
+const UNITY_MODEL_KEY_BY_CREATURE = {
+  brahmin: 'friendlyBrahmin',
+  npc_gecko: 'enemyGecko',
+  npc_fire_gecko: 'enemyFireGecko',
+  npc_ash_wolf: 'enemyAshWolf',
+  npc_radscorpion: 'enemyRadscorpion',
+  npc_mutant_ant: 'enemyMutantAnt',
+  npc_super_mutant: 'enemySuperMutant'
+};
 const EXPECTED_BOUNDS = {
   brahmin: {
     center: { x: 0, y: 0.570542, z: 0.157249 },
@@ -218,129 +224,25 @@ for (const definition of APPROVED_CREATURES) {
   totalChannels += channelCount;
 }
 
-const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
-[
-  "const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';",
-  'const APPROVED_CREATURE_STATIC_MODEL_KEYS = new Set([',
-  'const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([',
-  "'friendlyBrahmin'",
-  "'enemyAshWolf'",
-  "'enemyRadscorpion'",
-  "'enemyMutantAnt'",
-  "'enemyGecko'",
-  "'enemyFireGecko'",
-  "'enemySuperMutant'",
-  "const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';",
-  '? APPROVED_CREATURE_GLB_ASSET_VERSION',
-  'function staticModelKeysForLocation(',
-  '&& (options.includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
-  'function cloneStaticModelSource(source)',
-  'new THREE.Skeleton(bones, inverses)',
-  'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];'
-].forEach(marker => {
-  assert(staticRuntime.includes(marker), `approved creature loader integration is missing: ${marker}`);
-});
-[
-  'function scheduleStaticModelRetry(key, state)',
-  'state.pending = state.pending.filter(entry => staticModelHolderAttached(entry?.holder));',
-  'state.promise = null;',
-  'scheduleStaticModelRetry(key, state);'
-].forEach(marker => {
-  assert(staticRuntime.includes(marker), `retryable creature GLB loading is missing: ${marker}`);
-});
+// Unity resolves creature model keys to runtime GLBs through RoaEnemyModels.Urls.
+const unityEnemyModels = fs.readFileSync(UNITY_ENEMY_MODELS_FILE, 'utf8');
 assert(
-  !staticRuntime.includes('if (state.failed) return Promise.resolve(null);'),
-  'a transient creature GLB failure still permanently poisons the shared loader state'
+  unityEnemyModels.includes('private const string Wasteland = "/assets/models/wasteland/";'),
+  'Unity creature models no longer load from the runtime wasteland directory'
 );
-assert(
-  !staticRuntime.includes('state.pending.length = 0;'),
-  'failed creature GLB loading still discards holders that need the eventual model'
-);
-
-const worldSyncRuntime = fs.readFileSync(WORLD_SYNC_RUNTIME_FILE, 'utf8');
-const identityBlockStart = worldSyncRuntime.indexOf('const ENEMY_GLB_IDENTITY_BY_TOKEN');
-const identityBlockEnd = worldSyncRuntime.indexOf('\n  function enemyVisualFromNetworkSnapshot', identityBlockStart);
-assert(identityBlockStart >= 0 && identityBlockEnd > identityBlockStart, 'enemy GLB identity recovery block is missing');
-const identitySandbox = {
-  STATIC_MODEL_URLS: {
-    enemyRaider: '/enemy-raider.glb',
-    enemyGhoul: '/enemy-ghoul.glb',
-    enemySuperMutant: '/enemy-super-mutant.glb',
-    enemyAshWolf: '/enemy-ash-wolf.glb',
-    enemyRadscorpion: '/enemy-radscorpion.glb',
-    enemyMutantAnt: '/enemy-mutant-ant.glb',
-    enemyGecko: '/enemy-gecko.glb',
-    enemyFireGecko: '/enemy-fire-gecko.glb',
-    friendlyBrahmin: '/brahmin.glb'
-  }
-};
-vm.runInNewContext(
-  `${worldSyncRuntime.slice(identityBlockStart, identityBlockEnd)}\n`
-    + 'this.resolveEnemyGlbModel = enemyGlbModelKeyFromSnapshot;',
-  identitySandbox
-);
-assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ name: 'Пепельный волк' }, 'raider'), 'enemyAshWolf');
-assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ species: 'fire_gecko' }, 'raider'), 'enemyFireGecko');
-assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ modelKey: 'enemy_radscorpion' }, 'raider'), 'enemyRadscorpion');
-assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ role: 'animal' }, 'raider'), 'friendlyBrahmin');
-
-const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
-[
-  "modelKey !== 'enemyGhoul'",
-  "typeof APPROVED_CREATURE_STATIC_MODEL_KEYS === 'undefined'",
-  '!APPROVED_CREATURE_STATIC_MODEL_KEYS.has(modelKey)',
-  'configureEnemyStaticGlbAnimation(group, instance, appliedKey || rawKey);',
-  "function setEnemyStaticGlbAction(runtime, requested = 'idle'",
-  'characterOneShotRestart(runtime, action, state.attackToken)',
-  'attackActive: attackAnimation.active',
-  'attackToken: attackAnimation.token',
-  'root: model,',
-  'actorGroup.userData.approvedEquipmentCharacterRuntime = runtime;',
-  'actorGroup.userData.approvedEquipmentRefreshPending = true;',
-  'mesh.userData.approvedEquipmentRefreshPending',
-  "applyApprovedWeaponGrip(mesh, enemy.equipment?.weapon || enemy.weapon || 'fists');",
-  '&& runtime.actions.run',
-  "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
-  'updateEnemyStaticGlbAnimation(enemy, animationDt, {',
-  'updateEnemyStaticGlbAnimation(enemy, animationDt, { dead: true });'
-].forEach(marker => {
-  assert(enemyRuntime.includes(marker), `approved creature animation integration is missing: ${marker}`);
-});
-const createEnemyModelStart = enemyRuntime.indexOf('function createEnemyModel(type)');
-const createEnemyModelEnd = enemyRuntime.indexOf('\n  function enemyAnimCaptureBase', createEnemyModelStart);
-assert(createEnemyModelStart >= 0 && createEnemyModelEnd > createEnemyModelStart, 'enemy model factory is missing');
-const createEnemyModelBody = enemyRuntime.slice(createEnemyModelStart, createEnemyModelEnd);
-[
-  'buildBrahminEnemy(',
-  'buildRadscorpionEnemy(',
-  'buildMutantAntEnemy(',
-  'buildGeckoEnemy(',
-  'buildWolfEnemy(',
-  'buildMutantEnemy(',
-  'buildGhoulEnemy(',
-  'buildRaiderEnemy('
-].forEach(marker => {
-  assert(!createEnemyModelBody.includes(marker), `enemy factory still renders procedural fallback: ${marker}`);
-});
-[
-  'function buildBrahminEnemy(',
-  'function buildRadscorpionEnemy(',
-  'function buildMutantAntEnemy(',
-  'function buildGeckoEnemy(',
-  'function buildWolfEnemy(',
-  'function buildMutantEnemy(',
-  'function buildGhoulEnemy(',
-  'function buildRaiderEnemy(',
-  'function makeEnemyBox(',
-  'function makeEnemyCylinder(',
-  'function makeEnemySphere(',
-  'const enemyVisualMats =',
-  "parts.kind === 'wolf'",
-  "parts.kind === 'scorpion'"
-].forEach(marker => {
-  assert(!enemyRuntime.includes(marker), `procedural creature runtime must be physically removed: ${marker}`);
-});
-assert(createEnemyModelBody.includes('group.userData.glbModelUnavailable = true;'), 'missing GLB identity is not surfaced without a procedural fallback');
+const unityModelFileByKey = new Map(Array.from(
+  unityEnemyModels.matchAll(/\{\s*"(\w+)",\s*Wasteland\s*\+\s*"([^"]+\.glb)"\s*\}/g),
+  match => [match[1], match[2]]
+));
+for (const definition of APPROVED_CREATURES) {
+  const key = UNITY_MODEL_KEY_BY_CREATURE[definition.id];
+  assert(key, `${definition.id} has no Unity model key`);
+  assert.strictEqual(
+    unityModelFileByKey.get(key),
+    definition.outputFile,
+    `approved creature loader integration is missing: Unity key ${key}`
+  );
+}
 
 const serverRuntime = fs.readFileSync(SERVER_RUNTIME_FILE, 'utf8');
 const serverIdentityStart = serverRuntime.indexOf('const SERVER_ENEMY_MODEL_KEY_BY_VISUAL');
@@ -377,6 +279,16 @@ assert.strictEqual(serverIdentitySandbox.resolveServerExplicitActorGlbModel('cra
 assert.strictEqual(serverIdentitySandbox.resolveServerExplicitActorGlbModel('/assets/models/wasteland/crate.glb'), '');
 assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'legacy_generated_raider_body' }), '');
 assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'crate' }), '');
+// The server publishes Kromka creature keys; Unity must render them with the approved GLBs.
+for (const [identity, file] of [
+  [{ name: 'Радскорпион' }, 'npc_radscorpion.glb'],
+  [{ species: 'ash_wolf' }, 'npc_ash_wolf.glb'],
+  [{ modelKey: 'enemy_fire_gecko' }, 'npc_fire_gecko.glb'],
+  [{ role: 'animal' }, 'brahmin.glb']
+]) {
+  const key = serverIdentitySandbox.resolveServerEnemyGlbModel(identity);
+  assert.strictEqual(unityModelFileByKey.get(key), file, `Unity renders server creature key ${key} without ${file}`);
+}
 
 const encounterNormalizerSource = serverRuntime.slice(
   serverRuntime.indexOf('function normalizeServerEncounterActor'),
@@ -403,27 +315,6 @@ assert(!naturalCreatureNormalizerSource.includes('|| enemy.modelKey'), 'natural 
 assert(!collisionIdentitySource.includes('|| enemy?.modelKey') && !collisionIdentitySource.includes('|| enemy.modelKey'), 'enemy collision must not use a rejected actor model key');
 assert(!publicEnemySource.includes("String(e.modelKey || '')"), 'public enemy payload must not publish a rejected actor model key');
 assert(!spawnEnemySource.includes('|| opts.modelKey') && !spawnEnemySource.includes('|| opts.model'), 'enemy spawning must not retain a rejected actor model key');
-
-const equipmentRuntime = fs.readFileSync(EQUIPMENT_RUNTIME_FILE, 'utf8');
-[
-  'applyApprovedEquipmentVisuals(group, eq);'
-].forEach(marker => {
-  assert(equipmentRuntime.includes(marker), `super mutant equipment integration is missing: ${marker}`);
-});
-assert(
-  !equipmentRuntime.includes('updateEnemyStaticEquipmentOverlay'),
-  'legacy box equipment overlay must stay removed from NPC visuals'
-);
-
-const humanoidRuntime = fs.readFileSync(HUMANOID_RUNTIME_FILE, 'utf8');
-[
-  'function approvedActorCharacterRuntime(actor)',
-  'actor?.userData?.approvedEquipmentCharacterRuntime',
-  'const characterRuntime = approvedActorCharacterRuntime(actor);',
-  'if ((!firearmProfile && !meleeProfile) || !characterRuntime?.root)'
-].forEach(marker => {
-  assert(humanoidRuntime.includes(marker), `super mutant humanoid integration is missing: ${marker}`);
-});
 
 async function verifyThreeRuntime() {
   global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};

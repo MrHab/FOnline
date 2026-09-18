@@ -61,7 +61,7 @@
     { "id": "spectrumSample", "name": "Спектральная проба", "weight": 0.25, "basePrice": 28, "category": "materials", "stackLimit": 60, "conditionMode": "none", "acquisition": ["craft", "trade", "loot"] },
     { "id": "stabilizerCatalyst", "name": "Катализатор стабилизации", "weight": 0.2, "basePrice": 45, "category": "materials", "stackLimit": 40, "conditionMode": "none", "acquisition": ["craft", "trade", "loot"] },
     { "id": "food", "name": "Пища", "weight": 0.65, "basePrice": 4, "category": "misc", "stackLimit": 160, "conditionMode": "none", "acquisition": ["resource", "trade", "loot"] },
-    { "id": "silver", "name": "Марки Тракта", "weight": 0.0, "basePrice": 1, "category": "currency", "stackLimit": 200000, "conditionMode": "none", "acquisition": ["reward", "trade", "loot"] },
+    { "id": "silver", "name": "Марки Тракта", "weight": 0.0, "basePrice": 1, "category": "currency", "stackLimit": 1000000000, "conditionMode": "none", "acquisition": ["reward", "trade", "loot"] },
     { "id": "blue", "name": "Кассета сини", "weight": 0.4, "basePrice": 0, "category": "strategic", "stackLimit": 60, "conditionMode": "none", "acquisition": ["resource", "reward", "loot"] },
     { "id": "trophy", "name": "Трофей", "weight": 0.5, "basePrice": 10, "category": "misc", "stackLimit": 50, "conditionMode": "none", "acquisition": ["loot", "reward"] },
     { "id": "water", "name": "Фляга воды", "weight": 1.0, "basePrice": 6, "category": "misc", "stackLimit": 120, "conditionMode": "none", "acquisition": ["resource", "trade", "loot"] },

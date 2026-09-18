@@ -10,8 +10,9 @@ const ROOT = path.resolve(__dirname, '..');
 const RUNTIME_DIR = path.join(ROOT, 'public', 'assets', 'models', 'items');
 const MODEL_FILE = path.join(RUNTIME_DIR, 'ground_item_library.glb');
 const MANIFEST_FILE = path.join(RUNTIME_DIR, 'manifest.json');
-const ITEMS_SOURCE = path.join(ROOT, 'public', 'js', 'game', '03_items_inventory_core.js');
-const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '05e_ground_items_world_sync.js');
+const CATALOG_MODEL_DIR = path.join(RUNTIME_DIR, 'kromka');
+const KROMKA_ITEMS_FILE = path.join(ROOT, 'data', 'kromka', 'items.json');
+const UNITY_ITEM_CATALOG_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaItemModelCatalog.cs');
 const UNITY_GROUND_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGroundItems.cs');
 const UNITY_OVERLAY_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWorldOverlayCanvas.cs');
 const UNITY_INTERACTION_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInteraction.cs');
@@ -64,6 +65,24 @@ function embeddedImageBytes(parsed, image) {
   return parsed.binary.subarray(view.byteOffset || 0, (view.byteOffset || 0) + view.byteLength);
 }
 
+// Строковый список C#-коллекции: от объявления до первой закрывающей скобки.
+function unityList(source, declaration) {
+  const start = source.indexOf(declaration);
+  assert(start >= 0, `Нет Unity-таблицы ${declaration}`);
+  const open = source.indexOf('{', start);
+  return Array.from(source.slice(open, source.indexOf('}', open)).matchAll(/"(\w+)"/g), match => match[1]);
+}
+
+// Пары C#-словаря { "ключ", "значение" } до конца инициализатора.
+function unityPairs(source, declaration) {
+  const start = source.indexOf(declaration);
+  assert(start >= 0, `Нет Unity-таблицы ${declaration}`);
+  return new Map(Array.from(
+    source.slice(start, source.indexOf('};', start)).matchAll(/\{\s*"(\w+)",\s*"([^"]+)"\s*\}/g),
+    match => [match[1], match[2]]
+  ));
+}
+
 assert(fs.existsSync(MODEL_FILE), 'Не опубликована runtime-библиотека физических предметов');
 assert(fs.existsSync(MANIFEST_FILE), 'Нет манифеста физических предметов');
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'));
@@ -96,38 +115,48 @@ for (const mesh of parsed.json.meshes || []) {
 assert.strictEqual(vertices, 23296, 'Изменилась экспортированная геометрия библиотеки');
 assert.strictEqual(triangles, 11768, 'Изменилась утверждённая триангуляция библиотеки');
 
-const itemSource = fs.readFileSync(ITEMS_SOURCE, 'utf8');
-const authoredIds = [...itemSource.matchAll(/^\s{4}([A-Za-z0-9]+):\s*\{\s*id:\s*'([^']+)'/gm)]
-  .filter(match => match[1] === match[2])
-  .map(match => match[1]);
-const covered = new Set([...EXPECTED_LIBRARY_IDS, ...WEAPON_IDS, ...EQUIPMENT_IDS, 'fists']);
+// Unity выбирает модель наземного предмета по своим таблицам: общая библиотека
+// (с псевдонимами компонентов), GLB оружия, экипировка male_medium и
+// собственные GLB каталога RoaItemModelCatalog.
+const unityGround = fs.readFileSync(UNITY_GROUND_SOURCE, 'utf8');
+const unityLibraryIds = unityList(unityGround, 'LibraryItems =');
+const unityLibraryAliases = unityPairs(unityGround, 'LibraryAliases =');
+const unityWeaponIds = unityList(unityGround, 'WeaponItems =');
+const unityEquipmentModels = unityPairs(unityGround, 'EquipmentModels =');
+assert.deepStrictEqual(
+  unityLibraryIds.filter(id => !unityLibraryAliases.has(id)).sort(),
+  [...EXPECTED_LIBRARY_IDS].sort(),
+  'Unity-таблица библиотеки разошлась с утверждённой GLB-библиотекой'
+);
+for (const [alias, target] of unityLibraryAliases) {
+  assert(unityLibraryIds.includes(alias) && EXPECTED_LIBRARY_IDS.includes(target),
+    `Unity-псевдоним ${alias} → ${target} не ведёт в библиотеку предметов`);
+}
+assert.deepStrictEqual([...unityWeaponIds].sort(), [...WEAPON_IDS].sort(),
+  'Unity поднимает с земли не тот набор оружия');
+WEAPON_IDS.forEach(id => assert(fs.existsSync(path.join(ROOT, 'public', 'assets', 'models', 'weapons', `weapon_${id}.glb`)),
+  `Нет GLB оружия weapon_${id}.glb`));
+assert.deepStrictEqual([...unityEquipmentModels.keys()].sort(), [...EQUIPMENT_IDS].sort(),
+  'Unity поднимает с земли не тот набор экипировки');
+for (const [itemId, url] of unityEquipmentModels) {
+  assert(fs.existsSync(path.join(ROOT, 'public', url.replace(/^\//, ''))), `${itemId}: нет GLB экипировки ${url}`);
+}
+const unityCatalogIds = unityList(fs.readFileSync(UNITY_ITEM_CATALOG_SOURCE, 'utf8'), 'HashSet<string> Items =');
+unityCatalogIds.forEach(id => assert(fs.existsSync(path.join(CATALOG_MODEL_DIR, `item_${id}.glb`)),
+  `Нет GLB каталога предметов item_${id}.glb`));
+
+const kromkaItems = JSON.parse(fs.readFileSync(KROMKA_ITEMS_FILE, 'utf8')).items || [];
+const authoredIds = kromkaItems.map(item => String(item?.id || ''));
+const covered = new Set([
+  ...EXPECTED_LIBRARY_IDS, ...WEAPON_IDS, ...EQUIPMENT_IDS, 'fists',
+  ...unityLibraryAliases.keys(), ...unityCatalogIds
+]);
 assert.deepStrictEqual(
   [...new Set(authoredIds)].filter(id => !covered.has(id)),
   [],
   'Для части игровых предметов нет физической модели или осознанного исключения'
 );
 
-const runtime = fs.readFileSync(RUNTIME_SOURCE, 'utf8');
-[
-  "const GROUND_ITEM_MODEL_ASSET_VERSION = '7.76.7-ground-items-bc-v1'",
-  'loadGroundItemLibrary()',
-  'function pendingGroundItemGlbAssetSnapshot()',
-  'groundItemModelRetryTimer',
-  'loadWeaponModelTemplate(entry)',
-  "loadApprovedEquipmentTemplate(itemId, 'male_medium')",
-  'fitGroundItemPhysicalModel(model, itemId, kind)',
-  'group.userData.groundItemModelRequestId !== requestId'
-].forEach(marker => assert(runtime.includes(marker), `Нет runtime-маркера: ${marker}`));
-
-[
-  'groundItemFallback',
-  'new THREE.BoxGeometry(0.54, 0.18, 0.42)',
-  'new THREE.CylinderGeometry(0.58, 0.58, 0.12, 16)'
-].forEach(marker => assert(!runtime.includes(marker), `Вернулся процедурный fallback предмета: ${marker}`));
-assert(runtime.includes("makeStaticModelGroup('campfireRest', -2.6, 2.2"),
-  'Неавторская локация снова подменяет GLB-костёр процедурной моделью');
-
-const unityGround = fs.readFileSync(UNITY_GROUND_SOURCE, 'utf8');
 [
   'private void BeginVisualLoad(GroundItem item)',
   'private static void ScheduleVisualRetry(GroundItem item)',
@@ -181,6 +210,7 @@ assert(unityBootstrap.includes('Inventory.GroundItems = GroundItems;'),
 
 console.log(
   `Физические предметы OK: ${EXPECTED_LIBRARY_IDS.length} собственных + `
-  + `${WEAPON_IDS.length} оружия + ${EQUIPMENT_IDS.length} экипировки; `
+  + `${WEAPON_IDS.length} оружия + ${EQUIPMENT_IDS.length} экипировки + `
+  + `${unityCatalogIds.length} GLB Unity-каталога покрывают ${authoredIds.length} предметов Кромки; `
   + `${vertices} экспортированных вершин, ${triangles} треугольников; Canvas-подписи локализованы и не перекрываются`
 );

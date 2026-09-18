@@ -89,7 +89,7 @@ async function main() {
   ));
   if (requestedApproved.length) {
     throw new Error(
-      `Approved B+C environment models are published by tools/build-priority-environment-models.js: ${requestedApproved.join(', ')}`
+      `Approved B+C environment models are retired (src/server/retired-environment-models.js): ${requestedApproved.join(', ')}`
     );
   }
   const entries = (requested.length

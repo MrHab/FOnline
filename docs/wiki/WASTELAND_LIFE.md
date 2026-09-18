@@ -129,11 +129,7 @@
 восстановлении, число активных/прибывших групп беженцев и незавершённых грузовых
 транзакций.
 
-Основная проверка — `npm run check:kromka-world-life`. Дополнительные имена из
-плана (`check:wasteland-life`, `check:settlement-needs`,
-`check:caravan-logistics`, `check:world-catchup`, `check:world-recovery`,
-`check:world-causality`, `check:unity-world-state`) используют тот же единый
-контракт. Unity C# дополнительно проверяется `npm run check:unity-csharp`.
+Основная проверка — `npm run check:kromka-world-life`. Unity C# дополнительно проверяется `npm run check:unity-csharp`.
 В состав `check:kromka-world-life` входит детерминированный прогон 168 игровых
 часов: он проверяет сохранение населения, завершение маршрутов и предел числа
 агрегированных групп.

@@ -17,6 +17,29 @@ namespace RealmOfAshes.World
         [JsonProperty("nodes")] public List<GlobalMapNode> Nodes = new List<GlobalMapNode>();
         [JsonProperty("infrastructure")] public List<GlobalMapInfrastructure> Infrastructure = new List<GlobalMapInfrastructure>();
         [JsonProperty("cells")] public Dictionary<string, GlobalMapCell> Cells = new Dictionary<string, GlobalMapCell>();
+        // Клетки Сердцевины (сквозные мелкие клетки) с постоянными номерами.
+        [JsonProperty("dangerWalkCells")] public GlobalMapDangerWalkCells DangerWalkCells;
+        // Играбельный контур карты в точках карты: [[x, y], …].
+        [JsonProperty("playableContour")] public List<float[]> PlayableContour = new List<float[]>();
+    }
+
+    /// <summary>
+    /// Клетки Сердцевины: каждая мелкая клетка чёрной земли — своя сцена с
+    /// постоянным номером («Меловая чаша №47»). Строка cells — [sx, sy, номер,
+    /// индекс имени]; мелкая клетка sx, sy занимает точки карты
+    /// [sx·размер, (sx+1)·размер) по x и так же по y.
+    /// </summary>
+    public sealed class GlobalMapDangerWalkCells
+    {
+        [JsonProperty("subCellKm")] public float SubCellKm = 1.6f;
+        [JsonProperty("names")] public List<string> Names = new List<string>();
+        [JsonProperty("cells")] public List<int[]> Cells = new List<int[]>();
+
+        public string NameOf(int[] cell)
+        {
+            if (cell == null || cell.Length < 4 || Names == null) return string.Empty;
+            return cell[3] >= 0 && cell[3] < Names.Count ? Names[cell[3]] ?? string.Empty : string.Empty;
+        }
     }
 
     public sealed class GlobalMapGrid

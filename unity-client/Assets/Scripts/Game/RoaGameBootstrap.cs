@@ -89,6 +89,7 @@ namespace RealmOfAshes.Game
         public RoaPipboyCanvas PipboyCanvas;
         public RoaWorkbenchCanvas WorkbenchCanvas;
         public RoaMapWindowCanvas MapWindow;
+        public RoaWorldOverviewCanvas WorldOverview;
         public RoaWorldActivityCanvas WorldActivityCanvas;
         public RoaKromkaOnboarding Onboarding;
         public RoaCaravanDepartureCinematic CaravanDepartureCinematic;
@@ -512,6 +513,15 @@ namespace RealmOfAshes.Game
             mapWindow.Minimap = Minimap;
             MapWindow = mapWindow;
 
+            // Карта мира из локальной сцены: кнопка на миникарте, флажок там, где игрок.
+            var worldOverview = GetComponent<RoaWorldOverviewCanvas>();
+            if (worldOverview == null) worldOverview = gameObject.AddComponent<RoaWorldOverviewCanvas>();
+            worldOverview.GlobalMap = GlobalMap;
+            worldOverview.Socket = Socket;
+            worldOverview.Minimap = Minimap;
+            worldOverview.Loader = Loader;
+            WorldOverview = worldOverview;
+
             _characterPreview = GetComponent<RoaCharacterPreview>();
             if (_characterPreview == null) _characterPreview = gameObject.AddComponent<RoaCharacterPreview>();
         }
@@ -678,6 +688,7 @@ namespace RealmOfAshes.Game
                 else if (_graphicsOpen) SetGraphicsOpen(false);
                 else if (_tutorialOpen) SetTutorialOpen(false);
                 else if (_gameMenuOpen) SetGameMenuOpen(false);
+                else if (WorldOverview != null && WorldOverview.IsOpen) WorldOverview.Close();
                 else if (MapWindow != null && MapWindow.IsOpen) MapWindow.Close();
                 else if (WorkbenchCanvas != null && WorkbenchCanvas.IsOpen) Inventory.CloseWorkbench();
                 else if (PipboyCanvas != null && PipboyCanvas.IsOpen) PipboyCanvas.Close();
@@ -784,6 +795,7 @@ namespace RealmOfAshes.Game
             if (Pipboy != null) Pipboy.InputEnabled = input;
             if (PipboyCanvas != null) PipboyCanvas.InputEnabled = input;
             if (MapWindow != null) MapWindow.InputEnabled = input;
+            if (WorldOverview != null) WorldOverview.InputEnabled = input;
         }
 
         public bool CinematicActive { get { return _cinematicActive; } }
@@ -815,6 +827,7 @@ namespace RealmOfAshes.Game
         private bool AnyGameplayPanelOpen()
         {
             return (MapWindow != null && MapWindow.IsOpen)
+                || (WorldOverview != null && WorldOverview.IsOpen)
                 || (WorkbenchCanvas != null && WorkbenchCanvas.IsOpen)
                 || (PipboyCanvas != null && PipboyCanvas.IsOpen)
                 || (Inventory != null && Inventory.IsOpen)
@@ -1426,6 +1439,7 @@ namespace RealmOfAshes.Game
             Quickbar?.SetWorldActive(false);
             PipboyCanvas?.Close();
             MapWindow?.Close();
+            WorldOverview?.Close();
             if (Inventory != null && Inventory.IsOpen) Inventory.Toggle();
             if (Pipboy != null && Pipboy.IsOpen) Pipboy.Toggle();
         }

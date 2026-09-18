@@ -105,7 +105,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaWorldActivityCanvas` (+`.Feedback`), `RoaWorldActivityNavigation`,
 `RoaActivityHubCanvas` (+`.Presentation`), `RoaActivityBeacon`,
 `RoaActivityZoneMarker`, `RoaActivityFeedback`, `RoaCaravanStagingCanvas`,
-`RoaMapWindowCanvas`, `RoaWorldOverlayCanvas`.
+`RoaMapWindowCanvas`, `RoaWorldOverlayCanvas`, `RoaWorldOverviewCanvas`
+(«КАРТА МИРА» из сцены: обзор глобальной карты по `/api/global-map` с
+сеткой и номерами клеток Сердцевины и флажком игрока).
 
 **HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.EconomyFeedback`),
 `RoaHudLayout`, `RoaHudDragHandle` (редактор HUD), `RoaHudInteractionPrompt`,
@@ -129,6 +131,11 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
   проб пока сохраняет внутреннее меню **Realm of Ashes** до KRM-20.
 - `RoaClientAuditRunner.cs` — запускает набор проб одним batchmode-процессом и
   завершает Unity с кодом 1 при любой ошибке.
+- `RoaCoreMapCaptureProbe.cs` — снимки клеток Сердцевины на глобальной карте,
+  окна «КАРТА МИРА» (десктоп, телефон, обычная локация) и панели миникарты в
+  `Library/AgentCaptures/`. Берёт `global-map-public.json`,
+  `wasteland-public.json` и `locations-names.json` оттуда же (снять с
+  временного сервера); сцены не сохраняет.
 - Генераторы: `RoaUiPrefabGenerator` (24 редактируемых UI-префаба),
   `RoaModelPrefabGenerator`, `RoaOldKlimSceneGenerator`, авторские инструменты
   глобальной карты (`RoaGlobalMap*Authoring`), включая генератор рельефа

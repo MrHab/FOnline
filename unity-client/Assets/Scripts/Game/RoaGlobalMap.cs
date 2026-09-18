@@ -232,6 +232,8 @@ namespace RealmOfAshes.Game
         {
             // Опасные клетки видны на всех ярусах: это правила пути, а не справка.
             DangerZone,
+            // Сетка клеток Сердцевины — на ближнем и среднем ярусах.
+            CoreGrid,
             TerritoryFill,
             TerritoryBorder,
             Influence,
@@ -309,6 +311,56 @@ namespace RealmOfAshes.Game
         private const string AuthoredSceneName = Kromka.KromkaLocationSceneCatalog.GlobalMapSceneName;
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorProperty = Shader.PropertyToID("_Color");
+        private static readonly int BaseMapProperty = Shader.PropertyToID("_BaseMap");
+        private static readonly int MainTexProperty = Shader.PropertyToID("_MainTex");
+        private static readonly int BaseMapStProperty = Shader.PropertyToID("_BaseMap_ST");
+        private static readonly int MainTexStProperty = Shader.PropertyToID("_MainTex_ST");
+
+        // Наблюдения по «Страннику»: группы A-Life и другие игроки в радиусе видимости.
+        private static readonly Color SightingHostileColor = new Color(0.93f, 0.33f, 0.22f, 1f);
+        private static readonly Color SightingFaunaColor = new Color(0.55f, 0.84f, 0.52f, 1f);
+        private static readonly Color SightingPlayerColor = new Color(0.44f, 0.72f, 1f, 1f);
+        private JObject _sightings;
+        private readonly HashSet<string> _sightingIds = new HashSet<string>();
+        private bool _sightingsRebuildPending;
+        private float _nextSightingsRebuildAt;
+
+        // Сетка клеток Сердцевины: одна плитка с текстурой на весь чёрный край
+        // и подсветка клетки игрока; номера рисует канвас карты.
+        private static readonly Color CoreGridInner = new Color(0.86f, 0.36f, 0.66f, 0.42f);
+        private static readonly Color CoreGridOuter = new Color(0.96f, 0.42f, 0.74f, 0.92f);
+        private static readonly Color CorePlayerCellColor = new Color(0.98f, 0.5f, 0.8f, 0.34f);
+        private Texture2D _coreGridTexture;
+        private string _coreGridSignature = string.Empty;
+        // Сетка Сердцевины лежит на рельефе чуть выше земли, номера — над ней.
+        private const float CoreGridGroundOffset = 0.04f;
+        private const float CoreLabelGroundOffset = 0.07f;
+        // Прозрачная рамка текстуры сетки: за краем Сердцевины clamp берёт пустоту.
+        private const int CoreGridPadding = 2;
+        // Меш земли сцены (KromkaGlobalMapReliefAuthoring): uv = точка карты / размер карты.
+        private const string LandmassMeshName = "Kromka_GlobalRelief";
+        private MeshFilter _landmassFilter;
+        private Renderer[] _coreGridRenderers;
+        private Bounds _coreGridBounds;
+        private readonly Plane[] _frustumPlanes = new Plane[6];
+        private readonly List<CoreCellInfo> _coreCells = new List<CoreCellInfo>();
+        private readonly Dictionary<long, CoreCellInfo> _coreCellByKey = new Dictionary<long, CoreCellInfo>();
+
+        /// <summary>Клетка Сердцевины с постоянным номером («Меловая чаша №47»).</summary>
+        public sealed class CoreCellInfo
+        {
+            public int Sx;
+            public int Sy;
+            public int Number;
+            public string Name;
+            public GlobalMapPoint Center;
+            public Vector3 World;
+            public string Title { get { return Name + " №" + Number; } }
+        }
+
+        public IReadOnlyList<CoreCellInfo> CoreCells { get { return _coreCells; } }
+        /// <summary>Размер мелкой клетки в точках карты.</summary>
+        public float CoreSubCellPoints { get; private set; }
 
         public RoaSocketClient Socket;
         public RoaCameraRig CameraRig;
@@ -533,7 +585,9 @@ namespace RealmOfAshes.Game
             {
                 if (_selectedDynamic != null) return DynamicTargetTitle(_selectedDynamic);
                 if (_selectedNode != null) return NodeTitle(_selectedNode);
-                return "Точка пустоши";
+                // Точка в Сердцевине — её клетка: «Разбитый тракт №47».
+                CoreCellInfo cell = CoreCellAtPoint(_selectedPoint);
+                return cell != null ? cell.Title : "Точка пустоши";
             }
         }
 
@@ -929,6 +983,7 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelGroupReleased += HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision += HandleEncounterDecision;
             Socket.OnWorldActivityFeedChanged += HandleWorldActivityFeedChanged;
+            Socket.OnGlobalMapSightings += HandleSightings;
         }
 
         private void DetachSocket()
@@ -941,6 +996,7 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelGroupReleased -= HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision -= HandleEncounterDecision;
             Socket.OnWorldActivityFeedChanged -= HandleWorldActivityFeedChanged;
+            Socket.OnGlobalMapSightings -= HandleSightings;
         }
 
         private void HandleWorldActivityFeedChanged(JObject _)
@@ -1091,6 +1147,10 @@ namespace RealmOfAshes.Game
 
         public void Leave()
         {
+            // С карты ушли — метки наблюдений больше не действуют.
+            _sightings = null;
+            _sightingIds.Clear();
+            _sightingsRebuildPending = false;
             _pendingEntry = false;
             _locationEntryPending = false;
             _pendingArrival = null;
@@ -1168,6 +1228,23 @@ namespace RealmOfAshes.Game
                 }
                 _wastelandFetchPending = false;
             }
+        }
+
+        /// <summary>Описание карты: есть после первого входа на карту или загрузки обзором.</summary>
+        public GlobalMapDefinition Definition { get { return _map; } }
+
+        /// <summary>
+        /// Загрузить описание карты, если его ещё нет: обзор мира открывают и из
+        /// локальной сцены, куда игрок мог войти, не заходя на карту.
+        /// </summary>
+        public IEnumerator EnsureDefinition(Action<bool, string> onDone)
+        {
+            if (_map != null && _map.Grid != null && _map.Grid.Cols > 0)
+            {
+                onDone?.Invoke(true, null);
+                yield break;
+            }
+            yield return FetchDefinition(onDone);
         }
 
         private IEnumerator FetchDefinition(Action<bool, string> onDone)
@@ -1359,6 +1436,7 @@ namespace RealmOfAshes.Game
             BuildFactionTerritories();
             if (TerritoryCellCount == 0) BuildFactionInfluence();
             BuildDangerCells();
+            BuildCoreCellGrid();
 
             JArray sites = _wasteland["sites"] as JArray;
             if (sites != null)
@@ -1472,6 +1550,7 @@ namespace RealmOfAshes.Game
                     _dynamicTargets.Add(target);
                 }
             }
+            AddSightingActors();
             RemoveMissingPartyActors();
 
             JArray zones = _wasteland["worldZones"] as JArray;
@@ -2205,6 +2284,470 @@ namespace RealmOfAshes.Game
             return 0.05f + Mathf.Max(0f, highest - center);
         }
 
+        // --- наблюдения по «Страннику» ---------------------------------------------------------
+
+        /// <summary>
+        /// Наблюдения приходят от сервера раз в пару секунд: кого видно по
+        /// «Страннику». Известные метки двигаются сразу (новый снимок), новые и
+        /// пропавшие меняет пересборка слоя.
+        /// </summary>
+        private void HandleSightings(JObject payload)
+        {
+            _sightings = payload;
+            var ids = new HashSet<string>();
+            foreach (JObject row in SightingRows())
+            {
+                string id = row["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id)) continue;
+                ids.Add(id);
+                if (_partyActors.TryGetValue(id, out PartyActorState state) && state != null)
+                    state.Snapshot = row;
+            }
+            if (!ids.SetEquals(_sightingIds))
+            {
+                _sightingIds.Clear();
+                _sightingIds.UnionWith(ids);
+                _sightingsRebuildPending = true;
+            }
+        }
+
+        /// <summary>Наблюдения в виде строк отрядов: одна отрисовка для всех меток карты.</summary>
+        private IEnumerable<JObject> SightingRows()
+        {
+            if (_sightings == null) yield break;
+            if (_sightings["groups"] is JArray groups)
+            {
+                foreach (JToken token in groups)
+                {
+                    if (!(token is JObject row)) continue;
+                    string kind = row["kind"]?.ToString() ?? "monster";
+                    string name = row["name"]?.ToString() ?? "Группа";
+                    int size = row["size"]?.ToObject<int>() ?? 0;
+                    bool engaged = row["engaged"]?.ToObject<bool>() == true;
+                    yield return new JObject
+                    {
+                        ["id"] = "sight-group:" + row["id"],
+                        ["kind"] = kind == "raider" ? "raider" : "monster",
+                        ["faction"] = row["faction"]?.ToString() ?? string.Empty,
+                        ["species"] = row["creatureTypeId"]?.ToString() ?? string.Empty,
+                        ["name"] = name,
+                        ["x"] = row["x"],
+                        ["y"] = row["y"],
+                        ["state"] = "onsite",
+                        ["members"] = size,
+                        ["canEncounter"] = false,
+                        ["sighting"] = "group",
+                        ["hostile"] = row["hostile"]?.ToObject<bool>() != false,
+                        ["statusText"] = name + " · " + size + (engaged ? " · в бою" : string.Empty)
+                    };
+                }
+            }
+            if (_sightings["players"] is JArray players)
+            {
+                foreach (JToken token in players)
+                {
+                    if (!(token is JObject row)) continue;
+                    string name = row["name"]?.ToString() ?? "Игрок";
+                    yield return new JObject
+                    {
+                        ["id"] = "sight-player:" + row["id"],
+                        ["kind"] = "player",
+                        ["faction"] = "players",
+                        ["name"] = name,
+                        ["x"] = row["x"],
+                        ["y"] = row["y"],
+                        ["state"] = "onsite",
+                        ["members"] = 1,
+                        ["canEncounter"] = false,
+                        ["sighting"] = "player",
+                        ["hostile"] = false,
+                        ["statusText"] = "Игрок · " + name
+                    };
+                }
+            }
+        }
+
+        /// <summary>Метки наблюдений — теми же фигурками, что и отряды пустоши.</summary>
+        private void AddSightingActors()
+        {
+            foreach (JObject row in SightingRows())
+            {
+                string id = row["id"]?.ToString() ?? string.Empty;
+                GlobalMapPoint point = ReadPoint(row, "x", "y", null);
+                if (string.IsNullOrEmpty(id) || point == null) continue;
+                bool player = row["sighting"]?.ToString() == "player";
+                bool hostile = row["hostile"]?.ToObject<bool>() != false;
+                DynamicTarget target = TargetFrom(row, "party");
+                target.Point = point;
+                target.PartyId = id;
+                target.Faction = row["faction"]?.ToString() ?? string.Empty;
+                target.Radius = 1.2f;
+                target.CanEnter = false;
+                target.Forced = !player && hostile;
+                target.Details = row["statusText"]?.ToString() ?? string.Empty;
+                target.Semantic = player ? "Игрок" : (hostile ? "Угроза" : "Фауна");
+                target.Accent = player ? SightingPlayerColor : (hostile ? SightingHostileColor : SightingFaunaColor);
+                target.Priority = player ? 820 : 760;
+                _seenPartyActors.Add(id);
+
+                PartyActorState actor = EnsurePartyActor(id);
+                if (actor != null && actor.Root != null)
+                {
+                    if (!actor.HasRenderedPoint)
+                    {
+                        actor.Root.transform.localPosition = PointToWorld(point.X, point.Y, 0.45f);
+                        actor.HasRenderedPoint = true;
+                    }
+                    else
+                    {
+                        target.Point = WorldToPoint(actor.Root.transform.position);
+                    }
+                    actor.Root.transform.localScale = actor.BaseScale * (player ? 0.3f : 0.34f);
+                    ApplyPartyInteractionMarker(actor.Root, row);
+                    TintLivePrefab(actor.Root, target.Accent, "Tint");
+                    actor.Target = target;
+                    actor.Snapshot = row;
+                    actor.Presentation = RegisterDynamicVisual(actor.Root, DynamicVisualLayer.Party,
+                        target.Point, player, target.Priority);
+                    if (actor.Actor != null)
+                    {
+                        _ = actor.Actor.ConfigureParty(BaseUrl, row);
+                        actor.Actor.SetBanner(target.Accent);
+                    }
+                }
+                _dynamicTargets.Add(target);
+            }
+        }
+
+        /// <summary>Подписи ближайших наблюдений: кто это и сколько их.</summary>
+        private void AppendSightingLabels(List<OverlayLabel> output, MapDetailTier tier)
+        {
+            int limit = tier == MapDetailTier.Near ? 8 : (tier == MapDetailTier.Medium ? 5 : 0);
+            if (limit <= 0 || _partyActors == null || !_showParties) return;
+            int added = 0;
+            foreach (PartyActorState actor in _partyActors.Values)
+            {
+                if (added >= limit) break;
+                if (actor?.Snapshot == null || actor.Root == null || !actor.Root.activeInHierarchy) continue;
+                string sighting = actor.Snapshot["sighting"]?.ToString();
+                if (string.IsNullOrEmpty(sighting) || actor.Target?.Point == null) continue;
+                Color accent = actor.Target.Accent;
+                output.Add(new OverlayLabel
+                {
+                    Id = "sight:" + actor.Id,
+                    Text = EscapeOverlayText(actor.Snapshot["statusText"]?.ToString() ?? actor.Target.Name ?? string.Empty),
+                    World = _root.transform.TransformPoint(PointToWorld(actor.Target.Point.X, actor.Target.Point.Y, 1.05f)),
+                    Color = accent,
+                    Accent = accent,
+                    Activity = false,
+                    Selected = false,
+                    Cluster = false,
+                    Priority = sighting == "player" ? 720 : 700
+                });
+                added++;
+            }
+        }
+
+        // --- клетки Сердцевины -------------------------------------------------------------------------
+
+        private static long CoreCellKey(int sx, int sy)
+        {
+            return ((long)sx << 32) ^ (uint)sy;
+        }
+
+        /// <summary>Клетка Сердцевины по мелкой клетке карты или null.</summary>
+        public CoreCellInfo CoreCellAt(int sx, int sy)
+        {
+            return _coreCellByKey.TryGetValue(CoreCellKey(sx, sy), out CoreCellInfo cell) ? cell : null;
+        }
+
+        /// <summary>Клетка Сердцевины под точкой карты (null — точка не в Сердцевине).</summary>
+        public CoreCellInfo CoreCellAtPoint(GlobalMapPoint point)
+        {
+            if (point == null || CoreSubCellPoints <= 0f) return null;
+            return CoreCellAt(Mathf.FloorToInt(point.X / CoreSubCellPoints),
+                              Mathf.FloorToInt(point.Y / CoreSubCellPoints));
+        }
+
+        /// <summary>Клетка Сердцевины, где сейчас точка игрока на карте.</summary>
+        public CoreCellInfo PlayerCoreCell
+        {
+            get
+            {
+                return CoreCellAtPoint(_playerPoint);
+            }
+        }
+
+        /// <summary>Номера клеток Сердцевины показываются на ближнем и среднем ярусах.</summary>
+        public bool CoreGridVisible
+        {
+            get { return IsActive && _coreCells.Count > 0 && CurrentDetailTier() != MapDetailTier.Far; }
+        }
+
+        /// <summary>Размер мелкой клетки на экране в пикселях (по двум соседним центрам).</summary>
+        public float CoreCellScreenSize(Camera camera)
+        {
+            if (camera == null || _root == null || _coreCells.Count == 0 || CoreSubCellPoints <= 0f) return 0f;
+            CoreCellInfo cell = PlayerCoreCell ?? _coreCells[_coreCells.Count / 2];
+            Vector3 a = camera.WorldToScreenPoint(cell.World);
+            Vector3 b = camera.WorldToScreenPoint(_root.transform.TransformPoint(PointToWorld(
+                cell.Center.X + CoreSubCellPoints, cell.Center.Y, CoreLabelGroundOffset)));
+            if (a.z <= 0f || b.z <= 0f) return 0f;
+            return Vector2.Distance(a, b);
+        }
+
+        /// <summary>
+        /// Сетка клеток Сердцевины: каждая мелкая клетка чёрной земли — своя
+        /// сцена с номером. Линии рисует одна текстура (тысяча отдельных линий
+        /// дорога для WebGL) на авторском меше земли сцены: Сердцевина стоит на
+        /// склоне с перепадом до полуметра, и плоская плитка висела бы над
+        /// низиной — линии уезжали бы от номеров и от фигурки игрока. Меш земли
+        /// несёт uv в координатах карты, поэтому текстура ложится ровно на
+        /// Сердцевину, а вокруг прозрачна. Клетку игрока подсвечивает плитка.
+        /// </summary>
+        private void BuildCoreCellGrid()
+        {
+            _coreCells.Clear();
+            _coreCellByKey.Clear();
+            _coreGridRenderers = null;
+            CoreSubCellPoints = 0f;
+            GlobalMapDangerWalkCells walk = _map?.DangerWalkCells;
+            if (walk?.Cells == null || walk.Cells.Count == 0 || _map.Grid == null || _root == null) return;
+            float pointKm = _map.Grid.CellKm / Mathf.Max(0.001f, _map.Grid.CellPoints);
+            float size = walk.SubCellKm / Mathf.Max(0.001f, pointKm);
+            CoreSubCellPoints = size;
+            int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+            foreach (int[] row in walk.Cells)
+            {
+                if (row == null || row.Length < 3) continue;
+                var center = new GlobalMapPoint { X = (row[0] + 0.5f) * size, Y = (row[1] + 0.5f) * size };
+                var info = new CoreCellInfo
+                {
+                    Sx = row[0],
+                    Sy = row[1],
+                    Number = row[2],
+                    Name = RoaPipboy.KromkaPublicText(walk.NameOf(row)),
+                    Center = center,
+                    World = _root.transform.TransformPoint(PointToWorld(center.X, center.Y, CoreLabelGroundOffset))
+                };
+                _coreCells.Add(info);
+                _coreCellByKey[CoreCellKey(info.Sx, info.Sy)] = info;
+                minX = Mathf.Min(minX, info.Sx);
+                minY = Mathf.Min(minY, info.Sy);
+                maxX = Mathf.Max(maxX, info.Sx);
+                maxY = Mathf.Max(maxY, info.Sy);
+            }
+            if (_coreCells.Count == 0) return;
+
+            int columns = maxX - minX + 1;
+            int rows = maxY - minY + 1;
+            const int pixelsPerCell = 16;
+            string signature = walk.Cells.Count + ":" + minX + ":" + minY + ":" + maxX + ":" + maxY;
+            if (_coreGridTexture == null || _coreGridSignature != signature)
+            {
+                if (_coreGridTexture != null) Destroy(_coreGridTexture);
+                _coreGridTexture = BuildCoreGridTexture(minX, minY, columns, rows, pixelsPerCell);
+                _coreGridSignature = signature;
+            }
+
+            float x0 = minX * size;
+            float y0 = minY * size;
+            float widthPoints = columns * size;
+            float heightPoints = rows * size;
+            var coreCenter = new GlobalMapPoint { X = x0 + widthPoints * 0.5f, Y = y0 + heightPoints * 0.5f };
+            GameObject grid = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell, "CoreCellGrid");
+            MeshFilter landmass = LandmassFilter();
+            if (grid != null && landmass != null)
+            {
+                // Тот же меш, что у земли, на той же позиции — чуть выше неё.
+                Transform source = landmass.transform;
+                grid.transform.SetPositionAndRotation(source.position + Vector3.up * CoreGridGroundOffset,
+                    source.rotation);
+                Vector3 parentScale = grid.transform.parent != null ? grid.transform.parent.lossyScale : Vector3.one;
+                Vector3 sourceScale = source.lossyScale;
+                grid.transform.localScale = new Vector3(sourceScale.x / parentScale.x,
+                    sourceScale.y / parentScale.y, sourceScale.z / parentScale.z);
+                foreach (MeshFilter filter in grid.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    filter.sharedMesh = landmass.sharedMesh;
+                    filter.transform.localPosition = Vector3.zero;
+                    filter.transform.localRotation = Quaternion.identity;
+                    filter.transform.localScale = Vector3.one;
+                }
+                _coreGridRenderers = grid.GetComponentsInChildren<Renderer>(true);
+                // Поверх заливки опасности: заливка клетки висит над её низинами.
+                foreach (Renderer renderer in _coreGridRenderers) renderer.sortingOrder = 2;
+                TintLivePrefabTexture(grid, Color.white, _coreGridTexture,
+                    CoreGridTextureTransform(x0, y0, heightPoints, size, pixelsPerCell));
+                RegisterDynamicVisual(grid, DynamicVisualLayer.CoreGrid, coreCenter);
+                Vector3 cornerA = _root.transform.TransformPoint(PointToWorld(x0, y0, 0f));
+                Vector3 cornerB = _root.transform.TransformPoint(PointToWorld(x0 + widthPoints, y0 + heightPoints, 0f));
+                _coreGridBounds = new Bounds((cornerA + cornerB) * 0.5f, Vector3.zero);
+                _coreGridBounds.Encapsulate(new Vector3(cornerA.x, cornerA.y - 1.5f, cornerA.z));
+                _coreGridBounds.Encapsulate(new Vector3(cornerB.x, cornerB.y + 1.5f, cornerB.z));
+                UpdateCoreGridCulling();
+            }
+            else if (grid != null)
+            {
+                // Сцена без меша земли — плоская плитка над Сердцевиной.
+                grid.transform.localPosition = PointToWorld(coreCenter.X, coreCenter.Y, CoreGridGroundOffset);
+                grid.transform.localScale = new Vector3(widthPoints * MapWorldScale, 1f, heightPoints * MapWorldScale);
+                float padU = CoreGridPadding / (float)_coreGridTexture.width;
+                float padV = CoreGridPadding / (float)_coreGridTexture.height;
+                TintLivePrefabTexture(grid, Color.white, _coreGridTexture,
+                    new Vector4(1f - padU * 2f, 1f - padV * 2f, padU, padV));
+                RegisterDynamicVisual(grid, DynamicVisualLayer.CoreGrid, coreCenter);
+            }
+
+            // Клетка игрока — поярче.
+            CoreCellInfo playerCell = PlayerCoreCell;
+            if (playerCell != null)
+            {
+                GameObject highlight = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell, "CorePlayerCell");
+                if (highlight != null)
+                {
+                    highlight.transform.localPosition = PointToWorld(playerCell.Center.X, playerCell.Center.Y,
+                        CoreGridGroundOffset + 0.03f);
+                    highlight.transform.localScale = new Vector3(size * MapWorldScale, 1f, size * MapWorldScale);
+                    TintLivePrefab(highlight, CorePlayerCellColor);
+                    RegisterDynamicVisual(highlight, DynamicVisualLayer.CoreGrid, playerCell.Center, true);
+                }
+            }
+        }
+
+        /// <summary>Меш земли сцены (ищется один раз): на нём лежит сетка Сердцевины.</summary>
+        private MeshFilter LandmassFilter()
+        {
+            if (_landmassFilter != null) return _landmassFilter;
+            Transform scope = _authoredScene != null && _authoredScene.StaticContentRoot != null
+                ? _authoredScene.StaticContentRoot : (_root != null ? _root.transform : null);
+            if (scope == null) return null;
+            foreach (MeshFilter filter in scope.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (filter == null || filter.sharedMesh == null || filter.sharedMesh.name != LandmassMeshName) continue;
+                _landmassFilter = filter;
+                break;
+            }
+            return _landmassFilter;
+        }
+
+        /// <summary>
+        /// uv меша земли (u = x / ширина карты, v = y / высота карты, y растёт на
+        /// юг) → uv текстуры сетки (v растёт на север, по краям — прозрачная рамка).
+        /// </summary>
+        private Vector4 CoreGridTextureTransform(float x0, float y0, float heightPoints, float size, int pixelsPerCell)
+        {
+            float texW = _coreGridTexture.width;
+            float texH = _coreGridTexture.height;
+            float perPoint = pixelsPerCell / size;
+            return new Vector4(
+                MapWidthPoints * perPoint / texW,
+                -MapHeightPoints * perPoint / texH,
+                (CoreGridPadding - x0 * perPoint) / texW,
+                (CoreGridPadding + (y0 + heightPoints) * perPoint) / texH);
+        }
+
+        /// <summary>
+        /// Меш сетки — вся земля карты (вне Сердцевины прозрачная), и его границы
+        /// Unity не отсечёт: рисуем, только пока Сердцевина в кадре.
+        /// </summary>
+        private void UpdateCoreGridCulling()
+        {
+            if (_coreGridRenderers == null || _coreGridRenderers.Length == 0) return;
+            Camera camera = Camera.main;
+            bool inView = true;
+            if (camera != null)
+            {
+                GeometryUtility.CalculateFrustumPlanes(camera, _frustumPlanes);
+                inView = GeometryUtility.TestPlanesAABB(_frustumPlanes, _coreGridBounds);
+            }
+            for (int i = 0; i < _coreGridRenderers.Length; i++)
+                if (_coreGridRenderers[i] != null && _coreGridRenderers[i].enabled != inView)
+                    _coreGridRenderers[i].enabled = inView;
+        }
+
+        /// <summary>
+        /// Текстура сетки: прозрачный фон, тонкие линии между клетками
+        /// Сердцевины и яркая кайма по её краю. Строка 0 — южный край (v растёт
+        /// на север, а y карты — на юг).
+        /// </summary>
+        private Texture2D BuildCoreGridTexture(int minX, int minY, int columns, int rows, int pixelsPerCell)
+        {
+            int width = columns * pixelsPerCell + CoreGridPadding * 2;
+            int height = rows * pixelsPerCell + CoreGridPadding * 2;
+            var pixels = new Color32[width * height];
+            Color32 inner = CoreGridInner;
+            Color32 outer = CoreGridOuter;
+            foreach (CoreCellInfo cell in _coreCells)
+            {
+                int px = CoreGridPadding + (cell.Sx - minX) * pixelsPerCell;
+                int py = CoreGridPadding + (minY + rows - 1 - cell.Sy) * pixelsPerCell;
+                bool north = CoreCellAt(cell.Sx, cell.Sy - 1) != null;
+                bool south = CoreCellAt(cell.Sx, cell.Sy + 1) != null;
+                bool west = CoreCellAt(cell.Sx - 1, cell.Sy) != null;
+                bool east = CoreCellAt(cell.Sx + 1, cell.Sy) != null;
+                for (int i = 0; i < pixelsPerCell; i++)
+                {
+                    // Север — верхняя строка клетки в текстуре, юг — нижняя.
+                    SetGridPixel(pixels, width, px + i, py + pixelsPerCell - 1, north ? inner : outer);
+                    SetGridPixel(pixels, width, px + i, py, south ? inner : outer);
+                    SetGridPixel(pixels, width, px, py + i, west ? inner : outer);
+                    SetGridPixel(pixels, width, px + pixelsPerCell - 1, py + i, east ? inner : outer);
+                    if (!north) SetGridPixel(pixels, width, px + i, py + pixelsPerCell - 2, outer);
+                    if (!south) SetGridPixel(pixels, width, px + i, py + 1, outer);
+                    if (!west) SetGridPixel(pixels, width, px + 1, py + i, outer);
+                    if (!east) SetGridPixel(pixels, width, px + pixelsPerCell - 2, py + i, outer);
+                }
+            }
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, true)
+            {
+                name = "CoreCellGrid",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 2
+            };
+            texture.SetPixels32(pixels);
+            texture.Apply(true, false);
+            return texture;
+        }
+
+        private static void SetGridPixel(Color32[] pixels, int width, int x, int y, Color32 color)
+        {
+            int index = y * width + x;
+            if (x < 0 || y < 0 || index < 0 || index >= pixels.Length) return;
+            // Кайма края сильнее внутренней линии: не затираем её.
+            if (pixels[index].a >= color.a) return;
+            pixels[index] = color;
+        }
+
+        private void TintLivePrefabTexture(GameObject target, Color color, Texture texture)
+        {
+            TintLivePrefabTexture(target, color, texture, new Vector4(1f, 1f, 0f, 0f));
+        }
+
+        /// <summary>Цвет и текстура через блок свойств; uvTransform — масштаб (xy) и сдвиг (zw) uv.</summary>
+        private void TintLivePrefabTexture(GameObject target, Color color, Texture texture, Vector4 uvTransform)
+        {
+            if (target == null) return;
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+                _colorBlock.Clear();
+                _colorBlock.SetColor(BaseColorProperty, color);
+                _colorBlock.SetColor(ColorProperty, color);
+                if (texture != null)
+                {
+                    _colorBlock.SetTexture(BaseMapProperty, texture);
+                    _colorBlock.SetTexture(MainTexProperty, texture);
+                    _colorBlock.SetVector(BaseMapStProperty, uvTransform);
+                    _colorBlock.SetVector(MainTexStProperty, uvTransform);
+                }
+                renderer.SetPropertyBlock(_colorBlock);
+            }
+        }
+
         /// <summary>Центр клетки внутри играбельной границы карты (за ней пути нет).</summary>
         private bool DangerCellPlayable(int cx, int cy)
         {
@@ -2547,6 +3090,9 @@ namespace RealmOfAshes.Game
                         case DynamicVisualLayer.DangerZone:
                             visible = true;
                             break;
+                        case DynamicVisualLayer.CoreGrid:
+                            visible = tier != MapDetailTier.Far;
+                            break;
                         case DynamicVisualLayer.TerritoryFill:
                             visible = _showFactions && profile.TerritoryFill;
                             break;
@@ -2589,12 +3135,16 @@ namespace RealmOfAshes.Game
 
                 // Клетки опасности лежат впритык: крупнее их не рисуем, иначе
                 // плитки налезают друг на друга и дают тёмные швы.
-                float scale = state.Layer == DynamicVisualLayer.DangerZone ? 1f
+                float scale = state.Layer == DynamicVisualLayer.DangerZone
+                              || state.Layer == DynamicVisualLayer.CoreGrid ? 1f
                             : (tier == MapDetailTier.Far ? 1.18f
                             : (tier == MapDetailTier.Medium ? 1.08f : 1f));
                 state.TargetVisible = visible;
                 state.DetailScale = scale;
-                bool immediate = force || state.Layer == DynamicVisualLayer.TerritoryFill;
+                // Сетка Сердцевины стоит на меше всей земли: плавное появление
+                // масштабом сдвигало бы её к центру карты.
+                bool immediate = force || state.Layer == DynamicVisualLayer.TerritoryFill
+                    || state.Layer == DynamicVisualLayer.CoreGrid;
                 if (immediate)
                 {
                     state.Visibility = visible ? 1f : 0f;
@@ -3004,6 +3554,16 @@ namespace RealmOfAshes.Game
                 ResumePendingLocationEntry();
 
             UpdatePartyActors();
+            if (_sightingsRebuildPending && Time.unscaledTime >= _nextSightingsRebuildAt)
+            {
+                // Состав меток наблюдений сменился — пересобрать слой. Не чаще раза в
+                // три секунды: пересборка трогает весь живой слой, а опрос мира и так
+                // пересобирает его раз в пять секунд.
+                _sightingsRebuildPending = false;
+                _nextSightingsRebuildAt = Time.unscaledTime + 3f;
+                RebuildDynamicWorld();
+            }
+            UpdateCoreGridCulling();
 
             bool touchActive = UpdateTouchMapInput();
             if (!touchActive)
@@ -3917,6 +4477,8 @@ namespace RealmOfAshes.Game
                 if (selected) selectedActivityLabelAdded = true;
                 activityLabels++;
             }
+
+            AppendSightingLabels(output, tier);
 
             if (_selectedDynamic != null && _selectedDynamic.Point != null
                 && !selectedActivityLabelAdded)

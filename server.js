@@ -1432,7 +1432,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
       return {
         ...row,
         id: String(row?.id || `world_exit_${index + 1}`).slice(0, 48),
-        label: String(row?.label || 'Выход на глобальную карту').slice(0, 80),
+        label: String(row?.label || 'Выход в зону').slice(0, 80),
         tx: point.tx,
         tz: point.tz,
         radius: clamp(Number(row?.radius || 3), 0.5, 18)
@@ -4668,24 +4668,48 @@ function serverTransitionZoneRules(row = {}) {
   return zoneRules(locationPvpMode(target), serverZoneRulesExtra(target));
 }
 
+/**
+ * Старый выход места «в мир»: строка `exit`/`transitions` с дорогой к месту,
+ * которое теперь стоит в другой зоне (раньше — «в пустошь» или на глобальную
+ * карту). В мире зон такая дорога ведёт в зону самого места, иначе она
+ * переносила бы через полмира. Метро внутри одной территории остаётся метро.
+ */
+function serverLegacyWorldExit(loc = {}, row = {}) {
+  const to = normalizeLocationId(row?.to || '');
+  const own = ZONE_RUNTIME.parentZoneOf(loc?.id || '');
+  if (!to || !own) return false;
+  const other = ZONE_RUNTIME.parentZoneOf(to);
+  if (!other || other === own) return false;
+  const target = LOCATIONS[to] || {};
+  return !(loc.territoryId && target.territoryId && loc.territoryId === target.territoryId);
+}
+
 function kromkaPublicLocationDefinition(location = {}) {
   const next = transformKromkaPublicValue(location);
+  // Куда выводит край места: зона мира, её название и правила.
+  const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
+  const parentRules = parentZone ? serverTransitionZoneRules({ to: parentZone.id }) : null;
+  // Старые дороги «в мир» клиент видит выходом в зону места.
+  const asZoneExit = row => ({
+    ...row, type: 'zoneExit', to: parentZone.id, entryKey: parentZone.entryKey,
+    label: `Выход: ${parentZone.title}`,
+    ...(parentRules ? { targetPvpMode: parentRules.mode, targetZoneRules: parentRules } : {})
+  });
   if (Array.isArray(next.transitions)) {
     next.transitions = next.transitions.map(row => {
+      if (parentZone && serverLegacyWorldExit(location, row)) return asZoneExit(row);
       const rules = serverTransitionZoneRules(row);
       return rules ? { ...row, targetPvpMode: rules.mode, targetZoneRules: rules } : row;
     });
   }
   if (next.exit && next.exit.to) {
-    const rules = serverTransitionZoneRules(next.exit);
-    if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
+    if (parentZone && serverLegacyWorldExit(location, next.exit)) next.exit = asZoneExit(next.exit);
+    else {
+      const rules = serverTransitionZoneRules(next.exit);
+      if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
+    }
   }
-  // Куда выводит край места: зона мира, её название и правила.
-  const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
-  if (parentZone) {
-    const rules = serverTransitionZoneRules({ to: parentZone.id });
-    next.parentZone = rules ? { ...parentZone, targetZoneRules: rules } : parentZone;
-  }
+  if (parentZone) next.parentZone = parentRules ? { ...parentZone, targetZoneRules: parentRules } : parentZone;
   const lore = kromkaLocationLore(next.id);
   const node = kromkaGlobalNode(next.id);
   if (lore?.displayName) next.name = lore.displayName;
@@ -5951,7 +5975,7 @@ function syncWorldSiteLocationDefinitions(force = false) {
     source.entryFromEast = { tx: Math.max(bounds.minX + 2, bounds.maxX - 3), tz: centerZ };
     source.worldZones = [{
       id: 'world_exit_edges',
-      label: 'Уйти на глобальную карту',
+      label: 'Выход в зону',
       type: 'globalMap',
       tx: centerX,
       tz: bounds.minZ + 1,
@@ -12880,7 +12904,7 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
-  const authored = candidates.find(row => {
+  const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)).find(row => {
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
@@ -23671,7 +23695,7 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
   const activity = ensureServerWorldActivityForRoom(room, Date.now());
   if (!activity || String(activity.taskId || '') !== String(taskId || '')) return { ok: false, error: 'Активность в этой локации не найдена.' };
   if (!['outpost_defense', 'distress_signal'].includes(task.type) && !serverPlayerAtPlaceEdge(player)) {
-    return { ok: false, error: 'Для эвакуации доберитесь до края локации или выхода на глобальную карту.' };
+    return { ok: false, error: 'Для эвакуации доберитесь до края локации или её выхода.' };
   }
   const extracted = extractWorldActivity(activity, {
     socketId: player.id,
@@ -27724,7 +27748,7 @@ function serverPlayerAtPlaceEdge(p = {}) {
   if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {
-    if (row.to && normalizeLocationId(row.to || '') !== 'wasteland') return false;
+    if (row.to && normalizeLocationId(row.to || '') !== 'wasteland' && !serverLegacyWorldExit(loc, row)) return false;
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(loc));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
@@ -28792,7 +28816,6 @@ io.on('connection', (socket) => {
   socket.on('labNodeAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const mechanics = room ? serverLabMechanicsForRoom(room) : null;
@@ -28815,7 +28838,6 @@ io.on('connection', (socket) => {
   socket.on('publicEventAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const event = room ? serverPublicEventForRoom(room) : null;
@@ -30581,6 +30603,8 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: destinations.length > 0, destinations, error: destinations.length ? '' : 'Диспетчер переноса есть только в столицах фракций.' });
       return;
     }
+    // Отправляет только сам диспетчер: заказ издалека по столице не принимается.
+    if (!serverNearbyServiceActor(p, 'fastTravel')) return fail('Диспетчер переноса должен быть рядом.');
     const to = normalizeLocationId(data.to || '');
     const refusal = fastTravelRefusal({
       rules: FAST_TRAVEL_RULES, capitals, fromLocationId: p.locationId, toLocationId: to, feeMultiplier: discount,
@@ -30711,7 +30735,6 @@ io.on('connection', (socket) => {
   socket.on('craftingPlotAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const loc = room ? roomLocation(room) : null;
@@ -30759,7 +30782,6 @@ io.on('connection', (socket) => {
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
@@ -32436,7 +32458,7 @@ io.on('connection', (socket) => {
       return;
     }
     if (!sameLocation && !transitionTicket && !localTransition) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или завершите путь на глобальной карте.' });
+      if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или воротам.' });
       return;
     }
     // Ворота и выходы зоны мира не пропускают из перестрелки с игроком.

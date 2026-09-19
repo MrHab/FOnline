@@ -160,6 +160,26 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     const atBoard = await h.socketAck(clerk.socket, 'worldActivityQuickJoin', { boardSiteId: 'settlement' });
     assert(atBoard.ok || !/у доски работ/.test(atBoard.error || ''), 'the board of Keys picks an activity: ' + JSON.stringify(atBoard).slice(0, 200));
     console.log(`PASS the quick activity join works at the board of Keys (${atBoard.ok ? atBoard.taskId : atBoard.error}) and not at another settlement's`);
+
+    // --- старая дорога Ключей «в пустошь» ведёт в зону Ключей, а не через полмира ------------------
+    const keysZone = zoneById(graph, graph.zones.find(zone => zone.places.some(place => place.locationId === 'settlement')).id);
+    const shownKeys = await new Promise((resolve, reject) => {
+      require('node:http').get(h.baseUrl() + '/api/locations/settlement', res => {
+        let body = '';
+        res.on('data', chunk => { body += chunk; });
+        res.on('end', () => { try { resolve(JSON.parse(body).location); } catch (error) { reject(error); } });
+      }).on('error', reject);
+    });
+    assert.equal(shownKeys.exit?.type, 'zoneExit', 'the client sees the old road of Keys as an exit into its zone');
+    assert.equal(shownKeys.exit?.to, keysZone.id);
+    const exitPoint = { x: (keys.exit.tx - keysTiles.w / 2 + 0.5) * 2, z: (keys.exit.tz - keysTiles.d / 2 + 0.5) * 2 };
+    const clerkState = { x: Number(clerk.join.self?.x ?? clerk.join.x ?? 0), z: Number(clerk.join.self?.z ?? clerk.join.z ?? 0) };
+    assert(await zoneWalk.driveTo(h, clerk, clerkState, exitPoint.x, exitPoint.z, 160), 'the player walks to the road out of Keys');
+    const faraway = await changeLocation(clerk, { locationId: keys.exit.to });
+    assert.equal(faraway.ok, false, `the old road does not carry the player to ${keys.exit.to} across the world`);
+    const outOfKeys = await changeLocation(clerk, { locationId: keysZone.id });
+    assert(outOfKeys.ok && outOfKeys.locationId === keysZone.id, 'the road out of Keys leads into its zone: ' + JSON.stringify(outOfKeys).slice(0, 200));
+    console.log(`PASS the road out of Keys leads into zone ${keysZone.n}, not to ${keys.exit.to}`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

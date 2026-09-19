@@ -47,8 +47,16 @@ const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
 const accounts = {};
 
-function seed(role, locationId, inventory) {
-  zoneWalk.placeInZone(h, accounts, role, locationId, { x: 0, z: 0 });
+// Рядом с диспетчером: он стоит в трёх и двух тайлах от входа в столицу.
+function nearDispatcher(locationId) {
+  const loc = JSON.parse(fs.readFileSync(fsPath.join(__dirname, '..', 'data', 'locations', `${locationId}.json`), 'utf8'));
+  const tiles = { w: loc.map.width / 2, d: loc.map.depth / 2 };
+  const anchor = loc.entryFromWorld || loc.spawn;
+  return { x: (anchor.tx + 2 - tiles.w / 2 + 0.5) * 2, z: (anchor.tz + 2 - tiles.d / 2 + 0.5) * 2 };
+}
+
+function seed(role, locationId, inventory, point = nearDispatcher(locationId)) {
+  zoneWalk.placeInZone(h, accounts, role, locationId, point);
   const users = JSON.parse(fs.readFileSync(fsPath.join(h.DATA_DIR, 'users.json')));
   const savesPath = fsPath.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath));
@@ -62,6 +70,8 @@ const marks = self => (self?.inventory || []).filter(row => row.id === 'silver')
   await h.bootstrapCharacters(accounts);
   seed('trade', from.locationId, { silver: 500 });
   seed('progression', from.locationId, { silver: 500, artifactSpring: 1 });
+  const dispatcherSpot = nearDispatcher(from.locationId);
+  seed('harvest', from.locationId, { silver: 500 }, { x: dispatcherSpot.x - 20, z: dispatcherSpot.z });
   await h.startServer();
   try {
     await h.connectAndJoin(accounts.trade);
@@ -87,12 +97,19 @@ const marks = self => (self?.inventory || []).filter(row => row.id === 'silver')
     assert.match(refused.error, /не перевозят/, 'an artifact in the pack stays on the road');
     assert.equal(marks(refused.self), 500, 'a refused trip costs nothing');
     console.log('PASS an artifact in the pack is refused and nothing is charged');
+
+    await h.connectAndJoin(accounts.harvest);
+    const fromAfar = await h.socketAck(accounts.harvest.socket, 'fastTravel', { action: 'go', to: pick.locationId });
+    assert.equal(fromAfar.ok, false);
+    assert.match(fromAfar.error, /должен быть рядом/, 'a trip is not ordered from across the capital');
+    assert.equal(marks(fromAfar.self), 500, 'an order from afar costs nothing');
+    console.log('PASS the dispatcher does not take an order from across the capital');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Fast travel network OK: the capital dispatcher lists the other capitals, charges the fee once and moves the player; artifacts do not travel.');
+  console.log('Fast travel network OK: the capital dispatcher lists the other capitals, charges the fee once and moves the player; artifacts do not travel and nobody orders from afar.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

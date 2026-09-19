@@ -249,7 +249,7 @@ async function connect() {
     characterId, name: characterName,
     appearance: { schema: 'realm.character-appearance.v1', sex: 'male', bodyType: 'medium', faceId: 'male_01', hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_01' },
     special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
-    traits: ['trainedEye', 'scavengerStart'], taggedSkills: ['lightWeapons', 'wanderer']
+    traits: ['trainedEye', 'scavengerStart'], taggedSkills: ['lightWeapons', 'stealth']
   }), 'create and join QA character');
   update(joined);
   assert.equal((self.inventory || []).length, 0, 'New character started with equipment instead of collecting it');

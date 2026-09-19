@@ -19,10 +19,8 @@
     "radius": 2
   },
   "sightings": {
-    "note": "Видимость на глобальной карте: радиус = baseKm + wandererKm × навык «Странник» (0…1); чужой «Странник» сокращает дистанцию, на которой видно его носителя, до (1 − stealthShare × навык).",
-    "baseKm": 4,
-    "wandererKm": 10,
-    "stealthShare": 0.5,
+    "note": "Видимость на глобальной карте: радиус baseKm вокруг игрока.",
+    "baseKm": 6,
     "maxGroups": 40,
     "maxPlayers": 30
   },

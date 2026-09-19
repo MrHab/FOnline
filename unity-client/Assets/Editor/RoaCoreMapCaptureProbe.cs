@@ -15,7 +15,7 @@ using UnityEngine.UI;
 namespace RealmOfAshes.EditorTools
 {
     /// <summary>
-    /// Снимки клеток Сердцевины и видимости по «Страннику» так, как их строит
+    /// Снимки клеток Сердцевины и видимости на карте так, как их строит
     /// игра: глобальная карта из сцены KromkaGlobalMap с ответами /api/global-map,
     /// /api/wasteland и именами из /api/locations (Library/AgentCaptures:
     /// global-map-public.json, wasteland-public.json, locations-names.json), точка

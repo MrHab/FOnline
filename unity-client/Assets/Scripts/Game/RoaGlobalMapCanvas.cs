@@ -1225,8 +1225,8 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(difficulty)) lines.Add(HoverFactLine("Сложность", difficulty));
             string activity = RoaGlobalMap.CardActivity(row);
             if (!string.IsNullOrEmpty(activity)) lines.Add(HoverFactLine("Периоды активности", activity));
-            // Правило самих угодий: сколько у них встреч и каким Странником
-            // их обходят. Игрок должен понимать это до того, как войдёт.
+            // Правило самих угодий: сколько у них встреч. Игрок должен понимать
+            // это до того, как войдёт.
             string grounds = RoaGlobalMap.CardGroundsRule(row);
             if (!string.IsNullOrEmpty(grounds)) lines.Add(HoverFactLine("Угодья", grounds));
             // У постоянных угодий добыча — это категории, а не список вещей:

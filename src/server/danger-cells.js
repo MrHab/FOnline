@@ -32,7 +32,6 @@ const DEFAULT_CONFIG = Object.freeze({
   regionModes: Object.freeze({}),
   defaultMode: 'pvp',
   encounterChance: Object.freeze({ peaceful: 0, pve: 0, pvp: 0.04, pvpFullDrop: 0.1, pvpBlack: 0.18 }),
-  wandererReduction: 0.5,
   edgeGraceKm: 3,
   templates: Object.freeze({ default: 'randomRuinedRoad' }),
   encounters: Object.freeze({ pvp: Object.freeze(['raider_ambush']) }),
@@ -103,7 +102,6 @@ function normalizeDangerCellConfig(input = {}) {
     regionModes: Object.freeze(regionModes),
     defaultMode: cleanMode(src.defaultMode, DEFAULT_CONFIG.defaultMode),
     encounterChance: Object.freeze(chance),
-    wandererReduction: finite(src.wandererReduction, DEFAULT_CONFIG.wandererReduction, 0, 1),
     edgeGraceKm: finite(src.edgeGraceKm, DEFAULT_CONFIG.edgeGraceKm, 0, 1000),
     templates: Object.freeze(templates),
     encounters: Object.freeze(encounters),
@@ -215,11 +213,9 @@ function boundaryPoint(config, cell = {}, direction = '', pointKm = 1, along = 0
   return { x: step.dx < 0 ? x0 - inset : x0 + size + inset, y: y0 + size * t };
 }
 
-/** Шанс стычки при входе в мелкую клетку; навык странника снижает его. */
-function encounterChance(config, mode = 'pvp', wandererSkill = 0) {
-  const base = config.encounterChance[cleanMode(mode)] || 0;
-  const skill = finite(wandererSkill, 0, 0, 1);
-  return Math.max(0, base * (1 - skill * config.wandererReduction));
+/** Шанс стычки при входе в мелкую клетку. */
+function encounterChance(config, mode = 'pvp') {
+  return Math.max(0, config.encounterChance[cleanMode(mode)] || 0);
 }
 
 function stableHash(text = '') {

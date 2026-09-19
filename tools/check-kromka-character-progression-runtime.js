@@ -177,7 +177,7 @@ async function run() {
   await startServer();
   const catalogResponse = await request('/api/kromka/character-progression');
   assert.equal(catalogResponse.status, 200);
-  assert.equal(catalogResponse.json.catalog.skills.items.length, 16);
+  assert.equal(catalogResponse.json.catalog.skills.items.length, 15);
 
   const deviceId = 'progression_test_device_0123456789';
   const guestResponse = await request('/api/auth/guest', {
@@ -318,7 +318,25 @@ async function run() {
   assert.equal(joined.result.self.talentRanks.specialEnd, 1);
   assert.equal(joined.result.self.maxHp, endurance.self.maxHp);
   joined.socket.close();
-  console.log('Kromka progression runtime OK: budget rejection, alias start, migration, atomic proposals, skill cap, replay and restart persistence.');
+  await delay(500);
+  await stopServer();
+
+  // «Странник» убран из игры: шаги, вложенные в него, при входе снова свободны,
+  // а метка навыка снимается.
+  const savedAgain = JSON.parse(fs.readFileSync(savesFile, 'utf8'));
+  const wandererState = Object.values(savedAgain.characters).find(store => store && store[auth.characterId])[auth.characterId].state;
+  wandererState.progressionLedger.skillSteps.wanderer = 4;
+  wandererState.skillRanks = { ...wandererState.skillRanks, wanderer: 55 };
+  wandererState.taggedSkills = ['lightWeapons', 'wanderer'];
+  fs.writeFileSync(savesFile, JSON.stringify(savedAgain));
+  await startServer();
+  joined = await joinExisting(auth, 'progression_wanderer_client');
+  assert.equal(joined.result.self.skillPoints, 13, 'points spent on the removed Wanderer skill come back');
+  assert.equal(joined.result.self.skillRanks.wanderer, undefined, 'the removed skill has no rank');
+  assert.equal(joined.result.self.skillRanks.lightWeapons, 100);
+  if (Array.isArray(joined.result.self.taggedSkills)) assert(!joined.result.self.taggedSkills.includes('wanderer'), 'the removed skill is no longer tagged');
+  joined.socket.close();
+  console.log('Kromka progression runtime OK: budget rejection, alias start, migration, atomic proposals, skill cap, replay, restart persistence and the Wanderer refund.');
 }
 
 run().catch(error => {

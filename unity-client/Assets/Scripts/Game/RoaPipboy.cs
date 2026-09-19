@@ -1466,7 +1466,6 @@ namespace RealmOfAshes.Game
                 case "repair": value = 10 + intelligence * 2 + per; break;
                 case "speech": value = 10 + cha * 3; break;
                 case "barter": value = 10 + cha * 2 + intelligence; break;
-                case "wanderer": value = 10 + end + per + luck * 2; break;
                 default: value = 20; break;
             }
             value = Mathf.Clamp(Mathf.RoundToInt(value), 20, 45);
@@ -1652,7 +1651,6 @@ namespace RealmOfAshes.Game
                 case "repair": value = 10 + intel * 2 + per; break;
                 case "speech": value = 10 + cha * 3; break;
                 case "barter": value = 10 + cha * 2 + intel; break;
-                case "wanderer": value = 10 + end + per + luck * 2; break;
                 default: value = 5; break;
             }
             int baseValue = Mathf.Clamp(value, 5, 95);
@@ -1687,7 +1685,6 @@ namespace RealmOfAshes.Game
                 case "repair": formula = "10 + IN×2 + PE = " + (10 + intel * 2 + per); break;
                 case "speech": formula = "10 + CH×3 = " + (10 + cha * 3); break;
                 case "barter": formula = "10 + CH×2 + IN = " + (10 + cha * 2 + intel); break;
-                case "wanderer": formula = "10 + EN + PE + LK×2 = " + (10 + end + per + luck * 2); break;
                 default: formula = "5"; break;
             }
             bool tagged = false;

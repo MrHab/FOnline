@@ -65,8 +65,6 @@ for (const area of catalog.areas) {
   // Мини-босс принадлежит именной локации, а не встрече.
   assert(area.boss && area.boss.displayName.length > 0, `${area.id}: the lair must keep a mini boss`);
   assert(mutantIds.has(area.boss.creatureTypeId), `${area.id}: unknown boss creature ${area.boss.creatureTypeId}`);
-  assert(area.wandererRequired >= 0 && area.wandererRequired <= 100,
-    `${area.id}: the wanderer threshold decides whether the party can walk around an encounter`);
 }
 // Бросок по таблице детерминирован при заданном генераторе и не выходит за неё.
 {
@@ -77,11 +75,6 @@ for (const area of catalog.areas) {
     'A rolled encounter always comes from the area table.');
   assert.equal(pve.rollAreaEncounter({ encounters: [] }, () => 0.5), null,
     'An area without a table rolls nothing instead of throwing.');
-  // Проверка «Странника»: порог принадлежит области, сравнение — по проценту навыка.
-  assert.equal(pve.wandererPassesArea(area, area.wandererRequired), true,
-    'Exactly at the threshold the party still spots the encounter.');
-  assert.equal(pve.wandererPassesArea(area, area.wandererRequired - 1), false,
-    'Below the threshold the party is pulled in without a choice.');
 }
 for (const area of catalog.areas) {
   const location = JSON.parse(read(`data/locations/${area.locationId}.json`));
@@ -368,8 +361,6 @@ assert(server.includes('return pveLairRoomId(locationId);'),
 // Сервер обязан катить встречу на контакте и гасить бросок после входа.
 for (const needle of [
   'function serverGroundsRollFor(session = null, zone = null, now = Date.now(), options = {})',
-  'function serverGroundsForcedFor(area = null, player = null)',
-  "serverSkillPercent(player || {}, 'wanderer')",
   'roll.consumed = true;',
   'function serverEnsurePveAreaBoss(room, area, now = Date.now())'
 ]) assert(server.includes(needle), `server.js is missing the hunting-ground encounter contract: ${needle}`);
@@ -519,4 +510,4 @@ assert(pendingAt > 0 && clientMap.slice(pendingAt, pendingAt + 1200).includes('E
     'The map must carry a short label of the area under the target.');
 }
 
-console.log(`PvE areas OK: ${catalog.areas.length} hunting grounds, encounter tables with a wanderer check, one-shot scenes, one shared lair per ground with its boss and escort, no PvP/no loss.`);
+console.log(`PvE areas OK: ${catalog.areas.length} hunting grounds, encounter tables, one-shot scenes, one shared lair per ground with its boss and escort, no PvP/no loss.`);

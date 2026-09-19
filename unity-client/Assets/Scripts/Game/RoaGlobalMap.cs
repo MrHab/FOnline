@@ -316,7 +316,7 @@ namespace RealmOfAshes.Game
         private static readonly int BaseMapStProperty = Shader.PropertyToID("_BaseMap_ST");
         private static readonly int MainTexStProperty = Shader.PropertyToID("_MainTex_ST");
 
-        // Наблюдения по «Страннику»: группы A-Life и другие игроки в радиусе видимости.
+        // Наблюдения: группы A-Life и другие игроки в радиусе видимости.
         private static readonly Color SightingHostileColor = new Color(0.93f, 0.33f, 0.22f, 1f);
         private static readonly Color SightingFaunaColor = new Color(0.55f, 0.84f, 0.52f, 1f);
         private static readonly Color SightingPlayerColor = new Color(0.44f, 0.72f, 1f, 1f);
@@ -2284,11 +2284,11 @@ namespace RealmOfAshes.Game
             return 0.05f + Mathf.Max(0f, highest - center);
         }
 
-        // --- наблюдения по «Страннику» ---------------------------------------------------------
+        // --- наблюдения --------------------------------------------------------------------------
 
         /// <summary>
-        /// Наблюдения приходят от сервера раз в пару секунд: кого видно по
-        /// «Страннику». Известные метки двигаются сразу (новый снимок), новые и
+        /// Наблюдения приходят от сервера раз в пару секунд: кого видно в
+        /// радиусе. Известные метки двигаются сразу (новый снимок), новые и
         /// пропавшие меняет пересборка слоя.
         /// </summary>
         private void HandleSightings(JObject payload)
@@ -6752,18 +6752,14 @@ namespace RealmOfAshes.Game
         /// узел — сколько ему осталось.
         /// </summary>
         /// <summary>
-        /// Что угодья делают с идущим: сколько у них встреч и какой навык
-        /// «Странника» позволяет их обойти. Пустая строка у узлов, которые не
-        /// угодья, — карточка тогда просто не показывает строку.
+        /// Что угодья делают с идущим: сколько у них встреч. Пустая строка у узлов,
+        /// которые не угодья, — карточка тогда просто не показывает строку.
         /// </summary>
         public static string CardGroundsRule(JObject row)
         {
             int encounters = row?["encounterCount"]?.Value<int>() ?? 0;
             if (encounters <= 0) return string.Empty;
-            int wanderer = row?["wandererRequired"]?.Value<int>() ?? 0;
-            string rule = "встречи в пути: " + encounters;
-            if (wanderer > 0) rule += " · обойти с Странником " + wanderer;
-            return rule;
+            return "встречи в пути: " + encounters;
         }
 
         public static string CardActivity(JObject row)

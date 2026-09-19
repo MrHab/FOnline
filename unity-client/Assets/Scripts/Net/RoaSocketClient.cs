@@ -521,7 +521,7 @@ namespace RealmOfAshes.Net
             }));
 
             // Наблюдения на глобальной карте: группы A-Life и другие игроки в
-            // радиусе, который даёт «Странник». Сервер решает, кого видно.
+            // радиусе видимости. Сервер решает, кого видно.
             _connection.On("globalMapSightings", args => _mainThread.Enqueue(() =>
             {
                 var payload = First<JObject>(args);

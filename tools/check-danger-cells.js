@@ -90,10 +90,8 @@ for (const locationId of Object.values(config.templates)) {
 }
 
 // --- шанс ------------------------------------------------------------------------------
-assert.equal(cells.encounterChance(config, 'pvpBlack', 0), config.encounterChance.pvpBlack);
-assert.equal(cells.encounterChance(config, 'pvpBlack', 1), config.encounterChance.pvpBlack * (1 - config.wandererReduction),
-  'a skilled wanderer meets less');
-assert.equal(cells.encounterChance(config, 'peaceful', 0), 0);
+assert.equal(cells.encounterChance(config, 'pvpBlack'), config.encounterChance.pvpBlack);
+assert.equal(cells.encounterChance(config, 'peaceful'), 0);
 
 // --- итерация 2: сквозные клетки ------------------------------------------------------
 {
@@ -122,4 +120,4 @@ assert.equal(cells.encounterChance(config, 'peaceful', 0), 0);
   assert.deepEqual([...custom.sceneModes], ['pvpBlack', 'pvpFullDrop']);
 }
 
-console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, encounter chances by colour and wanderer skill, and walk cells with neighbours, entry sides and border points.');
+console.log('Danger cells OK: black core, peaceful capitals with blue belts, red outer regions, 1.6 km encounter cells with one shared scene each, encounter chances by colour, and walk cells with neighbours, entry sides and border points.');

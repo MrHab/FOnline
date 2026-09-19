@@ -347,7 +347,6 @@ namespace RealmOfAshes.Game
                 case "repair": value = 10 + intelligence * 2 + per; break;
                 case "speech": value = 10 + cha * 3; break;
                 case "barter": value = 10 + cha * 2 + intelligence; break;
-                case "wanderer": value = 10 + end + per + luck * 2; break;
                 default: value = 20; break;
             }
             value = Mathf.Clamp(value, 20, 45);

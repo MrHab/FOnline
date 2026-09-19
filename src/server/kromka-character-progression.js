@@ -81,7 +81,7 @@ function normalizeCharacterProgressionCatalog(input = {}) {
     group: cleanText(raw.group, 'Прочее', 80),
     description: cleanText(raw.description, '', 1200)
   }));
-  if (skills.length !== 16) throw new Error(`Character progression must define 16 skills, got ${skills.length}.`);
+  if (skills.length !== 15) throw new Error(`Character progression must define 15 skills, got ${skills.length}.`);
   const skillIds = new Set(skills.map(row => row.id));
 
   const traitsSource = source.startTraits || {};

@@ -49,12 +49,9 @@ const DEFAULT_CONFIG = Object.freeze({
     shakenMinutes: 10,
     radius: 2
   }),
-  // Восприятие на глобальной карте: радиус видимости групп и игроков растёт
-  // со «Странником», а тот же навык прячет своего носителя от чужих глаз.
+  // Восприятие на глобальной карте: радиус видимости групп и игроков.
   sightings: Object.freeze({
-    baseKm: 4,
-    wandererKm: 10,
-    stealthShare: 0.5,
+    baseKm: 6,
     maxGroups: 40,
     maxPlayers: 30
   }),
@@ -184,8 +181,6 @@ function normalizeEcologyConfig(input = {}) {
     roam,
     sightings: Object.freeze({
       baseKm: finite(src.sightings?.baseKm, DEFAULT_CONFIG.sightings.baseKm, 0, 200),
-      wandererKm: finite(src.sightings?.wandererKm, DEFAULT_CONFIG.sightings.wandererKm, 0, 200),
-      stealthShare: finite(src.sightings?.stealthShare, DEFAULT_CONFIG.sightings.stealthShare, 0, 0.95),
       maxGroups: Math.floor(finite(src.sightings?.maxGroups, DEFAULT_CONFIG.sightings.maxGroups, 0, 500)),
       maxPlayers: Math.floor(finite(src.sightings?.maxPlayers, DEFAULT_CONFIG.sightings.maxPlayers, 0, 500))
     }),

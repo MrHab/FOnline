@@ -22,7 +22,6 @@ const accounts = {};
 const root = path.resolve(__dirname, '..');
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'economy.json'), 'utf8'));
 economy.dangerCells.encounterChance = { peaceful: 0, pve: 0, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 };
-economy.dangerCells.wandererReduction = 0;
 economy.dangerCells.edgeGraceKm = 0.5;
 economy.worldModel.dangerEcology = false;
 const economyFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-')), 'economy.json');

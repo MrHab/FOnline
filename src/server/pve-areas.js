@@ -139,14 +139,6 @@ function rollAreaEncounter(area = {}, random = Math.random) {
   return rows[rows.length - 1];
 }
 
-/**
- * Прошёл ли отряд проверку «Странника». Высокий навык — встречу видно заранее
- * и от неё можно уйти; низкий — отряд выводят прямо на неё.
- */
-function wandererPassesArea(area = {}, wandererSkill = 0) {
-  return Math.max(0, Number(wandererSkill || 0)) >= Math.max(0, Number(area?.wandererRequired || 0));
-}
-
 function normalizePveAreaCatalog(raw = {}) {
   const rules = normalizePveRules(raw?.rules);
   const areas = [];
@@ -178,9 +170,6 @@ function normalizePveAreaCatalog(raw = {}) {
       shapeRotation: ((Math.floor(Number(input?.shapeRotation ?? 0)) % 360) + 360) % 360,
       objective: String(input?.objective || 'зачистить угодья').slice(0, 64),
       activity: String(input?.activity || 'всегда').slice(0, 32),
-      // Порог навыка «Странник»: ниже него отряд не успевает заметить встречу
-      // и втягивается в неё без выбора.
-      wandererRequired: clamp(Math.floor(Number(input?.wandererRequired ?? 40)), 0, 100),
       // Мини-босс именной локации угодий. Он и отличает логово от случайной
       // встречи: встречи одноразовы, логово стоит на месте.
       boss: normalizeAreaBoss(input?.boss),
@@ -248,10 +237,8 @@ function publicPveAreaCatalog(catalog = {}, pointForLocation = null, options = {
       dangerLabel: dangerBandLabel(area.dangerBand),
       objective: area.objective,
       activity: area.activity,
-      // Карта показывает порог «Странника» и главаря логова: по первому игрок
-      // понимает, втянут ли его во встречу без спроса, по второму карта рисует
-      // шестиугольник над именной локацией.
-      wandererRequired: area.wandererRequired,
+      // Карта показывает главаря логова: по нему она рисует шестиугольник над
+      // именной локацией.
       // Шанс встречи на отрезок пути внутри контура: карта бросает его сама,
       // пока отряд идёт, а какая именно встреча выпала — решает сервер.
       encounterStepPoints: Number(catalog?.rules?.encounterStepPoints ?? DEFAULT_RULES.encounterStepPoints),
@@ -592,7 +579,6 @@ module.exports = {
   pveAreaZone,
   pveAreaZoneId,
   rollAreaEncounter,
-  wandererPassesArea,
   PVE_AREA_SHAPES,
   PVE_AREA_MAX_RADIUS,
   DEFAULT_RULES,

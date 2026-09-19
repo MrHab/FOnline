@@ -1154,7 +1154,7 @@ async function joinQuickStartCharacter(socket, account) {
     appearance: account.appearance,
     special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
     traits: ['trainedEye', 'scavengerStart'],
-    taggedSkills: ['lightWeapons', 'wanderer']
+    taggedSkills: ['lightWeapons', 'stealth']
   });
 }
 

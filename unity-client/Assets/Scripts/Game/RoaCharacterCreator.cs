@@ -97,7 +97,7 @@ namespace RealmOfAshes.Game
             ["str"] = 5, ["per"] = 7, ["end"] = 6, ["cha"] = 5,
             ["int"] = 5, ["agi"] = 7, ["luck"] = 5
         };
-        private static string[] QuickStartSkills = { "lightWeapons", "wanderer" };
+        private static string[] QuickStartSkills = { "lightWeapons", "stealth" };
         private static string[] QuickStartTraits = { "trainedEye", "scavengerStart" };
 
         public static bool ApplyCatalog(JObject catalog, out string error)
@@ -289,7 +289,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>
         /// Шаблон быстрого старта — prepareQuickStartCharacter web (08:585):
-        /// SPECIAL 5/7/6/5/5/7/5, навыки lightWeapons + wanderer, черты
+        /// SPECIAL 5/7/6/5/5/7/5, навыки lightWeapons + stealth, черты
         /// trainedEye + scavengerStart, внешность по умолчанию (male).
         /// </summary>
         public void PrepareQuickStart()
@@ -520,7 +520,6 @@ namespace RealmOfAshes.Game
                 case "repair": raw = 10 + intelligence * 2 + per; break;
                 case "speech": raw = 10 + cha * 3; break;
                 case "barter": raw = 10 + cha * 2 + intelligence; break;
-                case "wanderer": raw = 10 + end + per + luck * 2; break;
                 default: raw = 20; break;
             }
             int baseValue = Mathf.Clamp(raw, 20, 45);

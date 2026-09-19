@@ -89,7 +89,6 @@
     "regionModes": { "silent_ring": "pvpFullDrop", "glasslands": "pvpFullDrop", "zero_basin": "pvpFullDrop" },
     "defaultMode": "pvp",
     "encounterChance": { "peaceful": 0, "pve": 0, "pvp": 0.04, "pvpFullDrop": 0.1, "pvpBlack": 0.18 },
-    "wandererReduction": 0.5,
     "edgeGraceKm": 3,
     "templates": {
       "default": "randomRuinedRoad",

@@ -126,13 +126,12 @@ function explosiveRadius({ throwing = 20, grenadier = 0, base = 4.2 }) {
   return Math.max(1.5, Number(base || 4.2)) + skillNorm(throwing) * 0.45 + Number(grenadier || 0) * 0.2;
 }
 
-function harvestBonusChance({ int = 5, luck = 5, craftsman = false, wanderer = 20, repair = 20, engineer = 0, recycler = 0 }) {
+function harvestBonusChance({ int = 5, luck = 5, craftsman = false, repair = 20, engineer = 0, recycler = 0 }) {
   return clamp(
     0.18 +
       Math.max(0, Number(int || 5) - 5) * 0.025 +
       Math.max(0, Number(luck || 5) - 5) * 0.01 +
       (craftsman ? 0.18 : 0) +
-      skillNorm(wanderer) * 0.12 +
       skillNorm(repair) * 0.08 +
       Number(engineer || 0) * 0.025 +
       Number(recycler || 0) * 0.02,
@@ -284,10 +283,10 @@ if (doctorMax > 0.98) fail(`Doctor chance too high: ${doctorMax}`);
 const rocketRadiusMax = explosiveRadius({ throwing: 100, grenadier: 2 });
 if (rocketRadiusMax > 5.2) fail(`Explosive radius too high: ${rocketRadiusMax}`);
 
-const harvestLow = harvestBonusChance({ int: 5, luck: 5, craftsman: false, wanderer: 20, repair: 20, engineer: 0, recycler: 0 });
-const harvestHigh = harvestBonusChance({ int: 15, luck: 15, craftsman: true, wanderer: 100, repair: 100, engineer: 2, recycler: 2 });
+const harvestLow = harvestBonusChance({ int: 5, luck: 5, craftsman: false, repair: 20, engineer: 0, recycler: 0 });
+const harvestHigh = harvestBonusChance({ int: 15, luck: 15, craftsman: true, repair: 100, engineer: 2, recycler: 2 });
 if (harvestLow < 0.05 || harvestHigh > 0.78) fail(`Harvest bonus chance out of balance: low=${harvestLow}, high=${harvestHigh}`);
-for (const snippet of ["serverSkillNorm(p, 'wanderer') * 0.12", "serverSkillNorm(p, 'repair') * 0.08", "serverTalentLevel(p, 'engineer') * 0.025", "serverTalentLevel(p, 'recycler') * 0.02"]) {
+for (const snippet of ["serverSkillNorm(p, 'repair') * 0.08", "serverTalentLevel(p, 'engineer') * 0.025", "serverTalentLevel(p, 'recycler') * 0.02"]) {
   if (!serverSource.includes(snippet)) fail(`Server harvest formula missing: ${snippet}`);
 }
 for (const snippet of ["const intVal = serverStatValue(p, 'int')", "const luckVal = serverStatValue(p, 'luck')"]) {

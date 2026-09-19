@@ -5,9 +5,7 @@
 // настоящем сервере:
 //  - /api/global-map отдаёт клетки Сердцевины с постоянными номерами и
 //    играбельный контур;
-//  - игрок на карте видит группы A-Life только в радиусе, который даёт
-//    «Странник», а другого игрока — ещё и с поправкой на его «Странника»:
-//    внутри своего радиуса можно не заметить скрытного;
+//  - игрок на карте видит группы A-Life и других игроков только в своём радиусе;
 //  - в сцене клетки Сердцевины игрок знает её имя с номером — то же, что на карте.
 
 const fs = require('node:fs');
@@ -25,7 +23,7 @@ economy.worldModel.dangerEcology = true;
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-map-sightings-'));
 fs.writeFileSync(path.join(scratch, 'economy.json'), JSON.stringify(economy));
 process.env.KROMKA_ECONOMY_FILE = path.join(scratch, 'economy.json');
-const SIGHTINGS = { baseKm: 4, wandererKm: 10, stealthShare: 0.9, maxGroups: 40, maxPlayers: 30 };
+const SIGHTINGS = { baseKm: 6, maxGroups: 40, maxPlayers: 30 };
 fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
   tickSeconds: 1,
   lairs: { density: { pvp: 0, pvpFullDrop: 0, pvpBlack: 0 } },
@@ -118,8 +116,7 @@ const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, re
     const view = seen.untargeted;
     assert(view, 'the watcher on the map receives sightings');
     const radius = Number(view.radiusKm);
-    const norm = (radius - SIGHTINGS.baseKm) / SIGHTINGS.wandererKm;
-    assert(radius > SIGHTINGS.baseKm && radius < SIGHTINGS.baseKm + SIGHTINGS.wandererKm, `the radius grows with the wanderer skill (${radius} km)`);
+    assert.equal(radius, SIGHTINGS.baseKm, 'the sighting radius is the same for everyone');
 
     // --- группы: только в радиусе -------------------------------------------------------------
     for (const group of groups) {
@@ -136,19 +133,13 @@ const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, re
     }
     const shown = view.groups.length;
     assert(shown >= 1 && shown < groups.length, 'some groups are in sight, some are not');
-    console.log(`PASS groups are seen only within the wanderer radius (${radius} km: ${shown} of ${groups.length})`);
+    console.log(`PASS groups are seen only within the sighting radius (${radius} km: ${shown} of ${groups.length})`);
 
-    // --- игроки: свой радиус и чужой «Странник» -------------------------------------------------
-    const exposure = 1 - SIGHTINGS.stealthShare * norm;
-    const near = view.players.find(row => row.name === accounts.harvest.characterName || row.id === accounts.harvest.socket.id);
-    assert(near, 'a player 1.5 km away is seen: ' + JSON.stringify(view.players));
-    const hiddenDistance = 4.9;
-    assert(hiddenDistance <= radius && hiddenDistance > radius * exposure,
-      `the check needs a player inside the radius (${radius}) but beyond the stealth distance (${(radius * exposure).toFixed(2)})`);
-    assert(!view.players.some(row => row.id === accounts.trade.socket.id),
-      'a player inside the radius is still missed thanks to his own wanderer skill');
-    assert(seen.harvest?.players?.some(row => row.id === accounts.untargeted.socket.id), 'sightings are mutual at close range');
-    console.log(`PASS players are seen within the radius shortened by their own wanderer skill (${hiddenDistance} km hidden, stealth distance ${(radius * exposure).toFixed(2)} km)`);
+    // --- игроки: в том же радиусе ------------------------------------------------------------------
+    assert(view.players.some(row => row.id === accounts.harvest.socket.id), 'a player 1.5 km away is seen: ' + JSON.stringify(view.players));
+    assert(view.players.some(row => row.id === accounts.trade.socket.id), 'a player 4.9 km away, inside the radius, is seen');
+    assert(seen.harvest?.players?.some(row => row.id === accounts.untargeted.socket.id), 'sightings are mutual');
+    console.log('PASS players are seen within the same radius, both ways');
 
     // --- клетка Сердцевины: имя с номером ------------------------------------------------------------
     const walker = accounts.target;
@@ -180,7 +171,7 @@ const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, re
     h.cleanupSync();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  console.log('Map sightings network OK: numbered Core cells and the playable contour on the map, groups seen within the wanderer radius, players hidden by their own wanderer skill, and Core scenes named with their number.');
+  console.log('Map sightings network OK: numbered Core cells and the playable contour on the map, groups and players seen within the sighting radius, and Core scenes named with their number.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

@@ -203,7 +203,6 @@ const {
   pveAreaRewardIds,
   pveAreaZone,
   rollAreaEncounter,
-  wandererPassesArea,
   publicPveRoomState,
   pveAreaForLocation,
   pveLairRoomId,
@@ -2245,7 +2244,7 @@ function publicGlobalMap(map = null) {
   const cells = {};
   for (const [key, cell] of Object.entries(src.cells || {})) {
     const pvpMode = modes[key] || cell.pvpMode;
-    const chance = dangerIsSceneMode(config, pvpMode) ? 0 : Math.round(dangerEncounterChance(config, pvpMode, 0) * 1000) / 10;
+    const chance = dangerIsSceneMode(config, pvpMode) ? 0 : Math.round(dangerEncounterChance(config, pvpMode) * 1000) / 10;
     cells[key] = { ...cell, pvpMode, chance };
   }
   return {
@@ -2961,14 +2960,8 @@ function serverDangerCellView(p = {}) {
 }
 
 /** Радиус, на котором игрок видит группы и других игроков на карте. */
-function serverSightingsRadiusKm(p = {}) {
-  const cfg = DANGER_ECOLOGY.sightings;
-  return cfg.baseKm + cfg.wandererKm * serverSkillNorm(p, 'wanderer');
-}
-
-/** Доля чужого радиуса, на которой видно этого игрока: «Странник» прячет. */
-function serverSightingsExposure(p = {}) {
-  return 1 - DANGER_ECOLOGY.sightings.stealthShare * serverSkillNorm(p, 'wanderer');
+function serverSightingsRadiusKm() {
+  return DANGER_ECOLOGY.sightings.baseKm;
 }
 
 const serverSightingsSent = new Map();
@@ -2995,7 +2988,7 @@ function serverTickSightings(now = Date.now()) {
   let sent = 0;
   for (const viewer of viewers) {
     const at = positions.get(viewer.id);
-    const radiusKm = serverSightingsRadiusKm(viewer);
+    const radiusKm = serverSightingsRadiusKm();
     const radius = radiusKm / pointKm;
     const groups = [];
     if (ecology && cfg.maxGroups > 0) {
@@ -3033,7 +3026,7 @@ function serverTickSightings(now = Date.now()) {
       if (other.id === viewer.id) continue;
       const pos = positions.get(other.id);
       const distance = Math.hypot(pos.x - at.x, pos.y - at.y);
-      if (distance > radius * serverSightingsExposure(other)) continue;
+      if (distance > radius) continue;
       others.push({ id: other.id, name: String(other.name || 'Игрок').slice(0, 40), x: Number(pos.x.toFixed(2)), y: Number(pos.y.toFixed(2)), distance });
     }
     others.sort((a, b) => a.distance - b.distance);
@@ -3156,7 +3149,7 @@ function serverTickDangerCells(now = Date.now()) {
       }
       if ((from && serverGlobalPointDistance(point, from) < grace) || (to && serverGlobalPointDistance(point, to) < grace)) continue;
       const mode = serverDangerModeAtPoint(cell.center);
-      const chance = dangerEncounterChance(config, mode, serverSkillNorm(leader, 'wanderer'));
+      const chance = dangerEncounterChance(config, mode);
       if (chance > 0 && Math.random() < chance) {
         hit = { point, cell, mode, entryKey: dangerEntryKeyForDirection(dangerDirectionBetween(cameFrom, point)) };
       }
@@ -11392,8 +11385,7 @@ function serverSkillBasePercent(p = {}, id = '') {
     science: 10 + s.int * 3,
     repair: 10 + s.int * 2 + s.per,
     speech: 10 + s.cha * 3,
-    barter: 10 + s.cha * 2 + s.int,
-    wanderer: 10 + s.end + s.per + s.luck * 2
+    barter: 10 + s.cha * 2 + s.int
   };
   const base = clamp(Math.round(formulas[id] ?? 20), 20, 45);
   const taggedBonus = sanitizeTaggedSkills(p.taggedSkills || []).includes(id)
@@ -22481,15 +22473,6 @@ function serverGroundsRollFor(session = null, zone = null, now = Date.now(), opt
   return roll;
 }
 
-/**
- * Проверка «Странника» на входе в угодья: не дотянул — отряд выводят прямо на
- * встречу, и «Обойти» недоступно. Порог объявляет сама область.
- */
-function serverGroundsForcedFor(area = null, player = null) {
-  if (!area) return false;
-  return !wandererPassesArea(area, serverSkillPercent(player || {}, 'wanderer'));
-}
-
 function serverGroundsContactTitle(roll = null, area = null) {
   const title = String(roll?.title || '').trim();
   if (title) return title;
@@ -27957,7 +27940,7 @@ function serverGlobalPointForPlayer(p = {}) {
 }
 
 function serverGlobalTravelSpeedKmh(p = {}, options = {}) {
-  const baseSpeed = 16 + 8 * serverSkillNorm(p, 'wanderer');
+  const baseSpeed = 18;
   if (options.clanConvoy !== true) return baseSpeed;
   const context = serverClanBaseContextForPlayer(p);
   return baseSpeed * serverClanCaravanSpeedMultiplier(context?.profile || {});
@@ -28058,8 +28041,7 @@ function serverGlobalTravelEncounterContact(session = null, encounterId = '', no
     const zonePoint = sanitizeServerGlobalMapPoint(zone);
     const radius = clamp(Number(zone.radius || 9), 2, 40);
     if (zonePoint && serverGlobalPointDistance(point, zonePoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      // Угодья предлагают не себя, а ту встречу, которая на них выпала, и
-      // «Обойти» зависит от «Странника» отряда: не дотянул — втянут без выбора.
+      // Угодья предлагают не себя, а ту встречу, которая на них выпала; обойти её можно всегда.
       const groundsArea = serverAreaForWorldZone(zone);
       if (groundsArea) {
         const roll = serverGroundsRollFor(session, zone, now);
@@ -28068,7 +28050,7 @@ function serverGlobalTravelEncounterContact(session = null, encounterId = '', no
           kind: 'zone',
           title: safeName(serverGroundsContactTitle(roll, groundsArea)),
           point: zonePoint,
-          forced: serverGroundsForcedFor(groundsArea, players.get(String(session?.leaderId || '')))
+          forced: false
         };
       }
       return {
@@ -28153,7 +28135,6 @@ function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
     clanConvoy: session.clanConvoy === true,
     clanCaravanSpeedPct: Math.max(0, Number(session.clanCaravanSpeedPct || 0)),
     worldHours: Math.max(0, Number(session.worldHours || 0)),
-    wandererSkill: 0,
     serverAuthoritative: true,
     encounterDecision: session.pendingEncounter ? {
       encounterId: session.pendingEncounter.id,
@@ -32874,7 +32855,6 @@ io.on('connection', (socket) => {
       Math.max(0, intVal - 5) * 0.025 +
       Math.max(0, luckVal - 5) * 0.01 +
       (serverHasTrait(p, 'craftsmanStart') ? 0.18 : 0) +
-      serverSkillNorm(p, 'wanderer') * 0.12 +
       serverSkillNorm(p, 'repair') * 0.08 +
       serverTalentLevel(p, 'engineer') * 0.025 +
       serverTalentLevel(p, 'recycler') * 0.02,

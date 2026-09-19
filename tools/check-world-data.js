@@ -185,6 +185,15 @@ function objectIsStorage(row = {}) {
     || tags.includes('container');
 }
 
+// Кандидат в узлы добычи по правилу сервера (locationObjectResourceType) и клиента
+// (RoaInteraction.IsResourceObject).
+function objectIsHarvestNode(row = {}) {
+  const tags = objectTags(row);
+  return !!String(row.resourceType || row.resource || '').trim()
+    || String(row.collision || '').trim().toLowerCase() === 'resource'
+    || tags.includes('resource') || tags.includes('harvestable') || tags.includes('resource-node');
+}
+
 function objectResourceType(row = {}) {
   const tags = objectTags(row);
   const model = objectModel(row);
@@ -1113,13 +1122,17 @@ for (const [id, row] of locations) {
       }
     }
 
+    // Узел добычи определяют resourceType и теги, а не collision. У моделей прежнего
+    // набора collision всегда "none", поэтому правило, ждавшее collision "resource",
+    // не срабатывало ни на одной строке — и 109 укрытий, ставших стенами при
+    // переносе в Кромку, никто не заметил.
     const model = String(obj.model || '').trim().toLowerCase();
-    const collision = String(obj.collision || '').trim().toLowerCase();
-    if (collision === 'resource' && ['scrapheap', 'oreoutcrop', 'deadtreeb', 'deadwood'].includes(model)
+    const harvestNode = objectIsHarvestNode(obj);
+    if (harvestNode && ['scrapheap', 'oreoutcrop', 'deadtreeb', 'deadwood'].includes(model)
       && visionKind !== 'cover') {
       errors.push(`${rel}: physical resource "${objectId || index}" must provide low cover`);
     }
-    if (collision === 'resource' && model === 'gardenpatch' && visionKind !== 'clear') {
+    if (harvestNode && model === 'gardenpatch' && visionKind !== 'clear') {
       errors.push(`${rel}: low garden patch "${objectId || index}" must keep line of sight clear`);
     }
 

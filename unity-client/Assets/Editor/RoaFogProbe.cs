@@ -80,13 +80,14 @@ namespace RealmOfAshes.EditorTools
                     }
 
                     string model = (entry.Model ?? string.Empty).Trim().ToLowerInvariant();
-                    if (collision == "resource"
+                    bool harvestNode = IsHarvestNode(entry, collision);
+                    if (harvestNode
                         && (model == "scrapheap" || model == "oreoutcrop"
                             || model == "deadtreeb" || model == "deadwood")
                         && kind != RoaAuthoredVision.Kind.Cover)
                         throw new InvalidOperationException(locationId + "/" + entry.Id
                             + " physical resource is not low cover");
-                    if (collision == "resource" && model == "gardenpatch"
+                    if (harvestNode && model == "gardenpatch"
                         && kind != RoaAuthoredVision.Kind.Clear)
                         throw new InvalidOperationException(locationId + "/" + entry.Id
                             + " low garden patch blocks sight");
@@ -120,6 +121,25 @@ namespace RealmOfAshes.EditorTools
             Debug.Log("[ТУМАН ВОЙНЫ] готово: " + files.Length + " локаций, "
                 + required + " статических правил (стены/укрытия/сквозные="
                 + block + "/" + cover + "/" + clear + "), синтетический LOS сходится.");
+        }
+
+        /// <summary>
+        /// Узел добычи по правилу сервера (locationObjectResourceType) и клиента
+        /// (RoaInteraction.IsResourceObject). От collision оно не зависит: у моделей
+        /// прежнего набора collision всегда "none", и правила укрытий, ждавшие
+        /// collision "resource", не срабатывали ни на одной строке.
+        /// </summary>
+        private static bool IsHarvestNode(LocationObject entry, string collision)
+        {
+            if (!string.IsNullOrEmpty(entry.ResourceType) || !string.IsNullOrEmpty(entry.Resource)) return true;
+            if (collision == "resource") return true;
+            if (entry.Tags == null) return false;
+            foreach (string tag in entry.Tags)
+            {
+                string value = (tag ?? string.Empty).ToLowerInvariant();
+                if (value == "resource" || value == "harvestable" || value == "resource-node") return true;
+            }
+            return false;
         }
 
         private static string LocationsRoot()

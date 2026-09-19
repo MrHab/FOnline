@@ -296,7 +296,7 @@
         "z": 1.64
       },
       "vision": {
-        "blocks": false
+        "mode": "cover"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1",
@@ -378,7 +378,7 @@
         "z": 0.68
       },
       "vision": {
-        "blocks": false
+        "mode": "cover"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1",

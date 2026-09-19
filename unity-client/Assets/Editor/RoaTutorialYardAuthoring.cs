@@ -61,13 +61,15 @@ namespace RealmOfAshes.EditorTools
             {
                 var row = ((JArray)definition["objects"]).OfType<JObject>().Single(obj => (string)obj["id"] == pair.Item1);
                 bool cover = pair.Item2 == "cover";
+                // Ore and wood nodes are low cover in every location (check-world-data, RoaFogProbe).
+                bool lowCover = pair.Item2 == "ore" || pair.Item2 == "wood";
                 var obj = cover ? RoaTutorialCoverAuthoring.Build(parent) : RoaTutorialProps.Build(pair.Item2, parent);
                 obj.name = pair.Item1;
                 obj.transform.localPosition = new Vector3((float)row["position"]["x"], 0, (float)row["position"]["z"]);
                 obj.transform.localRotation = Quaternion.Euler(0, (float)row["rotation"]["y"] * Mathf.Rad2Deg, 0);
                 obj.AddComponent<KromkaPlacedObjectAuthoring>().Configure(pair.Item1,
                     cover ? RoaTutorialCoverAuthoring.ModelKey : (string)row["model"], "tutorial",
-                    ((JArray)row["tags"]).Values<string>().ToArray(), true, cover, cover);
+                    ((JArray)row["tags"]).Values<string>().ToArray(), true, cover, cover, lowCover);
                 obj.AddComponent<RoaUnityLocationObject>().Configure(pair.Item1);
                 if (cover)
                 {

@@ -56,6 +56,12 @@ namespace RealmOfAshes.Game
         /// </summary>
         public bool? TouchLayoutOverride;
 
+        /// <summary>
+        /// Поле адреса сервера на шаге входа вместо определения по сборке: в браузере его
+        /// нет, и редакторская проба меряет вход таким, каким его видит игрок.
+        /// </summary>
+        public bool? ServerFieldOverride;
+
         private GameObject _root;
         private RectTransform _card;
         private Canvas _canvas;
@@ -64,10 +70,14 @@ namespace RealmOfAshes.Game
         private Text _subtitle;
         private Text _note;
         private RectTransform _body;
+        private float _bodyTop;
+        private RectTransform _panel;
         private readonly List<GameObject> _bodyObjects = new List<GameObject>();
         private string _builtStep = string.Empty;
         private int _builtCharacters = -1;
         private Text _status;
+        private float _statusTop;
+        private string _statusMeasured;
         private float _refreshAt;
 
         // Подтверждение удаления — как модалка openGameConfirmPanel в web.
@@ -96,12 +106,11 @@ namespace RealmOfAshes.Game
             int characters = Bootstrap.AuthCharacters.Count * 100000
                 + Bootstrap.AuthCatalogVersion * 100
                 + Bootstrap.ProgressionCatalogVersion;
-            if (step != _builtStep || characters != _builtCharacters || CreatorLayoutChanged(step))
+            if (step != _builtStep || characters != _builtCharacters || LayoutChanged(step))
             {
                 _builtCharacters = characters;
                 RebuildBody(step);
             }
-            FitCardToViewport();
 
             if (step == "creator")
             {
@@ -171,18 +180,20 @@ namespace RealmOfAshes.Game
             cardOutline.effectColor = CardBorder;
             cardOutline.effectDistance = new Vector2(1f, -1f);
 
+            // Кегль и место шапке даёт ApplyFrame: они зависят от раскладки шага под экран.
             _title = Label("Title", _card, 26, TextAnchor.UpperLeft, Title, FontStyle.Bold);
             _subtitle = Label("Subtitle", _card, 12, TextAnchor.UpperLeft, Subtitle);
             _subtitle.horizontalOverflow = HorizontalWrapMode.Wrap;
             _note = Label("OnlineNote", _card, 11, TextAnchor.UpperRight, StatusInk);
             _body = Child("Body", _card);
-            ApplyFrame(false);
         }
 
         /// <summary>
-        /// Шапка карточки и поле шага. У входа и выбора персонажа они постоянные;
-        /// редактор персонажа ставит свои: на ПК шапка ниже и подзаголовок в одну
-        /// строку, на телефоне шапку заменяет ряд вкладок.
+        /// Шапка карточки и поле шага. У шагов аккаунта шапка одна: заголовок, справа от
+        /// него адрес сервера, ниже пояснение, которому высоту даёт его текст, — поле
+        /// шага начинается там, где шапка кончилась. Редактор персонажа ставит свою: на
+        /// ПК шапка ниже и подзаголовок в одну строку, на телефоне шапку заменяет ряд
+        /// вкладок.
         /// </summary>
         private void ApplyFrame(bool creator)
         {
@@ -193,13 +204,19 @@ namespace RealmOfAshes.Game
             _title.alignment = compact ? TextAnchor.MiddleLeft : TextAnchor.UpperLeft;
             if (!creator)
             {
-                _title.fontSize = 26;
-                _subtitle.fontSize = 12;
-                _note.fontSize = 11;
-                Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(18f, -52f), new Vector2(-320f, -18f));
-                Place(_subtitle.rectTransform, 0f, 1f, 0f, 1f, new Vector2(18f, -92f), new Vector2(600f, -54f));
-                Place(_note.rectTransform, 1f, 1f, 1f, 1f, new Vector2(-320f, -40f), new Vector2(-18f, -20f));
-                Place(_body, 0f, 0f, 1f, 1f, new Vector2(18f, 18f), new Vector2(-18f, -104f));
+                _title.fontSize = Fs(26f);
+                _subtitle.fontSize = Fs(12f);
+                _note.fontSize = Fs(11f);
+                float width = _layout.Card.x - 2f * AccountPad;
+                float titleWidth = Mathf.Min(width, Mathf.Ceil(_title.preferredWidth) + U(12f));
+                float titleHeight = U(36f);
+                PlaceTop(_title.rectTransform, AccountPad, AccountPad, titleWidth, titleHeight);
+                PlaceTop(_note.rectTransform, AccountPad + titleWidth, AccountPad + U(2f), width - titleWidth, U(20f));
+                float subtitleWidth = Mathf.Min(width, U(582f));
+                float subtitleHeight = WrappedHeight(_subtitle, subtitleWidth);
+                PlaceTop(_subtitle.rectTransform, AccountPad, AccountPad + titleHeight, subtitleWidth, subtitleHeight);
+                _bodyTop = AccountPad + titleHeight + subtitleHeight + U(12f);
+                Place(_body, 0f, 0f, 1f, 1f, new Vector2(AccountPad, AccountPad), new Vector2(-AccountPad, -_bodyTop));
                 return;
             }
 
@@ -222,18 +239,35 @@ namespace RealmOfAshes.Game
 
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// Каждый шаг раскладывается под экран сам (ComputeLayout), а карточка остаётся в
+        /// масштабе раскладки — единице везде, кроме окна уже CompactMinWidth. Ужимать её
+        /// целиком под экран нельзя: сжатая карточка мылит текст (глифы растрируются по
+        /// масштабу канвы, а не карточки) и роняет 10 pt до 6 пикселей на телефоне.
+        /// </summary>
         private void RebuildBody(string step)
         {
+            // Пересборка того же шага под новый размер окна возвращает фокус тому же полю.
+            int focused = 0;
+            if (step == _builtStep)
+                for (int i = 0; i < _inputs.Count; i++)
+                    if (_inputs[i] != null && _inputs[i].isFocused) focused = i;
+
             foreach (GameObject go in _bodyObjects) Discard(go);
             _bodyObjects.Clear();
             _inputs.Clear();
             _status = null;
+            _panel = null;
             CloseConfirm();
             // Заново открытый редактор начинается с первой вкладки; пересборка под новый
             // размер окна или каталог оставляет ту, что открыта.
             if (step != _builtStep) _creatorTab = 0;
             _builtStep = step;
-            if (step != "creator") ApplyFrame(false);
+            bool creator = step == "creator";
+            _layout = ComputeLayout(creator);
+            _card.localScale = Vector3.one * _layout.CardScale;
+            HeaderTexts(step); // шапка меряет свой текст
+            ApplyFrame(creator);
 
             switch (step)
             {
@@ -245,31 +279,9 @@ namespace RealmOfAshes.Game
                 case "connecting": BuildConnecting(); break;
                 default: BuildLogin(); break;
             }
-            // На телефоне поле имени лежит на закрытой вкладке, а фокус поднял бы клавиатуру.
-            bool touchCreator = step == "creator" && _layout.Touch;
-            if (_inputs.Count > 0 && !touchCreator) _inputs[0].ActivateInputField();
-        }
-
-        /// <summary>
-        /// Ужимает карточку под экран. Редактор персонажа сюда не попадает: сжатая
-        /// карточка мылит текст (глифы растрируются по масштабу канвы, а не карточки)
-        /// и роняет 10 pt до 6 пикселей на телефоне, поэтому он раскладывается под
-        /// экран сам (ComputeCreatorLayout) и остаётся в масштабе 1.
-        /// </summary>
-        private void FitCardToViewport()
-        {
-            if (_card == null || _canvasRect == null) return;
-            Rect viewport = _canvasRect.rect;
-            if (viewport.width <= 1f || viewport.height <= 1f) return;
-            if (_builtStep == "creator")
-            {
-                _card.localScale = Vector3.one * _layout.CardScale;
-                return;
-            }
-            Vector2 size = _card.sizeDelta;
-            if (size.x <= 1f || size.y <= 1f) return;
-            float fit = Mathf.Min(1f, (viewport.width - CardMargin) / size.x, (viewport.height - CardMargin) / size.y);
-            _card.localScale = Vector3.one * Mathf.Max(0.35f, fit);
+            // На телефоне фокус поднял бы экранную клавиатуру поверх формы, а у редактора
+            // поле имени ещё и лежит на закрытой вкладке.
+            if (_inputs.Count > 0 && !_layout.Touch) _inputs[Mathf.Min(focused, _inputs.Count - 1)].ActivateInputField();
         }
 
         /// <summary>Экран строит и редакторская проба раскладки: в edit mode Destroy — ошибка в логе.</summary>
@@ -279,35 +291,50 @@ namespace RealmOfAshes.Game
             if (Application.isPlaying) Destroy(target); else DestroyImmediate(target);
         }
 
-        private RectTransform Panel(string name, float height)
+        // --- Панель шага аккаунта: всё расставляется сверху вниз, метрики — через U() ---
+
+        private float PanelWidth { get { return _layout.Card.x - 2f * AccountPad; } }
+
+        /// <summary>
+        /// Панель шага лежит в прокрутке на всё поле карточки. Высоту панели даёт её
+        /// содержимое (ClosePanel), карточка растёт вместе с ней, как #character-card в
+        /// web, но не выше экрана: не влезшее прокручивается, до кнопки всегда можно
+        /// добраться. Пока панель ниже поля, прокрутки нет.
+        /// </summary>
+        private RectTransform Panel(string name)
         {
-            // Карточка в web растёт по содержимому (max-height: 100vh-28px).
-            _card.sizeDelta = new Vector2(1180f, Mathf.Min(122f + height, 1040f));
-            RectTransform panel = Child(name, _body);
-            Place(panel, 0f, 1f, 1f, 1f, new Vector2(0f, -height), new Vector2(0f, 0f));
-            var image = panel.gameObject.AddComponent<Image>();
+            RectTransform content = ScrollColumn(_body, 0f, 0f, PanelWidth, 0f);
+            _bodyObjects.Add(content.parent.gameObject);
+            _panel = Child(name, content);
+            var image = _panel.gameObject.AddComponent<Image>();
             image.color = PanelBg;
-            var outline = panel.gameObject.AddComponent<Outline>();
+            var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1f, -1f);
-            _bodyObjects.Add(panel.gameObject);
-            return panel;
+            return _panel;
         }
 
-        private void PanelTitleRow(RectTransform panel, string caption, string small, out Text smallText)
+        private void ClosePanel(float height)
         {
-            PanelTitleRow(panel, caption, small, out smallText, 12f);
+            PlaceTop(_panel, 0f, 0f, PanelWidth, height);
+            var content = (RectTransform)_panel.parent;
+            content.sizeDelta = new Vector2(0f, height);
+            float cardHeight = Mathf.Min(_bodyTop + height + AccountPad, _layout.Card.y);
+            _card.sizeDelta = new Vector2(_layout.Card.x, cardHeight);
+            ((RectTransform)content.parent).sizeDelta = new Vector2(PanelWidth, cardHeight - _bodyTop - AccountPad);
         }
 
-        private void PanelTitleRow(RectTransform panel, string caption, string small, out Text smallText, float top)
+        /// <summary>Название панели слева, пояснение справа; right — место, занятое кнопкой в той же строке.</summary>
+        private float PanelTitleRow(RectTransform panel, string caption, string small, float top, float height, float right)
         {
-            Text title = Label("PanelTitle", panel, 12, TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
+            float half = Mathf.Floor(PanelWidth * 0.5f);
+            Text title = Label("PanelTitle", panel, Fs(12f), TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
             title.text = caption.ToUpperInvariant();
-            Place(title.rectTransform, 0f, 1f, 0.5f, 1f, new Vector2(12f, -top - 20f), new Vector2(0f, -top));
-            smallText = Label("PanelSmall", panel, 11, TextAnchor.MiddleRight, PanelTitle);
+            PlaceTop(title.rectTransform, 12f, top, half - 12f, height);
+            Text smallText = Label("PanelSmall", panel, Fs(11f), TextAnchor.MiddleRight, PanelTitle);
             smallText.text = small;
-            smallText.fontStyle = FontStyle.Normal;
-            Place(smallText.rectTransform, 0.5f, 1f, 1f, 1f, new Vector2(0f, -top - 20f), new Vector2(-12f, -top));
+            PlaceTop(smallText.rectTransform, half, top, PanelWidth - half - right, height);
+            return top + height;
         }
 
         /// <summary>Размещение от верхнего-левого угла: left/top — отступы, width/height — размер.</summary>
@@ -319,13 +346,29 @@ namespace RealmOfAshes.Game
             rect.sizeDelta = new Vector2(width, height);
         }
 
-        private InputField TextInput(RectTransform panel, float top, string placeholder, string value,
-                                 bool password, System.Action<string> onChanged)
+        /// <summary>
+        /// Ставит подпись в поток сверху вниз и возвращает её низ. Высоту рамке даёт сам
+        /// текст при его кегле: у подписей мельче основного кегль поднимает MinFont, и
+        /// рамка, отмеренная в единицах макета, оказалась бы ниже строки.
+        /// </summary>
+        private float FlowText(Text text, float left, float top, float width)
         {
-            RectTransform rect = Child("Input", panel);
-            Place(rect, 0f, 1f, 0f, 1f, new Vector2(12f, -top - 36f), new Vector2(472f, -top));
-            return InputBox(rect, 14, placeholder, value, password, onChanged);
+            float height = text.horizontalOverflow == HorizontalWrapMode.Wrap
+                ? WrappedHeight(text, width) : Mathf.Ceil(text.preferredHeight);
+            PlaceTop(text.rectTransform, left, top, width, height);
+            return top + height;
         }
+
+        private float TextInput(RectTransform panel, string key, float top, string placeholder, string value,
+                                bool password, System.Action<string> onChanged)
+        {
+            RectTransform rect = Child("Input-" + key, panel);
+            PlaceTop(rect, 12f, top, InputWidth, U(36f));
+            InputBox(rect, Fs(14f), placeholder, value, password, onChanged);
+            return top + U(36f);
+        }
+
+        private float InputWidth { get { return Mathf.Min(U(460f), PanelWidth - 24f); } }
 
         /// <summary>Поле ввода в готовом прямоугольнике: место и кегль задаёт вызывающий.</summary>
         private InputField InputBox(RectTransform rect, int fontSize, string placeholder, string value,
@@ -363,7 +406,7 @@ namespace RealmOfAshes.Game
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
             rect.anchoredPosition = new Vector2(-right, -top);
-            rect.sizeDelta = new Vector2(width, 32f);
+            rect.sizeDelta = new Vector2(width, U(32f));
             var image = go.AddComponent<Image>();
             image.color = link ? new Color(0f, 0f, 0f, 0f) : ButtonBg;
             var outline = go.AddComponent<Outline>();
@@ -371,20 +414,82 @@ namespace RealmOfAshes.Game
             outline.effectDistance = new Vector2(1f, -1f);
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;
-            Text label = Label("Label", rect, 13, TextAnchor.MiddleCenter, link ? LinkInk : ButtonInk);
+            Text label = Label("Label", rect, Fs(13f), TextAnchor.MiddleCenter, link ? LinkInk : ButtonInk);
             Stretch(label.rectTransform, 2f);
             label.text = caption;
             button.onClick.AddListener(() => onClick());
             return button;
         }
 
+        /// <summary>
+        /// Кнопка шага аккаунта. Ширину ей даёт подпись — кегль у экранов разный, —
+        /// но не меньше minWidth макета; место ей назначает ButtonRow. Высота U(32)
+        /// под палец (Zoom от TouchZoom) — ровно MinTouchUnits.
+        /// </summary>
+        private Button ActionButton(RectTransform panel, string name, string caption, bool link, System.Action onClick,
+                                    float minWidth = 96f)
+        {
+            Button button = ActionButton(panel, caption, 0f, 0f, 0f, link, onClick);
+            button.name = name;
+            float width = Mathf.Max(U(minWidth), Mathf.Ceil(button.GetComponentInChildren<Text>().preferredWidth) + U(36f));
+            ((RectTransform)button.transform).sizeDelta = new Vector2(width, U(32f));
+            return button;
+        }
+
+        /// <summary>
+        /// Ряд кнопок от правого края родителя шириной room, первая — крайняя справа.
+        /// Кнопка, которой не хватило места, уходит на следующую строку. Возвращает низ ряда.
+        /// </summary>
+        private float ButtonRow(float top, float right, float room, params Button[] buttons)
+        {
+            float gap = U(8f);
+            float used = right;
+            float rowHeight = 0f;
+            foreach (Button button in buttons)
+            {
+                var rect = (RectTransform)button.transform;
+                Vector2 size = rect.sizeDelta;
+                if (used > right && used + size.x > room - right)
+                {
+                    top += rowHeight + gap;
+                    used = right;
+                    rowHeight = 0f;
+                }
+                rect.anchoredPosition = new Vector2(-used, -top);
+                used += size.x + gap;
+                rowHeight = Mathf.Max(rowHeight, size.y);
+            }
+            return top + rowHeight;
+        }
+
+        /// <summary>
+        /// Строка статуса — последняя в панели, она же её и закрывает. Текст ей пишет
+        /// сервер, длина любая: когда строк становится больше, панель и карточка
+        /// подрастают вместе с ней, без пересборки шага — та отняла бы фокус у поля ввода.
+        /// </summary>
         private void StatusLine(RectTransform panel, float top, string fallback)
         {
-            _status = Label("Status", panel, 11, TextAnchor.UpperLeft, StatusInk);
-            Place(_status.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -top - 36f), new Vector2(-12f, -top));
+            _status = Label("Status", panel, Fs(11f), TextAnchor.UpperLeft, StatusInk);
             _status.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _status.text = fallback;
             _statusFallback = fallback;
+            _statusTop = top;
+            _statusMeasured = null;
+            ShowStatus();
+        }
+
+        private void ShowStatus()
+        {
+            string status = Bootstrap.StatusText;
+            _status.text = string.IsNullOrEmpty(status) ? _statusFallback : status;
+            _status.color = Bootstrap.AuthFailed ? StatusErr : (string.IsNullOrEmpty(status) ? StatusInk : StatusOk);
+            if (_status.text == _statusMeasured) return;
+            _statusMeasured = _status.text;
+            ClosePanel(FlowText(_status, 12f, _statusTop, PanelWidth - 24f) + U(10f));
+            // Панель выше поля карточки (вход с полем сервера на телефоне): ответ сервера не
+            // должен остаться под нижним краем. Статус в панели последний — она докручивается до низа.
+            var content = (RectTransform)_panel.parent;
+            float hidden = content.sizeDelta.y - ((RectTransform)content.parent).sizeDelta.y;
+            if (hidden > 0f && !string.IsNullOrEmpty(status)) content.anchoredPosition = new Vector2(0f, hidden);
         }
 
         private string _statusFallback = string.Empty;
@@ -393,174 +498,198 @@ namespace RealmOfAshes.Game
 
         private void BuildLogin()
         {
-            RectTransform panel = Panel("LoginPanel", 346f);
+            RectTransform panel = Panel("LoginPanel");
+            float width = PanelWidth;
 
             // .quick-start-panel web (01:680): кикер, «Сразу в пустошь», подпись и «Начать сразу».
-            RectTransform quick = new GameObject("QuickStart", typeof(RectTransform)).GetComponent<RectTransform>();
-            quick.SetParent(panel, false);
-            quick.anchorMin = new Vector2(0f, 1f);
-            quick.anchorMax = new Vector2(1f, 1f);
-            quick.offsetMin = new Vector2(12f, -84f);
-            quick.offsetMax = new Vector2(-12f, -8f);
+            // Подписи идут во всю ширину слева от кнопки: пояснение в одну строку экономит
+            // телефону высоту, а блок получает высоту своего текста.
+            RectTransform quick = Child("QuickStartPanel", panel);
+            float quickWidth = width - 24f;
             var quickBg = quick.gameObject.AddComponent<Image>();
             quickBg.color = new Color(0.18f, 0.15f, 0.08f, 1f);
             var quickBorder = quick.gameObject.AddComponent<Outline>();
             quickBorder.effectColor = new Color(0.78f, 0.604f, 0.275f, 0.78f);
             quickBorder.effectDistance = new Vector2(1f, -1f);
-            Text kicker = Label("Kicker", quick, 9, TextAnchor.UpperLeft, new Color(0.851f, 0.678f, 0.345f, 1f), FontStyle.Bold);
+            Button start = ActionButton(quick, "QuickStart", "Начать сразу", false, () => Bootstrap.AuthQuickStart(), 150f);
+            float quickPad = U(14f);
+            float textWidth = quickWidth - quickPad * 2f - ((RectTransform)start.transform).sizeDelta.x - U(16f);
+            Text kicker = Label("Kicker", quick, Fs(9f), TextAnchor.UpperLeft, new Color(0.851f, 0.678f, 0.345f, 1f), FontStyle.Bold);
             kicker.text = "БЫСТРЫЙ СТАРТ";
-            PlaceTop(kicker.rectTransform, 14f, 10f, 200f, 12f);
-            Text strong = Label("Title", quick, 16, TextAnchor.UpperLeft, new Color(0.949f, 0.824f, 0.529f, 1f), FontStyle.Bold);
+            float y = FlowText(kicker, quickPad, U(10f), textWidth);
+            Text strong = Label("Title", quick, Fs(16f), TextAnchor.UpperLeft, new Color(0.949f, 0.824f, 0.529f, 1f), FontStyle.Bold);
             strong.text = "Сразу в пустошь";
-            PlaceTop(strong.rectTransform, 14f, 24f, 200f, 20f);
-            Text small = Label("Small", quick, 10, TextAnchor.UpperLeft, new Color(0.722f, 0.753f, 0.639f, 1f));
+            y = FlowText(strong, quickPad, y, textWidth);
+            Text small = Label("Small", quick, Fs(10f), TextAnchor.UpperLeft, new Color(0.722f, 0.753f, 0.639f, 1f));
             small.text = "Готовый выживший, пистолет и сохранение прогресса на этом устройстве.";
             small.horizontalOverflow = HorizontalWrapMode.Wrap;
-            PlaceTop(small.rectTransform, 14f, 46f, 330f, 28f);
-            ActionButton(quick, "Начать сразу", 14f, 22f, 150f, false, () => Bootstrap.AuthQuickStart());
+            float quickHeight = FlowText(small, quickPad, y + U(2f), textWidth) + U(10f);
+            PlaceTop(quick, 12f, U(8f), quickWidth, quickHeight);
+            ButtonRow((quickHeight - U(32f)) * 0.5f, quickPad, quickWidth, start);
 
-            Text divider = Label("Divider", panel, 10, TextAnchor.MiddleCenter, new Color(0.6f, 0.6f, 0.5f, 1f));
+            Text divider = Label("Divider", panel, Fs(10f), TextAnchor.MiddleCenter, new Color(0.6f, 0.6f, 0.5f, 1f));
             divider.text = "— или войдите в постоянный аккаунт —";
-            PlaceTop(divider.rectTransform, 12f, 92f, 560f, 14f);
+            float top = FlowText(divider, 12f, U(8f) + quickHeight + U(8f), InputWidth);
 
-            PanelTitleRow(panel, "Вход", "не выполнен вход", out _, 110f);
-            TextInput(panel, 140f, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v);
-            TextInput(panel, 184f, "Пароль", Bootstrap.AuthPassword, true, v => Bootstrap.AuthPassword = v);
+            top = PanelTitleRow(panel, "Вход", "не выполнен вход", top + U(4f), U(20f), 12f) + U(10f);
+            top = TextInput(panel, "login", top, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v) + U(8f);
+            top = TextInput(panel, "password", top, "Пароль", Bootstrap.AuthPassword, true, v => Bootstrap.AuthPassword = v) + U(8f);
             // В браузере адрес берётся из адреса страницы, поэтому поле там только
             // технический шум и лишний способ случайно сломать вход. В остальных
             // сборках оно нужно: сервер задаётся вручную.
-#if !UNITY_WEBGL || UNITY_EDITOR
-            TextInput(panel, 228f, "Сервер (http://host:port)", Bootstrap.AuthServerUrl, false, v => Bootstrap.AuthServerUrl = v);
-#endif
+            if (ServerFieldOverride ?? ServerFieldInBuild)
+                top = TextInput(panel, "server", top, "Сервер (http://host:port)", Bootstrap.AuthServerUrl, false, v => Bootstrap.AuthServerUrl = v) + U(8f);
 
-            ActionButton(panel, "Войти", 12f, 276f, 120f, false, () => Bootstrap.AuthSubmitLogin());
-            ActionButton(panel, "Зарегистрироваться", 140f, 276f, 180f, true, () => Bootstrap.AuthShowPanel("register"));
-            ActionButton(panel, "Забыли пароль?", 328f, 276f, 150f, true, () => Bootstrap.AuthShowPanel("reset"));
-            StatusLine(panel, 310f, "Войдите, чтобы загрузить персонажей с сервера.");
+            top = ButtonRow(top + U(4f), 12f, width,
+                ActionButton(panel, "SubmitLogin", "Войти", false, () => Bootstrap.AuthSubmitLogin(), 120f),
+                ActionButton(panel, "ShowRegister", "Зарегистрироваться", true, () => Bootstrap.AuthShowPanel("register")),
+                ActionButton(panel, "ShowReset", "Забыли пароль?", true, () => Bootstrap.AuthShowPanel("reset")));
+            StatusLine(panel, top + U(4f), "Войдите, чтобы загрузить персонажей с сервера.");
         }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+        private const bool ServerFieldInBuild = true;
+#else
+        private const bool ServerFieldInBuild = false;
+#endif
 
         private void BuildRegister()
         {
-            RectTransform panel = Panel("RegisterPanel", 300f);
-            PanelTitleRow(panel, "Регистрация", "новый аккаунт", out _);
-            TextInput(panel, 44f, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v);
-            TextInput(panel, 88f, "Email для восстановления пароля", Bootstrap.AuthEmail, false, v => Bootstrap.AuthEmail = v);
-            TextInput(panel, 132f, "Пароль", Bootstrap.AuthPassword, true, v => Bootstrap.AuthPassword = v);
-            TextInput(panel, 176f, "Повторите пароль", Bootstrap.AuthPasswordConfirm, true, v => Bootstrap.AuthPasswordConfirm = v);
-            ActionButton(panel, "Создать аккаунт", 12f, 224f, 160f, false, () => Bootstrap.AuthSubmitRegister());
-            ActionButton(panel, "Назад ко входу", 180f, 224f, 150f, true, () => Bootstrap.AuthShowPanel("login"));
-            StatusLine(panel, 258f, "После регистрации откроется выбор персонажа.");
+            RectTransform panel = Panel("RegisterPanel");
+            float top = PanelTitleRow(panel, "Регистрация", "новый аккаунт", U(12f), U(20f), 12f) + U(12f);
+            top = TextInput(panel, "login", top, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v) + U(8f);
+            top = TextInput(panel, "email", top, "Email для восстановления пароля", Bootstrap.AuthEmail, false, v => Bootstrap.AuthEmail = v) + U(8f);
+            top = TextInput(panel, "password", top, "Пароль", Bootstrap.AuthPassword, true, v => Bootstrap.AuthPassword = v) + U(8f);
+            top = TextInput(panel, "passwordConfirm", top, "Повторите пароль", Bootstrap.AuthPasswordConfirm, true, v => Bootstrap.AuthPasswordConfirm = v);
+            top = ButtonRow(top + U(12f), 12f, PanelWidth,
+                ActionButton(panel, "SubmitRegister", "Создать аккаунт", false, () => Bootstrap.AuthSubmitRegister()),
+                ActionButton(panel, "BackToLogin", "Назад ко входу", true, () => Bootstrap.AuthShowPanel("login")));
+            StatusLine(panel, top + U(4f), "После регистрации откроется выбор персонажа.");
         }
 
         private void BuildReset()
         {
-            RectTransform panel = Panel("ResetPanel", 210f);
-            PanelTitleRow(panel, "Восстановление пароля", "код придёт на email", out _);
-            TextInput(panel, 44f, "Email аккаунта", Bootstrap.AuthEmail, false, v => Bootstrap.AuthEmail = v);
-            ActionButton(panel, "Отправить код", 12f, 92f, 150f, false, () => Bootstrap.AuthSubmitResetRequest());
-            ActionButton(panel, "У меня уже есть код", 170f, 92f, 170f, true, () => Bootstrap.AuthShowPanel("resetConfirm"));
-            ActionButton(panel, "Назад ко входу", 348f, 92f, 150f, true, () => Bootstrap.AuthShowPanel("login"));
-            StatusLine(panel, 134f, "Введите email, указанный при регистрации.");
+            RectTransform panel = Panel("ResetPanel");
+            float top = PanelTitleRow(panel, "Восстановление пароля", "код придёт на email", U(12f), U(20f), 12f) + U(12f);
+            top = TextInput(panel, "email", top, "Email аккаунта", Bootstrap.AuthEmail, false, v => Bootstrap.AuthEmail = v);
+            top = ButtonRow(top + U(12f), 12f, PanelWidth,
+                ActionButton(panel, "SubmitReset", "Отправить код", false, () => Bootstrap.AuthSubmitResetRequest()),
+                ActionButton(panel, "ShowResetConfirm", "У меня уже есть код", true, () => Bootstrap.AuthShowPanel("resetConfirm")),
+                ActionButton(panel, "BackToLogin", "Назад ко входу", true, () => Bootstrap.AuthShowPanel("login")));
+            StatusLine(panel, top + U(10f), "Введите email, указанный при регистрации.");
         }
 
         private void BuildResetConfirm()
         {
-            RectTransform panel = Panel("ResetConfirmPanel", 300f);
-            PanelTitleRow(panel, "Новый пароль", "одноразовый код", out _);
-            TextInput(panel, 44f, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v);
-            TextInput(panel, 88f, "Код восстановления", Bootstrap.AuthResetToken, false, v => Bootstrap.AuthResetToken = v);
-            TextInput(panel, 132f, "Новый пароль", Bootstrap.AuthNewPassword, true, v => Bootstrap.AuthNewPassword = v);
-            TextInput(panel, 176f, "Повторите новый пароль", Bootstrap.AuthPasswordConfirm, true, v => Bootstrap.AuthPasswordConfirm = v);
-            ActionButton(panel, "Сохранить новый пароль", 12f, 224f, 210f, false, () => Bootstrap.AuthSubmitResetConfirm());
-            ActionButton(panel, "Назад ко входу", 230f, 224f, 150f, true, () => Bootstrap.AuthShowPanel("login"));
-            StatusLine(panel, 258f, "Введите новый пароль длиной не менее 8 символов.");
+            RectTransform panel = Panel("ResetConfirmPanel");
+            float top = PanelTitleRow(panel, "Новый пароль", "одноразовый код", U(12f), U(20f), 12f) + U(12f);
+            top = TextInput(panel, "login", top, "Логин", Bootstrap.AuthLogin, false, v => Bootstrap.AuthLogin = v) + U(8f);
+            top = TextInput(panel, "resetToken", top, "Код восстановления", Bootstrap.AuthResetToken, false, v => Bootstrap.AuthResetToken = v) + U(8f);
+            top = TextInput(panel, "newPassword", top, "Новый пароль", Bootstrap.AuthNewPassword, true, v => Bootstrap.AuthNewPassword = v) + U(8f);
+            top = TextInput(panel, "passwordConfirm", top, "Повторите новый пароль", Bootstrap.AuthPasswordConfirm, true, v => Bootstrap.AuthPasswordConfirm = v);
+            top = ButtonRow(top + U(12f), 12f, PanelWidth,
+                ActionButton(panel, "SubmitResetConfirm", "Сохранить новый пароль", false, () => Bootstrap.AuthSubmitResetConfirm()),
+                ActionButton(panel, "BackToLogin", "Назад ко входу", true, () => Bootstrap.AuthShowPanel("login")));
+            StatusLine(panel, top + U(4f), "Введите новый пароль длиной не менее 8 символов.");
         }
 
         private void BuildConnecting()
         {
-            RectTransform panel = Panel("ConnectingPanel", 90f);
-            PanelTitleRow(panel, "Подключение", Bootstrap.AuthServerUrl, out _);
-            StatusLine(panel, 44f, "Вход...");
+            RectTransform panel = Panel("ConnectingPanel");
+            float top = PanelTitleRow(panel, "Подключение", Bootstrap.AuthServerUrl, U(12f), U(20f), 12f);
+            StatusLine(panel, top + U(12f), "Вход...");
         }
 
         private void BuildSelect()
         {
             IReadOnlyList<CharacterSummary> characters = Bootstrap.AuthCharacters;
-            float listHeight = Mathf.Clamp(characters.Count * 74f + 8f, 60f, 380f);
-            RectTransform panel = Panel("SelectPanel", 120f + listHeight);
-            PanelTitleRow(panel, "Выбор персонажа", Bootstrap.AuthLogin, out Text loginSmall);
-            loginSmall.rectTransform.offsetMax = new Vector2(-112f, -12f);
-            ActionButton(panel, "Выйти", 12f, 10f, 90f, true, () => Bootstrap.AuthLogout());
+            RectTransform panel = Panel("SelectPanel");
+            float width = PanelWidth;
 
-            // Список карточек (.character-list) с прокруткой.
-            RectTransform scrollArea = Child("Scroll", panel);
-            Place(scrollArea, 0f, 1f, 1f, 1f, new Vector2(12f, -44f - listHeight), new Vector2(-12f, -44f));
-            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
-            scroll.horizontal = false;
-            RoaUiScroll.Configure(scroll);
-            scrollArea.gameObject.AddComponent<RectMask2D>();
-            RectTransform list = Child("List", scrollArea);
-            list.anchorMin = new Vector2(0f, 1f);
-            list.anchorMax = new Vector2(1f, 1f);
-            list.pivot = new Vector2(0f, 1f);
-            list.sizeDelta = Vector2.zero;
-            var layout = list.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 8f;
-            layout.padding = new RectOffset(0, 4, 0, 0);
-            layout.childForceExpandHeight = false;
-            layout.childControlHeight = true;
-            list.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            scroll.content = list;
+            // Название панели стоит в одну строку с «Выйти» и по её высоте.
+            Button logout = ActionButton(panel, "Logout", "Выйти", true, () => Bootstrap.AuthLogout());
+            Vector2 logoutSize = ((RectTransform)logout.transform).sizeDelta;
+            float top = ButtonRow(U(10f), 12f, width, logout);
+            PanelTitleRow(panel, "Выбор персонажа", Bootstrap.AuthLogin, U(10f), logoutSize.y, 12f + logoutSize.x + U(10f));
+            top += U(8f);
 
-            if (characters.Count == 0)
+            // Список карточек (.character-list). Высоту карточке даёт её текст, поэтому
+            // расставляет их этот код, а не LayoutGroup.
+            float listWidth = width - 24f;
+            RectTransform list = ScrollColumn(panel, 12f, top, listWidth, 0f);
+            float gap = U(8f);
+            float firstRow = 0f;
+            float bottom = 0f;
+            if (characters.Count == 0) bottom = firstRow = AddEmptyRow(list, listWidth);
+            foreach (CharacterSummary character in characters)
             {
-                var empty = new GameObject("Empty", typeof(RectTransform));
-                empty.transform.SetParent(list, false);
-                empty.AddComponent<LayoutElement>().preferredHeight = 44f;
-                var outline = empty.AddComponent<Image>();
-                outline.color = new Color(0f, 0f, 0f, 0f);
-                var border = empty.AddComponent<Outline>();
-                border.effectColor = RowBorder;
-                border.effectDistance = new Vector2(1f, -1f);
-                Text text = Label("Text", (RectTransform)empty.transform, 12, TextAnchor.MiddleLeft, StatusInk);
-                Stretch(text.rectTransform, 12f);
-                text.text = "На этом аккаунте пока нет персонажей. Создайте нового персонажа.";
+                bottom = AddCharacterRow(list, character, bottom > 0f ? bottom + gap : 0f, listWidth);
+                if (firstRow <= 0f) firstRow = bottom;
             }
+            list.sizeDelta = new Vector2(0f, bottom);
 
-            foreach (CharacterSummary character in characters) AddCharacterRow(list, character);
+            // Под списком — кнопка и статус, которому отмерено две строки; всё остальное
+            // поле карточки достаётся списку. Карточки, которым не хватило места,
+            // прокручиваются в нём, а не вместе со всей панелью; меньше одной карточки
+            // список не бывает — тогда уже прокручивается панель.
+            float below = U(10f) + U(32f) + U(4f) + 2f * U(18f) + U(10f);
+            float room = _layout.Card.y - _bodyTop - AccountPad - top - below;
+            float listHeight = Mathf.Min(bottom, Mathf.Max(room, firstRow));
+            ((RectTransform)list.parent).sizeDelta = new Vector2(listWidth, listHeight);
 
-            float buttonsTop = 44f + listHeight + 10f;
-            ActionButton(panel, "Создать нового персонажа", 12f, buttonsTop, 230f, false, () => Bootstrap.AuthOpenCreator());
-            StatusLine(panel, buttonsTop + 36f, characters.Count > 0
+            top = ButtonRow(top + listHeight + U(10f), 12f, width,
+                ActionButton(panel, "CreateNew", "Создать нового персонажа", false, () => Bootstrap.AuthOpenCreator()));
+            StatusLine(panel, top + U(4f), characters.Count > 0
                 ? "Выберите персонажа для продолжения."
                 : "Персонажей пока нет. Создайте нового.");
         }
 
-        private void AddCharacterRow(RectTransform list, CharacterSummary character)
+        private float AddEmptyRow(RectTransform list, float width)
         {
-            var row = new GameObject("Row", typeof(RectTransform));
-            row.transform.SetParent(list, false);
-            row.AddComponent<LayoutElement>().preferredHeight = 66f;
-            row.AddComponent<Image>().color = RowBg;
-            var outline = row.AddComponent<Outline>();
+            RectTransform rect = Child("Empty", list);
+            rect.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+            var border = rect.gameObject.AddComponent<Outline>();
+            border.effectColor = RowBorder;
+            border.effectDistance = new Vector2(1f, -1f);
+            Text text = Label("Text", rect, Fs(12f), TextAnchor.UpperLeft, StatusInk);
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.text = "На этом аккаунте пока нет персонажей. Создайте нового персонажа.";
+            float height = FlowText(text, 12f, U(12f), width - 24f) + U(12f);
+            PlaceTop(rect, 0f, 0f, width, height);
+            return height;
+        }
+
+        /// <summary>Карточка персонажа (.character-card): имя, строка сведений с переносом и «Играть / Удалить». Возвращает свой низ.</summary>
+        private float AddCharacterRow(RectTransform list, CharacterSummary character, float top, float width)
+        {
+            RectTransform rect = Child("Row", list);
+            rect.gameObject.AddComponent<Image>().color = RowBg;
+            var outline = rect.gameObject.AddComponent<Outline>();
             outline.effectColor = RowBorder;
             outline.effectDistance = new Vector2(1f, -1f);
-            var rect = (RectTransform)row.transform;
 
-            Text name = Label("Name", rect, 14, TextAnchor.UpperLeft, Title, FontStyle.Bold);
-            name.text = "☢ " + (string.IsNullOrEmpty(character.Name) ? "Без имени" : character.Name);
-            Place(name.rectTransform, 0f, 1f, 1f, 1f, new Vector2(10f, -30f), new Vector2(-230f, -10f));
-
-            Text meta = Label("Meta", rect, 11, TextAnchor.UpperLeft, MetaInk);
-            meta.text = CharacterMeta(character);
-            Place(meta.rectTransform, 0f, 1f, 1f, 1f, new Vector2(10f, -56f), new Vector2(-230f, -34f));
-
-            Button play = ActionButton(rect, "Играть", 110f, 17f, 90f, false, () => Bootstrap.AuthPlayCharacter(character.CharacterId));
-            play.name = "Play";
-            Button delete = ActionButton(rect, "Удалить", 10f, 17f, 92f, false, () => OpenConfirm(character));
-            delete.name = "Delete";
+            Button delete = ActionButton(rect, "Delete", "Удалить", false, () => OpenConfirm(character));
             delete.GetComponent<Image>().color = DeleteBg;
             delete.GetComponentInChildren<Text>().color = DeleteInk;
+            Button play = ActionButton(rect, "Play", "Играть", false, () => Bootstrap.AuthPlayCharacter(character.CharacterId));
+            float pad = U(10f);
+            float buttons = ((RectTransform)delete.transform).sizeDelta.x + U(8f) + ((RectTransform)play.transform).sizeDelta.x;
+            float textWidth = width - pad * 3f - buttons;
+
+            Text name = Label("Name", rect, Fs(14f), TextAnchor.UpperLeft, Title, FontStyle.Bold);
+            // Значка радиации, как в web, перед именем нет: во вложенном шрифте такого глифа
+            // нет, а в WebGL подставить его неоткуда — имя начиналось бы с пустого места.
+            name.text = string.IsNullOrEmpty(character.Name) ? "Без имени" : character.Name;
+            float y = FlowText(name, pad, pad, textWidth);
+            // Название локации приходит из каталога и бывает длинным: строка переносится,
+            // а не уходит под кнопки.
+            Text meta = Label("Meta", rect, Fs(11f), TextAnchor.UpperLeft, MetaInk);
+            meta.horizontalOverflow = HorizontalWrapMode.Wrap;
+            meta.text = CharacterMeta(character);
+            float height = Mathf.Max(U(66f), FlowText(meta, pad, y + U(4f), textWidth) + pad);
+            PlaceTop(rect, 0f, top, width, height);
+            ButtonRow((height - U(32f)) * 0.5f, pad, width, delete, play);
+            return top + height;
         }
 
         /// <summary>Строка .character-card-meta: внешность · уровень · локация · обновлён.</summary>
@@ -586,13 +715,13 @@ namespace RealmOfAshes.Game
             return sex + " · " + body;
         }
 
-        // --- Создание персонажа (#character-creator-panel) ---------------------
+        // --- Раскладка под экран: общая для шагов аккаунта и создания персонажа ---
 
         /// <summary>
-        /// Нижний предел кегля на экране создания персонажа — в пикселях экрана, а не
-        /// в пунктах. Вложенный Noto Sans импортирован как Hinted Raster: глиф
-        /// растрируется в целых пикселях (кегль × масштаб канвы), и мельче 11 пикселей
-        /// буквы теряют форму, каким бы ни был кегль в единицах канвы.
+        /// Нижний предел кегля на экране аккаунта — в пикселях экрана, а не в пунктах.
+        /// Вложенный Noto Sans импортирован как Hinted Raster: глиф растрируется в целых
+        /// пикселях (кегль × масштаб канвы), и мельче 11 пикселей буквы теряют форму,
+        /// каким бы ни был кегль в единицах канвы.
         /// </summary>
         public const float MinTextPixels = 10.5f;
 
@@ -602,9 +731,13 @@ namespace RealmOfAshes.Game
         /// </summary>
         public const float MinTouchUnits = 48f;
 
-        private const int DesignFont = 12;          // самый мелкий кегль настольного макета
+        // Основной кегль настольного макета: от него считается Zoom. Подписи мельче
+        // (9–11 pt на шагах аккаунта) до MinFont поднимает сама Fs.
+        private const int DesignFont = 12;
         private const float TouchZoom = 1.5f;       // телефон: те же метрики в полтора раза крупнее
         private const float CardMargin = 24f;
+        private const float AccountCardWidth = 1180f; // #character-card в web
+        private const float AccountPad = 18f;
         private const float MaxCardWidth = 1416f;   // 1440 − поля: на 16:9 карточка встаёт пиксель в пиксель
         // Уже — четырём колонкам тесно: строке «ЦВЕТ ВОЛОС … Светло-коричневый» нужна колонка
         // в 358 единиц, то есть карточка от 1306. 16:9 и 16:10 проходят, 4:3 получает вкладки.
@@ -631,14 +764,16 @@ namespace RealmOfAshes.Game
         private static readonly Color TabSelectedBorder = new Color(0.851f, 0.722f, 0.427f, 0.95f);
 
         /// <summary>
-        /// Раскладка редактора под текущий экран. Карточка остаётся в масштабе 1, а под
+        /// Раскладка шага под текущий экран. Карточка остаётся в масштабе 1, а под
         /// экран подстраиваются кегль и расстановка. MinFont — кегль, который на этом
         /// экране даёт MinTextPixels; Zoom — множитель метрик относительно настольного
-        /// макета (кегль 12); Compact — вкладки вместо четырёх колонок: под палец и
-        /// когда колонкам тесно. CardScale меньше 1 только у окна уже CompactMinWidth,
-        /// и кегль это возмещает.
+        /// макета (кегль 12), под палец не меньше TouchZoom. CardScale меньше 1 только
+        /// у окна уже CompactMinWidth, и кегль это возмещает. Card — размер карточки
+        /// создания персонажа; у шагов аккаунта — ширина карточки и предел её высоты:
+        /// саму высоту даёт панель шага. Compact — только у создания персонажа: вкладки
+        /// вместо четырёх колонок, под палец и когда колонкам тесно.
         /// </summary>
-        private struct CreatorLayout
+        private struct ScreenLayout
         {
             public bool Compact;
             public bool Touch;
@@ -647,13 +782,80 @@ namespace RealmOfAshes.Game
             public int MinFont;
             public Vector2 Card;
 
-            public bool Same(CreatorLayout other)
+            public bool Same(ScreenLayout other)
             {
                 return Compact == other.Compact && Touch == other.Touch && MinFont == other.MinFont
                     && Mathf.Abs(CardScale - other.CardScale) < 0.001f && Mathf.Abs(Zoom - other.Zoom) < 0.001f
                     && Mathf.Abs(Card.x - other.Card.x) < 0.5f && Mathf.Abs(Card.y - other.Card.y) < 0.5f;
             }
         }
+
+        private ScreenLayout _layout;
+
+        private bool TouchLayout()
+        {
+            if (TouchLayoutOverride.HasValue) return TouchLayoutOverride.Value;
+            return Application.isMobilePlatform
+                || (Bootstrap != null && Bootstrap.MobileControls != null && Bootstrap.MobileControls.ControlsEnabled);
+        }
+
+        private ScreenLayout ComputeLayout(bool creator)
+        {
+            Rect viewport = _canvasRect.rect;
+            if (viewport.width <= 1f || viewport.height <= 1f) viewport = new Rect(Vector2.zero, RoaUiScale.Reference);
+            float canvasScale = _canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f;
+            var layout = new ScreenLayout { Touch = TouchLayout() };
+            layout.CardScale = Mathf.Clamp((viewport.width - CardMargin) / CompactMinWidth, 0.35f, 1f);
+            layout.MinFont = Mathf.CeilToInt(MinTextPixels / (canvasScale * layout.CardScale) - 0.001f);
+            layout.Zoom = Mathf.Max(layout.Touch ? TouchZoom : 1f, layout.MinFont / (float)DesignFont);
+            float roomX = (viewport.width - CardMargin) / layout.CardScale;
+            float roomY = (viewport.height - CardMargin) / layout.CardScale;
+            if (!creator)
+            {
+                layout.Card = new Vector2(Mathf.Floor(Mathf.Min(roomX, AccountCardWidth)), Mathf.Floor(roomY));
+                return layout;
+            }
+            layout.Compact = layout.Touch || roomX < WideMinWidth * layout.Zoom;
+            // Настольный макет: шапка 80, колонки 620, ряд действий 56 и поля — 786 единиц
+            // при Zoom 1, ровно 810 − поля. Вкладки занимают экран целиком.
+            float height = layout.Compact ? roomY : Mathf.Min(roomY, 52f + 734f * layout.Zoom);
+            layout.Card = new Vector2(Mathf.Floor(Mathf.Min(roomX, MaxCardWidth)), Mathf.Floor(height));
+            return layout;
+        }
+
+        /// <summary>Окно, масштаб канвы или способ ввода изменились: построенный шаг пора переложить.</summary>
+        private bool LayoutChanged(string step)
+        {
+            // Экранная клавиатура телефона меняет размер окна, а пересборка отняла бы фокус у
+            // поля ввода и закрыла её. На ПК поле в фокусе с самого открытия экрана, поэтому
+            // там окно перекладывается сразу, а фокус возвращает RebuildBody.
+            if (_layout.Touch)
+                foreach (InputField field in _inputs)
+                    if (field != null && field.isFocused) return false;
+            return !_layout.Same(ComputeLayout(step == "creator"));
+        }
+
+        /// <summary>
+        /// Высота переносимого текста при данной ширине рамки. Рамка подписи привязана к
+        /// пикселям экрана и в зависимости от места теряет до пикселя ширины, поэтому
+        /// строка «впритык» после расстановки переносилась иначе, чем при замере.
+        /// Меряем на два пикселя уже: лишняя строка в запасе безвредна, нехватка — нет.
+        /// </summary>
+        private float WrappedHeight(Text text, float width)
+        {
+            float slack = 2f / (_canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f);
+            TextGenerationSettings settings = text.GetGenerationSettings(new Vector2(Mathf.Max(1f, width - slack), 0f));
+            float pixels = text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text, settings);
+            return Mathf.Ceil(pixels / text.pixelsPerUnit) + 1f;
+        }
+
+        /// <summary>Метрика настольного макета в единицах канвы текущей раскладки.</summary>
+        private float U(float design) { return design * _layout.Zoom; }
+
+        /// <summary>Кегль настольного макета, не мельче MinTextPixels на этом экране.</summary>
+        private int Fs(float design) { return Mathf.Max(Mathf.RoundToInt(design * _layout.Zoom), _layout.MinFont); }
+
+        // --- Создание персонажа (#character-creator-panel) ---------------------
 
         private sealed class CreatorTab
         {
@@ -662,7 +864,6 @@ namespace RealmOfAshes.Game
             public Text Label;
         }
 
-        private CreatorLayout _layout;
         private int _creatorTab;
         private readonly List<RectTransform> _pages = new List<RectTransform>();
         private readonly List<CreatorTab> _tabs = new List<CreatorTab>();
@@ -695,64 +896,6 @@ namespace RealmOfAshes.Game
             return sb.ToString();
         }
 
-        private bool TouchLayout()
-        {
-            if (TouchLayoutOverride.HasValue) return TouchLayoutOverride.Value;
-            return Application.isMobilePlatform
-                || (Bootstrap != null && Bootstrap.MobileControls != null && Bootstrap.MobileControls.ControlsEnabled);
-        }
-
-        private CreatorLayout ComputeCreatorLayout()
-        {
-            Rect viewport = _canvasRect.rect;
-            if (viewport.width <= 1f || viewport.height <= 1f) viewport = new Rect(Vector2.zero, RoaUiScale.Reference);
-            float canvasScale = _canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f;
-            var layout = new CreatorLayout { Touch = TouchLayout() };
-            layout.CardScale = Mathf.Clamp((viewport.width - CardMargin) / CompactMinWidth, 0.35f, 1f);
-            layout.MinFont = Mathf.CeilToInt(MinTextPixels / (canvasScale * layout.CardScale) - 0.001f);
-            layout.Zoom = Mathf.Max(layout.Touch ? TouchZoom : 1f, layout.MinFont / (float)DesignFont);
-            float roomX = (viewport.width - CardMargin) / layout.CardScale;
-            float roomY = (viewport.height - CardMargin) / layout.CardScale;
-            layout.Compact = layout.Touch || roomX < WideMinWidth * layout.Zoom;
-            // Настольный макет: шапка 80, колонки 620, ряд действий 56 и поля — 786 единиц
-            // при Zoom 1, ровно 810 − поля. Вкладки занимают экран целиком.
-            float height = layout.Compact ? roomY : Mathf.Min(roomY, 52f + 734f * layout.Zoom);
-            layout.Card = new Vector2(Mathf.Floor(Mathf.Min(roomX, MaxCardWidth)), Mathf.Floor(height));
-            return layout;
-        }
-
-        private bool CreatorLayoutChanged(string step)
-        {
-            if (step != "creator" || _builtStep != "creator") return false;
-            // Экранная клавиатура телефона меняет размер окна, а пересборка отняла бы фокус у
-            // поля имени и закрыла её. На ПК поле имени в фокусе с самого открытия экрана,
-            // поэтому там окно перекладывается сразу, а фокус возвращает RebuildBody.
-            if (_layout.Touch)
-                foreach (InputField field in _inputs)
-                    if (field != null && field.isFocused) return false;
-            return !_layout.Same(ComputeCreatorLayout());
-        }
-
-        /// <summary>
-        /// Высота переносимого текста при данной ширине рамки. Рамка подписи привязана к
-        /// пикселям экрана и в зависимости от места теряет до пикселя ширины, поэтому
-        /// строка «впритык» после расстановки переносилась иначе, чем при замере.
-        /// Меряем на два пикселя уже: лишняя строка в запасе безвредна, нехватка — нет.
-        /// </summary>
-        private float WrappedHeight(Text text, float width)
-        {
-            float slack = 2f / (_canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f);
-            TextGenerationSettings settings = text.GetGenerationSettings(new Vector2(Mathf.Max(1f, width - slack), 0f));
-            float pixels = text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text, settings);
-            return Mathf.Ceil(pixels / text.pixelsPerUnit) + 1f;
-        }
-
-        /// <summary>Метрика настольного макета в единицах канвы текущей раскладки.</summary>
-        private float U(float design) { return design * _layout.Zoom; }
-
-        /// <summary>Кегль настольного макета, не мельче MinTextPixels на этом экране.</summary>
-        private int Fs(float design) { return Mathf.Max(Mathf.RoundToInt(design * _layout.Zoom), _layout.MinFont); }
-
         private float CreatorPad { get { return _layout.Compact ? 12f : 18f; } }
         private float CreatorBodyTop { get { return _layout.Compact ? 12f + U(36f) + 8f : 22f + U(58f); } }
         private float StepperArrowWidth { get { return U(_layout.Compact ? 56f : 40f); } }
@@ -772,8 +915,6 @@ namespace RealmOfAshes.Game
             _pages.Clear();
             _tabs.Clear();
             _hairSwatch = null;
-            _layout = ComputeCreatorLayout();
-            ApplyFrame(true);
 
             bool compact = _layout.Compact;
             float gap = compact ? 8f : 12f;
@@ -1509,42 +1650,47 @@ namespace RealmOfAshes.Game
             Stretch(dim, 0f);
             _confirm.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
 
+            // Окно собирается сверху вниз, как панель шага: высоту ему дают его подписи.
             RectTransform box = Child("Box", dim);
             box.anchorMin = box.anchorMax = new Vector2(0.5f, 0.5f);
-            box.sizeDelta = new Vector2(460f, 230f);
+            float width = Mathf.Min(U(460f), _layout.Card.x);
+            box.sizeDelta = new Vector2(width, 0f);
             box.gameObject.AddComponent<Image>().color = CardBg;
             var outline = box.gameObject.AddComponent<Outline>();
             outline.effectColor = CardBorder;
             outline.effectDistance = new Vector2(1f, -1f);
 
-            Text kicker = Label("Kicker", box, 11, TextAnchor.UpperLeft, PanelTitle, FontStyle.Bold);
+            float pad = U(16f);
+            float inner = width - pad * 2f;
+            Text kicker = Label("Kicker", box, Fs(11f), TextAnchor.UpperLeft, PanelTitle, FontStyle.Bold);
             kicker.text = "УДАЛЕНИЕ ПЕРСОНАЖА";
-            Place(kicker.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -32f), new Vector2(-16f, -14f));
-            Text title = Label("Title", box, 18, TextAnchor.UpperLeft, Title, FontStyle.Bold);
+            float top = FlowText(kicker, pad, U(14f), inner);
+            Text title = Label("Title", box, Fs(18f), TextAnchor.UpperLeft, Title, FontStyle.Bold);
+            title.horizontalOverflow = HorizontalWrapMode.Wrap;
             title.text = "Удалить персонажа навсегда?";
-            Place(title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -62f), new Vector2(-16f, -36f));
-            Text body = Label("Body", box, 12, TextAnchor.UpperLeft, InputInk);
+            top = FlowText(title, pad, top + U(4f), inner);
+            Text body = Label("Body", box, Fs(12f), TextAnchor.UpperLeft, InputInk);
             body.horizontalOverflow = HorizontalWrapMode.Wrap;
             body.text = (string.IsNullOrEmpty(character.Name) ? "Без имени" : character.Name)
                 + ". Уровень " + Mathf.Max(1, character.Level)
                 + ". Всё серверное сохранение этого персонажа будет удалено.";
-            Place(body.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -110f), new Vector2(-16f, -68f));
-            Text note = Label("Note", box, 11, TextAnchor.UpperLeft, StatusErr);
+            top = FlowText(body, pad, top + U(6f), inner);
+            Text note = Label("Note", box, Fs(11f), TextAnchor.UpperLeft, StatusErr);
             note.horizontalOverflow = HorizontalWrapMode.Wrap;
             note.text = "Действие необратимо. Инвентарь, прогресс, карта и задания восстановить нельзя.";
-            Place(note.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -150f), new Vector2(-16f, -114f));
+            top = FlowText(note, pad, top + U(4f), inner);
 
-            Button confirm = ActionButton(box, "Удалить", 16f, 178f, 120f, false, () =>
+            Button confirm = ActionButton(box, "ConfirmDelete", "Удалить", false, () =>
             {
                 string id = _deleteCandidate?.CharacterId;
                 CloseConfirm();
                 Bootstrap.AuthDeleteCharacter(id);
-            });
-            confirm.name = "ConfirmDelete";
+            }, 120f);
             confirm.GetComponent<Image>().color = DeleteBg;
             confirm.GetComponentInChildren<Text>().color = DeleteInk;
-            Button cancel = ActionButton(box, "Оставить", 146f, 178f, 120f, true, CloseConfirm);
-            cancel.name = "CancelDelete";
+            Button cancel = ActionButton(box, "CancelDelete", "Оставить", true, CloseConfirm, 120f);
+            top = ButtonRow(top + U(16f), pad, width, confirm, cancel);
+            box.sizeDelta = new Vector2(width, top + pad);
         }
 
         private void CloseConfirm()
@@ -1558,6 +1704,14 @@ namespace RealmOfAshes.Game
 
         private void RefreshTexts(string step)
         {
+            HeaderTexts(step);
+            if (step == "creator") RefreshCreatorTexts();
+            if (_status != null) ShowStatus();
+        }
+
+        /// <summary>Заголовок и пояснение зависят только от шага: по ним ApplyFrame размечает шапку.</summary>
+        private void HeaderTexts(string step)
+        {
             bool select = step == "select";
             bool creator = step == "creator";
             _title.text = creator ? CreatorTitle : "КРОМКА · "
@@ -1568,13 +1722,6 @@ namespace RealmOfAshes.Game
                 ? "Выберите персонажа, чтобы войти в мир, или создайте нового. Прогресс, карта, инвентарь и хранилище привязаны к серверному аккаунту."
                 : "Войдите в серверный аккаунт, чтобы выбрать уже созданного персонажа или создать нового. Прогресс, карта, инвентарь и хранилище привязаны к серверному аккаунту.";
             _note.text = select || creator ? "Сервер: " + Bootstrap.AuthLogin : "Сервер: " + Bootstrap.AuthServerUrl;
-            if (creator) RefreshCreatorTexts();
-
-            if (_status == null) return;
-            string status = Bootstrap.StatusText;
-            bool failed = Bootstrap.AuthFailed;
-            _status.text = string.IsNullOrEmpty(status) ? _statusFallback : status;
-            _status.color = failed ? StatusErr : (string.IsNullOrEmpty(status) ? StatusInk : StatusOk);
         }
 
         private void Submit(string step)

@@ -33,18 +33,20 @@ namespace RealmOfAshes.EditorTools
     {
         private const BindingFlags Private = BindingFlags.NonPublic | BindingFlags.Instance;
         private const string Tag = "[CREATOR CARD LAYOUT] ";
-        private static readonly string OutputDir = Path.Combine("Library", "AgentCaptures");
+        internal static readonly string OutputDir = Path.Combine("Library", "AgentCaptures");
         /// <summary>Тот же слой, что у превью персонажа: в edit mode он свободен.</summary>
         private const int CaptureLayer = 31;
         private static readonly Vector3[] Corners = new Vector3[4];
         private static readonly Vector2[] Nudges = { Vector2.zero, new Vector2(0.37f, 0.29f), new Vector2(-0.41f, -0.23f) };
 
-        private struct ScreenCase
+        internal struct ScreenCase
         {
             public string Name;
             public bool Mobile;
             public int Width;
             public int Height;
+            /// <summary>Неудобное окно: здесь раскладка обязана не терять кнопки, но вправе прокручиваться.</summary>
+            public bool Awkward;
         }
 
         // Окно браузера бывает любым, поэтому настольных размеров несколько: перенос
@@ -54,7 +56,7 @@ namespace RealmOfAshes.EditorTools
         // Ниже — неудобные окна, на которых раскладка обязана хотя бы не терять
         // кнопки: 16:10 (колонкам впритык), 5:4 и 4:3 (колонкам тесно — вкладки),
         // сверхширокий монитор, маленькое окно, маленький телефон, планшет.
-        private static readonly ScreenCase[] Screens =
+        internal static readonly ScreenCase[] Screens =
         {
             new ScreenCase { Name = "desktop-2560x1440", Mobile = false, Width = 2560, Height = 1440 },
             new ScreenCase { Name = "desktop-1920x1080", Mobile = false, Width = 1920, Height = 1080 },
@@ -65,14 +67,14 @@ namespace RealmOfAshes.EditorTools
             new ScreenCase { Name = "mobile-1266x585", Mobile = true, Width = 1266, Height = 585 },
             new ScreenCase { Name = "mobile-960x540", Mobile = true, Width = 960, Height = 540 },
             new ScreenCase { Name = "mobile-844x390", Mobile = true, Width = 844, Height = 390 },
-            new ScreenCase { Name = "desktop-1920x1200", Mobile = false, Width = 1920, Height = 1200 },
-            new ScreenCase { Name = "desktop-1280x800", Mobile = false, Width = 1280, Height = 800 },
-            new ScreenCase { Name = "desktop-1280x1024", Mobile = false, Width = 1280, Height = 1024 },
-            new ScreenCase { Name = "desktop-2560x1080", Mobile = false, Width = 2560, Height = 1080 },
-            new ScreenCase { Name = "desktop-1024x768", Mobile = false, Width = 1024, Height = 768 },
-            new ScreenCase { Name = "desktop-1024x576", Mobile = false, Width = 1024, Height = 576 },
-            new ScreenCase { Name = "mobile-667x375", Mobile = true, Width = 667, Height = 375 },
-            new ScreenCase { Name = "mobile-1536x1152", Mobile = true, Width = 1536, Height = 1152 }
+            new ScreenCase { Name = "desktop-1920x1200", Mobile = false, Width = 1920, Height = 1200, Awkward = true },
+            new ScreenCase { Name = "desktop-1280x800", Mobile = false, Width = 1280, Height = 800, Awkward = true },
+            new ScreenCase { Name = "desktop-1280x1024", Mobile = false, Width = 1280, Height = 1024, Awkward = true },
+            new ScreenCase { Name = "desktop-2560x1080", Mobile = false, Width = 2560, Height = 1080, Awkward = true },
+            new ScreenCase { Name = "desktop-1024x768", Mobile = false, Width = 1024, Height = 768, Awkward = true },
+            new ScreenCase { Name = "desktop-1024x576", Mobile = false, Width = 1024, Height = 576, Awkward = true },
+            new ScreenCase { Name = "mobile-667x375", Mobile = true, Width = 667, Height = 375, Awkward = true },
+            new ScreenCase { Name = "mobile-1536x1152", Mobile = true, Width = 1536, Height = 1152, Awkward = true }
         };
 
         [MenuItem("Realm of Ashes/Probe/Creator card layout")]
@@ -105,6 +107,15 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Probe/Creator card layout (все масштабы)")]
         public static void Sweep()
         {
+            ScreenCase[] screens = SweepScreens();
+            var failures = new List<string>();
+            WithCatalogTexts(() => Measure("каталог сервера", screens, failures, null, false));
+            Debug.Log(Tag + "масштабов: " + screens.Length + (failures.Count > 0
+                ? "; замечания (" + failures.Count + "): " + string.Join(" | ", failures) : "; замечаний нет"));
+        }
+
+        internal static ScreenCase[] SweepScreens()
+        {
             var screens = new List<ScreenCase>();
             foreach (bool mobile in new[] { false, true })
                 for (int height = 390; height <= 1440; height += 6)
@@ -113,10 +124,7 @@ namespace RealmOfAshes.EditorTools
                         Name = (mobile ? "mobile-" : "desktop-") + (height * 16 / 9) + "x" + height,
                         Mobile = mobile, Width = height * 16 / 9, Height = height
                     });
-            var failures = new List<string>();
-            WithCatalogTexts(() => Measure("каталог сервера", screens.ToArray(), failures, null, false));
-            Debug.Log(Tag + "масштабов: " + screens.Count + (failures.Count > 0
-                ? "; замечания (" + failures.Count + "): " + string.Join(" | ", failures) : "; замечаний нет"));
+            return screens.ToArray();
         }
 
         /// <summary>
@@ -229,7 +237,7 @@ namespace RealmOfAshes.EditorTools
         /// уместиться по высоте, строка без переноса — по ширине, а по высоте ей хватает
         /// рамки родителя (подпись кнопки центрируется в кнопке, а не в своих отступах).
         /// </summary>
-        private static float CheckTexts(string where, Canvas canvas, RectTransform card, List<string> failures)
+        internal static float CheckTexts(string where, Canvas canvas, RectTransform card, List<string> failures)
         {
             float smallest = float.MaxValue;
             foreach (Text text in card.GetComponentsInChildren<Text>(false))
@@ -267,7 +275,7 @@ namespace RealmOfAshes.EditorTools
         /// внутри её содержимого (иначе до него не докрутить), в её окне по ширине, а
         /// само окно на экране. Под палец — не мельче MinTouchUnits по обеим сторонам.
         /// </summary>
-        private static void CheckControls(string where, RectTransform canvasRect, RectTransform card, bool touch,
+        internal static void CheckControls(string where, RectTransform canvasRect, RectTransform card, bool touch,
                                           HashSet<string> seen, List<string> failures)
         {
             foreach (Selectable control in card.GetComponentsInChildren<Selectable>(false))
@@ -306,9 +314,23 @@ namespace RealmOfAshes.EditorTools
         /// листаются по окну за раз: глубину для луча и отсечение маской канва
         /// пересчитывает только при отрисовке, поэтому на каждую страницу — один кадр.
         /// </summary>
-        private static void CheckClickable(string where, Canvas canvas, RectTransform card, Camera camera,
+        internal static void CheckClickable(string where, Canvas canvas, RectTransform card, Camera camera,
                                            RenderTexture target, List<string> failures)
         {
+            // Обход идёт сверху вниз, а экран мог сам докрутить панель до ответа сервера.
+            bool rewound = false;
+            foreach (ScrollRect scroll in card.GetComponentsInChildren<ScrollRect>(false))
+            {
+                if (scroll.content == null || scroll.content.anchoredPosition == Vector2.zero) continue;
+                scroll.content.anchoredPosition = Vector2.zero;
+                rewound = true;
+            }
+            if (rewound)
+            {
+                Canvas.ForceUpdateCanvases();
+                Render(camera, target, null);
+            }
+
             var pending = new List<Selectable>();
             foreach (Selectable control in card.GetComponentsInChildren<Selectable>(false))
                 if (control.gameObject.activeInHierarchy) pending.Add(control);
@@ -348,13 +370,15 @@ namespace RealmOfAshes.EditorTools
             {
                 var rect = (RectTransform)pending[i].transform;
                 Vector3 center = rect.TransformPoint(rect.rect.center);
-                ScrollRect scroll = pending[i].GetComponentInParent<ScrollRect>();
-                if (scroll != null)
+                // Прокрутки бывают вложенными (список персонажей в панели шага): центр виден в каждой.
+                bool visible = true;
+                foreach (ScrollRect scroll in pending[i].GetComponentsInParent<ScrollRect>())
                 {
                     var window = (RectTransform)scroll.transform;
                     Vector2 inWindow = window.InverseTransformPoint(center);
-                    if (!window.rect.Contains(inWindow)) continue; // ещё не долистали
+                    if (!window.rect.Contains(inWindow)) visible = false;
                 }
+                if (!visible) continue; // ещё не долистали
                 // Ровно в центре рамки RectangleContainsScreenPoint изредка даёт ложный промах
                 // (замерено: точка пересчитывается в самый центр, 24 соседних пикселя из 25 внутри,
                 // а она сама — нет). Мышь таких дробных координат не даёт, поэтому при промахе луч
@@ -403,7 +427,7 @@ namespace RealmOfAshes.EditorTools
             return "подпись " + text.transform.parent.name + "/" + text.name + " «" + content + "»";
         }
 
-        private static Rect RectIn(RectTransform rect, RectTransform space)
+        internal static Rect RectIn(RectTransform rect, RectTransform space)
         {
             rect.GetWorldCorners(Corners);
             Vector2 min = space.InverseTransformPoint(Corners[0]);
@@ -411,38 +435,27 @@ namespace RealmOfAshes.EditorTools
             return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         }
 
-        private static bool Contains(Rect outer, Rect inner)
+        internal static bool Contains(Rect outer, Rect inner)
         {
             return inner.xMin >= outer.xMin - 0.5f && inner.xMax <= outer.xMax + 0.5f
                 && inner.yMin >= outer.yMin - 0.5f && inner.yMax <= outer.yMax + 0.5f;
         }
 
-        private static string Size(Rect rect)
+        internal static string Size(Rect rect)
         {
             return rect.width.ToString("0") + "×" + rect.height.ToString("0");
         }
 
         /// <summary>
         /// Экран создания персонажа теми же методами, что зовёт RoaAuthCanvas.Update.
-        /// Хост пересоздаётся под каждый размер. Порядок обязателен — масштабер раньше
-        /// постройки: раскладка считается от размера и масштаба канвы, иначе выйдет
-        /// настольная расстановка на телефонном холсте. RefreshPreview не зовём: он идёт
-        /// в сеть за GLB. Цвет волос берётся с самым длинным названием — его строка
-        /// самая тесная.
+        /// RefreshPreview не зовём: он идёт в сеть за GLB. Цвет волос берётся с самым
+        /// длинным названием — его строка самая тесная.
         /// </summary>
         private static Canvas BuildCreator(ScreenCase screen, out GameObject host, out GameObject cameraObject,
                                            out RenderTexture target)
         {
-            host = new GameObject("CreatorCardLayoutProbe");
-            var bootstrap = host.AddComponent<RoaGameBootstrap>();
-            bootstrap.enabled = false;
-            var auth = host.AddComponent<RoaAuthCanvas>();
-            auth.enabled = false;
-            auth.Bootstrap = bootstrap;
-            auth.TouchLayoutOverride = screen.Mobile;
-            Invoke(auth, "EnsureBuilt");
-
-            RoaCharacterCreator creator = bootstrap.Creator;
+            Canvas canvas = BuildHost(screen, out RoaAuthCanvas auth, out host, out cameraObject, out target);
+            RoaCharacterCreator creator = auth.Bootstrap.Creator;
             int longest = 0;
             for (int i = 0; i < 16; i++)
             {
@@ -451,14 +464,41 @@ namespace RealmOfAshes.EditorTools
             }
             for (int i = 0; i < 16 && creator.HairColorLabelText.Length < longest; i++) creator.CycleHairColor(1);
 
+            Invoke(auth, "RebuildBody", "creator");
+            Invoke(auth, "RebuildCreatorDynamic");
+            Invoke(auth, "RefreshTexts", "creator");
+            ToCaptureLayer(canvas);
+            Canvas.ForceUpdateCanvases();
+            return canvas;
+        }
+
+        /// <summary>
+        /// Пустой экран аккаунта на канве нужного размера: шаг строит вызывающий через
+        /// RebuildBody, после чего обязан вернуть постройке слой съёмки (ToCaptureLayer).
+        /// Хост пересоздаётся под каждый размер. Порядок обязателен — масштабер раньше
+        /// постройки: раскладка считается от размера и масштаба канвы, иначе выйдет
+        /// настольная расстановка на телефонном холсте.
+        /// </summary>
+        internal static Canvas BuildHost(ScreenCase screen, out RoaAuthCanvas auth, out GameObject host,
+                                         out GameObject cameraObject, out RenderTexture target)
+        {
+            host = new GameObject("AuthLayoutProbe");
+            var bootstrap = host.AddComponent<RoaGameBootstrap>();
+            bootstrap.enabled = false;
+            auth = host.AddComponent<RoaAuthCanvas>();
+            auth.enabled = false;
+            auth.Bootstrap = bootstrap;
+            auth.TouchLayoutOverride = screen.Mobile;
+            Invoke(auth, "EnsureBuilt");
+
             Canvas canvas = host.GetComponentInChildren<Canvas>(true);
             if (canvas == null) throw new InvalidOperationException(Tag + "канвас входа не построился");
             RoaUiScale.Apply(canvas.GetComponent<CanvasScaler>(), screen.Mobile);
 
             // ScreenSpaceOverlay в пакетном режиме не знает размера экрана: канвас
             // переводится на выключенную камеру с текстурой нужного размера.
-            SetLayerRecursively(canvas.gameObject, CaptureLayer);
-            cameraObject = new GameObject("CreatorCardLayoutCamera");
+            ToCaptureLayer(canvas);
+            cameraObject = new GameObject("AuthLayoutCamera");
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.enabled = false;
             camera.cullingMask = 1 << CaptureLayer;
@@ -466,7 +506,7 @@ namespace RealmOfAshes.EditorTools
             camera.backgroundColor = new Color(0.03f, 0.035f, 0.04f, 1f);
             target = new RenderTexture(screen.Width, screen.Height, 24, RenderTextureFormat.ARGB32)
             {
-                name = "CreatorCardLayout_" + screen.Name,
+                name = "AuthLayout_" + screen.Name,
                 antiAliasing = 1
             };
             target.Create();
@@ -474,13 +514,6 @@ namespace RealmOfAshes.EditorTools
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = camera;
             canvas.planeDistance = 1f;
-
-            Canvas.ForceUpdateCanvases();
-            Invoke(auth, "RebuildBody", "creator");
-            Invoke(auth, "FitCardToViewport");
-            Invoke(auth, "RebuildCreatorDynamic");
-            Invoke(auth, "RefreshTexts", "creator");
-            SetLayerRecursively(canvas.gameObject, CaptureLayer);
             Canvas.ForceUpdateCanvases();
 
             Vector2 expected = RoaMobileLayoutProbe.CanvasSize(new Vector2(screen.Width, screen.Height),
@@ -492,7 +525,7 @@ namespace RealmOfAshes.EditorTools
             return canvas;
         }
 
-        private static void Render(Camera camera, RenderTexture target, string path)
+        internal static void Render(Camera camera, RenderTexture target, string path)
         {
             RenderTexture previous = RenderTexture.active;
             Texture2D readback = null;
@@ -518,11 +551,17 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
-        private static void Invoke(RoaAuthCanvas auth, string method, params object[] args)
+        internal static void Invoke(RoaAuthCanvas auth, string method, params object[] args)
         {
             MethodInfo info = typeof(RoaAuthCanvas).GetMethod(method, Private);
             if (info == null) throw new MissingMethodException(typeof(RoaAuthCanvas).FullName, method);
             info.Invoke(auth, args);
+        }
+
+        /// <summary>Камера пробы видит один слой: всё построенное после BuildHost переводится на него.</summary>
+        internal static void ToCaptureLayer(Canvas canvas)
+        {
+            SetLayerRecursively(canvas.gameObject, CaptureLayer);
         }
 
         private static void SetLayerRecursively(GameObject go, int layer)

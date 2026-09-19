@@ -96,7 +96,6 @@ assert(unityPipboy.includes('site["settlementLife"] is JObject life')
 const coordinator = fs.readFileSync(path.join(ROOT, 'src', 'server', 'wasteland-sim.js'), 'utf8');
 assert(coordinator.includes("const SCHEMA = 'realm.wastelandSim.v2'")
   && coordinator.includes('WORLD_SIM_MAX_CATCHUP_STEPS')
-  && coordinator.includes('settleCargoArrival(')
   && coordinator.includes('settleCargoLoss(')
   && coordinator.includes('publicSettlementLife(site, worldSimulationConfig)'),
   'wasteland coordinator is missing the v2 life/logistics integration');

@@ -74,7 +74,6 @@ const {
 const { localizeLegacyWorldText } = require('./wasteland-localization');
 const {
   createPatrolOperation,
-  createSupplyOperation,
   normalizeWorldOperation,
   normalizeWorldTask,
   transitionWorldOperation,
@@ -128,8 +127,6 @@ const {
 } = require('./wasteland-settlements');
 const {
   pruneCargoLedger,
-  registerCargoDeparture,
-  settleCargoArrival,
   settleCargoLoss
 } = require('./wasteland-logistics');
 const {
@@ -214,15 +211,6 @@ const PARTY_REFORM_HOURS = {
   monster: 20
 };
 const PARTY_REFORM_VISIBLE_MAX_HOURS = 6;
-// Сколько реальных минут караван стоит в столице и набирает сопровождение.
-// Долгое ожидание игрок не высиживает, поэтому окно короткое.
-const CARAVAN_STAGING_REAL_MINUTES = 1;
-const CARAVAN_POST_BATTLE_REAL_MINUTES = 2;
-// Порога больше нет: караван уходит по таймеру с теми, кто успел записаться.
-// Прежние пять и десять человек читались игроком как «эту работу не взять» и
-// на деле лишь решали, уйдёт обоз с пометкой «группа готова» или «время вышло».
-const CARAVAN_ESCORT_MIN_PLAYERS = 0;
-const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;
 // Через сколько часов ограбленная точка снаряжает следующий обоз.
 const REPLACEMENT_CONVOY_DELAY_HOURS = 6;
 const SURPLUS_TRADE_COOLDOWN_HOURS = 24;
@@ -997,144 +985,6 @@ function defaultSites(globalMap = {}) {
 
 function defaultParties() {
   return {
-    klim_supply_caravan: {
-      id: 'klim_supply_caravan',
-      name: 'Снабженческий караван Управы',
-      kind: 'caravan',
-      faction: 'old_klim',
-      state: 'moving',
-      homeSiteId: 'settlement',
-      destinationSiteId: 'scrapFields',
-      route: ['scrapFields', 'settlement', 'dryWaterPump', 'oldKlimFarm', 'settlement', 'klimAmmoWorks', 'roadOutpost', 'settlement'],
-      routeIndex: 0,
-      x: 260,
-      y: 600,
-      speedKmh: 24,
-      strength: 58,
-      members: 5,
-      cargo: {},
-      cargoCapacity: 70,
-      collectScale: 1,
-      preferredResources: ['scrap', 'ammoParts', 'water', 'chemicals'],
-      supplyRole: 'mixed',
-      respawnHours: 18,
-      inventory: [{ id: 'water', qty: 6 }, { id: 'ammo556', qty: 24 }]
-    },
-    klim_water_caravan: {
-      id: 'klim_water_caravan',
-      name: 'Водовоз Управы',
-      kind: 'caravan',
-      faction: 'old_klim',
-      state: 'moving',
-      homeSiteId: 'settlement',
-      destinationSiteId: 'dryWaterPump',
-      route: ['dryWaterPump', 'oldKlimFarm', 'settlement', 'roadOutpost', 'settlement'],
-      routeIndex: 0,
-      x: 260,
-      y: 600,
-      speedKmh: 22,
-      strength: 46,
-      members: 4,
-      cargo: {},
-      cargoCapacity: 60,
-      collectScale: 1.15,
-      preferredResources: ['water', 'food', 'medicine', 'chemicals'],
-      supplyRole: 'water',
-      respawnHours: 14,
-      inventory: [{ id: 'water', qty: 10 }, { id: 'ammo9', qty: 24 }]
-    },
-    klim_heavy_caravan: {
-      id: 'klim_heavy_caravan',
-      name: 'Тяжёлый караван Управы',
-      kind: 'caravan',
-      faction: 'old_klim',
-      state: 'moving',
-      homeSiteId: 'settlement',
-      destinationSiteId: 'ironMine',
-      route: ['ironMine', 'settlement', 'scrapFields', 'settlement', 'scrapTown', 'settlement'],
-      routeIndex: 0,
-      x: 260,
-      y: 600,
-      speedKmh: 20,
-      strength: 70,
-      members: 6,
-      cargo: {},
-      cargoCapacity: 95,
-      collectScale: 1.2,
-      preferredResources: ['ore', 'scrap', 'ammoParts', 'weaponParts'],
-      supplyRole: 'heavy',
-      respawnHours: 20,
-      inventory: [{ id: 'water', qty: 8 }, { id: 'ammo556', qty: 36 }]
-    },
-    free_oil_caravan: {
-      id: 'free_oil_caravan',
-      name: 'Вольный нефтяной караван',
-      kind: 'caravan',
-      faction: 'caravans',
-      state: 'moving',
-      homeSiteId: 'relayStation',
-      destinationSiteId: 'oilPump',
-      route: ['oilPump', 'relayStation', 'settlement', 'scrapTown'],
-      routeIndex: 0,
-      x: 620,
-      y: 410,
-      speedKmh: 23,
-      strength: 52,
-      members: 5,
-      cargo: {},
-      cargoCapacity: 75,
-      collectScale: 1.05,
-      preferredResources: ['oil', 'electronics', 'chemicals', 'scrap'],
-      supplyRole: 'oil',
-      respawnHours: 22,
-      inventory: [{ id: 'water', qty: 5 }, { id: 'ammo9', qty: 30 }]
-    },
-    scrap_salvage_caravan: {
-      id: 'scrap_salvage_caravan',
-      name: 'Караван лома Свалочного поста',
-      kind: 'caravan',
-      faction: 'scrap_union',
-      state: 'moving',
-      homeSiteId: 'scrapTown',
-      destinationSiteId: 'scrapFields',
-      route: ['scrapFields', 'scrapOutpost', 'scrapFoundry', 'scrapTown', 'ironMine', 'scrapOutpost', 'scrapTown'],
-      routeIndex: 0,
-      x: 555,
-      y: 645,
-      speedKmh: 21,
-      strength: 50,
-      members: 5,
-      cargo: {},
-      cargoCapacity: 85,
-      collectScale: 1.12,
-      preferredResources: ['scrap', 'ore', 'ammoParts', 'weaponParts'],
-      supplyRole: 'scrap',
-      respawnHours: 20,
-      inventory: [{ id: 'water', qty: 4 }, { id: 'ammo9', qty: 18 }]
-    },
-    relay_tech_caravan: {
-      id: 'relay_tech_caravan',
-      name: 'Техкараван Ретранслятора',
-      kind: 'caravan',
-      faction: 'relay_order',
-      state: 'moving',
-      homeSiteId: 'relayStation',
-      destinationSiteId: 'relayWorkshop',
-      route: ['relayWorkshop', 'solarArray', 'relayOutpost', 'relayStation', 'siliconRidge', 'oilPump', 'relayOutpost', 'relayStation', 'settlement'],
-      routeIndex: 0,
-      x: 675,
-      y: 315,
-      speedKmh: 22,
-      strength: 55,
-      members: 5,
-      cargo: {},
-      cargoCapacity: 70,
-      collectScale: 1.05,
-      preferredResources: ['electronics', 'chemicals', 'oil', 'energyCell'],
-      supplyRole: 'tech',
-      respawnHours: 20,
-      inventory: [{ id: 'energyCell', qty: 20 }, { id: 'repairKit', qty: 1 }]
-    },
     klim_road_patrol: {
       id: 'klim_road_patrol',
       name: 'Дозор Управы',
@@ -1187,102 +1037,6 @@ function defaultParties() {
       strength: 64,
       members: 4,
       respawnHours: 14,
-      cargo: {}
-    },
-    raider_road_band: {
-      id: 'raider_road_band',
-      name: 'Дорожная банда рейдеров',
-      kind: 'raider',
-      faction: 'raiders',
-      state: 'hunting',
-      homeSiteId: 'oldDepot',
-      destinationSiteId: 'roadOutpost',
-      route: ['oldDepot', 'roadOutpost', 'scrapFields', 'klimAmmoWorks', 'scrapOutpost', 'oldDepot'],
-      routeIndex: 0,
-      x: 510,
-      y: 510,
-      speedKmh: 30,
-      strength: 64,
-      members: 6,
-      respawnHours: 30,
-      cargo: {}
-    },
-    mutant_roamers: {
-      id: 'mutant_roamers',
-      name: 'Бродячие супермутанты',
-      kind: 'monster',
-      faction: 'mutants',
-      species: 'mutant',
-      state: 'roaming',
-      homeSiteId: 'mutantCrater',
-      destinationSiteId: 'siliconRidge',
-      route: ['mutantCrater', 'siliconRidge', 'relayOutpost', 'oilPump', 'mutantCrater', 'ironMine'],
-      routeIndex: 0,
-      x: 465,
-      y: 330,
-      speedKmh: 22,
-      strength: 50,
-      members: 5,
-      respawnHours: 20,
-      cargo: {}
-    },
-    radscorpion_brood: {
-      id: 'radscorpion_brood',
-      name: 'Выводок радскорпионов',
-      kind: 'monster',
-      faction: 'wild',
-      species: 'radscorpion',
-      state: 'roaming',
-      homeSiteId: 'radscorpionNestSite',
-      destinationSiteId: 'chemSpring',
-      route: ['radscorpionNestSite', 'chemSpring', 'geckoCanyon', 'radscorpionNestSite'],
-      routeIndex: 0,
-      x: 390,
-      y: 210,
-      baseSpeedKmh: 18,
-      speedKmh: boostedWorldPartySpeedKmh(18, { kind: 'monster', faction: 'wild' }),
-      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION,
-      strength: 44,
-      members: 5,
-      respawnHours: 24,
-      cargo: {}
-    },
-    gecko_pack_party: {
-      id: 'gecko_pack_party',
-      name: 'Стая гекконов',
-      kind: 'monster',
-      faction: 'wild',
-      species: 'gecko',
-      state: 'roaming',
-      homeSiteId: 'geckoCanyon',
-      destinationSiteId: 'dryWaterPump',
-      route: ['geckoCanyon', 'dryWaterPump', 'klimQuarry', 'geckoCanyon'],
-      routeIndex: 0,
-      x: 315,
-      y: 390,
-      speedKmh: 24,
-      strength: 38,
-      members: 6,
-      respawnHours: 24,
-      cargo: {}
-    },
-    ant_swarm_party: {
-      id: 'ant_swarm_party',
-      name: 'Рой мутировавших муравьёв',
-      kind: 'monster',
-      faction: 'wild',
-      species: 'mutantAnt',
-      state: 'roaming',
-      homeSiteId: 'antHive',
-      destinationSiteId: 'tireDepot',
-      route: ['antHive', 'scrapFields', 'tireDepot', 'antHive', 'oldDepot'],
-      routeIndex: 0,
-      x: 570,
-      y: 450,
-      speedKmh: 25,
-      strength: 42,
-      members: 7,
-      respawnHours: 24,
       cargo: {}
     }
   };
@@ -2477,22 +2231,6 @@ function createWastelandSimulation(options = {}) {
   let lastSaveAt = 0;
   let partyMovementTracks = new Map();
 
-  function trackCargoDepartures() {
-    for (const party of Object.values(state.parties || {})) {
-      if (!party || String(party.kind || '').toLowerCase() !== 'caravan') continue;
-      if (stockpileTotal(party.cargo || {}) <= 0) continue;
-      registerCargoDeparture(
-        state.cargoLedger || (state.cargoLedger = {}),
-        party,
-        party.homeSiteId || party.lastSiteId || '',
-        party.destinationSiteId || '',
-        state.worldHour
-      );
-    }
-  }
-
-  trackCargoDepartures();
-
   function taskLocationIdForSite(site = {}) {
     return safeId(site?.locationId || worldSiteLocationId(site?.id || ''), '');
   }
@@ -3653,41 +3391,6 @@ function createWastelandSimulation(options = {}) {
     return zone;
   }
 
-  function caravanBattleDefenderActors(party = {}) {
-    const count = Math.max(3, Math.min(7, Math.round(Number(party.members || 4))));
-    const actors = [caravanMerchantActor(party, {
-      tx: 18,
-      tz: 18,
-      hp: 52,
-      maxHp: 52,
-      atk: 5,
-      stationary: false
-    })];
-    const loadouts = [
-      { weapon: 'rifle', armor: 'leather', helmet: 'helmet', boots: 'boots' },
-      { weapon: 'shotgun', armor: 'ballisticVest', helmet: 'helmet', boots: 'boots' },
-      { weapon: 'pistol', armor: 'leather', helmet: 'helmet', boots: 'boots' },
-      { weapon: 'assaultRifle', armor: 'combatArmor', helmet: 'assaultHelmet', boots: 'reinforcedBoots' }
-    ];
-    for (let i = 1; i < count; i++) {
-      actors.push({
-        id: `${party.id}_guard_${i}`,
-        side: 'defender',
-        name: i === 1 ? 'Старший охранник каравана' : 'Охранник каравана',
-        faction: party.faction || 'caravans',
-        role: 'guard',
-        tx: 14 + (i % 3) * 2,
-        tz: 17 + Math.floor(i / 3) * 3,
-        hp: 56 + Math.min(20, Number(party.strength || 40) * 0.12),
-        maxHp: 56 + Math.min(20, Number(party.strength || 40) * 0.12),
-        atk: 8 + Math.min(7, Number(party.strength || 40) / 18),
-        equipment: loadouts[i % loadouts.length],
-        loot: []
-      });
-    }
-    return actors;
-  }
-
   function caravanBattleAttackerActors(threatParty = {}, threat = {}) {
     const faction = factionGroup(threatParty.faction || threat.threatFaction || 'raiders');
     const count = Math.max(3, Math.min(8, Math.round(Number(threatParty.members || 4))));
@@ -4155,10 +3858,6 @@ function createWastelandSimulation(options = {}) {
           party.strength = clamp(Number(party.strength || 1) - deadActors.length * 4, 1, 500);
         }
         releaseEngagedParty(party, zone.id);
-        if (String(party.kind || '').toLowerCase() === 'caravan' && deadActors.length > 0) {
-          party.state = 'recovering';
-          party.recoverUntilHour = Number(state.worldHour || 0) + realMinutesToWorldHours(CARAVAN_POST_BATTLE_REAL_MINUTES);
-        }
       } else {
         destroyWorldParty(party, 'party_encounter_destroyed');
       }
@@ -4538,79 +4237,6 @@ function createWastelandSimulation(options = {}) {
     return true;
   }
 
-  function createCaravanBattleZone(party = {}, threat = {}) {
-    if (!party || String(party.kind || '') !== 'caravan') return null;
-    const existing = activeBattleZoneForParty(party.id);
-    if (existing) {
-      ensureCaravanBattleMerchant(existing);
-      return existing;
-    }
-    const threatParty = threat.threatPartyId ? state.parties[threat.threatPartyId] : null;
-    const encounterId = encounterIdForWorldContact({ kind: 'caravan', targetFaction: threat.threatFaction || threatParty?.faction || '', source: 'caravan' });
-    const id = safeId(`caravan_battle_${party.id}_${Math.floor(Number(state.worldHour || 0) * 10)}`, `caravan_battle_${party.id}`);
-    const actors = [
-      ...caravanBattleDefenderActors(party),
-      ...caravanBattleAttackerActors(threatParty || {}, threat)
-    ].map((actor, index) => normalizeBattleActor(actor, index, state.worldHour)).filter(Boolean);
-    const zone = upsertWorldZone({
-      id,
-      kind: 'caravan',
-      title: `Налет на караван: ${party.name || party.id}`,
-      text: `${party.name || 'Караван'} остановлен налетом. Бой идет сам по себе; если войти в событие, вы увидите текущую обстановку.`,
-      x: party.x,
-      y: party.y,
-      radius: 10,
-      priority: Math.max(4, Number(threat.riskLevel || 0) >= 75 ? 5 : 4),
-      sourceType: 'caravan_battle',
-      sourceId: party.id,
-      partyId: party.id,
-      threatPartyId: threat.threatPartyId || threatParty?.id || '',
-      faction: party.faction || 'caravans',
-      targetFaction: threat.threatFaction || threatParty?.faction || '',
-      encounterId,
-      locationId: 'randomRuinedRoad',
-      roomId: stableWorldRoomId('randomRuinedRoad', id),
-      pvpMode: 'pvp',
-      durationHours: 12,
-      details: {
-        simBattle: true,
-        realTimeBattle: true,
-        simulationDisabled: true,
-        battleState: 'active',
-        partyId: party.id,
-        partyName: party.name || '',
-        threatPartyId: threat.threatPartyId || threatParty?.id || '',
-        threatName: threat.threatName || threatParty?.name || '',
-        partySides: {
-          [party.id]: 'defender',
-          ...(threatParty?.id ? { [threatParty.id]: 'attacker' } : {})
-        },
-        joinedParties: [],
-        riskLevel: threat.riskLevel || 0,
-        lastBattleHour: Number(state.worldHour || 0),
-        cargo: compactStockpile(party.cargo || {}),
-        actors
-      }
-    });
-    party.state = 'engaged';
-    party.engagedZoneId = zone.id;
-    party.engagedUntilHour = Number(state.worldHour || 0) + 12;
-    if (threatParty) {
-      threatParty.state = 'engaged';
-      threatParty.engagedZoneId = zone.id;
-      threatParty.engagedUntilHour = Number(state.worldHour || 0) + 12;
-    }
-    addEvent('caravan_battle_started', `Налет на караван: ${party.name || party.id}.`, {
-      zoneId: zone.id,
-      partyId: party.id,
-      threatPartyId: threat.threatPartyId || '',
-      x: Number(Number(party.x || 0).toFixed(1)),
-      y: Number(Number(party.y || 0).toFixed(1))
-    });
-    dirty = true;
-    return zone;
-  }
-
   function releaseEngagedParty(party = null, zoneId = '') {
     if (!party || String(party.engagedZoneId || '') !== String(zoneId || '')) return false;
     party.state = String(party.kind || '') === 'caravan' || String(party.kind || '') === 'patrol' ? 'moving' : (String(party.kind || '') === 'monster' ? 'roaming' : 'hunting');
@@ -4926,32 +4552,6 @@ function createWastelandSimulation(options = {}) {
       party.onsiteUntilHour = Math.max(Number(party.onsiteUntilHour || 0), Number(state.worldHour || 0) + Math.max(1, Number(hours || 0) * 2));
       return true;
     }
-    if (site && String(party.kind || '').toLowerCase() === 'caravan' && party.stagingSiteId === site.id && !party.stagingJoinClosed && Number(party.stagingUntilHour || 0) > 0) {
-      let destination = state.sites[party.destinationSiteId];
-      if (!destination || destination.id === site.id) destination = chooseNextDestination(party);
-      const minPlayers = Number(party.stagingMinPlayers || caravanStagingMinPlayers(party));
-      const joined = worldPartyPlayerCount(party);
-      updateCaravanStagingTask(party, site, destination, false);
-      const enoughPlayers = minPlayers > 0 && joined >= minPlayers;
-      const waitExpired = Number(state.worldHour || 0) >= Number(party.stagingUntilHour || 0);
-      if (!enoughPlayers && !waitExpired) {
-        party.onsiteUntilHour = Math.max(Number(party.onsiteUntilHour || 0), Number(party.stagingUntilHour || 0));
-        return true;
-      }
-      party.stagingJoinClosed = true;
-      updateCaravanStagingTask(party, site, destination, true);
-      addEvent('caravan_departed', `${party.name} left ${site?.name || party.stagingSiteId || 'site'} for ${destination?.name || party.destinationSiteId || 'route'}.`, {
-        partyId: party.id,
-        siteId: site?.id || '',
-        destinationSiteId: destination?.id || party.destinationSiteId || '',
-        playerCount: joined,
-        minPlayers,
-        reason: enoughPlayers ? 'group_ready' : 'wait_expired',
-        cargo: compactStockpile(party.cargo || {})
-      });
-      requestOnsitePartyDeparture(party, zone, enoughPlayers ? 'caravan_group_ready' : 'caravan_wait_expired');
-      return true;
-    }
     if (Number(state.worldHour || 0) < Number(party.onsiteUntilHour || 0)) return true;
     requestOnsitePartyDeparture(party, zone, 'site_task_completed');
     return true;
@@ -5225,10 +4825,6 @@ function createWastelandSimulation(options = {}) {
       });
     } else {
       releaseEngagedParty(party, zone.id);
-      if (party && String(party.kind || '').toLowerCase() === 'caravan' && !party.destroyed) {
-        party.state = 'recovering';
-        party.recoverUntilHour = Number(state.worldHour || 0) + realMinutesToWorldHours(CARAVAN_POST_BATTLE_REAL_MINUTES);
-      }
       if (threatParty) {
         suppressPartyThreat(threatParty, 12, {
           reason: isCaravanBattle ? 'caravan_battle_lost' : 'world_battle_lost',
@@ -5922,7 +5518,6 @@ function createWastelandSimulation(options = {}) {
         }
       }
       if (Number(task.expiresHour || 0) > now) continue;
-      if (task.type === 'escort_caravan' && expireLiveCaravanEscortTask(task, now)) continue;
       if (task.type === 'join_patrol' && expireLivePatrolParticipationTask(task, now)) continue;
       task.status = 'expired';
       task.completedHour = now;
@@ -6387,53 +5982,6 @@ function createWastelandSimulation(options = {}) {
     return fallback ? { site: fallback, kind: 'retreat', reason: 'stronger_hostile_nearby', score: 400 } : null;
   }
 
-  function caravanAutonomyDecisions(party = {}) {
-    const globalMap = getGlobalMap();
-    const cargoTotal = stockpileTotal(party.cargo || {});
-    const capacity = Math.max(1, Number(party.cargoCapacity || 1));
-    const fill = clamp(cargoTotal / capacity, 0, 2);
-    const preferred = new Set((Array.isArray(party.preferredResources) ? party.preferredResources : []).map(id => safeId(id, '')).filter(Boolean));
-    const rows = [];
-    if (cargoTotal > 0) {
-      Object.values(state.sites || {}).forEach(site => {
-        if (!site?.locationId || !isSettlementServiceSite(site) || !caravanCanDeliverToSite(party, site)) return;
-        const demand = Object.keys(party.cargo || {}).reduce((sum, key) => (
-          sum + Math.max(0, 18 - Number(site.stockpile?.[key] || 0))
-        ), 0);
-        const conflictPenalty = activeSiteConflict(site) ? 180 : 0;
-        rows.push({
-          site,
-          kind: 'deliver',
-          reason: demand > 12 ? 'market_shortage' : 'cargo_loaded',
-          score: 115 + fill * 145 + demand * 2.4 + partySiteRelationScore(party, site) * 18
-            - pointDistanceKm(party, site, globalMap) * 1.25 - conflictPenalty
-            - partySiteRecentPenalty(party, site) + partyDecisionTieBreak(party, site.id)
-        });
-      });
-    }
-    if (fill < 0.86) {
-      Object.values(state.sites || {}).forEach(site => {
-        if (!site?.locationId || !isHarvestSite(site) || partySiteRelationScore(party, site) < 0) return;
-        const output = site.output && typeof site.output === 'object' ? site.output : {};
-        const matching = Object.entries(output).reduce((sum, [key, value]) => (
-          sum + ((!preferred.size || preferred.has(safeId(key, ''))) ? Number(value || 0) : 0)
-        ), 0);
-        if (matching <= 0) return;
-        rows.push({
-          site,
-          kind: 'harvest',
-          reason: 'resource_demand',
-          score: 105 + matching * 3 + Number(site.resourceActivity || 0) * 0.35
-            + Number(site.resourceRichness || 0) * 0.25 - fill * 90
-            - Number(site.danger || 0) * 11 - pointDistanceKm(party, site, globalMap) * 1.1
-            - (activeSiteConflict(site) ? 190 : 0) - partySiteRecentPenalty(party, site)
-            + partyDecisionTieBreak(party, site.id)
-        });
-      });
-    }
-    return rows;
-  }
-
   function patrolAutonomyDecisions(party = {}) {
     const globalMap = getGlobalMap();
     const rows = [];
@@ -6577,8 +6125,7 @@ function createWastelandSimulation(options = {}) {
       return applyPartyDecision(party, retreat);
     }
     let rows = [];
-    if (kind === 'caravan') rows = caravanAutonomyDecisions(party);
-    else if (kind === 'patrol') rows = patrolAutonomyDecisions(party);
+    if (kind === 'patrol') rows = patrolAutonomyDecisions(party);
     else if (kind === 'raider' || kind === 'monster' || partyIsHostileEncounterParty(party)) rows = hostileAutonomyDecisions(party);
     rows.push(...routePreferenceDecisions(party));
     if (avoidSiteId) rows = rows.filter(row => String(row?.site?.id || '') !== avoidSiteId);
@@ -6616,80 +6163,11 @@ function createWastelandSimulation(options = {}) {
     return chooseNextDestination(party, { keepCurrent: false });
   }
 
-  function caravanCanDeliverToSite(party = {}, site = {}) {
-    if (!party || !site || !isSettlementServiceSite(site)) return false;
-    const faction = factionGroup(party.faction || '');
-    const owner = factionGroup(site.owner || 'neutral');
-    if (!owner || owner === 'neutral') return true;
-    if (owner === faction) return true;
-    return !hostile(faction, owner) && (relation(faction, owner) >= 20 || relation(owner, faction) >= 20);
-  }
-
-  function caravanFallbackDestination(party = {}, blockedSite = null) {
-    const faction = factionGroup(party.faction || '');
-    const home = state.sites[party.homeSiteId || ''];
-    const candidates = Object.values(state.sites || {})
-      .filter(site => site
-        && site.id !== blockedSite?.id
-        && isSettlementServiceSite(site)
-        && caravanCanDeliverToSite(party, site))
-      .map(site => {
-        const dist = pointDistanceKm(party, site, getGlobalMap());
-        const isHome = home && site.id === home.id ? -18 : 0;
-        const isCapital = isFactionCapitalSite(site) ? -8 : 0;
-        const need = stockpileTotal(resourceSiteSupportDemand(site, resourceSiteSupportReason(site) || 'low_stock'));
-        return { site, score: dist - need * 1.25 + isHome + isCapital };
-      })
-      .sort((a, b) => a.score - b.score);
-    return candidates[0]?.site || (home && caravanCanDeliverToSite(party, home) ? home : null);
-  }
-
-  function rerouteCaravanIfDestinationInvalid(party = {}, destination = null, reason = 'destination_lost') {
-    if (!party || String(party.kind || '').toLowerCase() !== 'caravan') return destination;
-    if (stockpileTotal(party.cargo || {}) <= 0) return destination;
-    if (!destination || !isSettlementServiceSite(destination) || caravanCanDeliverToSite(party, destination)) return destination;
-    const fallback = caravanFallbackDestination(party, destination);
-    if (!fallback || fallback.id === destination.id) return destination;
-    party.destinationSiteId = fallback.id;
-    const operationRecord = caravanWorldOperationForParty(party, true);
-    if (operationRecord?.task) {
-      const operationTask = operationRecord.task;
-      const operation = operationRecord.operation;
-      const source = state.sites[operation?.sourceSiteId || party.stagingSiteId || party.homeSiteId || ''] || {};
-      ensureCaravanWorldOperation(operationTask, party, source, fallback, caravanOperationRuntimePhase(party, operation || {}));
-    }
-    addEvent('caravan_rerouted', `${party.name} развернулся: ${destination.name || destination.id} больше не безопасна для доставки. Новый пункт: ${fallback.name || fallback.id}.`, {
-      partyId: party.id,
-      fromSiteId: destination.id,
-      toSiteId: fallback.id,
-      reason,
-      cargo: compactStockpile(party.cargo || {})
-    });
-    dirty = true;
-    return fallback;
-  }
-
-  function caravanStagingMinPlayers(party = {}) {
-    return String(party.supplyRole || '').toLowerCase() === 'heavy'
-      ? HEAVY_CARAVAN_ESCORT_MIN_PLAYERS
-      : CARAVAN_ESCORT_MIN_PLAYERS;
-  }
-
   function caravanStagingIsOpen(party = {}) {
     if (!party || String(party.kind || '').toLowerCase() !== 'caravan' || party.stagingJoinClosed) return false;
     const stateKey = String(party.state || '').toLowerCase();
     return stateKey === 'staging'
       || (stateKey === 'onsite' && String(party.onsiteReason || '').toLowerCase() === 'staging' && !!party.stagingSiteId);
-  }
-
-  function clearCaravanStaging(party = {}) {
-    if (!party) return;
-    party.stagingSiteId = '';
-    party.stagingTaskId = '';
-    party.stagingStartedHour = 0;
-    party.stagingUntilHour = 0;
-    party.stagingMinPlayers = 0;
-    party.stagingJoinClosed = false;
   }
 
   function worldTaskById(id = '') {
@@ -6737,68 +6215,6 @@ function createWastelandSimulation(options = {}) {
     if (!task || !operation) return null;
     if (activeOnly && operation.status !== 'active') return null;
     return { task, operation };
-  }
-
-  function caravanOperationArrivalSiteId(party = {}, operation = {}) {
-    if (party.returningFromTrade || String(operation.phase || '') === 'returning') {
-      return safeId(party.homeSiteId || '', '');
-    }
-    return safeId(operation.destinationSiteId || party.destinationSiteId || '', '');
-  }
-
-  function supplyTaskCargoMatch(task = {}, cargo = {}) {
-    const demand = compactStockpile(task?.details?.demand || {});
-    return Object.entries(demand).reduce((sum, [id, amount]) => (
-      sum + Math.min(Math.max(0, Number(amount || 0)), Math.max(0, Number(cargo?.[id] || 0)))
-    ), 0);
-  }
-
-  function supplyRequestAvailableForCaravan(task = null, party = {}, destination = null, cargo = {}) {
-    if (!task || task.status !== 'active' || task.type !== 'deliver_supplies' || task.siteId !== destination?.id) return false;
-    if (supplyTaskCargoMatch(task, cargo) <= 0) return false;
-    const assignedPartyId = safeId(task.details?.assignedPartyId || '', '');
-    if (!assignedPartyId || assignedPartyId === party.id) return true;
-    const assignedParty = state.parties[assignedPartyId];
-    return !assignedParty || assignedParty.destroyed || assignedParty.state === 'destroyed';
-  }
-
-  function matchingSupplyRequestForCaravan(party = {}, destination = null) {
-    if (!party || !destination) return null;
-    const cargo = compactStockpile(party.cargo || {});
-    return (Array.isArray(state.worldTasks) ? state.worldTasks : [])
-      .filter(task => supplyRequestAvailableForCaravan(task, party, destination, cargo))
-      .sort((left, right) => (
-        supplyTaskCargoMatch(right, cargo) - supplyTaskCargoMatch(left, cargo)
-        || Number(right.priority || 0) - Number(left.priority || 0)
-        || Number(left.createdHour || 0) - Number(right.createdHour || 0)
-      ))[0] || null;
-  }
-
-  function resolveSupplyRequestForDelivery(party = {}, site = {}, delivered = {}, operation = null) {
-    const cargo = compactStockpile(delivered || {});
-    const linkedRequestId = safeId(operation?.requestTaskId || '', '');
-    const candidates = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
-      .filter(task => {
-        if (!task || task.status !== 'active' || task.type !== 'deliver_supplies' || task.siteId !== site.id) return false;
-        if (linkedRequestId && task.id !== linkedRequestId) return false;
-        const assignedPartyId = safeId(task.details?.assignedPartyId || '', '');
-        if (assignedPartyId && assignedPartyId !== party.id) return false;
-        return stockpileTotal(task.details?.demand || {}) <= 0 || supplyTaskCargoMatch(task, cargo) > 0;
-      })
-      .sort((left, right) => (
-        (left.id === linkedRequestId ? -1 : 0) - (right.id === linkedRequestId ? -1 : 0)
-        || supplyTaskCargoMatch(right, cargo) - supplyTaskCargoMatch(left, cargo)
-        || Number(right.priority || 0) - Number(left.priority || 0)
-        || Number(left.createdHour || 0) - Number(right.createdHour || 0)
-      ));
-    const requestTask = candidates[0] || null;
-    if (!requestTask) return null;
-    return finishWorldTask(requestTask, 'resolved', 'caravan_delivery', {
-      partyId: party.id,
-      operationId: operation?.id || party.assignment?.operationId || party.lastOperation?.id || '',
-      cargo: clone(cargo),
-      siteId: site.id
-    });
   }
 
   function caravanOperationGoal(party = {}, source = {}, destination = {}, requestTask = null) {
@@ -6927,147 +6343,6 @@ function createWastelandSimulation(options = {}) {
     if (party) bindPartyWorldOperation(party, detached, escortTask);
     dirty = true;
     return detached;
-  }
-
-  function expireLiveCaravanEscortTask(task = {}, now = Number(state.worldHour || 0)) {
-    const operation = normalizeWorldOperation(task?.details?.operation || {}, now);
-    const party = state.parties[operation?.assignment?.assigneeId || task.partyId || ''];
-    if (!operation || operation.status !== 'active' || !party
-      || party.destroyed || party.state === 'destroyed'
-      || String(party.kind || '').toLowerCase() !== 'caravan') return false;
-    const phase = caravanOperationRuntimePhase(party, operation);
-    const continued = transitionWorldOperation(operation, phase, now, {
-      assignment: { leaseUntilHour: 0 }
-    });
-    task.status = 'expired';
-    task.completedHour = now;
-    task.details = {
-      ...(task.details || {}),
-      finishReason: 'escort_window_expired',
-      npcOperationContinues: true,
-      joinOpen: false,
-      joinClosed: true,
-      operation: continued
-    };
-    bindPartyWorldOperation(party, continued, task);
-    removeWorldTaskPartyMembers(task);
-    state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
-    addEvent('world_task_expired', `Срок присоединения к сопровождению истёк: ${task.title}. Караван продолжает рейс.`, {
-      taskId: task.id,
-      taskType: task.type,
-      siteId: task.siteId,
-      partyId: task.partyId,
-      operationId: continued.id
-    });
-    archiveWorldTask(task);
-    dirty = true;
-    return true;
-  }
-
-  function ensureCaravanWorldOperation(task = {}, party = {}, source = {}, destination = null, phase = 'preparing') {
-    if (!task || !party || !destination) return null;
-    const existing = normalizeWorldOperation(task.details?.operation || {}, state.worldHour);
-    const cargo = compactStockpile(party.cargo || {});
-    const linkedRequest = existing?.requestTaskId ? worldTaskById(existing.requestTaskId) : null;
-    const requestTask = supplyRequestAvailableForCaravan(linkedRequest, party, destination, cargo)
-      ? linkedRequest
-      : matchingSupplyRequestForCaravan(party, destination);
-    if (linkedRequest && linkedRequest !== requestTask
-      && String(linkedRequest.details?.assignedPartyId || '') === String(party.id || '')) {
-      forEachWorldTaskCopy(linkedRequest.id, row => {
-        row.details = {
-          ...(row.details || {}),
-          assignedPartyId: '',
-          escortTaskId: '',
-          npcAssignment: {
-            ...(row.details?.npcAssignment || {}),
-            status: row.status === 'active' ? 'caravan_rerouted' : 'request_finished',
-            phase: 'cancelled',
-            finishedHour: Number(state.worldHour || 0)
-          }
-        };
-      });
-    }
-    const leader = partyLeaderPublicMember(party);
-    const goal = caravanOperationGoal(party, source, destination, requestTask);
-    const patch = {
-      issuerFactionId: factionGroup(party.faction || source.owner || ''),
-      requestTaskId: requestTask?.id || '',
-      escortTaskId: task.id || '',
-      sourceSiteId: source.id || party.stagingSiteId || party.homeSiteId || '',
-      destinationSiteId: destination.id || party.destinationSiteId || '',
-      demand: compactStockpile(requestTask?.details?.demand || {}),
-      cargo,
-      goal,
-      assignment: {
-        taskId: task.id || '',
-        assigneeId: party.id || '',
-        leaderId: leader.id || '',
-        leaderName: leader.name || 'Караванщик',
-        leaderRole: leader.role || 'Глава каравана',
-        leaseUntilHour: Number(task.expiresHour || 0)
-      }
-    };
-    const operation = existing
-      ? transitionWorldOperation(existing, phase, state.worldHour, patch)
-      : createSupplyOperation({
-        ...patch,
-        partyId: party.id,
-        phase,
-        createdHour: Number(party.stagingStartedHour || state.worldHour || 0)
-      }, state.worldHour);
-    if (!operation) return null;
-    task.details = {
-      ...(task.details || {}),
-      destinationSiteId: operation.destinationSiteId,
-      operationId: operation.id,
-      requestTaskId: operation.requestTaskId || '',
-      operation,
-      liveEvent: {
-        ...(task.details?.liveEvent || {}),
-        causeLabel: operation.goal?.summary || task.details?.liveEvent?.causeLabel || '',
-        impactSiteId: operation.destinationSiteId
-      }
-    };
-    task.targetSiteId = operation.destinationSiteId;
-    task.targetSiteName = destination.name || operation.destinationSiteId;
-    forEachWorldTaskCopy(task.id, row => {
-      if (row !== task && safeId(row.details?.operation?.id || '', '') !== operation.id) return;
-      row.details = {
-        ...(row.details || {}),
-        destinationSiteId: operation.destinationSiteId,
-        operationId: operation.id,
-        requestTaskId: operation.requestTaskId || '',
-        operation,
-        liveEvent: {
-          ...(row.details?.liveEvent || {}),
-          causeLabel: operation.goal?.summary || row.details?.liveEvent?.causeLabel || '',
-          impactSiteId: operation.destinationSiteId
-        }
-      };
-      row.targetSiteId = operation.destinationSiteId;
-      row.targetSiteName = destination.name || operation.destinationSiteId;
-    });
-    if (requestTask) {
-      forEachWorldTaskCopy(requestTask.id, row => {
-        row.details = {
-          ...(row.details || {}),
-          operationId: operation.id,
-          assignedPartyId: party.id || '',
-          escortTaskId: task.id || '',
-          npcAssignment: {
-            status: row.status === 'active' ? 'active' : 'request_finished',
-            phase: operation.phase,
-            assignedHour: Number(operation.assignment?.acceptedHour || operation.createdHour || state.worldHour || 0),
-            sourceSiteId: operation.sourceSiteId,
-            destinationSiteId: operation.destinationSiteId,
-            leaderName: operation.assignment?.leaderName || 'Караванщик'
-          }
-        };
-      });
-    }
-    bindPartyWorldOperation(party, operation, task);
-    return operation;
   }
 
   function publicCaravanWorldOperation(task = {}, party = null) {
@@ -7988,54 +7263,6 @@ function createWastelandSimulation(options = {}) {
     return settleCaravanWorldOperation(task, operation, phase, reason || task.status || phase, details);
   }
 
-  function updateCaravanStagingTask(party = {}, site = {}, destination = null, departed = false) {
-    const task = state.worldTasks.find(row => row && row.status === 'active' && (
-      row.id === party.stagingTaskId || row.key === `escort_caravan:${party.id}`
-    ));
-    if (!task) return null;
-    const issuer = escortIssuerSiteFor(party, site);
-    task.siteId = issuer?.id || task.siteId || party.homeSiteId || '';
-    task.issuerSiteId = issuer?.id || task.issuerSiteId || party.homeSiteId || '';
-    task.partyId = party.id || task.partyId || '';
-    const playerLimit = worldPartyPlayerLimit(party, task);
-    const taskMembers = Array.isArray(party.playerMembers)
-      ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, playerLimit)
-      : [];
-    const destinationRegion = destination ? liveRegionForSite(destination) : null;
-    const liveCause = activityCause('escort_caravan', destinationRegion || {});
-    const operation = ensureCaravanWorldOperation(task, party, site, destination, departed ? 'traveling' : 'preparing');
-    task.details = {
-      ...(task.details || {}),
-      liveEvent: {
-        ...(task.details?.liveEvent || {}),
-        cause: liveCause.key,
-        causeLabel: operation?.goal?.summary || liveCause.label,
-        impactSiteId: destination?.id || party.destinationSiteId || ''
-      },
-      initialNpcMembers: Math.max(1, Math.floor(Number(task.details?.initialNpcMembers || party.members || 1))),
-      staging: !departed,
-      joinOpen: !departed,
-      joinClosed: !!departed,
-      stagingSiteId: site.id || '',
-      destinationSiteId: destination?.id || party.destinationSiteId || '',
-      minPlayers: Number(party.stagingMinPlayers || caravanStagingMinPlayers(party)),
-      playerLimit,
-      joinedPlayers: taskMembers.map(row => row.id).filter(Boolean),
-      playerCount: taskMembers.length,
-      waitUntilHour: Number(party.stagingUntilHour || 0),
-      departedHour: departed ? Number(state.worldHour || 0) : Number(task.details?.departedHour || 0),
-      cargo: compactStockpile(party.cargo || {})
-    };
-    if (operation) {
-      const leaderName = operation.assignment?.leaderName || 'Караванщик';
-      task.text = departed
-        ? `${leaderName} ведёт караван к ${destination?.name || party.destinationSiteId || 'месту назначения'}. ${operation.goal?.summary || ''}`.slice(0, 320)
-        : `${leaderName} готовит караван у ${site.name || site.id}. ${operation.goal?.summary || ''} Можно присоединиться до отправления.`.slice(0, 320);
-    }
-    dirty = true;
-    return task;
-  }
-
   // Доска с наймом в сопровождение висит только в столице фракции: караваны
   // встают на погрузку у ресурсных точек по всей карте, и объявление у каждой из
   // них означало, что найти его невозможно. Столица — одно узнаваемое место,
@@ -8043,145 +7270,6 @@ function createWastelandSimulation(options = {}) {
   function escortIssuerSiteFor(party = {}, fallbackSite = {}) {
     const capitalId = capitalSiteIdForFaction(party.faction || '');
     return state.sites[capitalId] || fallbackSite || state.sites.settlement || null;
-  }
-
-  function createCaravanStagingTask(party = {}, site = {}, destination = null) {
-    const minPlayers = caravanStagingMinPlayers(party);
-    const issuer = escortIssuerSiteFor(party, site);
-    const task = createWorldTask('escort_caravan', {
-      key: `escort_caravan:${party.id}`,
-      title: `${String(party.supplyRole || '').toLowerCase() === 'heavy' ? 'Тяжелый караван' : 'Караван'} ждет сопровождение: ${party.name}`,
-      text: `${party.name} стоит у ${site.name || site.id} и ждет сопровождение перед выходом ${destination ? `к ${destination.name}` : 'по маршруту'}. Запишитесь в столице: группа собирается сама, караван выходит по таймеру.`,
-      siteId: issuer?.id || site.id || party.homeSiteId || 'settlement',
-      issuerSiteId: issuer?.id || site.id || party.homeSiteId || 'settlement',
-      partyId: party.id,
-      targetFaction: '',
-      objective: String(party.supplyRole || '').toLowerCase() === 'heavy' ? 'escort_heavy_caravan' : 'escort_regular_caravan',
-      durationHours: Math.max(12, realMinutesToWorldHours(CARAVAN_STAGING_REAL_MINUTES) + 24),
-      priority: String(party.supplyRole || '').toLowerCase() === 'heavy' ? 4 : 3,
-      details: {
-        staging: true,
-        joinOpen: true,
-        stagingSiteId: site.id || '',
-        destinationSiteId: destination?.id || party.destinationSiteId || '',
-        initialNpcMembers: Math.max(1, Math.floor(Number(party.members || 1))),
-        minPlayers,
-        playerLimit: worldPartyPlayerLimit(party),
-        waitRealMinutes: CARAVAN_STAGING_REAL_MINUTES,
-        waitUntilHour: Number(party.stagingUntilHour || 0),
-        cargo: compactStockpile(party.cargo || {})
-      }
-    });
-    if (task) party.stagingTaskId = task.id;
-    updateCaravanStagingTask(party, site, destination, false);
-    return task;
-  }
-
-  function beginCaravanStaging(party = {}, site = {}) {
-    if (!party || String(party.kind || '').toLowerCase() !== 'caravan' || !site) return false;
-    if (stockpileTotal(party.cargo || {}) <= 0) return false;
-    let destination = state.sites[party.destinationSiteId];
-    if (!destination || destination.id === site.id) destination = chooseNextDestination(party);
-    if (!destination || destination.id === site.id) return false;
-    const now = Number(state.worldHour || 0);
-    party.state = 'staging';
-    party.x = Number(site.x || party.x || 0);
-    party.y = Number(site.y || party.y || 0);
-    party.stagingSiteId = site.id || '';
-    party.stagingStartedHour = now;
-    party.stagingUntilHour = now + realMinutesToWorldHours(CARAVAN_STAGING_REAL_MINUTES);
-    party.stagingMinPlayers = caravanStagingMinPlayers(party);
-    party.stagingJoinClosed = false;
-    createCaravanStagingTask(party, site, destination);
-    addEvent('caravan_staging', `${party.name} ждет сопровождение у ${site.name || site.id}.`, {
-      partyId: party.id,
-      siteId: site.id,
-      destinationSiteId: destination.id,
-      minPlayers: party.stagingMinPlayers,
-      waitUntilHour: party.stagingUntilHour,
-      cargo: compactStockpile(party.cargo || {})
-    });
-    dirty = true;
-    return true;
-  }
-
-  function beginCaravanStagingOnsite(party = {}, site = {}, options = {}) {
-    if (!beginCaravanStaging(party, site)) return false;
-    const zone = beginPartyOnsiteVisit(party, site, {
-      reason: 'staging',
-      dwellHours: Math.max(0.25, Number(party.stagingUntilHour || 0) - Number(state.worldHour || 0)),
-      arrivalFrom: options.arrivalFrom
-    });
-    if (zone) return true;
-    const stagingTaskId = String(party.stagingTaskId || '');
-    const stagingTask = stagingTaskId ? worldTaskById(stagingTaskId) : null;
-    if (stagingTask) finalizeWorldTaskOperation(stagingTask, 'staging_unavailable', stagingTask.details || {});
-    if (stagingTaskId) state.worldTasks = state.worldTasks.filter(task => String(task?.id || '') !== stagingTaskId);
-    state.events = state.events.filter(event => !(event?.type === 'caravan_staging' && String(event?.partyId || '') === String(party.id || '')));
-    clearCaravanStaging(party);
-    party.state = 'moving';
-    return false;
-  }
-
-  function updateCaravanStaging(party = {}, hours = 0) {
-    if (!party || String(party.state || '').toLowerCase() !== 'staging') return false;
-    const site = state.sites[party.stagingSiteId] || state.sites[party.lastSiteId] || state.sites[party.homeSiteId];
-    let destination = state.sites[party.destinationSiteId];
-    if (!destination || destination.id === site?.id) destination = chooseNextDestination(party);
-    if (site) {
-      party.x = Number(site.x || party.x || 0);
-      party.y = Number(site.y || party.y || 0);
-      const zone = beginPartyOnsiteVisit(party, site, {
-        reason: 'staging',
-        dwellHours: Math.max(0.25, Number(party.stagingUntilHour || 0) - Number(state.worldHour || 0))
-      });
-      if (zone) return true;
-    }
-    const now = Number(state.worldHour || 0);
-    const minPlayers = Number(party.stagingMinPlayers || caravanStagingMinPlayers(party));
-    const joined = worldPartyPlayerCount(party);
-    updateCaravanStagingTask(party, site || {}, destination, false);
-    const enoughPlayers = minPlayers > 0 && joined >= minPlayers;
-    const waitExpired = now >= Number(party.stagingUntilHour || 0);
-    if (!enoughPlayers && !waitExpired) return true;
-    party.state = 'moving';
-    party.stagingJoinClosed = true;
-    updateCaravanStagingTask(party, site || {}, destination, true);
-    addEvent('caravan_departed', `${party.name} вышел из ${site?.name || party.stagingSiteId || 'точки'} к ${destination?.name || party.destinationSiteId || 'маршруту'}.`, {
-      partyId: party.id,
-      siteId: site?.id || '',
-      destinationSiteId: destination?.id || party.destinationSiteId || '',
-      playerCount: joined,
-      minPlayers,
-      reason: enoughPlayers ? 'group_ready' : 'wait_expired',
-      cargo: compactStockpile(party.cargo || {})
-    });
-    dirty = true;
-    return false;
-  }
-
-  function applyCaravanEscortArrivalGrade(task = {}, party = {}) {
-    if (!task || task.type !== 'escort_caravan') return { grade: 'completed', initialNpcMembers: 0, survivingNpcMembers: 0, guardLosses: 0 };
-    const initialNpcMembers = Math.max(1, Math.floor(Number(task.details?.initialNpcMembers || party.members || 1)));
-    const survivingNpcMembers = Math.max(0, Math.floor(Number(party.members || 0)));
-    const guardLosses = Math.max(0, initialNpcMembers - survivingNpcMembers);
-    const grade = guardLosses <= 0 ? 'mastered' : 'completed';
-    if (grade === 'mastered' && task.details?.escortRewardAdjusted !== true) {
-      task.reward = {
-        ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
-        xp: Math.round(Math.max(0, Number(task.reward?.xp || 0)) * 1.25),
-        caps: Math.round(Math.max(0, Number(task.reward?.caps || 0)) * 1.25)
-      };
-    }
-    task.details = {
-      ...(task.details || {}),
-      initialNpcMembers,
-      survivingNpcMembers,
-      guardLosses,
-      escortGrade: grade,
-      escortRewardAdjusted: true
-    };
-    return { grade, initialNpcMembers, survivingNpcMembers, guardLosses };
   }
 
   function partyRewardPlayerDetails(party = {}, taskId = '') {
@@ -8240,249 +7328,6 @@ function createWastelandSimulation(options = {}) {
       rewardCapsLimitedByTreasury: paidPerPlayer < requestedPerPlayer
     };
     return paidPerPlayer;
-  }
-
-  function deliverCargo(party, site) {
-    if (!party || !site) return;
-    const cargo = compactStockpile(party.cargo && typeof party.cargo === 'object' ? party.cargo : {});
-    const keys = Object.keys(cargo).filter(key => Number(cargo[key] || 0) > 0);
-    party.cargo = cargo;
-    if (!keys.length) return;
-    const operationRecord = String(party.kind || '').toLowerCase() === 'caravan'
-      ? caravanWorldOperationForParty(party, true)
-      : null;
-    const operationBeforeDelivery = operationRecord?.operation || null;
-    const operationArrivalSiteId = operationBeforeDelivery
-      ? caravanOperationArrivalSiteId(party, operationBeforeDelivery)
-      : '';
-    if (operationArrivalSiteId && operationArrivalSiteId !== safeId(site.id || '', '')) return false;
-    const delivered = clone(cargo);
-    if (String(party.kind || '').toLowerCase() === 'caravan') {
-      const settlement = settleCargoArrival(
-        state.cargoLedger || (state.cargoLedger = {}),
-        party,
-        site.id,
-        delivered,
-        state.worldHour
-      );
-      if (settlement.duplicate) {
-        party.cargo = {};
-        dirty = true;
-        return false;
-      }
-      party.lastCargoTransactionId = settlement.transaction?.id || party.cargoTransactionId || '';
-      party.cargoTransactionId = '';
-    }
-    addStockpile(site.stockpile, delivered);
-    party.cargo = {};
-    clearCaravanStaging(party);
-    if (party.kind === 'caravan') {
-      state.stats.caravansArrived = Number(state.stats.caravansArrived || 0) + 1;
-      state.stats.resourcesDelivered = addStockpile(state.stats.resourcesDelivered || {}, delivered);
-      party.lastDeliveryHour = state.worldHour;
-      site.lastSupplyHour = state.worldHour;
-      site.lastDelivery = {
-        partyId: party.id,
-        cargo: clone(delivered),
-        worldHour: Number(Number(state.worldHour || 0).toFixed(2))
-      };
-      site.marketSupplyBoostUntil = Math.max(Number(site.marketSupplyBoostUntil || 0), Number(state.worldHour || 0) + 24);
-      site.supplyDisruptedUntil = 0;
-      site.prosperity = clamp(Number(site.prosperity || 0) + 2, 0, 100);
-      addEvent('caravan_arrived', `${party.name} доставил груз в ${site.name}: ${stockpileSummary(delivered)}.`, {
-        partyId: party.id,
-        siteId: site.id,
-        cargo: clone(delivered)
-      });
-      const isTradeOutbound = party.interFactionTrade && site.id !== party.homeSiteId;
-      if (isTradeOutbound && party.homeSiteId && state.sites[party.homeSiteId]) {
-        resolveSupplyRequestForDelivery(party, site, delivered, operationBeforeDelivery);
-        const askingPrice = Math.max(20, Math.floor(stockpileTotal(delivered) * 1.35));
-        // За чужой товар фракция платит из своего склада, а не печатает крышки.
-        // Если крышек не хватает, караван увозит столько, сколько покупатель
-        // смог дать: сделка идёт, но по средствам.
-        const buyer = factionGroup(site.owner || 'neutral');
-        const seller = factionGroup(party.faction || '');
-        const returnCaps = buyer && buyer !== 'neutral' && buyer !== seller
-          ? Math.floor(Number(takeStockpile(
-            site.stockpile || (site.stockpile = emptyStockpile()),
-            { silver: askingPrice }
-          ).silver || 0))
-          : askingPrice;
-        party.cargo = { silver: returnCaps };
-        party.destinationSiteId = party.homeSiteId;
-        party.route = [party.homeSiteId];
-        party.routeIndex = 0;
-        party.returningFromTrade = true;
-        const returnSite = state.sites[party.homeSiteId] || {};
-        const returnTasks = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
-          .filter(task => task && task.type === 'escort_caravan' && task.partyId === party.id
-            && normalizeWorldOperation(task.details?.operation || {}, state.worldHour)?.status === 'active');
-        returnTasks
-          .forEach(task => {
-            const taskMembers = Array.isArray(party.playerMembers)
-              ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, worldPartyPlayerLimit(party, task))
-              : [];
-            task.details = {
-              ...(task.details || {}),
-              finishReason: 'caravan_returning',
-              stage: 'returning',
-              joinOpen: false,
-              joinClosed: true,
-              returning: true,
-              returnStartedHour: Number(state.worldHour || 0),
-              returnSiteId: party.homeSiteId,
-              destinationSiteId: party.homeSiteId,
-              tradeDestinationSiteId: site.id,
-              returnCargo: clone(party.cargo),
-              cargo: clone(delivered),
-              playerLimit: worldPartyPlayerLimit(party, task),
-              playerCount: taskMembers.length,
-              joinedPlayers: taskMembers.map(row => row.id).filter(Boolean)
-            };
-            const operation = normalizeWorldOperation(task.details.operation || {}, state.worldHour);
-            if (operation) {
-              task.details.operation = transitionWorldOperation(operation, 'returning', state.worldHour, {
-                goal: {
-                  ...operation.goal,
-                  reason: 'return_to_base',
-                  summary: `Возвращение в ${returnSite.name || party.homeSiteId} после обмена.`,
-                  targetSiteId: party.homeSiteId
-                }
-              });
-              task.details.liveEvent = {
-                ...(task.details.liveEvent || {}),
-                causeLabel: task.details.operation.goal?.summary || '',
-                impactSiteId: party.homeSiteId
-              };
-              forEachWorldTaskCopy(task.id, row => {
-                row.details = {
-                  ...(row.details || {}),
-                  ...task.details,
-                  operation: task.details.operation
-                };
-              });
-              bindPartyWorldOperation(party, task.details.operation, task);
-            }
-            task.text = `${party.name} завершил обмен и возвращается домой. Награда будет доступна после возвращения каравана.`;
-            task.targetSiteId = party.homeSiteId;
-            task.targetSiteName = state.sites[party.homeSiteId]?.name || party.homeSiteId;
-          });
-        addEvent('caravan_returning', `${party.name} завершил обмен и возвращается в ${state.sites[party.homeSiteId].name || party.homeSiteId}.`, {
-            partyId: party.id,
-          fromSiteId: site.id,
-          toSiteId: party.homeSiteId,
-          returnCargo: clone(party.cargo)
-        });
-        dirty = true;
-        return;
-      }
-      const escortTasks = state.worldTasks
-        .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id);
-      escortTasks.forEach(task => {
-        const escortGrade = applyCaravanEscortArrivalGrade(task, party);
-        const escortReward = partyRewardPlayerDetails(party, task.id);
-        const hasPlayerEscorts = Number(escortReward.rewardPlayerCount || 0) > 0;
-        if (hasPlayerEscorts) fundWorldTaskCapsRewardFromSite(task, site, escortReward.rewardPlayerCount);
-        const liveRegion = applyLiveActivityOutcome(task, {
-          siteId: site.id,
-          success: true,
-          grade: escortGrade.grade,
-          participantCount: escortReward.rewardPlayerCount || 0,
-          contribution: stockpileTotal(delivered)
-        });
-        finishWorldTask(task, hasPlayerEscorts ? 'completed' : 'resolved', 'caravan_arrived', {
-          partyId: party.id,
-          siteId: site.id,
-          arrivalSiteId: site.id,
-          arrivalLocationId: site.locationId || '',
-          cargo: clone(delivered),
-          liveRegionOutcome: liveRegion?.aftermath || null,
-          ...escortGrade,
-          ...escortReward
-        });
-      });
-      settleLiveCaravanWorldOperation(party, true, 'caravan_arrived', {
-        partyId: party.id,
-        siteId: site.id,
-        arrivalSiteId: site.id,
-        cargo: clone(delivered)
-      });
-      resolveSupplyRequestForDelivery(party, site, delivered, operationBeforeDelivery);
-      if (party.resourceExport) {
-        addEvent('resource_export_delivered', `${party.name} разгрузился в ${site.name || site.id}.`, {
-          partyId: party.id,
-          siteId: site.id,
-          cargo: clone(delivered)
-        });
-        delete state.parties[party.id];
-        dirty = true;
-        return true;
-      }
-      if (party.productionExport) {
-        addEvent('production_export_delivered', `${party.name} разгрузился в ${site.name || site.id}.`, {
-          partyId: party.id,
-          siteId: site.id,
-          cargo: clone(delivered)
-        });
-        delete state.parties[party.id];
-        dirty = true;
-        return true;
-      }
-      if (party.interFactionTrade && party.returningFromTrade && site.id === party.homeSiteId) {
-        delete state.parties[party.id];
-        dirty = true;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function collectResources(party, site) {
-    if (!party || !site || !isHarvestSite(site)) return;
-    if (site.owner && site.owner !== 'neutral' && hostile(party.faction, site.owner)) {
-      addEvent('resource_blocked', `${party.name} не смог загрузиться в ${site.name}: точку удерживают ${factionLabel(site.owner)}.`, {
-        partyId: party.id,
-        siteId: site.id,
-        owner: site.owner
-      });
-      return;
-    }
-    const produced = site.output && typeof site.output === 'object' ? site.output : {};
-    addStockpile(site.stockpile, produced, 0.35);
-    const activityMul = clamp(Number(site.resourceActivity || resourceActivityPercent(site, state.worldHour)) / 100, 0.15, 1.4);
-    const capacity = Math.max(0, Math.floor(Number(party.cargoCapacity || 0)));
-    const capacityLeft = capacity > 0 ? Math.max(0, capacity - Math.floor(stockpileTotal(party.cargo || {}))) : 999;
-    if (capacityLeft <= 0) return;
-    const preferred = Array.isArray(party.preferredResources) && party.preferredResources.length
-      ? new Set(party.preferredResources.map(x => safeId(x)))
-      : null;
-    const wanted = {};
-    let remaining = capacityLeft;
-    Object.entries(produced)
-      .filter(([key]) => !preferred || preferred.has(safeId(key)))
-      .forEach(([key, value]) => {
-        if (remaining <= 0) return;
-        const want = Math.max(0, Math.floor(Number(value || 0) * Number(party.collectScale || 1) * activityMul));
-        const take = Math.min(remaining, want);
-        if (take > 0) {
-          wanted[key] = take;
-          remaining -= take;
-        }
-      });
-    const cargo = takeStockpile(site.stockpile, wanted);
-    if (Object.keys(cargo).length) {
-      party.cargo = party.cargo || {};
-      addStockpile(party.cargo, cargo);
-      party.lastLoadedHour = state.worldHour;
-      party.lastLoadedSiteId = site.id;
-      site.lastHarvestHour = state.worldHour;
-      addEvent('resource_loaded', `${party.name} загрузился в ${site.name}: ${stockpileSummary(cargo)}.`, {
-        partyId: party.id,
-        siteId: site.id,
-        cargo
-      });
-    }
   }
 
   function siteDefaultSecurity(site = {}) {
@@ -9045,39 +7890,7 @@ function createWastelandSimulation(options = {}) {
     party.siteVisitHours = { ...(party.siteVisitHours || {}), [site.id]: Number(state.worldHour || 0) };
     if (completeSiteSupportArrival(party, site)) return;
     completePatrolMissionArrival(party, site);
-    let onsiteReason = '';
-    if (party.kind === 'caravan') {
-      const operationRecord = caravanWorldOperationForParty(party, true);
-      const operation = operationRecord?.operation || null;
-      const operationArrivalSiteId = operation ? caravanOperationArrivalSiteId(party, operation) : '';
-      const isOperationArrival = !operationArrivalSiteId || operationArrivalSiteId === safeId(site.id || '', '');
-      const mayLoadOperationCargo = !operation
-        || (safeId(operation.sourceSiteId || '', '') === safeId(site.id || '', '')
-          && ['preparing', 'loading'].includes(String(operation.phase || '')));
-      const cargoBefore = stockpileTotal(party.cargo || {});
-      if (isHarvestSite(site) && mayLoadOperationCargo) collectResources(party, site);
-      const cargoAfter = stockpileTotal(party.cargo || {});
-      if (isHarvestSite(site) && cargoAfter > cargoBefore && beginCaravanStagingOnsite(party, site, { arrivalFrom })) {
-        return;
-      }
-      if (isHarvestSite(site) && cargoAfter > cargoBefore) onsiteReason = 'harvest';
-      if (isSettlementServiceSite(site)) {
-        if (!isOperationArrival) {
-          onsiteReason = 'transit';
-        }
-        else if (caravanCanDeliverToSite(party, site)) {
-          const beforeDelivery = stockpileTotal(party.cargo || {});
-          const partyRemoved = deliverCargo(party, site);
-          if (partyRemoved || !state.parties[party.id]) return;
-          if (beforeDelivery > 0) onsiteReason = 'unload';
-        }
-        else {
-          const fallback = rerouteCaravanIfDestinationInvalid(party, site, 'arrival_owner_changed');
-          if (fallback && fallback.id !== site.id) return;
-        }
-      }
-    }
-    if (beginPartyOnsiteVisit(party, site, { reason: onsiteReason || 'arrival', arrivalFrom })) return;
+    if (beginPartyOnsiteVisit(party, site, { reason: 'arrival', arrivalFrom })) return;
     chooseNextDestination(party);
   }
 
@@ -9086,16 +7899,6 @@ function createWastelandSimulation(options = {}) {
     if (party.state === 'engaged' && activeBattleZoneForParty(party.id)) return;
     if (party.state === 'engaged') releaseEngagedParty(party, party.engagedZoneId || '');
     if (String(party.state || '').toLowerCase() === 'onsite' && updateOnsiteParty(party, hours)) return;
-    if (String(party.state || '').toLowerCase() === 'staging' && updateCaravanStaging(party, hours)) return;
-    if (String(party.state || '').toLowerCase() === 'recovering') {
-      if (Number(state.worldHour || 0) < Number(party.recoverUntilHour || 0)) return;
-      party.state = 'moving';
-      party.recoverUntilHour = 0;
-      addEvent('caravan_recovered', `${party.name} перегруппировался и продолжает маршрут.`, {
-        partyId: party.id,
-        destinationSiteId: party.destinationSiteId || ''
-      });
-    }
     refreshPartyDecision(party, false);
     const speedKmh = effectiveWorldPartySpeedKmh(party);
     if (Number(party.speedKmh) !== speedKmh) {
@@ -9117,7 +7920,6 @@ function createWastelandSimulation(options = {}) {
         dest = partyMovementTarget(party);
       }
       if (!dest) return;
-      if (!dest.movingParty) dest = rerouteCaravanIfDestinationInvalid(party, dest, 'owner_changed_on_route') || dest;
       const route = partyInfrastructureRoute(party, dest, globalMap);
       if (route.length < 2) return;
       let routeIndex = Math.max(1, Math.floor(Number(party.infrastructureRouteIndex || 1)));
@@ -9565,21 +8367,7 @@ function createWastelandSimulation(options = {}) {
         b.y = Number(contact.rightPoint.y || b.y || 0);
         clearPartyInfrastructureRoute(a);
         clearPartyInfrastructureRoute(b);
-        const aIsCaravan = String(a.kind || '').toLowerCase() === 'caravan';
-        const bIsCaravan = String(b.kind || '').toLowerCase() === 'caravan';
-        if (aIsCaravan || bIsCaravan) {
-          const caravan = aIsCaravan ? a : b;
-          const threatParty = caravan === a ? b : a;
-          createCaravanBattleZone(caravan, {
-            threatPartyId: threatParty.id,
-            threatName: threatParty.name || threatParty.id,
-            threatFaction: threatParty.faction || '',
-            threatDistanceKm: Number(contactDistanceKm.toFixed(1)),
-            riskLevel: 100
-          });
-        } else {
-          createPartyClashZone(a, b);
-        }
+        createPartyClashZone(a, b);
         if (a.state === 'engaged') break;
       }
     }
@@ -10523,7 +9311,6 @@ function createWastelandSimulation(options = {}) {
       party.cargo = {};
       party.route = Array.isArray(defaults.route) && defaults.route.length ? defaults.route.slice() : (Array.isArray(party.route) ? party.route : []);
       party.routeIndex = 0;
-      clearCaravanStaging(party);
       clearPartyOnsiteState(party);
       party.targetPartyId = '';
       party.nextDecisionHour = 0;
@@ -10609,7 +9396,6 @@ function createWastelandSimulation(options = {}) {
     });
     maintainDistrictInterestSites(hours);
     reformDestroyedParties();
-    trackCargoDepartures();
     maintainWorldZoneBattles(hours);
     partyMovementTracks = new Map();
     Object.values(state.parties).forEach(party => recordPartyMovementPoint(party, party, 0));
@@ -12728,7 +11514,6 @@ function createWastelandSimulation(options = {}) {
     Object.values(state.sites || {}).forEach(site => {
       site.settlementLife = normalizeSettlementLife(site, worldSimulationConfig, state.worldHour);
     });
-    trackCargoDepartures();
     dirty = true;
     save(true);
     return publicState();

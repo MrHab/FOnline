@@ -135,12 +135,20 @@ namespace RealmOfAshes.EditorTools
                         && generator.AuthoredPrefabCount
                             >= generator.SurfaceClusterCount + generator.RidgeCount
                         && generator.AuthoredRendererCount > generator.AuthoredPrefabCount
-                        && generator.CompatibleMaterialCount > 0
+                        // Число пересобранных материалов не проверяется: локальный пак MEP
+                        // уже переведён на URP, и пересборка нужна не всем. Что все
+                        // материалы в итоге URP, проверяет следующий блок.
                         && generator.GroundAccentCount > 0
                         && generator.GroundAccentCount < generator.SurfaceClusterCount / 2
                         && generator.MaximumDecorationHeight > 0.9f
                         && generator.MaximumDecorationHeight < 2.5f,
-                    "детали земли остались слишком мелкими или схематичными");
+                    "детали земли остались слишком мелкими или схематичными: prefab="
+                    + generator.UsesAuthoredPrefabs + " " + generator.AuthoredPrefabCount
+                    + "/" + (generator.SurfaceClusterCount + generator.RidgeCount)
+                    + ", renderers=" + generator.AuthoredRendererCount
+                    + ", materials=" + generator.CompatibleMaterialCount
+                    + ", accents=" + generator.GroundAccentCount + "/" + generator.SurfaceClusterCount
+                    + ", height=" + generator.MaximumDecorationHeight.ToString("0.00"));
                 Require(generator.MinimumClusterSpacing >= RoaGroundDressing.MinimumSurfaceSpacing - 0.001f,
                     "декоративные группы снова накладываются друг на друга: "
                     + generator.MinimumClusterSpacing.ToString("0.00") + " м");
@@ -287,12 +295,34 @@ namespace RealmOfAshes.EditorTools
             Texture2D readback = null;
             GameObject cameraObject = null;
             GameObject lightObject = null;
+            GameObject keyLightObject = null;
             AmbientMode previousAmbient = RenderSettings.ambientMode;
             Color previousAmbientLight = RenderSettings.ambientLight;
+            SphericalHarmonicsL2 previousAmbientProbe = RenderSettings.ambientProbe;
+            // Свет кадра не должен зависеть от открытой сцены: в пустой сцене пакетного
+            // аудита кадр выходил вдвое темнее, чем с открытой Wasteland. Чужие источники
+            // на время съёмки гасятся, а ключевой свет повторяет солнце Wasteland.unity.
+            Light[] sceneLights = Array.FindAll(
+                UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None),
+                sceneLight => sceneLight.enabled);
             try
             {
+                foreach (Light sceneLight in sceneLights) sceneLight.enabled = false;
                 RenderSettings.ambientMode = AmbientMode.Flat;
                 RenderSettings.ambientLight = new Color(0.20f, 0.18f, 0.14f);
+                // Unity пересчитывает ambient probe только на следующем тике редактора,
+                // а кадр снимается сразу, поэтому проба задаётся явно.
+                var ambientProbe = new SphericalHarmonicsL2();
+                ambientProbe.AddAmbientLight(RenderSettings.ambientLight);
+                RenderSettings.ambientProbe = ambientProbe;
+
+                keyLightObject = new GameObject("GroundDressingCaptureKeyLight");
+                Light keyLight = keyLightObject.AddComponent<Light>();
+                keyLight.type = LightType.Directional;
+                keyLight.color = new Color(1f, 0.96f, 0.88f);
+                keyLight.intensity = 1.1f;
+                keyLight.shadows = LightShadows.Soft;
+                keyLightObject.transform.rotation = new Quaternion(0.40821794f, -0.23456973f, 0.10938166f, 0.8754261f);
 
                 lightObject = new GameObject("GroundDressingCaptureLight");
                 Light light = lightObject.AddComponent<Light>();
@@ -323,12 +353,17 @@ namespace RealmOfAshes.EditorTools
                 };
                 target.Create();
                 camera.targetTexture = target;
-                if (GraphicsSettings.currentRenderPipeline != null)
+                // Кадр, в котором редактор впервые встречает вариант шейдера, выходит
+                // испорченным: объект рисуется бирюзовым, красным или пурпурным. Материалы
+                // MEP (URP Lit со specular/detail) никто до этой пробы не рисует, поэтому
+                // сначала прогревочный кадр, а меряется следующий.
+                for (int warmup = 0; warmup < 4; warmup++)
                 {
-                    var request = new RenderPipeline.StandardRequest { destination = target };
-                    RenderPipeline.SubmitRenderRequest(camera, request);
+                    RenderCapture(camera, target);
+                    if (!ShaderUtil.anythingCompiling) break;
+                    System.Threading.Thread.Sleep(250);
                 }
-                else camera.Render();
+                RenderCapture(camera, target);
 
                 RenderTexture.active = target;
                 readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
@@ -338,13 +373,14 @@ namespace RealmOfAshes.EditorTools
                 float darkRatio = DarkPixelRatio(pixels);
                 float magentaRatio = MagentaPixelRatio(pixels);
                 float brightRatio = BrightPixelRatio(pixels);
-                Require(darkRatio < 0.0075f,
-                    "кадр снова провалился в чёрные пятна: " + darkRatio.ToString("0.0000"));
-                Require(magentaRatio < 0.0001f,
-                    "MEP materials are rendered magenta: " + magentaRatio.ToString("0.0000"));
-                Require(brightRatio < 0.18f,
-                    "controlled environment capture is overexposed: " + brightRatio.ToString("0.0000"));
+                // Кадр сохраняется до проверок: при провале он и есть улика.
                 File.WriteAllBytes(path, readback.EncodeToPNG());
+                Require(darkRatio < 0.0075f,
+                    "кадр снова провалился в чёрные пятна: " + darkRatio.ToString("0.0000") + " (" + path + ")");
+                Require(magentaRatio < 0.0001f,
+                    "MEP materials are rendered magenta: " + magentaRatio.ToString("0.0000") + " (" + path + ")");
+                Require(brightRatio < 0.18f,
+                    "controlled environment capture is overexposed: " + brightRatio.ToString("0.0000") + " (" + path + ")");
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] доля почти чёрных пикселей: "
                     + darkRatio.ToString("0.0000"));
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] кадр: " + path);
@@ -353,6 +389,9 @@ namespace RealmOfAshes.EditorTools
             {
                 RenderSettings.ambientMode = previousAmbient;
                 RenderSettings.ambientLight = previousAmbientLight;
+                RenderSettings.ambientProbe = previousAmbientProbe;
+                foreach (Light sceneLight in sceneLights)
+                    if (sceneLight != null) sceneLight.enabled = true;
                 RenderTexture.active = previous;
                 if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
                 if (target != null)
@@ -362,7 +401,18 @@ namespace RealmOfAshes.EditorTools
                 }
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (lightObject != null) UnityEngine.Object.DestroyImmediate(lightObject);
+                if (keyLightObject != null) UnityEngine.Object.DestroyImmediate(keyLightObject);
             }
+        }
+
+        private static void RenderCapture(Camera camera, RenderTexture target)
+        {
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                var request = new RenderPipeline.StandardRequest { destination = target };
+                RenderPipeline.SubmitRenderRequest(camera, request);
+            }
+            else camera.Render();
         }
 
         public static float DarkPixelRatio(Color32[] pixels)

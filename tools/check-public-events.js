@@ -391,4 +391,118 @@ for (const template of catalog.templates) {
   }
 }
 
-console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones.`);
+// --- босс и опоры в комнате --------------------------------------------------
+// Гибель проверялась опросом раз в 5 с по телу в комнате, а обысканное тело
+// исчезает через 0,5 с: матку убивали и обыскивали, событие навсегда оставалось
+// «босс появился, не убит», и тайник не появлялся. После перезапуска наоборот:
+// комната новая, а отметка «появился» мешала вернуть босса, и зачищать было
+// некого. Настоящие функции server.js в песочнице, данные — из каталога.
+{
+  const vm = require('node:vm');
+  const functionSource = name => {
+    const start = serverSource.indexOf(`function ${name}(`);
+    assert(start >= 0, `server.js: function ${name} is missing`);
+    return serverSource.slice(start, serverSource.indexOf('\n}', start) + 2);
+  };
+  const template = catalog.byId.scorpion_pit;
+  assert(template?.boss && template.mechanics?.supports?.length, 'The Rykhlyak pit has a matriarch and supports.');
+  let actorSeq = 0;
+  const persisted = [];
+  const emitted = [];
+  const byId = {};
+  const context = vm.createContext({
+    Math, Number, String,
+    KROMKA_PUBLIC_EVENT_CATALOG: catalog,
+    notePublicEventBoss: events.notePublicEventBoss,
+    noteScenarioSupportDestroyed: scenarios.noteSupportDestroyed,
+    scenarioSupportAlive: scenarios.supportAlive,
+    serverPublicEventById: id => byId[id] || null,
+    scheduleServerPublicEventPersist: () => persisted.push(1),
+    serverEmitPublicEventState: (event, extra) => emitted.push(extra),
+    ensureRoomWorld: () => {},
+    roomTileDims: () => ({ w: 40, h: 40 }),
+    tileToWorld: (tx, tz) => ({ x: tx, z: tz }),
+    worldToTile: (x, z) => ({ tx: Math.round(x), tz: Math.round(z) }),
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    findRoomSafeSpawnTile: (room, tx, tz) => ({ tx, tz }),
+    spawnEncounterActor: (room, tx, tz, options) => {
+      const actor = { id: `actor_${++actorSeq}`, x: tx, z: tz, hp: options.hp || 60, maxHp: options.hp || 60, atk: 8, ...options };
+      room.enemies.set(actor.id, actor);
+      return actor;
+    }
+  });
+  vm.runInContext([
+    functionSource('serverEnsurePublicEventBoss'),
+    functionSource('serverNotePublicEventBossKill'),
+    functionSource('serverEnsurePublicEventSupports')
+  ].join('\n'), context);
+  const newRoom = () => ({ id: 'randomAshGrove#pit', enemies: new Map() });
+  const bossIn = (room, event) => [...room.enemies.values()].find(enemy => enemy.publicEventBossId === event.id);
+  const supportsIn = (room, event) => [...room.enemies.values()].filter(enemy => enemy.publicEventId === event.id && enemy.publicEventSupportId);
+
+  // 1. Убита, обыскана и убрана до опроса — засчитывается на следующем тике.
+  const pit = events.createPublicEvent(template, { now: t0, rules, random: () => 0.5, point: { x: 20, y: 20 } });
+  byId[pit.id] = pit;
+  let room = newRoom();
+  assert.equal(context.serverEnsurePublicEventBoss(room, pit, t0), true, 'The matriarch appears.');
+  const matriarch = bossIn(room, pit);
+  assert(matriarch && matriarch.maxHp > 60, 'The matriarch is a strengthened boss.');
+  assert.equal(context.serverEnsurePublicEventBoss(room, pit, t0 + 5000), false, 'A living matriarch changes nothing.');
+  assert.equal(events.publicEventBossDefeated(pit, template), false);
+  matriarch.dead = true;
+  room.enemies.delete(matriarch.id);
+  assert.equal(context.serverEnsurePublicEventBoss(room, pit, t0 + 10000), true,
+    'A matriarch whose looted body is already gone still counts as killed.');
+  assert.equal(events.publicEventBossDefeated(pit, template), true, 'The lair can now be cleared and the chest can appear.');
+  assert.equal(bossIn(room, pit), undefined, 'A killed matriarch never comes back.');
+
+  // 2. Гибель от игрока засчитывается сразу, без ожидания опроса.
+  const pit2 = events.createPublicEvent(template, { now: t0, rules, random: () => 0.5, point: { x: 20, y: 20 } });
+  byId[pit2.id] = pit2;
+  room = newRoom();
+  context.serverEnsurePublicEventBoss(room, pit2, t0);
+  assert.equal(context.serverNotePublicEventBossKill(room, bossIn(room, pit2), t0 + 3000), true,
+    'The kill is recorded at the moment of death.');
+  assert.equal(pit2.boss.killedAt, t0 + 3000);
+  assert(persisted.length > 0, 'The recorded kill is persisted.');
+  assert.equal(context.serverNotePublicEventBossKill(room, { id: 'wolf' }, t0 + 3000), false, 'Ordinary kills are ignored.');
+
+  // 3. Перезапуск: сохранённое событие помнит «появилась», комната новая — матка возвращается.
+  const pit3 = events.createPublicEvent(template, { now: t0, rules, random: () => 0.5, point: { x: 20, y: 20 } });
+  byId[pit3.id] = pit3;
+  events.notePublicEventBoss(pit3, { spawned: true });
+  room = newRoom();
+  assert.equal(context.serverEnsurePublicEventBoss(room, pit3, t0 + 60000), true,
+    'After a restart the rebuilt room gets its matriarch back.');
+  assert(bossIn(room, pit3), 'Someone is there to kill.');
+  assert.equal(events.publicEventBossDefeated(pit3, template), false, 'The restart does not count as a kill.');
+
+  // 4. Опоры: разрушенное и убранное гнездо засчитывается; в новой комнате целые опоры ставятся заново.
+  const pit4 = events.createPublicEvent(template, { now: t0, rules, random: () => 0.5, point: { x: 20, y: 20 } });
+  byId[pit4.id] = pit4;
+  room = newRoom();
+  context.serverEnsurePublicEventSupports(room, pit4, t0);
+  const supports = supportsIn(room, pit4);
+  assert.equal(supports.length, template.mechanics.supports.length, 'Every support stands in the room.');
+  const [first, second] = supports;
+  first.dead = true;
+  room.enemies.delete(first.id);
+  emitted.length = 0;
+  context.serverEnsurePublicEventSupports(room, pit4, t0 + 5000);
+  assert.equal(scenarios.supportAlive(pit4.scenario, first.publicEventSupportId), false,
+    'A destroyed support whose body is gone is destroyed.');
+  assert(emitted.some(row => row.supportDestroyed === first.publicEventSupportId), 'Players hear about it.');
+  assert.equal(supportsIn(room, pit4).length, supports.length - 1, 'A destroyed support is not rebuilt.');
+  assert.equal(context.serverNotePublicEventBossKill(room, second, t0 + 6000), true,
+    'A support broken by a player is recorded at once.');
+  assert.equal(scenarios.supportAlive(pit4.scenario, second.publicEventSupportId), false);
+  const pit5 = events.createPublicEvent(template, { now: t0, rules, random: () => 0.5, point: { x: 20, y: 20 } });
+  byId[pit5.id] = pit5;
+  pit5.scenario.spawned = true;
+  room = newRoom();
+  context.serverEnsurePublicEventSupports(room, pit5, t0 + 60000);
+  assert.equal(supportsIn(room, pit5).length, template.mechanics.supports.length,
+    'After a restart the rebuilt room gets its intact supports back.');
+}
+
+console.log(`Public events OK: ${catalog.templates.length} templates, scheduled spawns, lifetime with warning and eviction, contested chest 45–60 s, death rejoin 60–90 s, persisted store and simulation zones, boss and support deaths counted after the body is gone.`);

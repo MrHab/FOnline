@@ -1953,6 +1953,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-01",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-01",
+      "position": {
+        "x": -6.799,
+        "y": 0.0,
+        "z": -33.099
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.675,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.711,
+        "z": 0.714
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-02",
+      "model": "garden_patch",
+      "name": "coreBaseContour-dressing-region-02",
+      "position": {
+        "x": 29.474,
+        "y": 0.0,
+        "z": -14.198
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.881,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.154,
+        "z": 2.179
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-03",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-03",
+      "position": {
+        "x": -14.255,
+        "y": 0.0,
+        "z": 18.704
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.264,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.721,
+        "z": 0.72
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-04",
+      "position": {
+        "x": 31.476,
+        "y": 0.0,
+        "z": -10.505
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.065,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.473,
+        "z": 2.08
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-05",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-05",
+      "position": {
+        "x": 18.055,
+        "y": 0.0,
+        "z": -0.508
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.935,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.617,
+        "z": 0.608
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-06",
+      "position": {
+        "x": 31.941,
+        "y": 0.0,
+        "z": -3.472
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.425,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.735,
+        "z": 0.587
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-07",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-07",
+      "position": {
+        "x": 23.708,
+        "y": 0.0,
+        "z": -21.402
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.243,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.553,
+        "z": 0.564
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-08",
+      "model": "garden_patch",
+      "name": "coreBaseContour-dressing-region-08",
+      "position": {
+        "x": -31.271,
+        "y": 0.0,
+        "z": -5.315
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.55,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.199,
+        "z": 2.826
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-09",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-09",
+      "position": {
+        "x": 17.998,
+        "y": 0.0,
+        "z": 5.946
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.418,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.225,
+        "z": 1.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-10",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-10",
+      "position": {
+        "x": -31.23,
+        "y": 0.0,
+        "z": 2.055
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.402,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.309,
+        "z": 2.352
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-11",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-11",
+      "position": {
+        "x": -18.226,
+        "y": 0.0,
+        "z": -21.803
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.557,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.719,
+        "z": 0.72
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-12",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-12",
+      "position": {
+        "x": 27.558,
+        "y": 0.0,
+        "z": -16.571
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.298,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.576,
+        "z": 0.586
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-13",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-13",
+      "position": {
+        "x": 32.693,
+        "y": 0.0,
+        "z": -7.113
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.785,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.319,
+        "z": 1.32
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-14",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-14",
+      "position": {
+        "x": 24.489,
+        "y": 0.0,
+        "z": -19.773
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.85,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.716,
+        "z": 0.717
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-15",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-15",
+      "position": {
+        "x": -20.094,
+        "y": 0.0,
+        "z": -19.667
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.221,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.945,
+        "z": 1.594
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-16",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-16",
+      "position": {
+        "x": -24.453,
+        "y": 0.0,
+        "z": 6.078
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.164,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.7,
+        "z": 0.696
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-17",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-17",
+      "position": {
+        "x": -31.913,
+        "y": 0.0,
+        "z": 10.399
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.573,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.834,
+        "z": 0.919
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-18",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-18",
+      "position": {
+        "x": -23.466,
+        "y": 0.0,
+        "z": 8.532
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.972,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.494,
+        "z": 1.976
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-19",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-19",
+      "position": {
+        "x": 0.527,
+        "y": 0.0,
+        "z": 21.789
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.995,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.636,
+        "z": 0.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [],

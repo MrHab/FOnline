@@ -1289,6 +1289,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-01",
+      "model": "cargo_stack",
+      "name": "coreLabSprout-dressing-region-01",
+      "position": {
+        "x": 12.447,
+        "y": 0.0,
+        "z": -28.295
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.593,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.753,
+        "z": 1.341
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-02",
+      "model": "utility_pole",
+      "name": "coreLabSprout-dressing-region-02",
+      "position": {
+        "x": -28.267,
+        "y": 0.0,
+        "z": 6.749
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.021,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.798,
+        "z": 1.239
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-03",
+      "model": "tire_stack",
+      "name": "coreLabSprout-dressing-region-03",
+      "position": {
+        "x": -22.843,
+        "y": 0.0,
+        "z": -15.326
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.797,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.013,
+        "z": 1.013
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "coreLabSprout-dressing-region-04",
+      "position": {
+        "x": 5.202,
+        "y": 0.0,
+        "z": 20.735
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.269,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.042,
+        "z": 1.045
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-05",
+      "model": "cargo_stack",
+      "name": "coreLabSprout-dressing-region-05",
+      "position": {
+        "x": -10.512,
+        "y": 0.0,
+        "z": -27.244
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.969,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.404,
+        "z": 1.726
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreLabSprout-dressing-region-06",
+      "position": {
+        "x": -14.023,
+        "y": 0.0,
+        "z": -25.044
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.733,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.321,
+        "z": 0.626
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-07",
+      "model": "tire_stack",
+      "name": "coreLabSprout-dressing-region-07",
+      "position": {
+        "x": 8.718,
+        "y": 0.0,
+        "z": -29.467
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.649,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.144,
+        "z": 1.144
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "coreLabSprout-dressing-region-08",
+      "position": {
+        "x": 3.586,
+        "y": 0.0,
+        "z": 20.794
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.142,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.103,
+        "z": 1.106
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-09",
+      "model": "cargo_stack",
+      "name": "coreLabSprout-dressing-region-09",
+      "position": {
+        "x": 15.896,
+        "y": 0.0,
+        "z": 11.152
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.979,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.904,
+        "y": 0.904,
+        "z": 0.904
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.156,
+        "z": 1.803
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-10",
+      "model": "utility_pole",
+      "name": "coreLabSprout-dressing-region-10",
+      "position": {
+        "x": -7.459,
+        "y": 0.0,
+        "z": -28.379
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.783,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.035,
+        "z": 1.031
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-11",
+      "model": "tire_stack",
+      "name": "coreLabSprout-dressing-region-11",
+      "position": {
+        "x": 6.999,
+        "y": 0.0,
+        "z": -29.632
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.775,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.077,
+        "z": 1.077
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "coreLabSprout-dressing-region-12",
+      "position": {
+        "x": 5.886,
+        "y": 0.0,
+        "z": -21.797
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.603,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.128,
+        "z": 1.127
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-13",
+      "model": "cargo_stack",
+      "name": "coreLabSprout-dressing-region-13",
+      "position": {
+        "x": 14.692,
+        "y": 0.0,
+        "z": 13.401
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.11,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.311,
+        "z": 1.734
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-14",
+      "model": "utility_pole",
+      "name": "coreLabSprout-dressing-region-14",
+      "position": {
+        "x": -5.493,
+        "y": 0.0,
+        "z": -29.155
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.652,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.148,
+        "z": 0.9
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-15",
+      "model": "tire_stack",
+      "name": "coreLabSprout-dressing-region-15",
+      "position": {
+        "x": 5.305,
+        "y": 0.0,
+        "z": -29.786
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.907,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.004,
+        "z": 1.004
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-16",
+      "model": "perimeter_debris",
+      "name": "coreLabSprout-dressing-region-16",
+      "position": {
+        "x": -21.033,
+        "y": 0.0,
+        "z": -18.198
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.55,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.142,
+        "z": 1.14
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-17",
+      "model": "cargo_stack",
+      "name": "coreLabSprout-dressing-region-17",
+      "position": {
+        "x": -3.858,
+        "y": 0.0,
+        "z": -29.419
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.578,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.509,
+        "z": 1.728
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-18",
+      "model": "utility_pole",
+      "name": "coreLabSprout-dressing-region-18",
+      "position": {
+        "x": 9.729,
+        "y": 0.0,
+        "z": 18.508
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.119,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.387,
+        "z": 0.236
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSprout-dressing-region-19",
+      "model": "tire_stack",
+      "name": "coreLabSprout-dressing-region-19",
+      "position": {
+        "x": -24.324,
+        "y": 0.0,
+        "z": -12.114
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.165,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.891,
+        "y": 0.891,
+        "z": 0.891
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.114,
+        "z": 1.114
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [

@@ -1186,6 +1186,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-01",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-01",
+      "position": {
+        "x": 7.39,
+        "y": 0.0,
+        "z": -29.86
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.661,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 1.832
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-02",
+      "model": "tire_stack",
+      "name": "coreMarket-dressing-region-02",
+      "position": {
+        "x": 31.802,
+        "y": 0.0,
+        "z": 7.09
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.144,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.454,
+        "z": 1.454
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-03",
+      "model": "perimeter_debris",
+      "name": "coreMarket-dressing-region-03",
+      "position": {
+        "x": 9.067,
+        "y": 0.0,
+        "z": -29.392
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.717,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.086,
+        "z": 1.091
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-04",
+      "model": "cargo_stack",
+      "name": "coreMarket-dressing-region-04",
+      "position": {
+        "x": 18.326,
+        "y": 0.0,
+        "z": 3.683
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.313,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.017,
+        "z": 2.116
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-05",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-05",
+      "position": {
+        "x": 18.14,
+        "y": 0.0,
+        "z": 5.071
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.257,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.233,
+        "z": 1.476
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-06",
+      "model": "tire_stack",
+      "name": "coreMarket-dressing-region-06",
+      "position": {
+        "x": -10.7,
+        "y": 0.0,
+        "z": -27.207
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.577,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.236,
+        "z": 1.236
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-07",
+      "model": "perimeter_debris",
+      "name": "coreMarket-dressing-region-07",
+      "position": {
+        "x": 10.936,
+        "y": 0.0,
+        "z": -27.796
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.844,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.214,
+        "z": 1.219
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-08",
+      "model": "cargo_stack",
+      "name": "coreMarket-dressing-region-08",
+      "position": {
+        "x": -8.681,
+        "y": 0.0,
+        "z": -28.064
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.151,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.175,
+        "y": 1.175,
+        "z": 1.175
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.762,
+        "z": 2.271
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-09",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-09",
+      "position": {
+        "x": -13.46,
+        "y": 0.0,
+        "z": 19.158
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.408,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.67,
+        "z": 0.791
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-10",
+      "model": "tire_stack",
+      "name": "coreMarket-dressing-region-10",
+      "position": {
+        "x": -0.199,
+        "y": 0.0,
+        "z": 21.877
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.254,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.502,
+        "z": 1.502
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-11",
+      "model": "perimeter_debris",
+      "name": "coreMarket-dressing-region-11",
+      "position": {
+        "x": 33.424,
+        "y": 0.0,
+        "z": -3.438
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.916,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.364,
+        "z": 1.36
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-12",
+      "model": "cargo_stack",
+      "name": "coreMarket-dressing-region-12",
+      "position": {
+        "x": 33.181,
+        "y": 0.0,
+        "z": -5.267
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.915,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.29,
+        "z": 1.388
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-13",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-13",
+      "position": {
+        "x": -22.946,
+        "y": 0.0,
+        "z": 8.859
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.261,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.781,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-14",
+      "model": "tire_stack",
+      "name": "coreMarket-dressing-region-14",
+      "position": {
+        "x": 31.465,
+        "y": 0.0,
+        "z": -10.514
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.615,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.166,
+        "z": 1.166
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-15",
+      "model": "perimeter_debris",
+      "name": "coreMarket-dressing-region-15",
+      "position": {
+        "x": 32.696,
+        "y": 0.0,
+        "z": -7.081
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.867,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.302,
+        "z": 1.298
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-16",
+      "model": "cargo_stack",
+      "name": "coreMarket-dressing-region-16",
+      "position": {
+        "x": -22.324,
+        "y": 0.0,
+        "z": 10.631
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.207,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.38,
+        "z": 2.291
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-17",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-17",
+      "position": {
+        "x": -13.764,
+        "y": 0.0,
+        "z": 16.805
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.651,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.142,
+        "y": 1.142,
+        "z": 1.142
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.471,
+        "z": 1.153
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-18",
+      "model": "utility_pole",
+      "name": "coreMarket-dressing-region-18",
+      "position": {
+        "x": 0.218,
+        "y": 0.0,
+        "z": -21.978
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.939,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.148,
+        "y": 1.148,
+        "z": 1.148
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.715,
+        "z": 0.691
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreMarket-dressing-region-19",
+      "model": "perimeter_debris",
+      "name": "coreMarket-dressing-region-19",
+      "position": {
+        "x": 23.58,
+        "y": 0.0,
+        "z": -19.833
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.827,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.148,
+        "y": 1.148,
+        "z": 1.148
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.496,
+        "z": 1.496
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [],

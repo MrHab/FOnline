@@ -321,7 +321,7 @@ namespace Kromka.EditorTools
                     BuildLocationModules(staticContent, id, Text(location, "locationType"), regionColor);
                     KromkaLocationSceneComposer.Compose(staticContent, location);
                     KromkaLocationDressing.Compose(staticContent, id,
-                        Text(location, "locationType"), regionId);
+                        Text(location, "locationType"), regionId, location["territory"] != null);
                 }
                 BuildImportedGameplayObjects(importedContent, id);
                 BuildAnomalyFields(dynamicAnchors, location);

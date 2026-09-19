@@ -1304,6 +1304,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-01",
+      "model": "cargo_stack",
+      "name": "coreLabSpectrum-dressing-region-01",
+      "position": {
+        "x": -14.228,
+        "y": 0.0,
+        "z": -24.727
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.441,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.051,
+        "z": 1.372
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-02",
+      "model": "utility_pole",
+      "name": "coreLabSpectrum-dressing-region-02",
+      "position": {
+        "x": -6.439,
+        "y": 0.0,
+        "z": -28.873
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.914,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.404,
+        "z": 1.592
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-03",
+      "model": "tire_stack",
+      "name": "coreLabSpectrum-dressing-region-03",
+      "position": {
+        "x": -4.844,
+        "y": 0.0,
+        "z": -29.185
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.757,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.364,
+        "z": 1.364
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "coreLabSpectrum-dressing-region-04",
+      "position": {
+        "x": -21.172,
+        "y": 0.0,
+        "z": 12.597
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.792,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.222,
+        "z": 1.219
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-05",
+      "model": "cargo_stack",
+      "name": "coreLabSpectrum-dressing-region-05",
+      "position": {
+        "x": -12.093,
+        "y": 0.0,
+        "z": -28.167
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.424,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.861,
+        "z": 2.059
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreLabSpectrum-dressing-region-06",
+      "position": {
+        "x": 7.803,
+        "y": 0.0,
+        "z": -29.649
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.425,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.317,
+        "z": 1.603
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-07",
+      "model": "tire_stack",
+      "name": "coreLabSpectrum-dressing-region-07",
+      "position": {
+        "x": -15.354,
+        "y": 0.0,
+        "z": -30.263
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.795,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.235,
+        "z": 1.235
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "coreLabSpectrum-dressing-region-08",
+      "position": {
+        "x": 20.985,
+        "y": 0.0,
+        "z": -23.933
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.614,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.328,
+        "z": 1.326
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-09",
+      "model": "cargo_stack",
+      "name": "coreLabSpectrum-dressing-region-09",
+      "position": {
+        "x": 6.107,
+        "y": 0.0,
+        "z": -29.899
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.658,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.032,
+        "y": 1.032,
+        "z": 1.032
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.682,
+        "z": 2.025
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-10",
+      "model": "utility_pole",
+      "name": "coreLabSpectrum-dressing-region-10",
+      "position": {
+        "x": 30.055,
+        "y": 0.0,
+        "z": -13.75
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.333,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.009,
+        "z": 1.364
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-11",
+      "model": "tire_stack",
+      "name": "coreLabSpectrum-dressing-region-11",
+      "position": {
+        "x": -22.704,
+        "y": 0.0,
+        "z": 10.264
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.976,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.117,
+        "z": 1.117
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "coreLabSpectrum-dressing-region-12",
+      "position": {
+        "x": 30.782,
+        "y": 0.0,
+        "z": -12.027
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.888,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.108,
+        "z": 1.112
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-13",
+      "model": "cargo_stack",
+      "name": "coreLabSpectrum-dressing-region-13",
+      "position": {
+        "x": -26.235,
+        "y": 0.0,
+        "z": -3.563
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.883,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.721,
+        "z": 1.917
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-14",
+      "model": "utility_pole",
+      "name": "coreLabSpectrum-dressing-region-14",
+      "position": {
+        "x": -8.191,
+        "y": 0.0,
+        "z": -28.112
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.071,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.618,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-15",
+      "model": "tire_stack",
+      "name": "coreLabSpectrum-dressing-region-15",
+      "position": {
+        "x": 18.016,
+        "y": 0.0,
+        "z": -25.901
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.798,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.372,
+        "z": 1.372
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-16",
+      "model": "perimeter_debris",
+      "name": "coreLabSpectrum-dressing-region-16",
+      "position": {
+        "x": 33.336,
+        "y": 0.0,
+        "z": -4.609
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.09,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.008,
+        "z": 1.003
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-17",
+      "model": "cargo_stack",
+      "name": "coreLabSpectrum-dressing-region-17",
+      "position": {
+        "x": -9.7,
+        "y": 0.0,
+        "z": -27.477
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.327,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.798,
+        "z": 1.856
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-18",
+      "model": "utility_pole",
+      "name": "coreLabSpectrum-dressing-region-18",
+      "position": {
+        "x": 13.204,
+        "y": 0.0,
+        "z": 14.548
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.896,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.378,
+        "z": 1.605
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabSpectrum-dressing-region-19",
+      "model": "tire_stack",
+      "name": "coreLabSpectrum-dressing-region-19",
+      "position": {
+        "x": 15.691,
+        "y": 0.0,
+        "z": 11.824
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.841,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.038,
+        "y": 1.038,
+        "z": 1.038
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.086,
+        "z": 1.086
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [

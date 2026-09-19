@@ -1157,6 +1157,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-01",
+      "model": "cargo_stack",
+      "name": "coreLabCenterReactor-dressing-region-01",
+      "position": {
+        "x": 13.286,
+        "y": 0.0,
+        "z": 15.179
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.984,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.395,
+        "z": 1.745
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-02",
+      "model": "utility_pole",
+      "name": "coreLabCenterReactor-dressing-region-02",
+      "position": {
+        "x": 23.126,
+        "y": 0.0,
+        "z": -22.381
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.75,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.325,
+        "z": 1.407
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-03",
+      "model": "tire_stack",
+      "name": "coreLabCenterReactor-dressing-region-03",
+      "position": {
+        "x": 15.916,
+        "y": 0.0,
+        "z": 25.844
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.202,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.157,
+        "z": 1.157
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-04",
+      "model": "perimeter_debris",
+      "name": "coreLabCenterReactor-dressing-region-04",
+      "position": {
+        "x": 4.207,
+        "y": 0.0,
+        "z": -30.204
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.384,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.063,
+        "z": 1.066
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-05",
+      "model": "cargo_stack",
+      "name": "coreLabCenterReactor-dressing-region-05",
+      "position": {
+        "x": 23.087,
+        "y": 0.0,
+        "z": -19.996
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.451,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.678,
+        "z": 1.511
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreLabCenterReactor-dressing-region-06",
+      "position": {
+        "x": 9.461,
+        "y": 0.0,
+        "z": 18.517
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.832,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.437,
+        "z": 1.388
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-07",
+      "model": "tire_stack",
+      "name": "coreLabCenterReactor-dressing-region-07",
+      "position": {
+        "x": 5.895,
+        "y": 0.0,
+        "z": -29.917
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.312,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.909,
+        "y": 0.909,
+        "z": 0.909
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.114,
+        "z": 1.114
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-08",
+      "model": "perimeter_debris",
+      "name": "coreLabCenterReactor-dressing-region-08",
+      "position": {
+        "x": 11.439,
+        "y": 0.0,
+        "z": 17.188
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.222,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.91,
+        "y": 0.91,
+        "z": 0.91
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.074,
+        "z": 1.077
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-09",
+      "model": "cargo_stack",
+      "name": "coreLabCenterReactor-dressing-region-09",
+      "position": {
+        "x": 11.83,
+        "y": 0.0,
+        "z": 23.075
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.908,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.91,
+        "y": 0.91,
+        "z": 0.91
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.06,
+        "z": 1.827
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-10",
+      "model": "utility_pole",
+      "name": "coreLabCenterReactor-dressing-region-10",
+      "position": {
+        "x": -4.312,
+        "y": 0.0,
+        "z": 23.709
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.695,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.25,
+        "z": 0.811
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-11",
+      "model": "tire_stack",
+      "name": "coreLabCenterReactor-dressing-region-11",
+      "position": {
+        "x": -22.749,
+        "y": 0.0,
+        "z": 10.47
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.37,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.091,
+        "z": 1.091
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-12",
+      "model": "perimeter_debris",
+      "name": "coreLabCenterReactor-dressing-region-12",
+      "position": {
+        "x": -16.535,
+        "y": 0.0,
+        "z": 17.311
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.278,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.849,
+        "z": 0.845
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-13",
+      "model": "cargo_stack",
+      "name": "coreLabCenterReactor-dressing-region-13",
+      "position": {
+        "x": -24.272,
+        "y": 0.0,
+        "z": 9.572
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.944,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.593,
+        "z": 1.624
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-14",
+      "model": "utility_pole",
+      "name": "coreLabCenterReactor-dressing-region-14",
+      "position": {
+        "x": -8.079,
+        "y": 0.0,
+        "z": -27.95
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.136,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.419,
+        "z": 0.282
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-15",
+      "model": "tire_stack",
+      "name": "coreLabCenterReactor-dressing-region-15",
+      "position": {
+        "x": -10.131,
+        "y": 0.0,
+        "z": -27.277
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.137,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.969,
+        "z": 0.969
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-16",
+      "model": "perimeter_debris",
+      "name": "coreLabCenterReactor-dressing-region-16",
+      "position": {
+        "x": -18.672,
+        "y": 0.0,
+        "z": 15.452
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.769,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.178,
+        "z": 1.177
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-17",
+      "model": "cargo_stack",
+      "name": "coreLabCenterReactor-dressing-region-17",
+      "position": {
+        "x": 11.408,
+        "y": 0.0,
+        "z": -28.786
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.776,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.914,
+        "y": 0.914,
+        "z": 0.914
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.725,
+        "z": 1.456
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-18",
+      "model": "utility_pole",
+      "name": "coreLabCenterReactor-dressing-region-18",
+      "position": {
+        "x": -23.368,
+        "y": 0.0,
+        "z": 22.044
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.141,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.913,
+        "y": 0.913,
+        "z": 0.913
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.83,
+        "z": 1.238
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreLabCenterReactor-dressing-region-19",
+      "model": "tire_stack",
+      "name": "coreLabCenterReactor-dressing-region-19",
+      "position": {
+        "x": 8.304,
+        "y": 0.0,
+        "z": 19.41
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.937,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.913,
+        "y": 0.913,
+        "z": 0.913
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "off_map",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.207,
+        "z": 1.207
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [

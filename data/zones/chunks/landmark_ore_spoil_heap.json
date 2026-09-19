@@ -1,0 +1,110 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_ore_spoil_heap",
+  "kind": "landmark",
+  "name": "Террикон",
+  "biomes": [
+    "ore_arc"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        6,
+        10
+      ],
+      "spacing": 3.5,
+      "scale": [
+        1,
+        2
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o1",
+      "prefab": "ore_outcrop",
+      "x": 0,
+      "z": 0,
+      "ry": 0,
+      "s": 2.9
+    },
+    {
+      "id": "o2",
+      "prefab": "ore_outcrop",
+      "x": -9,
+      "z": 5,
+      "ry": 80,
+      "s": 2
+    },
+    {
+      "id": "o3",
+      "prefab": "ore_outcrop",
+      "x": 8,
+      "z": 6,
+      "ry": 170,
+      "s": 1.9
+    },
+    {
+      "id": "o4",
+      "prefab": "ore_outcrop",
+      "x": 4,
+      "z": -10,
+      "ry": 260,
+      "s": 1.7
+    },
+    {
+      "id": "h1",
+      "prefab": "scrap_heap",
+      "x": -11,
+      "z": -8,
+      "ry": 30,
+      "s": 1.4
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 15,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -13,
+      "z": 1,
+      "tier": "tools"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

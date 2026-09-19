@@ -1,0 +1,142 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_ring_melted_pylons",
+  "kind": "landmark",
+  "name": "Оплавленные опоры",
+  "biomes": [
+    "silent_ring"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dead_tree_a",
+        "dead_tree_c"
+      ],
+      "count": [
+        6,
+        9
+      ],
+      "spacing": 4,
+      "scale": [
+        1.2,
+        1.8
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "p0",
+      "prefab": "utility_pole",
+      "x": -14,
+      "z": -10,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": -8.4,
+      "z": -6,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": -2.8,
+      "z": -2,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "p3",
+      "prefab": "utility_pole",
+      "x": 2.8,
+      "z": 2,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "p4",
+      "prefab": "utility_pole",
+      "x": 8.4,
+      "z": 6,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "p5",
+      "prefab": "utility_pole",
+      "x": 14,
+      "z": 10,
+      "ry": 324,
+      "s": 2.5
+    },
+    {
+      "id": "d1",
+      "prefab": "deadwood",
+      "x": -6,
+      "z": 7,
+      "ry": 40
+    },
+    {
+      "id": "d2",
+      "prefab": "deadwood",
+      "x": 7,
+      "z": -6,
+      "ry": 120
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_a",
+      "x": -12,
+      "z": 10,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "t2",
+      "prefab": "dead_tree_a",
+      "x": 12,
+      "z": -11,
+      "ry": 0,
+      "s": 1.5
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 12,
+      "z": 12,
+      "radius": 7
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 0,
+      "z": -15,
+      "radius": 3
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_sluice_gatehouse",
+  "kind": "landmark",
+  "name": "Сторожка затвора",
+  "biomes": [
+    "northern_sluices"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "t1",
+      "prefab": "watch_post",
+      "x": 0,
+      "z": 0,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "k1",
+      "prefab": "water_tank",
+      "x": -8,
+      "z": -6,
+      "ry": 0,
+      "s": 1.8
+    },
+    {
+      "id": "n0",
+      "prefab": "concrete_wall",
+      "x": -10,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n1",
+      "prefab": "concrete_wall",
+      "x": -8.2,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n2",
+      "prefab": "concrete_wall",
+      "x": -6.4,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n3",
+      "prefab": "concrete_wall",
+      "x": -4.6,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n4",
+      "prefab": "concrete_wall",
+      "x": -2.8,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n5",
+      "prefab": "concrete_wall",
+      "x": -1,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n6",
+      "prefab": "concrete_wall",
+      "x": 0.8000000000000007,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n7",
+      "prefab": "concrete_wall",
+      "x": 2.5999999999999996,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n8",
+      "prefab": "concrete_wall",
+      "x": 4.4,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n9",
+      "prefab": "concrete_wall",
+      "x": 6.199999999999999,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "n10",
+      "prefab": "concrete_wall",
+      "x": 8,
+      "z": -12,
+      "ry": 0
+    },
+    {
+      "id": "w0",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -10,
+      "ry": 90
+    },
+    {
+      "id": "w1",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -8.2,
+      "ry": 90
+    },
+    {
+      "id": "w2",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -6.4,
+      "ry": 90
+    },
+    {
+      "id": "w3",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -4.6,
+      "ry": 90
+    },
+    {
+      "id": "w4",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -2.8,
+      "ry": 90
+    },
+    {
+      "id": "w5",
+      "prefab": "concrete_wall",
+      "x": -12,
+      "z": -1,
+      "ry": 90
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": 8,
+      "z": 6,
+      "ry": 120
+    },
+    {
+      "id": "l1",
+      "prefab": "storage_lean_to",
+      "x": 9,
+      "z": -5,
+      "ry": 270
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 4,
+      "z": 13,
+      "radius": 9
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -6,
+      "z": 4,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

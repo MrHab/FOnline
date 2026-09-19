@@ -116,4 +116,20 @@ for (const zone of graph.zones) {
 const objects = [...built.values()].reduce((sum, def) => sum + def.objects.length, 0);
 const lairs = [...built.values()].reduce((sum, def) => sum + def.zone.lairs.length, 0);
 
-console.log(`Zone graph OK: ${graph.zones.length} zones, all reachable from a capital, ${visible.length} places in exactly one zone each, ${gates} gates that land opposite each other; the constructor built every zone (${objects} objects, ${lairs} lairs).`);
+// Облик региона: у каждого три своих ориентира, и зона стоит у ориентира своего региона.
+const chunkById = new Map(catalog.chunks.map(chunk => [chunk.id, chunk]));
+const regions = [...new Set(graph.zones.map(zone => zone.region))];
+for (const region of regions) {
+  const own = catalog.chunks.filter(chunk => chunk.kind === 'landmark' && chunk.biomes.includes(region));
+  assert(own.length >= 3, `${region} has ${own.length} landmarks of its own`);
+}
+assert(catalog.chunks.filter(chunk => chunk.kind === 'landmark').every(chunk => !chunk.biomes.includes('*')), 'no landmark stands in every region');
+for (const zone of graph.zones) {
+  const marks = built.get(zone.id).zone.chunks.map(row => chunkById.get(row.chunk)).filter(chunk => chunk?.kind === 'landmark');
+  assert(marks.length >= 1 && marks.every(chunk => chunk.biomes.includes(zone.region)), `${zone.id}: a landmark of ${zone.region} stands in the zone`);
+}
+// Топонимы: у каждой зоны своё имя, не «регион №N».
+const names = new Set(graph.zones.map(zone => zone.name));
+assert.equal(names.size, graph.zones.length, 'every zone has a name of its own');
+
+console.log(`Zone graph OK: ${graph.zones.length} zones with names of their own, all reachable from a capital, ${visible.length} places in exactly one zone each, ${gates} gates that land opposite each other; the constructor built every zone (${objects} objects, ${lairs} lairs) around a landmark of its region (${regions.length} regions × 3).`);

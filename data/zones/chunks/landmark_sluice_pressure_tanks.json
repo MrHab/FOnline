@@ -1,0 +1,134 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_sluice_pressure_tanks",
+  "kind": "landmark",
+  "name": "Напорные баки",
+  "biomes": [
+    "northern_sluices"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "k1",
+      "prefab": "water_tank",
+      "x": -9,
+      "z": -2,
+      "ry": 0,
+      "s": 2.2
+    },
+    {
+      "id": "k2",
+      "prefab": "water_tank",
+      "x": 0,
+      "z": -4,
+      "ry": 25,
+      "s": 2.4
+    },
+    {
+      "id": "k3",
+      "prefab": "water_tank",
+      "x": 9,
+      "z": -2,
+      "ry": 50,
+      "s": 2.1
+    },
+    {
+      "id": "f0",
+      "prefab": "fence_segment",
+      "x": -14,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f1",
+      "prefab": "fence_segment",
+      "x": -8.4,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f2",
+      "prefab": "fence_segment",
+      "x": -2.8,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f3",
+      "prefab": "fence_segment",
+      "x": 2.8,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f4",
+      "prefab": "fence_segment",
+      "x": 8.4,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f5",
+      "prefab": "fence_segment",
+      "x": 14,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": 15,
+      "z": -10,
+      "ry": 0,
+      "s": 1.8
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

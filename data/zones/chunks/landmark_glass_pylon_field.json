@@ -1,0 +1,111 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_glass_pylon_field",
+  "kind": "landmark",
+  "name": "Поле опор",
+  "biomes": [
+    "glasslands"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        4,
+        7
+      ],
+      "spacing": 4,
+      "scale": [
+        0.8,
+        1.5
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": -11,
+      "z": -9,
+      "ry": 17,
+      "s": 2.4
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": -2,
+      "z": -12,
+      "ry": 71,
+      "s": 2.2
+    },
+    {
+      "id": "p3",
+      "prefab": "utility_pole",
+      "x": 9,
+      "z": -6,
+      "ry": 133,
+      "s": 2.5
+    },
+    {
+      "id": "p4",
+      "prefab": "utility_pole",
+      "x": -8,
+      "z": 5,
+      "ry": 212,
+      "s": 2.3
+    },
+    {
+      "id": "p5",
+      "prefab": "utility_pole",
+      "x": 6,
+      "z": 8,
+      "ry": 301,
+      "s": 2.4
+    },
+    {
+      "id": "m1",
+      "prefab": "relay_antenna",
+      "x": 0,
+      "z": 0,
+      "ry": 45,
+      "s": 1.2
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

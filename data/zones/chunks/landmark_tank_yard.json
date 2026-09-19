@@ -4,7 +4,7 @@
   "kind": "landmark",
   "name": "Двор цистерн",
   "biomes": [
-    "*"
+    "zero_basin"
   ],
   "modes": [
     "*"
@@ -106,6 +106,13 @@
       "x": -12,
       "z": -12,
       "radius": 9
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": -14,
+      "radius": 3
     }
   ]
 }

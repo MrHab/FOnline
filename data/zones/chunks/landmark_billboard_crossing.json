@@ -4,7 +4,7 @@
   "kind": "landmark",
   "name": "Перекрёсток со щитами",
   "biomes": [
-    "*"
+    "tract_isthmus"
   ],
   "modes": [
     "*"
@@ -106,6 +106,13 @@
       "x": 12,
       "z": -12,
       "tier": "wasteland"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 15,
+      "z": 0,
+      "radius": 3
     }
   ]
 }

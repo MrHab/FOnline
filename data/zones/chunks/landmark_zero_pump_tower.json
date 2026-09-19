@@ -1,0 +1,118 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_zero_pump_tower",
+  "kind": "landmark",
+  "name": "Насосная башня",
+  "biomes": [
+    "zero_basin"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rust_barrel_v1"
+      ],
+      "count": [
+        6,
+        10
+      ],
+      "spacing": 1.6
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "k1",
+      "prefab": "water_tank",
+      "x": 0,
+      "z": -2,
+      "ry": 0,
+      "s": 2.6
+    },
+    {
+      "id": "j1",
+      "prefab": "oil_pump_jack",
+      "x": -9,
+      "z": 4,
+      "ry": 30,
+      "s": 1.4
+    },
+    {
+      "id": "j2",
+      "prefab": "oil_pump_jack",
+      "x": 9,
+      "z": 5,
+      "ry": 330,
+      "s": 1.4
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": -11,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "b2",
+      "prefab": "barrel_cluster",
+      "x": 11,
+      "z": -9,
+      "ry": 90
+    },
+    {
+      "id": "b3",
+      "prefab": "barrel_cluster",
+      "x": 0,
+      "z": 10,
+      "ry": 180
+    },
+    {
+      "id": "w1",
+      "prefab": "watch_post",
+      "x": 13,
+      "z": 12,
+      "ry": 200
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": -13,
+      "z": 13,
+      "radius": 7
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 4,
+      "z": 6,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 0,
+      "z": -15,
+      "radius": 3
+    }
+  ]
+}

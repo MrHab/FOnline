@@ -9,7 +9,7 @@
 const crypto = require('node:crypto');
 const { SLOT_METRES, chunkFits, rotatePoint, rotatedHalfExtents } = require('./zone-chunks');
 
-const BUILDER_VERSION = 3;
+const BUILDER_VERSION = 4;
 const TILE = 2;
 const TILES = 160;
 const HALF_METRES = TILES * TILE / 2;
@@ -347,7 +347,12 @@ function buildZone(recipeInput, catalog) {
   const zoneLists = { spawnAreas: [], lairs: [], eventAnchors: [] };
   const inTheWay = (point, reach) => keyPoints.some(key => Math.hypot(key.x - point.x, key.z - point.z) < KEY_POINT_CLEAR_METRES + reach)
     || corridors.some(seg => segmentDistance(point, seg.a, seg.b) < seg.half + reach);
-  const farFromArrivals = point => arrivalPoints.every(arrival => Math.hypot(arrival.x - point.x, arrival.z - point.z) >= SPAWN_CLEAR_METRES);
+  // Меряется от центра тайла, который попадёт в определение, а не от точной точки якоря:
+  // иначе округление до тайла подводило место появления к воротам ближе 40 м.
+  const farFromArrivals = point => {
+    const at = worldOf({ tx: metresToTile(point.x), tz: metresToTile(point.z) });
+    return arrivalPoints.every(arrival => Math.hypot(arrival.x - at.x, arrival.z - at.z) >= SPAWN_CLEAR_METRES);
+  };
 
   // Тропы держатся свободными: мелочь не ложится на середину тропы.
   const onTrail = point => corridors.some(seg => segmentDistance(point, seg.a, seg.b) < Math.max(1, seg.half - 1));

@@ -1,0 +1,115 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_ring_dead_turret",
+  "kind": "landmark",
+  "name": "Мёртвая турель",
+  "biomes": [
+    "silent_ring"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        3,
+        5
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "t1",
+      "prefab": "scrap_watch_tower",
+      "x": 0,
+      "z": 0,
+      "ry": 0,
+      "s": 1.5
+    },
+    {
+      "id": "r1",
+      "prefab": "armory_rack",
+      "x": 3,
+      "z": 3,
+      "ry": 90
+    },
+    {
+      "id": "b0",
+      "prefab": "roadblock_barricade",
+      "x": -12,
+      "z": -9,
+      "ry": 0
+    },
+    {
+      "id": "b1",
+      "prefab": "roadblock_barricade",
+      "x": -4,
+      "z": -9,
+      "ry": 0
+    },
+    {
+      "id": "b2",
+      "prefab": "roadblock_barricade",
+      "x": 4,
+      "z": -9,
+      "ry": 0
+    },
+    {
+      "id": "b3",
+      "prefab": "roadblock_barricade",
+      "x": 12,
+      "z": -9,
+      "ry": 0
+    },
+    {
+      "id": "k1",
+      "prefab": "cargo_stack",
+      "x": -8,
+      "z": 7,
+      "ry": 20
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 6,
+      "z": 6,
+      "tier": "rare"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -15,
+      "z": 0,
+      "radius": 3
+    }
+  ]
+}

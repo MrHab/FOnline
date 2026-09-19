@@ -1,0 +1,110 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_chalk_rock_gate",
+  "kind": "landmark",
+  "name": "Каменные ворота",
+  "biomes": [
+    "chalk_lowland"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        5,
+        8
+      ],
+      "spacing": 3.5,
+      "scale": [
+        0.9,
+        1.7
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": -6,
+      "z": 0,
+      "ry": 0,
+      "s": 2.9
+    },
+    {
+      "id": "r2",
+      "prefab": "rubble_rock",
+      "x": 6,
+      "z": 0,
+      "ry": 90,
+      "s": 2.8
+    },
+    {
+      "id": "r3",
+      "prefab": "rubble_rock",
+      "x": -11,
+      "z": 6,
+      "ry": 40,
+      "s": 1.8
+    },
+    {
+      "id": "r4",
+      "prefab": "rubble_rock",
+      "x": 11,
+      "z": -6,
+      "ry": 210,
+      "s": 1.9
+    },
+    {
+      "id": "d1",
+      "prefab": "deadwood",
+      "x": 0,
+      "z": 9,
+      "ry": 90
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_c",
+      "x": -3,
+      "z": -10,
+      "ry": 0,
+      "s": 1.5
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

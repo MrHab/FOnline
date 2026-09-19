@@ -9,8 +9,9 @@ Unity-сцены: сервер собирает её конструктором 
 `data/zones/kit.json` (каталог `RoaZoneKitCatalog`). Граф зон собирается командой `node tools/build-zone-graph.js` в
 `data/kromka/zone-graph.json`. Источник географии для графа — `data/global-map.json`
 (узлы, регионы, клетки) и играбельный контур `data/kromka/global-map-playable.json`.
-Ручные правки графа (закрытые рёбра, закрепы, топонимы) хранятся в
-необязательном файле `data/kromka/zone-graph.overrides.json`.
+Ручные правки графа — топонимы зон, закрытые рёбра и закрепы — хранятся в
+`data/kromka/zone-graph.overrides.json`; после правки граф пересобирают
+`node tools/build-zone-graph.js`.
 
 Зону можно закрепить: `node tools/freeze-zone.js z_CC_RR` пишет собранную зону в
 `data/zones/authored/<id>.json`. Дальше её правят руками, а сервер берёт этот

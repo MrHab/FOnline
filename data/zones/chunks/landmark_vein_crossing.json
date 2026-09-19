@@ -1,0 +1,139 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_vein_crossing",
+  "kind": "landmark",
+  "name": "Переезд",
+  "biomes": [
+    "middle_vein"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "s0",
+      "prefab": "asphalt_slab",
+      "x": -15,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "s1",
+      "prefab": "asphalt_slab",
+      "x": -9,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "s2",
+      "prefab": "asphalt_slab",
+      "x": -3,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "s3",
+      "prefab": "asphalt_slab",
+      "x": 3,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "s4",
+      "prefab": "asphalt_slab",
+      "x": 9,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "s5",
+      "prefab": "asphalt_slab",
+      "x": 15,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "r1",
+      "prefab": "roadblock_barricade",
+      "x": -4,
+      "z": -5,
+      "ry": 0
+    },
+    {
+      "id": "r2",
+      "prefab": "roadblock_barricade",
+      "x": 4,
+      "z": 5,
+      "ry": 180
+    },
+    {
+      "id": "h1",
+      "prefab": "highway_sign",
+      "x": -9,
+      "z": -8,
+      "ry": 0,
+      "s": 1.5
+    },
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": 10,
+      "z": -7,
+      "ry": 60
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": -14,
+      "z": 9,
+      "ry": 0,
+      "s": 1.7
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 12,
+      "z": 12,
+      "radius": 9
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 0,
+      "z": -15,
+      "radius": 3
+    }
+  ]
+}

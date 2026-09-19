@@ -4,7 +4,7 @@
   "kind": "landmark",
   "name": "Мачта связи",
   "biomes": [
-    "*"
+    "glasslands"
   ],
   "modes": [
     "*"
@@ -138,6 +138,13 @@
       "x": 0,
       "z": -14,
       "radius": 10
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 15,
+      "z": 0,
+      "radius": 3
     }
   ]
 }

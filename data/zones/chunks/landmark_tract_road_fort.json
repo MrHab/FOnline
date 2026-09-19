@@ -1,0 +1,160 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_tract_road_fort",
+  "kind": "landmark",
+  "name": "Придорожная крепость",
+  "biomes": [
+    "tract_isthmus"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "t1",
+      "prefab": "scrap_watch_tower",
+      "x": 0,
+      "z": 0,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "w0",
+      "prefab": "scrap_wall_segment",
+      "x": 0,
+      "z": 10,
+      "ry": 90
+    },
+    {
+      "id": "w1",
+      "prefab": "scrap_wall_segment",
+      "x": 5.88,
+      "z": 8.09,
+      "ry": 126
+    },
+    {
+      "id": "w3",
+      "prefab": "scrap_wall_segment",
+      "x": 9.51,
+      "z": -3.09,
+      "ry": 198
+    },
+    {
+      "id": "w4",
+      "prefab": "scrap_wall_segment",
+      "x": 5.88,
+      "z": -8.09,
+      "ry": 234
+    },
+    {
+      "id": "w5",
+      "prefab": "scrap_wall_segment",
+      "x": 0,
+      "z": -10,
+      "ry": 270
+    },
+    {
+      "id": "w6",
+      "prefab": "scrap_wall_segment",
+      "x": -5.88,
+      "z": -8.09,
+      "ry": 306
+    },
+    {
+      "id": "w7",
+      "prefab": "scrap_wall_segment",
+      "x": -9.51,
+      "z": -3.09,
+      "ry": 342
+    },
+    {
+      "id": "w8",
+      "prefab": "scrap_wall_segment",
+      "x": -9.51,
+      "z": 3.09,
+      "ry": 18
+    },
+    {
+      "id": "w9",
+      "prefab": "scrap_wall_segment",
+      "x": -5.88,
+      "z": 8.09,
+      "ry": 54
+    },
+    {
+      "id": "r1",
+      "prefab": "roadblock_barricade",
+      "x": 14,
+      "z": 0,
+      "ry": 90
+    },
+    {
+      "id": "h1",
+      "prefab": "highway_sign",
+      "x": 15,
+      "z": -8,
+      "ry": 270,
+      "s": 1.4
+    },
+    {
+      "id": "k1",
+      "prefab": "cargo_stack",
+      "x": -5,
+      "z": 4,
+      "ry": 30
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": -15,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 4,
+      "z": 4,
+      "tier": "wasteland"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

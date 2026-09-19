@@ -1,0 +1,130 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_tract_car_graveyard",
+  "kind": "landmark",
+  "name": "Кладбище машин",
+  "biomes": [
+    "tract_isthmus"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": -11,
+      "z": -8,
+      "ry": 10
+    },
+    {
+      "id": "c2",
+      "prefab": "car_wreck",
+      "x": -4,
+      "z": -9,
+      "ry": 170
+    },
+    {
+      "id": "c3",
+      "prefab": "car_wreck",
+      "x": 4,
+      "z": -8,
+      "ry": 20
+    },
+    {
+      "id": "c4",
+      "prefab": "car_wreck",
+      "x": 11,
+      "z": -9,
+      "ry": 190
+    },
+    {
+      "id": "c5",
+      "prefab": "car_wreck",
+      "x": -8,
+      "z": 1,
+      "ry": 100
+    },
+    {
+      "id": "c6",
+      "prefab": "car_wreck",
+      "x": 1,
+      "z": 0,
+      "ry": 280
+    },
+    {
+      "id": "c7",
+      "prefab": "car_wreck",
+      "x": 9,
+      "z": 2,
+      "ry": 80
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": -13,
+      "z": 9,
+      "ry": 0
+    },
+    {
+      "id": "t2",
+      "prefab": "tire_stack",
+      "x": 12,
+      "z": 10,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 13,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -2,
+      "z": 9,
+      "tier": "wasteland"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 0,
+      "z": -15,
+      "radius": 3
+    }
+  ]
+}

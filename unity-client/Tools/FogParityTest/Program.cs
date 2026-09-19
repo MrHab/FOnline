@@ -347,7 +347,7 @@ internal static class Program
 
     // ------------------------------------------------------------------
     // Тайловая баллистика: server.js roomBlockingDistanceOnRay() против
-    // RoaFogOfWar.TerrainBlocksBallisticLine(), включая инверсию Unity Z.
+    // RoaFogOfWar.TerrainBlocksBallisticLine(). Сервер и сцена Unity в одной системе (RoaCoords).
     // ------------------------------------------------------------------
 
     private static bool RefTerrainBallisticBlocked(double startX, double startZ,
@@ -387,7 +387,7 @@ internal static class Program
             float sampleX = startX + dx * d;
             float sampleUnityZ = startUnityZ + unityDz * d;
             int tx = (int)MathF.Floor(sampleX / 2f + W / 2f);
-            int tz = (int)MathF.Floor((-sampleUnityZ) / 2f + H / 2f);
+            int tz = (int)MathF.Floor(sampleUnityZ / 2f + H / 2f);
             bool blocked = !InBounds(tx, tz) || Blocking(tx, tz, crouching);
             if (!blocked) continue;
             float clearDistance = MathF.Max(0.1f, d - step * 0.5f);
@@ -514,8 +514,8 @@ internal static class Program
             double endPadding = random.NextDouble() * 1.4;
             bool crouching = random.Next(2) == 0;
             bool a = RefTerrainBallisticBlocked(x1, z1, x2, z2, crouching, endPadding);
-            bool b = PortTerrainBallisticBlocked((float)x1, (float)-z1,
-                (float)x2, (float)-z2, crouching, (float)endPadding);
+            bool b = PortTerrainBallisticBlocked((float)x1, (float)z1,
+                (float)x2, (float)z2, crouching, (float)endPadding);
             if (a != b)
             {
                 if (mismatches < 10)

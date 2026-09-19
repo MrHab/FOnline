@@ -158,9 +158,10 @@ function createWorldActivityEncounterLayout(options = {}) {
   });
 
   const rawLanes = [
-    { id: 'north', label: 'СЕВЕР', tx: focusTx, tz: bounds.minZ + margin },
+    // Север — старший ряд тайлов (+Z): сцены Кромки строятся в Unity.
+    { id: 'north', label: 'СЕВЕР', tx: focusTx, tz: bounds.maxZ - margin },
     { id: 'east', label: 'ВОСТОК', tx: bounds.maxX - margin, tz: focusTz },
-    { id: 'south', label: 'ЮГ', tx: focusTx, tz: bounds.maxZ - margin },
+    { id: 'south', label: 'ЮГ', tx: focusTx, tz: bounds.minZ + margin },
     { id: 'west', label: 'ЗАПАД', tx: bounds.minX + margin, tz: focusTz }
   ];
   const lanes = [];
@@ -190,14 +191,14 @@ function createWorldActivityEncounterLayout(options = {}) {
   }
   if (!lanes.length) return null;
 
-  const northWorld = toWorld(focusTx, bounds.minZ) || {};
+  const northWorld = toWorld(focusTx, bounds.maxZ) || {};
   const eastWorld = toWorld(bounds.maxX, focusTz) || {};
-  const southWorld = toWorld(focusTx, bounds.maxZ) || {};
+  const southWorld = toWorld(focusTx, bounds.minZ) || {};
   const westWorld = toWorld(bounds.minX, focusTz) || {};
   const edgeRadius = Math.min(
-    Math.abs(finite(focusWorld.z, focusTz) - finite(northWorld.z, bounds.minZ)),
+    Math.abs(finite(northWorld.z, bounds.maxZ) - finite(focusWorld.z, focusTz)),
     Math.abs(finite(eastWorld.x, bounds.maxX) - finite(focusWorld.x, focusTx)),
-    Math.abs(finite(southWorld.z, bounds.maxZ) - finite(focusWorld.z, focusTz)),
+    Math.abs(finite(focusWorld.z, focusTz) - finite(southWorld.z, bounds.minZ)),
     Math.abs(finite(focusWorld.x, focusTx) - finite(westWorld.x, bounds.minX))
   );
 

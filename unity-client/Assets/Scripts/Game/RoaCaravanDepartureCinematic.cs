@@ -77,8 +77,8 @@ namespace RealmOfAshes.Game
         private bool _savedShowFog;
         private GameObject _hiddenPlayerView;
         private bool _savedPlayerViewActive;
-        private static readonly Vector3[] ShotCenters = { RoaCoords.ToUnity(0,-16), RoaCoords.ToUnity(2,-9),
-            RoaCoords.ToUnity(-3,-8), RoaCoords.ToUnity(2,-10), RoaCoords.ToUnity(-3,-13), RoaCoords.ToUnity(1,-10) };
+        private static readonly Vector3[] ShotCenters = { RoaCaravanAmbushStage.StagePoint(0,-16), RoaCaravanAmbushStage.StagePoint(2,-9),
+            RoaCaravanAmbushStage.StagePoint(-3,-8), RoaCaravanAmbushStage.StagePoint(2,-10), RoaCaravanAmbushStage.StagePoint(-3,-13), RoaCaravanAmbushStage.StagePoint(1,-10) };
         private static readonly float[] ShotDistances = { 17f,21f,15f,18f,18f,22f };
         private static readonly float[] ShotPitches = { 43f,47f,42f,45f,48f,67f };
         private static readonly float[] ShotYaws = { 32f,65f,105f,65f,32f,0f };
@@ -297,7 +297,7 @@ namespace RealmOfAshes.Game
 
         private void DirectAmbushCamera(float time, int shot, bool cut)
         {
-            _focus.position = (shot == 0 ? RoaCoords.ToUnity(0,-16 + time) : ShotCenters[shot])
+            _focus.position = (shot == 0 ? RoaCaravanAmbushStage.StagePoint(0,-16 + time) : ShotCenters[shot])
                 + RoaCaravanAmbushStage.AmbushOffset + Vector3.up * 0.9f;
             float sinceBlast = time >= 15.4f ? time - 15.4f : time >= 10.1f ? time - 10.1f : time - 5.3f;
             if (sinceBlast >= 0f && sinceBlast < 0.6f)
@@ -346,7 +346,7 @@ namespace RealmOfAshes.Game
                 elapsed += Time.unscaledDeltaTime;
                 float t = Smooth01(elapsed / duration);
                 _stage?.SampleDeparture(elapsed / duration);
-                if (_focus != null) _focus.position = RoaCoords.ToUnity(0f,17.5f + elapsed / duration * 13f)
+                if (_focus != null) _focus.position = RoaCaravanAmbushStage.StagePoint(0f,17.5f + elapsed / duration * 13f)
                     + Vector3.up * 0.8f;
                 if (_truck == null) { yield return null; continue; }
                 Vector3 point = EvaluateTruckPath(start, middle, end, t);
@@ -449,7 +449,7 @@ namespace RealmOfAshes.Game
 
         private void ApplyDepartureCamera()
         {
-            Vector3 focus = RoaCoords.ToUnity(0f,18f) + Vector3.up * 0.8f;
+            Vector3 focus = RoaCaravanAmbushStage.StagePoint(0f,18f) + Vector3.up * 0.8f;
             _focus.position = focus;
             _cameraRig.Target = _focus;
             _cameraRig.Distance = 20f;

@@ -41,11 +41,11 @@
   },
   "entryFromNorth": {
     "tx": 19,
-    "tz": 4
+    "tz": 34
   },
   "entryFromSouth": {
     "tx": 19,
-    "tz": 34
+    "tz": 4
   },
   "entryFromWest": {
     "tx": 4,

@@ -16,8 +16,9 @@ const wasteland = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/locations/was
 
 assert.strictEqual(normalizeGlobalExitDirection('NORTH'), 'north');
 assert.strictEqual(normalizeGlobalExitDirection('forged'), '');
-assert.strictEqual(globalExitDirectionFromTile({ tx: 19, tz: 0 }, 38, 38), 'north');
-assert.strictEqual(globalExitDirectionFromTile({ tx: 19, tz: 37 }, 38, 38), 'south');
+// Сцены Кромки строятся в Unity: север — +Z, старший ряд тайлов.
+assert.strictEqual(globalExitDirectionFromTile({ tx: 19, tz: 37 }, 38, 38), 'north');
+assert.strictEqual(globalExitDirectionFromTile({ tx: 19, tz: 0 }, 38, 38), 'south');
 assert.strictEqual(globalExitDirectionFromTile({ tx: 0, tz: 19 }, 38, 38), 'west');
 assert.strictEqual(globalExitDirectionFromTile({ tx: 37, tz: 19 }, 38, 38), 'east');
 

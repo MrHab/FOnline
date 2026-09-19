@@ -264,7 +264,8 @@ const member = (id, type, hp) => ({ id, type, hp, maxHp: hp });
       return null;
     }, 10000, 'the hunter group arrives');
     assert.equal(newcomers.length, 3);
-    assert(newcomers.every(row => Number(row.z) < -12), 'coming from the north, the group walks in at the north edge: ' + JSON.stringify(newcomers.map(row => row.z)));
+    // Север сцены — +Z, как на глобальной карте.
+    assert(newcomers.every(row => Number(row.z) > 12), 'coming from the north, the group walks in at the north edge: ' + JSON.stringify(newcomers.map(row => row.z)));
     await waitFor(() => notices.some(text => /С севера/.test(text)), 3000, 'the arrival notice');
     const hunter = await groupNear('hunter', scene.sx, scene.sy, 2);
     assert.equal(hunter.sx, scene.sx);
@@ -289,7 +290,7 @@ const member = (id, type, hp) => ({ id, type, hp, maxHp: hp });
     const liveResidents = gari(snapshots[snapshots.length - 1] || []);
     const residentHpBefore = liveResidents.map(row => Math.round(Number(row.hp))).sort((a, b) => a - b);
     const state = { x: Number(first.x ?? 0), z: Number(first.z ?? 0) };
-    assert(await driveTo(walker, state, state.x, 36), 'reached the south edge: ' + JSON.stringify(state));
+    assert(await driveTo(walker, state, state.x, -36), 'reached the south edge: ' + JSON.stringify(state));
     const back = waitForTransfer(walker);
     const exit = await h.socketAck(walker.socket, 'globalTravelEnterWorld', {});
     assert(exit.ok, JSON.stringify(exit).slice(0, 300));

@@ -17,9 +17,11 @@ function globalExitDirectionFromTile(tile = {}, mapWidth = 0, mapHeight = 0) {
   const height = Math.max(1, Math.floor(Number(mapHeight) || 0));
   const tx = Math.max(0, Math.min(width - 1, Number(tile.tx) || 0));
   const tz = Math.max(0, Math.min(height - 1, Number(tile.tz) || 0));
+  // Сцены Кромки строятся в Unity, и сервер считает в их координатах: север — +Z,
+  // то есть старший ряд тайлов (как на глобальной карте и в виде сверху редактора).
   const candidates = [
-    { direction: 'north', distance: tz },
-    { direction: 'south', distance: height - 1 - tz },
+    { direction: 'north', distance: height - 1 - tz },
+    { direction: 'south', distance: tz },
     { direction: 'west', distance: tx },
     { direction: 'east', distance: width - 1 - tx }
   ];

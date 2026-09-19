@@ -2449,7 +2449,9 @@ function serverDangerExitAlong(player = {}, direction = '') {
   if (direction === 'north' || direction === 'south') {
     return clamp((tile.tx - bounds.minX) / Math.max(1, bounds.width), 0, 1);
   }
-  return clamp((tile.tz - bounds.minZ) / Math.max(1, bounds.height), 0, 1);
+  // Вдоль восточного и западного края 0 — северный конец: на глобальной карте
+  // это верх клетки, в сцене — старший ряд тайлов (+Z).
+  return clamp((bounds.maxZ - tile.tz) / Math.max(1, bounds.height), 0, 1);
 }
 
 // --- A-Life опасных клеток ---------------------------------------------------------------------------
@@ -4845,28 +4847,28 @@ const DEFAULT_LOCATIONS = {
     id: 'randomEncounter', name: 'Событие мира', seed: 20260901, safe: false, pvpMode: 'pvp',
     encounterOnly: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomAshGrove: {
     id: 'randomAshGrove', name: 'Пепельная роща', seed: 20260911, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomDryBasin: {
     id: 'randomDryBasin', name: 'Сухая низина', seed: 20260921, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomRuinedRoad: {
     id: 'randomRuinedRoad', name: 'Старая дорога', seed: 20260931, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   }
 };
@@ -6392,8 +6394,9 @@ function syncWorldSiteLocationDefinitions(force = false) {
     const centerZ = Math.floor((bounds.minZ + bounds.maxZ) / 2);
     source.spawn = { tx: centerX, tz: centerZ };
     source.entryFromWorld = { tx: centerX, tz: centerZ };
-    source.entryFromNorth = { tx: centerX, tz: Math.min(bounds.maxZ - 2, bounds.minZ + 3) };
-    source.entryFromSouth = { tx: centerX, tz: Math.max(bounds.minZ + 2, bounds.maxZ - 3) };
+    // Север — старший ряд тайлов (+Z), как в сцене Unity.
+    source.entryFromNorth = { tx: centerX, tz: Math.max(bounds.minZ + 2, bounds.maxZ - 3) };
+    source.entryFromSouth = { tx: centerX, tz: Math.min(bounds.maxZ - 2, bounds.minZ + 3) };
     source.entryFromWest = { tx: Math.min(bounds.maxX - 2, bounds.minX + 3), tz: centerZ };
     source.entryFromEast = { tx: Math.max(bounds.minX + 2, bounds.maxX - 3), tz: centerZ };
     source.worldZones = [{
@@ -6401,7 +6404,7 @@ function syncWorldSiteLocationDefinitions(force = false) {
       label: 'Уйти на глобальную карту',
       type: 'globalMap',
       tx: centerX,
-      tz: bounds.minZ + 1,
+      tz: bounds.maxZ - 1,
       radius: 2.4
     }];
     source.map = {

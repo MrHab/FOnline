@@ -95,11 +95,12 @@ async function driveTo(account, state, x, z, maxFrames = 120) {
     assert.equal(firstCell.sx, startCell.sx);
     assert.equal(firstCell.sy, startCell.sy - 1, 'the second sub-cell of the route pulls the party in: ' + JSON.stringify(first.worldPoint));
     const state = { x: Number(first.x ?? first.self?.x ?? 0), z: Number(first.z ?? first.self?.z ?? 0) };
-    assert(state.z > 20, 'moving north, the party enters from the south edge of the scene: z=' + state.z);
+    // Север сцены — +Z, как на глобальной карте: южный край — отрицательный z.
+    assert(state.z < -20, 'moving north, the party enters from the south edge of the scene: z=' + state.z);
     console.log('PASS a walk cell is entered on foot from the side of arrival (' + first.roomId + ')');
 
     // --- выход тем же краем: соседняя сквозная сцена ------------------------------------
-    assert(await driveTo(walker, state, state.x, 36), 'reached the south edge: ' + JSON.stringify(state));
+    assert(await driveTo(walker, state, state.x, -36), 'reached the south edge: ' + JSON.stringify(state));
     const back = waitForTransfer(walker);
     const exit = await h.socketAck(walker.socket, 'globalTravelEnterWorld', {});
     assert(exit.ok && exit.transferred === true, 'the south edge leads into the next walk scene: ' + JSON.stringify(exit).slice(0, 300));
@@ -109,7 +110,7 @@ async function driveTo(account, state, x, z, maxFrames = 120) {
     assert.equal(secondCell.sy, firstCell.sy + 1, 'the neighbour to the south');
     assert.notEqual(second.roomId, first.roomId, 'another scene');
     const inSecond = { x: Number(second.x ?? 0), z: Number(second.z ?? 0) };
-    assert(inSecond.z < -20, 'going south, the party appears at the north edge of the next scene: z=' + inSecond.z);
+    assert(inSecond.z > 20, 'going south, the party appears at the north edge of the next scene: z=' + inSecond.z);
     console.log('PASS the edge of a walk scene leads into the neighbouring scene (' + second.roomId + ')');
 
     // --- выход в обычную землю: на карту у общей границы ------------------------------------

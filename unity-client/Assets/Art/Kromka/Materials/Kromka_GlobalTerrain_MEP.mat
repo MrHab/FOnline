@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Kromka_GlobalTerrain_MEP
+  m_Shader: {fileID: 4800000, guid: 56b585a9e8fb16b4984e235e3bb7826d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseTex:
+        m_Texture: {fileID: 2800000, guid: d22832715e54d7c41a0411d816a455e5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ChalkTex:
+        m_Texture: {fileID: 2800000, guid: 832a7ce0389e3844a8e7a4f07a39d254, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CliffTex:
+        m_Texture: {fileID: 2800000, guid: 8344597d8aa253c458e0e6588f4fd891, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DustTex:
+        m_Texture: {fileID: 2800000, guid: c63cd427b876d1b418fccd360e726bbb, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlassTex:
+        m_Texture: {fileID: 2800000, guid: 3581cfe908275a2418d2ac61a67a6854, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GranuleTex:
+        m_Texture: {fileID: 2800000, guid: 1e76714c0a8fdd2498e971d9bee29f15, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MicroDustTex:
+        m_Texture: {fileID: 2800000, guid: c63cd427b876d1b418fccd360e726bbb, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NorthTex:
+        m_Texture: {fileID: 2800000, guid: 41e57691cdbe55e4e8967794c69fdafc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OreTex:
+        m_Texture: {fileID: 2800000, guid: 4d762ab9915ca5e47a2e5e1a5e1e5579, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PatinaTex:
+        m_Texture: {fileID: 2800000, guid: 1e76714c0a8fdd2498e971d9bee29f15, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PeatTex:
+        m_Texture: {fileID: 2800000, guid: 0e664591f3da04f4297cb4f8984f6655, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WetTex:
+        m_Texture: {fileID: 2800000, guid: 3bf9bb2e961ca8149a7d41bd1946f4cf, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ZeroTex:
+        m_Texture: {fileID: 2800000, guid: f235f3a8abcb66048926a3dd59c232a8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BasinWetStrength: 0.72
+    - _BoundaryWarp: 16
+    - _ChalkDepositStrength: 0.34
+    - _ChromaticCompression: 0.1
+    - _CliffTiling: 0.75
+    - _DepositBreakup: 0.38
+    - _DepositMacroTiling: 8.2
+    - _DepositTiling: 23
+    - _DustVeil: 0.09
+    - _GlassDepositStrength: 0.34
+    - _MacroBlend: 0.33
+    - _MacroTiling: 5.1
+    - _MacroVariation: 0.14
+    - _OreDepositStrength: 0.42
+    - _PatinaMacroTiling: 7.4
+    - _PatinaStrength: 0.1
+    - _PatinaTiling: 31
+    - _PeatDepositStrength: 0.3
+    - _RiverWetInner: 2.8
+    - _RiverWetOuter: 13.5
+    - _Roughness: 0.88
+    - _SlopeFull: 0.66
+    - _SlopeStart: 0.28
+    - _TextureTiling: 16
+    - _TransitionWidth: 0.46
+    - _WashContrast: 0.12
+    - _WeatheringEnd: 1.02
+    - _WeatheringStart: 0.5
+    - _WeatheringStrength: 0.18
+    - _WetBlend: 0.66
+    - _WetDarkening: 0.09
+    m_Colors:
+    - _BaseTint: {r: 0.64, g: 0.6, b: 0.43, a: 1}
+    - _ChalkDepositTint: {r: 0.96, g: 0.93, b: 0.8, a: 1}
+    - _ChalkTint: {r: 0.88, g: 0.84, b: 0.72, a: 1}
+    - _CliffTint: {r: 0.6, g: 0.56, b: 0.5, a: 1}
+    - _GlassDepositTint: {r: 0.62, g: 0.77, b: 0.77, a: 1}
+    - _GlassTint: {r: 0.5, g: 0.73, b: 0.74, a: 1}
+    - _NorthTint: {r: 0.57, g: 0.59, b: 0.56, a: 1}
+    - _OreDepositTint: {r: 0.88, g: 0.48, b: 0.31, a: 1}
+    - _OreTint: {r: 0.82, g: 0.43, b: 0.26, a: 1}
+    - _PeatDepositTint: {r: 0.92, g: 0.98, b: 0.7, a: 1}
+    - _RingTint: {r: 0.49, g: 0.42, b: 0.35, a: 1}
+    - _WetTint: {r: 1.1, g: 1.2, b: 1.08, a: 1}
+    - _ZeroTint: {r: 0.47, g: 0.52, b: 0.34, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

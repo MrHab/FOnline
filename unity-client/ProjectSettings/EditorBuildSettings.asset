@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Wasteland.unity
     guid: 555cf56d23c7c2e418ade77f6275210d
   - enabled: 1
+    path: Assets/Scenes/Kromka/KromkaGlobalMap.unity
+    guid: db0439b817e77ec45a68c2e45ade05fa
+  - enabled: 1
     path: Assets/Scenes/Kromka/Locations/settlement.unity
     guid: e6f090355e41fb0449fb0d1496fd4a3e
   - enabled: 1

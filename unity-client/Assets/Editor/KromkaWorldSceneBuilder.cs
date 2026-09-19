@@ -443,7 +443,8 @@ namespace Kromka.EditorTools
 
         internal static void ConfigureBuildSettings(JObject catalog)
         {
-            var paths = new List<string> { "Assets/Scenes/Wasteland.unity" };
+            // 3D-карта мира — отдельная сцена, которую окно «КАРТА МИРА» грузит поверх зоны.
+            var paths = new List<string> { "Assets/Scenes/Wasteland.unity", KromkaLocationSceneCatalog.WorldMapScenePath };
             // Build Settings must follow the catalog alias (wasteland -> KromkaGloomDetour),
             // never the raw location id: LoadSceneAsync ignores case and the raw name
             // collides with the Wasteland bootstrap scene.

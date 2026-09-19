@@ -9,6 +9,10 @@ namespace Kromka
     /// </summary>
     public static class KromkaLocationSceneCatalog
     {
+        /// <summary>3D-карта мира: рельеф, реки, дороги и города, по которым лежит сетка зон.</summary>
+        public const string WorldMapSceneName = "KromkaGlobalMap";
+        public const string WorldMapScenePath = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
+
         private static readonly HashSet<string> LocationIds = new HashSet<string>(
             new[]
             {

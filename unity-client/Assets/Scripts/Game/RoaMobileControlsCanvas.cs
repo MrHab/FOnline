@@ -70,8 +70,14 @@ namespace RealmOfAshes.Game
             public RawImage Back;
             public RawImage Icon;
             public Text Label;
+            public int BaseFontSize;
             public RoaMobileControlPress Press;
         }
+
+        // Мельче 11 пикселей экрана вложенный Noto Sans (Hinted Raster) теряет форму
+        // букв: «ДЕЙСТВИЕ» читается как «дейСтвие». Размер глифа округляется до целых
+        // пикселей, поэтому порог подгонки подписи — 10,5 пикселя.
+        public const float MinLabelPixels = 10.5f;
 
         private static readonly Color Ink = new Color(0.90f, 0.96f, 0.84f, 1f);
         private static readonly Color Normal = new Color(0.075f, 0.11f, 0.075f, 0.88f);
@@ -82,6 +88,7 @@ namespace RealmOfAshes.Game
         public RoaBoltThrower BoltThrower;
 
         private Canvas _canvas;
+        private CanvasScaler _scaler;
         private GraphicRaycaster _raycaster;
         private RectTransform _layer;
         private RectTransform _joystickOuter;
@@ -202,12 +209,13 @@ namespace RealmOfAshes.Game
             SetVisible("Player", _gameplayButtonsVisible);
             SetVisible("Bolt", _gameplayButtonsVisible);
             SetSelected("Target", state.TargetSelected, false);
-            SetLabel("Target", state.TargetSelected ? "ЦЕЛЬ ✓" : "ЦЕЛЬ");
+            // Галки U+2713 нет во вложенном Noto Sans, а в WebGL нет системных
+            // шрифтов, которые бы её подставили; точка U+2022 в шрифте есть.
+            SetLabel("Target", state.TargetSelected ? "ЦЕЛЬ •" : "ЦЕЛЬ");
             SetLabel("Fire", Controls != null ? Controls.FireLabel : "ОГОНЬ");
             SetSelected("Crouch", state.Crouching, false);
             SetLabel("Crouch", state.Crouching ? "ВСТАТЬ" : "ПРИСЕСТЬ");
-            SetLabel("Mode", string.IsNullOrWhiteSpace(state.FireMode)
-                ? "РЕЖИМ" : state.FireMode.ToUpperInvariant());
+            SetLabel("Mode", FireModeLabel(state.FireMode));
             SetSelected("Player", state.PingAvailable, false);
             SetLabel("Player", state.PingAvailable ? "МЕТКА" : "ИГРОК");
             SetSelected("Bolt", state.BoltAiming, false);
@@ -304,6 +312,24 @@ namespace RealmOfAshes.Game
             };
         }
 
+        /// <summary>
+        /// Подпись кнопки режима. RoaCombat.FireMode — id режима (single, aimed…),
+        /// который раньше и выводился заглавными латинскими буквами; полные названия
+        /// из журнала боя («Автоматический», «Парный залп») в кнопку не влезают.
+        /// </summary>
+        public static string FireModeLabel(string mode)
+        {
+            switch (mode)
+            {
+                case "single": return "ОДИН.";
+                case "aimed": return "ПРИЦ.";
+                case "auto": return "АВТО";
+                case "dual": return "ПАРА";
+                case "melee": return "БЛИЖН.";
+                default: return "РЕЖИМ";
+            }
+        }
+
         private void PresentFromControls()
         {
             EnsureCanvas();
@@ -351,7 +377,8 @@ namespace RealmOfAshes.Game
             _canvas = canvasRoot.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 26;
-            RoaUiScale.Apply(canvasRoot.GetComponent<CanvasScaler>());
+            _scaler = canvasRoot.GetComponent<CanvasScaler>();
+            RoaUiScale.Apply(_scaler);
             _raycaster = canvasRoot.GetComponent<GraphicRaycaster>();
 
             if (FindAnyObjectByType<EventSystem>() == null)
@@ -448,7 +475,8 @@ namespace RealmOfAshes.Game
 
             _buttons[id] = new ButtonView
             {
-                Id = id, Rect = rect, Back = back, Icon = icon, Label = text, Press = press
+                Id = id, Rect = rect, Back = back, Icon = icon, Label = text,
+                BaseFontSize = text.fontSize, Press = press
             };
         }
 
@@ -494,6 +522,41 @@ namespace RealmOfAshes.Game
             SetScreenRect("Mode", _layout.Mode, width, height);
             SetScreenRect("Player", _layout.Player, width, height);
             SetScreenRect("Bolt", _layout.Bolt, width, height);
+            foreach (ButtonView view in _buttons.Values) FitLabel(view);
+        }
+
+        /// <summary>
+        /// Кнопки ограничены в пикселях экрана, а шрифт подписи задан в единицах
+        /// канвы и растёт вместе с ней: на телефоне «ДЕЙСТВИЕ» залезал в соседний
+        /// столбец, на планшете не влезала ни одна подпись. Шрифт сбрасывается к
+        /// базовому и уменьшается, пока подпись шире своей кнопки, но не мельче
+        /// MinLabelPixels на экране; влезающая подпись сохраняет размер.
+        /// </summary>
+        private void FitLabel(ButtonView view)
+        {
+            Text label = view.Label;
+            label.fontSize = view.BaseFontSize;
+            if (_layoutWidth <= 0 || !TryGetButtonScreenRect(view.Id, out Rect button)) return;
+            float scale = CanvasScale(_layoutWidth, _layoutHeight);
+            RectTransform box = label.rectTransform;
+            float width = button.width * (box.anchorMax.x - box.anchorMin.x) / scale;
+            int floor = Mathf.CeilToInt(MinLabelPixels / scale);
+            while (label.fontSize > floor && label.preferredWidth > width)
+                label.fontSize--;
+        }
+
+        /// <summary>
+        /// Масштаб, который CanvasScaler (ScaleWithScreenSize, MatchWidthOrHeight)
+        /// даст канве на экране этого размера. Размер приходит в PresentNow
+        /// параметром, поэтому масштаб считается по нему, а не берётся с канвы.
+        /// </summary>
+        private float CanvasScale(int width, int height)
+        {
+            if (_scaler == null) return 1f;
+            Vector2 reference = _scaler.referenceResolution;
+            float logWidth = Mathf.Log(width / reference.x, 2f);
+            float logHeight = Mathf.Log(height / reference.y, 2f);
+            return Mathf.Pow(2f, Mathf.Lerp(logWidth, logHeight, _scaler.matchWidthOrHeight));
         }
 
         private void ApplyJoystick(Vector2 screenBase, Vector2 screenPoint, float radius,
@@ -536,8 +599,9 @@ namespace RealmOfAshes.Game
 
         private void SetLabel(string id, string value)
         {
-            if (_buttons.TryGetValue(id, out ButtonView view) && view.Label.text != value)
-                view.Label.text = value;
+            if (!_buttons.TryGetValue(id, out ButtonView view) || view.Label.text == value) return;
+            view.Label.text = value;
+            FitLabel(view);
         }
 
         private void SetSelected(string id, bool selected, bool fire)

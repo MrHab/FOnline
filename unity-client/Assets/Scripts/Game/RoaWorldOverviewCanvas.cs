@@ -328,7 +328,7 @@ namespace RealmOfAshes.Game
             if (_selectedPlace != null) body.Append("В зоне: ").Append(zone["title"]).Append('\n');
             bool isCity = !string.IsNullOrEmpty(zone["city"]?.ToString());
             if (isCity) body.Append("Город занимает сектор целиком: ворота соседей ведут прямо в него.\n");
-            body.Append(isCity ? "Город " : "Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
+            body.Append("Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
             string gates = zone["gates"]?.ToString() ?? string.Empty;
             var open = new List<string>();
             foreach (char side in RoaWorldMapRoute.Sides) if (gates.IndexOf(side) >= 0) open.Add(RoaWorldMapRoute.GateName(side));
@@ -340,7 +340,7 @@ namespace RealmOfAshes.Game
             List<JObject> path = RoaWorldMapRoute.Find(_zonesById, from, RoaWorldMapRoute.Id(zone));
             if (string.IsNullOrEmpty(from)) body.Append("Путь проложить нельзя: вы не в зоне мира.");
             else if (path.Count == 0) body.Append("Пути туда через открытые ворота нет.");
-            else if (path.Count == 1) body.Append("Вы в этой зоне.");
+            else if (path.Count == 1) body.Append("Вы уже здесь.");
             else body.Append("Путь: ").Append(RoaWorldMapRoute.ZonesWord(path.Count - 1)).Append(" через ворота.");
             _cardBody.text = body.ToString();
             bool routed = _routeTargetZone == RoaWorldMapRoute.Id(zone);

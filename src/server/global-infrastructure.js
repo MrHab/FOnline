@@ -2,11 +2,6 @@
 
 const DEFAULT_GRID = Object.freeze({ cols: 30, rows: 30, cellPoints: 30, cellKm: 10 });
 const WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
-const COASTLINE = [
-  { x: 0.105, y: 0.00 }, { x: 0.070, y: 0.08 }, { x: 0.082, y: 0.16 }, { x: 0.055, y: 0.25 },
-  { x: 0.106, y: 0.36 }, { x: 0.090, y: 0.48 }, { x: 0.142, y: 0.62 }, { x: 0.126, y: 0.73 },
-  { x: 0.184, y: 0.86 }, { x: 0.154, y: 1.00 }
-];
 
 function clamp(value, min, max) {
   const number = Number(value);
@@ -154,26 +149,11 @@ function routeDistance(points = []) {
   return total;
 }
 
-function coastlineXAtY(ny = 0) {
-  const y = clamp(ny, 0, 1);
-  if (y <= COASTLINE[0].y) return COASTLINE[0].x;
-  for (let index = 0; index < COASTLINE.length - 1; index += 1) {
-    const from = COASTLINE[index];
-    const to = COASTLINE[index + 1];
-    if (y > to.y) continue;
-    const progress = (y - from.y) / Math.max(0.0001, to.y - from.y);
-    return from.x + (to.x - from.x) * progress;
-  }
-  return COASTLINE[COASTLINE.length - 1].x;
-}
-
+// Вода — только клетки с водной текстурой: берега прежнего мира у карты нет.
 function infrastructurePointIsWater(globalMap = {}, point = null) {
   const grid = infrastructureGrid(globalMap);
   const safe = sanitizeInfrastructurePoint(point, grid);
   if (!safe) return true;
-  const nx = safe.x / Math.max(1, grid.width);
-  const ny = safe.y / Math.max(1, grid.height);
-  if (globalMap?.legacyCoastline !== false && nx <= coastlineXAtY(ny)) return true;
   const cx = clamp(Math.floor(safe.x / grid.cellPoints), 0, grid.cols - 1);
   const cy = clamp(Math.floor(safe.y / grid.cellPoints), 0, grid.rows - 1);
   const texture = String(globalMap?.cells?.[`${cx}:${cy}`]?.texture || '').trim().toLowerCase();

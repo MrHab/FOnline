@@ -1314,7 +1314,6 @@ function normalizeGlobalMapConfig(raw = {}) {
     unityScene: String(src.unityScene || '').replace(/[^a-zA-Z0-9_./-]/g, '').slice(0, 180),
     sitePlacement: src.worldRevision === 'kromka-1' || src.sitePlacement === 'unity-authored'
       ? 'unity-authored' : 'procedural',
-    legacyCoastline: src.legacyCoastline !== false,
     grid,
     nodes,
     infrastructure,
@@ -6369,7 +6368,6 @@ function syncWorldSiteLocationDefinitions(force = false) {
 syncWorldSiteLocationDefinitions(true);
 const WORLD_ESCORT_BATTLE_TRANSFERS = new Set();
 const WORLD_ESCORT_ARRIVAL_TRANSFERS = new Set();
-const WORLD_AMBUSH_TRANSFERS = new Set();
 const WORLD_ONSITE_TRANSFERS = new Set();
 const WORLD_BATTLE_ROOM_SYNC_MS = 1000;
 
@@ -26903,17 +26901,6 @@ function onlinePlayerForWorldPartyMember(member = {}) {
   return null;
 }
 
-function onlinePlayerByWorldId(value = '') {
-  const key = worldTransferId(value);
-  if (!key) return null;
-  for (const p of players.values()) {
-    if (!p || p.dead || !socketIsLive(p.id)) continue;
-    const playerIds = [p.id, p.characterId, p.userId].map(worldTransferId).filter(Boolean);
-    if (playerIds.includes(key)) return p;
-  }
-  return null;
-}
-
 function transferSetAddLimited(set, key, max = 600) {
   if (!set || !key) return false;
   if (set.has(key)) return false;
@@ -27215,37 +27202,6 @@ function syncWorldCaravanBattleTransfers(state = null) {
   }
 }
 
-function syncWorldPlayerAmbushTransfers(state = null) {
-  const simState = state || (typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null);
-  const zones = Array.isArray(simState?.worldZones) ? simState.worldZones : [];
-  for (const zone of zones) {
-    if (!zone || zone.status !== 'active' || !zone.details?.playerAmbush || !zone.details?.triggered || !zone.partyId) continue;
-    const room = prepareWorldZoneTransferRoom(zone);
-    if (!room) continue;
-    const targets = [];
-    const owner = onlinePlayerByWorldId(zone.ownerPlayerId || zone.sourceId || zone.details?.ownerPlayerId || '');
-    if (owner) targets.push({ player: owner, role: 'ambushOwner' });
-    const party = simState.parties && simState.parties[zone.partyId];
-    const members = Array.isArray(party?.playerMembers) ? party.playerMembers : [];
-    for (const member of members) {
-      const player = onlinePlayerForWorldPartyMember(member);
-      if (player && !targets.some(row => row.player.id === player.id)) targets.push({ player, role: 'escort' });
-    }
-    for (const target of targets) {
-      const p = target.player;
-      const key = `${worldTransferId(zone.id)}:${p.id}:${target.role}`;
-      runServerWorldTransferOnce(WORLD_AMBUSH_TRANSFERS, key, () => transferPlayerToServerRoom(p, room, {
-        reason: 'playerAmbushTriggered',
-        message: target.role === 'ambushOwner'
-          ? 'В засаду вошёл отряд. Локация ожила.'
-          : 'Ваш отряд попал в засаду.',
-        partyId: party?.id || zone.partyId || '',
-        worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
-      }));
-    }
-  }
-}
-
 function syncWorldCaravanArrivalTransfers(state = null) {
   const simState = state || (typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null);
   const tasks = [
@@ -27379,7 +27335,6 @@ function syncWorldCaravanPlayerTransfers() {
   syncWorldBattleRooms(simState);
   syncWorldPartyPlayerAttachments(simState);
   syncWorldCaravanBattleTransfers(simState);
-  syncWorldPlayerAmbushTransfers(simState);
   syncWorldCaravanArrivalTransfers(simState);
   syncWorldOnsitePartyTransfers(simState);
   settleServerWorldActivityPlayers();
@@ -31346,10 +31301,6 @@ io.on('connection', (socket) => {
     emitGlobalTravelToParty(session, 'globalTravelCancelled', payload, false);
     globalTravelSessions.delete(socket.id);
     if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
-
-  socket.on('globalMapCreateAmbush', (_data = {}, ack) => {
-    if (typeof ack === 'function') ack({ ok: false, error: 'Маркеры засад и связанные с ними искусственные встречи отключены.' });
   });
 
   socket.on('globalTravelEncounterDecision', (data = {}, ack) => {

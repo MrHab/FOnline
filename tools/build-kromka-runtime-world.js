@@ -174,7 +174,6 @@ const globalMap = {
   version: 3,
   worldRevision: seed.worldRevision,
   sitePlacement: 'unity-authored',
-  legacyCoastline: false,
   unityScene: catalog.unityGlobalMapScene,
   grid: seed.grid,
   nodes,

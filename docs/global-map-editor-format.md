@@ -14,7 +14,8 @@ production-процесс редактор не публикуют; режимы
 
 - `worldRevision` — ревизия мира; у активной карты `kromka-1`. Из неё
   выводится `sitePlacement: unity-authored`: размещение мест задаёт Unity, а не
-  процедурный генератор. `legacyCoastline: false` — маски берега нет.
+  процедурный генератор. Водой считаются только клетки с водной `texture`
+  (`water`, `ocean`, `sea`, `lake`); маски берега у карты нет.
 - `unityScene` — авторская сцена-источник,
   `Assets/Scenes/Kromka/KromkaGlobalMap.unity`.
 - `grid` — сетка: `cols`, `rows`, `cellPoints` (точек в клетке) и `cellKm`

@@ -4,7 +4,6 @@
   "worldRevision": "kromka-1",
   "unityScene": "Assets/Scenes/Kromka/KromkaGlobalMap.unity",
   "sitePlacement": "unity-authored",
-  "legacyCoastline": false,
   "grid": {
     "cols": 38,
     "rows": 30,

@@ -132,7 +132,6 @@ assert.deepStrictEqual(
   [
     'changeRoom',
     'disconnect',
-    'globalMapCreateAmbush',
     'input',
     'worldTaskJoinParty',
     'worldTaskLeaveParty'

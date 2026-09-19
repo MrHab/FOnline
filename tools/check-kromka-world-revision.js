@@ -23,8 +23,14 @@ assert(map.unityScene === 'Assets/Scenes/Kromka/KromkaGlobalMap.unity',
   'runtime map must point to the editable Kromka Unity scene');
 assert(map.grid.cols === 38 && map.grid.rows === 30 && map.grid.cellPoints === 10,
   'Kromka must use the new 380×300 layout, not the legacy 900×900 grid');
-assert(map.legacyCoastline === false,
-  'Kromka must not inherit the retired western-ocean collision mask');
+// Западного океана прежнего мира у карты нет: столица на западном краю — суша.
+{
+  const { infrastructurePointIsWater } = require('../src/server/global-infrastructure');
+  const westernmost = map.nodes.reduce((a, b) => (Number(a.x) <= Number(b.x) ? a : b));
+  assert(!infrastructurePointIsWater(map, { x: 1, y: westernmost.y })
+    && !infrastructurePointIsWater(map, { x: westernmost.x, y: westernmost.y }),
+  'the western edge of Kromka must be passable land, not the retired ocean mask');
+}
 assert(map.nodes.length === seed.locations.length && map.nodes.length === 44,
   'all physical Kromka locations must be present on the strategic map');
 assert(map.infrastructure.length === seed.routes.length && map.infrastructure.length >= 5,
@@ -204,9 +210,8 @@ assert(globalMapRuntime.includes('World = NodeLabelWorld(node, 0.9f)')
   && globalMapRuntime.includes('_authoredScene.TryGetNode(node.Id, out RoaGlobalMapNodeAnchor anchor)')
   && globalMapRuntime.includes('return anchor.transform.position + Vector3.up * height;'),
   'global-map nameplates must project from the same Unity anchors as location miniatures');
-assert(serverRuntime.includes("const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'")
-  && serverRuntime.includes('legacyCoastline: src.legacyCoastline !== false'),
-  'server normalization must preserve Kromka entry points and the retired-coastline flag');
+assert(serverRuntime.includes("const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'"),
+  'server normalization must preserve Kromka entry points');
 const builder = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Editor',
   'KromkaWorldSceneBuilder.cs'), 'utf8');
 for (const token of ['KromkaGlobalMap.unity', 'Regions_EDITABLE', 'Routes_EDITABLE',

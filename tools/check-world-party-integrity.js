@@ -1716,7 +1716,7 @@ function assertSocketContract() {
   'leader disconnect can leave a follower locked when one release save fails');
   const travelCancel = serverSource.slice(
     serverSource.indexOf("socket.on('globalTravelCancel'"),
-    serverSource.indexOf("socket.on('globalMapCreateAmbush'", serverSource.indexOf("socket.on('globalTravelCancel'"))
+    serverSource.indexOf("socket.on('globalTravelEncounterDecision'", serverSource.indexOf("socket.on('globalTravelCancel'"))
   );
   assert(travelCancel.indexOf('session.terminating = true') >= 0
     && travelCancel.indexOf('session.terminating = true') < travelCancel.indexOf('persistActivePlayerStates(cancellingMembers)'),
@@ -1749,14 +1749,8 @@ function assertSocketContract() {
       && lifecycleSync.includes("emitAuthoritativePlayerState(p, { reason: 'worldTaskLifecycle' })"),
     'accepted players do not receive a personalized self snapshot when a shared task becomes terminal'
   );
-  assert(serverSource.includes('syncWorldPlayerAmbushTransfers(simState);'),
-    'triggered player ambushes are not transferred into their server room');
-  assert(serverSource.includes("? 'В засаду вошёл отряд. Локация ожила.'")
-    && serverSource.includes(": 'Ваш отряд попал в засаду.'"),
-  'player ambush transfer still sends corrupted UI text');
   for (const setName of [
     'WORLD_ESCORT_BATTLE_TRANSFERS',
-    'WORLD_AMBUSH_TRANSFERS',
     'WORLD_ESCORT_ARRIVAL_TRANSFERS',
     'WORLD_ONSITE_TRANSFERS'
   ]) {

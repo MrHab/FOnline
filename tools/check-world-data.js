@@ -302,11 +302,6 @@ const UNITY_AUTHORED_GLOBAL_MAP_MODEL_KEYS = new Set([
 const LOCATION_EDITOR_MODEL_ALIASES = {
   rustBarrel: 'barrel'
 };
-const GLOBAL_MAP_COASTLINE = [
-  { x: 0.105, y: 0.00 }, { x: 0.070, y: 0.08 }, { x: 0.082, y: 0.16 }, { x: 0.055, y: 0.25 },
-  { x: 0.106, y: 0.36 }, { x: 0.090, y: 0.48 }, { x: 0.142, y: 0.62 }, { x: 0.126, y: 0.73 },
-  { x: 0.184, y: 0.86 }, { x: 0.154, y: 1.00 }
-];
 const GLOBAL_MAP_WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
 const ROAD_LOCATION_CLEARANCE_POINTS = 20;
 const PIPELINE_ROAD_EDGE_CLEARANCE_POINTS = 18;
@@ -332,21 +327,6 @@ function resolveLocationEditorModelKey(value) {
   return LOCATION_EDITOR_MODEL_ALIASES[key] || key;
 }
 
-function globalMapCoastNormXAtY(ny = 0) {
-  const y = Math.max(0, Math.min(1, Number(ny || 0)));
-  const points = GLOBAL_MAP_COASTLINE;
-  if (y <= points[0].y) return points[0].x;
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i];
-    const b = points[i + 1];
-    if (y <= b.y) {
-      const t = (y - a.y) / Math.max(0.0001, b.y - a.y);
-      return a.x + (b.x - a.x) * t;
-    }
-  }
-  return points[points.length - 1].x;
-}
-
 function globalMapPointCellForMap(globalMap, x = 0, y = 0) {
   const grid = globalMap?.grid || {};
   const cols = Math.max(1, Number(grid.cols || 30));
@@ -367,9 +347,6 @@ function globalMapPointIsWaterForMap(globalMap, x = 0, y = 0) {
   const height = rows * cellPoints;
   const px = Math.max(0, Math.min(width, Number(x || 0)));
   const py = Math.max(0, Math.min(height, Number(y || 0)));
-  const nx = px / width;
-  const ny = py / height;
-  if (globalMap?.legacyCoastline !== false && nx <= globalMapCoastNormXAtY(ny)) return true;
   const cell = globalMapPointCellForMap(globalMap, px, py);
   const override = globalMap?.cells?.[`${cell.cx}:${cell.cy}`];
   const texture = String(override?.texture || override?.textureId || '').trim().toLowerCase();

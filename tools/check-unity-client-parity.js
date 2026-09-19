@@ -289,7 +289,6 @@ assert.deepStrictEqual(unityEmitsWithoutServerHandler, [],
 const serverOnlyHandlers = [
   'changeRoom', // синоним changeLocation (тот же обработчик) для прежних клиентов и инструментов
   'disconnect', // жизненный цикл Socket.IO: событие поднимает сам транспорт, а не клиентский emit
-  'globalMapCreateAmbush', // заглушка совместимости: засады на карте отключены, всегда отказ
   'input', // прежний канал осевого ввода; движение Unity идёт через state
   'worldTaskJoinParty', // заглушка совместимости: вступление в группу только через работу пустоши (worldTaskAction)
   'worldTaskLeaveParty' // заглушка совместимости: выход из группы только отменой работы пустоши (worldTaskAction)

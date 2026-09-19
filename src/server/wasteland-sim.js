@@ -8857,7 +8857,7 @@ function createWastelandSimulation(options = {}) {
           : districtInterestCellCenter(globalMap, cx, cy);
         next.cx = cx;
         next.cy = cy;
-        if (!isFinish && districtInterestPointIsWater(globalMap, next.x, next.y, 0)) continue;
+        if (!isFinish && districtInterestPointIsWater(globalMap, next.x, next.y)) continue;
         if (!infrastructureSegmentIsLand(globalMap, current, next)) continue;
         const tentative = Number(score.get(currentKey) || 0) + partyTerrainStepCost(globalMap, current, next, roads, zones);
         if (tentative + 0.001 >= Number(score.get(key) ?? Infinity)) continue;
@@ -8933,7 +8933,7 @@ function createWastelandSimulation(options = {}) {
         x: clamp(Number(site.x || 0) + Math.cos(angle) * radiusPoints, 0, size.width - 0.001),
         y: clamp(Number(site.y || 0) + Math.sin(angle) * radiusPoints, 0, size.height - 0.001)
       };
-      if (districtInterestPointIsWater(globalMap, candidate.x, candidate.y, 0)) continue;
+      if (districtInterestPointIsWater(globalMap, candidate.x, candidate.y)) continue;
       if (!infrastructureSegmentIsLand(globalMap, site, candidate)) continue;
       party.x = candidate.x;
       party.y = candidate.y;
@@ -12047,7 +12047,7 @@ function createWastelandSimulation(options = {}) {
     const cols = clamp(Math.round(Number(grid.cols || 30)), 1, 80);
     const rows = clamp(Math.round(Number(grid.rows || 30)), 1, 80);
     const cellPoints = Math.max(1, Number(grid.cellPoints || 30));
-    const pointIsWater = (x = 0, y = 0) => districtInterestPointIsWater(globalMap, x, y, 0);
+    const pointIsWater = (x = 0, y = 0) => districtInterestPointIsWater(globalMap, x, y);
     const borderSideIsWater = (row = {}, side = '') => {
       const cx = Number(row.cx || 0);
       const cy = Number(row.cy || 0);

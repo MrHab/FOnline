@@ -106,8 +106,8 @@ namespace Kromka.EditorTools
                         camera.transform.position = loadedFocus + new Vector3(4,30,-30); camera.transform.LookAt(loadedFocus);
                         RenderSettings.fog = false;
                     }
-                    KromkaOuterWastelandPlayAudit.Capture(camera, Path.Combine(Output,captureName+"-desktop.png"),1920,1080);
-                    KromkaOuterWastelandPlayAudit.Capture(camera, Path.Combine(Output,captureName+"-mobile.png"),844,390);
+                    KromkaSceneShot.Capture(camera, Path.Combine(Output,captureName+"-desktop.png"),1920,1080);
+                    KromkaSceneShot.Capture(camera, Path.Combine(Output,captureName+"-mobile.png"),844,390);
                     Object.DestroyImmediate(sun.gameObject);
                     prepared = false; shot++; return;
                 }

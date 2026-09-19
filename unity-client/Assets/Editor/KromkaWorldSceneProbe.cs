@@ -16,75 +16,21 @@ namespace Kromka.EditorTools
     /// <summary>Editor gate proving that the generated world is editable Unity content.</summary>
     public static class KromkaWorldSceneProbe
     {
-        private const string GlobalScene = "Assets/Scenes/Kromka/KromkaGlobalMap.unity";
-
         [MenuItem("Кромка/Проверки/Авторские сцены")]
         public static void Run()
         {
             JObject catalog = ReadProjectJson("data/kromka/locations.json");
-            JObject seed = ReadProjectJson("data/kromka/world-layout.seed.json");
             JArray locations = (JArray)catalog["locations"];
             Require(locations.Count == 45, "каталог должен содержать 45 локаций");
 
             var buildPaths = new HashSet<string>(EditorBuildSettings.scenes
                 .Where(scene => scene.enabled).Select(scene => scene.path), StringComparer.Ordinal);
             Require(buildPaths.Contains("Assets/Scenes/Wasteland.unity"), "нет bootstrap-сцены Wasteland");
-            Require(buildPaths.Contains(GlobalScene), "глобальная сцена Кромки не добавлена в Build Settings");
 
-            ValidateGlobal(seed, buildPaths);
             foreach (JObject row in locations.OfType<JObject>()) ValidateLocation(row, buildPaths);
 
-            Debug.Log("[KROMKA SCENE AUDIT] PASS: глобальная карта и " + locations.Count
+            Debug.Log("[KROMKA SCENE AUDIT] PASS: " + locations.Count
                 + " редактируемых локаций соответствуют kromka-1.");
-        }
-
-        private static void ValidateGlobal(JObject seed, HashSet<string> buildPaths)
-        {
-            Require(AssetDatabase.LoadAssetAtPath<SceneAsset>(GlobalScene) != null,
-                "не создана " + GlobalScene);
-            Scene scene = EditorSceneManager.OpenScene(GlobalScene, OpenSceneMode.Single);
-            KromkaWorldAuthoring world = Components<KromkaWorldAuthoring>(scene).SingleOrDefault();
-            Require(world != null, "глобальная сцена не содержит KromkaWorldAuthoring");
-            Require(world.Validate(out string error), "глобальная сцена: " + error);
-            Require(world.WorldRevision == "kromka-1", "неверная ревизия глобальной сцены");
-            Require(Mathf.Approximately(world.WorldWidthKm, 380f)
-                    && Mathf.Approximately(world.WorldHeightKm, 300f),
-                "глобальная сцена должна иметь размер 380x300 км");
-
-            KromkaWorldLocationAuthoring[] markers = Components<KromkaWorldLocationAuthoring>(scene);
-            int expectedMarkerCount = ((JArray)seed["locations"]).Count;
-            string[] expectedMarkerIds = ((JArray)seed["locations"]).OfType<JObject>()
-                .Select(row => row["id"]?.Value<string>() ?? string.Empty).ToArray();
-            string[] actualMarkerIds = markers.Select(marker => marker.StableLocationId).ToArray();
-            GameObject locationRoot = Find(scene, "Locations_EDITABLE");
-            int locationChildCount = locationRoot != null ? locationRoot.transform.childCount : -1;
-            string[] markerObjectsWithoutComponent = locationRoot == null
-                ? Array.Empty<string>()
-                : Enumerable.Range(0, locationRoot.transform.childCount)
-                    .Select(index => locationRoot.transform.GetChild(index))
-                    .Where(item => item.GetComponent<KromkaWorldLocationAuthoring>() == null)
-                    .Select(item => item.name).ToArray();
-            string markerDifference = "; missing=" + string.Join(",",
-                expectedMarkerIds.Except(actualMarkerIds, StringComparer.Ordinal))
-                + "; unexpected=" + string.Join(",",
-                    actualMarkerIds.Except(expectedMarkerIds, StringComparer.Ordinal))
-                + "; locationChildren=" + locationChildCount
-                + "; objectsWithoutComponent=" + string.Join(",", markerObjectsWithoutComponent);
-            Require(markers.Length == expectedMarkerCount,
-                "число Unity-маркеров не совпадает с физическими узлами seed: Unity="
-                + markers.Length + ", seed=" + expectedMarkerCount + markerDifference);
-            Require(markers.Select(marker => marker.StableLocationId).Distinct(StringComparer.Ordinal).Count()
-                    == markers.Length, "на глобальной сцене повторяются ID локаций");
-            int routeCount = Components<KromkaRouteAuthoring>(scene).Length;
-            int expectedRouteCount = ((JArray)seed["routes"]).Count;
-            Require(routeCount == expectedRouteCount,
-                "число Unity-маршрутов не совпадает с seed: Unity=" + routeCount
-                + ", seed=" + expectedRouteCount);
-            Require(Find(scene, "LORE_TERRAIN_LANGUAGE_EDITABLE") != null,
-                "нет непрерывного лорного оформления глобальной карты");
-            Require(Find(scene, "RegionGround_northern_sluices") == null,
-                "обнаружена запрещённая прямоугольная плитка старого биома");
-            Require(buildPaths.Contains(GlobalScene), "глобальная сцена выключена в Build Settings");
         }
 
         private static void ValidateLocation(JObject row, HashSet<string> buildPaths)

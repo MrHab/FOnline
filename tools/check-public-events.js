@@ -366,24 +366,6 @@ for (const template of catalog.templates) {
     'The event line must name the side of every intact support.');
   assert(presentation.includes('string strikeSide = CompassSide(strike["x"]?.Value<float>() ?? 0f, strike["z"]?.Value<float>() ?? 0f);'),
     'The telegraphed strike must name the side it comes from.');
-  // Событие живёт минуты: на карте у цели маршрута должен стоять его остаток,
-  // иначе отряд едет к логову, которое закроется раньше прибытия.
-  const map = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaGlobalMap.cs'), 'utf8');
-  for (const token of [
-    'public static string PublicEventMetaLabel(JObject row)',
-    'public JObject PublicEventAt(GlobalMapPoint point)',
-    'row["remainingSeconds"]?.ToObject<int>() ?? 0'
-  ]) assert(map.includes(token), `The map must carry the event countdown: ${token}`);
-  const mapCanvas = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs'), 'utf8');
-  assert(mapCanvas.includes('string eventMeta = Map.SelectedEventMeta();'),
-    'The target line of the map must show the event countdown.');
-  assert(mapCanvas.includes('if (string.IsNullOrEmpty(eventMeta)) eventMeta = Map.SelectedAreaMeta();'),
-    'Without an event the target line must name the permanent area.');
-  // Авторская вводная сценария читается перед входом, в окне правил зоны.
-  assert(map.includes('public string SelectedEventBriefing()'),
-    'The map must expose the briefing of the event under the target.');
-  assert(mapCanvas.includes('ZoneRulesDescription(rules, Map != null ? Map.SelectedEventBriefing() : string.Empty)'),
-    'The zone rules window must carry the briefing of the event.');
   for (const template of catalog.templates) {
     assert(String(template.text || '').trim().length > 20,
       `${template.id}: the scenario must carry a briefing worth showing`);

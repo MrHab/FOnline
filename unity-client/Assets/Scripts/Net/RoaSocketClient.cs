@@ -162,15 +162,6 @@ namespace RealmOfAshes.Net
         /// </summary>
         public event Action<JObject> OnGroundItems;
 
-        // События сервер-авторитетного маршрута глобальной карты. Они нужны
-        // не только лидеру: участники группы получают те же переходы без ack.
-        public event Action<JObject> OnGlobalTravelStarted;
-        public event Action<JObject> OnGlobalTravelEnteredWorld;
-        public event Action<JObject> OnGlobalTravelCancelled;
-        public event Action<JObject> OnGlobalTravelArrived;
-        public event Action<JObject> OnGlobalTravelGroupReleased;
-        public event Action<JObject> OnGlobalTravelEncounterDecision;
-
         private RoaSocketIoConnection _connection;
         private RoaAuthClient _auth;
         private string _characterId;
@@ -752,42 +743,6 @@ namespace RealmOfAshes.Net
                 var payload = First<JObject>(args);
                 if (payload != null) OnEnemyKilled?.Invoke(payload);
             }));
-
-            _connection.On("globalTravelStarted", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelStarted?.Invoke(payload);
-            }));
-
-            _connection.On("globalTravelEnteredWorld", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelEnteredWorld?.Invoke(payload);
-            }));
-
-            _connection.On("globalTravelCancelled", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelCancelled?.Invoke(payload);
-            }));
-
-            _connection.On("globalTravelArrived", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelArrived?.Invoke(payload);
-            }));
-
-            _connection.On("globalTravelGroupReleased", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelGroupReleased?.Invoke(payload);
-            }));
-
-            _connection.On("globalTravelEncounterDecision", args => _mainThread.Enqueue(() =>
-            {
-                var payload = First<JObject>(args);
-                if (payload != null) OnGlobalTravelEncounterDecision?.Invoke(payload);
-            }));
         }
 
         private T First<T>(JArray args) where T : class
@@ -810,8 +765,8 @@ namespace RealmOfAshes.Net
         /// в полёте остаются сообщения предыдущей сцены.
         ///
         /// Отбрасывать можно только когда обе стороны знают свою комнату и они разные.
-        /// Пустой roomId — законное состояние (игрок на глобальной карте), и трактовать
-        /// его как «не совпало» нельзя: тогда фильтр режет вообще весь трафик.
+        /// Пустой roomId (сессия ещё без комнаты) трактовать как «не совпало» нельзя:
+        /// тогда фильтр режет вообще весь трафик.
         /// Та же логика в web-клиенте: public/js/game/05_multiplayer_core_state.js:390.
         /// </summary>
         private bool IsForCurrentRoom(string roomId)
@@ -1183,22 +1138,6 @@ namespace RealmOfAshes.Net
             if (combat == null) return;
             if (Session != null) Session.Combat = combat;
             OnCombatState?.Invoke(combat);
-        }
-
-        /// <summary>
-        /// globalTravelEnterWorld меняет серверную комнату без повторного join.
-        /// Сразу отражаем это в Session, чтобы фильтр пакетов не считал старую
-        /// локальную комнату текущей.
-        /// </summary>
-        public void ApplyGlobalMapTransitionAck(JObject ack)
-        {
-            if (Session == null) return;
-            Session.RoomId = string.Empty;
-            Session.WorldState = null;
-            Session.Players.Clear();
-            string locationId = ack?["fromLocationId"]?.ToString();
-            if (!string.IsNullOrEmpty(locationId)) Session.LocationId = locationId;
-            _lastEnemyFrameSeq = 0;
         }
 
         /// <summary>

@@ -14,13 +14,9 @@ const map = read('data', 'global-map.json');
 const generated = read('data', 'generated', 'kromka', 'world.json');
 const migration = read('data', 'generated', 'kromka', 'save-migration.json');
 const plan = read('data', 'map-plan', 'plan.json');
-const globalScenePath = path.join(root, 'unity-client', 'Assets', 'Scenes',
-  'Kromka', 'KromkaGlobalMap.unity');
 
 assert(map.worldRevision === 'kromka-1' && generated.worldRevision === 'kromka-1',
   'runtime world must use revision kromka-1');
-assert(map.unityScene === 'Assets/Scenes/Kromka/KromkaGlobalMap.unity',
-  'runtime map must point to the editable Kromka Unity scene');
 assert(map.grid.cols === 38 && map.grid.rows === 30 && map.grid.cellPoints === 10,
   'Kromka must use the new 380×300 layout, not the legacy 900×900 grid');
 // Западного океана прежнего мира у карты нет: столица на западном краю — суша.
@@ -66,96 +62,6 @@ for (const node of map.nodes) {
   assert(node.visualProfile === location.visualProfile, `${node.id} visual profile drifted`);
 }
 
-function parseKromkaSceneLocations(scene) {
-  const blocks = scene.split(/^--- /m).slice(1).map(block => `--- ${block}`);
-  const gameObjectNames = new Map();
-  const transformsByGameObject = new Map();
-  const nodeIdsByGameObject = new Map();
-  const bindingsByGameObject = new Map();
-
-  for (const block of blocks) {
-    const header = block.match(/^--- !u!(\d+) &(\d+)/);
-    if (!header) continue;
-    const type = Number(header[1]);
-    const fileId = header[2];
-    const gameObjectId = block.match(/\n  m_GameObject: \{fileID: (\d+)\}/)?.[1];
-    if (type === 1) {
-      const name = block.match(/\n  m_Name: (.*)/)?.[1]?.trim();
-      if (name) gameObjectNames.set(fileId, name);
-      continue;
-    }
-    if (type === 4 && gameObjectId) {
-      const rawPosition = block.match(
-        /\n  m_LocalPosition: \{x: ([^,]+), y: ([^,]+), z: ([^}]+)\}/);
-      const parentId = block.match(/\n  m_Father: \{fileID: (\d+)\}/)?.[1] || '0';
-      if (rawPosition) {
-        transformsByGameObject.set(gameObjectId, {
-          fileId,
-          parentId,
-          x: Number(rawPosition[1]),
-          y: Number(rawPosition[2]),
-          z: Number(rawPosition[3])
-        });
-      }
-      continue;
-    }
-    if (type !== 114 || !gameObjectId) continue;
-    const nodeId = block.match(/\n  _nodeId: (.*)/)?.[1]?.trim();
-    if (nodeId) nodeIdsByGameObject.set(gameObjectId, nodeId);
-    const stableLocationId = block.match(/\n  _stableLocationId: (.*)/)?.[1]?.trim();
-    if (stableLocationId) {
-      bindingsByGameObject.set(gameObjectId, {
-        stableLocationId,
-        scenePath: block.match(/\n  _locationScenePath: (.*)/)?.[1]?.trim() || ''
-      });
-    }
-  }
-
-  const locationsRootGameObject = [...gameObjectNames.entries()]
-    .find(([, name]) => name === 'Locations_EDITABLE')?.[0];
-  const locationsRoot = transformsByGameObject.get(locationsRootGameObject);
-  assert(locationsRoot, 'Kromka global scene has no Locations_EDITABLE transform');
-
-  const locations = new Map();
-  for (const [gameObjectId, nodeId] of nodeIdsByGameObject) {
-    assert(!locations.has(nodeId), `Unity global scene duplicates ${nodeId}`);
-    locations.set(nodeId, {
-      name: gameObjectNames.get(gameObjectId) || '',
-      transform: transformsByGameObject.get(gameObjectId),
-      binding: bindingsByGameObject.get(gameObjectId),
-      parentId: locationsRoot.fileId
-    });
-  }
-  return locations;
-}
-
-assert(fs.existsSync(globalScenePath), 'editable Kromka global scene is missing');
-const sceneLocations = parseKromkaSceneLocations(fs.readFileSync(globalScenePath, 'utf8'));
-assert(sceneLocations.size === map.nodes.length,
-  `Kromka global scene has ${sceneLocations.size} location anchors instead of ${map.nodes.length}`);
-const mapWidth = map.grid.cols * map.grid.cellPoints;
-const mapHeight = map.grid.rows * map.grid.cellPoints;
-const mapWorldScale = 0.1;
-for (const node of map.nodes) {
-  const sceneLocation = sceneLocations.get(node.id);
-  assert(sceneLocation, `Kromka global scene has no anchor for ${node.id}`);
-  assert(sceneLocation.name === `Location_${node.id}`,
-    `${node.id} Unity anchor has unexpected object name ${sceneLocation.name}`);
-  assert(sceneLocation.transform, `${node.id} Unity anchor has no transform`);
-  assert(sceneLocation.transform.parentId === sceneLocation.parentId,
-    `${node.id} Unity anchor is outside Locations_EDITABLE`);
-  assert(sceneLocation.binding?.stableLocationId === node.locationId,
-    `${node.id} Unity location binding does not match its server entry id`);
-  assert(sceneLocation.binding.scenePath === catalog.locations.find(row => row.id === node.locationId)?.unityScene,
-    `${node.id} Unity location binding points to the wrong local scene`);
-  const expectedWorldX = (node.x - mapWidth * 0.5) * mapWorldScale;
-  const expectedWorldZ = (mapHeight * 0.5 - node.y) * mapWorldScale;
-  assert(Math.abs(sceneLocation.transform.x - expectedWorldX) <= 0.001
-      && Math.abs(sceneLocation.transform.z - expectedWorldZ) <= 0.001,
-    `${node.id} Unity anchor (${sceneLocation.transform.x}, ${sceneLocation.transform.z}) `
-    + `drifted from its server entry point (${expectedWorldX}, ${expectedWorldZ})`);
-}
-
 function segmentDistance(point, a, b) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -199,23 +105,16 @@ for (const capital of ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp',
 
 const sceneCatalog = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Scripts',
   'Kromka', 'KromkaLocationSceneCatalog.cs'), 'utf8');
-const globalMapRuntime = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Scripts',
-  'Game', 'RoaGlobalMap.cs'), 'utf8');
 const serverRuntime = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 for (const location of catalog.locations) {
   assert(sceneCatalog.includes(`"${location.id}"`),
     `Unity scene catalog has no ${location.id}`);
 }
-assert(globalMapRuntime.includes('World = NodeLabelWorld(node, 0.9f)')
-  && globalMapRuntime.includes('_authoredScene.TryGetNode(node.Id, out RoaGlobalMapNodeAnchor anchor)')
-  && globalMapRuntime.includes('return anchor.transform.position + Vector3.up * height;'),
-  'global-map nameplates must project from the same Unity anchors as location miniatures');
 assert(serverRuntime.includes("const preserveAuthoredNodePoints = String(src.worldRevision || '') === 'kromka-1'"),
   'server normalization must preserve Kromka entry points');
 const builder = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Editor',
   'KromkaWorldSceneBuilder.cs'), 'utf8');
-for (const token of ['KromkaGlobalMap.unity', 'Regions_EDITABLE', 'Routes_EDITABLE',
-  'Locations_EDITABLE', 'MigrationArrival_SAFE', 'KromkaPlacedObjectAuthoring',
+for (const token of ['MigrationArrival_SAFE', 'KromkaPlacedObjectAuthoring',
   'EditorSceneManager.SaveScene']) {
   assert(builder.includes(token), `Unity world builder is missing ${token}`);
 }

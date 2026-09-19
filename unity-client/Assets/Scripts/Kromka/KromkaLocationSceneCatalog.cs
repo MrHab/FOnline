@@ -9,8 +9,6 @@ namespace Kromka
     /// </summary>
     public static class KromkaLocationSceneCatalog
     {
-        public const string GlobalMapSceneName = "KromkaGlobalMap";
-
         private static readonly HashSet<string> LocationIds = new HashSet<string>(
             new[]
             {

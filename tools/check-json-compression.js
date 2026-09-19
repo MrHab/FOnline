@@ -26,7 +26,7 @@ assert(/\/bgzip\\b\/i\.test/.test(server) || server.includes("headers?.['accept-
 
 for (const [route, label] of [
   ["app.get('/api/wasteland'", 'симуляция пустоши'],
-  ["app.get('/api/global-map'", 'глобальная карта']
+  ["app.get('/api/world-map'", 'карта мира']
 ]) {
   const start = server.indexOf(route);
   assert(start > 0, `не найден маршрут: ${label}`);
@@ -36,9 +36,8 @@ for (const [route, label] of [
 
 // Сжатая копия считается на срок жизни кэша, а не на каждый запрос.
 assert(server.includes('gzip: gzipJsonBuffer(body)'), 'сжатая копия симуляции больше не кэшируется');
-assert(server.includes('globalMapResponseCache'), 'ответ глобальной карты больше не кэшируется');
-assert(server.includes('invalidateGlobalMapResponseCache()'),
-  'правка карты через редактор не сбрасывает кэш ответа — клиенты получат устаревшую карту');
+assert(server.includes('worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision'),
+  'ответ карты мира больше не кэшируется до смены графа зон');
 
 // --- Выигрыш действительно есть ---
 const compressed = zlib.gzipSync(Buffer.from(globalMapConfig, 'utf8'), { level: zlib.constants.Z_BEST_SPEED });

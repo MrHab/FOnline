@@ -71,10 +71,7 @@ assert(!loss.duplicate && loss.transaction.status === 'lost' && loss.transaction
 assert(settleCargoLoss(ledger, lostCaravan, 'ambush', 12).duplicate,
   'the same lost cargo transaction can be settled twice');
 
-const unityMap = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGlobalMap.cs'), 'utf8');
 const unityPipboy = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaPipboyCanvas.cs'), 'utf8');
-['Состояние: ', 'Причина: ', 'Прогноз: ', 'Помощь: ', 'Резерв: ', 'Последствие: ']
-  .forEach(text => assert(unityMap.includes(text), `global-map settlement card is missing ${text}`));
 assert(unityPipboy.includes('site["settlementLife"] is JObject life')
   && unityPipboy.includes('Mathf.Min(3, consequences.Count)'),
   'Pipboy world page does not expose settlement causes and three consequences');

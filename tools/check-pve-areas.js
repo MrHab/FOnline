@@ -420,11 +420,6 @@ assert(server.includes('function serverEnsurePveAreaBoss(room, area, now = Date.
     'The area line must say how long the party still waits for the roll.');
   assert(presentation.includes('sb.Append(" · проверка через ").Append(nextRoll).Append(" с");'),
     'The waiting time must reach the panel.');
-  // Точка на карте принадлежит области: без этого игрок узнаёт об этом только
-  // на месте, а полная сводка области живёт лишь в отладочной раскладке.
-  const mapSource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaGlobalMap.cs'), 'utf8');
-  assert(mapSource.includes('public static string PveAreaMetaLabel(JObject area)'),
-    'The map must carry a short label of the area under the target.');
 }
 
 console.log(`PvE areas OK: ${catalog.areas.length} hunting grounds, encounter tables, one-shot scenes, one shared lair per ground with its boss and escort, no PvP/no loss.`);

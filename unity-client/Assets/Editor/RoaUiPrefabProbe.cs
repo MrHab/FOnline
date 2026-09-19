@@ -35,7 +35,6 @@ namespace RealmOfAshes.EditorTools
                 { "RoaGraphicsWindow", RoaUiPrefabKind.GraphicsWindow },
                 { "RoaPauseScreen", RoaUiPrefabKind.PauseScreen },
                 { "RoaContextMenu", RoaUiPrefabKind.ContextMenu },
-                { "RoaGlobalMapHud", RoaUiPrefabKind.GlobalMap },
                 { "RoaMobileControls", RoaUiPrefabKind.MobileControls }
             };
 
@@ -72,7 +71,7 @@ namespace RealmOfAshes.EditorTools
                 "Assets/Resources/RealmUi/mobile/right/attack.png");
             if (mobileAttack == null) throw new Exception("Canonical mobile UI art was not imported.");
 
-            Debug.Log("[ROA PROBE] UI Prefab library OK: 24 prefabs, shared theme and canonical UI art.");
+            Debug.Log("[ROA PROBE] UI Prefab library OK: " + (Expected.Count + 1) + " prefabs, shared theme and canonical UI art.");
         }
 
         private static GameObject Load(string name)

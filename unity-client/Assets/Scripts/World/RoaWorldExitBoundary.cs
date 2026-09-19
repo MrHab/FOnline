@@ -6,9 +6,9 @@ using UnityEngine.Rendering;
 namespace RealmOfAshes.World
 {
     /// <summary>
-    /// Represents the outer edge of a local map. When world travel is available it
-    /// draws the automatic exit strip. Story-locked locations instead get a dashed,
-    /// collidable perimeter at the inner edge of that same strip.
+    /// Край места внутри зоны мира. Когда выход открыт, рисует золотую полосу:
+    /// шаг в неё уводит в родительскую зону. Место, закрытое сюжетом, вместо
+    /// полосы получает пунктирный непроходимый периметр по её внутренней кромке.
     /// </summary>
     public sealed class RoaWorldExitBoundary : MonoBehaviour
     {
@@ -63,10 +63,10 @@ namespace RealmOfAshes.World
             _halfWidth = mapWidth * RoaCoords.Tile * 0.5f;
             _halfDepth = mapDepth * RoaCoords.Tile * 0.5f;
 
-            _visualRoot = new GameObject("GlobalMapExitBoundary");
+            _visualRoot = new GameObject("PlaceExitBoundary");
             _visualRoot.transform.SetParent(transform, false);
-            _bandMaterial = CreateTransparentMaterial("GlobalMapExitBandMaterial", 0.18f, 3015);
-            _accentMaterial = CreateTransparentMaterial("GlobalMapExitAccentMaterial", 0.82f, 3020);
+            _bandMaterial = CreateTransparentMaterial("PlaceExitBandMaterial", 0.18f, 3015);
+            _accentMaterial = CreateTransparentMaterial("PlaceExitAccentMaterial", 0.82f, 3020);
 
             BuildBand();
             BuildThreshold();
@@ -115,7 +115,7 @@ namespace RealmOfAshes.World
                 new Vector3(-innerWidth, y, innerDepth), new Vector3(-innerWidth, y, _halfDepth),
                 new Vector3(innerWidth, y, _halfDepth), new Vector3(innerWidth, y, innerDepth));
 
-            _bandMesh = new Mesh { name = "GlobalMapExitBandMesh" };
+            _bandMesh = new Mesh { name = "PlaceExitBandMesh" };
             _bandMesh.SetVertices(vertices);
             _bandMesh.SetTriangles(triangles, 0);
             _bandMesh.RecalculateNormals();
@@ -164,7 +164,7 @@ namespace RealmOfAshes.World
             AddArrowRow(vertices, triangles, new Vector3(0f, 0f, z), Vector3.forward,
                 Vector3.right, innerWidth * 2f);
 
-            _arrowMesh = new Mesh { name = "GlobalMapExitArrowMesh" };
+            _arrowMesh = new Mesh { name = "PlaceExitArrowMesh" };
             _arrowMesh.SetVertices(vertices);
             _arrowMesh.SetTriangles(triangles, 0);
             _arrowMesh.RecalculateNormals();
@@ -299,7 +299,7 @@ namespace RealmOfAshes.World
         {
             if (_mapWidth <= 0 || _mapDepth <= 0) return;
             RoaGameBootstrap bootstrap = RoaGameBootstrap.Active;
-            _exitAllowed = bootstrap == null || bootstrap.CurrentLocationAllowsGlobalMapExit;
+            _exitAllowed = bootstrap == null || bootstrap.CurrentLocationHasEdgeExit;
             if (_visualRoot != null && _visualRoot.activeSelf != _exitAllowed)
                 _visualRoot.SetActive(_exitAllowed);
             if (_lockedRoot != null && _lockedRoot.activeSelf == _exitAllowed)
@@ -383,11 +383,13 @@ namespace RealmOfAshes.World
                     "Выход закрыт до завершения задания", detail);
                 return;
             }
+            ParentZoneInfo zone = RoaGameBootstrap.Active?.Loader?.Current?.ParentZone;
+            string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
             GUI.Label(new Rect(panel.x + 12f, panel.y + 6f, panel.width - 24f, 24f),
-                "ВЫХОД НА ГЛОБАЛЬНУЮ КАРТУ", title);
+                "ВЫХОД: " + zoneName.ToUpperInvariant(), title);
             float metres = Mathf.Max(0f, _distanceToEdge - ExitBandWidth);
             string copy = _distanceToEdge <= ExitBandWidth + 0.25f
-                ? "Переход на карту пустоши..."
+                ? "Переход в зону..."
                 : "Пересеките золотую полосу  •  " + Mathf.CeilToInt(metres) + " м";
             GUI.Label(new Rect(panel.x + 12f, panel.y + 31f, panel.width - 24f, 22f), copy, detail);
         }

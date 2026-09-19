@@ -102,8 +102,7 @@ namespace RealmOfAshes.Game
             bool activitySucceeded = matchingResult && activity.LastResultSucceeded;
             bool activityFailed = matchingResult && !activity.LastResultSucceeded;
             CoachStep next = ResolveStep(_step, _movementMeters >= 1.5f, interacted,
-                                         Bootstrap.OnGlobalMap, activityActive,
-                                         activitySucceeded, activityFailed);
+                                         activityActive, activitySucceeded, activityFailed);
             if (matchingResult) _consumedResultId = activity.LastResultId;
             if (activityFailed) _trackedActivityTaskId = string.Empty;
             if (next == CoachStep.Complete)
@@ -129,7 +128,7 @@ namespace RealmOfAshes.Game
         private void TrackMovement()
         {
             Transform player = Bootstrap?.PlayerView != null ? Bootstrap.PlayerView.transform : null;
-            if (player == null || Bootstrap.OnGlobalMap)
+            if (player == null)
             {
                 _hasPlayerPosition = false;
                 return;
@@ -147,20 +146,18 @@ namespace RealmOfAshes.Game
         }
 
         public static CoachStep ResolveStep(CoachStep current, bool moved, bool interacted,
-                                            bool onGlobalMap, bool activityActive,
-                                            bool activitySucceeded, bool activityFailed)
+                                            bool activityActive, bool activitySucceeded,
+                                            bool activityFailed)
         {
             if (activitySucceeded) return CoachStep.Complete;
             if (activityFailed) return CoachStep.Activity;
             if (activityActive) return CoachStep.Mission;
-            if (current == CoachStep.Mission && onGlobalMap) return CoachStep.Activity;
-            if (onGlobalMap && (int)current < (int)CoachStep.Activity) return CoachStep.Activity;
             if (current == CoachStep.Movement && moved) return CoachStep.Interaction;
             if (current == CoachStep.Interaction && interacted) return CoachStep.Activity;
             return current;
         }
 
-        public static string InstructionFor(CoachStep step, bool mobile, bool onGlobalMap)
+        public static string InstructionFor(CoachStep step, bool mobile)
         {
             if (step == CoachStep.Movement)
                 return mobile
@@ -170,10 +167,8 @@ namespace RealmOfAshes.Game
                 return mobile
                     ? "Подойдите к зелёной или золотой метке и нажмите «ДЕЙСТВИЕ»."
                     : "Подойдите к зелёной или золотой метке и нажмите E.";
-            if (step == CoachStep.Activity && onGlobalMap)
-                return "Выберите карточку события и нажмите «ВЗЯТЬ И ЕХАТЬ».";
             if (step == CoachStep.Activity)
-                return "Дойдите до края локации: переход на живую карту произойдёт автоматически.";
+                return "Выйдите через ворота в соседнюю зону: там ждут события и вылазки.";
             if (step == CoachStep.Mission)
                 return "Выполните выделенные цели. Когда появится «ЭВАКУАЦИЯ», доберитесь до неё и подтвердите выход.";
             return "Первая вылазка завершена. Результат и награда показаны в карточке.";
@@ -185,7 +180,7 @@ namespace RealmOfAshes.Game
             bool mobile = Application.isMobilePlatform;
             int number = Mathf.Clamp((int)_step + 1, 1, 4);
             _kicker.text = "ПЕРВЫЙ ВЫХОД   " + number + "/4";
-            _instruction.text = InstructionFor(_step, mobile, Bootstrap != null && Bootstrap.OnGlobalMap);
+            _instruction.text = InstructionFor(_step, mobile);
             for (int i = 0; i < _progress.Length; i++)
                 _progress[i].color = i < (int)_step ? Done : i == (int)_step
                     ? Accent : new Color(Muted.r, Muted.g, Muted.b, 0.28f);

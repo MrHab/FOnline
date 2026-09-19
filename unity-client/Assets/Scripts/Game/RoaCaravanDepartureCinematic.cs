@@ -408,7 +408,7 @@ namespace RealmOfAshes.Game
 
         private bool AmbushReady()
         {
-            return _bootstrap != null && _bootstrap.InGame && !_bootstrap.OnGlobalMap
+            return _bootstrap != null && _bootstrap.InGame
                 && _bootstrap.Loader != null && !_bootstrap.Loader.IsLoading
                 && string.Equals(_bootstrap.Loader.Current?.Id, AmbushLocationId,
                     StringComparison.Ordinal);

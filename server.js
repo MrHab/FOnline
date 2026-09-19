@@ -245,12 +245,7 @@ const {
   rollPlotReturns,
   publicPlot
 } = require('./src/server/crafting-plots');
-const {
-  encounterChance: dangerEncounterChance,
-  cellDangerModes,
-  isSceneMode: dangerIsSceneMode,
-  entryKeyForDirection: dangerEntryKeyForDirection
-} = require('./src/server/danger-cells');
+const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/server/danger-cells');
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
@@ -831,11 +826,6 @@ const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_E
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
-// Играбельный контур глобальной карты в точках карты — из сцены Unity
-// (tools/build-global-map-playable.js): за ним логов и групп нет.
-const GLOBAL_MAP_PLAYABLE_POINTS = (readJson(path.join(BUNDLED_DATA_DIR, 'kromka', 'global-map-playable.json'), {}).points || [])
-  .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
-  .map(point => [Number(point[0]), Number(point[1])]);
 
 // Прогрессия добычу не создаёт вовсе: перки поиска только усиливают останки,
 // трофеи и авторские тайники (src/server/loot-perks.js).
@@ -2223,17 +2213,6 @@ app.get('/api/kromka/artifacts', (_, res) => {
   res.json({ ok: true, catalog: publicArtifactCatalog(KROMKA_ARTIFACT_CATALOG) });
 });
 
-let globalMapResponseCache = null;
-
-function invalidateGlobalMapResponseCache() {
-  globalMapResponseCache = null;
-}
-
-/**
- * Карта для клиента: скрытые узлы не уходят игрокам. Базы фракций Сердцевины
- * остаются точками мира на сервере, но метками на карте больше не являются —
- * попасть туда можно только по контракту через узел Сердцевины.
- */
 /** Точка узла глобальной карты по локации: центр области для клиента. */
 function serverGlobalMapPointForLocation(locationId = '') {
   const id = normalizeLocationId(locationId);
@@ -2242,67 +2221,15 @@ function serverGlobalMapPointForLocation(locationId = '') {
   return node ? { x: Number(node.x || 0), y: Number(node.y || 0) } : null;
 }
 
-function publicGlobalMap(map = null) {
-  const src = map && typeof map === 'object' ? map : {};
-  const nodes = (Array.isArray(src.nodes) ? src.nodes : []).filter(node => node?.hidden !== true);
-  // Экономика v3: клиенты видят цвет опасных клеток; файл карты не меняется.
-  const modes = src === GLOBAL_MAP ? serverDangerCellModes() : null;
-  if (!modes) return { ...src, nodes };
-  // Вместе с цветом уходит и настоящий шанс стычки: процент на мелкую клетку
-  // пути без поправки на навык. Сквозные клетки проходятся пешком, броска нет.
-  const config = WORLD_ECONOMY.dangerCells;
-  const cells = {};
-  for (const [key, cell] of Object.entries(src.cells || {})) {
-    const pvpMode = modes[key] || cell.pvpMode;
-    const chance = dangerIsSceneMode(config, pvpMode) ? 0 : Math.round(dangerEncounterChance(config, pvpMode) * 1000) / 10;
-    cells[key] = { ...cell, pvpMode, chance };
-  }
-  return {
-    ...src,
-    nodes,
-    cells,
-    // Играбельный контур (точки карты): клиент рисует край мира и в локальной сцене.
-    playableContour: GLOBAL_MAP_PLAYABLE_POINTS
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Опасные клетки (экономика v3, библия 18.1): цвет клетки карты по правилам
-// economy.json и серверные стычки в пути по мелким клеткам 1,6 км — каждая
-// мелкая клетка своя общая сцена.
-// ---------------------------------------------------------------------------
-let serverDangerCellCache = null;
-
-function serverDangerCellModes() {
-  if (!WORLD_ECONOMY.worldModel.dangerCells) return null;
-  if (serverDangerCellCache?.map === GLOBAL_MAP) return serverDangerCellCache.modes;
-  const nodes = {};
-  for (const node of Array.isArray(GLOBAL_MAP.nodes) ? GLOBAL_MAP.nodes : []) {
-    const id = String(node?.locationId || node?.id || '');
-    if (id && Number.isFinite(Number(node.x)) && Number.isFinite(Number(node.y))) nodes[id] = { x: Number(node.x), y: Number(node.y) };
-  }
-  const modes = cellDangerModes(WORLD_ECONOMY.dangerCells, GLOBAL_MAP.grid, GLOBAL_MAP.cells, nodes);
-  serverDangerCellCache = { map: GLOBAL_MAP, modes };
-  return modes;
-}
-
-function serverGlobalMapCellKeyAt(point = {}) {
-  const grid = GLOBAL_MAP.grid || GLOBAL_MAP_GRID_DEFAULT;
-  const cx = clamp(Math.floor(Number(point.x || 0) / grid.cellPoints), 0, grid.cols - 1);
-  const cy = clamp(Math.floor(Number(point.y || 0) / grid.cellPoints), 0, grid.rows - 1);
-  return `${cx}:${cy}`;
-}
-
-/** Места карты (узлы и площадки): у них сквозных сцен нет — туда можно дойти. */
-// --- A-Life опасных клеток ---------------------------------------------------------------------------
+// --- A-Life зон ---------------------------------------------------------------------------
 
 /**
- * A-Life опасных клеток (src/server/danger-ecology.js, data/kromka/danger-ecology.json):
- * группы монстров Кромки и налётчиков живут на сетке мелких клеток и сами
- * приходят в сцены. Сервер даёт им цвет земли и занятость сцен, превращает
- * группу в настоящих NPC, когда она оказывается в сцене с игроками, и
- * возвращает её в мир с ранами выживших, когда сцена пустеет. Досыпки угроз
- * по таймеру нет: новые враги в сцене — это пришедшая группа.
+ * A-Life зон (src/server/danger-ecology.js, data/kromka/danger-ecology.json):
+ * группы монстров Кромки и налётчиков живут на графе зон, ходят через открытые
+ * ворота и сами приходят в каналы зон. Сервер даёт им цвет зоны и занятость
+ * каналов, превращает группу в настоящих NPC, когда она оказывается в канале с
+ * игроками, и возвращает её в мир с ранами выживших, когда канал пустеет.
+ * Досыпки угроз по таймеру нет: новые враги в зоне — это пришедшая группа.
  */
 let dangerEcologyState = null;
 let dangerEcologySavedAt = 0;
@@ -2811,14 +2738,6 @@ function serverTickEcology(now = Date.now()) {
   return arrivals;
 }
 
-app.get('/api/global-map', (req, res) => {
-  if (!globalMapResponseCache) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: publicGlobalMap(GLOBAL_MAP) }), 'utf8');
-    globalMapResponseCache = { body, gzip: gzipJsonBuffer(body) };
-  }
-  sendJsonBuffer(res, globalMapResponseCache.body, globalMapResponseCache.gzip);
-});
-
 let wastelandPublicCache = null;
 let wastelandPublicCacheHits = 0;
 let wastelandPublicCacheMisses = 0;
@@ -2990,7 +2909,6 @@ app.post('/api/dev/global-map', (req, res) => {
   const incoming = req.body && typeof req.body === 'object' && req.body.map ? req.body.map : req.body;
   if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON глобальной карты.' });
   GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
-  invalidateGlobalMapResponseCache();
   WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
   syncWorldSiteLocationDefinitions();
   writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });

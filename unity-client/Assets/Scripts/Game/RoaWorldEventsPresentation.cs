@@ -154,7 +154,7 @@ namespace RealmOfAshes.Game
             string lab = DescribeLabHall(_labHall, roomId);
             if (!string.IsNullOrEmpty(lab)) lines.Add(lab);
             bool visible = lines.Count > 0 && _socket != null && _socket.Phase == RoaSocketClient.ConnectionPhase.Joined
-                && _socket.Session != null && !(_socket.Session.Self?["onGlobalMap"]?.Value<bool>() ?? false);
+                && _socket.Session != null;
             _panel.SetActive(visible);
             if (!visible) return;
             _text.text = string.Join("\n", lines);

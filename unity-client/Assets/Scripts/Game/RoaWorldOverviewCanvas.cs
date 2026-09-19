@@ -1,20 +1,22 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using RealmOfAshes.World;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Карта мира из локальной сцены. Кнопка «КАРТА МИРА» на миникарте открывает
-    /// обзор глобальной карты с флажком там, где сейчас игрок: в клетке
-    /// Сердцевины («Меловая чаша №47») или у места карты. Карта рисуется из
-    /// /api/global-map — цвета опасности земель, край мира, места и сетка
-    /// клеток Сердцевины с номерами; колесо, «+»/«−» и перетаскивание меняют
-    /// масштаб и вид. Сцена глобальной карты для этого не загружается.
+    /// Карта мира: сетка зон мира из /api/world-map. Каждая зона — клетка цвета её
+    /// опасности с номером, закрытые стороны — стены, места и столицы — точки с
+    /// именами, флажок — где стоит игрок (зона из self.zone, в месте — зона, в
+    /// которую выводит его край). Других игроков, групп A-Life и событий на
+    /// карте нет: она только показывает, куда идти. Открывается кнопкой
+    /// «КАРТА МИРА» у миникарты и в окне локальной карты.
     /// </summary>
     public sealed class RoaWorldOverviewCanvas : MonoBehaviour
     {
@@ -24,16 +26,16 @@ namespace RealmOfAshes.Game
         private static readonly Color MutedInk = new Color(0.72f, 0.7f, 0.6f, 1f);
         private static readonly Color Accent = new Color(1f, 0.82f, 0.42f, 1f);
         private static readonly Color FlagColor = new Color(0.96f, 0.27f, 0.2f, 1f);
-        private static readonly Color CoreInner = new Color(0.86f, 0.36f, 0.66f, 0.5f);
-        private static readonly Color CoreOuter = new Color(0.96f, 0.42f, 0.74f, 0.95f);
-        private static readonly float[] ZoomSteps = { 1f, 1.5f, 2f, 3f, 4f, 6f, 8f, 12f, 16f, 24f, 32f };
-        private const int PixelsPerCell = 16;
-        private const int CorePixelsPerCell = 16;
-        // Клетка Сердцевины на экране (ед. канвы): с какого размера номера и имена.
-        private const float CoreNumberUnits = 22f;
-        private const float CoreNameUnits = 96f;
+        private static readonly Color Void = new Color(0.08f, 0.08f, 0.07f, 1f);
+        private static readonly Color Wall = new Color(0.05f, 0.05f, 0.04f, 1f);
 
-        public RoaGlobalMap GlobalMap;
+        public static readonly Color PeacefulZoneColor = new Color(0.36f, 0.82f, 0.46f, 1f);
+        public static readonly Color BlueZoneColor = new Color(0.33f, 0.62f, 1f, 1f);
+        public static readonly Color YellowZoneColor = new Color(0.97f, 0.8f, 0.3f, 1f);
+        public static readonly Color RedZoneColor = new Color(0.9f, 0.2f, 0.14f, 1f);
+        public static readonly Color BlackZoneColor = new Color(0.36f, 0.06f, 0.24f, 1f);
+        private const int PixelsPerZone = 32;
+
         public RoaSocketClient Socket;
         public RoaMinimap Minimap;
         public RoaLocationLoader Loader;
@@ -42,46 +44,55 @@ namespace RealmOfAshes.Game
         private Canvas _canvas;
         private GameObject _root;
         private RectTransform _panel;
-        private Text _title;
         private Text _subtitle;
         private Text _status;
-        private RectTransform _viewport;
-        private RectTransform _content;
+        private RectTransform _map;
         private RawImage _mapImage;
-        private RawImage _coreImage;
-        private RectTransform _nodeLayer;
-        private RectTransform _coreLabelLayer;
+        private RectTransform _labels;
         private RectTransform _flag;
-        private RectTransform _flagPlate;
-        private Text _flagText;
-        private RectTransform _pointerCard;
-        private Text _pointerText;
-        private readonly List<RectTransform> _nodeDots = new List<RectTransform>();
-        private readonly List<Text> _nodeNames = new List<Text>();
-        private readonly List<GlobalMapNode> _nodeRows = new List<GlobalMapNode>();
-        private readonly List<Text> _coreLabels = new List<Text>();
-        private readonly Dictionary<long, int[]> _coreCells = new Dictionary<long, int[]>();
-
-        private GlobalMapDefinition _built;
-        private Texture2D _mapTexture;
-        private Texture2D _coreTexture;
-        private int _coreMinX, _coreMinY, _coreColumns, _coreRows;
-        private float _subCellPoints = 1.6f;
-        private float _mapWidthPoints = 380f;
-        private float _mapHeightPoints = 300f;
-        private int _zoomIndex;
-        private Vector2 _focus = new Vector2(190f, 150f);
-        private Vector2 _playerPoint;
-        private bool _hasPlayer;
-        private int[] _playerCell;
-        private string _place = string.Empty;
-        private string _playerLocationId = string.Empty;
+        private Text _pointer;
+        private Texture2D _texture;
+        private JObject _world;
+        private readonly Dictionary<string, JObject> _zonesById = new Dictionary<string, JObject>(StringComparer.Ordinal);
+        private readonly List<Text> _labelPool = new List<Text>();
         private bool _loading;
-        private float _coreLabelsScale = -1f;
-        private Vector2 _lastPointer;
-        private bool _pointerDirty;
+        private int _cols = 19;
+        private int _rows = 15;
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
+
+        /// <summary>Порядок опасности: 0 мирная … 4 чёрная, -1 — вне мира.</summary>
+        public static int DangerRank(string mode)
+        {
+            switch ((mode ?? string.Empty).ToLowerInvariant())
+            {
+                case "peaceful": return 0;
+                case "pve": return 1;
+                case "pvp": return 2;
+                case "pvpfulldrop": return 3;
+                case "pvpblack": return 4;
+                default: return -1;
+            }
+        }
+
+        public static Color DangerZoneColor(string mode)
+        {
+            switch (DangerRank(mode))
+            {
+                case 0: return PeacefulZoneColor;
+                case 1: return BlueZoneColor;
+                case 3: return RedZoneColor;
+                case 4: return BlackZoneColor;
+                default: return YellowZoneColor;
+            }
+        }
+
+        public static string DangerLegendText()
+        {
+            return "<color=#5cd175>■</color> мирная  <color=#549eff>■</color> синяя — PvE, вещи при себе  "
+                + "<color=#f7cc4d>■</color> жёлтая — PvP, вещи при себе  <color=#e63324>■</color> красная — выпадает инвентарь  "
+                + "<color=#9e1452>■</color> чёрная — выпадает всё";
+        }
 
         private void Update()
         {
@@ -90,25 +101,12 @@ namespace RealmOfAshes.Game
                 if (IsOpen) Close();
                 return;
             }
-            if (!IsOpen) return;
-            // Esc закрывает окно из цепочки RoaGameBootstrap: иначе в том же кадре
-            // загрузчик не увидел бы открытого окна и открыл бы игровое меню.
-            float wheel = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(wheel) > 0.01f && _viewport != null
-                && RectTransformUtility.RectangleContainsScreenPoint(_viewport, Input.mousePosition, null))
+            if (!IsOpen || _map == null || _world == null) return;
+            // Зона под курсором — её номер, название и цвет; на телефоне подсказка не нужна.
+            if (Input.mousePresent && RectTransformUtility.ScreenPointToLocalPointInRectangle(_map, Input.mousePosition, null, out Vector2 local))
             {
-                ZoomAround(wheel > 0f ? 1 : -1, Input.mousePosition);
-            }
-            // Клетка под курсором — её имя с номером; на телефоне — по касанию.
-            if (Input.mousePresent)
-            {
-                Vector2 mouse = Input.mousePosition;
-                if (_pointerDirty || (mouse - _lastPointer).sqrMagnitude > 0.25f)
-                {
-                    _pointerDirty = false;
-                    _lastPointer = mouse;
-                    ReadPointer(mouse);
-                }
+                JObject zone = ZoneAtLocalPoint(local);
+                _pointer.text = zone == null ? string.Empty : ZoneCaption(zone);
             }
         }
 
@@ -123,29 +121,17 @@ namespace RealmOfAshes.Game
             OpenFor(Socket?.Session?.Self);
         }
 
-        /// <summary>Открыть обзор для состояния игрока (self сервера); пробы подают своё.</summary>
+        /// <summary>Открыть карту для состояния игрока (self сервера); пробы подают своё.</summary>
         public void OpenFor(JObject self)
         {
             EnsureBuilt();
             _root.SetActive(true);
-            ReadPlayer(self);
-            _status.text = string.Empty;
-            if (GlobalMap != null && (GlobalMap.Definition == null || GlobalMap.Definition.Grid == null))
+            if (_world == null)
             {
-                if (!_loading)
-                {
-                    _loading = true;
-                    _status.text = "Загрузка карты…";
-                    StartCoroutine(GlobalMap.EnsureDefinition((ok, error) =>
-                    {
-                        _loading = false;
-                        _status.text = ok ? string.Empty : (error ?? "Карта недоступна.");
-                        if (ok && IsOpen) Rebuild(true);
-                    }));
-                }
+                if (!_loading) StartCoroutine(FetchWorld(self));
                 return;
             }
-            Rebuild(true);
+            Rebuild(self);
         }
 
         public void Close()
@@ -153,497 +139,245 @@ namespace RealmOfAshes.Game
             if (_root != null) _root.SetActive(false);
         }
 
-        // --- где игрок --------------------------------------------------------------------------------
-
-        private void ReadPlayer(JObject self)
+        private IEnumerator FetchWorld(JObject self)
         {
-            _hasPlayer = false;
-            _playerCell = null;
-            _playerLocationId = self?["locationId"]?.ToString() ?? string.Empty;
-            JObject cell = self?["dangerCell"] as JObject;
-            _place = Minimap != null ? Minimap.LocationName : string.Empty;
-            if (cell != null)
+            _loading = true;
+            _status.text = "Загрузка карты…";
+            string baseUrl = Loader != null ? Loader.BaseUrl : "http://127.0.0.1:3000";
+            using (UnityWebRequest request = UnityWebRequest.Get(baseUrl.TrimEnd('/') + "/api/world-map"))
             {
-                _playerPoint = new Vector2(cell["x"]?.ToObject<float>() ?? 0f, cell["y"]?.ToObject<float>() ?? 0f);
-                _hasPlayer = true;
-                _place = cell["title"]?.ToString() ?? _place;
+                yield return request.SendWebRequest();
+                _loading = false;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    _status.text = "Карта недоступна: " + request.error;
+                    yield break;
+                }
+                try
+                {
+                    ApplyWorld(JObject.Parse(request.downloadHandler.text)["map"] as JObject);
+                }
+                catch (Exception error)
+                {
+                    _status.text = "Карта не разобрана: " + error.Message;
+                    yield break;
+                }
             }
-            else if (self?["uiSnapshots"]?["world"]?["globalMap"] is JObject globalMap)
-            {
-                // В обычной локации сервер держит точку игрока на карте — место входа.
-                float x = globalMap["playerX"]?.ToObject<float>() ?? 0f;
-                float y = globalMap["playerY"]?.ToObject<float>() ?? 0f;
-                _hasPlayer = x > 0f || y > 0f;
-                _playerPoint = new Vector2(x, y);
-            }
-            ApplyPlaceText();
+            _status.text = string.Empty;
+            if (IsOpen) Rebuild(self ?? Socket?.Session?.Self);
         }
 
-        /// <summary>«Вы здесь: …» и подпись флажка; без имени локации — ближайшее место карты.</summary>
-        private void ApplyPlaceText()
+        /// <summary>Подставить карту мира без запроса (пробы).</summary>
+        public void ApplyWorld(JObject world)
         {
-            string place = _place;
-            GlobalMapDefinition map = GlobalMap != null ? GlobalMap.Definition : null;
-            if (string.IsNullOrEmpty(place) && _hasPlayer && map?.Nodes != null)
+            _world = world;
+            _zonesById.Clear();
+            if (world == null) return;
+            _cols = Mathf.Max(1, world["cols"]?.ToObject<int>() ?? 19);
+            _rows = Mathf.Max(1, world["rows"]?.ToObject<int>() ?? 15);
+            foreach (JToken token in world["zones"] as JArray ?? new JArray())
             {
-                GlobalMapNode best = null;
-                float bestDistance = 4f;
-                foreach (GlobalMapNode node in map.Nodes)
+                if (token is JObject zone && !string.IsNullOrEmpty(zone["id"]?.ToString())) _zonesById[zone["id"].ToString()] = zone;
+            }
+            BuildTexture();
+        }
+
+        // --- вид ----------------------------------------------------------------------------------------
+
+        private void Rebuild(JObject self)
+        {
+            if (_world == null || _texture == null) return;
+            _mapImage.texture = _texture;
+            // Карта вписывается в окно, пропорции сетки сохраняются.
+            Rect area = ((RectTransform)_map.parent).rect;
+            float scale = Mathf.Min(area.width / _cols, area.height / _rows);
+            _map.sizeDelta = new Vector2(_cols * scale, _rows * scale);
+            LayoutLabels(scale);
+            PlaceFlag(self, scale);
+        }
+
+        private void BuildTexture()
+        {
+            int width = _cols * PixelsPerZone;
+            int height = _rows * PixelsPerZone;
+            if (_texture == null || _texture.width != width || _texture.height != height)
+            {
+                if (_texture != null) Destroy(_texture);
+                _texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "WorldOverviewZones" };
+            }
+            var pixels = new Color32[width * height];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = Void;
+            foreach (JObject zone in _zonesById.Values)
+            {
+                int col = zone["col"]?.ToObject<int>() ?? 0;
+                int row = zone["row"]?.ToObject<int>() ?? 0;
+                Color fill = Color.Lerp(new Color(0.36f, 0.33f, 0.27f, 1f), DangerZoneColor(zone["mode"]?.ToString()), 0.62f);
+                string gates = zone["gates"]?.ToString() ?? string.Empty;
+                for (int y = 0; y < PixelsPerZone; y++)
                 {
-                    if (node == null || node.Hidden) continue;
-                    if (!string.IsNullOrEmpty(_playerLocationId) && node.EffectiveLocationId == _playerLocationId)
+                    for (int x = 0; x < PixelsPerZone; x++)
                     {
-                        best = node;
-                        break;
+                        // Строки текстуры идут снизу вверх, ряды зон — с севера на юг.
+                        int px = col * PixelsPerZone + x;
+                        int py = (_rows - 1 - row) * PixelsPerZone + y;
+                        bool edgeN = y >= PixelsPerZone - 1, edgeS = y == 0, edgeW = x == 0, edgeE = x >= PixelsPerZone - 1;
+                        bool gap = Mathf.Abs(x - PixelsPerZone / 2) <= 4 || Mathf.Abs(y - PixelsPerZone / 2) <= 4;
+                        // Закрытая сторона — сплошная стена, открытая — стена с проходом посередине.
+                        bool wall = (edgeN && (gates.IndexOf('n') < 0 || !gap)) || (edgeS && (gates.IndexOf('s') < 0 || !gap))
+                            || (edgeW && (gates.IndexOf('w') < 0 || !gap)) || (edgeE && (gates.IndexOf('e') < 0 || !gap));
+                        pixels[py * width + px] = wall ? (Color32)Wall : (Color32)fill;
                     }
-                    float distance = Vector2.Distance(new Vector2(node.X, node.Y), _playerPoint);
-                    if (distance >= bestDistance) continue;
-                    bestDistance = distance;
-                    best = node;
-                }
-                if (best != null) place = NodeTitle(best);
-            }
-            _subtitle.text = _hasPlayer
-                ? "Вы здесь: " + (string.IsNullOrEmpty(place) ? "пустошь" : RoaPipboy.KromkaPublicText(place))
-                : "Место на карте неизвестно";
-            _flagText.text = string.IsNullOrEmpty(place) ? "ВЫ ЗДЕСЬ" : RoaPipboy.KromkaPublicText(place);
-            _flagPlate.sizeDelta = new Vector2(Mathf.Ceil(_flagText.preferredWidth) + 12f, 20f);
-        }
-
-        // --- построение -------------------------------------------------------------------------------
-
-        private void Rebuild(bool focusPlayer)
-        {
-            GlobalMapDefinition map = GlobalMap != null ? GlobalMap.Definition : null;
-            if (map?.Grid == null) return;
-            if (!ReferenceEquals(map, _built))
-            {
-                BuildTextures(map);
-                BuildNodes(map);
-                _built = map;
-            }
-            if (_hasPlayer && _subCellPoints > 0f)
-            {
-                _coreCells.TryGetValue(Key(Mathf.FloorToInt(_playerPoint.x / _subCellPoints),
-                    Mathf.FloorToInt(_playerPoint.y / _subCellPoints)), out _playerCell);
-            }
-            if (focusPlayer)
-            {
-                _zoomIndex = _playerCell != null ? ZoomForCoreNumbers() : (_hasPlayer ? 2 : 0);
-                _focus = _hasPlayer ? _playerPoint : new Vector2(_mapWidthPoints * 0.5f, _mapHeightPoints * 0.5f);
-            }
-            _coreLabelsScale = -1f;
-            ApplyPlaceText();
-            Layout();
-        }
-
-        /// <summary>Самый мелкий масштаб, при котором у клеток Сердцевины видны номера.</summary>
-        private int ZoomForCoreNumbers()
-        {
-            float fit = Scale / ZoomSteps[Mathf.Clamp(_zoomIndex, 0, ZoomSteps.Length - 1)];
-            for (int i = 0; i < ZoomSteps.Length; i++)
-                if (fit * ZoomSteps[i] * _subCellPoints >= CoreNumberUnits) return i;
-            return ZoomSteps.Length - 1;
-        }
-
-        private static long Key(int sx, int sy)
-        {
-            return ((long)sx << 32) ^ (uint)sy;
-        }
-
-        private void BuildTextures(GlobalMapDefinition map)
-        {
-            int cols = map.Grid.Cols;
-            int rows = map.Grid.Rows;
-            _mapWidthPoints = cols * map.Grid.CellPoints;
-            _mapHeightPoints = rows * map.Grid.CellPoints;
-            int width = cols * PixelsPerCell;
-            int height = rows * PixelsPerCell;
-            var pixels = new Color32[width * height];
-            List<float[]> contour = map.PlayableContour;
-            float pointsPerPixel = map.Grid.CellPoints / PixelsPerCell;
-            var crossings = new List<float>();
-            for (int py = 0; py < height; py++)
-            {
-                // Строка 0 — юг (у карты y растёт на юг, у текстуры — вверх).
-                float y = _mapHeightPoints - (py + 0.5f) * pointsPerPixel;
-                ContourCrossings(contour, y, crossings);
-                int cy = Mathf.Clamp(Mathf.FloorToInt(y / map.Grid.CellPoints), 0, rows - 1);
-                for (int px = 0; px < width; px++)
-                {
-                    float x = (px + 0.5f) * pointsPerPixel;
-                    int cx = Mathf.Clamp(Mathf.FloorToInt(x / map.Grid.CellPoints), 0, cols - 1);
-                    bool inside = contour == null || contour.Count < 3 || InsideByCrossings(crossings, x);
-                    Color color = inside ? CellColor(map, cx, cy) : new Color(0.035f, 0.04f, 0.036f, 1f);
-                    // Тонкая сетка клеток 10 км.
-                    if (inside && (px % PixelsPerCell == 0 || py % PixelsPerCell == 0)) color *= 0.86f;
-                    color.a = 1f;
-                    pixels[py * width + px] = color;
                 }
             }
-            if (_mapTexture != null) Destroy(_mapTexture);
-            _mapTexture = new Texture2D(width, height, TextureFormat.RGBA32, true)
-            {
-                name = "WorldOverview",
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            _mapTexture.SetPixels32(pixels);
-            _mapTexture.Apply(true, false);
-            _mapImage.texture = _mapTexture;
-
-            BuildCoreTexture(map);
+            _texture.SetPixels32(pixels);
+            _texture.Apply(false);
         }
 
-        private static Color CellColor(GlobalMapDefinition map, int cx, int cy)
+        private void LayoutLabels(float scale)
         {
-            string mode = map.Cells != null && map.Cells.TryGetValue(cx + ":" + cy, out GlobalMapCell cell)
-                ? (cell?.PvpMode ?? string.Empty) : string.Empty;
-            Color ground = new Color(0.2f, 0.19f, 0.15f, 1f);
-            switch (RoaGlobalMap.DangerRank(mode))
-            {
-                case 0: return Color.Lerp(ground, RoaGlobalMap.PeacefulZoneColor, 0.42f);
-                case 1: return Color.Lerp(ground, RoaGlobalMap.BlueZoneColor, 0.36f);
-                case 2: return Color.Lerp(ground, RoaGlobalMap.YellowZoneColor, 0.2f);
-                case 3: return Color.Lerp(ground, RoaGlobalMap.RedZoneColor, 0.38f);
-                case 4: return Color.Lerp(ground, RoaGlobalMap.BlackZoneColor, 0.8f);
-                default: return ground;
-            }
-        }
-
-        private static void ContourCrossings(List<float[]> contour, float y, List<float> output)
-        {
-            output.Clear();
-            if (contour == null || contour.Count < 3) return;
-            for (int i = 0, j = contour.Count - 1; i < contour.Count; j = i, i++)
-            {
-                float[] a = contour[i];
-                float[] b = contour[j];
-                if (a == null || b == null || a.Length < 2 || b.Length < 2) continue;
-                if ((a[1] > y) == (b[1] > y)) continue;
-                output.Add((b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]);
-            }
-            output.Sort();
-        }
-
-        private static bool InsideByCrossings(List<float> crossings, float x)
-        {
-            int count = 0;
-            for (int i = 0; i < crossings.Count; i++) if (crossings[i] > x) count++;
-            return (count & 1) == 1;
-        }
-
-        private void BuildCoreTexture(GlobalMapDefinition map)
-        {
-            _coreCells.Clear();
-            GlobalMapDangerWalkCells walk = map.DangerWalkCells;
-            _coreImage.gameObject.SetActive(false);
-            if (walk?.Cells == null || walk.Cells.Count == 0) return;
-            float pointKm = map.Grid.CellKm / Mathf.Max(0.001f, map.Grid.CellPoints);
-            _subCellPoints = walk.SubCellKm / Mathf.Max(0.001f, pointKm);
-            int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
-            foreach (int[] row in walk.Cells)
-            {
-                if (row == null || row.Length < 3) continue;
-                _coreCells[Key(row[0], row[1])] = row;
-                minX = Mathf.Min(minX, row[0]);
-                minY = Mathf.Min(minY, row[1]);
-                maxX = Mathf.Max(maxX, row[0]);
-                maxY = Mathf.Max(maxY, row[1]);
-            }
-            if (_coreCells.Count == 0) return;
-            _coreMinX = minX;
-            _coreMinY = minY;
-            _coreColumns = maxX - minX + 1;
-            _coreRows = maxY - minY + 1;
-            int width = _coreColumns * CorePixelsPerCell;
-            int height = _coreRows * CorePixelsPerCell;
-            var pixels = new Color32[width * height];
-            Color32 inner = CoreInner;
-            Color32 outer = CoreOuter;
-            foreach (int[] row in _coreCells.Values)
-            {
-                int px = (row[0] - minX) * CorePixelsPerCell;
-                int py = (maxY - row[1]) * CorePixelsPerCell;
-                bool north = _coreCells.ContainsKey(Key(row[0], row[1] - 1));
-                bool south = _coreCells.ContainsKey(Key(row[0], row[1] + 1));
-                bool west = _coreCells.ContainsKey(Key(row[0] - 1, row[1]));
-                bool east = _coreCells.ContainsKey(Key(row[0] + 1, row[1]));
-                for (int i = 0; i < CorePixelsPerCell; i++)
-                {
-                    Put(pixels, width, px + i, py + CorePixelsPerCell - 1, north ? inner : outer);
-                    Put(pixels, width, px + i, py, south ? inner : outer);
-                    Put(pixels, width, px, py + i, west ? inner : outer);
-                    Put(pixels, width, px + CorePixelsPerCell - 1, py + i, east ? inner : outer);
-                }
-            }
-            if (_coreTexture != null) Destroy(_coreTexture);
-            _coreTexture = new Texture2D(width, height, TextureFormat.RGBA32, true)
-            {
-                name = "WorldOverviewCore",
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            _coreTexture.SetPixels32(pixels);
-            _coreTexture.Apply(true, false);
-            _coreImage.texture = _coreTexture;
-            _coreImage.gameObject.SetActive(true);
-        }
-
-        private static void Put(Color32[] pixels, int width, int x, int y, Color32 color)
-        {
-            int index = y * width + x;
-            if (x < 0 || y < 0 || index < 0 || index >= pixels.Length) return;
-            if (pixels[index].a >= color.a) return;
-            pixels[index] = color;
-        }
-
-        private void BuildNodes(GlobalMapDefinition map)
-        {
-            _nodeRows.Clear();
-            if (map.Nodes == null) return;
-            foreach (GlobalMapNode node in map.Nodes)
-            {
-                if (node == null || node.Hidden) continue;
-                _nodeRows.Add(node);
-            }
-            while (_nodeDots.Count < _nodeRows.Count)
-            {
-                RectTransform dot = Child("Node" + _nodeDots.Count, _nodeLayer);
-                dot.anchorMin = dot.anchorMax = new Vector2(0f, 1f);
-                dot.pivot = new Vector2(0.5f, 0.5f);
-                var image = dot.gameObject.AddComponent<Image>();
-                image.raycastTarget = false;
-                _nodeDots.Add(dot);
-                Text name = Label("Name", _nodeLayer, 11, TextAnchor.MiddleLeft, Ink);
-                name.rectTransform.anchorMin = name.rectTransform.anchorMax = new Vector2(0f, 1f);
-                name.rectTransform.pivot = new Vector2(0f, 0.5f);
-                name.rectTransform.sizeDelta = new Vector2(220f, 18f);
-                AddShadow(name);
-                _nodeNames.Add(name);
-            }
-            for (int i = 0; i < _nodeDots.Count; i++)
-            {
-                bool used = i < _nodeRows.Count;
-                _nodeDots[i].gameObject.SetActive(used);
-                _nodeNames[i].gameObject.SetActive(used);
-                if (!used) continue;
-                GlobalMapNode node = _nodeRows[i];
-                _nodeDots[i].GetComponent<Image>().color = node.Capital
-                    ? new Color(1f, 0.84f, 0.4f, 1f) : new Color(0.9f, 0.86f, 0.74f, 0.9f);
-                _nodeDots[i].sizeDelta = node.Capital ? new Vector2(9f, 9f) : new Vector2(6f, 6f);
-                string title = NodeTitle(node);
-                _nodeNames[i].text = title;
-                _nodeNames[i].enabled = title.Length > 0;
-                _nodeNames[i].fontStyle = node.Capital ? FontStyle.Bold : FontStyle.Normal;
-            }
-        }
-
-        /// <summary>Имя места для игрока; служебный id вместо имени не показываем — только точку.</summary>
-        private string NodeTitle(GlobalMapNode node)
-        {
-            string locationId = node.EffectiveLocationId;
-            LocationDefinition location = Loader != null ? Loader.GetDefinition(locationId) : null;
-            string title = location != null && !string.IsNullOrEmpty(location.Name) ? location.Name
-                : (GlobalMap != null ? GlobalMap.NodeTitle(node) : string.Empty);
-            if (string.IsNullOrEmpty(title) || title == locationId || title == node.Id) return string.Empty;
-            return RoaPipboy.KromkaPublicText(title);
-        }
-
-        private string CellTitle(int[] row)
-        {
-            GlobalMapDangerWalkCells walk = _built?.DangerWalkCells;
-            string name = walk != null ? RoaPipboy.KromkaPublicText(walk.NameOf(row)) : string.Empty;
-            return (string.IsNullOrEmpty(name) ? "Клетка" : name) + " №" + row[2];
-        }
-
-        // --- вид ---------------------------------------------------------------------------------------
-
-        private float Scale
-        {
-            get
-            {
-                Rect view = _viewport.rect;
-                float fit = Mathf.Min(view.width / Mathf.Max(1f, _mapWidthPoints),
-                    view.height / Mathf.Max(1f, _mapHeightPoints));
-                return fit * ZoomSteps[Mathf.Clamp(_zoomIndex, 0, ZoomSteps.Length - 1)];
-            }
-        }
-
-        private Vector2 ContentPosition(float x, float y)
-        {
-            float s = Scale;
-            return new Vector2(x * s, -y * s);
-        }
-
-        private void Layout()
-        {
-            if (_content == null || _viewport == null) return;
-            float s = Scale;
-            Rect view = _viewport.rect;
-            _content.sizeDelta = new Vector2(_mapWidthPoints * s, _mapHeightPoints * s);
-            // Точка фокуса — в середину окна; край карты не уходит внутрь окна.
-            float left = view.width * 0.5f - _focus.x * s;
-            float top = -(view.height * 0.5f) + _focus.y * s;
-            left = _content.sizeDelta.x <= view.width
-                ? (view.width - _content.sizeDelta.x) * 0.5f
-                : Mathf.Clamp(left, view.width - _content.sizeDelta.x, 0f);
-            top = _content.sizeDelta.y <= view.height
-                ? -(view.height - _content.sizeDelta.y) * 0.5f
-                : Mathf.Clamp(top, 0f, _content.sizeDelta.y - view.height);
-            _content.anchoredPosition = new Vector2(left, top);
-            _focus = new Vector2((view.width * 0.5f - left) / s, (view.height * 0.5f + top) / s);
-
-            if (_coreImage.gameObject.activeSelf)
-            {
-                RectTransform core = _coreImage.rectTransform;
-                core.anchoredPosition = ContentPosition(_coreMinX * _subCellPoints, _coreMinY * _subCellPoints);
-                core.sizeDelta = new Vector2(_coreColumns * _subCellPoints * s, _coreRows * _subCellPoints * s);
-            }
-
-            bool allNames = ZoomSteps[_zoomIndex] >= 2f;
-            for (int i = 0; i < _nodeRows.Count && i < _nodeDots.Count; i++)
-            {
-                GlobalMapNode node = _nodeRows[i];
-                Vector2 position = ContentPosition(node.X, node.Y);
-                _nodeDots[i].anchoredPosition = position;
-                _nodeNames[i].rectTransform.anchoredPosition = position + new Vector2(7f, 0f);
-                // Место, где стоит игрок, называет флажок.
-                bool underFlag = _hasPlayer && Vector2.Distance(new Vector2(node.X, node.Y), _playerPoint) < 2f;
-                _nodeNames[i].gameObject.SetActive((allNames || node.Capital) && !underFlag);
-            }
-
-            _flag.gameObject.SetActive(_hasPlayer);
-            if (_hasPlayer) _flag.anchoredPosition = ContentPosition(_playerPoint.x, _playerPoint.y);
-            _flag.SetAsLastSibling();
-            LayoutCoreLabels(s);
-            _pointerDirty = true;
-        }
-
-        /// <summary>
-        /// Номера клеток Сердцевины, когда клетка достаточно крупная, и «Имя №N»
-        /// вблизи. Подписи лежат в координатах карты: перетаскивание их не
-        /// пересчитывает, лишнее обрезает маска окна. Клетку игрока подписывает флажок.
-        /// </summary>
-        private void LayoutCoreLabels(float scale)
-        {
-            if (Mathf.Approximately(scale, _coreLabelsScale)) return;
-            _coreLabelsScale = scale;
+            foreach (Text label in _labelPool) label.gameObject.SetActive(false);
             int used = 0;
-            float cellUnits = _subCellPoints * scale;
-            bool numbers = cellUnits >= CoreNumberUnits;
-            bool names = cellUnits >= CoreNameUnits;
-            if (_coreCells.Count > 0 && numbers)
+            var capitals = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JToken id in _world["capitals"] as JArray ?? new JArray()) capitals.Add(id.ToString());
+            foreach (JObject zone in _zonesById.Values)
             {
-                foreach (int[] row in _coreCells.Values)
+                Vector2 cell = CellOrigin(zone, scale);
+                // Номер зоны в углу клетки: по нему зону ищут в разговоре.
+                Text number = TakeLabel(ref used);
+                number.fontSize = Mathf.Clamp(Mathf.RoundToInt(scale * 0.28f), 8, 12);
+                number.color = new Color(0f, 0f, 0f, 0.62f);
+                number.alignment = TextAnchor.UpperLeft;
+                number.text = zone["n"]?.ToString() ?? string.Empty;
+                SetLabelRect(number, cell + new Vector2(2f, -2f), new Vector2(scale, scale * 0.4f), new Vector2(0f, 1f));
+                foreach (JToken token in zone["places"] as JArray ?? new JArray())
                 {
-                    if (row == _playerCell) continue;
-                    Text label = CoreLabel(used++);
-                    label.gameObject.SetActive(true);
-                    label.text = names ? CellTitle(row).Replace(" №", "\n№") : row[2].ToString();
-                    label.fontSize = names ? 11 : Mathf.Clamp(Mathf.RoundToInt(cellUnits * 0.36f), 9, 15);
-                    label.rectTransform.anchoredPosition = ContentPosition((row[0] + 0.5f) * _subCellPoints,
-                        (row[1] + 0.5f) * _subCellPoints);
+                    if (!(token is JObject place)) continue;
+                    bool capital = capitals.Contains(place["id"]?.ToString() ?? string.Empty);
+                    float u = place["u"]?.ToObject<float>() ?? 0.5f;
+                    float v = place["v"]?.ToObject<float>() ?? 0.5f;
+                    Vector2 at = cell + new Vector2(u * scale, -v * scale);
+                    Text dot = TakeLabel(ref used);
+                    dot.fontSize = capital ? 16 : 12;
+                    dot.color = capital ? Accent : Ink;
+                    dot.alignment = TextAnchor.MiddleCenter;
+                    dot.text = capital ? "◆" : "●";
+                    SetLabelRect(dot, at, new Vector2(18f, 18f), new Vector2(0.5f, 0.5f));
+                    Text name = TakeLabel(ref used);
+                    name.fontSize = capital ? 12 : 10;
+                    name.color = capital ? Accent : Ink;
+                    name.alignment = TextAnchor.UpperCenter;
+                    name.text = place["name"]?.ToString() ?? string.Empty;
+                    SetLabelRect(name, at + new Vector2(0f, -8f), new Vector2(scale * 2.4f, 16f), new Vector2(0.5f, 1f));
                 }
             }
-            for (int i = used; i < _coreLabels.Count; i++)
-                if (_coreLabels[i].gameObject.activeSelf) _coreLabels[i].gameObject.SetActive(false);
         }
 
-        /// <summary>Клетка Сердцевины под курсором (или пальцем) — её имя с номером внизу окна.</summary>
-        private void ReadPointer(Vector2 screenPoint)
+        private void PlaceFlag(JObject self, float scale)
         {
-            if (_pointerCard == null || _viewport == null) return;
-            string text = string.Empty;
-            Camera eventCamera = _canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : _canvas.worldCamera;
-            if (_coreCells.Count > 0 && _subCellPoints > 0f
-                && RectTransformUtility.ScreenPointToLocalPointInRectangle(_viewport, screenPoint, eventCamera, out Vector2 local)
-                && _viewport.rect.Contains(local))
+            string zoneId = self?["zone"]?["id"]?.ToString() ?? string.Empty;
+            float u = 0.5f, v = 0.5f;
+            if (!string.IsNullOrEmpty(zoneId))
             {
-                Vector2 fromCenter = local - _viewport.rect.center;
-                Vector2 point = _focus + new Vector2(fromCenter.x, -fromCenter.y) / Mathf.Max(0.0001f, Scale);
-                if (_coreCells.TryGetValue(Key(Mathf.FloorToInt(point.x / _subCellPoints),
-                        Mathf.FloorToInt(point.y / _subCellPoints)), out int[] row))
-                    text = (row == _playerCell ? "Вы здесь: " : string.Empty) + CellTitle(row);
-            }
-            if (_pointerText.text != text) _pointerText.text = text;
-            bool show = text.Length > 0;
-            if (_pointerCard.gameObject.activeSelf != show) _pointerCard.gameObject.SetActive(show);
-        }
-
-        private void HandleTap(BaseEventData data)
-        {
-            if (data is PointerEventData pointer) ReadPointer(pointer.position);
-        }
-
-        private Text CoreLabel(int index)
-        {
-            while (_coreLabels.Count <= index)
-            {
-                Text label = Label("Core" + _coreLabels.Count, _coreLabelLayer, 11, TextAnchor.MiddleCenter,
-                    new Color(0.98f, 0.74f, 0.89f, 0.9f));
-                label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(0f, 1f);
-                label.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                label.rectTransform.sizeDelta = new Vector2(160f, 34f);
-                label.lineSpacing = 0.9f;
-                AddShadow(label);
-                _coreLabels.Add(label);
-            }
-            return _coreLabels[index];
-        }
-
-        private void ZoomAround(int direction, Vector2 screenPoint)
-        {
-            int next = Mathf.Clamp(_zoomIndex + direction, 0, ZoomSteps.Length - 1);
-            if (next == _zoomIndex) return;
-            Vector2 anchor = _focus;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_viewport, screenPoint, null, out Vector2 local))
-            {
-                // Точка под курсором остаётся под курсором.
-                Rect view = _viewport.rect;
-                float s = Scale;
-                Vector2 fromCenter = local - view.center;
-                anchor = _focus + new Vector2(fromCenter.x, -fromCenter.y) / s;
-                _zoomIndex = next;
-                float ns = Scale;
-                _focus = anchor - new Vector2(fromCenter.x, -fromCenter.y) / ns;
+                // В зоне: точка игрока в зоне (центр зоны — 0,0, ось z сервера — на юг).
+                LocationDefinition current = Loader != null ? Loader.Current : null;
+                float width = current != null && current.WorldWidth > 0 ? current.WorldWidth : 320f;
+                float depth = current != null && current.WorldDepth > 0 ? current.WorldDepth : 320f;
+                u = Mathf.Clamp01((self["x"]?.ToObject<float>() ?? 0f) / width + 0.5f);
+                v = Mathf.Clamp01((self["z"]?.ToObject<float>() ?? 0f) / depth + 0.5f);
             }
             else
             {
-                _zoomIndex = next;
+                // В месте: зона, куда выводит его край, и точка места в ней.
+                ParentZoneInfo parent = Loader != null && Loader.Current != null ? Loader.Current.ParentZone : null;
+                zoneId = parent?.Id ?? string.Empty;
+                string placeId = Loader?.Current?.Id ?? string.Empty;
+                if (_zonesById.TryGetValue(zoneId, out JObject host))
+                {
+                    foreach (JToken token in host["places"] as JArray ?? new JArray())
+                    {
+                        if (token is JObject place && place["id"]?.ToString() == placeId)
+                        {
+                            u = place["u"]?.ToObject<float>() ?? 0.5f;
+                            v = place["v"]?.ToObject<float>() ?? 0.5f;
+                        }
+                    }
+                }
             }
-            Layout();
+            if (!_zonesById.TryGetValue(zoneId, out JObject zone))
+            {
+                _flag.gameObject.SetActive(false);
+                _subtitle.text = "Где вы — не видно: вы не в зоне мира.";
+                return;
+            }
+            _flag.gameObject.SetActive(true);
+            _flag.anchoredPosition = CellOrigin(zone, scale) + new Vector2(u * scale, -v * scale);
+            _flag.SetAsLastSibling();
+            _subtitle.text = "Вы здесь: " + ZoneCaption(zone);
         }
 
-        private void Zoom(int direction)
+        private static string ZoneCaption(JObject zone)
         {
-            _zoomIndex = Mathf.Clamp(_zoomIndex + direction, 0, ZoomSteps.Length - 1);
-            Layout();
+            string mode;
+            switch (DangerRank(zone["mode"]?.ToString()))
+            {
+                case 0: mode = "мирная"; break;
+                case 1: mode = "синяя"; break;
+                case 3: mode = "красная"; break;
+                case 4: mode = "чёрная"; break;
+                default: mode = "жёлтая"; break;
+            }
+            return (zone["title"]?.ToString() ?? zone["id"]?.ToString() ?? "зона") + " · " + mode + " зона";
         }
 
-        private void CenterOnPlayer()
+        /// <summary>Левый верхний угол клетки зоны в координатах карты (начало — левый верхний угол карты).</summary>
+        private Vector2 CellOrigin(JObject zone, float scale)
         {
-            if (_hasPlayer) _focus = _playerPoint;
-            Layout();
+            int col = zone["col"]?.ToObject<int>() ?? 0;
+            int row = zone["row"]?.ToObject<int>() ?? 0;
+            return new Vector2(col * scale, -row * scale);
         }
 
-        /// <summary>Перетаскивание карты мышью или пальцем.</summary>
-        private void HandleDrag(BaseEventData data)
+        private JObject ZoneAtLocalPoint(Vector2 local)
         {
-            if (!(data is PointerEventData pointer)) return;
-            float factor = 1f / Mathf.Max(0.01f, _canvas.scaleFactor);
-            _focus -= new Vector2(pointer.delta.x, -pointer.delta.y) * factor / Mathf.Max(0.0001f, Scale);
-            Layout();
+            Rect rect = _map.rect;
+            float scale = rect.width / Mathf.Max(1, _cols);
+            int col = Mathf.FloorToInt((local.x - rect.xMin) / scale);
+            int row = Mathf.FloorToInt((rect.yMax - local.y) / scale);
+            foreach (JObject zone in _zonesById.Values)
+            {
+                if ((zone["col"]?.ToObject<int>() ?? -1) == col && (zone["row"]?.ToObject<int>() ?? -1) == row) return zone;
+            }
+            return null;
         }
 
-        // --- окно --------------------------------------------------------------------------------------
+        private Text TakeLabel(ref int used)
+        {
+            if (used >= _labelPool.Count)
+            {
+                Text label = Label("Label", _labels, 10, TextAnchor.MiddleCenter, Ink);
+                _labelPool.Add(label);
+            }
+            Text text = _labelPool[used++];
+            text.gameObject.SetActive(true);
+            return text;
+        }
+
+        private static void SetLabelRect(Text label, Vector2 position, Vector2 size, Vector2 pivot)
+        {
+            RectTransform rect = label.rectTransform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = pivot;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+        }
+
+        // --- окно ---------------------------------------------------------------------------------------
 
         private void EnsureBuilt()
         {
             if (_root != null) return;
-
             var canvasGo = new GameObject("WorldOverviewCanvas", typeof(RectTransform), typeof(Canvas),
-                                          typeof(CanvasScaler), typeof(GraphicRaycaster));
+                typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
             _canvas = canvasGo.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -653,138 +387,53 @@ namespace RealmOfAshes.Game
             _root = new GameObject("WorldOverview", typeof(RectTransform));
             var rootRect = (RectTransform)_root.transform;
             rootRect.SetParent(canvasGo.transform, false);
-            Stretch(rootRect, 0f);
-            // Касание мимо окна закрывает его. Затемнение — соседний слой, а не
-            // родитель окна: клики по окну не всплывают к этой кнопке.
-            RectTransform dimRect = Child("Dim", rootRect);
-            Stretch(dimRect, 0f);
-            var dim = dimRect.gameObject.AddComponent<Image>();
-            dim.color = new Color(0f, 0f, 0f, 0.5f);
-            var dimButton = dimRect.gameObject.AddComponent<Button>();
-            dimButton.transition = Selectable.Transition.None;
-            dimButton.onClick.AddListener(Close);
+            Place(rootRect, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
+            _root.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
 
             _panel = Child("Panel", rootRect);
-            _panel.anchorMin = new Vector2(0.5f, 0.5f);
-            _panel.anchorMax = new Vector2(0.5f, 0.5f);
-            _panel.pivot = new Vector2(0.5f, 0.5f);
-            Vector2 reference = RoaUiScale.Reference;
-            _panel.sizeDelta = new Vector2(Mathf.Min(1060f, reference.x - 40f), Mathf.Min(700f, reference.y - 28f));
-            var back = _panel.gameObject.AddComponent<Image>();
-            back.color = PanelBg;
+            Place(_panel, 0.5f, 0.5f, 0.5f, 0.5f, new Vector2(-530f, -350f), new Vector2(530f, 350f));
+            _panel.gameObject.AddComponent<Image>().color = PanelBg;
             var outline = _panel.gameObject.AddComponent<Outline>();
             outline.effectColor = PanelBorder;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
-            _title = Label("Title", _panel, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
-            Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -40f), new Vector2(-280f, -8f));
-            _title.text = "КАРТА МИРА";
+            Text title = Label("Title", _panel, 20, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
+            title.text = "КАРТА МИРА";
+            Place(title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -44f), new Vector2(-60f, -8f));
             _subtitle = Label("Subtitle", _panel, 13, TextAnchor.MiddleLeft, Ink);
-            Place(_subtitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -62f), new Vector2(-280f, -40f));
+            Place(_subtitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(16f, -70f), new Vector2(-16f, -44f));
 
-            Button close = TextButton("Close", _panel, "×", 24, out Text closeText);
-            Place((RectTransform)close.transform, 1f, 1f, 1f, 1f, new Vector2(-44f, -40f), new Vector2(-8f, -8f));
-            closeText.color = Accent;
-            close.onClick.AddListener(Close);
-            Button zoomIn = TextButton("ZoomIn", _panel, "+", 20, out _);
-            Place((RectTransform)zoomIn.transform, 1f, 1f, 1f, 1f, new Vector2(-92f, -40f), new Vector2(-56f, -8f));
-            zoomIn.onClick.AddListener(() => Zoom(1));
-            Button zoomOut = TextButton("ZoomOut", _panel, "−", 20, out _);
-            Place((RectTransform)zoomOut.transform, 1f, 1f, 1f, 1f, new Vector2(-132f, -40f), new Vector2(-96f, -8f));
-            zoomOut.onClick.AddListener(() => Zoom(-1));
-            Button toPlayer = TextButton("ToPlayer", _panel, "К ИГРОКУ", 12, out _);
-            Place((RectTransform)toPlayer.transform, 1f, 1f, 1f, 1f, new Vector2(-250f, -40f), new Vector2(-140f, -8f));
-            toPlayer.onClick.AddListener(CenterOnPlayer);
+            Button close = MakeButton("Close", _panel, "×", Close);
+            Place((RectTransform)close.transform, 1f, 1f, 1f, 1f, new Vector2(-48f, -44f), new Vector2(-10f, -8f));
 
-            _viewport = Child("Viewport", _panel);
-            Place(_viewport, 0f, 0f, 1f, 1f, new Vector2(12f, 64f), new Vector2(-12f, -70f));
-            var viewportBack = _viewport.gameObject.AddComponent<Image>();
-            viewportBack.color = new Color(0.02f, 0.025f, 0.022f, 1f);
-            _viewport.gameObject.AddComponent<RectMask2D>();
-            var drag = _viewport.gameObject.AddComponent<EventTrigger>();
-            var dragEntry = new EventTrigger.Entry { eventID = EventTriggerType.Drag };
-            dragEntry.callback.AddListener(HandleDrag);
-            drag.triggers.Add(dragEntry);
-            var tapEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
-            tapEntry.callback.AddListener(HandleTap);
-            drag.triggers.Add(tapEntry);
+            RectTransform area = Child("MapArea", _panel);
+            Place(area, 0f, 0f, 1f, 1f, new Vector2(16f, 58f), new Vector2(-16f, -78f));
+            _map = Child("Map", area);
+            _map.anchorMin = _map.anchorMax = new Vector2(0.5f, 0.5f);
+            _map.pivot = new Vector2(0.5f, 0.5f);
+            _mapImage = _map.gameObject.AddComponent<RawImage>();
+            _mapImage.color = Color.white;
+            _labels = Child("Labels", _map);
+            Place(_labels, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
 
-            _content = Child("Content", _viewport);
-            _content.anchorMin = _content.anchorMax = new Vector2(0f, 1f);
-            _content.pivot = new Vector2(0f, 1f);
-            _mapImage = Child("Map", _content).gameObject.AddComponent<RawImage>();
-            Stretch(_mapImage.rectTransform, 0f);
-            _mapImage.raycastTarget = false;
-            _coreImage = Child("Core", _content).gameObject.AddComponent<RawImage>();
-            _coreImage.rectTransform.anchorMin = _coreImage.rectTransform.anchorMax = new Vector2(0f, 1f);
-            _coreImage.rectTransform.pivot = new Vector2(0f, 1f);
-            _coreImage.raycastTarget = false;
-            _coreImage.gameObject.SetActive(false);
-            _coreLabelLayer = Child("CoreLabels", _content);
-            Stretch(_coreLabelLayer, 0f);
-            _nodeLayer = Child("Nodes", _content);
-            Stretch(_nodeLayer, 0f);
-
-            // Флажок игрока: древко, полотнище и подпись.
-            _flag = Child("Flag", _content);
+            Text flag = Label("Flag", _map, 22, TextAnchor.LowerCenter, FlagColor, FontStyle.Bold);
+            flag.text = "⚑";
+            _flag = flag.rectTransform;
             _flag.anchorMin = _flag.anchorMax = new Vector2(0f, 1f);
             _flag.pivot = new Vector2(0.5f, 0f);
-            _flag.sizeDelta = new Vector2(2f, 2f);
-            RectTransform pole = Child("Pole", _flag);
-            pole.anchorMin = pole.anchorMax = new Vector2(0.5f, 0f);
-            pole.pivot = new Vector2(0.5f, 0f);
-            pole.sizeDelta = new Vector2(2.5f, 26f);
-            pole.anchoredPosition = Vector2.zero;
-            pole.gameObject.AddComponent<Image>().color = new Color(0.95f, 0.92f, 0.86f, 1f);
-            RectTransform cloth = Child("Cloth", _flag);
-            cloth.anchorMin = cloth.anchorMax = new Vector2(0.5f, 0f);
-            cloth.pivot = new Vector2(0f, 1f);
-            cloth.sizeDelta = new Vector2(15f, 10f);
-            cloth.anchoredPosition = new Vector2(1.2f, 26f);
-            cloth.gameObject.AddComponent<Image>().color = FlagColor;
-            RectTransform foot = Child("Foot", _flag);
-            foot.anchorMin = foot.anchorMax = new Vector2(0.5f, 0f);
-            foot.pivot = new Vector2(0.5f, 0.5f);
-            foot.sizeDelta = new Vector2(7f, 7f);
-            foot.gameObject.AddComponent<Image>().color = FlagColor;
-            // Подложка под подписью флажка: поверх номеров клеток текст читается.
-            _flagPlate = Child("Plate", _flag);
-            _flagPlate.anchorMin = _flagPlate.anchorMax = new Vector2(0.5f, 0f);
-            _flagPlate.pivot = new Vector2(0f, 0.5f);
-            _flagPlate.anchoredPosition = new Vector2(13f, 22f);
-            _flagPlate.sizeDelta = new Vector2(80f, 20f);
-            _flagPlate.gameObject.AddComponent<Image>().color = new Color(0.05f, 0.04f, 0.035f, 0.86f);
-            _flagText = Label("Text", _flag, 12, TextAnchor.MiddleLeft, new Color(1f, 0.95f, 0.85f, 1f), FontStyle.Bold);
-            _flagText.rectTransform.anchorMin = _flagText.rectTransform.anchorMax = new Vector2(0.5f, 0f);
-            _flagText.rectTransform.pivot = new Vector2(0f, 0.5f);
-            _flagText.rectTransform.sizeDelta = new Vector2(240f, 18f);
-            _flagText.rectTransform.anchoredPosition = new Vector2(19f, 22f);
-            AddShadow(_flagText);
-            foreach (Image image in _flag.GetComponentsInChildren<Image>()) image.raycastTarget = false;
+            _flag.sizeDelta = new Vector2(28f, 28f);
 
-            // Имя клетки под курсором — плашка в левом нижнем углу карты.
-            _pointerCard = Child("PointerCell", _viewport);
-            Place(_pointerCard, 0f, 0f, 0f, 0f, new Vector2(8f, 8f), new Vector2(268f, 34f));
-            var pointerBack = _pointerCard.gameObject.AddComponent<Image>();
-            pointerBack.color = new Color(0.03f, 0.035f, 0.03f, 0.88f);
-            pointerBack.raycastTarget = false;
-            _pointerText = Label("Text", _pointerCard, 13, TextAnchor.MiddleLeft, Ink);
-            Stretch(_pointerText.rectTransform, 0f);
-            _pointerText.rectTransform.offsetMin = new Vector2(10f, 0f);
-            _pointerCard.gameObject.SetActive(false);
-
-            Text legend = Label("Legend", _panel, 11, TextAnchor.UpperLeft, MutedInk);
-            Place(legend.rectTransform, 0f, 0f, 1f, 0f, new Vector2(16f, 6f), new Vector2(-16f, 60f));
+            Text legend = Label("Legend", _panel, 11, TextAnchor.MiddleLeft, MutedInk);
             legend.supportRichText = true;
-            legend.horizontalOverflow = HorizontalWrapMode.Wrap;
-            legend.text = RoaGlobalMap.DangerLegendText().Replace("\n", "   ");
-            _status = Label("Status", _panel, 13, TextAnchor.MiddleCenter, Ink);
-            Place(_status.rectTransform, 0f, 0.5f, 1f, 0.5f, new Vector2(20f, -14f), new Vector2(-20f, 14f));
+            legend.text = DangerLegendText();
+            Place(legend.rectTransform, 0f, 0f, 1f, 0f, new Vector2(16f, 30f), new Vector2(-16f, 54f));
+            _pointer = Label("Pointer", _panel, 12, TextAnchor.MiddleLeft, Ink);
+            Place(_pointer.rectTransform, 0f, 0f, 0.7f, 0f, new Vector2(16f, 8f), new Vector2(0f, 30f));
+            _status = Label("Status", _panel, 12, TextAnchor.MiddleRight, MutedInk);
+            Place(_status.rectTransform, 0.5f, 0f, 1f, 0f, new Vector2(0f, 8f), new Vector2(-16f, 30f));
 
             _root.SetActive(false);
         }
-
-        // --- помощники uGUI ----------------------------------------------------------------------------
 
         private static RectTransform Child(string name, RectTransform parent)
         {
@@ -794,16 +443,7 @@ namespace RealmOfAshes.Game
             return rect;
         }
 
-        private static void Stretch(RectTransform rect, float inset)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(inset, inset);
-            rect.offsetMax = new Vector2(-inset, -inset);
-        }
-
-        private static void Place(RectTransform rect, float minX, float minY, float maxX, float maxY,
-                                  Vector2 offsetMin, Vector2 offsetMax)
+        private static void Place(RectTransform rect, float minX, float minY, float maxX, float maxY, Vector2 offsetMin, Vector2 offsetMax)
         {
             rect.anchorMin = new Vector2(minX, minY);
             rect.anchorMax = new Vector2(maxX, maxY);
@@ -811,8 +451,7 @@ namespace RealmOfAshes.Game
             rect.offsetMax = offsetMax;
         }
 
-        private static Text Label(string name, RectTransform parent, int size, TextAnchor anchor,
-                                  Color color, FontStyle style = FontStyle.Normal)
+        private static Text Label(string name, RectTransform parent, int size, TextAnchor anchor, Color color, FontStyle style = FontStyle.Normal)
         {
             RectTransform rect = Child(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
@@ -827,24 +466,17 @@ namespace RealmOfAshes.Game
             return text;
         }
 
-        private static void AddShadow(Text text)
+        private static Button MakeButton(string name, RectTransform parent, string caption, Action onClick)
         {
-            Shadow shadow = text.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
-            shadow.effectDistance = new Vector2(1f, -1f);
-        }
-
-        private static Button TextButton(string name, RectTransform parent, string caption, int size, out Text label)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var image = go.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0.35f);
-            var button = go.AddComponent<Button>();
+            RectTransform rect = Child(name, parent);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.color = new Color(0.13f, 0.12f, 0.09f, 0.95f);
+            var button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
-            label = Label("Label", (RectTransform)go.transform, size, TextAnchor.MiddleCenter, Ink);
-            Stretch(label.rectTransform, 2f);
+            button.onClick.AddListener(() => onClick());
+            Text label = Label("Label", rect, 20, TextAnchor.MiddleCenter, Accent);
             label.text = caption;
+            Place(label.rectTransform, 0f, 0f, 1f, 1f, Vector2.zero, Vector2.zero);
             return button;
         }
     }

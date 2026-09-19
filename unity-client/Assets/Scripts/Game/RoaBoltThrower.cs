@@ -289,7 +289,7 @@ namespace RealmOfAshes.Game
         {
             return _socket != null && _socket.Phase == RoaSocketClient.ConnectionPhase.Joined
                 && _socket.Session != null && !string.IsNullOrWhiteSpace(_socket.Session.RoomId)
-                && RoaGameBootstrap.Active != null && !RoaGameBootstrap.Active.OnGlobalMap
+                && RoaGameBootstrap.Active != null
                 && !RoaGameBootstrap.BlocksWorldHud && RoaGameBootstrap.Active.PlayerView != null;
         }
 

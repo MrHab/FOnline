@@ -28,7 +28,8 @@ namespace RealmOfAshes.World
         [JsonProperty("worldSiteInstance")] public bool WorldSiteInstance;
         [JsonProperty("templateLocationId")] public string TemplateLocationId;
         [JsonProperty("noRespawn")] public bool NoRespawn;
-        [JsonProperty("allowGlobalMapExit")] public bool? AllowGlobalMapExit;
+        /// <summary>false — край места закрыт сюжетом (поле данных сохранило старое имя).</summary>
+        [JsonProperty("allowGlobalMapExit")] public bool? AllowEdgeExit;
         [JsonProperty("enemyCap")] public int EnemyCap;
         [JsonProperty("spawnCount")] public int SpawnCount;
         [JsonProperty("visualProfile")] public JObject VisualProfile;
@@ -57,7 +58,7 @@ namespace RealmOfAshes.World
         [JsonProperty("parentZone")] public ParentZoneInfo ParentZone;
 
         [JsonIgnore]
-        public bool CanExitToGlobalMap { get { return AllowGlobalMapExit != false; } }
+        public bool CanExitAtEdge { get { return AllowEdgeExit != false; } }
 
         /// <summary>
         /// map.width/map.depth are authored in world metres (76 for the standard
@@ -159,7 +160,7 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("label")] public string Label;
-        /// <summary>globalMap (выход) или factionPlatform (платформа фракции в Сердцевине).</summary>
+        /// <summary>Тип зоны места, например factionPlatform (платформа фракции в Сердцевине).</summary>
         [JsonProperty("type")] public string Type;
         [JsonProperty("factionId")] public string FactionId;
         [JsonProperty("tx")] public int Tx;

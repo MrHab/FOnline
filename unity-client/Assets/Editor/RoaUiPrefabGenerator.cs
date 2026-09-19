@@ -105,9 +105,6 @@ namespace RealmOfAshes.EditorTools
             new Spec("RoaContextMenu", RoaUiPrefabKind.ContextMenu, "#item-context-menu",
                 "Контекстные действия предмета и общая всплывающая подсказка.",
                 "Tooltip", "ActionList", "PrimaryAction", "SecondaryActions"),
-            new Spec("RoaGlobalMapHud", RoaUiPrefabKind.GlobalMap, "#global-map-window",
-                "Полноэкранная глобальная карта, панель точки, маршрут и встречи.",
-                "MapViewport", "TerritoryOverlay", "Cursor", "LocationPanel", "RoutePanel", "EncounterPanel"),
             new Spec("RoaMobileControls", RoaUiPrefabKind.MobileControls, ".touch-buttons",
                 "Landscape HUD: джойстик, область прицела, огонь, действие, перезарядка и панели.",
                 "MoveZone", "Joystick", "AimZone", "Fire", "Interact", "Reload", "Mode", "Menu", "LeftRail", "RightRail")

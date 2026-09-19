@@ -1,24 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
     public static class RoaCameraProbe
     {
-        [MenuItem("Realm of Ashes/Проверить камеру и панорамирование карты")]
+        [MenuItem("Realm of Ashes/Проверить камеру")]
         public static void Run()
         {
             GameObject cameraObject = null;
             GameObject targetObject = null;
-            GameObject canvasObject = null;
             try
             {
                 cameraObject = new GameObject("RoaCameraProbe");
@@ -57,239 +52,12 @@ namespace RealmOfAshes.EditorTools
                 Check(Mathf.Abs(Vector3.Dot(right, forward)) < 0.001f,
                     "горизонтальные оси камеры не ортогональны");
 
-                Vector3 movement = RoaGlobalMap.CameraPanMovement(
-                    new Vector2(100f, -50f), 100f, 720f, Vector3.right, Vector3.forward);
-                Check(movement.x < 0f && movement.z < 0f,
-                    "drag карты не движет anchor против движения указателя");
-                Vector2 rightMouseDelta = RoaGlobalMap.RightMousePanDelta(
-                    new Vector2(100f, -50f));
-                Vector3 rightMouseMovement = RoaGlobalMap.CameraPanMovement(
-                    rightMouseDelta, 100f, 720f, Vector3.right, Vector3.forward);
-                Check(Mathf.Approximately(rightMouseMovement.x, movement.x)
-                      && Mathf.Approximately(rightMouseMovement.z, -movement.z),
-                    "ПКМ не инвертирует только вертикальную ось обзора");
-                Vector3 keyboardMovement = RoaGlobalMap.KeyboardCameraPanMovement(
-                    Vector2.one, 100f, 0.5f, Vector3.right, Vector3.forward);
-                Check(keyboardMovement.x > 0f && keyboardMovement.z > 0f
-                      && Mathf.Abs(keyboardMovement.magnitude - 14f) < 0.001f,
-                    "WASD не движет камеру относительно её текущих осей");
-                Vector3 clamped = RoaGlobalMap.ClampCameraPan(
-                    new Vector3(80f, 3f, -90f), 100f, 120f);
-                Check(Mathf.Approximately(clamped.x, 50f)
-                      && Mathf.Approximately(clamped.z, -60f)
-                      && Mathf.Approximately(clamped.y,
-                          RoaGlobalMap.StrategicMinimumCameraAnchorY),
-                    "anchor карты вышел за границы или опустился ниже минимальной высоты");
-
-                Check(Mathf.Approximately(RoaGlobalMap.StrategicDefaultPitchDeg, 55f)
-                      && Mathf.Approximately(RoaGlobalMap.StrategicDefaultYawDeg, 45f),
-                    "глобальная камера потеряла стандартный наклон 55/45");
-                Check(Mathf.Approximately(RoaGlobalMap.StrategicMinimumCameraAnchorY, 0f),
-                    "минимальная высота anchor глобальной камеры не равна 0");
-                Vector2 orbit = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
-                    new Vector2(10f, -20f));
-                Check(Mathf.Abs(orbit.x - 58.6f) < 0.001f
-                      && Mathf.Abs(orbit.y - 46.8f) < 0.001f,
-                    "drag с зажатым колесом не меняет pitch/yaw камеры");
-                Vector2 orbitMinimum = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
-                    new Vector2(0f, 1000f));
-                Vector2 orbitMaximum = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
-                    new Vector2(0f, -1000f));
-                Vector2 orbitWrapped = RoaGlobalMap.StrategicCameraOrbit(55f, 359f,
-                    new Vector2(20f, 0f));
-                Check(Mathf.Approximately(orbitMinimum.x,
-                          RoaGlobalMap.StrategicMinimumPitchDeg)
-                      && Mathf.Approximately(orbitMaximum.x,
-                          RoaGlobalMap.StrategicMaximumPitchDeg)
-                      && Mathf.Abs(orbitWrapped.y - 2.6f) < 0.001f,
-                    "орбита глобальной камеры не ограничивает наклон или не замыкает yaw");
-                float strategicNear = RoaGlobalMap.StrategicMinimumCameraDistance(90f);
-                float kromkaNear = RoaGlobalMap.StrategicMinimumCameraDistance(38f);
-                float strategicFar = RoaGlobalMap.StrategicMaximumCameraDistance(90f);
-                Check(Mathf.Abs(strategicNear - 1f) < 0.001f
-                      && Mathf.Abs(kromkaNear - 1f) < 0.001f
-                      && Mathf.Abs(strategicFar - 20f) < 0.001f,
-                    "диапазон дистанции глобальной камеры не равен 1–20");
-
-                Vector2 touchStart = new Vector2(100f, 100f);
-                Check(!RoaGlobalMap.TouchDragReached(touchStart, new Vector2(108f, 106f), 14f),
-                    "небольшое касание ошибочно стало drag карты");
-                Check(RoaGlobalMap.TouchDragReached(touchStart, new Vector2(118f, 100f), 14f),
-                    "явный drag карты не достиг порога");
-                Check(RoaGlobalMap.TouchTapEligible(0.25f, touchStart, new Vector2(106f, 105f), false),
-                    "короткое касание не выбирает маршрут");
-                Check(!RoaGlobalMap.TouchTapEligible(0.8f, touchStart, touchStart, false)
-                      && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, new Vector2(120f, 100f), false)
-                      && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, touchStart, true),
-                    "долгое, сдвинутое или отменённое касание ошибочно выбирает маршрут");
-                Check(RoaGlobalMap.MouseTapEligible(0.3f, touchStart,
-                          new Vector2(106f, 104f), false)
-                      && !RoaGlobalMap.MouseTapEligible(0.3f, touchStart,
-                          new Vector2(112f, 100f), false)
-                      && !RoaGlobalMap.MouseTapEligible(0.9f, touchStart, touchStart, false),
-                    "ЛКМ не отделяет короткий выбор маршрута от перетаскивания карты");
-
-                float pinchIn = RoaGlobalMap.PinchZoomDistance(100f, 100f, 200f, 8f, 220f);
-                float pinchOut = RoaGlobalMap.PinchZoomDistance(100f, 100f, 50f, 8f, 220f);
-                Check(Mathf.Approximately(pinchIn, 50f) && Mathf.Approximately(pinchOut, 200f),
-                    "pinch карты меняет масштаб в неверном направлении");
-                Check(Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 10000f, 8f, 220f), 8f)
-                      && Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 1f, 8f, 220f), 220f),
-                    "pinch карты вышел за границы камеры");
-                Check(RoaGlobalMap.DetailTierForDistance(20f, 20f, 120f)
-                        == RoaGlobalMap.MapDetailTier.Near
-                      && RoaGlobalMap.DetailTierForDistance(52f, 20f, 120f)
-                        == RoaGlobalMap.MapDetailTier.Medium
-                      && RoaGlobalMap.DetailTierForDistance(90f, 20f, 120f)
-                        == RoaGlobalMap.MapDetailTier.Far,
-                    "масштаб карты не переключает ближний, средний и дальний LOD");
-
-                Check(!RoaGlobalMap.ThreatZoneShouldDisplay("caravan", 0.03f, 0.05f, false)
-                      && !RoaGlobalMap.ThreatZoneShouldDisplay("patrol", -0.05f, -0.35f, false)
-                      && RoaGlobalMap.ThreatZoneShouldDisplay("monster", 0.14f, 0.9f, true)
-                      && !RoaGlobalMap.ThreatZoneShouldDisplay("caravan", 0.03f, 0.05f, true)
-                      && !RoaGlobalMap.ThreatZoneShouldDisplay("resource", 0.11f, 0.88f, true)
-                      && !RoaGlobalMap.ThreatZoneShouldDisplay("pointofinterest", 0.07f, 0.55f, true),
-                    "фоновые зоны караванов, патрулей и объектов снова отображаются как угрозы");
-                Check(RoaGlobalMap.MarkerSemanticLabel("site", "resource", false) == "РЕСУРС"
-                      && RoaGlobalMap.MarkerSemanticLabel("party", "caravan", false) == "КАРАВАН"
-                      && RoaGlobalMap.MarkerSemanticLabel("party", "patrol", true) == "УГРОЗА"
-                      && RoaGlobalMap.MarkerPresentationPriority("site", "resource", false, "critical")
-                         > RoaGlobalMap.MarkerPresentationPriority("site", "outpost", false, "stable")
-                      && RoaGlobalMap.MarkerSemanticColor("party", "caravan", false, string.Empty).g
-                         > RoaGlobalMap.MarkerSemanticColor("party", "caravan", false, string.Empty).r
-                      && RoaGlobalMap.ThreatZoneColor(0.9f, 0.14f).r
-                         > RoaGlobalMap.ThreatZoneColor(0.1f, 0.02f).g,
-                    "семантика, приоритеты или цвета маркеров не различают цель и угрозу");
-
-                Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(420f, 250f), 840, 500, true)
-                      && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(-1f, 250f), 840, 500, true),
-                    "Canvas-карта неверно определяет доступную область касания");
-                Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(200f, 250f), 840, 500, false)
-                      && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(640f, 250f), 840, 500, false),
-                    "legacy-панель карты не блокирует касание по интерфейсу");
-                Check(RoaGlobalMap.RouteClickAllowed(true, false, false, false)
-                      && !RoaGlobalMap.RouteClickAllowed(false, false, false, false)
-                      && !RoaGlobalMap.RouteClickAllowed(true, true, false, false)
-                      && !RoaGlobalMap.RouteClickAllowed(true, false, true, false)
-                      && !RoaGlobalMap.RouteClickAllowed(true, false, false, true),
-                    "клик по карте не меняет маршрут или обходит обязательное решение встречи");
-
-                Rect sidebar = RoaGlobalMap.InformationPanelRect(840, 500);
-                var occupied = new[] { new Rect(216f, 228f, 220f, 44f) };
-                Check(RoaGlobalMap.TryResolveOverlayLabelRect(new Vector2(326f, 250f), sidebar,
-                    occupied, 840, 500, 220f, 44f, out Rect activityLabel)
-                      && Mathf.Approximately(activityLabel.width, 220f)
-                      && Mathf.Approximately(activityLabel.height, 44f)
-                      && !activityLabel.Overlaps(sidebar)
-                      && !activityLabel.Overlaps(occupied[0]),
-                    "Canvas-подпись активности перекрывает панель или соседнюю метку");
-                Check(!RoaGlobalMap.TryResolveOverlayLabelRect(sidebar.center, sidebar, null,
-                    840, 500, 220f, 44f, out _),
-                    "Canvas-подпись активности появилась поверх панели маршрута");
-
-                Rect projectedRect = new Rect(320f, 180f, 200f, 40f);
-                Vector2 canvasPosition = RoaGlobalMapCanvas.CanvasPositionForScreenRect(
-                    projectedRect, 840, 500, 2f);
-                Vector2 canvasSize = RoaGlobalMapCanvas.CanvasSizeForScreenRect(projectedRect, 2f);
-                Check(Vector2.Distance(canvasPosition, new Vector2(0f, 25f)) < 0.001f
-                      && Vector2.Distance(canvasSize, new Vector2(100f, 20f)) < 0.001f,
-                    "экранная подпись неверно переводится в масштабируемый Canvas");
-
-                canvasObject = new GameObject("Global map label Canvas probe");
-                RoaGlobalMapCanvas mapCanvas = canvasObject.AddComponent<RoaGlobalMapCanvas>();
-                MethodInfo ensureBuilt = typeof(RoaGlobalMapCanvas).GetMethod("EnsureBuilt",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Check(ensureBuilt != null, "Canvas глобальной карты не имеет детерминированной сборки");
-                ensureBuilt.Invoke(mapCanvas, null);
-                Canvas.ForceUpdateCanvases();
-                Image[] mapLabelBackgrounds = canvasObject.GetComponentsInChildren<Image>(true)
-                    .Where(image => image.gameObject.name == "MapOverlayLabel").ToArray();
-                Text[] mapLabelTexts = canvasObject.GetComponentsInChildren<Text>(true)
-                    .Where(text => text.transform.parent != null
-                        && text.transform.parent.gameObject.name == "MapOverlayLabel").ToArray();
-                Check(mapCanvas.MapLabelPoolSize == 8
-                      && mapLabelBackgrounds.Length == 8
-                      && mapLabelTexts.Length == 8
-                      && mapLabelBackgrounds.All(image => !image.raycastTarget)
-                      && mapLabelTexts.All(text => !text.raycastTarget && text.supportRichText),
-                    "пул Canvas-подписей карты не ограничен, перехватывает ввод или теряет rich text");
-                RectTransform hoverCard = canvasObject.GetComponentsInChildren<RectTransform>(true)
-                    .FirstOrDefault(rect => rect.gameObject.name == "MapHoverCard");
-                Check(hoverCard != null && !mapCanvas.HoverCardVisible
-                      && hoverCard.GetComponent<Image>() != null
-                      && !hoverCard.GetComponent<Image>().raycastTarget,
-                    "карточка предпросмотра точки отсутствует или перекрывает ввод карты");
-                Text mapLegend = canvasObject.GetComponentsInChildren<Text>(true)
-                    .FirstOrDefault(text => text.gameObject.name == "MapLegend");
-                Check(mapLegend != null && mapLegend.supportRichText
-                      && mapLegend.text.Contains("РЕСУРС")
-                      && mapLegend.text.Contains("УГРОЗА")
-                      && mapLegend.text.Contains("ПОСЕЛЕНИЕ"),
-                    "легенда карты не объясняет игроку семантику маркеров");
-                string[] mapButtonLabels = canvasObject.GetComponentsInChildren<Button>(true)
-                    .Select(button => button.GetComponentInChildren<Text>(true)?.text ?? string.Empty)
-                    .ToArray();
-                Check(!mapButtonLabels.Contains("Войти") && !mapButtonLabels.Contains("Стоп")
-                      && mapButtonLabels.Contains("Вступить")
-                      && mapButtonLabels.Contains("ПОДРОБНО")
-                      && mapButtonLabels.Contains("ФРАКЦИИ")
-                      && mapButtonLabels.Contains("СОБЫТИЯ")
-                      && mapButtonLabels.Contains("ОТРЯДЫ")
-                      && !mapCanvas.DetailsExpanded,
-                    "глобальная карта вернула старые кнопки входа/остановки или потеряла решение контакта");
-
-                MethodInfo setRouteProgress = typeof(RoaGlobalMapCanvas).GetMethod("SetRouteProgress",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Check(setRouteProgress != null
-                      && Mathf.Approximately(RoaGlobalMapCanvas.RouteProgressFillAmount(-1f), 0.025f)
-                      && Mathf.Approximately(RoaGlobalMapCanvas.RouteProgressFillAmount(2f), 1f),
-                    "полоса маршрута не ограничивает начало и завершение пути");
-                setRouteProgress.Invoke(mapCanvas, new object[] { true, 0.42f, false });
-                Image progressFill = canvasObject.GetComponentsInChildren<Image>(true)
-                    .FirstOrDefault(image => image.gameObject.name == "RouteProgressFill");
-                Color safeRouteColor = RoaGlobalMapCanvas.RouteProgressColor(false);
-                Color contactRouteColor = RoaGlobalMapCanvas.RouteProgressColor(true);
-                Check(mapCanvas.RouteProgressVisible
-                      && Mathf.Abs(mapCanvas.RouteProgressFill - 0.42f) < 0.001f
-                      && progressFill != null && !progressFill.raycastTarget
-                      && contactRouteColor.r > safeRouteColor.r
-                      && contactRouteColor.g < safeRouteColor.g,
-                    "маршрут не показывает прогресс или тревожный контакт");
-                setRouteProgress.Invoke(mapCanvas, new object[] { false, 0f, false });
-                Check(!mapCanvas.RouteProgressVisible,
-                    "полоса маршрута остаётся без активного пути");
-
-                var taskCards = new List<RoaInteraction.WorldTaskCard>
-                {
-                    new RoaInteraction.WorldTaskCard
-                    {
-                        Id = "task-1", Label = "Работа", Title = "Разведка",
-                        Reward = "100 XP", AcceptLabel = "Взять работу", CanAccept = true
-                    }
-                };
-                string workA = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
-                string workSame = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
-                taskCards[0].TrackLabel = "Отслеживать";
-                string workChanged = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
-                string cachedSignature = null;
-                Check(workA == workSame && workA != workChanged
-                      && RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workA)
-                      && !RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workSame)
-                      && RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workChanged)
-                      && RoaGlobalMapCanvas.BuildPartySignature(string.Empty)
-                         != RoaGlobalMapCanvas.BuildPartySignature("caravan-1"),
-                    "неизменная доска контрактов пересобирается или обновление списка теряется");
-
-                Debug.Log("[GLOBAL MAP UX 4.2] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, map drag="
-                    + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, orbit=55/45+MMB, WASD=camera-relative, RMB=Y-inverted, mapZoom=1–20, pointer=tap/drag/pinch-pan, labels=canvas/activities, route=progress/contact, lists=stable");
+                Debug.Log("[CAMERA] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, planar axes orthogonal");
             }
             finally
             {
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (targetObject != null) UnityEngine.Object.DestroyImmediate(targetObject);
-                if (canvasObject != null) UnityEngine.Object.DestroyImmediate(canvasObject);
             }
         }
 

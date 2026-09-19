@@ -147,7 +147,7 @@ namespace RealmOfAshes.World
         }
 
         /// <summary>
-        /// Убрать локальную геометрию при выходе на глобальную карту. Каталог и
+        /// Убрать локальную геометрию при выходе к экрану персонажей. Каталог и
         /// GLB-кеш сохраняются, поэтому обратный вход не требует повторной загрузки
         /// уже виденных моделей.
         /// </summary>
@@ -221,10 +221,13 @@ namespace RealmOfAshes.World
             _currentRoot = new GameObject("Location:" + definition.Id);
             Current = definition;
 
-            // The same edge component renders either the world-map exit or a
-            // collidable dashed perimeter when story progression locks travel.
-            var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
-            exitBoundary.Configure(definition.TileWidth, definition.TileDepth);
+            // Край места выводит в его зону, а закрытое сюжетом место получает
+            // непроходимый пунктир. У самой зоны края нет: её стены и ворота собирает конструктор.
+            if (definition.ParentZone != null || !definition.CanExitAtEdge)
+            {
+                var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
+                exitBoundary.Configure(definition.TileWidth, definition.TileDepth);
+            }
 
             RoaUnityLocationScene unityScene = null;
             string unitySceneName = UnitySceneName(definition.Id);

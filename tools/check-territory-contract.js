@@ -102,8 +102,6 @@ for (const token of [
   'function serverPlayerAtTerritoryGate(',
   'function serverTerritoryGateCompanions(',
   'function serverTerritoryFactionShares(',
-  'function publicGlobalMap(',
-  'map: publicGlobalMap(GLOBAL_MAP)',
   // Поле пишется только у скрытых узлов: перезапуск сервера не должен
   // проставлять `hidden: false` каждой точке авторской карты.
   "...(node?.hidden === true ? { hidden: true } : {}),",
@@ -119,40 +117,14 @@ assert(server.includes('Сменить фракцию можно только у
 // --- Клиент ---------------------------------------------------------------
 const net = read('unity-client/Assets/Scripts/Game/RoaTerritoryNet.cs');
 assert(net.includes('RequestContractOffer'), 'клиент умеет запрашивать предложение контракта');
-const map = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
-for (const token of [
-  'contractRequired',
-  'OpenTerritoryContract(',
-  'public void SignTerritoryContract()',
-  'public void CancelTerritoryContract()',
-  'public void SelectTerritoryContractFaction(',
-  'RoaTerritoryNet.JoinFaction(Socket, factionId',
-  '|| _territoryContractPending) return;'
-]) assert(map.includes(token), `RoaGlobalMap is missing ${token}`);
-// Клиент не рисует скрытые узлы даже если карта пришла из кэша или старой
-// сборки: метки баз фракций не должны возвращаться на карту.
-const mapModel = read('unity-client/Assets/Scripts/World/RoaGlobalMapData.cs');
-assert(/\[JsonProperty\("hidden"\)\] public bool Hidden;/.test(mapModel), 'The node model must read the hidden flag.');
-assert(map.includes('_map.Nodes.RemoveAll(node => node == null || node.Hidden);'),
-  'The client must drop hidden nodes right after loading the map.');
-const canvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
-for (const token of [
-  'BuildContractModal(',
-  'RefreshTerritoryContract();',
-  'КОНТРАКТ С ФРАКЦИЕЙ',
-  'ПОДПИСАТЬ КОНТРАКТ',
-  'ContractRowText(',
-  'CultureInfo.InvariantCulture'
-]) assert(canvas.includes(token), `RoaGlobalMapCanvas is missing ${token}`);
-assert(/sharePct/.test(canvas), 'окно показывает долю фракции в процентах');
-
-// Подпись связывает игрока на срок смены фракции, и сервер шлёт этот срок в
-// самом предложении: окно обязано назвать его до подписи, а не потом.
+const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
+assert(interaction.includes('ack?["contractRequired"]?.ToObject<bool>() == true'),
+  'отказ ворот Сердцевины без контракта открывает окно контракта');
+const canvas = read('unity-client/Assets/Scripts/Game/RoaTerritoryContractCanvas.cs');
+assert(canvas.includes('RoaTerritoryNet.JoinFaction(Socket, _factionId'), 'окно контракта подписывает его через joinFaction');
 assert(/changeCooldownMs/.test(canvas), 'окно контракта читает срок, на который связывает подпись');
-assert(canvas.includes('сменить фракцию можно будет только через'),
-  'окно контракта называет срок до смены фракции');
 const gateProbe = read('unity-client/Assets/Editor/RoaWorldZonesUiProbe.cs');
 assert(gateProbe.includes('сменить фракцию можно будет только через 72 ч.'),
   'проба проверяет срок в окне контракта');
 
-console.log('Territory contract OK: faction shares, gate offer, base routing, hidden base markers and the Unity contract window are wired.');
+console.log('Territory contract OK: faction shares, gate offer, base routing, and the Unity contract window are wired.');

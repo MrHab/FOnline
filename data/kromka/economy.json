@@ -87,29 +87,13 @@
     "blockedCategories": ["artifacts"]
   },
   "dangerCells": {
-    "subCellKm": 1.6,
     "capitals": ["sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "balanceBunker"],
     "safeRadiusKm": 12,
     "blueRadiusKm": 38,
     "blueExtraCenters": ["settlement"],
     "blackCenters": [{ "locationId": "coreZone", "radiusKm": 22 }],
     "regionModes": { "silent_ring": "pvpFullDrop", "glasslands": "pvpFullDrop", "zero_basin": "pvpFullDrop" },
-    "defaultMode": "pvp",
-    "encounterChance": { "peaceful": 0, "pve": 0, "pvp": 0.04, "pvpFullDrop": 0.1, "pvpBlack": 0.18 },
-    "edgeGraceKm": 3,
-    "templates": {
-      "default": "randomRuinedRoad",
-      "silent_ring": "randomDryBasin",
-      "zero_basin": "randomDryBasin",
-      "glasslands": "randomAshGrove",
-      "chalk_lowland": "randomAshGrove"
-    },
-    "sceneModes": ["pvpBlack"],
-    "encounters": {
-      "pvp": ["raider_ambush", "gecko_pack", "mutant_ant_swarm", "ghoul_pack"],
-      "pvpFullDrop": ["raider_ambush", "radscorpion_nest", "fire_gecko_ambush", "gari_pack", "super_mutant_lair"],
-      "pvpBlack": ["super_mutant_lair", "gari_pack", "fire_gecko_ambush", "lantern_grazing"]
-    }
+    "defaultMode": "pvp"
   },
   "blackMarket": {
     "service": "blackMarket",

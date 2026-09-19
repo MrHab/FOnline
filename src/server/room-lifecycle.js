@@ -35,13 +35,16 @@ function pruneIdleRooms(rooms, options = {}) {
   const hasActiveOwner = typeof options.hasActiveOwner === 'function'
     ? options.hasActiveOwner
     : () => false;
+  // Последний взгляд на комнату перед удалением: сохранить то, что должно пережить сон.
+  const beforeRemove = typeof options.beforeRemove === 'function' ? options.beforeRemove : null;
   const removed = [];
 
-  for (const [roomId, room] of rooms.entries()) {
+  for (const [roomId, room] of [...rooms.entries()]) {
     if (!room || Number(room.sockets?.size || 0) > 0) continue;
     if (shouldPruneRoom(room) !== true || hasActiveOwner(room) === true) continue;
     const idleSince = finiteTimestamp(room.emptySince, finiteTimestamp(room.createdAt, now));
     if (now - idleSince < idleTtlMs) continue;
+    if (beforeRemove) beforeRemove(room);
     if (!rooms.delete(roomId)) continue;
     removed.push(String(roomId));
   }

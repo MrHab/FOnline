@@ -264,6 +264,15 @@ const {
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const {
+  ZONE_CHANNEL_SOFT_CAP,
+  ZONE_SLEEP_AFTER_MS,
+  channelOf: zoneChannelOf,
+  pickChannel: pickZoneChannel
+} = require('./src/server/zone-channels');
+// Проверки поднимают сервер с крошечным пределом канала и быстрым сном зон.
+const ZONE_CHANNEL_CAP = Math.max(1, Math.floor(Number(process.env.KROMKA_ZONE_CHANNEL_CAP) || ZONE_CHANNEL_SOFT_CAP));
+const ZONE_SLEEP_MS = Math.max(1000, Number(process.env.KROMKA_ZONE_SLEEP_MS) || ZONE_SLEEP_AFTER_MS);
+const {
   normalizeEcologyConfig,
   normalizeEcologyState,
   serializeEcologyState,
@@ -5980,8 +5989,34 @@ function serverTerritoryGateCompanions(leader = null) {
     .filter(member => member && !territoryMembershipActive(member.territoryFaction));
 }
 
+// Щит прибытия: 4 с после входа в зону через ворота игрока не задеть, пока он
+// сам не выстрелит, — у ворот не караулят тех, кто ещё не видит, куда пришёл.
+const ZONE_ARRIVAL_SHIELD_MS = 4000;
+// Пауза ворот: 6 с после урона от игрока или по игроку ворота не пропускают —
+// из перестрелки не уходят шагом в соседнюю зону.
+const ZONE_GATE_PVP_PAUSE_MS = 6000;
+// Отряд проходит ворота вслед за тем, кто шагнул первым, если стоит рядом.
+const ZONE_GATE_FOLLOW_METRES = 8.5;
+
+function serverZoneArrivalShielded(p = {}, now = Date.now()) {
+  return Number(p?.zoneArrivalShieldUntil || 0) > now;
+}
+
+function serverZoneGatePvpPauseLeft(p = {}, now = Date.now()) {
+  return Math.max(0, Number(p?.lastPvpAt || 0) + ZONE_GATE_PVP_PAUSE_MS - now);
+}
+
+function serverNotePvpExchange(attacker, target, now = Date.now()) {
+  if (attacker) {
+    attacker.lastPvpAt = now;
+    attacker.zoneArrivalShieldUntil = 0;
+  }
+  if (target) target.lastPvpAt = now;
+}
+
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
   return locationAllowsPvp(roomLocation(room))
+    && !serverZoneArrivalShielded(target, now)
     && !serverPlayersAllied(attacker, target)
     && !serverPlayerHasProtectedClanRally(target, room, now)
     && !serverTerritoryPvpBlock(attacker, target, room, now);
@@ -5994,6 +6029,7 @@ function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
  */
 function serverPvpBlockLabel(attacker = {}, target = {}, room = null, now = Date.now()) {
   if (!locationAllowsPvp(roomLocation(room))) return 'Здесь по игрокам не стреляют: мирная зона.';
+  if (serverZoneArrivalShielded(target, now)) return 'Игрок только что вошёл в зону: несколько секунд его не задеть.';
   if (serverPlayersAllied(attacker, target)) return 'Это свой: по союзникам огонь не ведётся.';
   if (serverPlayerHasProtectedClanRally(target, room, now)) return 'Цель под защитой сбора клана.';
   switch (serverTerritoryPvpBlock(attacker, target, room, now)) {
@@ -10891,7 +10927,8 @@ function serverLocationContextFromPlayer(player = {}) {
     : null;
   return sanitizeServerLocationContext({
     locationId,
-    roomId: room && !locationUsesSharedReality(roomLocation(room)) ? room.id : '',
+    // Общая локация своей комнаты не помнит, кроме канала зоны: реконнект возвращает в него.
+    roomId: room && (!locationUsesSharedReality(roomLocation(room)) || zoneChannelOf(room.id, room.locationId) > 1) ? room.id : '',
     encounterId: onsiteZone?.encounterId || room?.encounterId || '',
     worldZoneId: onsiteZone?.id || room?.worldZoneId || '',
     partyId: onsiteZone?.partyId || onsiteZone?.details?.partyId || room?.worldPartyId || '',
@@ -19455,6 +19492,7 @@ function ensureRoomWorld(room) {
     const environmentRebuild = room.worldReady && room.environmentVersion !== WORLD_ENVIRONMENT_VERSION;
     if (environmentRebuild || worldSiteDefinitionChanged) clearRoomEnemies(room);
     generateRoomWorld(room);
+    serverWakeZoneRoom(room);
     const loc = roomLocation(room);
     if (!loc.safe && !loc.noRespawn) for (let i = 0; i < (loc.spawnCount || 8); i++) spawnServerEnemy(room);
     refreshRoomWorldState(room);
@@ -26508,6 +26546,8 @@ function sanitizeLootRequest(data) {
 function canonicalLocationRealityId(roomId = '', locationId = '') {
   const requested = String(roomId || '').replace(/[^a-zA-Z0-9_#-]/g, '').slice(0, 96);
   const loc = normalizeLocationId(locationId || requested.split('#')[0] || 'settlement');
+  // Зона мира делится на каналы `z_CC_RR#chN`, когда в ней тесно.
+  if (ZONE_RUNTIME.isZone(loc) && zoneChannelOf(requested, loc) > 1) return requested;
   if (locationUsesSharedReality(loc)) return loc;
   return requested && requested.startsWith(`${loc}#`) ? requested : loc;
 }
@@ -26608,6 +26648,51 @@ function pruneExpiredEphemeralRooms(now = Date.now()) {
   });
 }
 
+// Сон зон мира: пустая зона уходит из памяти через 10 минут. Вскрытые тайники
+// и выработанные ресурсы ждут её пробуждения до конца игрового дня — иначе их
+// обновлял бы любой, кто вышел из зоны и вернулся.
+const sleepingZoneRooms = new Map();
+
+function pruneSleepingZoneRooms(now = Date.now()) {
+  const day = currentGameDayIndex(now);
+  for (const [id, stash] of sleepingZoneRooms) if (stash.day !== day) sleepingZoneRooms.delete(id);
+  return pruneIdleRooms(rooms, {
+    now,
+    idleTtlMs: ZONE_SLEEP_MS,
+    shouldPruneRoom: room => ZONE_RUNTIME.isZone(room?.locationId),
+    beforeRemove(room) {
+      if (room.ecologyGroupIds?.size) serverEcologyReleaseRoom(room, now);
+      clearRoomEnemies(room);
+      if (!room.worldReady) return;
+      sleepingZoneRooms.set(room.id, {
+        day,
+        containers: room.containers,
+        containersRestockDay: room.containersRestockDay,
+        resources: room.resources
+      });
+    }
+  });
+}
+
+/** Зона просыпается такой, какой уснула: тайники и ресурсы из сонного снимка. */
+function serverWakeZoneRoom(room) {
+  const stash = sleepingZoneRooms.get(room?.id);
+  if (!stash) return false;
+  sleepingZoneRooms.delete(room.id);
+  if (stash.day !== currentGameDayIndex()) return false;
+  room.containers = stash.containers;
+  room.containersRestockDay = stash.containersRestockDay;
+  for (const [id, fresh] of [...room.resources.entries()]) {
+    const kept = stash.resources.get(id);
+    if (kept) room.resources.set(id, kept);
+    else {
+      room.resources.delete(id);
+      clearRoomResourceTile(room, fresh);
+    }
+  }
+  return true;
+}
+
 function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
   const loc = normalizeLocationId(locationId || 'settlement');
   let count = 0;
@@ -26639,9 +26724,58 @@ function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
   return count;
 }
 
-function chooseRoomForLocation(locationId) {
+function serverLiveSocketCount(room) {
+  if (!room?.sockets) return 0;
+  let count = 0;
+  for (const sid of room.sockets) if (socketIsLive(sid)) count++;
+  return count;
+}
+
+/** Товарищи игрока по отряду мирового задания, которые сейчас в игре. */
+function serverWorldPartyMatesOnline(p = {}) {
+  const attachment = serverWorldPartyAttachmentForPlayer(p);
+  if (!attachment) return [];
+  const members = Array.isArray(attachment.party.playerMembers) ? attachment.party.playerMembers : [];
+  return [...players.values()].filter(other => other && other.id !== p.id && socketIsLive(other.id)
+    && members.some(row => String(row.taskId || '') === String(attachment.task.id || '') && playerMatchesWorldPartyMember(other, row)));
+}
+
+/** Канал зоны, где уже стоит товарищ по отряду: отряд не разбрасывает по копиям зоны. */
+function serverZoneChannelPreference(p = {}, zoneId = '') {
+  for (const mate of serverWorldPartyMatesOnline(p)) {
+    if (zoneChannelOf(mate.roomId, zoneId)) return mate.roomId;
+  }
+  return '';
+}
+
+/**
+ * Отряд у ворот: кто стоит рядом с шагнувшим и не в перестрелке, проходит
+ * вместе с ним в тот же канал; отставшим сервер говорит, какими воротами ушли.
+ */
+function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '') {
+  const now = Date.now();
+  for (const mate of serverWorldPartyMatesOnline(p)) {
+    if (mate.roomId !== fromRoomId || mate.dead || Number(mate.hp || 0) <= 0) continue;
+    const near = Math.hypot(Number(mate.x || 0) - from.x, Number(mate.z || 0) - from.z) <= ZONE_GATE_FOLLOW_METRES;
+    if (near && serverZoneGatePvpPauseLeft(mate, now) <= 0
+      && transferPlayerToServerRoom(mate, room, { entryKey, reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
+      mate.zoneArrivalShieldUntil = now + ZONE_ARRIVAL_SHIELD_MS;
+      continue;
+    }
+    io.to(mate.id).emit('dangerCellNotice', { text: `${p.name || 'Товарищ'} ушёл воротами «${label}» — догоняйте.`.slice(0, 160), t: now });
+  }
+}
+
+/**
+ * Комната локации. Зона мира отдаёт канал: предпочтительный (канал товарища по
+ * отряду или сохранённый), если в нём есть место, иначе первый неполный.
+ */
+function chooseRoomForLocation(locationId, options = {}) {
   const loc = normalizeLocationId(locationId);
-  const room = getOrCreateRoom(roomIdFor(loc), loc);
+  const roomId = ZONE_RUNTIME.isZone(loc)
+    ? pickZoneChannel({ zoneId: loc, prefer: options.prefer || '', cap: ZONE_CHANNEL_CAP, occupancy: id => serverLiveSocketCount(rooms.get(id)) })
+    : roomIdFor(loc);
+  const room = getOrCreateRoom(roomId, loc);
   for (const sid of [...room.sockets]) if (!socketIsLive(sid)) room.sockets.delete(sid);
   return room;
 }
@@ -27543,8 +27677,21 @@ function publicAuthoritativePlayerState(p = {}) {
     globalMap,
     // Сцена опасной клетки: какая это клетка карты и как её зовут («Меловая чаша №47»).
     dangerCell: serverDangerCellView(p),
-    // Зона мира, в которой стоит игрок: номер, название, цвет и куда ведут ворота.
-    zone: ZONE_RUNTIME.view(p.locationId)
+    // Зона мира, в которой стоит игрок: номер, название, цвет, куда ведут ворота,
+    // канал и сколько ещё держатся щит прибытия и пауза ворот.
+    zone: serverZoneSelfView(p)
+  };
+}
+
+function serverZoneSelfView(p = {}) {
+  const view = ZONE_RUNTIME.view(p.locationId);
+  if (!view) return null;
+  const now = Date.now();
+  return {
+    ...view,
+    channel: zoneChannelOf(p.roomId, p.locationId) || 1,
+    arrivalShieldMs: Math.max(0, Number(p.zoneArrivalShieldUntil || 0) - now),
+    gatePauseMs: serverZoneGatePvpPauseLeft(p, now)
   };
 }
 
@@ -28882,6 +29029,7 @@ io.on('connection', (socket) => {
       ? candidateSavedZone
       : null;
     const savedRoomId = !sharedRealityLocation ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId) : '';
+    const savedZoneChannel = ZONE_RUNTIME.isZone(locationId) ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId) : '';
     const joinSiteRoomId = !sharedRealityLocation && savedLocationContext.siteId
       ? roomIdForWorldSite(locationId, savedLocationContext.siteId)
       : '';
@@ -28897,6 +29045,8 @@ io.on('connection', (socket) => {
       : '';
     const room = pveJoinRoomId
       ? getOrCreateRoom(pveJoinRoomId, locationId)
+      : ZONE_RUNTIME.isZone(locationId)
+        ? chooseRoomForLocation(locationId, { prefer: savedZoneChannel })
       : savedRoomId
         ? getOrCreateRoom(savedRoomId, locationId)
         : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
@@ -32297,6 +32447,7 @@ io.on('connection', (socket) => {
       if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
+      if (!isSelf) serverNotePvpExchange(p, target, now);
       serverApplyArtifactImpact(target, room, { x: impactX, z: impactZ }, 'explosive', 2 * falloff, now);
       const downed = !secondChance && Number(target.hp || 0) <= 0
         && serverTryDownWorldActivityPlayer(target, room, now);
@@ -32717,6 +32868,7 @@ io.on('connection', (socket) => {
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
+    serverNotePvpExchange(attacker, target, now);
     if (anyHit) serverApplyArtifactImpact(target, room, attacker,
       hits.some(row => row.hit && row.damageType === 'electric') ? 'electric' : '', 0, now);
     const downed = anyHit && Number(target.hp || 0) <= 0
@@ -33639,6 +33791,17 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или завершите путь на глобальной карте.' });
       return;
     }
+    // Ворота и выходы зоны мира не пропускают из перестрелки с игроком.
+    const zoneCrossing = !sameLocation && !transitionTicket && !!localTransition
+      && (ZONE_RUNTIME.isZone(p.locationId) || ZONE_RUNTIME.isZone(locationId));
+    if (zoneCrossing) {
+      const pauseMs = serverZoneGatePvpPauseLeft(p);
+      if (pauseMs > 0) {
+        if (typeof ack === 'function') ack({ ok: false, gatePauseMs: pauseMs, error: `Проход закрыт ещё ${Math.ceil(pauseMs / 1000)} с: после перестрелки с игроком ворота не пропускают.` });
+        return;
+      }
+    }
+    const crossedFrom = { roomId: p.roomId, x: Number(p.x || 0), z: Number(p.z || 0) };
     if ((baseLoc.randomTemplate || baseLoc.encounterOnly) && !transitionTicket && !sameLocation) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Временная встреча требует серверного билета.' });
       return;
@@ -33701,7 +33864,8 @@ io.on('connection', (socket) => {
       ? getOrCreateRoom(pveResolvedRoomId, locationId)
       : canUseRequestedRoom
         ? getOrCreateRoom(effectiveRoomId, locationId)
-        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId)
+          : chooseRoomForLocation(locationId, { prefer: serverZoneChannelPreference(p, locationId) }));
     if (pveResolvedRoomId) serverPveRoomEntered(room, p, Date.now());
     const effectiveEncounterId = String(activeTransitionZone?.encounterId || transitionTicket?.encounterId || '').slice(0, 40);
     const hasEncounterPayload = !!effectiveEncounterId;
@@ -33757,6 +33921,7 @@ io.on('connection', (socket) => {
     const spawn = playerSpawnWorld(locationId, entryKey);
     p.x = spawn.x;
     p.z = spawn.z;
+    if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
     p.input = { forward: 0, right: 0 };
     p.moving = false;
     p.vx = 0;
@@ -33809,6 +33974,9 @@ io.on('connection', (socket) => {
     emitGroundItemsSnapshot(room, true, socket.id);
     emitWorldContainersSnapshot(room, true, socket.id);
     emitServerArtifactState(p, 'locationChanged');
+    if (zoneCrossing && localTransition?.type === 'zoneGate') {
+      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId));
+    }
   };
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);
@@ -33990,6 +34158,7 @@ setInterval(() => {
     if (WASTELAND_SIM.tick(Date.now())) invalidateWastelandPublicCache();
     syncWorldSiteLocationDefinitions();
     pruneExpiredEphemeralRooms(Date.now());
+    pruneSleepingZoneRooms(Date.now());
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
   } finally {

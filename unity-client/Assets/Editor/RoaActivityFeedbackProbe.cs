@@ -66,16 +66,16 @@ namespace RealmOfAshes.EditorTools
                 ["worldFactionReputation"] = new JObject { ["old_klim"] = 14 }
             };
             string receipt = RoaWorldActivityCanvas.RewardReceipt(paidResult, paidSelf);
-            Require(receipt.Contains("+25 XP") && receipt.Contains("+10 крышек")
+            Require(receipt.Contains("+25 XP") && receipt.Contains("+10 марок")
                     && receipt.Contains("ПОДТВЕРЖДЕНО СЕРВЕРОМ")
-                    && receipt.Contains("баланс 117 крышек") && receipt.Contains("XP 55/100")
-                    && receipt.Contains("Старый Клим 14"),
+                    && receipt.Contains("баланс 117 марок") && receipt.Contains("XP 55/100")
+                    && receipt.Contains("Управа 14"),
                 "paid activity result has no authoritative reward receipt");
             JObject pendingResult = (JObject)paidResult.DeepClone();
             pendingResult["rewardClaimed"] = false;
             pendingResult["reason"] = "reward_inventory_full";
             Require(RoaWorldActivityCanvas.RewardReceipt(pendingResult, paidSelf)
-                    .Contains("освободите место для крышек"),
+                    .Contains("освободите место для марок"),
                 "blocked reward receipt does not explain how payment resumes");
 
             var objectiveViews = new List<RoaWorldActivityCanvas.ObjectiveView>();

@@ -73,6 +73,22 @@ namespace RealmOfAshes.Game
             }, completed);
         }
 
+        /// <summary>Диспетчер переноса в столице: другие столицы, расстояние и цена.</summary>
+        public static bool RequestFastTravel(RoaSocketClient socket, Action<JObject> completed)
+        {
+            return Send(socket, "fastTravel", new Dictionary<string, object> { ["action"] = "list" }, completed);
+        }
+
+        /// <summary>Отправиться в столицу: марки списывает сервер, переход приходит как serverWorldTransfer.</summary>
+        public static bool UseFastTravel(RoaSocketClient socket, string locationId, Action<JObject> completed)
+        {
+            return Send(socket, "fastTravel", new Dictionary<string, object>
+            {
+                ["action"] = "go",
+                ["to"] = locationId ?? string.Empty
+            }, completed);
+        }
+
         /// <summary>Ремонтник столицы: список изношенного и цена за каждую починку.</summary>
         public static bool RequestRepairState(RoaSocketClient socket, Action<JObject> completed)
         {
@@ -110,6 +126,7 @@ namespace RealmOfAshes.Game
                 completed?.Invoke(ack);
             };
             if (eventName == "territoryFactionAction") socket.EmitWithAck("territoryFactionAction", payload, onAck);
+            else if (eventName == "fastTravel") socket.EmitWithAck("fastTravel", payload, onAck);
             else socket.EmitWithAck("baseServiceAction", payload, onAck);
             return true;
         }

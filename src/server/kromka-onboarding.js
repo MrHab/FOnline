@@ -88,6 +88,8 @@ function sanitizeKromkaOnboarding(input = {}, catalog = {}, options = {}) {
     missionCompleted: input?.missionCompleted === true || phase === 'complete',
     canSkipTutorial: input?.canSkipTutorial === true || options.accountCompleted === true,
     outcomeTags: sanitizeStringArray(input?.outcomeTags, 16),
+    // Одноразовые подсказки мира (первые ворота, карта мира): показаны — больше не повторяются.
+    hintsShown: sanitizeStringArray(input?.hintsShown, 16),
     evidence: sanitizeEvidence(input?.evidence),
     issuedSupplies: Object.fromEntries(Object.entries(input?.issuedSupplies || {})
       .slice(0, 40).map(([id, qty]) => [safeId(id), Math.max(0, Math.min(999, Math.floor(Number(qty) || 0)))])),

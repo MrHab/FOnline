@@ -80,7 +80,32 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
         const other = zoneById(graph, edge.to);
         return { dir, to: edge.to, n: other.n, title: other.title, mode: other.mode, road: !!edge.road };
       }),
-      places: zone.places.map(place => ({ locationId: place.locationId, name: place.name }))
+      places: zone.places.filter(place => !place.hidden).map(place => ({ locationId: place.locationId, name: place.name }))
+    };
+  }
+
+  /**
+   * Обзорная карта мира: сетка зон с цветами, номерами и открытыми воротами,
+   * места зон (скрытые базы — нет) и столицы. Своё положение игрок берёт из self.zone.
+   * nameOf(locationId) — имя места, как его видит игрок.
+   */
+  function worldMap(nameOf = () => '') {
+    return {
+      schema: 'kromka.worldMap.v1',
+      worldRevision: graph.worldRevision,
+      cols: graph.grid.cols,
+      rows: graph.grid.rows,
+      zoneKm: graph.grid.zoneKm,
+      capitals: [...(graph.capitals || [])],
+      zones: graph.zones.map(zone => ({
+        id: zone.id, n: zone.n, col: zone.col, row: zone.row, title: zone.title, region: zone.region, mode: zone.mode,
+        // Открытые стороны: n, e, s, w.
+        gates: ['north', 'east', 'south', 'west'].filter(side => zone.edges[side]?.open).map(side => side[0]).join(''),
+        places: zone.places.filter(place => !place.hidden).map(place => ({
+          id: place.locationId, name: nameOf(place.locationId) || place.name, kind: place.kind,
+          u: Number(Number(place.u).toFixed(3)), v: Number(Number(place.v).toFixed(3))
+        }))
+      }))
     };
   }
 
@@ -100,7 +125,7 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     };
   }
 
-  return { graph, registerStubs, isZone, ensure, view, parentZoneOf, parentZoneView, builtCount: () => built.size };
+  return { graph, registerStubs, isZone, ensure, view, worldMap, parentZoneOf, parentZoneView, builtCount: () => built.size };
 }
 
 module.exports = { createZoneRuntime };

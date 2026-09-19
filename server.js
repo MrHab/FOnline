@@ -263,6 +263,7 @@ const {
 } = require('./src/server/danger-cells');
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const { createZoneRuntime } = require('./src/server/zone-runtime');
+const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { zoneRecipe } = require('./src/server/zone-graph');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
@@ -841,6 +842,8 @@ const SERVER_MODEL_COLLIDERS = loadModelColliderCatalog(MODEL_COLLIDERS_FILE);
 const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));
 // A-Life опасных клеток: виды, логова и темп жизни групп. KROMKA_DANGER_ECOLOGY_FILE
 // подменяет их в сетевых проверках; состояние мира групп живёт в DATA_DIR.
+// Перенос между столицами: цена, пауза после боя и груз, который не перевозят.
+const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'), {}).fastTravel);
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
@@ -890,6 +893,8 @@ function readJson(file, fallback) {
 // equipment, carry weight, prices and crafting all derive from the same rows.
 const KROMKA_ITEM_CATALOG = normalizeItemCatalog(readJson(KROMKA_ITEMS_FILE, { items: [] }));
 const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
+const SERVER_ITEM_CATEGORY = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.category || '')]));
+const SERVER_ITEM_NAME = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.name || item.id)]));
 const KROMKA_FIELD_RECIPE_CATALOG = normalizeFieldRecipeCatalog(
   readJson(KROMKA_FIELD_RECIPES_FILE, { recipes: [] }),
   KROMKA_ITEM_CATALOG
@@ -2180,6 +2185,16 @@ app.get('/api/locations', (_, res) => {
 
 // Одна локация, в том числе зона мира (её собирает конструктор при первом
 // обращении). Ответ сжат и кэшируется по ревизии зоны.
+// Обзорная карта мира зон: одна на всех, сжата и кэширована до смены графа.
+let worldMapResponse = null;
+app.get('/api/world-map', (_, res) => {
+  if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
+    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName) }), 'utf8');
+    worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
+  }
+  sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
+});
+
 const locationResponseCache = new Map();
 app.get('/api/locations/:id', (req, res) => {
   const id = normalizeLocationId(req.params.id);
@@ -17721,7 +17736,43 @@ function spawnAuthoredLocationActors(room, loc) {
     serverPrepareNpcCorpseLoot(actor, room);
     count++;
   });
-  return count;
+  return count + serverSpawnFastTravelDispatcher(room, loc);
+}
+
+/**
+ * Диспетчер переноса: в каждой столице фракции сервер ставит его у точки входа
+ * (авторские сцены столиц не трогаются). Разговор с ним — список других столиц с
+ * ценой; поездку ведёт обработчик fastTravel.
+ */
+function serverSpawnFastTravelDispatcher(room, loc) {
+  if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
+  const dims = locationTileDims(loc);
+  const anchor = loc.entryFromWorld || loc.spawn || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const actor = spawnServerEnemy(room, {
+    force: true,
+    allowSafeLocation: true,
+    tx: clamp(Math.floor(Number(anchor.tx) + 3), 2, dims.w - 3),
+    tz: clamp(Math.floor(Number(anchor.tz) + 2), 2, dims.h - 3),
+    maxSpawnSearchRadius: 6,
+    minEnemyDistance: 0.65,
+    minPlayerDistance: 0,
+    visual: 'wastelandSettler',
+    modelKey: 'wastelandSettler',
+    npcSeed: `${loc.id}:fastTravelDispatcher`,
+    npcId: `${loc.id}_dispatcher`,
+    service: 'fastTravel',
+    canDialogue: true,
+    name: 'Диспетчер переноса',
+    role: 'npc',
+    faction: 'neutral',
+    hostileToPlayer: false,
+    stationary: true
+  });
+  if (!actor) return 0;
+  actor.authoredLocationId = loc.id;
+  actor.homeX = actor.x;
+  actor.homeZ = actor.z;
+  return 1;
 }
 
 function ensureKromkaNamedLocationActors(room, loc) {
@@ -26728,6 +26779,34 @@ function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = ''
  * Комната локации. Зона мира отдаёт канал: предпочтительный (канал товарища по
  * отряду или сохранённый), если в нём есть место, иначе первый неполный.
  */
+// Подсказки первого входа в зону мира: как ходить воротами и где карта мира.
+const ZONE_FIRST_HINTS = Object.freeze([
+  { id: 'zoneGates', text: 'Вы в зоне мира. Проходы по краям — ворота в соседние зоны: шагните в проход. У ворот видно, куда они ведут и насколько там опасно.' },
+  { id: 'worldMap', text: 'Карта мира — кнопка у миникарты: зоны, их цвета, места и где вы стоите.' }
+]);
+
+function serverShowZoneFirstHints(p = {}) {
+  if (!p?.id || !ZONE_RUNTIME.isZone(p.locationId) || !p.kromkaOnboarding) return 0;
+  const shown = Array.isArray(p.kromkaOnboarding.hintsShown) ? p.kromkaOnboarding.hintsShown : (p.kromkaOnboarding.hintsShown = []);
+  let sent = 0;
+  for (const hint of ZONE_FIRST_HINTS) {
+    if (shown.includes(hint.id)) continue;
+    shown.push(hint.id);
+    io.to(p.id).emit('dangerCellNotice', { text: hint.text, hint: hint.id, t: Date.now() + sent });
+    sent += 1;
+  }
+  return sent;
+}
+
+/** Столицы фракций для переноса: место, его имя для игрока и его зона. */
+function serverFastTravelCapitals() {
+  return (ZONE_RUNTIME.graph.capitals || []).map(locationId => ({
+    locationId,
+    name: serverLocationPublicName(locationId),
+    zone: ZONE_RUNTIME.graph.zones.find(zone => zone.places.some(place => place.locationId === locationId)) || null
+  })).filter(row => row.zone);
+}
+
 function chooseRoomForLocation(locationId, options = {}) {
   const loc = normalizeLocationId(locationId);
   const roomId = ZONE_RUNTIME.isZone(loc)
@@ -31937,6 +32016,38 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Диспетчер переноса в столице: куда можно и за сколько, и сама поездка —
+  // марки списываются, персонаж переходит в столицу назначения.
+  socket.on('fastTravel', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const capitals = serverFastTravelCapitals();
+    const destinations = fastTravelDestinations(FAST_TRAVEL_RULES, capitals, p.locationId);
+    if (String(data.action || 'list') !== 'go') {
+      if (typeof ack === 'function') ack({ ok: destinations.length > 0, destinations, error: destinations.length ? '' : 'Диспетчер переноса есть только в столицах фракций.' });
+      return;
+    }
+    const to = normalizeLocationId(data.to || '');
+    const refusal = fastTravelRefusal({
+      rules: FAST_TRAVEL_RULES, capitals, fromLocationId: p.locationId, toLocationId: to,
+      silver: serverInventoryQty(p.inventory || [], 'silver'),
+      lastCombatAt: Math.max(Number(p.lastServerDamageAt || 0), Number(p.serverCombat?.lastAttackAt || 0)),
+      now: Date.now(),
+      cargo: sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: false })
+        .map(row => ({ id: row.id, category: SERVER_ITEM_CATEGORY.get(row.id) || '', name: SERVER_ITEM_NAME.get(row.id) || row.id }))
+    });
+    if (refusal) return fail(refusal);
+    const trip = destinations.find(row => row.locationId === to);
+    const room = chooseRoomForLocation(to);
+    serverInventoryRemove(p, 'silver', trip.fee);
+    if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'fastTravel', message: `Перенос в ${trip.name} — ${trip.fee} марок.` })) {
+      serverInventoryAdd(p, 'silver', trip.fee);
+      return fail('Перенос сорвался: попробуйте ещё раз.');
+    }
+    if (typeof ack === 'function') ack({ ok: true, to, fee: trip.fee, self: publicAuthoritativePlayerState(p) });
+  });
+
   // Синь: счёт, покупка премиума и обменник синь↔марки у аукционера.
   socket.on('accountSinAction', (data = {}, ack) => {
     const p = players.get(socket.id);
@@ -33935,6 +34046,7 @@ io.on('connection', (socket) => {
     if (zoneCrossing && localTransition?.type === 'zoneGate') {
       serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId));
     }
+    if (serverShowZoneFirstHints(p)) persistActivePlayerState(p);
   };
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);

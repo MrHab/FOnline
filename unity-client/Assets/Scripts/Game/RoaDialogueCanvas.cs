@@ -326,6 +326,7 @@ namespace RealmOfAshes.Game
                 case "registrar": AddRegistrarOptions(); break;
                 // "auction" сюда не доходит: аукционер открывает RoaAuctionCanvas.
                 case "artifactLab": AddArtifactLabOptions(); break;
+                case "fastTravel": AddFastTravelOptions(); break;
             }
             if (!string.IsNullOrEmpty(_serviceNote)) AddHeading(_serviceNote);
         }
@@ -344,6 +345,7 @@ namespace RealmOfAshes.Game
             bool sent = service == "medic" ? RoaTerritoryNet.RequestMedicState(Interaction.Socket, completed)
                 : service == "repair" ? RoaTerritoryNet.RequestRepairState(Interaction.Socket, completed)
                 : service == "registrar" ? RoaTerritoryNet.RequestMembershipState(Interaction.Socket, completed)
+                : service == "fastTravel" ? RoaTerritoryNet.RequestFastTravel(Interaction.Socket, completed)
                 : false;
             if (!sent) _servicePending = false;
         }
@@ -354,6 +356,36 @@ namespace RealmOfAshes.Game
             else _serviceNote = string.Empty;
             _serviceStateKey = string.Empty; // перечитать снимок сервиса после действия
             _refreshAt = 0f;
+        }
+
+        /// <summary>
+        /// Диспетчер переноса: другие столицы с расстоянием и ценой. Из боя и с
+        /// артефактами в рюкзаке сервер откажет — причину покажет строка сервиса.
+        /// </summary>
+        private void AddFastTravelOptions()
+        {
+            AddHeading("ДИСПЕТЧЕР ПЕРЕНОСА");
+            if (_serviceState == null)
+            {
+                AddCard("Направления", _servicePending ? "Диспетчер сверяет расписание…" : "Нет данных.", null);
+                return;
+            }
+            JArray destinations = _serviceState["destinations"] as JArray ?? new JArray();
+            AddCard("Перенос между столицами",
+                "Быстро и за марки — только в другую столицу. Артефакты так не возят: их выносят из зон своими ногами.", null);
+            foreach (JToken token in destinations)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                string to = row["locationId"]?.ToString() ?? string.Empty;
+                int fee = row["fee"]?.Value<int>() ?? 0;
+                int km = row["distanceKm"]?.Value<int>() ?? 0;
+                var actions = new List<(string, System.Action)>
+                {
+                    ("Отправиться за " + fee + " марок", () => RoaTerritoryNet.UseFastTravel(Interaction.Socket, to, AfterServiceAction))
+                };
+                AddCard(row["name"]?.ToString() ?? to, km + " км по прямой", actions);
+            }
         }
 
         private void AddMedicOptions()

@@ -71,12 +71,20 @@ const getJson = route => new Promise((resolve, reject) => {
     assert(!Object.keys(all.json.locations).some(id => /^z_\d\d_\d\d$/.test(id)), 'the full catalogue does not carry zones');
     assert(all.json.locations.settlement, 'authored places are still listed');
     console.log('PASS the zone definition is served by id and kept out of the full catalogue');
+    const overview = (await getJson('/api/world-map')).json.map;
+    assert.equal(overview.zones.length, graph.zones.length, 'the world map lists every zone');
+    const mine = overview.zones.find(row => row.id === home.id);
+    assert(mine && mine.gates.includes('n') && mine.places.some(place => place.id === 'settlement'), 'the world map shows open gates and places: ' + JSON.stringify(mine));
+    assert.equal(overview.capitals.length, 6, 'the six capitals are marked');
+    console.log(`PASS the world map serves ${overview.zones.length} zones with gates, places and capitals`);
 
     // --- ворота: только рядом и только к соседу ------------------------------------------------
     const farAway = await h.socketAck(walker.socket, 'changeLocation', { locationId: east });
     assert.equal(farAway.ok, false, 'the east gate is far away: ' + JSON.stringify(farAway).slice(0, 200));
     const notNeighbour = await h.socketAck(walker.socket, 'changeLocation', { locationId: 'z_03_03' });
     assert.equal(notNeighbour.ok, false, 'there is no gate to a zone that is not a neighbour');
+    const hints = [];
+    walker.socket.on('dangerCellNotice', payload => { if (payload?.hint) hints.push(payload.hint); });
     const crossed = await h.socketAck(walker.socket, 'changeLocation', { locationId: north });
     assert(crossed.ok, 'the north gate leads to the neighbour: ' + JSON.stringify(crossed).slice(0, 300));
     assert.equal(crossed.locationId, north);
@@ -100,6 +108,9 @@ const getJson = route => new Promise((resolve, reject) => {
     const homeLanding = world(homeDef.entryFromNorth);
     assert(Math.hypot(back.x - homeLanding.x, back.z - homeLanding.z) < 3, 'arrives at the north entry of the home zone');
     console.log('PASS walking to the far gate and crossing back lands at the matching entry');
+    await delay(300);
+    assert.deepEqual(hints, ['zoneGates', 'worldMap'], 'the first gate teaches gates and the world map once: ' + JSON.stringify(hints));
+    console.log('PASS the first gate crossing shows the gate and world map hints once');
 
     // --- реконнект и перезапуск: та же зона, то же место ---------------------------------------
     const before = { x: back.x, z: back.z };

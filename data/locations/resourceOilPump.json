@@ -1139,7 +1139,7 @@
         "y": 1.0,
         "z": 1.0
       },
-      "collision": "none",
+      "collision": "solid",
       "role": "structure",
       "tags": [
         "fuel",

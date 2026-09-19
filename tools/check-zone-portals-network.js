@@ -93,6 +93,11 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
   zoneWalk.placeInZone(h, accounts, 'untargeted', eventZone.id, nearPortal(eventPortal));
   zoneWalk.placeInZone(h, accounts, 'harvest', eventZone.id, world(built[eventZone.id].entryFromWorld));
   zoneWalk.placeInZone(h, accounts, 'trade', groundsZone.id, nearPortal(groundsPortal));
+  const keys = readJson('data/locations/settlement.json');
+  const keysTiles = { w: keys.map.width / 2, d: keys.map.depth / 2 };
+  zoneWalk.placeInZone(h, accounts, 'progression', 'settlement', {
+    x: (keys.spawn.tx - keysTiles.w / 2 + 0.5) * 2, z: (keys.spawn.tz - keysTiles.d / 2 + 0.5) * 2
+  });
 
   await h.startServer();
   try {
@@ -144,12 +149,23 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     assert(area.encounters.some(row => row.locationId === encounter.locationId), 'the scene comes from the encounter table of the area');
     assert.equal(encounter.worldState?.parentZone?.id, groundsZone.id, 'the encounter leads back into the zone it was entered from');
     console.log(`PASS the trail of ${area.displayName} leads into ${encounter.roomId}`);
+
+    // --- быстрый подбор вылазки — у доски работ, а не откуда угодно -------------------------------
+    const clerk = accounts.progression;
+    await h.connectAndJoin(clerk);
+    assert.equal(clerk.join.locationId, 'settlement');
+    const elsewhere = await h.socketAck(clerk.socket, 'worldActivityQuickJoin', { boardSiteId: 'sluiceCity' });
+    assert.equal(elsewhere.ok, false);
+    assert.match(elsewhere.error, /у доски работ/, 'a board in another settlement does not pick an activity');
+    const atBoard = await h.socketAck(clerk.socket, 'worldActivityQuickJoin', { boardSiteId: 'settlement' });
+    assert(atBoard.ok || !/у доски работ/.test(atBoard.error || ''), 'the board of Keys picks an activity: ' + JSON.stringify(atBoard).slice(0, 200));
+    console.log(`PASS the quick activity join works at the board of Keys (${atBoard.ok ? atBoard.taskId : atBoard.error}) and not at another settlement's`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Zone portals network OK: an event stands as a portal in the zone of its point, lets in only up close, its room leads back to the portal, and hunting-ground trails roll an encounter.');
+  console.log('Zone portals network OK: an event stands as a portal in the zone of its point, lets in only up close, its room leads back to the portal, hunting-ground trails roll an encounter, and the job board picks an activity.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

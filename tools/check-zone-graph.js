@@ -45,6 +45,15 @@ for (const node of map.nodes.filter(row => row.hidden === true)) {
 }
 assert.equal(graph.capitals.length, 6);
 for (const capital of graph.capitals) assert.equal(zoneOfPlace(graph, capital).mode, 'peaceful', `${capital} stands in a peaceful zone`);
+// Синие зоны — только кольцо 3×3 вокруг городов фракций, мирные — только сами города.
+const capitalZones = graph.capitals.map(id => zoneOfPlace(graph, id));
+const ringOf = zone => Math.min(...capitalZones.map(c => Math.max(Math.abs(c.col - zone.col), Math.abs(c.row - zone.row))));
+for (const zone of graph.zones) {
+  const ring = ringOf(zone);
+  if (ring === 0) assert.equal(zone.mode, 'peaceful', `${zone.id} holds a faction city`);
+  else if (ring === 1) assert(['pve', 'pvpBlack'].includes(zone.mode), `${zone.id} next to a faction city is blue`);
+  else assert(!['pve', 'peaceful'].includes(zone.mode), `${zone.id} is ${ring} zones from any faction city and must not be blue or peaceful`);
+}
 assert.equal(zoneOfPlace(graph, 'coreZone').mode, 'pvpBlack', 'the Core hub stands in a black zone');
 assert.equal(zoneAtPoint(graph, -50, 9999).id.startsWith('z_'), true, 'a point outside the world snaps to the nearest zone');
 

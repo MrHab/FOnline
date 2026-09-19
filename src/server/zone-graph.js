@@ -19,6 +19,9 @@ const SIDES = Object.freeze({
 });
 const ALONG_MIN = 0.15;
 const ALONG_MAX = 0.85;
+// Решение 20.09.2026: синие зоны — только кольцо вокруг городов фракций: зона
+// столицы мирная, соседние с ней зоны (квадрат 3×3) синие, дальше цвет по региону.
+const BLUE_RING_ZONES = 1;
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function zoneId(col, row) { return `z_${pad(col)}_${pad(row)}`; }
@@ -76,7 +79,13 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
   const nodesById = {};
   for (const node of globalMap.nodes) nodesById[node.locationId || node.id] = { x: Number(node.x), y: Number(node.y) };
   const capitals = new Set(dangerConfig.capitals);
-  const blueCentres = new Set(dangerConfig.blueExtraCenters);
+  // Синий пояс и мирный радиус опасных клеток считаются по сетке зон ниже, а не по километрам.
+  const colourRules = { ...dangerConfig, capitals: [], blueExtraCenters: [] };
+  const capitalCells = [...capitals].filter(id => nodesById[id]).map(id => ({
+    col: clamp(Math.floor(nodesById[id].x / zonePoints), 0, cols - 1),
+    row: clamp(Math.floor(nodesById[id].y / zonePoints), 0, rows - 1)
+  }));
+  const capitalDistance = (col, row) => Math.min(Infinity, ...capitalCells.map(cell => Math.max(Math.abs(cell.col - col), Math.abs(cell.row - row))));
 
   const placesByZone = new Map();
   for (const node of globalMap.nodes.filter(row => row.hidden !== true)) {
@@ -110,9 +119,10 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
       }
       const difficultyOf = region => Math.max(0, ...cells.filter(cell => cell.macroRegion === region).map(cell => Number(cell.difficulty || 0)));
       const region = majority(cells.map(cell => cell.macroRegion || ''), difficultyOf);
-      let mode = dangerModeAt(dangerConfig, centre, nodesById, region, pointKm);
-      if (places.some(place => capitals.has(place.locationId))) mode = 'peaceful';
-      else if (mode !== 'peaceful' && places.some(place => blueCentres.has(place.locationId))) mode = 'pve';
+      const ring = capitalDistance(col, row);
+      let mode = dangerModeAt(colourRules, centre, nodesById, region, pointKm);
+      if (ring === 0) mode = 'peaceful';
+      else if (ring <= BLUE_RING_ZONES && mode !== 'pvpBlack') mode = 'pve';
       zones.set(id, {
         id, col, row, n: 0, name: '', title: '', region, mode,
         difficulty: clamp(Math.round(cells.reduce((sum, cell) => sum + Number(cell.difficulty || 1), 0) / Math.max(1, cells.length)), 1, 5),

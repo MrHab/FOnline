@@ -927,7 +927,7 @@ MonoBehaviour:
   - crafting-station
   - weapon_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &161454258
@@ -1037,7 +1037,7 @@ MonoBehaviour:
   - crafting-station
   - tool_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &209507880
@@ -2496,7 +2496,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &593469262
 PrefabInstance:
@@ -2615,7 +2615,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &599116012
 GameObject:
@@ -3988,7 +3988,7 @@ MonoBehaviour:
   - crafting-station
   - ammo_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &841781495
@@ -4315,7 +4315,7 @@ MonoBehaviour:
   - personal-storage
   - capital-storage
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &889276759
@@ -6382,7 +6382,7 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1183354378
@@ -6730,7 +6730,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1293051939
@@ -7787,7 +7787,7 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1706728389

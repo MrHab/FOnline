@@ -416,7 +416,7 @@ MonoBehaviour:
   - story_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &51726400
 GameObject:
@@ -2886,7 +2886,7 @@ MonoBehaviour:
   - lore
   - quest
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &586616647
 GameObject:
@@ -3654,7 +3654,7 @@ MonoBehaviour:
   - impossible-lattice
   - buried-field-rings
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &806856529
 PrefabInstance:
@@ -3772,7 +3772,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &836178307
 PrefabInstance:
@@ -4231,7 +4231,7 @@ MonoBehaviour:
   - service
   - interaction
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &896403645
 GameObject:
@@ -4599,7 +4599,7 @@ MonoBehaviour:
   - story_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &969274083
 PrefabInstance:
@@ -4718,7 +4718,7 @@ MonoBehaviour:
   - district
   - vector-deep-research-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &978651166
 PrefabInstance:
@@ -5279,7 +5279,7 @@ MonoBehaviour:
   - district
   - vector-deep-research-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1151878771
 GameObject:
@@ -5724,7 +5724,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1222303920
 PrefabInstance:
@@ -6335,7 +6335,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1278418311
 GameObject:
@@ -6831,7 +6831,7 @@ MonoBehaviour:
   - story-gate
   - interior
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1548391021
 GameObject:
@@ -7314,7 +7314,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1744421864
 GameObject:
@@ -9236,7 +9236,7 @@ MonoBehaviour:
   - distortion
   - impossible-geometry
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

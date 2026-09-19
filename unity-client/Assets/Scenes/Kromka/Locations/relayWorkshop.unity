@@ -2332,7 +2332,7 @@ MonoBehaviour:
   - industrial_site
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &400697183
 GameObject:
@@ -3225,7 +3225,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &748458769
@@ -3639,7 +3639,7 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &846135976
@@ -3926,7 +3926,7 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &863821648
@@ -7324,7 +7324,7 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1735987609
@@ -8238,7 +8238,7 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1929550812
@@ -8937,7 +8937,7 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &2027743332

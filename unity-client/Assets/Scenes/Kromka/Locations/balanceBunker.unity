@@ -2800,7 +2800,7 @@ MonoBehaviour:
   - lore
   - quest
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &295750815
 GameObject:
@@ -3143,7 +3143,7 @@ MonoBehaviour:
   - district
   - continuity-balance-bunker-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &370024105
 PrefabInstance:
@@ -4648,7 +4648,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &688140755
 GameObject:
@@ -5061,7 +5061,7 @@ MonoBehaviour:
   - district
   - continuity-balance-bunker-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &784714505
 PrefabInstance:
@@ -5629,7 +5629,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &852708872
 GameObject:
@@ -6148,7 +6148,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &909939716
 GameObject:
@@ -6577,7 +6577,7 @@ MonoBehaviour:
   - administrative-shaft
   - cold-status-column
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1010102840
 PrefabInstance:
@@ -6696,7 +6696,7 @@ MonoBehaviour:
   - story_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1049613145
 GameObject:
@@ -8688,7 +8688,7 @@ MonoBehaviour:
   - story_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1344107390
 GameObject:
@@ -9249,7 +9249,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1444035333
 GameObject:
@@ -9776,7 +9776,7 @@ MonoBehaviour:
   - service
   - interaction
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1525933161
 GameObject:
@@ -11324,7 +11324,7 @@ MonoBehaviour:
   - story-gate
   - interior
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1979914342
 GameObject:

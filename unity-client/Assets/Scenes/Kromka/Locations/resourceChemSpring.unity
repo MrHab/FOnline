@@ -4009,7 +4009,7 @@ MonoBehaviour:
   - resource
   - chemicals
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &686472601
@@ -4117,7 +4117,7 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &688978980
@@ -9731,7 +9731,7 @@ MonoBehaviour:
   - cover
   - chemicals
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1799904924

@@ -540,7 +540,7 @@ MonoBehaviour:
   - road_outpost
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &74300687
 PrefabInstance:
@@ -904,7 +904,7 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &144190407
@@ -1800,7 +1800,7 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &298745049
@@ -7221,7 +7221,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1636558070
@@ -8026,7 +8026,7 @@ MonoBehaviour:
   - road_outpost
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1749446261
 GameObject:
@@ -9328,7 +9328,7 @@ MonoBehaviour:
   - outpost
   - relay
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1999016894

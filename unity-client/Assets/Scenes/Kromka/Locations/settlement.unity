@@ -1677,7 +1677,7 @@ MonoBehaviour:
   - crafting-station
   - tool_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &284725322
@@ -2797,7 +2797,7 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &538611270
@@ -3921,7 +3921,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &662510720
@@ -5540,7 +5540,7 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &851007721
@@ -6193,7 +6193,7 @@ MonoBehaviour:
   - personal-storage
   - capital-storage
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &997777321
@@ -7596,7 +7596,7 @@ MonoBehaviour:
   - settlement
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1213372831
 PrefabInstance:
@@ -8325,7 +8325,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1271452413
@@ -9821,7 +9821,7 @@ MonoBehaviour:
   - settlement
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1667116732
 PrefabInstance:
@@ -9930,7 +9930,7 @@ MonoBehaviour:
   - crafting-station
   - weapon_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1670678530
@@ -11301,7 +11301,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1868669331
@@ -12096,7 +12096,7 @@ MonoBehaviour:
   - crafting-station
   - ammo_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &2050359304

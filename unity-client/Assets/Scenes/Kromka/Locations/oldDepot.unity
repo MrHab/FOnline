@@ -1527,7 +1527,7 @@ MonoBehaviour:
   - resource
   - electronics
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &457748124
@@ -2027,7 +2027,7 @@ MonoBehaviour:
   - raid_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &561143647
 PrefabInstance:
@@ -2866,7 +2866,7 @@ MonoBehaviour:
   - cover
   - depot
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &818023217
@@ -3057,7 +3057,7 @@ MonoBehaviour:
   - raid_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &847777488
 GameObject:
@@ -4083,7 +4083,7 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1180031838
@@ -5524,7 +5524,7 @@ MonoBehaviour:
   - ammoParts
   - weapon-parts
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1518325343

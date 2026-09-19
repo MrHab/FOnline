@@ -726,7 +726,7 @@ MonoBehaviour:
   _gameplayTags:
   - home
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &264413684
 PrefabInstance:
@@ -1082,7 +1082,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &391320938
 GameObject:
@@ -2333,7 +2333,7 @@ MonoBehaviour:
   _gameplayTags:
   - home
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &575607100
 PrefabInstance:
@@ -4384,7 +4384,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &832208329
 PrefabInstance:
@@ -4853,7 +4853,7 @@ MonoBehaviour:
   - lore
   - quest
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &906937262
 PrefabInstance:
@@ -4973,7 +4973,7 @@ MonoBehaviour:
   - command-dam
   - vertical-warning-light
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &933466082
 GameObject:
@@ -6184,7 +6184,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1229774275
 PrefabInstance:
@@ -6303,7 +6303,7 @@ MonoBehaviour:
   - service
   - interaction
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1317055090
 GameObject:
@@ -6518,7 +6518,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1342456819
 GameObject:
@@ -7573,7 +7573,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1545846298
 GameObject:
@@ -7916,7 +7916,7 @@ MonoBehaviour:
   - district
   - uprava-command-dam-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1598272384
 PrefabInstance:
@@ -8829,7 +8829,7 @@ MonoBehaviour:
   - district
   - uprava-command-dam-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1909731965
 PrefabInstance:
@@ -8935,7 +8935,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1911751781
 GameObject:

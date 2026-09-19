@@ -747,7 +747,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &84703886
 GameObject:
@@ -935,7 +935,7 @@ MonoBehaviour:
   - quarry-houses
   - filter-canopy
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &151387960
 GameObject:
@@ -2864,7 +2864,7 @@ MonoBehaviour:
   - district
   - seconds-chalk-quarry-town-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &696601621
 PrefabInstance:
@@ -3927,7 +3927,7 @@ MonoBehaviour:
   - lore
   - quest
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &781654166
 GameObject:
@@ -4337,7 +4337,7 @@ MonoBehaviour:
   _gameplayTags:
   - home
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &876118885
 GameObject:
@@ -4616,7 +4616,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1002990045
 PrefabInstance:
@@ -4901,7 +4901,7 @@ MonoBehaviour:
   - district
   - seconds-chalk-quarry-town-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1108509642
 GameObject:
@@ -6102,7 +6102,7 @@ MonoBehaviour:
   _gameplayTags:
   - home
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1307215523
 GameObject:
@@ -6894,7 +6894,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1448259827
 PrefabInstance:
@@ -7244,7 +7244,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1473598388
 GameObject:
@@ -7462,7 +7462,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1506840181
 GameObject:
@@ -9096,7 +9096,7 @@ MonoBehaviour:
   - faction_capital
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1779676414
 PrefabInstance:
@@ -9334,7 +9334,7 @@ MonoBehaviour:
   - service
   - interaction
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1799188635
 GameObject:

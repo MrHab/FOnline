@@ -1007,7 +1007,7 @@ MonoBehaviour:
   - resource
   - ore
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &326151445
@@ -4235,7 +4235,7 @@ MonoBehaviour:
   - resource
   - ore
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1037362175

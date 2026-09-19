@@ -699,8 +699,10 @@ namespace Kromka.EditorTools
 
         private static void ImpossibleLattice(Transform parent, string id, Vector3 position)
         {
+            // The beams carry no colliders: players walk through the lattice, so the
+            // server must not keep a blocker in its place.
             Transform root = Group(parent, id, "vector_lattice", "landmark",
-                new[] { "vector", "distortion", "impossible-geometry" }, true, false);
+                new[] { "vector", "distortion", "impossible-geometry" }, false, false);
             root.localPosition = position;
             for (int i = 0; i < 8; i++)
             {

@@ -1070,7 +1070,7 @@ MonoBehaviour:
   - crafting-station
   - ammo_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &219879990
@@ -1292,7 +1292,7 @@ MonoBehaviour:
   - crafting-station
   - tool_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &254853496
@@ -2372,7 +2372,7 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &462803284
@@ -3469,7 +3469,7 @@ MonoBehaviour:
   - caravan_hub
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &653104349
 GameObject:
@@ -4419,7 +4419,7 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &847936986
@@ -5315,7 +5315,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1017609622
@@ -7399,7 +7399,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1513490586
@@ -7729,7 +7729,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1630281969
@@ -8241,7 +8241,7 @@ MonoBehaviour:
   - personal-storage
   - capital-storage
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1783555039
@@ -8802,7 +8802,7 @@ MonoBehaviour:
   - crafting-station
   - weapon_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1878383276
@@ -9408,7 +9408,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &2100159579
@@ -9514,7 +9514,7 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &2101148986

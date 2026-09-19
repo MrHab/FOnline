@@ -1063,7 +1063,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &133063400
 GameObject:
@@ -1405,7 +1405,7 @@ MonoBehaviour:
   _gameplayTags:
   - guard-post
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &248860518
 GameObject:
@@ -3505,7 +3505,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &526603107
 GameObject:
@@ -4191,7 +4191,7 @@ MonoBehaviour:
   - raid_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &579143415
 GameObject:
@@ -4805,7 +4805,7 @@ MonoBehaviour:
   - regenerator-column
   - black-water-rings
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &685159414
 GameObject:
@@ -6531,7 +6531,7 @@ MonoBehaviour:
   - raid_complex
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &943254772
 GameObject:
@@ -6889,7 +6889,7 @@ MonoBehaviour:
   _gameplayTags:
   - entrance
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1029271586
 GameObject:
@@ -7344,7 +7344,7 @@ MonoBehaviour:
   - district
   - cascade-regenerator-r12-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1106309981
 GameObject:
@@ -8441,7 +8441,7 @@ MonoBehaviour:
   - service
   - interaction
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1312296634
 GameObject:
@@ -10122,7 +10122,7 @@ MonoBehaviour:
   - district
   - cascade-regenerator-r12-v1
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1556560450
 GameObject:
@@ -10927,7 +10927,7 @@ MonoBehaviour:
   - story-gate
   - interior
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1632044920
 GameObject:
@@ -14090,7 +14090,7 @@ MonoBehaviour:
   - lore
   - quest
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &2126314080
 GameObject:

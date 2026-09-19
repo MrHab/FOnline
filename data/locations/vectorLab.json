@@ -1167,7 +1167,7 @@
         "y": 1.0,
         "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "vector",

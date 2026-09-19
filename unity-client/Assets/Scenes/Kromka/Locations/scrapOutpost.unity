@@ -1548,7 +1548,7 @@ MonoBehaviour:
   - road_outpost
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &394974344
 PrefabInstance:
@@ -3372,7 +3372,7 @@ MonoBehaviour:
   - road_outpost
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &888316771
 GameObject:
@@ -5490,7 +5490,7 @@ MonoBehaviour:
   - crafting-station
   - tool_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1325623235
@@ -6331,7 +6331,7 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1001 &1420657844
@@ -7201,7 +7201,7 @@ MonoBehaviour:
   - crafting-station
   - ammo_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1622012681
@@ -8981,7 +8981,7 @@ MonoBehaviour:
   - cover
   - supplies
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &2027723041

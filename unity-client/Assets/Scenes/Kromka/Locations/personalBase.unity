@@ -2390,7 +2390,7 @@ MonoBehaviour:
   - base-fixed
   - base-terminal
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &399702020
 GameObject:
@@ -7785,7 +7785,7 @@ MonoBehaviour:
   - shelter
   - roof
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1198151594
 GameObject:

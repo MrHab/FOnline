@@ -5992,7 +5992,7 @@ MonoBehaviour:
   - resource
   - wood
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &1785628290
@@ -7329,7 +7329,7 @@ MonoBehaviour:
   - resource
   - wood
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 0
   _lowCover: 1
 --- !u!1 &2012009655

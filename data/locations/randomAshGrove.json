@@ -166,14 +166,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 1.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.2
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-cover-1",
@@ -201,14 +213,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 1.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.2
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-cover-2",
@@ -236,14 +260,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 1.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.2
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-cover-3",
@@ -271,14 +307,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 1.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.2
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-cover-4",
@@ -306,14 +354,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 1.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 1.2
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-dressing-functional-01",
@@ -1005,14 +1065,36 @@
         "windbreak-trees"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-module-1",
@@ -1040,14 +1122,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "randomAshGrove-module-2",
@@ -1075,14 +1166,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-module-3",
@@ -1110,14 +1213,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-module-4",
@@ -1145,14 +1260,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "randomAshGrove-module-5",
@@ -1180,14 +1307,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "randomAshGrove-region-field-0",

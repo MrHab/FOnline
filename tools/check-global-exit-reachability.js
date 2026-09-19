@@ -1,288 +1,272 @@
 #!/usr/bin/env node
 'use strict';
-// Достижимость зон выхода на глобальную карту.
+// Достижимость внутри локации: выход на глобальную карту и всё, с чем игрок
+// взаимодействует.
 //
 // check-global-exit-direction проверяет геометрию полос (направление, ширину,
 // отрисовку), но не отвечает на главный игровой вопрос: может ли персонаж
 // ДОЙТИ от точки спавна до полосы выхода пешком. Стена из авторских объектов,
 // поставленная поперёк, запечатала бы выход, и ни одна статическая проверка
-// этого бы не заметила. Повод написать эту: живой Unity-прогон, где персонаж
-// у края локации упал за пределы мира — выяснилось, что край карты никто
-// не проверял целиком.
+// этого бы не заметила.
 //
-// Метод: для каждой локации собираются те же OBB-блокираторы движения, что
-// строит сервер (transformedModelBlockers по каталогу model-colliders.json,
-// server.js:12366), тайл считается проходимым, если центр тайла с радиусом
-// игрока не попадает в блокиратор, и от спавна запускается заливка.
-// Полоса выхода — два крайних тайла игровой зоны с каждой стороны
-// (WORLD_MAP_EXIT_BAND_TILES = 2, server.js:18485).
+// Преграды здесь собирает тот же src/server/location-collision.js, что и сервер,
+// поэтому проверка видит ровно те стены, которые видит он: collisionParts сцен
+// Кромки, collisionSize, footprint. С настоящими преградами зданий вопрос стал
+// шире выхода: NPC, станок, тайник или объект задания, оказавшийся внутри стены
+// или за ней, молча перестаёт работать — сервер требует прямой видимости
+// (serverInteractionHasLineOfSight) и отвечает «находится за препятствием».
+//
+// Метод: сетка с шагом 0.5 м, клетка свободна, если круг игрока в ней не задевает
+// ни одну преграду (правило roomStaticCollisionMoveAllowed); от спавна идёт заливка.
+// Цель взаимодействия годна, если из какой-то достигнутой клетки в радиусе
+// действия до неё есть прямая видимость по правилу сервера.
 
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const {
-  loadModelColliderCatalog,
-  modelColliderCatalogEntry,
-  transformedModelBlockers
-} = require('../src/server/model-colliders');
+  circleBlockerPenalty,
+  createLocationCollision,
+  locationObjectIsNpc,
+  locationObjectPosition,
+  locationObjectTags
+} = require('../src/server/location-collision');
+const { segmentIntersectsRotatedBlocker } = require('../src/server/enemy-ai');
+const {
+  buildStaticCollisionSpatialIndex,
+  queryStaticCollisionSpatialIndex
+} = require('../src/server/static-collision-spatial-index');
 
 const ROOT = path.resolve(__dirname, '..');
 const TILE = 2;
+const CELL = 0.5;
 // Сетка тайлов задаётся локацией (server.js locationTileDims): без явного
 // map.width/depth остаётся 38×38, авторская сцена любого размера объявляет
-// его в метрах. Значения переустанавливаются для каждой локации.
-const DEFAULT_MAP_W = 38;
-const DEFAULT_MAP_H = 38;
-let MAP_W = DEFAULT_MAP_W;
-let MAP_H = DEFAULT_MAP_H;
+// его в метрах.
+const DEFAULT_MAP_TILES = 38;
+const EXIT_BAND_TILES = 2;
+// PLAYER_COLLISION_RADIUS в server.js и радиус капсулы RoaPlayerController.
+const PLAYER_RADIUS = 0.48;
+// Дальности сервера: станок, хранилище, объект задания и разговор — 4.6 м,
+// тайник и добыча ресурса — 3.2 м. Проверка оставляет запас на шаг сетки.
+const REACH = { interact: 4.6 - CELL, loot: 3.2 - CELL };
+
+const { locationObjectBlockers } = createLocationCollision({ tile: TILE });
+
 function locationTileDims(loc = {}) {
   const map = loc.map && typeof loc.map === 'object' ? loc.map : {};
   const widthMeters = Number(map.technicalWidth || map.width || 0);
   const depthMeters = Number(map.technicalDepth || map.depth || 0);
   return {
-    w: widthMeters > 0 ? Math.max(1, Math.round(widthMeters / TILE)) : DEFAULT_MAP_W,
-    h: depthMeters > 0 ? Math.max(1, Math.round(depthMeters / TILE)) : DEFAULT_MAP_H
-  };
-}
-const EXIT_BAND_TILES = 2;
-const PLAYER_RADIUS = 0.35;
-
-const catalog = loadModelColliderCatalog(
-  path.join(ROOT, 'public/assets/models/wasteland/model-colliders.json'));
-
-// --- Мини-копии серверных помощников (server.js:12133–12420). Логика обязана
-// совпадать с сервером, поэтому переносится дословно, а не «по мотивам». ---
-
-const MODULE_MODEL_KEYS = new Set([
-  'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
-  'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
-  'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
-]);
-
-function objectPosition(row = {}) {
-  const pos = row.position && typeof row.position === 'object' ? row.position : row;
-  return { x: Number(pos.x || 0), z: Number(pos.z || 0) };
-}
-
-function objectScale(row = {}) {
-  if (MODULE_MODEL_KEYS.has(String(row.model || ''))) return { x: 1, z: 1 };
-  const scale = row.scale && typeof row.scale === 'object' ? row.scale : {};
-  const uniform = Number(row.scale || 1);
-  const fallback = Number.isFinite(uniform) ? uniform : 1;
-  return {
-    x: Number.isFinite(Number(scale.x)) ? Number(scale.x) : fallback,
-    z: Number.isFinite(Number(scale.z)) ? Number(scale.z) : fallback
+    w: widthMeters > 0 ? Math.max(1, Math.round(widthMeters / TILE)) : DEFAULT_MAP_TILES,
+    h: depthMeters > 0 ? Math.max(1, Math.round(depthMeters / TILE)) : DEFAULT_MAP_TILES
   };
 }
 
-function objectRotationY(row = {}) {
-  const rotation = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
-  const value = Number(rotation.y ?? row.rotationY ?? (typeof row.rotation === 'number' ? row.rotation : 0));
-  return Number.isFinite(value) ? value : 0;
+// Точка в метрах; старые записи знают только тайл — тогда берётся его центр.
+function pointOf(entry, dims) {
+  if (!entry || typeof entry !== 'object') return null;
+  const finite = value => value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
+  if (finite(entry.x) && finite(entry.z)) return { x: Number(entry.x), z: Number(entry.z) };
+  if (finite(entry.tx) && finite(entry.tz))
+    return { x: (Number(entry.tx) - dims.w / 2 + 0.5) * TILE, z: (Number(entry.tz) - dims.h / 2 + 0.5) * TILE };
+  return null;
 }
 
-function objectTags(row = {}) {
-  return (Array.isArray(row.tags) ? row.tags : [])
-    .map(tag => String(tag || '').trim().toLowerCase())
-    .filter(Boolean);
+function isHostile(row) {
+  const kind = String(row.entity?.kind || '').trim().toLowerCase();
+  return ['enemy', 'creature', 'monster'].includes(kind)
+    || row.entity?.hostileToPlayer === true
+    || locationObjectTags(row).some(tag => ['hostile', 'mutant', 'enemy', 'monster'].includes(tag));
 }
 
-function objectIsNpc(row = {}) {
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const entityKind = String(entity.kind || row.entity || '').trim().toLowerCase();
-  return entityKind === 'npc' || entityKind === 'enemy' || entityKind === 'monster'
-    || objectTags(row).some(tag => ['npc', 'enemy', 'monster', 'living', 'friendly', 'guard', 'merchant', 'trader'].includes(tag))
-    || /^(enemy|npc|tradernpc|caravanmerchant|caravanguard|klimpatrolguard|wastelandsettler|friendlybrahmin)/i.test(String(row.model || ''));
+// То, к чему игрок подходит и нажимает «использовать».
+function interactionReach(row) {
+  const tags = locationObjectTags(row);
+  const kind = String(row.interactive?.kind || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  if (row.resourceType || row.resource || tags.includes('resource-node') || tags.includes('harvestable')) return REACH.loot;
+  if (kind || (Array.isArray(row.craftingStations) && row.craftingStations.length)
+    || tags.some(tag => ['quest-object', 'crafting-station', 'jobboard', 'questboard', 'lab-node',
+      'personal-storage', 'capital-storage'].includes(tag))) return REACH.interact;
+  return 0;
 }
 
-function objectAllowsPlayerOverlap(row = {}) {
-  const explicit = String(row.playerCollision ?? row.movementCollision ?? '').trim().toLowerCase();
-  if (row.playerCollision === false
-    || ['none', 'off', 'disabled', 'pass', 'pass-through', 'passthrough'].includes(explicit)) return true;
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const kinds = [interactive.kind, entity.kind, row.kind]
-    .map(value => String(value || '').replace(/[^a-z0-9]/gi, '').toLowerCase())
-    .filter(Boolean);
-  const tags = [...objectTags(row), ...objectTags(entity), ...objectTags(interactive)];
-  return kinds.some(kind => ['craftingstation', 'jobboard', 'trademachine', 'vendingmachine', 'container', 'storage'].includes(kind))
-    || tags.some(tag => [
-      'interactive', 'crafting-station', 'jobboard', 'questboard', 'trademachine',
-      'vendingmachine', 'container', 'storage', 'personal-storage', 'ground-item',
-      'loot-item', 'pickup', 'pass-through', 'no-player-collision'
-    ].includes(tag));
-}
-
-function objectBlocksMovement(row = {}) {
-  if (objectIsNpc(row)) return false;
-  const tags = objectTags(row);
-  const role = String((row.occlusion && row.occlusion.role) || '').toLowerCase();
-  if (role === 'roof' || role === 'floor' || tags.includes('roof') || tags.includes('floor')) return false;
-  if (objectAllowsPlayerOverlap(row)) return false;
-  const collision = String(row.collision || '').toLowerCase();
-  return ['solid', 'block', 'blocked', 'wall', 'resource'].includes(collision);
-}
-
-function objectModelRef(row = {}) {
-  return String(row.url || row.file || '').trim();
-}
-
-function objectFootprintSize(row = {}) {
-  const placement = row.placement && typeof row.placement === 'object' ? row.placement : {};
-  const cells = placement.cells && typeof placement.cells === 'object' ? placement.cells : {};
-  const footprint = row.footprint && typeof row.footprint === 'object' ? row.footprint : {};
-  const scale = objectScale(row);
-  const cellW = Number(cells.x || 0) > 0 ? Number(cells.x) * TILE : 0;
-  const cellD = Number(cells.z || 0) > 0 ? Number(cells.z) * TILE : 0;
-  return {
-    width: Math.max(0.45, cellW || Number(footprint.x || 0) || Math.max(1, Math.abs(scale.x)) * TILE),
-    depth: Math.max(0.45, cellD || Number(footprint.z || 0) || Math.max(1, Math.abs(scale.z)) * TILE)
-  };
-}
-
-function objectBlockers(row) {
-  const pos = objectPosition(row);
-  if (!Number.isFinite(pos.x) || !Number.isFinite(pos.z)) return [];
-  const scale = objectScale(row);
-  const rotationY = objectRotationY(row);
-  const modelRef = objectModelRef(row);
-  const entry = modelColliderCatalogEntry(catalog, modelRef);
-  const parts = transformedModelBlockers(catalog, modelRef, {
-    x: pos.x, z: pos.z, rotationY, scaleX: scale.x, scaleZ: scale.z
-  });
-  if (entry && parts.length) return parts;
-  if (entry) {
-    // Модель в каталоге, но без частей и без явного collisionSize —
-    // сервер такие пропускает (server.js:12378).
-    const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
-    if (!(Number(exact.width || exact.x || 0) > 0 && Number(exact.depth || exact.z || 0) > 0)) return [];
-  }
-  const size = objectFootprintSize(row);
-  return [{
-    x: pos.x, z: pos.z,
-    halfX: Math.max(0.2, size.width * 0.5),
-    halfZ: Math.max(0.2, size.depth * 0.5),
-    rotationY: -rotationY
-  }];
-}
-
-// Точка (центр тайла) с радиусом игрока против OBB — так же семплирует
-// проходимость web-клиент (isBlockedByStaticCollision по позиции персонажа).
-function pointBlocked(x, z, blockers) {
-  for (const box of blockers) {
-    const dx = x - box.x;
-    const dz = z - box.z;
-    const cos = Math.cos(box.rotationY || 0);
-    const sin = Math.sin(box.rotationY || 0);
-    const localX = dx * cos + dz * sin;
-    const localZ = -dx * sin + dz * cos;
-    if (Math.abs(localX) <= box.halfX + PLAYER_RADIUS && Math.abs(localZ) <= box.halfZ + PLAYER_RADIUS) return true;
-  }
-  return false;
-}
-
-function tileToWorld(tx, tz) {
-  return { x: (tx - MAP_W / 2 + 0.5) * TILE, z: (tz - MAP_H / 2 + 0.5) * TILE };
-}
-
-// --- Сама проверка ---
-
-const locationsDir = path.join(ROOT, 'data/locations');
+// Необязательный аргумент — другой каталог локаций: так проверяется пробный экспорт сцен.
+const locationsDir = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'data/locations');
 const files = fs.readdirSync(locationsDir).filter(name => name.endsWith('.json'));
 assert(files.length >= 25, `подозрительно мало локаций: ${files.length}`);
 
 const failures = [];
 let checked = 0;
+let targetsChecked = 0;
+let actorsChecked = 0;
 
 for (const file of files.sort()) {
   const loc = JSON.parse(fs.readFileSync(path.join(locationsDir, file), 'utf8'));
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
+  const objects = (Array.isArray(loc.objects) ? loc.objects : []).filter(row => row && typeof row === 'object');
   const dims = locationTileDims(loc);
-  MAP_W = dims.w;
-  MAP_H = dims.h;
+  const fail = message => failures.push(`${loc.id}: ${message}`);
 
-  const blockers = [];
-  for (const row of objects) {
-    if (!row || !objectBlocksMovement(row)) continue;
-    blockers.push(...objectBlockers(row));
-  }
+  const blockers = objects.flatMap(row => locationObjectBlockers(row));
+  const index = buildStaticCollisionSpatialIndex(blockers, { cellSize: 8 });
+  const near = (minX, minZ, maxX, maxZ) => queryStaticCollisionSpatialIndex(index, minX, minZ, maxX, maxZ);
+  const isFree = (x, z, radius = PLAYER_RADIUS) => near(x - radius, z - radius, x + radius, z + radius)
+    .every(blocker => circleBlockerPenalty(x, z, radius, blocker) <= 0.001);
+  // serverInteractionHasLineOfSight: цель не заслоняет сама себя.
+  const sees = (fromX, fromZ, toX, toZ, ownId) => !near(
+    Math.min(fromX, toX) - 0.1, Math.min(fromZ, toZ) - 0.1, Math.max(fromX, toX) + 0.1, Math.max(fromZ, toZ) + 0.1
+  ).some(blocker => !(ownId && blocker.objectId === ownId)
+    && segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, 0.055, { startPadding: 0.3, endPadding: 0.42 }));
 
   // Границы игровой зоны: у всех текущих локаций совпадают с картой,
   // но формула повторяет серверную normalizedLocationPlayableBounds.
   const raw = loc.playableBounds && typeof loc.playableBounds === 'object' ? loc.playableBounds : {};
-  const width = Math.max(8, Math.min(MAP_W, Math.floor(Number(raw.width) || MAP_W)));
-  const height = Math.max(8, Math.min(MAP_H, Math.floor(Number(raw.height) || MAP_H)));
-  const minX = Math.max(0, Math.min(MAP_W - width, Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (MAP_W - width) / 2)));
-  const minZ = Math.max(0, Math.min(MAP_H - height, Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (MAP_H - height) / 2)));
-  const maxX = minX + width - 1;
-  const maxZ = minZ + height - 1;
+  const width = Math.max(8, Math.min(dims.w, Math.floor(Number(raw.width) || dims.w)));
+  const height = Math.max(8, Math.min(dims.h, Math.floor(Number(raw.height) || dims.h)));
+  const minTx = Math.max(0, Math.min(dims.w - width, Math.floor(Number.isFinite(Number(raw.minX)) ? Number(raw.minX) : (dims.w - width) / 2)));
+  const minTz = Math.max(0, Math.min(dims.h - height, Math.floor(Number.isFinite(Number(raw.minZ)) ? Number(raw.minZ) : (dims.h - height) / 2)));
+  const maxTx = minTx + width - 1;
+  const maxTz = minTz + height - 1;
 
-  const walkable = [];
-  for (let tz = 0; tz < MAP_H; tz++) {
-    walkable[tz] = [];
-    for (let tx = 0; tx < MAP_W; tx++) {
-      if (tx < minX || tz < minZ || tx > maxX || tz > maxZ) { walkable[tz][tx] = false; continue; }
-      const point = tileToWorld(tx, tz);
-      walkable[tz][tx] = !pointBlocked(point.x, point.z, blockers);
+  const columns = Math.round(dims.w * TILE / CELL);
+  const rowsCount = Math.round(dims.h * TILE / CELL);
+  const cellX = column => (column + 0.5) * CELL - dims.w * TILE / 2;
+  const cellZ = line => (line + 0.5) * CELL - dims.h * TILE / 2;
+  const tileOf = (column, line) => ({ tx: Math.floor(column * CELL / TILE), tz: Math.floor(line * CELL / TILE) });
+  const free = new Uint8Array(columns * rowsCount);
+  for (let line = 0; line < rowsCount; line++) {
+    for (let column = 0; column < columns; column++) {
+      const tile = tileOf(column, line);
+      if (tile.tx < minTx || tile.tz < minTz || tile.tx > maxTx || tile.tz > maxTz) continue;
+      if (isFree(cellX(column), cellZ(line))) free[line * columns + column] = 1;
     }
   }
 
-  const spawn = loc.spawn || {};
-  const spawnTx = Number(spawn.tx);
-  const spawnTz = Number(spawn.tz);
-  if (!Number.isFinite(spawnTx) || !Number.isFinite(spawnTz)) {
-    failures.push(`${loc.id}: нет точки спавна`);
-    continue;
-  }
+  const spawn = pointOf(loc.spawn, dims);
+  if (!spawn) { fail('нет точки спавна'); continue; }
 
-  // Заливка от спавна. Спавн может стоять на краю коллайдера — стартуем
-  // с ближайшего проходимого тайла в радиусе двух, как серверный respawn.
-  const reached = new Set();
-  const queue = [];
-  outer:
-  for (let r = 0; r <= 2; r++) {
-    for (let dz = -r; dz <= r; dz++) {
-      for (let dx = -r; dx <= r; dx++) {
-        const tx = spawnTx + dx;
-        const tz = spawnTz + dz;
-        if (tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H) continue;
-        if (walkable[tz][tx]) { queue.push([tx, tz]); reached.add(tz * MAP_W + tx); break outer; }
+  // Заливка от спавна. Спавн может стоять вплотную к стене — стартуем с ближайшей
+  // свободной клетки в пределах 1.5 м, как серверный respawn ищет место рядом.
+  const nearestFreeCell = (point, reach) => {
+    let best = -1;
+    let bestDistance = Infinity;
+    const span = Math.ceil(reach / CELL);
+    const centerColumn = Math.floor((point.x + dims.w * TILE / 2) / CELL);
+    const centerLine = Math.floor((point.z + dims.h * TILE / 2) / CELL);
+    for (let line = centerLine - span; line <= centerLine + span; line++) {
+      for (let column = centerColumn - span; column <= centerColumn + span; column++) {
+        if (column < 0 || line < 0 || column >= columns || line >= rowsCount || !free[line * columns + column]) continue;
+        const distance = Math.hypot(cellX(column) - point.x, cellZ(line) - point.z);
+        if (distance <= reach && distance < bestDistance) { bestDistance = distance; best = line * columns + column; }
       }
     }
-  }
+    return best;
+  };
 
-  if (!queue.length) {
-    failures.push(`${loc.id}: спавн (${spawnTx},${spawnTz}) заперт коллизией`);
-    continue;
-  }
-
+  const start = nearestFreeCell(spawn, 1.5);
+  if (start < 0) { fail(`спавн (${spawn.x}, ${spawn.z}) заперт коллизией`); continue; }
+  const reached = new Uint8Array(columns * rowsCount);
+  const queue = [start];
+  reached[start] = 1;
   while (queue.length) {
-    const [tx, tz] = queue.pop();
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = tx + dx;
-      const nz = tz + dz;
-      if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H) continue;
-      const key = nz * MAP_W + nx;
-      if (reached.has(key) || !walkable[nz][nx]) continue;
-      reached.add(key);
-      queue.push([nx, nz]);
+    const cell = queue.pop();
+    const column = cell % columns;
+    const line = (cell - column) / columns;
+    for (const [dc, dl] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = column + dc;
+      const nl = line + dl;
+      if (nc < 0 || nl < 0 || nc >= columns || nl >= rowsCount) continue;
+      const next = nl * columns + nc;
+      if (reached[next] || !free[next]) continue;
+      reached[next] = 1;
+      queue.push(next);
     }
   }
 
-  // Полоса выхода: серверный предикат serverPlayerAtGlobalMapExit
-  // (server.js:18668) — два крайних тайла внутри игровой зоны.
+  const reachedNear = (point, reach, accept = () => true) => {
+    const span = Math.ceil(reach / CELL);
+    const centerColumn = Math.floor((point.x + dims.w * TILE / 2) / CELL);
+    const centerLine = Math.floor((point.z + dims.h * TILE / 2) / CELL);
+    for (let line = centerLine - span; line <= centerLine + span; line++) {
+      for (let column = centerColumn - span; column <= centerColumn + span; column++) {
+        if (column < 0 || line < 0 || column >= columns || line >= rowsCount || !reached[line * columns + column]) continue;
+        const x = cellX(column);
+        const z = cellZ(line);
+        if (Math.hypot(x - point.x, z - point.z) <= reach && accept(x, z)) return true;
+      }
+    }
+    return false;
+  };
+
+  // Любая точка прибытия: игрок появляется ровно в ней и обязан выйти на общую землю.
+  // Точку в преграде сервер меняет на ближайший свободный центр тайла
+  // (ensurePlayerOutsideRoomGeometry) — порой в нескольких метрах и уже вне
+  // досягаемости двери, через которую игрок пришёл и хочет уйти назад.
+  for (const [key, value] of Object.entries(loc)) {
+    if (!/^(spawn|respawn|entry|entry[A-Z]\w*|migrationArrival)$/.test(key)) continue;
+    const point = pointOf(value, dims);
+    if (!point) continue;
+    if (!isFree(point.x, point.z)) fail(`точка прибытия ${key} (${point.x}, ${point.z}) стоит в преграде: сервер сдвинет игрока`);
+    else if (!reachedNear(point, 1.5)) fail(`точка прибытия ${key} (${point.x}, ${point.z}) отрезана от спавна`);
+  }
+
+  for (const row of objects) {
+    const position = locationObjectPosition(row);
+    if (locationObjectIsNpc(row)) {
+      actorsChecked++;
+      const label = `${isHostile(row) ? 'противник' : 'NPC'} ${row.id}`;
+      // spawnAuthoredLocationActors ставит актёра на авторскую точку, только если там
+      // свободно для круга 0.32 м (isEnemyStepOpen); иначе он остаётся на ближайшей
+      // свободной клетке сетки — порой по другую сторону стены.
+      if (!isFree(position.x, position.z, 0.32)) {
+        fail(`${label} (${position.x}, ${position.z}) стоит внутри преграды: сервер поставит его в другом месте`);
+      }
+      else if (isHostile(row)) {
+        if (!reachedNear(position, 2.5)) fail(`${label} отрезан от спавна: до него не дойти и он не выйдет`);
+      } else if (!reachedNear(position, REACH.interact, (x, z) => sees(x, z, position.x, position.z, ''))) {
+        fail(`${label} не виден ни из одной доступной точки в ${REACH.interact + CELL} м: поговорить и торговать нельзя`);
+      }
+      continue;
+    }
+    const reach = interactionReach(row);
+    if (!reach) continue;
+    targetsChecked++;
+    const ownId = String(row.id || '');
+    if (!reachedNear(position, reach, (x, z) => sees(x, z, position.x, position.z, ownId)))
+      fail(`объект ${row.id} (${position.x}, ${position.z}) не виден ни из одной доступной точки в ${reach + CELL} м`);
+  }
+
+  for (const container of Array.isArray(loc.containers) ? loc.containers : []) {
+    const point = pointOf(container, dims);
+    if (!point) continue;
+    targetsChecked++;
+    if (!reachedNear(point, REACH.loot, (x, z) => sees(x, z, point.x, point.z, '')))
+      fail(`тайник ${container.id} (${point.x}, ${point.z}) не виден ни из одной доступной точки в ${REACH.loot + CELL} м`);
+  }
+
+  for (const transition of Array.isArray(loc.transitions) ? loc.transitions : []) {
+    if (String(transition.type || '').toLowerCase() === 'globalmap') continue;
+    const point = pointOf(transition, dims);
+    if (!point) continue;
+    targetsChecked++;
+    if (!reachedNear(point, Math.max(1.5, Number(transition.radius) || 2.4)))
+      fail(`переход ${transition.id || transition.to} (${point.x}, ${point.z}) недостижим от спавна`);
+  }
+
+  // Полоса выхода: серверный предикат serverPlayerAtGlobalMapExit — два крайних
+  // тайла внутри игровой зоны.
   const inner = EXIT_BAND_TILES - 1;
   const sides = { north: false, south: false, west: false, east: false };
   let bandReached = 0;
-
-  for (const key of reached) {
-    const tx = key % MAP_W;
-    const tz = Math.floor(key / MAP_W);
+  for (let cell = 0; cell < reached.length; cell++) {
+    if (!reached[cell]) continue;
+    const column = cell % columns;
+    const tile = tileOf(column, (cell - column) / columns);
     let inBand = false;
-    if (tz <= minZ + inner) { sides.north = true; inBand = true; }
-    if (tz >= maxZ - inner) { sides.south = true; inBand = true; }
-    if (tx <= minX + inner) { sides.west = true; inBand = true; }
-    if (tx >= maxX - inner) { sides.east = true; inBand = true; }
+    if (tile.tz <= minTz + inner) { sides.north = true; inBand = true; }
+    if (tile.tz >= maxTz - inner) { sides.south = true; inBand = true; }
+    if (tile.tx <= minTx + inner) { sides.west = true; inBand = true; }
+    if (tile.tx >= maxTx - inner) { sides.east = true; inBand = true; }
     if (inBand) bandReached++;
   }
 
@@ -291,38 +275,32 @@ for (const file of files.sort()) {
   // спавн проверен выше, а выход идёт через платформу метро или лифт.
   if (loc.allowGlobalMapExit === false) {
     checked++;
-    console.log(`  ${loc.id}: выход на глобальную карту закрыт авторски, проверен только спавн (${dims.w}×${dims.h})`);
+    console.log(`  ${loc.id}: выход на глобальную карту закрыт авторски, проверены спавн и цели (${dims.w}×${dims.h})`);
     continue;
   }
   if (!reachableSides.length) {
-    failures.push(`${loc.id}: полоса выхода недостижима от спавна (${spawnTx},${spawnTz}), блокираторов ${blockers.length}`);
+    fail(`полоса выхода недостижима от спавна (${spawn.x}, ${spawn.z}), преград ${blockers.length}`);
     continue;
   }
 
   // Явный авторский выход тоже обязан быть достижим.
-  if (loc.exit && Number.isFinite(Number(loc.exit.tx)) && Number.isFinite(Number(loc.exit.tz))) {
-    const near = [];
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        near.push((Number(loc.exit.tz) + dz) * MAP_W + (Number(loc.exit.tx) + dx));
-      }
-    }
-    if (!near.some(key => reached.has(key))) {
-      failures.push(`${loc.id}: авторский выход (${loc.exit.tx},${loc.exit.tz}) недостижим от спавна`);
-      continue;
-    }
+  const exit = pointOf(loc.exit, dims);
+  if (exit && !reachedNear(exit, 3)) {
+    fail(`авторский выход (${exit.x}, ${exit.z}) недостижим от спавна`);
+    continue;
   }
 
   checked++;
   if (reachableSides.length < 4) {
-    console.log(`  ${loc.id}: достижимо сторон ${reachableSides.length}/4 (${reachableSides.join(', ')}), тайлов полосы ${bandReached}`);
+    console.log(`  ${loc.id}: достижимо сторон ${reachableSides.length}/4 (${reachableSides.join(', ')}), клеток полосы ${bandReached}`);
   }
 }
 
 if (failures.length) {
-  console.error('Global exit reachability FAILED:');
+  console.error('Location reachability FAILED:');
   for (const line of failures) console.error('  - ' + line);
   process.exit(1);
 }
 
-console.log(`Global exit reachability OK: ${checked} локаций, спавн и авторский выход достижимы, полоса выхода открыта хотя бы с одной стороны.`);
+console.log(`Location reachability OK: ${checked} локаций, точки прибытия свободны, выход открыт хотя бы с одной стороны, `
+  + `${actorsChecked} NPC и противников стоят на свободной земле, ${targetsChecked} целей взаимодействия видны игроку.`);

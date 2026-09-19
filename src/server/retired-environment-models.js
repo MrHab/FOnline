@@ -89,27 +89,9 @@ function isRetiredEnvironmentModel(model = '') {
   return RETIRED_ENVIRONMENT_MODEL_KEYS.has(String(model || '').trim());
 }
 
-function stripRetiredEnvironmentCollisions(definition = {}) {
-  let changed = 0;
-  for (const object of Array.isArray(definition.objects) ? definition.objects : []) {
-    if (!object || !isRetiredEnvironmentModel(object.model)) continue;
-    if (String(object.collision || '').toLowerCase() !== 'none') {
-      object.collision = 'none';
-      changed += 1;
-    }
-    for (const field of ['collisionParts', 'collisionSize', 'modelCollision']) {
-      if (!Object.prototype.hasOwnProperty.call(object, field)) continue;
-      delete object[field];
-      changed += 1;
-    }
-  }
-  return changed;
-}
-
 module.exports = {
   RETIRED_ENVIRONMENT_MODELS,
   RETIRED_OLD_KLIM_MODEL_KEYS,
   RETIRED_ENVIRONMENT_MODEL_KEYS,
-  isRetiredEnvironmentModel,
-  stripRetiredEnvironmentCollisions
+  isRetiredEnvironmentModel
 };

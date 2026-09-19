@@ -23,10 +23,10 @@
   },
   "spawn": {
     "tx": 19,
-    "tz": 8,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromSettlement": {
@@ -191,14 +191,56 @@
         "vertical"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": -1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-defense-tower-1",
@@ -227,14 +269,56 @@
         "vertical"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": -1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-defense-tower-2",
@@ -263,14 +347,56 @@
         "vertical"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": -1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": -1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        },
+        {
+          "center": {
+            "x": 1.8,
+            "z": 1.8
+          },
+          "size": {
+            "x": 0.35,
+            "z": 0.35
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-dressing-functional-01",
@@ -963,14 +1089,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 31.46,
+        "z": 31.46
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 13.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 12.01,
+            "z": 4.975
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 9.192,
+            "z": 9.192
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 4.975,
+            "z": 12.01
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 13.0
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -4.975,
+            "z": 12.01
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -9.192,
+            "z": 9.192
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -12.01,
+            "z": 4.975
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -13.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -12.01,
+            "z": -4.975
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -9.192,
+            "z": -9.192
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -4.975,
+            "z": -12.01
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -13.0
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 4.975,
+            "z": -12.01
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 9.192,
+            "z": -9.192
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 12.01,
+            "z": -4.975
+          },
+          "size": {
+            "x": 5.46,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "wasteland-landmark",
@@ -997,14 +1299,23 @@
         "defense-tower"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.0,
+        "z": 8.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.75
+        }
+      ]
     },
     {
       "id": "wasteland-module-1",
@@ -1032,14 +1343,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "wasteland-module-2",
@@ -1067,14 +1387,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-module-3",
@@ -1102,14 +1434,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-module-4",
@@ -1137,14 +1481,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "wasteland-module-5",
@@ -1172,14 +1528,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "wasteland-region-crater-0",
@@ -1452,14 +1817,26 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 58.0,
+        "z": 0.75
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 57.78,
+            "z": 0.75
+          }
+        }
+      ]
     }
   ],
   "worldRevision": "kromka-1",
@@ -1471,42 +1848,42 @@
   "unityScene": "Assets/Scenes/Kromka/Locations/KromkaGloomDetour.unity",
   "respawn": {
     "tx": 19,
-    "tz": 8,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entry": {
     "tx": 19,
-    "tz": 8,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 19,
-    "tz": 8,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "entryFromWasteland": {
     "tx": 19,
-    "tz": 8,
+    "tz": 6,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -26.0,
     "rotationY": 0.0
   },
   "migrationArrival": {
-    "tx": 17,
-    "tz": 9,
-    "x": -4.0,
+    "tx": 18,
+    "tz": 8,
+    "x": -2.0,
     "y": 0.1,
-    "z": -19.0,
+    "z": -21.0,
     "rotationY": 0.0
   },
   "unitySpawns": [
@@ -1516,9 +1893,9 @@
       "targetLocationId": "",
       "radius": 3.0,
       "position": {
-        "x": -4.0,
+        "x": -2.0,
         "y": 0.1,
-        "z": -19.0
+        "z": -21.0
       },
       "rotationY": 0.0
     },
@@ -1542,7 +1919,7 @@
       "position": {
         "x": 0.0,
         "y": 0.1,
-        "z": -22.0
+        "z": -26.0
       },
       "rotationY": 0.0
     }

@@ -282,7 +282,9 @@ namespace Kromka.EditorTools
                 Transform arrival = Child(dynamicAnchors, "PlayerArrival");
                 Transform migration = Child(dynamicAnchors, "MigrationArrival_SAFE");
                 arrival.localPosition = new Vector3(0f, 0.1f, -18f);
-                migration.localPosition = new Vector3(-4f, 0.1f, -19f);
+                // Свободно во всех раскладках: у населённых сцен модуль 7 кольца модулей
+                // (радиус 22 м) накрывал прежнюю точку (-4, -19).
+                migration.localPosition = new Vector3(-2f, 0.1f, -21f);
                 arrival.gameObject.AddComponent<KromkaSpawnAuthoring>().Configure(
                     id + "-arrival", KromkaSpawnKind.PlayerArrival, string.Empty, 2f);
                 migration.gameObject.AddComponent<KromkaSpawnAuthoring>().Configure(
@@ -402,6 +404,53 @@ namespace Kromka.EditorTools
                     new[] { type, "modular" }, false, true, true);
                 Bridge(module, id + "-module-" + (i + 1));
             }
+        }
+
+        /// <summary>
+        /// Строки data, которые написали руками или генератором уже после сборки сцены
+        /// (сюжетные цели, аварийные шлюзы лабораторий), получают объект в сцене. Без него
+        /// у строки нет вида на клиенте: сцена Кромки заменяет статическую геометрию data
+        /// (ReplaceServerStaticGeometry), а interaction-цель строится из data, так что
+        /// игрок нажимал «использовать» на пустом месте. Экспортируются только эти строки.
+        /// </summary>
+        [MenuItem("Кромка/Авторинг/Дополнить сцены маркерами строк data")]
+        public static void ImportUnmarkedRows()
+        {
+            RefuseDirtyOpenScenes();
+            Scene original = SceneManager.GetActiveScene();
+            string originalPath = original.IsValid() ? original.path : string.Empty;
+            JObject catalog = ReadProjectJson("data/kromka/locations.json");
+            var report = new List<string>();
+            foreach (JObject location in ((JArray)catalog["locations"]).OfType<JObject>())
+            {
+                string id = Text(location, "id");
+                string scenePath = KromkaLocationSceneCatalog.ScenePath(id);
+                if (!SceneAssetExists(scenePath)) continue;
+                JObject definition = ReadProjectJson("data/locations/" + id + ".json");
+                if (!(definition?["objects"] is JArray rows)) continue;
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                var marked = new HashSet<string>(scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                    .Select(marker => marker.StableObjectId), StringComparer.Ordinal);
+                string[] missing = rows.OfType<JObject>()
+                    .Where(row => !IsLiveObject(row) && !string.IsNullOrWhiteSpace(Text(row, "id"))
+                                  && !marked.Contains(Text(row, "id")))
+                    .Select(row => Text(row, "id")).ToArray();
+                if (missing.Length == 0) continue;
+                int added = ImportGameplayObjects(scene, id, missing);
+                if (added != missing.Length)
+                    throw new InvalidOperationException(id + ": в сцену внесено " + added + " из " + missing.Length
+                        + " строк (" + string.Join(", ", missing) + "). Остальные импорт отбрасывает: у строки нет"
+                        + " роли, тегов геймплея или это снятый вид Старого Клима — дайте ей роль или удалите её.");
+                EditorSceneManager.SaveScene(scene);
+                KromkaWorldSceneExporter.ExportPlacedObjects(scene, missing);
+                report.Add(id + ": " + string.Join(", ", missing));
+            }
+            if (!string.IsNullOrWhiteSpace(originalPath) && SceneAssetExists(originalPath))
+                EditorSceneManager.OpenScene(originalPath, OpenSceneMode.Single);
+            AssetDatabase.Refresh();
+            Debug.Log("[KROMKA] Маркеры строк data: " + (report.Count == 0 ? "все статические строки уже в сценах."
+                : "внесено в " + report.Count + " сцен — " + string.Join("; ", report)));
         }
 
         /// <summary>

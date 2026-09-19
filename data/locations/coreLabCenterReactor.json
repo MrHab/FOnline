@@ -232,14 +232,16 @@
       "footprint": {
         "x": 2.708,
         "z": 0.557
-      }
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     },
     {
       "id": "zero_custodian",
       "model": "enemySuperMutant",
       "name": "Хранитель Нуля",
       "position": {
-        "x": 0.0,
+        "x": 1.25,
         "y": 0.0,
         "z": 6.0
       },
@@ -321,9 +323,9 @@
       "model": "enemyGhoul",
       "name": "Выжженный",
       "position": {
-        "x": 0.0,
+        "x": -1.25,
         "y": 0.0,
-        "z": 14.0
+        "z": 15.0
       },
       "rotation": {
         "x": 0.0,
@@ -360,9 +362,9 @@
       "model": "enemySuperMutant",
       "name": "Складень",
       "position": {
-        "x": 8.0,
+        "x": 9.0,
         "y": 0.0,
-        "z": 14.0
+        "z": 13.75
       },
       "rotation": {
         "x": 0.0,
@@ -420,14 +422,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 26.62,
+        "z": 26.62
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 11.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 10.163,
+            "z": 4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 7.778,
+            "z": 7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 4.21,
+            "z": 10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 11.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -4.21,
+            "z": 10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -7.778,
+            "z": 7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -10.163,
+            "z": 4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -11.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -10.163,
+            "z": -4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -7.778,
+            "z": -7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -4.21,
+            "z": -10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -11.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 4.21,
+            "z": -10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 7.778,
+            "z": -7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 10.163,
+            "z": -4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-cascade-feed",
@@ -455,14 +633,26 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 0.75,
+        "z": 55.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 54.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-chime-1",
@@ -559,14 +749,36 @@
         "buried-installation"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-module-1",
@@ -594,14 +806,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-module-2",
@@ -629,14 +850,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-module-3",
@@ -664,14 +897,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-module-4",
@@ -699,14 +944,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-module-5",
@@ -734,14 +991,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-regenerator-column",
@@ -770,14 +1036,33 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 7.7
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 2.385
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -5.0
+          },
+          "size": {
+            "x": 3.0,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterReactor-region-departure-rail",
@@ -841,13 +1126,25 @@
       ],
       "footprint": {
         "x": 1.0,
-        "z": 1.0
+        "z": 66.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 66.0
+          }
+        }
+      ]
     },
     {
       "id": "reactor_core",
@@ -1916,9 +2213,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 0.0,
+        "x": -1.25,
         "y": 0.0,
-        "z": 14.0
+        "z": 15.0
       },
       "rotationY": 0.0
     },
@@ -1928,9 +2225,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 8.0,
+        "x": 9.0,
         "y": 0.0,
-        "z": 14.0
+        "z": 13.75
       },
       "rotationY": 0.0
     },
@@ -1940,7 +2237,7 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 0.0,
+        "x": 1.25,
         "y": 0.0,
         "z": 6.0
       },

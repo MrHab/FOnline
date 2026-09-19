@@ -287,12 +287,17 @@ namespace RealmOfAshes.Game
                     if (entry == null || entry.Position == null || entry.IsLiveEntity()) continue;
                     Color32 color;
                     if (!TryFeatureColor(entry, out color)) continue;
+                    StaticFeatureCount++;
+                    // Здание сцены Кромки рисуется своими стенами, а не заливкой размаха.
+                    Color32 partColor = color;
+                    if (RoaCollisionParts.ForEachTile(entry, MapWidth, MapDepth,
+                            (x, z) => pixels[z * MapWidth + x] = partColor))
+                        continue;
                     Vector3 world = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z);
                     RoaCoords.WorldToTile(world, MapWidth, MapDepth, out int tx, out int tz);
                     int width = FootprintTiles(entry, true);
                     int depth = FootprintTiles(entry, false);
                     PaintFeature(pixels, tx, tz, width, depth, color);
-                    StaticFeatureCount++;
                 }
             }
 

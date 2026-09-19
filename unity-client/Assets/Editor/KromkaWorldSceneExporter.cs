@@ -54,7 +54,8 @@ namespace Kromka.EditorTools
                 EditorSceneManager.OpenScene(originalPath, OpenSceneMode.Single);
 
             AssetDatabase.Refresh();
-            Debug.Log("[KROMKA] PASS: пространственные данные 45 локаций и глобальной карты экспортированы из Unity.");
+            Debug.Log("[KROMKA] PASS: пространственные данные " + locations.Count
+                + " локаций и глобальной карты экспортированы из Unity.");
         }
 
         [MenuItem("Кромка/Авторинг/Экспортировать открытую локацию в data")]
@@ -110,15 +111,28 @@ namespace Kromka.EditorTools
                 .GroupBy(row => Text(row, "id"), StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
 
-            JArray exported = new JArray(previous.OfType<JObject>()
-                .Where(IsLiveServerObject)
-                .Select(row => row.DeepClone()));
-
             KromkaPlacedObjectAuthoring[] markers = authoring
                 .GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true)
                 .Where(marker => marker != null && marker.Role != "terrain")
                 .OrderBy(marker => marker.StableObjectId, StringComparer.Ordinal)
                 .ToArray();
+            var markerIds = new HashSet<string>(markers.Select(marker => marker.StableObjectId), StringComparer.Ordinal);
+
+            // Живые строки сцена не описывает. Статическая строка без маркера — либо объект,
+            // удалённый в Unity (её писал экспорт, unityAuthored), либо строка, которую
+            // написали руками или генератором и ещё не внесли в сцену. Вторую экспорт
+            // обязан оставить: 18 сюжетных целей и шлюзов лабораторий он раньше стирал молча.
+            string[] unimported = previous.OfType<JObject>()
+                .Where(row => !IsLiveServerObject(row) && !IsUnityAuthored(row)
+                              && !string.IsNullOrWhiteSpace(Text(row, "id")) && !markerIds.Contains(Text(row, "id")))
+                .Select(row => Text(row, "id")).ToArray();
+            if (unimported.Length > 0)
+                Debug.LogWarning("[KROMKA] " + authoring.StableLocationId + ": строки без маркера сцены оставлены как есть: "
+                    + string.Join(", ", unimported)
+                    + ". Внесите их в сцену: «Кромка/Авторинг/Дополнить сцены маркерами строк data».");
+            JArray exported = new JArray(previous.OfType<JObject>()
+                .Where(row => IsLiveServerObject(row) || unimported.Contains(Text(row, "id")))
+                .Select(row => row.DeepClone()));
             foreach (KromkaPlacedObjectAuthoring marker in markers)
             {
                 if (string.IsNullOrWhiteSpace(marker.StableObjectId))
@@ -398,7 +412,7 @@ namespace Kromka.EditorTools
             JObject row = previous != null ? (JObject)previous.DeepClone() : new JObject();
             Transform transform = marker.transform;
             Vector3 euler = transform.eulerAngles * Mathf.Deg2Rad;
-            Bounds bounds = BoundsFor(marker.gameObject);
+            List<KromkaWalkCollision.GroundShape> shapes = KromkaWalkCollision.Shapes(marker.gameObject);
 
             row["id"] = marker.StableObjectId;
             if (!string.IsNullOrWhiteSpace(marker.ServerArchetypeId))
@@ -407,7 +421,7 @@ namespace Kromka.EditorTools
             row["position"] = Vector(transform.position);
             row["rotation"] = Vector(euler);
             row["scale"] = Vector(transform.lossyScale);
-            RequirePhysicalMovementFlag(marker);
+            RequirePhysicalMovementFlag(marker, shapes.Count > 0);
             row["collision"] = CollisionFor(marker.BlocksMovement, Text(previous, "collision"));
             row["role"] = marker.Role;
             row["tags"] = new JArray(marker.GameplayTags);
@@ -416,11 +430,15 @@ namespace Kromka.EditorTools
                 row["hp"] = 1200;
                 row["maxHp"] = 1200;
             }
-            row["footprint"] = new JObject
-            {
-                ["x"] = Round(Mathf.Max(0.2f, bounds.size.x)),
-                ["z"] = Round(Mathf.Max(0.2f, bounds.size.z))
-            };
+            row["footprint"] = FootprintFor(marker.gameObject, previous);
+            // Сервер строит преграды из collisionParts: одна коробка footprint закрыла бы двор
+            // внутри ограды, проезд под балкой КПП и дно отстойника (38 тыс. м² лишних стен).
+            if (marker.BlocksMovement)
+                row["collisionParts"] = KromkaWalkCollision.Parts(shapes,
+                    new Vector3(Round(transform.position.x), 0f, Round(transform.position.z)),
+                    Round(euler.y), new Vector3(Round(transform.lossyScale.x), 1f, Round(transform.lossyScale.z)));
+            else
+                row.Remove("collisionParts");
             // Булев blocks не выражает низкое укрытие, поэтому оно пишется режимом.
             row["vision"] = marker.ProvidesLowCover
                 ? new JObject { ["mode"] = "cover" }
@@ -429,6 +447,18 @@ namespace Kromka.EditorTools
             row["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
             row.Remove("placement");
             return row;
+        }
+
+        /// <summary>Поля преград строки так, как их записал бы экспорт: для проверки сцен.</summary>
+        internal static JObject ExportedCollision(KromkaPlacedObjectAuthoring marker, JObject previous)
+        {
+            JObject row = ExportObject(marker, previous);
+            // Отсутствующее поле остаётся отсутствующим: индексатор JObject превратил бы C# null
+            // в JSON null, а экспорт у непроходимых объектов collisionParts удаляет.
+            var fields = new JObject();
+            foreach (string field in new[] { "footprint", "collisionParts" })
+                if (row[field] != null) fields[field] = row[field].DeepClone();
+            return fields;
         }
 
         /// <summary>
@@ -460,25 +490,46 @@ namespace Kromka.EditorTools
         }
 
         /// <summary>
-        /// Игрока на клиенте останавливает только включённый коллайдер сцены, сервер —
-        /// только collision из этого экспорта. Триггеры движению не мешают.
+        /// Игрока на клиенте останавливает только включённый коллайдер сцены на высоте его
+        /// тела, сервер — только collision из этого экспорта. Триггеры движению не мешают,
+        /// и то, что целиком выше головы (настил моста на 2,5 м), тоже.
         /// </summary>
-        internal static bool HasPhysicalCollider(GameObject root)
-        {
-            return root != null && root.GetComponentsInChildren<Collider>(false)
-                .Any(collider => collider.enabled && !collider.isTrigger);
-        }
+        internal static bool HasPhysicalCollider(GameObject root) => KromkaWalkCollision.BlocksWalking(root);
 
         // Флаг без коллайдера дал бы серверу невидимую преграду, коллайдер без флага —
         // стену, сквозь которую сервер ведёт игрока и противников. 319 маркеров прежнего
         // набора окружения несли такой флаг с переноса в Кромку (33a20ffd).
-        private static void RequirePhysicalMovementFlag(KromkaPlacedObjectAuthoring marker)
+        private static void RequirePhysicalMovementFlag(KromkaPlacedObjectAuthoring marker, bool blocksWalking)
         {
-            if (marker.BlocksMovement == HasPhysicalCollider(marker.gameObject)) return;
+            if (marker.BlocksMovement == blocksWalking) return;
             throw new InvalidOperationException("Объект " + marker.StableObjectId + (marker.BlocksMovement
-                ? " помечен как преграда, но включённого коллайдера в сцене у него нет"
-                : " несёт включённый коллайдер, но не помечен как преграда")
+                ? " помечен как преграда, но включённого коллайдера на высоте тела в сцене у него нет"
+                : " несёт включённый коллайдер на высоте тела, но не помечен как преграда")
                 + ": сервер и клиент разошлись бы в движении.");
+        }
+
+        /// <summary>
+        /// footprint — размах объекта по земле. Его даёт физика: коллайдеры примитивов
+        /// одинаковы на любой машине. Строке без коллайдеров значение оставляется прежним:
+        /// её вид — меши магазинных наборов (MEP), которых в чистой копии репозитория нет,
+        /// и экспорт там переписал бы 1070 строк под пустые границы.
+        /// </summary>
+        private static JObject FootprintFor(GameObject root, JObject previous)
+        {
+            if (KromkaWalkCollision.TryFootprint(root, out double sizeX, out double sizeZ))
+                return new JObject
+                {
+                    ["x"] = KromkaWalkCollision.Round(Math.Max(0.2, sizeX)),
+                    ["z"] = KromkaWalkCollision.Round(Math.Max(0.2, sizeZ))
+                };
+            if (previous?["footprint"] is JObject authored && authored["x"] != null && authored["z"] != null)
+                return (JObject)authored.DeepClone();
+            Bounds bounds = BoundsFor(root);
+            return new JObject
+            {
+                ["x"] = Round(Mathf.Max(0.2f, bounds.size.x)),
+                ["z"] = Round(Mathf.Max(0.2f, bounds.size.z))
+            };
         }
 
         private static void ExportAnomalyLayout(KromkaLocationAuthoring authoring)
@@ -499,16 +550,25 @@ namespace Kromka.EditorTools
             }
             else
             {
-                location["anomalyFields"] = new JArray(fields.Select(field => new JObject
+                // Сцена владеет местом, радиусом и ритмом поля; остальные поля строки
+                // (permanentDischarge и прочее, заданное в каталоге) экспорт сохраняет.
+                var previous = (location["anomalyFields"] as JArray ?? new JArray()).OfType<JObject>()
+                    .Where(row => !string.IsNullOrWhiteSpace(Text(row, "id")))
+                    .GroupBy(row => Text(row, "id"), StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+                location["anomalyFields"] = new JArray(fields.Select(field =>
                 {
-                    ["id"] = field.StableAnomalyId,
-                    ["type"] = field.AnomalyTypeId,
-                    ["x"] = Round(field.transform.position.x),
-                    ["z"] = Round(field.transform.position.z),
-                    ["radius"] = Round(field.Radius),
-                    ["dischargeMs"] = field.DischargeMilliseconds,
-                    ["training"] = field.TrainingField,
-                    ["placement"] = "unity-authored"
+                    JObject row = previous.TryGetValue(field.StableAnomalyId, out JObject known)
+                        ? (JObject)known.DeepClone() : new JObject();
+                    row["id"] = field.StableAnomalyId;
+                    row["type"] = field.AnomalyTypeId;
+                    row["x"] = Round(field.transform.position.x);
+                    row["z"] = Round(field.transform.position.z);
+                    row["radius"] = Round(field.Radius);
+                    row["dischargeMs"] = field.DischargeMilliseconds;
+                    row["training"] = field.TrainingField;
+                    row["placement"] = "unity-authored";
+                    return row;
                 }));
             }
             WriteJson(path, catalog);
@@ -593,15 +653,15 @@ namespace Kromka.EditorTools
                 .Any(tag => tag == "npc" || tag == "living" || tag == "hostile" || tag == "mutant");
         }
 
+        private static bool IsUnityAuthored(JObject row)
+        {
+            return row?["unityAuthored"]?.Type == JTokenType.Boolean && row["unityAuthored"].Value<bool>();
+        }
+
+        // Видимые границы новой строки без коллайдеров: единственный случай, когда footprint
+        // берётся из рендереров (дальше он хранится в data, и экспорт его не трогает).
         private static Bounds BoundsFor(GameObject root)
         {
-            Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
-            if (colliders.Length > 0)
-            {
-                Bounds result = colliders[0].bounds;
-                for (int i = 1; i < colliders.Length; i++) result.Encapsulate(colliders[i].bounds);
-                return result;
-            }
             Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
             if (renderers.Length > 0)
             {

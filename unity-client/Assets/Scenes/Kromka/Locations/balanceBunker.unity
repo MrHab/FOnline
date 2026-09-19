@@ -4942,6 +4942,9 @@ Transform:
   - {fileID: 896510833}
   - {fileID: 673230577}
   - {fileID: 359388727}
+  - {fileID: 1412736902}
+  - {fileID: 1513852112}
+  - {fileID: 1897241264}
   m_Father: {fileID: 512619937}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &724924254
@@ -9145,6 +9148,127 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1404040416}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1412736901
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 717394298}
+    m_Modifications:
+    - target: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-balance-census-core
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -12
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1412736905}
+    - targetCorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1412736904}
+  m_SourcePrefab: {fileID: 100100000, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+--- !u!4 &1412736902 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+  m_PrefabInstance: {fileID: 1412736901}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1412736903 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+  m_PrefabInstance: {fileID: 1412736901}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1412736904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1412736903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-balance-census-core
+--- !u!114 &1412736905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1412736903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-balance-census-core
+  _serverArchetypeId: workshopBench
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1433279891
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9659,6 +9783,127 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1507897255}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1513852111
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 717394298}
+    m_Modifications:
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-balance-selection-protocol
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1513852115}
+    - targetCorrespondingSourceObject: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1513852114}
+  m_SourcePrefab: {fileID: 100100000, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+--- !u!4 &1513852112 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2444974592321881033, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+  m_PrefabInstance: {fileID: 1513852111}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1513852113 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+  m_PrefabInstance: {fileID: 1513852111}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1513852114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513852113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-balance-selection-protocol
+--- !u!114 &1513852115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513852113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-balance-selection-protocol
+  _serverArchetypeId: storageLeanTo
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1516206856
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10795,6 +11040,127 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1843997881}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1897241263
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 717394298}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-balance-emergency-exit
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1897241267}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1897241266}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &1897241264 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1897241263}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1897241265 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1897241263}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1897241266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1897241265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-balance-emergency-exit
+--- !u!114 &1897241267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1897241265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-balance-emergency-exit
+  _serverArchetypeId: utilityPole
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1922123585
 GameObject:
   m_ObjectHideFlags: 0

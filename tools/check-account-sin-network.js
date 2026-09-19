@@ -43,12 +43,14 @@ const postJson = (route, body) => new Promise((resolve, reject) => {
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const userId = role => users.users[accounts[role].login].id;
   const stateFor = role => saves.characters[userId(role)][accounts[role].characterId].state;
-  const nearAuctioneer = (role, dz, items) => {
+  // Аукционер стоит в проходе между модулем и КПП: подход — с востока и запада,
+  // точка внутри стены сервер при входе переносит прочь от стойки.
+  const nearAuctioneer = (role, dx, items) => {
     const state = stateFor(role);
     state.currentLocationId = 'sluiceCity';
     state.serverLocationContext = { locationId: 'sluiceCity' };
     Object.assign(state.inventory, items);
-    state.player = { ...(state.player || {}), x: Number(auctioneer.position.x), z: Number(auctioneer.position.z) + dz };
+    state.player = { ...(state.player || {}), x: Number(auctioneer.position.x) + dx, z: Number(auctioneer.position.z) };
   };
   // У продавца 340 сини на счёте и полная стопка кассет в рюкзаке —
   // наследие старых сохранений.

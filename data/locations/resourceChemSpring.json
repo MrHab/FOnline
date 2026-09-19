@@ -234,14 +234,26 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 0.75,
+        "z": 30.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 29.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-dressing-functional-01",
@@ -933,14 +945,36 @@
         "drain-stack"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-module-1",
@@ -968,14 +1002,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-module-2",
@@ -1003,14 +1046,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-module-3",
@@ -1038,14 +1093,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-module-4",
@@ -1073,14 +1140,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-module-5",
@@ -1108,14 +1187,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-region-black-pool-0",
@@ -1143,14 +1231,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 16.94,
+        "z": 16.94
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-region-black-pool-1",
@@ -1178,14 +1442,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 16.94,
+        "z": 16.94
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-region-black-pool-2",
@@ -1213,14 +1653,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 16.94,
+        "z": 16.94
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-region-main-pipe",
@@ -1248,14 +1864,26 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 64.0,
+        "z": 0.75
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 63.78,
+            "z": 0.75
+          }
+        }
+      ]
     },
     {
       "id": "resourceChemSpring-settling-pool",
@@ -1283,14 +1911,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 24.2,
+        "z": 24.2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 10.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 9.239,
+            "z": 3.827
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 7.071,
+            "z": 7.071
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 3.827,
+            "z": 9.239
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 10.0
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -3.827,
+            "z": 9.239
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -7.071,
+            "z": 7.071
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -9.239,
+            "z": 3.827
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -10.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -9.239,
+            "z": -3.827
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -7.071,
+            "z": -7.071
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -3.827,
+            "z": -9.239
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -10.0
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 3.827,
+            "z": -9.239
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 7.071,
+            "z": -7.071
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 9.239,
+            "z": -3.827
+          },
+          "size": {
+            "x": 4.2,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "rest_campfire_01",

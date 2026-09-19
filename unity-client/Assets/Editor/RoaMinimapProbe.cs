@@ -57,6 +57,19 @@ namespace RealmOfAshes.EditorTools
                 Require(minimap.StaticFeatureCount >= 20,
                         "на карту попало слишком мало авторских объектов: " + minimap.StaticFeatureCount);
 
+                // Двор Ключей — пять стен вокруг открытой земли (collisionParts из сцены):
+                // на карте и в тумане закрашены стены, а не весь его размах 53×49 м.
+                LocationObject ring = location.Objects.Find(entry => entry != null && entry.Id == "settlement-settlement-ring");
+                Require(ring != null && ring.CollisionParts != null && ring.CollisionParts.Count == 5,
+                        "у двора Ключей нет пяти стен в collisionParts");
+                var ringTiles = new System.Collections.Generic.HashSet<int>();
+                Require(RoaCollisionParts.ForEachTile(ring, 38, 38, (tx, tz) => ringTiles.Add(tz * 38 + tx)),
+                        "стены двора не разложились по тайлам");
+                RoaCoords.WorldToTile(RoaCoords.ToUnity(ring.Position.X, ring.Position.Z), 38, 38,
+                                      out int ringX, out int ringZ);
+                Require(ringTiles.Count >= 40 && !ringTiles.Contains(ringZ * 38 + ringX),
+                        "двор закрашен целиком, а не стенами: " + ringTiles.Count + " тайлов");
+
                 Vector3 center = RoaCoords.TileToWorld(19, 19, 38, 38);
                 Vector2 normalized = minimap.WorldToMapNormalized(center);
                 Require(Mathf.Abs(normalized.x - 19.5f / 38f) < 0.0001f

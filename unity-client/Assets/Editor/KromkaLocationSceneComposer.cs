@@ -436,8 +436,10 @@ namespace Kromka.EditorTools
 
         private static void RailBridge(Transform parent, string id, Vector3 position)
         {
+            // Настил висит на 2,5 м, фермы — на 3 м: под мостом проходят в полный рост,
+            // поэтому преградой движению он не помечается (экспорт это проверяет).
             Transform root = Group(parent, id, "rail_bridge", "landmark",
-                new[] { "rail", "bridge", "top-readable" }, true, true);
+                new[] { "rail", "bridge", "top-readable" }, false, true);
             root.localPosition = position;
             Box("Deck", root, new Vector3(0f, 2.8f, 0f), new Vector3(16f, 0.6f, 7f), Steel());
             for (int i = -1; i <= 1; i += 2) Box("Truss_" + i, root,

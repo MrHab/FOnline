@@ -1541,14 +1541,36 @@
         "warm-light"
       ],
       "footprint": {
-        "x": 13.5,
-        "z": 15.8
+        "x": 11.0,
+        "z": 8.25
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 11.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 2.4,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "settlement-keys-life",
@@ -1614,14 +1636,56 @@
         "shelter"
       ],
       "footprint": {
-        "x": 6.5,
-        "z": 4.5
+        "x": 10.3,
+        "z": 7.3
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "settlement-keys-rail-bridge",
@@ -1642,7 +1706,7 @@
         "y": 1,
         "z": 1
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "rail",
@@ -1650,8 +1714,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 16.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
@@ -1686,14 +1750,56 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 4.45,
+        "z": 4.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        }
+      ]
     },
     {
       "id": "settlement-keys-workshops",
@@ -1722,14 +1828,36 @@
         "craft"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 13.0,
+        "z": 9.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 12.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "settlement-landmark",
@@ -1756,14 +1884,23 @@
         "water-tower"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.0,
+        "z": 8.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.75
+        }
+      ]
     },
     {
       "id": "settlement-module-1",
@@ -1791,14 +1928,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "settlement-module-10",
@@ -1826,14 +1972,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-2",
@@ -1861,14 +2019,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-3",
@@ -1896,14 +2066,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-4",
@@ -1931,14 +2113,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-5",
@@ -1966,14 +2160,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "settlement-module-6",
@@ -2001,14 +2204,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-7",
@@ -2036,14 +2251,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-8",
@@ -2071,14 +2298,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "settlement-module-9",
@@ -2106,14 +2345,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "settlement-region-field-0",
@@ -2491,14 +2739,66 @@
         "editable-perimeter"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 52.8,
+        "z": 48.8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 24.0
+          },
+          "size": {
+            "x": 52.0,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": -26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": 26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": -16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": 16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        }
+      ]
     },
     {
       "id": "story-keys-filter-inspection",
@@ -2537,7 +2837,8 @@
         "kind": "questObject",
         "questObjective": "inspect_keys_filter"
       },
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "unityAuthored": true
     },
     {
       "id": "story-keys-filter-feed",
@@ -2576,7 +2877,8 @@
         "kind": "questObject",
         "questObjective": "restore_filter_feed"
       },
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "unityAuthored": true
     },
     {
       "id": "story-keys-filter-defense",
@@ -2615,7 +2917,8 @@
         "kind": "questObject",
         "questObjective": "defend_filter"
       },
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "unityAuthored": true
     }
   ],
   "updatedAt": "2026-07-12T01:43:36.116Z",
@@ -2627,11 +2930,11 @@
   "anomalyDensity": 0,
   "unityScene": "Assets/Scenes/Kromka/Locations/settlement.unity",
   "migrationArrival": {
-    "tx": 17,
-    "tz": 9,
-    "x": -4,
+    "tx": 18,
+    "tz": 8,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "unitySpawns": [
@@ -2653,9 +2956,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },

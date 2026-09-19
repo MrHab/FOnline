@@ -667,14 +667,36 @@
         "controlled-route"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 16.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-dish-array",
@@ -703,14 +725,37 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 20.5,
-        "z": 15.5
+        "x": 14.5,
+        "z": 0.5
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.25
+        },
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "radius": 0.25
+        },
+        {
+          "center": {
+            "x": 14.0,
+            "z": 0.0
+          },
+          "radius": 0.25
+        }
+      ]
     },
     {
       "id": "relayStation-dressing-functional-01",
@@ -1507,14 +1552,23 @@
         "dish-array"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.0,
+        "z": 8.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayStation-module-1",
@@ -1542,14 +1596,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayStation-module-10",
@@ -1577,14 +1640,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-2",
@@ -1612,14 +1687,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-3",
@@ -1647,14 +1734,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-4",
@@ -1682,14 +1781,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-5",
@@ -1717,14 +1828,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayStation-module-6",
@@ -1752,14 +1872,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-7",
@@ -1787,14 +1919,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-8",
@@ -1822,14 +1966,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "relayStation-module-9",
@@ -1857,14 +2013,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayStation-region-glass-0",
@@ -2243,14 +2408,33 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 6.0,
+        "z": 9.4
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 2.727
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -6.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 0.8
+          }
+        }
+      ]
     },
     {
       "id": "relay_antenna_01",
@@ -2534,11 +2718,11 @@
     "rotationY": 0
   },
   "migrationArrival": {
-    "tx": 17,
-    "tz": 9,
-    "x": -4,
+    "tx": 18,
+    "tz": 8,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "unitySpawns": [
@@ -2548,9 +2732,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },

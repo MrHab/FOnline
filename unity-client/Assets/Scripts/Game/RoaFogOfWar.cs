@@ -239,6 +239,13 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void MarkFootprint(LocationObject entry, HashSet<int> target)
         {
+            // Стены и корпуса сцен Кромки: те же фигуры, что останавливают на сервере.
+            // Прямоугольник footprint — размах объекта целиком; у двора это закрыло бы
+            // обзор внутри ограды, у кольца — всё, что внутри кольца.
+            if (RoaCollisionParts.ForEachTile(entry, _mapWidth, _mapDepth,
+                    (x, z) => { if (InBounds(x, z)) target.Add(Key(x, z)); }))
+                return;
+
             Vector3 position = entry.Position != null
                 ? RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z)
                 : Vector3.zero;

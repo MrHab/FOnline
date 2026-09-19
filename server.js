@@ -116,9 +116,14 @@ const {
 const {
   loadModelColliderCatalog,
   modelColliderRadius,
-  transformedBounds,
   transformedModelBlockers
 } = require('./src/server/model-colliders');
+const {
+  circleBlockerPenalty: circleRotatedBlockerPenalty,
+  createLocationCollision,
+  locationObjectPosition,
+  locationObjectTags
+} = require('./src/server/location-collision');
 const {
   NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
@@ -13836,8 +13841,12 @@ function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
   }
   return false;
 }
-function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
-  if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, { startPadding: 0.3, endPadding: 0.42 })) return false;
+function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ, opts = {}) {
+  if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, {
+    startPadding: 0.3,
+    endPadding: 0.42,
+    ignoreObjectId: opts.ignoreObjectId
+  })) return false;
   const start = worldToTile(fromX, fromZ, roomTileDims(room));
   const end = worldToTile(toX, toZ, roomTileDims(room));
   if (!inBounds(start.tx, start.tz, roomTileDims(room)) || !inBounds(end.tx, end.tz, roomTileDims(room))) return false;
@@ -13848,14 +13857,14 @@ function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
   }
   return true;
 }
-function serverInteractionHasLineOfSight(room, actor = {}, target = {}) {
+function serverInteractionHasLineOfSight(room, actor = {}, target = {}, opts = {}) {
   const fromX = Number(actor.x);
   const fromZ = Number(actor.z);
   const toX = Number(target.x);
   const toZ = Number(target.z);
   if (![fromX, fromZ, toX, toZ].every(Number.isFinite)) return false;
   if (Math.hypot(toX - fromX, toZ - fromZ) <= 0.08) return true;
-  return roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ);
+  return roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ, opts);
 }
 function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   if (!room || !enemy || !p || p.dead || Number(p.hp || 0) <= 0) return false;
@@ -16818,47 +16827,16 @@ function restockRoomWorldContainersIfNeeded(room, force = false) {
   return true;
 }
 
-function locationObjectPosition(row = {}) {
-  const pos = row.position && typeof row.position === 'object' ? row.position : row;
-  return {
-    x: Number(pos.x || 0),
-    y: Number(pos.y || 0),
-    z: Number(pos.z || 0)
-  };
-}
-
-const SERVER_MODULE_MODEL_KEYS = new Set([
-  'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
-  'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
-  'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
-]);
-
-function locationObjectScale(row = {}) {
-  if (SERVER_MODULE_MODEL_KEYS.has(String(row.model || ''))) return { x: 1, y: 1, z: 1 };
-  const scale = row.scale && typeof row.scale === 'object' ? row.scale : {};
-  const uniform = Number(row.scale || 1);
-  const fallback = Number.isFinite(uniform) ? uniform : 1;
-  return {
-    x: Number.isFinite(Number(scale.x)) ? Number(scale.x) : fallback,
-    y: Number.isFinite(Number(scale.y)) ? Number(scale.y) : fallback,
-    z: Number.isFinite(Number(scale.z)) ? Number(scale.z) : fallback
-  };
-}
-
-function locationObjectRotationY(row = {}) {
-  const rotation = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
-  const value = Number(rotation.y ?? row.rotationY ?? (typeof row.rotation === 'number' ? row.rotation : 0));
-  return Number.isFinite(value) ? value : 0;
-}
+// Преграды авторских объектов (движение, линия огня, обзор взаимодействия) собирает
+// src/server/location-collision.js: тем же кодом их проверяют tools/check-*.
+const {
+  locationObjectBlocksMovement,
+  locationObjectFootprintCells,
+  locationObjectBlockers: roomStaticCollisionBlockersFromObject
+} = createLocationCollision({ tile: TILE, isNpc: locationDefinitionObjectIsNpc });
 
 function locationObjectModelRef(row = {}) {
   return String(row.url || row.file || serverModelFileForRef(row.model || '') || '').trim();
-}
-
-function locationObjectTags(row = {}) {
-  return (Array.isArray(row.tags) ? row.tags : [])
-    .map(tag => String(tag || '').trim().toLowerCase())
-    .filter(Boolean);
 }
 
 const SERVER_RESOURCE_DEFS = {
@@ -16974,123 +16952,6 @@ function locationObjectResourceType(row = {}) {
   if (tags.includes('wood') || model.includes('deadwood')) return 'wood';
   if (collision === 'resource' && tags.includes('tree')) return 'wood';
   return '';
-}
-
-function locationObjectOcclusionRole(row = {}) {
-  return String(row.occlusion?.role || '').trim().toLowerCase();
-}
-
-function locationObjectAllowsPlayerOverlap(row = {}) {
-  const explicit = String(row.playerCollision ?? row.movementCollision ?? '').trim().toLowerCase();
-  if (row.playerCollision === false || ['none', 'off', 'disabled', 'pass', 'pass-through', 'passthrough'].includes(explicit)) return true;
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const kinds = [interactive.kind, entity.kind, row.kind]
-    .map(value => String(value || '').replace(/[^a-z0-9]/gi, '').toLowerCase())
-    .filter(Boolean);
-  const tags = [
-    ...locationObjectTags(row),
-    ...locationObjectTags(entity),
-    ...locationObjectTags(interactive)
-  ];
-  return kinds.some(kind => ['craftingstation', 'jobboard', 'trademachine', 'vendingmachine', 'container', 'storage'].includes(kind))
-    || tags.some(tag => [
-      'interactive', 'crafting-station', 'jobboard', 'questboard', 'trademachine',
-      'vendingmachine', 'container', 'storage', 'personal-storage', 'ground-item',
-      'loot-item', 'pickup', 'pass-through', 'no-player-collision'
-    ].includes(tag));
-}
-
-function locationObjectBlocksMovement(row = {}) {
-  if (locationDefinitionObjectIsNpc(row)) return false;
-  const tags = locationObjectTags(row);
-  const role = locationObjectOcclusionRole(row);
-  if (role === 'roof' || role === 'floor' || tags.includes('roof') || tags.includes('floor')) return false;
-  if (locationObjectAllowsPlayerOverlap(row)) return false;
-  const collision = String(row.collision || '').toLowerCase();
-  return ['solid', 'block', 'blocked', 'wall', 'resource'].includes(collision);
-}
-
-function locationObjectFootprintCells(row = {}) {
-  const placement = row.placement && typeof row.placement === 'object' ? row.placement : {};
-  const cells = placement.cells && typeof placement.cells === 'object' ? placement.cells : {};
-  const footprint = row.footprint && typeof row.footprint === 'object' ? row.footprint : {};
-  const scale = row.scale && typeof row.scale === 'object' ? row.scale : {};
-  const moduleModels = new Set([
-    'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
-    'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
-    'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
-  ]);
-  const lockedModule = moduleModels.has(String(row.model || ''));
-  const sx = Math.max(1, Math.round(Number(cells.x || footprint.x / TILE || (lockedModule ? 1 : scale.x) || 1)));
-  const sz = Math.max(1, Math.round(Number(cells.z || footprint.z / TILE || (lockedModule ? 1 : scale.z) || 1)));
-  return { sx: clamp(sx, 1, 12), sz: clamp(sz, 1, 12) };
-}
-
-function locationObjectCollisionSize(row = {}) {
-  const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
-  const width = Number(exact.width || exact.x || 0);
-  const depth = Number(exact.depth || exact.z || 0);
-  if (Number.isFinite(width) && width > 0 && Number.isFinite(depth) && depth > 0) {
-    return {
-      width: clamp(width, 0.4, TILE * 12),
-      depth: clamp(depth, 0.4, TILE * 12),
-      exact: true
-    };
-  }
-  const fp = locationObjectFootprintCells(row);
-  return { width: fp.sx * TILE, depth: fp.sz * TILE, exact: false };
-}
-
-function locationObjectCollisionParts(row = {}) {
-  const parts = Array.isArray(row.collisionParts) ? row.collisionParts : [];
-  if (!parts.length) return [];
-  const pos = locationObjectPosition(row);
-  const scale = locationObjectScale(row);
-  const rotationY = locationObjectRotationY(row);
-  return parts.map(part => {
-    const center = part?.center && typeof part.center === 'object' ? part.center : {};
-    const size = part?.size && typeof part.size === 'object' ? part.size : {};
-    const width = Number(size.x ?? size.width ?? part?.width);
-    const depth = Number(size.z ?? size.depth ?? part?.depth);
-    const centerX = Number(center.x ?? part?.x ?? 0);
-    const centerZ = Number(center.z ?? part?.z ?? 0);
-    if (![width, depth, centerX, centerZ].every(Number.isFinite) || width <= 0 || depth <= 0) return null;
-    return transformedBounds({
-      center: { x: centerX, z: centerZ },
-      size: { x: width, z: depth }
-    }, {
-      x: pos.x,
-      z: pos.z,
-      rotationY,
-      scaleX: scale.x,
-      scaleZ: scale.z
-    });
-  }).filter(Boolean);
-}
-
-function roomStaticCollisionBlockersFromObject(row = {}) {
-  if (!row || typeof row !== 'object') return [];
-  if (!locationObjectBlocksMovement(row)) return [];
-  const pos = locationObjectPosition(row);
-  if (!Number.isFinite(pos.x) || !Number.isFinite(pos.z)) return [];
-  const authoredParts = locationObjectCollisionParts(row);
-  if (authoredParts.length) return authoredParts.map((part, partIndex) => ({
-    id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
-    ...part,
-    modelRef: String(row.model || 'authored-object')
-  }));
-  const rotationY = locationObjectRotationY(row);
-  const size = locationObjectCollisionSize(row);
-  return [{
-    id: String(row.id || row.model || '').slice(0, 64),
-    x: pos.x,
-    z: pos.z,
-    halfX: Math.max(0.2, size.width * 0.5),
-    halfZ: Math.max(0.2, size.depth * 0.5),
-    rotationY: -rotationY,
-    modelRef: String(row.model || 'authored-object')
-  }];
 }
 
 function roomStaticCollisionBlockersFromTrader(loc = {}) {
@@ -17223,30 +17084,15 @@ function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius =
     Math.max(Number(fromX || 0), Number(toX || 0)) + padding,
     Math.max(Number(fromZ || 0), Number(toZ || 0)) + padding
   );
+  // Объект, с которым взаимодействуют, не заслоняет сам себя: иначе нефтяная качалка
+  // с настоящими преградами закрывала бы игроку обзор на собственный центр.
+  const ownId = String(opts.ignoreObjectId || '');
   for (const blocker of blockers) {
     if (opts.ignoreLowCover && serverBlockerIsLowBallisticCover(blocker)) continue;
+    if (ownId && blocker.objectId === ownId) continue;
     if (segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius, opts)) return true;
   }
   return false;
-}
-
-function circleRotatedBlockerPenalty(x, z, radius, blocker) {
-  if (!blocker) return 0;
-  const dx = Number(x || 0) - Number(blocker.x || 0);
-  const dz = Number(z || 0) - Number(blocker.z || 0);
-  const rot = Number(blocker.rotationY || 0);
-  const cos = Math.cos(-rot);
-  const sin = Math.sin(-rot);
-  const localX = dx * cos - dz * sin;
-  const localZ = dx * sin + dz * cos;
-  const halfX = Math.max(0.01, Number(blocker.halfX || 0));
-  const halfZ = Math.max(0.01, Number(blocker.halfZ || 0));
-  const nearestX = clamp(localX, -halfX, halfX);
-  const nearestZ = clamp(localZ, -halfZ, halfZ);
-  const collisionRadius = Math.max(0.01, Number(radius || 0));
-  const outsideDistance = Math.hypot(localX - nearestX, localZ - nearestZ);
-  if (outsideDistance > 0) return Math.max(0, collisionRadius - outsideDistance);
-  return collisionRadius + Math.min(halfX - Math.abs(localX), halfZ - Math.abs(localZ));
 }
 
 function roomStaticCollisionPenaltyAt(room, x, z, radius = 0.35) {
@@ -20708,7 +20554,7 @@ function serverKromkaQuestObject(player = {}, objectId = '') {
   if (!point || Math.hypot(Number(player.x || 0) - point.x, Number(player.z || 0) - point.z) > 4.6) {
     return { ok: false, error: 'Подойдите ближе к объекту задания.' };
   }
-  if (!serverInteractionHasLineOfSight(room, player, point)) {
+  if (!serverInteractionHasLineOfSight(room, player, point, { ignoreObjectId: id })) {
     return { ok: false, error: 'Объект задания находится за препятствием.' };
   }
   const activeQuestId = Object.keys(player.kromkaQuestState?.active || {}).find(questId => {
@@ -33019,7 +32865,9 @@ io.on('connection', (socket) => {
     const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
     const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
-    if (!serverInteractionHasLineOfSight(room, p, pos)) return fail('Ресурс находится за препятствием.');
+    if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
+      return fail('Ресурс находится за препятствием.');
+    }
 
     const expectedTool = resourceDef.toolId;
     const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());

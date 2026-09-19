@@ -245,9 +245,9 @@
       "model": "enemySuperMutant",
       "name": "Складень",
       "position": {
-        "x": 0.0,
+        "x": -1.25,
         "y": 0.0,
-        "z": 14.0
+        "z": 15.0
       },
       "rotation": {
         "x": 0.0,
@@ -418,14 +418,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 26.62,
+        "z": 26.62
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 11.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 10.163,
+            "z": 4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 7.778,
+            "z": 7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 4.21,
+            "z": 10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 11.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -4.21,
+            "z": 10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -7.778,
+            "z": 7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -10.163,
+            "z": 4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -11.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -10.163,
+            "z": -4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -7.778,
+            "z": -7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -4.21,
+            "z": -10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -11.0
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 4.21,
+            "z": -10.163
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 7.778,
+            "z": -7.778
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 10.163,
+            "z": -4.21
+          },
+          "size": {
+            "x": 4.62,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-cascade-feed",
@@ -453,14 +629,26 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 0.75,
+        "z": 55.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 54.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-landmark",
@@ -487,14 +675,36 @@
         "buried-installation"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-module-1",
@@ -522,14 +732,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-module-2",
@@ -557,14 +776,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-module-3",
@@ -592,14 +823,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-module-4",
@@ -627,14 +870,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-module-5",
@@ -662,14 +917,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-regenerator-column",
@@ -698,14 +962,33 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 7.7
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 2.385
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -5.0
+          },
+          "size": {
+            "x": 3.0,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "coreLabCenterService-region-departure-rail",
@@ -769,13 +1052,25 @@
       ],
       "footprint": {
         "x": 1.0,
-        "z": 1.0
+        "z": 66.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 66.0
+          }
+        }
+      ]
     },
     {
       "id": "shell_e",
@@ -1691,9 +1986,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 0.0,
+        "x": -1.25,
         "y": 0.0,
-        "z": 14.0
+        "z": 15.0
       },
       "rotationY": 0.0
     },

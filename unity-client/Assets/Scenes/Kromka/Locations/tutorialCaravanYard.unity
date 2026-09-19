@@ -2679,9 +2679,7 @@ MonoBehaviour:
   _role: tutorial
   _gameplayTags:
   - tutorial
-  - sleep
-  - bed
-  - personal-bed
+  - cot
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0

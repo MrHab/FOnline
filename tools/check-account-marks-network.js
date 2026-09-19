@@ -38,7 +38,8 @@ const storagePoint = { x: Number(storageMatch[1]), z: Number(storageMatch[2]) };
   first.state.currentLocationId = 'sluiceCity';
   first.state.serverLocationContext = { locationId: 'sluiceCity' };
   first.state.inventory.silver = 500;
-  first.state.player = { ...(first.state.player || {}), x: Number(auctioneer.position.x), z: Number(auctioneer.position.z) - 2 };
+  // Аукционер стоит в проходе между модулем и КПП: подход — с востока.
+  first.state.player = { ...(first.state.player || {}), x: Number(auctioneer.position.x) + 2, z: Number(auctioneer.position.z) };
   // На счёте аккаунта уже 1000 марок.
   saves.accounts = { [userId]: { sin: 0, marks: 1000 } };
   // Второй персонаж того же аккаунта: без марок в рюкзаке.

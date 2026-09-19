@@ -943,6 +943,7 @@ Transform:
   - {fileID: 979801818}
   - {fileID: 1034317950}
   - {fileID: 1334477887}
+  - {fileID: 1886021685}
   m_Father: {fileID: 2048691413}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &158004863
@@ -8620,6 +8621,122 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1827863213}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1886021684
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 152412791}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_east_shaft
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1886021688}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1886021687}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1886021685 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1886021684}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1886021686 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1886021684}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1886021687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1886021686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: east_shaft
+--- !u!114 &1886021688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1886021686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: east_shaft
+  _serverArchetypeId: cargoStack
+  _role: scenery
+  _gameplayTags:
+  - central-lab
+  - lab-door
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &1897141601
 PrefabInstance:
   m_ObjectHideFlags: 0

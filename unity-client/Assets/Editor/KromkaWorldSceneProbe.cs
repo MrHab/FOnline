@@ -158,6 +158,15 @@ namespace Kromka.EditorTools
                 .OfType<JObject>()
                 .GroupBy(entry => entry["id"]?.Value<string>() ?? string.Empty, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            // Состав строк: экспорт оставляет статическую строку только при маркере в сцене, а
+            // клиент без объекта сцены её не показывает. 18 сюжетных целей и шлюзов лабораторий
+            // жили так с 15.09: нажималось «использовать» на пустом месте.
+            var markerIds = new HashSet<string>(objects.Select(marker => marker.StableObjectId), StringComparer.Ordinal);
+            string[] unmarked = rows.Where(pair => !string.IsNullOrEmpty(pair.Key) && !IsLiveRow(pair.Value)
+                                                   && !markerIds.Contains(pair.Key))
+                .Select(pair => pair.Key).ToArray();
+            Require(unmarked.Length == 0, id + ": статические строки data без объекта сцены: "
+                + string.Join(", ", unmarked) + " («Кромка/Авторинг/Дополнить сцены маркерами строк data»)");
             foreach (KromkaPlacedObjectAuthoring marker in objects.Where(marker => marker.Role != "terrain"))
             {
                 RoaUnityLocationObject bridge = marker.GetComponent<RoaUnityLocationObject>();
@@ -172,6 +181,20 @@ namespace Kromka.EditorTools
                 Require(KromkaWorldSceneExporter.CollisionFor(marker.BlocksMovement, collision) == collision,
                     id + ": экспорт сцены сменил бы collision объекта " + marker.StableObjectId
                     + " с \"" + collision + "\"");
+                // Теги экспорт берёт с маркера: расхождение молча сняло бы quest-object с антенны
+                // заставы и вернуло бы койке учебного двора теги сна.
+                string[] dataTags = data["tags"] is JArray tagRows ? tagRows.Values<string>().ToArray() : Array.Empty<string>();
+                Require(dataTags.SequenceEqual(marker.GameplayTags, StringComparer.Ordinal),
+                    id + ": теги объекта " + marker.StableObjectId + " в data [" + string.Join(", ", dataTags)
+                    + "] расходятся с маркером [" + string.Join(", ", marker.GameplayTags) + "]");
+                // Преграды и размах: data обязана хранить ровно то, что напишет экспорт, иначе
+                // сервер останавливает игрока не там, где клиент.
+                JObject expected = KromkaWorldSceneExporter.ExportedCollision(marker, data);
+                foreach (string field in new[] { "footprint", "collisionParts" })
+                    Require(SameNumbers(expected[field], data[field]),
+                        id + ": экспорт сцены сменил бы " + field + " объекта " + marker.StableObjectId
+                        + ": в data " + (data[field]?.ToString(Newtonsoft.Json.Formatting.None) ?? "нет")
+                        + ", в сцене " + (expected[field]?.ToString(Newtonsoft.Json.Formatting.None) ?? "нет"));
             }
 
             int expectedAnomalies = row["anomalyFields"] is JArray fields ? fields.Count : 0;
@@ -210,6 +233,33 @@ namespace Kromka.EditorTools
                 Require(CountNames(scene, "-training-range") == 1, id + ": нет учебного стрельбища");
                 Require(CountNames(scene, "-caravan-loading") == 1, id + ": нет каравана к отправке");
             }
+        }
+
+        // Правило клиента RoaLocationData.IsLiveEntity в объёме экспортёра: живых сцена не описывает.
+        private static bool IsLiveRow(JObject row)
+        {
+            string kind = row?["entity"]?["kind"]?.Value<string>() ?? string.Empty;
+            if (kind == "npc" || kind == "enemy" || kind == "creature" || kind == "player") return true;
+            return row?["tags"] is JArray tags && tags.Values<string>()
+                .Any(tag => tag == "npc" || tag == "living" || tag == "hostile" || tag == "mutant");
+        }
+
+        // Числа сравниваются с допуском в полмиллиметра: 8 и 8.0 после чтения JSON — разные токены.
+        private static bool SameNumbers(JToken expected, JToken actual)
+        {
+            if (expected == null || actual == null) return expected == null && actual == null;
+            if (expected is JValue a && actual is JValue b)
+            {
+                bool numeric = (a.Type == JTokenType.Float || a.Type == JTokenType.Integer)
+                               && (b.Type == JTokenType.Float || b.Type == JTokenType.Integer);
+                return numeric ? Math.Abs(a.Value<double>() - b.Value<double>()) <= 0.0005 : JToken.DeepEquals(a, b);
+            }
+            if (expected is JArray left && actual is JArray right)
+                return left.Count == right.Count && left.Zip(right, SameNumbers).All(same => same);
+            if (expected is JObject first && actual is JObject second)
+                return first.Count == second.Count && first.Properties()
+                    .All(property => second[property.Name] != null && SameNumbers(property.Value, second[property.Name]));
+            return false;
         }
 
         private static int MinimumObjects(string type)

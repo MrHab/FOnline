@@ -77,10 +77,10 @@ for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.j
     const hasGeneratedParts = Array.isArray(object.collisionParts) && object.collisionParts.length > 0;
     // A retired key can also name geometry built in the Unity scene: the oil site's
     // pump jack is three box colliders under the archetype "oil_pump_jack". Its
-    // collision is exported from the scene marker, not derived from a GLB.
+    // collision and collisionParts are exported from the scene, not derived from a GLB.
     const unityAuthoredBlocker = markers.get(String(object.id || ''))?.blocksMovement === true;
     if ((collision && collision !== 'none' && !unityAuthoredBlocker)
-      || hasGeneratedParts || object.collisionSize || object.modelCollision) {
+      || (hasGeneratedParts && !unityAuthoredBlocker) || object.collisionSize || object.modelCollision) {
       collisionLeaks.push(`${file}: ${object.id || object.model}`);
     }
   }

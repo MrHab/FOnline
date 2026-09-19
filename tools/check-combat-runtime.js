@@ -348,10 +348,11 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   const maxHp = computedMaxHp(level, Number(special.end || 5));
   const maxAp = Math.max(5, 5 + Math.floor(Number(special.agi || 5) / 2));
   const locationId = String(options.locationId || COMBAT_LOCATION_ID);
-  // The arena's authored spawn is tile (19, 25), or world (1, 13). Individual
-  // feature probes can override both the location and a known-walkable point.
-  const spawnX = Number.isFinite(Number(options.spawnX)) ? Number(options.spawnX) : 1;
-  const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
+  // The arena's authored arrival is tile (19, 8), or world (0, -22): open ground
+  // south of the depot modules (the old point (1, 13) is inside module 2).
+  // Individual feature probes can override both the location and a known-walkable point.
+  const spawnX = Number.isFinite(Number(options.spawnX)) ? Number(options.spawnX) : 0;
+  const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : -22;
 
   state.characterProfile.special = special;
   if (options.skillRanks && typeof options.skillRanks === 'object') {

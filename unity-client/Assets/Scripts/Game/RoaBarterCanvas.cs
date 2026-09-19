@@ -8,11 +8,11 @@ namespace RealmOfAshes.Game
     /// <summary>
     /// Окно бартера в web-виде — #trader-window.barter-window
     /// (01_base_layout_hud.css:1288, renderTraderWindow в 07d_trader_barter_ui.js).
-    /// Шапка «Имя · БАРТЕР», строка «Бартер N% · крышки торговца · интерес» и
-    /// «Вес X/Y», три колонки: «Ваши вещи» (крышки, вкладки категорий, строки
+    /// Шапка «Имя · БАРТЕР», строка «Бартер N% · марки торговца · интерес» и
+    /// «Вес X/Y», три колонки: «Ваши вещи» (марки, вкладки категорий, строки
     /// .barter-row с артом/весом/ценой продажи), центр «ИТОГ ОБМЕНА» (леджер,
     /// «Вы отдаёте / Вы берёте», предупреждение, «Принять обмен / Сбросить»),
-    /// «Товар торговца» (имя · крышки, вкладки, строки с ценой покупки).
+    /// «Товар торговца» (имя · марки, вкладки, строки с ценой покупки).
     /// Логика очередей и сделки — RoaInteraction (tradeQueue/submit на сервере).
     /// </summary>
     public sealed class RoaBarterCanvas : MonoBehaviour
@@ -309,7 +309,7 @@ namespace RealmOfAshes.Game
             _player.Meta.text = money + " мар.";
             _vendor.Meta.text = traderName + " · " + traderCaps + " мар.";
 
-            // Строка состояния: бартер, крышки торговца, интерес (buyInterests рынка).
+            // Строка состояния: бартер, марки торговца, интерес (buyInterests рынка).
             int barter = TradeSkillPercent(self);
             string skillText = blackMarket
                 ? "Касса скупщика: " + traderCaps + " мар. · цена зависит от спроса и состояния"
@@ -371,9 +371,9 @@ namespace RealmOfAshes.Game
             _carryLine.text = "Вес " + projectedWeight.ToString("0.0") + "/" + capacity.ToString("0.0");
             _carryLine.color = overweight ? WarnInk : StatusInk;
 
-            _sellTotal.text = "+" + sellTotal + " кр.";
-            _buyTotal.text = "-" + buyTotal + " кр.";
-            _net.text = net > 0 ? "Вы платите " + net + " кр." : (net < 0 ? "Вам платят " + Mathf.Abs(net) + " кр." : "Ровный обмен");
+            _sellTotal.text = "+" + sellTotal + " мар.";
+            _buyTotal.text = "-" + buyTotal + " мар.";
+            _net.text = net > 0 ? "Вы платите " + net + " мар." : (net < 0 ? "Вам платят " + Mathf.Abs(net) + " мар." : "Ровный обмен");
             _net.color = net > 0 ? NetPay : (net < 0 ? NetGain : NetInk);
             _warning.text = hasTrade ? reason : string.Empty;
             _warning.gameObject.SetActive(hasTrade && !string.IsNullOrEmpty(reason));
@@ -501,12 +501,12 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < sell.Count; i++)
             {
                 Entry e = sell[i];
-                _offerRows.Add(MiniRow(_sellList, i, e, "+" + (e.Price * e.Qty) + " кр.", () => Interaction.TradeQueueRemove(e.RuntimeId, false, 1)));
+                _offerRows.Add(MiniRow(_sellList, i, e, "+" + (e.Price * e.Qty) + " мар.", () => Interaction.TradeQueueRemove(e.RuntimeId, false, 1)));
             }
             for (int i = 0; i < buy.Count; i++)
             {
                 Entry e = buy[i];
-                _offerRows.Add(MiniRow(_buyList, i, e, "-" + (e.Price * e.Qty) + " кр.", () => Interaction.TradeQueueRemove(e.RuntimeId, true, 1)));
+                _offerRows.Add(MiniRow(_buyList, i, e, "-" + (e.Price * e.Qty) + " мар.", () => Interaction.TradeQueueRemove(e.RuntimeId, true, 1)));
             }
             _sellList.sizeDelta = new Vector2(0f, Mathf.Max(1, sell.Count) * (MiniRowHeight + 5f));
             _buyList.sizeDelta = new Vector2(0f, Mathf.Max(1, buy.Count) * (MiniRowHeight + 5f));
@@ -641,15 +641,16 @@ namespace RealmOfAshes.Game
             artImage.raycastTarget = false;
             artImage.enabled = artImage.texture != null;
             Text name = Label("Name", rect, 10, TextAnchor.MiddleLeft, RowName, FontStyle.Bold);
-            Place(name.rectTransform, 0f, 0f, 1f, 1f, new Vector2(30f, 0f), new Vector2(-96f, 0f));
+            Place(name.rectTransform, 0f, 0f, 1f, 1f, new Vector2(30f, 0f), new Vector2(-104f, 0f));
             name.horizontalOverflow = HorizontalWrapMode.Wrap;
             name.verticalOverflow = VerticalWrapMode.Truncate;
             name.text = ItemName(entry.BaseId);
             Text qty = Label("Qty", rect, 10, TextAnchor.MiddleRight, new Color(0.682f, 0.725f, 0.557f, 1f));
-            Place(qty.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-94f, 0f), new Vector2(-62f, 0f));
+            Place(qty.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-102f, 0f), new Vector2(-70f, 0f));
             qty.text = "x" + entry.Qty;
+            // Колонка суммы 63 px: «-12345 мар.» жирным 10 pt не наезжает на количество.
             Text total = Label("Sum", rect, 10, TextAnchor.MiddleRight, LedgerGain, FontStyle.Bold);
-            Place(total.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-60f, 0f), new Vector2(-5f, 0f));
+            Place(total.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-68f, 0f), new Vector2(-5f, 0f));
             total.text = sum;
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;

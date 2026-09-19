@@ -248,6 +248,11 @@ namespace RealmOfAshes.Game
             return _buttons.TryGetValue(id, out ButtonView view) ? view.Label.text : string.Empty;
         }
 
+        public bool ButtonHasIcon(string id)
+        {
+            return _buttons.TryGetValue(id, out ButtonView view) && view.Icon.enabled;
+        }
+
         public bool SimulatePressForProbe(string id, bool pressed)
         {
             if (!_buttons.TryGetValue(id, out ButtonView view)) return false;
@@ -374,7 +379,7 @@ namespace RealmOfAshes.Game
                 () => Controls?.TriggerInventory());
             CreateButton("Map", "КАРТА", "RealmUi/mobile/left/map",
                 () => Controls?.TriggerMap());
-            CreateButton("Pipboy", "ПИП-БОЙ", "RealmUi/mobile/left/skills",
+            CreateButton("Pipboy", "ПУТНИК", "RealmUi/mobile/left/skills",
                 () => Controls?.TriggerPipboy());
             CreateButton("Menu", "МЕНЮ", "RealmUi/mobile/top/main_menu",
                 () => Controls?.TriggerMenu());
@@ -425,12 +430,16 @@ namespace RealmOfAshes.Game
             icon.texture = Resources.Load<Texture2D>(iconPath);
             icon.color = Color.white;
             icon.raycastTarget = false;
+            // RawImage без текстуры рисует сплошной белый квадрат поверх диска:
+            // без спрайта кнопка остаётся текстовой, с подписью по центру.
+            bool hasIcon = icon.texture != null;
+            icon.enabled = hasIcon;
 
             var labelRoot = new GameObject("Label", typeof(RectTransform), typeof(Text));
             labelRoot.transform.SetParent(root.transform, false);
             RectTransform labelRect = (RectTransform)labelRoot.transform;
-            labelRect.anchorMin = new Vector2(0.02f, 0.03f);
-            labelRect.anchorMax = new Vector2(0.98f, 0.30f);
+            labelRect.anchorMin = new Vector2(0.02f, hasIcon ? 0.03f : 0.30f);
+            labelRect.anchorMax = new Vector2(0.98f, hasIcon ? 0.30f : 0.70f);
             labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
             Text text = labelRoot.GetComponent<Text>();
             text.font = RoaUiFont.Default;

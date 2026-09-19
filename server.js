@@ -6180,8 +6180,7 @@ const WASTELAND_SIM = createWastelandSimulation({
   traderProfiles: SERVER_TRADER_PROFILES,
   publicSiteIds: RELEASED_LOCATION_IDS,
   locationRelease: publicLocationRelease(),
-  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || [],
-  worldModel: WORLD_ECONOMY.worldModel
+  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || []
 });
 const rawWastelandPublicState = WASTELAND_SIM.publicState.bind(WASTELAND_SIM);
 const rawWastelandPublicWorldTasks = typeof WASTELAND_SIM.publicWorldTasks === 'function'
@@ -28132,21 +28131,7 @@ function serverGlobalTravelEncounterContact(session = null, encounterId = '', no
       };
     }
   }
-  // Невидимые отряды NPC встречей в пути не бывают: угрозы живут в клетках.
-  const party = WORLD_ECONOMY.worldModel.visibleWorldParties === false ? null : (state.parties?.[id] || null);
-  const partyPoint = party && !party.destroyed && String(party.state || '') !== 'destroyed'
-    ? sanitizeServerGlobalMapPoint(party)
-    : null;
-  const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
-  if (partyPoint && serverGlobalPointDistance(point, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-    return {
-      id,
-      kind: 'party',
-      title: safeName(party.name || 'Отряд пустоши'),
-      point: partyPoint,
-      forced: party.forced === true
-    };
-  }
+  // Отряды NPC на карте не видны и встречей в пути не бывают: угрозы живут в клетках.
   return null;
 }
 
@@ -28234,24 +28219,6 @@ function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
     serverNow,
     elapsedMs
   };
-}
-
-function serverGlobalWorldPartyRadius(party = {}) {
-  const kind = String(party.kind || '').toLowerCase();
-  const faction = serverWorldFactionKey(party.faction || '');
-  const speciesText = [party.species, party.visual, party.modelKey, party.name]
-    .map(value => String(value || '').toLowerCase()).join(' ');
-  let radius = 5.8;
-  if (kind === 'caravan') radius = 8.2;
-  else if (kind === 'patrol') radius = 6.4;
-  else if (faction === 'raiders' || kind === 'raider') radius = 6.2;
-  else if (faction === 'mutants') radius = 7.0;
-  else if (/radscorpion|scorpion|скорпион/.test(speciesText)) radius = 7.2;
-  else if (/gecko|геккон/.test(speciesText)) radius = 6.8;
-  else if (/brahmin|брамин/.test(speciesText)) radius = 7.4;
-  else if (/ant|мурав/.test(speciesText)) radius = 6.0;
-  else if (/wolf|волк/.test(speciesText)) radius = 6.4;
-  return clamp(radius, 5.2, 8.8);
 }
 
 function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', preferredSiteId = '') {
@@ -28450,34 +28417,8 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
       return resolution;
     }
   }
-  if (partyId) {
-    const party = simState?.parties?.[partyId] || null;
-    const partyStateKey = String(party?.state || '');
-    // Зверь на фуражировке («onsite» посреди пустоши) остаётся встречаемым:
-    // стая видна на карте, и игрок вправе в неё врезаться. Караваны и патрули
-    // в «onsite» стоят внутри поселений — для них ограничение сохраняется.
-    const foragingBeast = String(party?.kind || '').toLowerCase() === 'monster'
-      && partyStateKey === 'onsite';
-    const encounterable = party && !party.destroyed && partyStateKey !== 'destroyed'
-      && (foragingBeast || !['onsite', 'engaged'].includes(partyStateKey))
-      && Number(party.members || party.strength || 0) > 0;
-    const partyPoint = encounterable ? sanitizeServerGlobalMapPoint(party) : null;
-    const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
-    if (partyPoint && serverGlobalPointDistance(expectedPoint, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      try {
-        const result = WASTELAND_SIM.beginPartyEncounterZone({
-          partyId,
-          playerId: leader.characterId || leader.id || '',
-          playerName: leader.name || '',
-          point: partyPoint
-        });
-        const resolution = serverGlobalZoneResolution(result?.zone || null, session?.fromPoint || null);
-        if (result?.ok && resolution) return resolution;
-      } catch (err) {
-        console.error('beginPartyEncounterZone failed:', err);
-      }
-    }
-  }
+  // Отряды NPC на карте не видны, поэтому встречи по одному лишь partyId нет:
+  // угрозы в пути — опасные клетки и зоны, которые сервер сам показал игроку.
   if (siteId) {
     const site = serverGlobalSite(siteId, simState);
     const locationId = normalizeLocationId(site?.locationId || '');

@@ -90,15 +90,10 @@ const stableScene = settlementSceneVariant(settlement('stable', 0, 0), config, 1
 assert(!stableScene.queue && !stableScene.barricades && !stableScene.repairCrew
   && stableScene.actorBudget === 0, 'stable scene incorrectly materializes crisis dressing');
 
-const coordinator = fs.readFileSync(path.join(ROOT, 'src', 'server', 'wasteland-sim.js'), 'utf8');
 const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 const globalMap = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGlobalMap.cs'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGameBootstrap.cs'), 'utf8');
 const presentation = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaSettlementLifePresentation.cs'), 'utf8');
-assert(coordinator.includes('createRefugeeFlow(')
-  && coordinator.includes("createWorldTask('deliver_supplies'")
-  && coordinator.includes('...Object.values(state.refugeeFlows?.active || {}).map'),
-  'wasteland simulation does not publish causal refugee flows and humanitarian contracts');
 assert(server.includes('settlementSceneVariant(controllingSite')
   && server.includes('wastelandSceneVariant'),
   'local room does not materialize settlement scene actors');

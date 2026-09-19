@@ -20,7 +20,6 @@ const pointKm = map.grid.cellKm / map.grid.cellPoints;
 
 // --- настройки ------------------------------------------------------------------------
 assert.equal(economy.worldModel.dangerCells, true, 'v3 turns danger cells on');
-assert.equal(economy.worldModel.visibleWorldParties, false, 'NPC parties leave the map with danger cells');
 assert.equal(config.subCellKm, 1.6, 'an encounter cell is the size of an Albion zone');
 for (const id of config.capitals) assert(nodes[id], `capital ${id} is on the map`);
 for (const center of config.blackCenters) assert(nodes[center.locationId], `black centre ${center.locationId} is on the map`);

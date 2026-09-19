@@ -123,7 +123,6 @@ const {
   retailMarketKey
 } = require('./faction-economy');
 const {
-  advanceSettlementHour,
   normalizeSettlementLife,
   publicSettlementLife
 } = require('./wasteland-settlements');
@@ -139,8 +138,6 @@ const {
   publicAnomalyCycle
 } = require('./wasteland-anomaly-cycle');
 const {
-  advanceRefugeeFlows,
-  createRefugeeFlow,
   normalizeRefugeeState,
   publicRefugeeFlow,
   settlementSceneVariant
@@ -183,7 +180,6 @@ const WORLD_SIM_CATCHUP_BUDGET_MS = Math.max(
   20,
   Number(process.env.WORLD_SIM_CATCHUP_BUDGET_MS || 180)
 );
-const FACTION_ECONOMY_PLAN_INTERVAL_HOURS = 1;
 const RETAIL_MARKET_BOOTSTRAP_VERSION = 2;
 const MAX_PRODUCTION_QUEUE_ROWS = 8;
 const LEGACY_SITE_NAMES = {
@@ -227,21 +223,11 @@ const CARAVAN_POST_BATTLE_REAL_MINUTES = 2;
 // на деле лишь решали, уйдёт обоз с пометкой «группа готова» или «время вышло».
 const CARAVAN_ESCORT_MIN_PLAYERS = 0;
 const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;
-// На сколько партий станция просит входов про запас. Заказ ровно в один рецепт
-// держал производство впроголодь: собрал одну вещь и снова жди караван.
-const PRODUCTION_INPUT_BUFFER_BATCHES = 3;
 // Через сколько часов ограбленная точка снаряжает следующий обоз.
 const REPLACEMENT_CONVOY_DELAY_HOURS = 6;
-// Как часто столица обновляет заказ на закупку у вольных людей.
-const FACTION_PROCUREMENT_INTERVAL_HOURS = 18;
-const SURPLUS_TRADE_THRESHOLD = 95;
 const SURPLUS_TRADE_COOLDOWN_HOURS = 24;
-const RESOURCE_EXPORT_THRESHOLD = 42;
 const RESOURCE_EXPORT_COOLDOWN_HOURS = 7;
-const PRODUCTION_EXPORT_THRESHOLD = 34;
-const PRODUCTION_EXPORT_COOLDOWN_HOURS = 8;
 const FIXED_LAIR_RESPAWN_HOURS = 24;
-const FIXED_LAIR_STATE_VERSION = 3;
 const WORLD_INFRASTRUCTURE_LAYOUT_VERSION = 2;
 const WORLD_PARTY_AUTONOMY_VERSION = 1;
 const PARTY_DECISION_MIN_HOURS = 0.6;
@@ -253,7 +239,6 @@ const PATROL_MISSION_DURATION_HOURS = 48;
 const PATROL_PARTICIPATION_DURATION_HOURS = 24;
 const PATROL_PARTICIPATION_COOLDOWN_HOURS = 8;
 const PUBLIC_PARTY_MOTION_LOOKAHEAD_MS = 7500;
-const CARAVAN_PUBLIC_THREAT_RISK = 48;
 const PARTY_CLASH_ENGAGE_DISTANCE_KM = 5;
 const PARTY_CLASH_SITE_LINK_DISTANCE_KM = 9;
 const PARTY_CLASH_ACTORS_VERSION = 3;
@@ -2480,17 +2465,7 @@ function createWastelandSimulation(options = {}) {
     ? clone(options.worldSimulationConfig)
     : readJson(options.worldSimulationFile || path.join(process.cwd(), 'data', 'kromka', 'world-simulation.json'), {});
   const anomalyLocations = Array.isArray(options.anomalyLocations) ? clone(options.anomalyLocations) : [];
-  // Экономика v3 (KRM-22) выключает части прежней живой пустоши. Без явной
-  // настройки симуляция работает целиком, как раньше: так её проверяют тесты.
-  const worldModel = Object.freeze({
-    settlementLife: true,
-    npcProduction: true,
-    worldCaravans: true,
-    visibleWorldParties: true,
-    hostileWorldParties: true,
-    ...(options.worldModel && typeof options.worldModel === 'object' ? options.worldModel : {})
-  });
-  let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
+  let state =normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
   state.cargoLedger = pruneCargoLedger(state.cargoLedger || {});
   state.refugeeFlows = normalizeRefugeeState(state.refugeeFlows || {}, worldSimulationConfig);
   for (const site of Object.values(state.sites || {})) {
@@ -9203,80 +9178,6 @@ function createWastelandSimulation(options = {}) {
     }
   }
 
-  function updateCaravanThreats(hours) {
-    for (const party of Object.values(state.parties)) {
-      if (!party || party.destroyed || party.state === 'destroyed' || String(party.kind || '') !== 'caravan') continue;
-      if (['onsite', 'recovering'].includes(String(party.state || '').toLowerCase())) continue;
-      if (party.state === 'engaged' && activeBattleZoneForParty(party.id)) continue;
-      const threat = partyThreatInfo(party);
-      const now = Number(state.worldHour || 0);
-      const destination = state.sites[party.destinationSiteId];
-      const home = state.sites[party.homeSiteId || 'settlement'];
-      if (threat.riskLevel < 42 || Number(threat.threatDistanceKm || 0) > 32) {
-        party.threatWatchProgress = Math.max(0, Number(party.threatWatchProgress || 0) - hours * 0.5);
-        if (String(party.state || '').toLowerCase() === 'staging' && now - Number(party.lastEscortListingHour || -999) >= 18 && (destination || stockpileTotal(party.cargo || {}) > 0)) {
-          party.lastEscortListingHour = now;
-          createWorldTask('escort_caravan', {
-            key: `escort_caravan:${party.id}`,
-            title: `Сопроводить караван: ${party.name}`,
-            text: `${party.name} готовит переход ${destination ? `к ${destination.name}` : 'по маршруту'} с грузом ${stockpileSummary(party.cargo || {}) || 'припасов'}. Присоединитесь к каравану и идите вместе с группой, пока она не доберется до безопасной точки.`,
-            siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
-            partyId: party.id,
-            targetFaction: threat.threatFaction || '',
-            objective: 'escort_regular_caravan',
-            durationHours: 36,
-            priority: 2,
-            details: {
-              x: Number(Number(party.x || 0).toFixed(1)),
-              y: Number(Number(party.y || 0).toFixed(1)),
-              destinationSiteId: party.destinationSiteId || '',
-              riskLevel: threat.riskLevel,
-              cargo: compactStockpile(party.cargo || {})
-            }
-          });
-        }
-        continue;
-      }
-      party.threatWatchProgress = Number(party.threatWatchProgress || 0) + Math.max(0, Number(hours || 0));
-      if (party.threatWatchProgress < 1.5) continue;
-      party.threatWatchProgress = 0;
-      const lastEventHour = Number(party.lastThreatEventHour || -999);
-      if (Number(state.worldHour || 0) - lastEventHour < 7 && threat.riskLevel < 72) continue;
-      party.lastThreatEventHour = Number(state.worldHour || 0);
-      party.lastEscortListingHour = Number(state.worldHour || 0);
-      const priority = threat.riskLevel >= 75 ? 5 : threat.riskLevel >= 58 ? 4 : 3;
-      party.nextDecisionHour = 0;
-      refreshPartyDecision(party, true);
-      addEvent('caravan_threat', `${party.name}: замечена угроза на маршруте (${threat.threatName}, ${threat.threatDistanceKm} км).`, {
-        partyId: party.id,
-        threatPartyId: threat.threatPartyId,
-        riskLevel: threat.riskLevel,
-        response: party.decisionKind || 'reroute',
-        x: Number(Number(party.x || 0).toFixed(1)),
-        y: Number(Number(party.y || 0).toFixed(1))
-      });
-      createWorldTask('escort_caravan', {
-        key: `escort_caravan:${party.id}`,
-        title: `Прикрыть караван: ${party.name}`,
-        text: `${party.name} обнаружил рядом ${threat.threatName || 'опасный отряд'} и меняет маршрут; риск ${threat.riskLevel}%. Бой начнется только при физическом столкновении групп.`,
-        siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
-        partyId: party.id,
-        targetFaction: threat.threatFaction || '',
-        objective: 'escort_threatened_caravan',
-        durationHours: 28,
-        priority,
-        details: {
-          x: Number(Number(party.x || 0).toFixed(1)),
-          y: Number(Number(party.y || 0).toFixed(1)),
-          destinationSiteId: party.destinationSiteId || '',
-          threatPartyId: threat.threatPartyId || '',
-          riskLevel: threat.riskLevel,
-          cargo: compactStockpile(party.cargo || {})
-        }
-      });
-    }
-  }
-
   function updatePatrolThreats(hours) {
     for (const party of Object.values(state.parties)) {
       if (!party || party.destroyed || party.state === 'destroyed' || String(party.kind || '') !== 'patrol') continue;
@@ -9690,221 +9591,11 @@ function createWastelandSimulation(options = {}) {
     return economyRecipes[id]?.inputs || null;
   }
 
-  function siteCanCraftRecipe(site = {}, recipe = null) {
-    if (!site || !recipe) return false;
-    const group = factionGroup(site.owner || 'neutral');
-    if (recipe.factions.length && !recipe.factions.includes(group)) return false;
-    const capabilities = new Set(Array.isArray(site.productionCapabilities) ? site.productionCapabilities : []);
-    return capabilities.has(recipe.station) || Number(site.production?.[recipe.id] || 0) > 0;
-  }
-
-  function factionEconomySites(faction = '') {
-    const group = factionGroup(faction || 'neutral');
-    return Object.values(state.sites || {}).filter(site => site
-      && factionGroup(site.owner || 'neutral') === group
-      && isSettlementServiceSite(site));
-  }
-
   function addEconomyAmount(target = {}, itemId = '', qty = 0) {
     const id = safeId(itemId || '', '');
     const amount = Math.max(0, Number(qty || 0));
     if (!id || amount <= 0) return;
     target[id] = Number((Number(target[id] || 0) + amount).toFixed(3));
-  }
-
-  function factionEconomyAvailable(faction = '') {
-    const available = {};
-    for (const site of factionEconomySites(faction)) {
-      for (const [id, qty] of Object.entries(site.stockpile || {})) addEconomyAmount(available, id, qty);
-      for (const market of Object.values(site.retailMarkets || {})) {
-        for (const row of normalizeMarketStockRows(market?.stock || [])) addEconomyAmount(available, row.id, row.qty);
-      }
-      for (const row of Array.isArray(site.productionQueue) ? site.productionQueue : []) {
-        addEconomyAmount(available, row.itemId, row.outputQty);
-      }
-    }
-    for (const party of Object.values(state.parties || {})) {
-      if (!party || party.destroyed || factionGroup(party.faction || '') !== factionGroup(faction || '')) continue;
-      for (const [id, qty] of Object.entries(party.cargo || {})) addEconomyAmount(available, id, qty);
-    }
-    return available;
-  }
-
-  function factionEconomyTargets(faction = '') {
-    const targets = {};
-    for (const site of factionEconomySites(faction)) {
-      const includedProfiles = new Set();
-      for (const profileId of Array.isArray(site.traderProfiles) ? site.traderProfiles : []) {
-        const profile = traderProfiles[profileId];
-        if (!profile) continue;
-        includedProfiles.add(profile.id);
-        for (const row of profile.stock) addEconomyAmount(targets, row.id, Math.max(row.shelfTarget, row.shelfMin) * 1.35);
-      }
-      for (const market of Object.values(site.retailMarkets || {})) {
-        if (!market || (market.profileId && includedProfiles.has(market.profileId))) continue;
-        for (const row of normalizeTraderPlanRows(market.plan || [])) {
-          addEconomyAmount(targets, row.id, Math.max(row.shelfTarget, row.shelfMin) * 1.35);
-        }
-      }
-      for (const [id, qty] of Object.entries(site.productionDemand || {})) addEconomyAmount(targets, id, qty);
-      for (const [id, qty] of Object.entries(site.retailDemand || {})) addEconomyAmount(targets, id, qty);
-    }
-    return targets;
-  }
-
-  function productionCandidateSites(faction = '', recipe = null) {
-    return factionEconomySites(faction)
-      .filter(site => siteCanCraftRecipe(site, recipe))
-      .sort((a, b) => {
-        const queueDelta = Number(a.productionQueue?.length || 0) - Number(b.productionQueue?.length || 0);
-        if (queueDelta) return queueDelta;
-        return resourceActivityPercent(b, state.worldHour) - resourceActivityPercent(a, state.worldHour)
-          || String(a.id || '').localeCompare(String(b.id || ''));
-      });
-  }
-
-  function productionInputAvailability(site = {}, recipe = null) {
-    if (!site || !recipe) return { ratio: 0, missing: {} };
-    const stock = site.stockpile || {};
-    const missing = {};
-    let ratio = 1;
-    for (const [id, need] of Object.entries(recipe.inputs || {})) {
-      const required = Math.max(0, Number(need || 0));
-      const have = Math.max(0, Number(stock[id] || 0));
-      if (required > 0) ratio = Math.min(ratio, have / required);
-      if (have + 0.0001 < required) missing[id] = Number((required - have).toFixed(3));
-    }
-    return { ratio: clamp(ratio, 0, 1), missing };
-  }
-
-  function enqueueFactionProduction(site = {}, recipe = null, priority = 50) {
-    if (!site || !recipe || !siteCanCraftRecipe(site, recipe)) return { ok: false, missing: {} };
-    site.productionQueue = Array.isArray(site.productionQueue) ? site.productionQueue : [];
-    if (site.productionQueue.length >= MAX_PRODUCTION_QUEUE_ROWS) return { ok: false, missing: {}, full: true };
-    if (site.productionQueue.some(row => row.itemId === recipe.id)) return { ok: false, missing: {}, queued: true };
-    const inputState = productionInputAvailability(site, recipe);
-    if (Object.keys(inputState.missing).length) {
-      site.productionDemand = site.productionDemand || {};
-      for (const [id, qty] of Object.entries(inputState.missing)) {
-        // Просим запас на несколько партий, а не ровно на одну. Заказ в один
-        // рецепт означал вечную жизнь впроголодь: станция получала три дерева,
-        // собирала топор и снова оставалась ни с чем, а караван приходил не
-        // раньше чем через семь часов.
-        const wanted = qty * PRODUCTION_INPUT_BUFFER_BATCHES;
-        site.productionDemand[id] = Math.max(Number(site.productionDemand[id] || 0), wanted);
-      }
-      return { ok: false, missing: inputState.missing };
-    }
-    const stock = site.stockpile || (site.stockpile = emptyStockpile());
-    const reservedInputs = {};
-    for (const [id, need] of Object.entries(recipe.inputs)) {
-      const qty = Math.max(0, Number(need || 0));
-      stock[id] = Math.max(0, Number(stock[id] || 0) - qty);
-      if (qty > 0) reservedInputs[id] = qty;
-      if (site.productionDemand) site.productionDemand[id] = Math.max(0, Number(site.productionDemand[id] || 0) - qty);
-    }
-    const workforceMul = clamp((Number(site.workforce || 35) + Number(site.prosperity || 25)) / 100, 0.45, 1.6);
-    const workHours = Math.max(0.25, Number(recipe.workHours || 1) / workforceMul);
-    const row = {
-      id: safeId(`production_${site.id}_${recipe.id}_${Math.floor(Number(state.worldHour || 0) * 100)}_${site.productionQueue.length}`, `production_${site.id}_${recipe.id}`),
-      itemId: recipe.id,
-      outputQty: recipe.outputQty,
-      remainingHours: Number(workHours.toFixed(3)),
-      workHours: Number(workHours.toFixed(3)),
-      priority: clamp(priority, 1, 100),
-      reservedInputs,
-      createdHour: Number(state.worldHour || 0)
-    };
-    site.productionQueue.push(row);
-    site.lastProductionOrder = { itemId: recipe.id, outputQty: recipe.outputQty, createdHour: row.createdHour };
-    dirty = true;
-    return { ok: true, row };
-  }
-
-  function planFactionProduction(hours = 0) {
-    state.factionEconomyPlanProgress = Number(state.factionEconomyPlanProgress || 0) + Math.max(0, Number(hours || 0));
-    if (state.factionEconomyPlanProgress < FACTION_ECONOMY_PLAN_INTERVAL_HOURS) return false;
-    state.factionEconomyPlanProgress %= FACTION_ECONOMY_PLAN_INTERVAL_HOURS;
-    const factions = [...new Set(Object.values(state.sites || {})
-      .map(site => factionGroup(site?.owner || 'neutral'))
-      .filter(isTerritorialWorldFaction))];
-    let planned = 0;
-    for (const faction of factions) {
-      const available = factionEconomyAvailable(faction);
-      const targets = factionEconomyTargets(faction);
-      const orders = Object.entries(targets)
-        .map(([id, target]) => {
-          const recipe = economyRecipes[id];
-          const have = Math.max(0, Number(available[id] || 0));
-          const deficit = Math.max(0, Number(target || 0) - have);
-          const zeroBonus = have < 0.001 ? 140 : 0;
-          const ratio = target > 0 ? deficit / target : 0;
-          return { id, recipe, deficit, priority: zeroBonus + ratio * 100 + Math.min(35, deficit) };
-        })
-        .filter(row => row.recipe && row.deficit > 0.001)
-        .sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
-      for (const order of orders.slice(0, 24)) {
-        const candidates = productionCandidateSites(faction, order.recipe);
-        if (!candidates.length) continue;
-        candidates.sort((a, b) => productionInputAvailability(b, order.recipe).ratio - productionInputAvailability(a, order.recipe).ratio);
-        let result = null;
-        for (const site of candidates) {
-          result = enqueueFactionProduction(site, order.recipe, Math.min(100, order.priority));
-          if (result.ok || result.queued) break;
-          if (!result.full && Object.keys(result.missing || {}).length) break;
-        }
-        if (result?.ok) {
-          addEconomyAmount(available, order.id, order.recipe.outputQty);
-          planned++;
-        }
-      }
-    }
-    if (planned > 0) dirty = true;
-    return planned > 0;
-  }
-
-  function advanceFactionProduction(hours = 0) {
-    const elapsed = Math.max(0, Number(hours || 0));
-    if (elapsed <= 0) return false;
-    let changed = false;
-    for (const site of Object.values(state.sites || {})) {
-      const queue = Array.isArray(site?.productionQueue) ? site.productionQueue : [];
-      if (!queue.length) continue;
-      const activityMul = site.activeConflict
-        ? 0.45
-        : Number(site.raidUntil || 0) > Number(state.worldHour || 0)
-          ? 0.35
-          : Number(site.supplyDisruptedUntil || 0) > Number(state.worldHour || 0)
-            ? 0.65
-            : 1;
-      const completed = [];
-      for (const row of queue) {
-        row.remainingHours = Math.max(0, Number(row.remainingHours || 0) - elapsed * activityMul);
-        if (row.remainingHours <= 0.0001) completed.push(row);
-      }
-      for (const row of completed) {
-        site.stockpile = site.stockpile || emptyStockpile();
-        site.stockpile[row.itemId] = Number((Number(site.stockpile[row.itemId] || 0) + Number(row.outputQty || 0)).toFixed(3));
-        site.lastWarehouseDeposit = {
-          kind: 'planned_craft',
-          cargo: { [row.itemId]: row.outputQty },
-          worldHour: Number(Number(state.worldHour || 0).toFixed(2))
-        };
-        addEvent('planned_production_completed', `${site.name}: готово ${row.itemId} x${row.outputQty}.`, {
-          siteId: site.id,
-          itemId: row.itemId,
-          qty: row.outputQty
-        });
-      }
-      if (completed.length) {
-        const completedIds = new Set(completed.map(row => row.id));
-        site.productionQueue = queue.filter(row => !completedIds.has(row.id));
-        site.lastProductionHour = Number(state.worldHour || 0);
-      }
-      changed = true;
-    }
-    if (changed) dirty = true;
-    return changed;
   }
 
   function craftIntoStockpile(stock = {}, itemId = '', targetQty = 0) {
@@ -10001,61 +9692,6 @@ function createWastelandSimulation(options = {}) {
     return { ok: false, error: 'unsupported_kind' };
   }
 
-  function produceAtSettlements(hours) {
-    for (const site of Object.values(state.sites)) {
-      if (!site || !isSettlementServiceSite(site)) continue;
-      site.productionProgress = Number(site.productionProgress || 0) + hours;
-      if (site.productionProgress < 6) continue;
-      const cycles = Math.floor(site.productionProgress / 6);
-      site.productionProgress -= cycles * 6;
-      const stock = site.stockpile || (site.stockpile = emptyStockpile());
-      const produced = {};
-      const addProduced = (id, qty) => {
-        const amount = Math.max(0, Number(qty || 0));
-        if (amount > 0) produced[id] = Number((Number(produced[id] || 0) + amount).toFixed(3));
-      };
-      const ammoCycles = Math.min(cycles, Math.floor(Number(stock.scrap || 0) / 4), Math.floor(Number(stock.ammoParts || 0) / 2));
-      if (ammoCycles > 0) {
-        stock.scrap -= 4 * ammoCycles;
-        stock.ammoParts -= 2 * ammoCycles;
-        const ammo9 = 24 * ammoCycles;
-        const ammo556 = 12 * ammoCycles;
-        stock.ammo9 = Number(stock.ammo9 || 0) + ammo9;
-        stock.ammo556 = Number(stock.ammo556 || 0) + ammo556;
-        addProduced('ammo9', ammo9);
-        addProduced('ammo556', ammo556);
-      }
-      const medicineCycles = Math.min(cycles, Math.floor(Number(stock.water || 0) / 3), Math.floor(Number(stock.chemicals || 0) / 1));
-      if (medicineCycles > 0) {
-        stock.water -= 3 * medicineCycles;
-        stock.chemicals -= 1 * medicineCycles;
-        const medicine = 2 * medicineCycles;
-        stock.medicine = Number(stock.medicine || 0) + medicine;
-        addProduced('medicine', medicine);
-      }
-      const weaponPartCycles = Math.min(cycles, Math.floor(Number(stock.ore || 0) / 5), Math.floor(Number(stock.scrap || 0) / 3));
-      if (weaponPartCycles > 0) {
-        stock.ore -= 5 * weaponPartCycles;
-        stock.scrap -= 3 * weaponPartCycles;
-        stock.weaponParts = Number(stock.weaponParts || 0) + weaponPartCycles;
-        addProduced('weaponParts', weaponPartCycles);
-      }
-      if (site.production && typeof site.production === 'object') {
-        const workerMul = clamp((Number(site.workforce || 35) + Number(site.prosperity || 25)) / 120, 0.35, 1.35);
-        addStockpile(produced, runSiteProduction(stock, site.production, cycles, workerMul), 1);
-      }
-      if (Object.keys(produced).length) {
-        site.lastWarehouseDeposit = {
-          kind: 'npc_craft',
-          cargo: compactStockpile(produced),
-          worldHour: Number(Number(state.worldHour || 0).toFixed(2))
-        };
-        site.lastProductionHour = Number(state.worldHour || 0);
-      }
-      dirty = true;
-    }
-  }
-
   function resourceSiteSupportDemand(site = {}, reason = 'support') {
     if (!isSupportDemandSite(site)) return {};
     const output = site.output && typeof site.output === 'object' ? site.output : {};
@@ -10128,478 +9764,6 @@ function createWastelandSimulation(options = {}) {
     return '';
   }
 
-  function maybeCreateResourceSupportTask(site = {}, reason = '') {
-    // Без производства (экономика v3) точке нечего поддерживать: даже налёт
-    // не превращается в заказ на припасы.
-    if (!worldModel.npcProduction) return null;
-    const supportReason = reason || resourceSiteSupportReason(site);
-    if (!site || !supportReason) return null;
-    const demand = resourceSiteSupportDemand(site, supportReason);
-    if (!Object.keys(demand).length) return null;
-    const now = Number(state.worldHour || 0);
-    if (now - Number(site.lastSupportTaskHour || -999) < 10 && supportReason !== 'raid') return null;
-    site.lastSupportTaskHour = now;
-    const priority = supportReason === 'raid' ? 5 : supportReason === 'stalled' ? 3 : 2;
-    const productionSite = isProductionSite(site);
-    const reasonText = supportReason === 'raid'
-      ? 'точка под налетом'
-      : supportReason === 'stalled'
-        ? (productionSite ? 'производство почти стоит' : 'добыча почти стоит')
-        : supportReason === 'security'
-          ? 'охрана просела'
-          : 'запасы на точке низкие';
-    const supportLabel = productionSite ? 'производства' : 'добычи';
-    const activityLabel = productionSite ? 'производства' : 'добычи';
-    addEvent('resource_support_needed', `${site.name}: нужна поддержка ${supportLabel} (${stockpileSummary(demand)}).`, {
-      siteId: site.id,
-      reason: supportReason,
-      demand
-    });
-    // Обещаем ровно то, что заказчик способен заплатить. За фракционную точку
-    // платит казна её столицы, за ничейную — она сама, и там бывает пять крышек:
-    // объявление о сорока девяти было бы обманом, а не наградой.
-    const payer = worldTaskPayerSite(site);
-    const purse = Math.max(0, Number((payer?.stockpile || {}).silver || 0));
-    const offered = rewardForWorldTask('deliver_supplies', site, priority);
-    return createWorldTask('deliver_supplies', {
-      key: `resource_support:${site.id}:${supportReason}`,
-      title: `Поддержать ${supportLabel}: ${site.name}`,
-      text: `${site.name}: ${reasonText}. Доставьте ${stockpileSummary(demand)}, чтобы поднять рабочих, безопасность и активность ${activityLabel}.`,
-      siteId: site.id,
-      objective: 'support_resource_site',
-      durationHours: supportReason === 'raid' ? 24 : 42,
-      priority,
-      reward: { ...offered, caps: Math.min(Number(offered.caps || 0), Math.floor(purse / 3)) },
-      details: {
-        demand,
-        resourceSupport: true,
-        supportReason,
-        relief: {
-          workforce: supportReason === 'stalled' ? 12 : 8,
-          security: supportReason === 'security' || supportReason === 'raid' ? 12 : 6,
-          activityHours: supportReason === 'raid' ? 18 : 24
-        }
-      }
-    });
-  }
-
-  function produceAtResourceSites(hours) {
-    for (const site of Object.values(state.sites)) {
-      if (!site || !isHarvestSite(site)) continue;
-      site.resourceProgress = Number(site.resourceProgress || 0) + hours;
-      if (site.resourceProgress < 4) continue;
-      const cycles = Math.floor(site.resourceProgress / 4);
-      site.resourceProgress -= cycles * 4;
-      const output = site.output && typeof site.output === 'object'
-        ? site.output
-        : {};
-      if (!Object.keys(output).length) continue;
-      const activity = resourceActivityPercent(site, state.worldHour);
-      site.resourceActivity = activity;
-      const productionMul = cycles * 0.24 * clamp(activity / 100, 0.03, 1.8);
-      const produced = {};
-      Object.entries(output).forEach(([id, amount]) => {
-        const qty = Math.max(0, Number(amount || 0) * productionMul);
-        if (qty > 0) produced[id] = qty;
-      });
-      addStockpile(site.stockpile || (site.stockpile = emptyStockpile()), output, productionMul);
-      if (Object.keys(produced).length) {
-        site.lastWarehouseDeposit = {
-          kind: 'npc_harvest',
-          cargo: compactStockpile(produced),
-          worldHour: Number(Number(state.worldHour || 0).toFixed(2))
-        };
-      }
-      if (activity < 25 && Number(state.worldHour || 0) - Number(site.lastStalledEventHour || -999) >= 24) {
-        site.lastStalledEventHour = state.worldHour;
-        addEvent('resource_stalled', `${site.name}: добыча почти остановилась. Нужны безопасность и рабочие.`, {
-          siteId: site.id,
-          owner: site.owner,
-          activity
-        });
-        maybeCreateResourceSupportTask(site, 'stalled');
-      }
-      const supportReason = resourceSiteSupportReason(site);
-      if (supportReason && Number(state.worldHour || 0) - Number(site.lastSupportCheckHour || -999) >= 12) {
-        site.lastSupportCheckHour = state.worldHour;
-        maybeCreateResourceSupportTask(site, supportReason);
-      }
-      if (Number(state.worldHour || 0) - Number(site.lastProductionEventHour || -999) >= 24) {
-        site.lastProductionEventHour = state.worldHour;
-        addEvent('resource_produced', `${site.name} накопила ресурсы: ${stockpileSummary(site.stockpile)}. Активность: ${activity}%.`, {
-          siteId: site.id,
-          owner: site.owner,
-          activity,
-          stockpile: clone(site.stockpile)
-        });
-      }
-      dirty = true;
-    }
-  }
-
-  function ensureRefugeeHumanitarianTask(flow = {}) {
-    if (!flow?.id) return null;
-    const targetSiteId = flow.destinationSiteId || flow.originSiteId || '';
-    if (!targetSiteId || !state.sites[targetSiteId]) return null;
-    const members = Math.max(1, Math.floor(Number(flow.members || 1)));
-    const demand = {
-      water: Math.max(3, Math.ceil(members * 0.25)),
-      food: Math.max(2, Math.ceil(members * 0.2)),
-      medicine: Math.max(1, Math.ceil(members * 0.04))
-    };
-    return createWorldTask('deliver_supplies', {
-      key: `refugee_aid:${flow.id}`,
-      title: `Помощь беженцам: ${flow.originSiteName || flow.originSiteId}`,
-      text: flow.destinationSiteId
-        ? `${members} человек идут в ${flow.destinationSiteName || flow.destinationSiteId}. Нужны вода, еда и лекарства к их прибытию.`
-        : `${members} человек застряли у ${flow.originSiteName || flow.originSiteId} без безопасного маршрута.`,
-      siteId: targetSiteId,
-      objective: 'deliver_supplies',
-      durationHours: Math.max(24, Number(worldSimulationConfig.refugees?.humanitarianTaskDurationHours || 72)),
-      priority: flow.status === 'stranded' ? 3 : 2,
-      details: {
-        causeCode: flow.causeCode || 'settlement_crisis',
-        refugeeFlowId: flow.id,
-        originSiteId: flow.originSiteId || '',
-        destinationSiteId: flow.destinationSiteId || '',
-        members,
-        demand,
-        aggregatedGroup: true
-      }
-    });
-  }
-
-  function advanceRefugeeMigration(hours) {
-    const result = advanceRefugeeFlows(
-      state.refugeeFlows || (state.refugeeFlows = normalizeRefugeeState({}, worldSimulationConfig)),
-      state.sites,
-      hours,
-      state.worldHour,
-      { config: worldSimulationConfig, pointKm: mapPointKm(getGlobalMap()) }
-    );
-    for (const arrival of result.arrivals) {
-      const flow = arrival.flow;
-      const destination = arrival.destination;
-      addEvent('refugee_group_arrived', `${flow.name} прибыли в ${destination.name}. Поселение приняло ${flow.members} человек.`, {
-        refugeeFlowId: flow.id,
-        originSiteId: flow.originSiteId,
-        destinationSiteId: destination.id,
-        causeCode: flow.causeCode,
-        members: flow.members,
-        aggregatedGroup: true
-      });
-    }
-    if (result.arrivals.length || result.reroutes.length) dirty = true;
-    return result;
-  }
-
-  function consumeSettlementSupplies(hours) {
-    for (const site of Object.values(state.sites)) {
-      if (!site || !isSettlementServiceSite(site)) continue;
-      if (String(site.type || '').toLowerCase() === 'settlement') {
-        const beforeCondition = String(site.settlementLife?.condition || 'stable');
-        const beforeCause = String(site.settlementLife?.causeCode || 'stable_supplies');
-        const result = advanceSettlementHour(site, worldSimulationConfig, hours, state.worldHour);
-        const life = result.life;
-        if (result.conditionChanged || beforeCause !== life.causeCode) {
-          addEvent('settlement_state_changed', `${site.name}: ${life.reason}`, {
-            siteId: site.id,
-            state: life.condition,
-            previousState: beforeCondition,
-            causeCode: life.causeCode,
-            forecast: life.forecast,
-            actions: life.actions
-          });
-        }
-        if (result.migrated > 0) {
-          const refugeeResult = createRefugeeFlow(
-            state.refugeeFlows || (state.refugeeFlows = normalizeRefugeeState({}, worldSimulationConfig)),
-            site,
-            result.migrated,
-            state.sites,
-            state.worldHour,
-            worldSimulationConfig
-          );
-          if (refugeeResult.flow) ensureRefugeeHumanitarianTask(refugeeResult.flow);
-          addEvent('settlement_migration', `${site.name}: ${result.migrated} жителей покинули поселение после затяжного кризиса.`, {
-            siteId: site.id,
-            causeCode: life.causeCode,
-            migrated: result.migrated,
-            population: life.population,
-            refugeeFlowId: refugeeResult.flow?.id || '',
-            destinationSiteId: refugeeResult.flow?.destinationSiteId || '',
-            aggregatedGroup: true
-          });
-        }
-        const missing = Object.fromEntries(Object.entries(result.consumption.missing || {})
-          .filter(([, qty]) => Number(qty || 0) > 0));
-        if (Object.keys(missing).length
-          && Number(state.worldHour || 0) - Number(site.lastLifeSupportTaskHour || -999) >= 18) {
-          site.lastLifeSupportTaskHour = state.worldHour;
-          createWorldTask('deliver_supplies', {
-            key: `settlement_life:${site.id}:${life.causeCode}`,
-            title: `Аварийная поставка: ${site.name}`,
-            text: `${site.name} запрашивает припасы. Причина: ${life.reason}.`,
-            siteId: site.id,
-            objective: 'deliver_supplies',
-            durationHours: 48,
-            priority: life.condition === 'crisis' ? 3 : 2,
-            details: {
-              causeCode: life.causeCode,
-              forecast: life.forecast,
-              demand: missing,
-              actions: life.actions
-            }
-          });
-        }
-        dirty = true;
-        continue;
-      }
-      site.consumptionProgress = Number(site.consumptionProgress || 0) + hours;
-      if (site.consumptionProgress < 6) continue;
-      const cycles = Math.floor(site.consumptionProgress / 6);
-      site.consumptionProgress -= cycles * 6;
-      const stock = site.stockpile || (site.stockpile = emptyStockpile());
-      const demand = {
-        water: Math.max(1, Math.round((Number(site.prosperity || 25) / 35 + 0.7) * cycles)),
-        medicine: Math.max(0, Math.floor((100 - Number(site.security || siteDefaultSecurity(site))) / 45) * cycles),
-        ammoParts: (site.type === 'outpost' || site.type === 'production') ? Math.max(1, cycles) : Math.max(0, Math.floor(cycles / 2))
-      };
-      const taken = takeStockpile(stock, demand);
-      const shortage = Object.entries(demand).some(([key, need]) => Number(taken[key] || 0) < Number(need || 0));
-      if (shortage) {
-        site.supplyDisruptedUntil = Math.max(Number(site.supplyDisruptedUntil || 0), Number(state.worldHour || 0) + 10);
-        site.prosperity = clamp(Number(site.prosperity || 0) - 1.5 * cycles, 0, 100);
-        site.security = clamp(Number(site.security || siteDefaultSecurity(site)) - 1 * cycles, 0, 100);
-        if (Number(state.worldHour || 0) - Number(site.lastShortageEventHour || -999) >= 18) {
-          site.lastShortageEventHour = state.worldHour;
-          addEvent('supply_shortage', `${site.name}: нехватка снабжения (${stockpileSummary(demand)}).`, {
-            siteId: site.id,
-            demand,
-            taken
-          });
-          createWorldTask('deliver_supplies', {
-            key: `deliver_supplies:${site.id}`,
-            title: `Доставить припасы: ${site.name}`,
-            text: `${site.name} испытывает нехватку: ${stockpileSummary(demand)}. Доставьте припасы до того, как безопасность и производство просядут сильнее.`,
-            siteId: site.id,
-            objective: 'deliver_supplies',
-            durationHours: 48,
-            priority: (site.type === 'outpost' || site.type === 'production') ? 3 : 2,
-            details: { demand, taken }
-          });
-        }
-      } else {
-        site.prosperity = clamp(Number(site.prosperity || 0) + 0.35 * cycles, 0, 100);
-        site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + ((site.type === 'outpost' || site.type === 'production') ? 0.3 : 0.12) * cycles, 0, 100);
-      }
-      dirty = true;
-    }
-  }
-
-  function surplusTradeCargoForSite(site = {}) {
-    if (!site || !isSettlementServiceSite(site)) return {};
-    const stock = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
-    const reserve = site.type === 'settlement' ? 55 : site.type === 'production' ? 42 : 32;
-    const preferred = new Set([
-      ...Object.keys(site.production || {}),
-      ...Object.keys(stock)
-    ]);
-    const cargo = {};
-    let total = 0;
-    // Готовые изделия делаются малыми партиями: пары кирок никогда не наберётся
-    // больше общего резерва, и они оставались на производстве навсегда, пока
-    // прилавки стояли пустыми. Если другая точка фракции этот товар прямо
-    // запрашивает, резерв опускается — так же, как это уже сделано для вывоза с
-    // ресурсных точек.
-    // Но входы собственного производства товаром не считаются: иначе станция
-    // отдаёт дерево и лом ровно перед тем, как собрать из них инструмент, и
-    // рецепт вечно стоит в шаге от готовности. Своё держим при себе.
-    const ownNeed = productionInputDemand(site);
-    const reserveFor = id => Math.max(
-      remoteFactionDemand(site, id) > 0 ? Math.min(4, reserve) : reserve,
-      Math.ceil(Number(ownNeed[id] || 0))
-    );
-    Object.entries(stock)
-      .filter(([id, amount]) => preferred.has(id) && Number(amount || 0) > reserveFor(id))
-      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
-      .forEach(([id, amount]) => {
-        if (total >= 140) return;
-        const excess = Math.floor(Number(amount || 0) - reserveFor(id));
-        const take = Math.min(excess, 70, 140 - total);
-        if (take > 0) {
-          cargo[id] = take;
-          total += take;
-        }
-      });
-    return stockpileTotal(cargo) >= SURPLUS_TRADE_THRESHOLD ? compactStockpile(cargo) : {};
-  }
-
-  function chooseSurplusTradeDestination(source = {}, cargo = {}) {
-    const sourceFaction = factionGroup(source.owner || 'caravans');
-    const fakeParty = { faction: sourceFaction, cargo };
-    const globalMap = getGlobalMap();
-    const rows = Object.values(state.sites || {})
-      .filter(site => site
-        && site.id !== source.id
-        && isSettlementServiceSite(site)
-        && caravanCanDeliverToSite(fakeParty, site))
-      .map(site => {
-        // Совпадение считалось только по нехватке припасов. Из-за этого груз
-        // лома не видел станцию, которой он нужен на инструменты, и уезжал
-        // туда, где просто пустовал склад. Нужды производства теперь тоже
-        // притягивают караван.
-        const demand = resourceSiteSupportDemand(site, 'low_stock');
-        const inputs = productionInputDemand(site);
-        const matchingNeed = Object.keys(cargo).reduce((sum, id) => {
-          const carried = Number(cargo[id] || 0);
-          const wanted = Math.max(Number(demand[id] || 0), Number(inputs[id] || 0));
-          return sum + Math.min(carried, wanted);
-        }, 0);
-        const tradeBonus = factionGroup(site.owner || '') !== sourceFaction ? -18 : 0;
-        const capitalBonus = isFactionCapitalSite(site) ? -8 : 0;
-        const distance = pointDistanceKm(source, site, globalMap);
-        return { site, score: distance - matchingNeed * 2.4 + tradeBonus + capitalBonus };
-      })
-      .sort((a, b) => a.score - b.score);
-    return rows[0]?.site || null;
-  }
-
-  function createSurplusTradeCaravan(source = {}) {
-    if (!source || !isSettlementServiceSite(source)) return null;
-    const now = Number(state.worldHour || 0);
-    if (now - Number(source.lastSurplusTradeHour || -999) < SURPLUS_TRADE_COOLDOWN_HOURS * caravanCadenceMultiplier()) return null;
-    const active = Object.values(state.parties || {}).some(party => party
-      && party.interFactionTrade
-      && !party.destroyed
-      && party.state !== 'destroyed'
-      && party.homeSiteId === source.id);
-    if (active) return null;
-    const cargoPlan = surplusTradeCargoForSite(source);
-    if (!Object.keys(cargoPlan).length) return null;
-    const destination = chooseSurplusTradeDestination(source, cargoPlan);
-    if (!destination || destination.id === source.id) return null;
-    const cargo = takeStockpile(source.stockpile || (source.stockpile = emptyStockpile()), cargoPlan);
-    if (stockpileTotal(cargo) < SURPLUS_TRADE_THRESHOLD) {
-      addStockpile(source.stockpile, cargo);
-      return null;
-    }
-    const faction = isTerritorialWorldFaction(source.owner || '') ? factionGroup(source.owner || '') : 'caravans';
-    const partyId = safeId(`trade_${source.id}_${Math.floor(now * 10)}`, `trade_${source.id}_${Date.now()}`);
-    const party = {
-      id: partyId,
-      name: `Тяжелый торговый караван: ${source.name || source.id}`,
-      kind: 'caravan',
-      faction,
-      state: 'moving',
-      homeSiteId: source.id,
-      destinationSiteId: destination.id,
-      route: [destination.id, source.id],
-      routeIndex: 0,
-      x: Number(source.x || 0),
-      y: Number(source.y || 0),
-      baseSpeedKmh: 18,
-      speedKmh: boostedWorldPartySpeedKmh(18, { kind: 'caravan', faction }),
-      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION,
-      strength: 74,
-      members: 8,
-      cargoCapacity: Math.max(140, Math.ceil(stockpileTotal(cargo) + 40)),
-      cargo,
-      preferredResources: Object.keys(cargo),
-      supplyRole: 'heavy',
-      dynamic: true,
-      respawnDisabled: true,
-      interFactionTrade: true,
-      tradeDestinationSiteId: destination.id,
-      createdHour: now
-    };
-    state.parties[partyId] = party;
-    source.lastSurplusTradeHour = now;
-    if (!beginCaravanStagingOnsite(party, source)) {
-      addStockpile(source.stockpile, cargo);
-      delete state.parties[partyId];
-      return null;
-    }
-    addEvent('surplus_trade_caravan', `${party.name} готовит обменный рейс в ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`, {
-      partyId,
-      sourceSiteId: source.id,
-      destinationSiteId: destination.id,
-      cargo: clone(cargo)
-    });
-    dirty = true;
-    return party;
-  }
-
-  // Заказ фракции на закупку. Собственной добычи двум фракциям из трёх не
-  // хватает, и это их характер, а не поломка: недостающее должны приносить
-  // игроки. Столица вывешивает на доску, чего ей не хватает на производство и
-  // на прилавок, и платит за принесённое из своей казны.
-  function factionProcurementDemand(capital = {}) {
-    const stock = capital.stockpile && typeof capital.stockpile === 'object' ? capital.stockpile : {};
-    const shortfall = source => Object.entries(source || {})
-      .map(([id, qty]) => ({
-        id: safeId(id, ''),
-        need: Math.ceil(Math.max(0, Number(qty || 0)) - Math.max(0, Number(stock[safeId(id, '')] || 0)))
-      }))
-      .filter(row => row.id && row.need > 0)
-      .sort((a, b) => b.need - a.need);
-    // Заказ должен читаться с одного взгляда, поэтому берём немного: сырьё,
-    // которого фракции не хватает на производство, и пару позиций, пустующих
-    // на прилавке. Полный список нужд — это два десятка строк, простыня.
-    const rows = [
-      ...shortfall(productionInputDemand(capital)).slice(0, 3),
-      ...shortfall(capital.retailDemand).slice(0, 2)
-    ];
-    const wanted = {};
-    for (const row of rows) wanted[row.id] = Math.max(Number(wanted[row.id] || 0), Math.min(row.need, 30));
-    return compactStockpile(wanted);
-  }
-
-  function maybeCreateFactionProcurementTask(capital = {}) {
-    if (!capital || !isSettlementServiceSite(capital)) return null;
-    const now = Number(state.worldHour || 0);
-    if (now - Number(capital.lastProcurementTaskHour || -999) < FACTION_PROCUREMENT_INTERVAL_HOURS) return null;
-    const demand = factionProcurementDemand(capital);
-    if (stockpileTotal(demand) < 4) return null;
-    capital.lastProcurementTaskHour = now;
-    // Платим по объёму заказа, но не больше того, что есть в казне столицы:
-    // фракция закупает на свои, а не печатает крышки.
-    const units = stockpileTotal(demand);
-    const treasury = Math.max(0, Number((capital.stockpile || {}).silver || 0));
-    const caps = Math.max(30, Math.min(Math.round(units * 4), Math.floor(treasury / 4), 320));
-    return createWorldTask('deliver_supplies', {
-      key: `faction_procurement:${capital.id}`,
-      // Метка фракции приходит в разных падежах («техники Ретранслятора»,
-      // «Свалочный союз»), и подстановка её в заголовок читалась криво. Хватает
-      // названия самой столицы — оно и так говорит, чей это заказ.
-      title: `Закупка: ${capital.name || capital.id}`,
-      text: `${capital.name || capital.id} скупает у вольных людей ${stockpileSummary(demand)}. Принесите на склад и получите марки — фракция платит за то, чего не добывает сама.`,
-      siteId: capital.id,
-      issuerSiteId: capital.id,
-      objective: 'faction_procurement',
-      durationHours: 36,
-      priority: 3,
-      reward: { xp: 60 + Math.round(units * 2), caps, reputation: 1 },
-      details: { demand, procurement: true }
-    });
-  }
-
-  function createFactionProcurementTasks() {
-    for (const site of Object.values(state.sites || {})) {
-      if (site && isFactionCapitalSite(site)) maybeCreateFactionProcurementTask(site);
-    }
-  }
-
-  function createSurplusTradeCaravans(hours) {
-    for (const site of Object.values(state.sites || {})) {
-      if (!site || !isSettlementServiceSite(site)) continue;
-      site.surplusTradeProgress = Number(site.surplusTradeProgress || 0) + Math.max(0, Number(hours || 0));
-      if (site.surplusTradeProgress < 6) continue;
-      site.surplusTradeProgress = 0;
-      createSurplusTradeCaravan(site);
-    }
-  }
-
   function productionInputDemand(site = {}) {
     const production = site.production && typeof site.production === 'object' ? site.production : {};
     const demand = { ...(site.productionDemand && typeof site.productionDemand === 'object' ? site.productionDemand : {}) };
@@ -10618,422 +9782,11 @@ function createWastelandSimulation(options = {}) {
     return compactStockpile(demand);
   }
 
-  // Спрос считался только по своим точкам, поэтому излишки одной фракции не
-  // видели нужды соседей: лом копился сотнями у одних, а у других станции стояли
-  // пустыми при полных сундуках крышек. Дружественная фракция теперь тоже
-  // создаёт спрос, но вполсилы — своих снабжаем первыми.
-  function remoteFactionDemand(source = {}, itemId = '') {
-    const owner = factionGroup(source.owner || 'neutral');
-    const fakeParty = { faction: owner, cargo: { [itemId]: 1 } };
-    return Object.values(state.sites || {}).reduce((sum, site) => {
-      if (!site || site.id === source.id || !isSettlementServiceSite(site)) return sum;
-      const siteOwner = factionGroup(site.owner || 'neutral');
-      const need = Math.max(0, Number(productionInputDemand(site)[itemId] || 0));
-      if (need <= 0) return sum;
-      if (siteOwner === owner) return sum + need;
-      if (!caravanCanDeliverToSite(fakeParty, site)) return sum;
-      return sum + need * 0.5;
-    }, 0);
-  }
-
   function cargoDemandAtSite(cargo = {}, site = {}) {
     const demand = productionInputDemand(site);
     return Object.entries(cargo || {}).reduce((sum, [id, qty]) => (
       sum + Math.min(Math.max(0, Number(qty || 0)), Math.max(0, Number(demand[id] || 0)))
     ), 0);
-  }
-
-  function resourceExportCargoForSite(source = {}) {
-    if (!source || !isHarvestSite(source)) return {};
-    const ownerGroup = factionGroup(source.owner || 'neutral');
-    if (!isTerritorialWorldFaction(ownerGroup) && ownerGroup !== 'neutral') return {};
-    const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
-    const outputKeys = Object.keys(source.output || {}).filter(Boolean);
-    if (!outputKeys.length) return {};
-    const normalReserve = source.type === 'pointOfInterest' ? 20 : 18;
-    const cargo = {};
-    let total = 0;
-    let demandDriven = 0;
-    outputKeys
-      .sort((a, b) => Number(stock[b] || 0) - Number(stock[a] || 0))
-      .forEach(id => {
-        if (total >= 90) return;
-        const have = Math.max(0, Math.floor(Number(stock[id] || 0)));
-        const requested = Math.max(0, Math.ceil(remoteFactionDemand(source, id)));
-        const reserve = requested > 0 ? Math.min(6, normalReserve) : normalReserve;
-        const available = Math.max(0, have - reserve);
-        // Раньше груз обрезался размером заказа, а заказ станции — это один
-        // рецепт. Ферма даёт шесть дерева за цикл против заказа в три, и
-        // остаток копился на месте: сто тридцать семь у источника против двух
-        // у станции. Везём всё, что точка переросла сверх резерва.
-        const take = Math.min(available, 60, 90 - total);
-        if (take > 0) {
-          cargo[id] = take;
-          total += take;
-          if (requested > 0) demandDriven += take;
-        }
-      });
-    return demandDriven > 0 || stockpileTotal(cargo) >= RESOURCE_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
-  }
-
-  // Умеет ли точка превратить этот груз в то, чего у неё просят на прилавке.
-  // Надбавки при выборе назначения раздавались по типу точки — производственной
-  // и аванпосту, но не поселению, — а мастерские фракций как раз поселения.
-  // Из-за этого сырьё оседало на ближнем складе, а станция стояла пустой.
-  function siteCanCraftWithInput(site = {}, itemId = '') {
-    const caps = Array.isArray(site.productionCapabilities) ? site.productionCapabilities : [];
-    if (!caps.length || !itemId) return false;
-    const retail = site.retailDemand && typeof site.retailDemand === 'object' ? site.retailDemand : {};
-    for (const [id, recipe] of Object.entries(economyRecipes || {})) {
-      if (!recipe || !caps.includes(recipe.station)) continue;
-      if (!(Number(recipe.inputs?.[itemId] || 0) > 0)) continue;
-      if (Number(retail[id] || 0) > 0) return true;
-    }
-    return false;
-  }
-
-  function chooseResourceExportDestination(source = {}, cargo = {}) {
-    const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
-    const fakeParty = { faction, cargo };
-    // Добыча фракции стекается в её столицу. Раньше назначение выбиралось по
-    // весам среди всех точек, и нефтяная качалка Ретранслятора все десять рейсов
-    // из десяти отвозила лом и дерево в город соседей, пока своя станция стояла
-    // пустой. Столицы всех трёх фракций — это мастерские со станком инструментов,
-    // так что сырьё попадает туда, где его умеют пустить в дело, а уже столица
-    // решает, что раздать своим и чем поделиться с соседями.
-    if (isTerritorialWorldFaction(ownerGroup)) {
-      const capital = state.sites[capitalSiteIdForFaction(ownerGroup)];
-      if (capital && capital.id !== source.id && isSettlementServiceSite(capital)) return capital;
-    }
-    const globalMap = getGlobalMap();
-    const candidates = Object.values(state.sites || {})
-      .filter(site => site
-        && site.id !== source.id
-        && isSettlementServiceSite(site)
-        && caravanCanDeliverToSite(fakeParty, site))
-      .map(site => {
-        const supportDemand = resourceSiteSupportDemand(site, 'low_stock');
-        const inputDemand = productionInputDemand(site);
-        const matchingSupport = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(supportDemand[id] || 0)), 0);
-        const matchingInputs = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(inputDemand[id] || 0)), 0);
-        const distance = pointDistanceKm(source, site, globalMap);
-        // Надбавка за производственную площадку раньше давалась безусловно и
-        // перевешивала настоящий спрос: дерево уезжало на патронный завод, где
-        // станки его не берут, мимо поселения, собиравшего из него инструменты.
-        // Площадка считается удобной только если правда просит везомое.
-        const productionBonus = matchingInputs > 0 || matchingSupport > 0
-          ? (isProductionSite(site) ? -16 : site.type === 'outpost' ? -7 : 0)
-          : 0;
-        const capitalBonus = isFactionCapitalSite(site) ? -5 : 0;
-        // Одного лишь совпадения по спросу мало: патронный завод и станция
-        // инструментов просят лом поровну, но завод как производственная
-        // площадка забирал его весь, и станция годами стояла на нуле. Считаем,
-        // насколько точка пуста относительно своей нужды, и везём тому, кто
-        // голоднее.
-        const siteStock = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
-        const starvation = Object.keys(cargo).reduce((sum, id) => {
-          const need = Number(inputDemand[id] || 0);
-          if (need <= 0) return sum;
-          return sum + clamp((need - Number(siteStock[id] || 0)) / need, 0, 1);
-        }, 0);
-        const craftBonus = Object.keys(cargo).some(id => siteCanCraftWithInput(site, id)) ? -20 : 0;
-        return {
-          site,
-          score: distance - matchingInputs * 3 - matchingSupport * 1.7 - starvation * 14
-            + productionBonus + capitalBonus + craftBonus
-        };
-      })
-      .sort((a, b) => a.score - b.score);
-    return candidates[0]?.site || null;
-  }
-
-  // Откат между отправками сокращается по мере того, как в сети прибывает
-  // народу: на пустом сервере темп остаётся авторским, на многолюдном караванов
-  // становится втрое больше — но не более, чтобы дороги не захлебнулись.
-  function caravanCadenceMultiplier() {
-    const online = Math.max(0, Number(getOnlinePlayerCount() || 0));
-    return clamp(1 / (1 + online / 40), 0.34, 1);
-  }
-
-  function createResourceExportCaravan(source = {}) {
-    if (!source || !isHarvestSite(source)) return null;
-    const now = Number(state.worldHour || 0);
-    if (now - Number(source.lastResourceExportHour || -999) < RESOURCE_EXPORT_COOLDOWN_HOURS * caravanCadenceMultiplier()) return null;
-    // Точка держала в пути ровно один караван, и на этом рост упирался в
-    // потолок независимо от онлайна. Позволяем ей вести несколько сразу, по
-    // мере того как в мире прибавляется людей.
-    const allowedInFlight = Math.max(1, Math.round(1 / caravanCadenceMultiplier()));
-    const inFlight = Object.values(state.parties || {}).filter(party => party
-      && party.resourceExport
-      && !party.destroyed
-      && party.state !== 'destroyed'
-      && party.homeSiteId === source.id).length;
-    if (inFlight >= allowedInFlight) return null;
-    const cargoPlan = resourceExportCargoForSite(source);
-    if (!Object.keys(cargoPlan).length) return null;
-    const destination = chooseResourceExportDestination(source, cargoPlan);
-    if (!destination || destination.id === source.id) return null;
-    const cargo = takeStockpile(source.stockpile || (source.stockpile = emptyStockpile()), cargoPlan);
-    if (stockpileTotal(cargo) < RESOURCE_EXPORT_THRESHOLD && cargoDemandAtSite(cargo, destination) <= 0) {
-      addStockpile(source.stockpile, cargo);
-      return null;
-    }
-    const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
-    const partyId = safeId(`resource_${source.id}_${Math.floor(now * 10)}`, `resource_${source.id}_${Date.now()}`);
-    const party = {
-      id: partyId,
-      name: `Ресурсный караван: ${source.name || source.id}`,
-      kind: 'caravan',
-      faction,
-      state: 'moving',
-      homeSiteId: source.id,
-      destinationSiteId: destination.id,
-      route: [destination.id],
-      routeIndex: 0,
-      x: Number(source.x || 0),
-      y: Number(source.y || 0),
-      baseSpeedKmh: 18,
-      speedKmh: boostedWorldPartySpeedKmh(18, { kind: 'caravan', faction }),
-      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION,
-      strength: 36 + Math.min(24, stockpileTotal(cargo) / 4),
-      members: Math.max(4, Math.min(8, 3 + Math.ceil(stockpileTotal(cargo) / 24))),
-      cargoCapacity: Math.max(70, Math.ceil(stockpileTotal(cargo) + 18)),
-      cargo,
-      preferredResources: Object.keys(cargo),
-      supplyRole: 'resource_export',
-      dynamic: true,
-      respawnDisabled: true,
-      resourceExport: true,
-      resourceSourceSiteId: source.id,
-      createdHour: now
-    };
-    state.parties[partyId] = party;
-    source.lastResourceExportHour = now;
-    if (!beginCaravanStagingOnsite(party, source)) {
-      addStockpile(source.stockpile, cargo);
-      delete state.parties[partyId];
-      return null;
-    }
-    addEvent('resource_export_caravan', `${party.name} готовит отправку в ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`, {
-      partyId,
-      sourceSiteId: source.id,
-      destinationSiteId: destination.id,
-      cargo: clone(cargo)
-    });
-    dirty = true;
-    return party;
-  }
-
-  function createResourceExportCaravans(hours) {
-    for (const site of Object.values(state.sites || {})) {
-      if (!site || !isHarvestSite(site)) continue;
-      site.resourceExportProgress = Number(site.resourceExportProgress || 0) + Math.max(0, Number(hours || 0));
-      if (site.resourceExportProgress < 3) continue;
-      site.resourceExportProgress = 0;
-      createResourceExportCaravan(site);
-    }
-  }
-
-  function productionExportSite(source = {}) {
-    const type = siteTypeKey(source);
-    return type === 'production' || type === 'outpost';
-  }
-
-  function productionExportOutputKeys(source = {}) {
-    const production = source.production && typeof source.production === 'object' ? source.production : {};
-    const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
-    const authored = Object.keys(production).filter(id => productionInputRecipe(id));
-    const producedGoods = [
-      'ammo9',
-      'ammo556',
-      'shotgunShell',
-      'rocketAmmo',
-      'ammoParts',
-      'energyCell',
-      'napalm',
-      'repairKit',
-      'electronics',
-      'weaponParts',
-      'stim',
-      'medkit',
-      'doctorBag',
-      'antibiotics',
-      'medicine'
-    ];
-    return Array.from(new Set([
-      ...authored,
-      ...producedGoods.filter(id => Number(stock[id] || 0) > 0),
-      ...Object.keys(economyRecipes).filter(id => Number(stock[id] || 0) > 0)
-    ]));
-  }
-
-  function productionExportCargoForSite(source = {}) {
-    if (!source || !productionExportSite(source)) return {};
-    const ownerGroup = factionGroup(source.owner || 'neutral');
-    if (!isTerritorialWorldFaction(ownerGroup)) return {};
-    const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
-    const outputKeys = productionExportOutputKeys(source);
-    if (!outputKeys.length) return {};
-    const normalReserve = siteTypeKey(source) === 'outpost' ? 26 : 18;
-    const cargo = {};
-    let total = 0;
-    let demandDriven = 0;
-    outputKeys
-      .sort((a, b) => Number(stock[b] || 0) - Number(stock[a] || 0))
-      .forEach(id => {
-        if (total >= 95) return;
-        const have = Math.max(0, Math.floor(Number(stock[id] || 0)));
-        const requested = Math.max(0, Math.ceil(remoteFactionDemand(source, id)));
-        const reserve = requested > 0 ? 0 : normalReserve;
-        const available = Math.max(0, have - reserve);
-        const take = Math.min(available, requested > 0 ? requested : 64, 95 - total);
-        if (take > 0) {
-          cargo[id] = take;
-          total += take;
-          if (requested > 0) demandDriven += take;
-        }
-      });
-    return demandDriven > 0 || stockpileTotal(cargo) >= PRODUCTION_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
-  }
-
-  function productionGoodsDemand(site = {}) {
-    if (!site || !isSettlementServiceSite(site)) return {};
-    const stock = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
-    const type = siteTypeKey(site);
-    const capitalMul = isFactionCapitalSite(site) ? 1.8 : 1;
-    const outpostMul = type === 'outpost' ? 1.25 : 1;
-    const desired = {
-      ammo9: Math.round((type === 'settlement' ? 260 : 110) * capitalMul * outpostMul),
-      ammo556: Math.round((type === 'settlement' ? 130 : 72) * capitalMul * outpostMul),
-      shotgunShell: Math.round((type === 'settlement' ? 48 : 28) * capitalMul * outpostMul),
-      rocketAmmo: Math.round((type === 'settlement' ? 8 : 5) * capitalMul * outpostMul),
-      ammoParts: Math.round((type === 'production' ? 38 : 22) * capitalMul),
-      energyCell: Math.round((type === 'settlement' ? 72 : 44) * capitalMul * outpostMul),
-      napalm: Math.round((type === 'settlement' ? 18 : 10) * capitalMul * outpostMul),
-      repairKit: Math.round((type === 'settlement' ? 18 : 10) * capitalMul),
-      electronics: Math.round((type === 'production' ? 32 : 18) * capitalMul),
-      weaponParts: Math.round((type === 'settlement' ? 26 : 14) * capitalMul),
-      stim: Math.round((type === 'settlement' ? 38 : 18) * capitalMul),
-      medkit: Math.round((type === 'settlement' ? 24 : 12) * capitalMul),
-      doctorBag: Math.round((type === 'settlement' ? 8 : 4) * capitalMul),
-      antibiotics: Math.round((type === 'settlement' ? 18 : 9) * capitalMul),
-      medicine: Math.round((type === 'settlement' ? 60 : 24) * capitalMul)
-    };
-    const inputDemand = productionInputDemand(site);
-    Object.entries(inputDemand).forEach(([id, qty]) => {
-      desired[id] = Math.max(Number(desired[id] || 0), Number(qty || 0) + 12);
-    });
-    const demand = {};
-    Object.entries(desired).forEach(([id, wanted]) => {
-      const need = Math.max(0, Math.ceil(Number(wanted || 0) - Number(stock[id] || 0)));
-      if (need > 0) demand[id] = need;
-    });
-    return compactStockpile(demand);
-  }
-
-  function chooseProductionExportDestination(source = {}, cargo = {}) {
-    const sourceFaction = factionGroup(source.owner || 'neutral');
-    const faction = isTerritorialWorldFaction(sourceFaction) ? sourceFaction : 'caravans';
-    const fakeParty = { faction, cargo };
-    const globalMap = getGlobalMap();
-    const capitalId = capitalSiteIdForFaction(faction);
-    const rows = Object.values(state.sites || {})
-      .filter(site => site
-        && site.id !== source.id
-        && isSettlementServiceSite(site)
-        && caravanCanDeliverToSite(fakeParty, site))
-      .map(site => {
-        const demand = productionGoodsDemand(site);
-        const matchingNeed = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(demand[id] || 0)), 0);
-        const owner = factionGroup(site.owner || 'neutral');
-        const sameOwnerBonus = owner === faction ? -18 : 0;
-        const capitalBonus = site.id === capitalId ? -16 : isFactionCapitalSite(site) ? -6 : 0;
-        const outpostBonus = siteTypeKey(site) === 'outpost' ? -7 : 0;
-        const productionPenalty = siteTypeKey(site) === 'production' && matchingNeed <= 0 ? 16 : 0;
-        const distance = pointDistanceKm(source, site, globalMap);
-        return { site, matchingNeed, score: distance - matchingNeed * 2.8 + sameOwnerBonus + capitalBonus + outpostBonus + productionPenalty };
-      })
-      .filter(row => row.matchingNeed > 0 || row.site.id === capitalId || siteTypeKey(row.site) === 'outpost')
-      .sort((a, b) => a.score - b.score);
-    return rows[0]?.site || null;
-  }
-
-  function createProductionExportCaravan(source = {}) {
-    if (!source || !productionExportSite(source)) return null;
-    const now = Number(state.worldHour || 0);
-    if (now - Number(source.lastProductionExportHour || -999) < PRODUCTION_EXPORT_COOLDOWN_HOURS) return null;
-    const active = Object.values(state.parties || {}).some(party => party
-      && party.productionExport
-      && !party.destroyed
-      && party.state !== 'destroyed'
-      && party.homeSiteId === source.id);
-    if (active) return null;
-    const cargoPlan = productionExportCargoForSite(source);
-    if (!Object.keys(cargoPlan).length) return null;
-    const destination = chooseProductionExportDestination(source, cargoPlan);
-    if (!destination || destination.id === source.id) return null;
-    const cargo = takeStockpile(source.stockpile || (source.stockpile = emptyStockpile()), cargoPlan);
-    if (stockpileTotal(cargo) < PRODUCTION_EXPORT_THRESHOLD && cargoDemandAtSite(cargo, destination) <= 0) {
-      addStockpile(source.stockpile, cargo);
-      return null;
-    }
-    const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
-    const partyId = safeId(`production_${source.id}_${Math.floor(now * 10)}`, `production_${source.id}_${Date.now()}`);
-    const party = {
-      id: partyId,
-      name: `Производственный караван: ${source.name || source.id}`,
-      kind: 'caravan',
-      faction,
-      state: 'moving',
-      homeSiteId: source.id,
-      destinationSiteId: destination.id,
-      route: [destination.id],
-      routeIndex: 0,
-      x: Number(source.x || 0),
-      y: Number(source.y || 0),
-      baseSpeedKmh: 18,
-      speedKmh: boostedWorldPartySpeedKmh(18, { kind: 'caravan', faction }),
-      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION,
-      strength: 42 + Math.min(28, stockpileTotal(cargo) / 3.5),
-      members: Math.max(5, Math.min(9, 4 + Math.ceil(stockpileTotal(cargo) / 22))),
-      cargoCapacity: Math.max(80, Math.ceil(stockpileTotal(cargo) + 22)),
-      cargo,
-      preferredResources: Object.keys(cargo),
-      supplyRole: 'production_export',
-      dynamic: true,
-      respawnDisabled: true,
-      productionExport: true,
-      productionSourceSiteId: source.id,
-      createdHour: now
-    };
-    state.parties[partyId] = party;
-    source.lastProductionExportHour = now;
-    if (!beginCaravanStagingOnsite(party, source)) {
-      addStockpile(source.stockpile, cargo);
-      delete state.parties[partyId];
-      return null;
-    }
-    addEvent('production_export_caravan', `${party.name} готовит доставку в ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`, {
-      partyId,
-      sourceSiteId: source.id,
-      destinationSiteId: destination.id,
-      cargo: clone(cargo)
-    });
-    dirty = true;
-    return party;
-  }
-
-  function createProductionExportCaravans(hours) {
-    for (const site of Object.values(state.sites || {})) {
-      if (!site || !productionExportSite(site)) continue;
-      site.productionExportProgress = Number(site.productionExportProgress || 0) + Math.max(0, Number(hours || 0));
-      if (site.productionExportProgress < 4) continue;
-      site.productionExportProgress = 0;
-      createProductionExportCaravan(site);
-    }
   }
 
   function siteConflictTaskKey(site = {}) {
@@ -11236,7 +9989,6 @@ function createWastelandSimulation(options = {}) {
       });
     }
     ensureSiteConflictTask(site);
-    if (data.createSupport !== false) maybeCreateResourceSupportTask(site, 'raid');
     dirty = true;
     return conflict;
   }
@@ -11792,13 +10544,12 @@ function createWastelandSimulation(options = {}) {
   }
 
   /**
-   * Караваны сняты с карты (worldModel.worldCaravans = false): постоянные
-   * караваны возвращаются при каждой загрузке из defaultParties, поэтому их
-   * убирают на каждом шаге. Груз в пути закрывается в журнале, привязанные
-   * задания сопровождения истекают обычным путём, раз партии больше нет.
+   * Караванов на карте нет (экономика v3): постоянные караваны возвращаются при
+   * каждой загрузке из defaultParties и старых сохранений, поэтому их убирают
+   * на каждом шаге. Груз в пути закрывается в журнале, привязанные задания
+   * сопровождения истекают обычным путём, раз партии больше нет.
    */
   function retireWorldCaravans() {
-    if (worldModel.worldCaravans) return false;
     let changed = false;
     for (const party of Object.values(state.parties || {})) {
       if (!party || String(party.kind || '').toLowerCase() !== 'caravan') continue;
@@ -11812,8 +10563,8 @@ function createWastelandSimulation(options = {}) {
     state.worldZones = (Array.isArray(state.worldZones) ? state.worldZones : [])
       .filter(zone => !(zone?.partyId && !state.parties[zone.partyId] && String(zone?.kind || zone?.type || '').includes('caravan')));
     if (state.worldZones.length !== before) changed = true;
-    if (!worldModel.settlementLife && Object.keys(state.refugeeFlows?.active || {}).length) {
-      // Без населения нет и беженцев: незавершённые группы просто расходятся.
+    if (Object.keys(state.refugeeFlows?.active || {}).length) {
+      // Без населения нет и беженцев: группы из старых сохранений просто расходятся.
       state.refugeeFlows.active = {};
       changed = true;
     }
@@ -11822,13 +10573,12 @@ function createWastelandSimulation(options = {}) {
   }
 
   /**
-   * Враждебные отряды сняты (worldModel.hostileWorldParties = false): угрозы
-   * пустоши теперь — группы A-Life опасных клеток. Постоянные налётчики, мутанты
-   * и звери возвращаются из defaultParties при каждой загрузке, поэтому их
-   * убирают на каждом шаге вместе с их встречами и боями.
+   * Враждебных отрядов на карте нет: угрозы пустоши — группы A-Life опасных
+   * клеток. Постоянные налётчики, мутанты и звери возвращаются из defaultParties
+   * при каждой загрузке, поэтому их убирают на каждом шаге вместе с их встречами
+   * и боями.
    */
   function retireHostileWorldParties() {
-    if (worldModel.hostileWorldParties !== false) return false;
     const retired = new Set();
     for (const party of Object.values(state.parties || {})) {
       const kind = String(party?.kind || '').toLowerCase();
@@ -11866,7 +10616,6 @@ function createWastelandSimulation(options = {}) {
     Object.values(state.parties).forEach(party => moveParty(party, hours));
     Object.values(state.parties).forEach(party => recordPartyMovementPoint(party, party, 1));
     updatePlayerAmbushInterceptions();
-    if (worldModel.worldCaravans) updateCaravanThreats(hours);
     updatePatrolThreats(hours);
     updateVisibleLairs(hours);
     resolvePartyContacts();
@@ -11877,28 +10626,11 @@ function createWastelandSimulation(options = {}) {
     resolveResourceRaids(hours);
     resolveSiteConflicts(hours);
     updatePatrolWorldOperations();
-    if (worldModel.npcProduction) {
-      produceAtResourceSites(hours);
-      ensureResourceExpeditionTasks();
-    }
     ensureReconExpeditionTasks();
     ensureOutpostDefenseTasks();
     ensureDistressSignalTasks();
     ensureAssaultDiversionTasks();
-    if (worldModel.npcProduction && worldModel.worldCaravans) createResourceExportCaravans(hours);
-    if (worldModel.npcProduction) {
-      advanceFactionProduction(hours);
-      produceAtSettlements(hours);
-      planFactionProduction(hours);
-    }
     restockRetailMarkets();
-    if (worldModel.npcProduction && worldModel.worldCaravans) createProductionExportCaravans(hours);
-    if (worldModel.settlementLife) {
-      advanceRefugeeMigration(hours);
-      consumeSettlementSupplies(hours);
-    }
-    if (worldModel.worldCaravans) createSurplusTradeCaravans(hours);
-    if (worldModel.npcProduction) createFactionProcurementTasks();
     expirePunitiveParties();
     expireWorldTasks();
   }
@@ -12315,16 +11047,6 @@ function createWastelandSimulation(options = {}) {
     if (['combatArmor', 'heavyArmor', 'energySuit'].includes(id)) return 18;
     if (['tacticalHelmet', 'assaultHelmet'].includes(id)) return 7;
     return 1;
-  }
-
-  function backedTraderQuantity(row = {}, site = {}) {
-    const requested = Math.max(0, Math.floor(Number(row.qty || 0)));
-    if (requested <= 0) return 0;
-    const keys = traderItemSupplyKeys(row.id);
-    if (!keys.length) return requested;
-    const previewStock = clone(site.stockpile || {});
-    const fulfilled = consumeStockpileForTraderItem(previewStock, row.id, requested);
-    return clamp(Math.floor(fulfilled + 0.0001), 0, requested);
   }
 
   function traderSite(profileId = '', context = {}) {
@@ -13254,71 +11976,6 @@ function createWastelandSimulation(options = {}) {
     return { ok: true, removed, party: leftParty ? publicParty(leftParty) : null, sim: publicState() };
   }
 
-  function partyThreatZone(party) {
-    if (!party || party.destroyed || party.state === 'destroyed') return null;
-    const kind = String(party.kind || '').toLowerCase();
-    const suppressed = Number(party.threatSuppressedUntil || 0) > Number(state.worldHour || 0);
-    const suppressMul = suppressed ? 0.45 : 1;
-    const base = {
-      id: `party_${safeId(party.id || kind || 'party')}`,
-      sourceType: 'party',
-      sourceId: party.id,
-      name: party.name || party.id || 'Party',
-      kind: party.kind || 'party',
-      faction: party.faction || '',
-      species: party.species || '',
-      x: Number(Number(party.x || 0).toFixed(2)),
-      y: Number(Number(party.y || 0).toFixed(2))
-    };
-    if (kind === 'raider') {
-      return {
-        ...base,
-        radiusKm: 18,
-        chanceBonus: 0.18 * suppressMul,
-        difficultyBonus: 1.15 * suppressMul,
-        label: suppressed ? 'suppressed raider activity' : 'raider activity',
-        suppressedUntil: party.threatSuppressedUntil || 0,
-        weights: { raider_ambush: 8, raiders_vs_patrol: 4, caravan_patrol_vs_ghouls: 1 }
-      };
-    }
-    if (kind === 'monster') {
-      const encounterId = partyMeetingEncounterId(party);
-      const weights = encounterId === 'fire_gecko_ambush'
-        ? { fire_gecko_ambush: 6, gecko_pack: 2 }
-        : { [encounterId]: 8 };
-      return {
-        ...base,
-        radiusKm: 15,
-        chanceBonus: 0.14 * suppressMul,
-        difficultyBonus: 0.9 * suppressMul,
-        label: suppressed ? 'scattered monster migration' : 'monster migration',
-        suppressedUntil: party.threatSuppressedUntil || 0,
-        weights
-      };
-    }
-    if (kind === 'patrol') {
-      return {
-        ...base,
-        radiusKm: 12,
-        chanceBonus: -0.05,
-        difficultyBonus: -0.35,
-        label: 'patrol route',
-        weights: { peaceful_caravan: 2, caravan_patrol_vs_ghouls: 3, radscorpions_vs_patrol: 2, raiders_vs_patrol: 2 }
-      };
-    }
-    if (kind === 'caravan') {
-      return {
-        ...base,
-        radiusKm: 10,
-        chanceBonus: 0.03,
-        difficultyBonus: 0.05,
-        label: 'caravan route',
-        weights: { peaceful_caravan: 5, raider_ambush: 1 }
-      };
-    }
-    return null;
-  }
-
   function siteThreatZone(site) {
     if (!site) return null;
     const type = String(site.type || '').toLowerCase();
@@ -13358,14 +12015,8 @@ function createWastelandSimulation(options = {}) {
   }
 
   function publicThreatZones() {
+    // Отряды NPC скрыты и не выдают себя кругами угрозы: круги есть только у мест.
     const zones = [];
-    // Скрытые отряды не выдают себя и кругами угрозы.
-    if (worldModel.visibleWorldParties !== false) {
-      Object.values(state.parties).forEach(party => {
-        const zone = partyThreatZone(party);
-        if (zone) zones.push(zone);
-      });
-    }
     Object.values(state.sites).filter(siteVisibleOnPublicGlobalMap).forEach(site => {
       const zone = siteThreatZone(site);
       if (zone) zones.push(zone);
@@ -13891,10 +12542,7 @@ function createWastelandSimulation(options = {}) {
       }),
       refugeeFlows: Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites)),
       // Экономика v3: отряды NPC не видны на карте — угрозы живут в опасных клетках.
-      parties: worldModel.visibleWorldParties === false ? [] : [
-        ...Object.values(state.parties).map(publicParty),
-        ...Object.values(state.refugeeFlows?.active || {}).map(flow => publicRefugeeFlow(flow, state.sites))
-      ],
+      parties: [],
       threatZones: publicThreatZones(),
       territories: publicTerritories(),
       worldZones: [],

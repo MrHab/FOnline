@@ -7,21 +7,16 @@
     "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками. Лежат на счёте аккаунта, общие для его персонажей, не выпадают и не выбрасываются."
   },
   "worldModel": {
-    "settlementLife": false,
-    "npcProduction": false,
-    "worldCaravans": false,
     "npcTraders": true,
     "wildTraders": false,
     "npcStations": false,
     "npcGearDrops": false,
-    "visibleWorldParties": false,
     "blackMarket": true,
     "cityAuctions": true,
     "dangerCells": true,
     "accountSin": true,
     "accountMarks": true,
-    "dangerEcology": true,
-    "hostileWorldParties": false
+    "dangerEcology": true
   },
   "npcTradeHubs": {
     "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",

@@ -187,10 +187,6 @@ rejectText('server trade machine', server, 'tradeMachineExchange');
 requireText('world retail stock transaction', functionBody(wastelandSim, 'applyRetailTransaction'), 'site.stockpile = next;');
 requireText('server NPC trade only from capital traders', functionBody(server, 'serverNpcTradeOpen'), 'locationIsFactionCapital(LOCATIONS[id])');
 requireText('world visible production deposit', functionBody(wastelandSim, 'performVisibleSiteWork'), "kind: 'visible_craft'");
-requireText('world npc production deposit', functionBody(wastelandSim, 'produceAtSettlements'), "kind: 'npc_craft'");
-requireText('world npc ammo production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const ammoCycles = Math.min(cycles');
-requireText('world npc medicine production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const medicineCycles = Math.min(cycles');
-requireText('world npc weapon part production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const weaponPartCycles = Math.min(cycles');
 requireText('world caravan staging wait', wastelandSim, 'const CARAVAN_STAGING_REAL_MINUTES = 1;');
 requireText('world caravan regular escort size', wastelandSim, 'const CARAVAN_ESCORT_MIN_PLAYERS = 0;');
 requireText('world caravan heavy escort size', wastelandSim, 'const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;');
@@ -201,25 +197,15 @@ requireText('world caravan staging exists inside a local scene', functionBody(wa
 requireText('world caravan battle recovery', functionBody(wastelandSim, 'completeBattleZone'), 'party.state = \'recovering\';');
 requireText('world caravan battle recovery delay', functionBody(wastelandSim, 'completeBattleZone'), 'realMinutesToWorldHours(CARAVAN_POST_BATTLE_REAL_MINUTES)');
 requireText('world caravan route recovery hold', functionBody(wastelandSim, 'moveParty'), "String(party.state || '').toLowerCase() === 'recovering'");
-requireText('world surplus trade caravan creates physical onsite staging', functionBody(wastelandSim, 'createSurplusTradeCaravan'), 'beginCaravanStagingOnsite(party, source)');
 requireText('world caravan minimum speed constant', wastelandPartySpeed, 'const CARAVAN_MIN_SPEED_KMH = 4;');
 requireText('world caravan minimum speed normalization', functionBody(wastelandPartySpeed, 'normalizeWorldPartySpeedKmh'), 'worldPartyMinimumSpeedKmh(party, defaults)');
 requireText('world caravan minimum movement speed', functionBody(wastelandSim, 'moveParty'), 'effectiveWorldPartySpeedKmh(party)');
 requireText('world caravan minimum published speed', functionBody(wastelandSim, 'publicParty'), 'effectiveWorldPartySpeedKmh(party)');
-requireText('world resource export threshold', wastelandSim, 'const RESOURCE_EXPORT_THRESHOLD = 42;');
-requireText('world resource export creates physical onsite staging', functionBody(wastelandSim, 'createResourceExportCaravan'), 'beginCaravanStagingOnsite(party, source)');
-requireText('world resource export removes stockpile cargo', functionBody(wastelandSim, 'createResourceExportCaravan'), 'takeStockpile(source.stockpile');
-requireText('world resource export tick', functionBody(wastelandSim, 'tickWorldSimStep'), 'createResourceExportCaravans(hours)');
-requireText('world production export threshold', wastelandSim, 'const PRODUCTION_EXPORT_THRESHOLD = 34;');
-requireText('world production export creates physical onsite staging', functionBody(wastelandSim, 'createProductionExportCaravan'), 'beginCaravanStagingOnsite(party, source)');
-requireText('world production export removes stockpile cargo', functionBody(wastelandSim, 'createProductionExportCaravan'), 'takeStockpile(source.stockpile');
-requireText('world production export tick', functionBody(wastelandSim, 'tickWorldSimStep'), 'createProductionExportCaravans(hours)');
 requireText('server resource site room identity', functionBody(server, 'getOrCreateRoom'), 'worldSiteIdFromRoomId(id, loc)');
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'wastelandSiteResourceRows(site)');
 requireText('server resource site output nodes', functionBody(server, 'ensureWastelandSiteResourceNodes'), 'siteOutputResource: true');
 requireText('server camel-case resource aliases', server, "ammoparts: 'ammoParts'");
 
-rejectText('world npc ammo overproduction', functionBody(wastelandSim, 'produceAtSettlements'), '24 * cycles');
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
 
 for (const [questId, quest] of Object.entries(quests.quests || {})) {
@@ -603,47 +589,6 @@ function checkPersistentFactionEconomy() {
       throw new Error('retail restock did not move real stock from the faction warehouse');
     }
 
-    const productionStateFile = path.join(tempDir, 'production-sim.json');
-    const productionTraders = {
-      oldKlim: { caps: 100, restockHours: 24, stock: [{ id: 'helmet', qty: 2, price: 20 }] }
-    };
-    const productionSim = createWastelandSimulation({ stateFile: productionStateFile, traderProfiles: productionTraders, saveIntervalMs: 3000 });
-    const helmetContext = { siteId: 'settlement', role: 'merchant', marketKey: 'settlement:helmet_guard' };
-    productionSim.applyTraderSupply('oldKlim', productionTraders.oldKlim, helmetContext);
-    if (Number(productionSim.state().sites.settlement.retailDemand?.helmet || 0) < 2) {
-      throw new Error('empty retail shelf did not create faction demand');
-    }
-    for (const site of Object.values(productionSim.state().sites)) {
-      if (String(site.owner || '') !== 'old_klim') continue;
-      site.stockpile.helmet = 0;
-      site.productionQueue = [];
-      site.productionDemand = {};
-    }
-    for (const party of Object.values(productionSim.state().parties)) {
-      if (String(party.faction || '') === 'old_klim' && party.cargo) party.cargo.helmet = 0;
-    }
-    productionSim.state().sites.settlement.stockpile.scrap = 20;
-    productionSim.state().sites.klimAmmoWorks.stockpile.helmet = 1;
-    productionSim.tick(Date.now() + 1000, { hours: 1, force: true });
-    const helmetQueue = Object.values(productionSim.state().sites)
-      .flatMap(site => site.productionQueue || [])
-      .find(row => row.itemId === 'helmet');
-    if (!helmetQueue) throw new Error('faction planner did not queue a missing trader item');
-    productionSim.tick(Date.now() + 2000, { hours: 3, force: true });
-    const logisticsParty = Object.values(productionSim.state().parties)
-      .find(party => party.productionExport && Number(party.cargo?.helmet || 0) > 0 && party.destinationSiteId === 'settlement');
-    if (!logisticsParty) throw new Error('faction logistics did not dispatch a demanded low-volume item');
-    productionSim.tick(Date.now() + 3000, { hours: 12, force: true });
-    const producedHelmet = Object.values(productionSim.state().sites)
-      .reduce((sum, site) => sum + Number(site.stockpile?.helmet || 0), 0)
-      + Object.values(productionSim.state().parties)
-        .reduce((sum, party) => sum + Number(party.cargo?.helmet || 0), 0)
-      + Object.values(productionSim.state().sites)
-        .flatMap(site => Object.values(site.retailMarkets || {}))
-        .flatMap(market => market.stock || [])
-        .filter(row => row.id === 'helmet')
-        .reduce((sum, row) => sum + Number(row.qty || 0), 0);
-    if (producedHelmet <= 1) throw new Error('faction production queue did not complete its craft');
   } catch (error) {
     errors.push(`faction economy runtime: ${error.message}`);
   } finally {

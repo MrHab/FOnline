@@ -139,7 +139,6 @@ function assertJoinContract() {
     task('task_not_group', 'deliver_supplies', 'patrol_a'),
     task('task_wrong_kind', 'escort_caravan', 'patrol_a')
   ];
-  const beforePower = sim.publicState().parties.find(row => row.id === 'patrol_a').escortPower;
   const rejected = [
     ['missing task id', joinPayload('', 'patrol_a')],
     ['unknown task', joinPayload('unknown_task', 'patrol_a')],
@@ -173,8 +172,6 @@ function assertJoinContract() {
   assert.strictEqual(state.parties.patrol_a.playerMembers.length, 1, 'valid join did not create exactly one member');
   assert.strictEqual(state.parties.patrol_a.playerMembers[0].taskId, 'task_patrol_a', 'member was not bound to the accepted task');
   assert.deepStrictEqual(state.worldTasks[0].details.joinedPlayers, ['character_player'], 'task roster was not synchronized');
-  const afterPower = sim.publicState().parties.find(row => row.id === 'patrol_a').escortPower;
-  assert.strictEqual(afterPower - beforePower, 7, 'one player did not contribute exactly one player-power unit');
 
   const eventsAfterJoin = state.events.length;
   const replay = sim.joinWorldParty(joinPayload());
@@ -971,17 +968,11 @@ function assertPublicMotionSnapshot() {
   };
 
   const first = sim.publicState();
-  const publicParty = first.parties.find(row => row.id === 'motion_party');
+  assert.deepStrictEqual(first.parties, [], 'NPC parties and their routes must not reach the map client');
   assert.strictEqual(first.sampledAt, firstSampleAt,
     'public motion snapshot is not anchored to the authoritative simulation tick');
   assert(first.serverNow >= first.sampledAt,
     'public motion snapshot does not expose a comparable server clock');
-  assert.deepStrictEqual(publicParty.movementRoutePoints, [
-    { x: 30, y: 30 },
-    { x: 32.12, y: 32.12 }
-  ], 'public motion snapshot does not preserve the authoritative near-term route segment');
-  assert(publicParty.movementRoutePoints.every(point => point.x < 45 && point.y < 45),
-    'public motion snapshot leaked route geometry beyond the interpolation horizon');
 
   const repeated = sim.publicState();
   assert.strictEqual(repeated.sampledAt, first.sampledAt,

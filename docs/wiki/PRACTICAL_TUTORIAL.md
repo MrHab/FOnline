@@ -17,5 +17,5 @@
 Проверки:
 
 - `npm run check:kromka-onboarding` — порядок, обязательные факты, миграция и пустой старт.
-- `KROMKA_QA_SCOPE=onboarding node tools/check-kromka-live-journey-local.js` — изолированный персонаж и настоящее прохождение через Socket.IO до Ключей, включая отрицательные проверки.
+- `KROMKA_QA_SCOPE=onboarding node tools/check-kromka-live-journey-local.js` — изолированный персонаж и настоящее прохождение через Socket.IO до Ключей, включая отрицательные проверки, а затем первый выход через край Ключей в их зону мира и возврат через портал. Без `KROMKA_QA_SCOPE` проверка проходит всю кампанию и квесты с условиями; между местами она переезжает тестовым переносом сервера (`qaTravel`, есть только при `NODE_ENV=test` и `KROMKA_TEST_TRAVEL=1`), потому что дорогу через ворота зон проверяют проверки зон.
 - **Realm of Ashes → Onboarding → Check practical tutorial desktop and mobile** — автономный Play Mode: модели, выбор мишени/пациента и подсказки 1920×1080 и 844×390. Результаты в `unity-client/Library/PracticalTutorialAudit`.

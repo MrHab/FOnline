@@ -30,6 +30,13 @@ module.exports = function practicalSteps({ call, state, actors, containers, move
       assert(crate, 'Supply crate beside Gleb is missing');
       const gleb = actors().find(row => row.kromkaOnboardingNpcId === step.npcId);
       assert(Math.hypot(crate.x - gleb.x, crate.z - gleb.z) <= 4, 'Supplies are not beside the quest giver');
+      // A refused grab proves something only from out of reach. The server allows
+      // 3.2 m, and the blocked turn-in at Gleb leaves the character about 3.3 m
+      // from the crate, so step back towards the previous lesson first.
+      const guide = actors().find(row => row.kromkaOnboardingNpcId === 'yard_versta_guide');
+      assert(guide, 'Inspection guide is missing');
+      await moveNear(guide.x, guide.z, 3, 'out of reach of the supply crate');
+      assert(Math.hypot(state().x - crate.x, state().z - crate.z) > 6, 'Character did not step out of reach of the supply crate');
       assert.equal((await call('lootWorldContainer', { id: crate.id, mode: 'all' })).ok, false, 'Remote looting was accepted');
       await moveNear(crate.x, crate.z, 2, 'supply crate');
       const opened = ok(await call('openWorldContainer', { id: crate.id }), 'open supply crate');

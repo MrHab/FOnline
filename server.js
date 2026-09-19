@@ -30627,6 +30627,20 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, to, fee: trip.fee, self: publicAuthoritativePlayerState(p) });
   });
 
+  // Сквозная проверка кампании (tools/check-kromka-live-journey) переезжает между местами
+  // сразу: дорогу через ворота зон проверяют проверки зон. Есть только в тестовом сервере.
+  if (process.env.NODE_ENV === 'test' && process.env.KROMKA_TEST_TRAVEL === '1') {
+    socket.on('qaTravel', (data = {}, ack) => {
+      const p = players.get(socket.id);
+      const to = normalizeLocationId(data.to || '');
+      const reply = payload => { if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null }); };
+      if (!p || !p.roomId || !LOCATIONS[to]) return reply({ ok: false, error: 'Нет такого места.' });
+      const room = chooseRoomForLocation(to);
+      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
+      reply({ ok: true, locationId: to, roomId: room.id });
+    });
+  }
+
   // Синь: счёт, покупка премиума и обменник синь↔марки у аукционера.
   socket.on('accountSinAction', (data = {}, ack) => {
     const p = players.get(socket.id);

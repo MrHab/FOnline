@@ -1,0 +1,73 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "resource_scrap_yard",
+  "kind": "resource",
+  "name": "Свалка лома",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 4,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "s1",
+      "prefab": "scrap_heap",
+      "x": -7,
+      "z": -7,
+      "ry": 0
+    },
+    {
+      "id": "s2",
+      "prefab": "scrap_heap",
+      "x": 5,
+      "z": -9,
+      "ry": 60
+    },
+    {
+      "id": "s3",
+      "prefab": "scrap_heap",
+      "x": 8,
+      "z": 6,
+      "ry": 150
+    },
+    {
+      "id": "s4",
+      "prefab": "scrap_heap",
+      "x": -6,
+      "z": 8,
+      "ry": 240
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": 0,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": 13,
+      "z": -2,
+      "ry": 90
+    }
+  ],
+  "anchors": [
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": -12,
+      "z": 0,
+      "radius": 8
+    }
+  ]
+}

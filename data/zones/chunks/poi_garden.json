@@ -1,0 +1,67 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_garden",
+  "kind": "poi",
+  "name": "Заброшенный огород",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "peaceful",
+    "pve"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "g1",
+      "prefab": "garden_patch",
+      "x": -5,
+      "z": -4,
+      "ry": 0
+    },
+    {
+      "id": "g2",
+      "prefab": "garden_patch",
+      "x": 4,
+      "z": -4,
+      "ry": 0
+    },
+    {
+      "id": "p1",
+      "prefab": "brahmin_pen",
+      "x": 0,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f1",
+      "prefab": "fence_segment",
+      "x": -10,
+      "z": 2,
+      "ry": 90
+    },
+    {
+      "id": "f2",
+      "prefab": "fence_segment",
+      "x": 10,
+      "z": 2,
+      "ry": 90
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 12,
+      "z": 12,
+      "radius": 8
+    }
+  ]
+}

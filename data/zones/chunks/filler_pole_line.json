@@ -1,0 +1,58 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_pole_line",
+  "kind": "filler",
+  "name": "Линия столбов",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 4,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": -15,
+      "z": -4,
+      "ry": 0
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": 0,
+      "z": -2,
+      "ry": 0
+    },
+    {
+      "id": "p3",
+      "prefab": "utility_pole",
+      "x": 15,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "d1",
+      "prefab": "perimeter_debris",
+      "x": 6,
+      "z": 9,
+      "ry": 45
+    },
+    {
+      "id": "b1",
+      "prefab": "dry_bush",
+      "x": -8,
+      "z": 12,
+      "ry": 0
+    }
+  ],
+  "anchors": []
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "resource_oil_seep",
+  "kind": "resource",
+  "name": "Нефтяной выход",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 2,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "p1",
+      "prefab": "oil_pump_jack",
+      "x": 0,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": -8,
+      "z": 5,
+      "ry": 0
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": 8,
+      "z": -6,
+      "ry": 45
+    },
+    {
+      "id": "k1",
+      "prefab": "rust_barrel_v1",
+      "x": 5,
+      "z": 9,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -6,
+      "z": -8,
+      "tier": "basic"
+    }
+  ]
+}

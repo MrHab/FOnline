@@ -1,0 +1,58 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_road_debris",
+  "kind": "filler",
+  "name": "Брошенная дорога",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 4,
+  "maxPerZone": 5,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "s1",
+      "prefab": "asphalt_slab",
+      "x": -9,
+      "z": -3,
+      "ry": 10
+    },
+    {
+      "id": "s2",
+      "prefab": "asphalt_slab",
+      "x": 4,
+      "z": 1,
+      "ry": 355
+    },
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": 11,
+      "z": -9,
+      "ry": 70
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": -13,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "h1",
+      "prefab": "highway_sign",
+      "x": -2,
+      "z": -12,
+      "ry": 180
+    }
+  ],
+  "anchors": []
+}

@@ -1,0 +1,79 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_dead_grove",
+  "kind": "filler",
+  "name": "Сухостой",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 5,
+  "maxPerZone": 8,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "t1",
+      "prefab": "dead_tree_a",
+      "x": -12,
+      "z": -9,
+      "ry": 20
+    },
+    {
+      "id": "t2",
+      "prefab": "dead_tree_c",
+      "x": -3,
+      "z": -14,
+      "ry": 110
+    },
+    {
+      "id": "t3",
+      "prefab": "dead_tree_a",
+      "x": 9,
+      "z": -6,
+      "ry": 200
+    },
+    {
+      "id": "t4",
+      "prefab": "dead_tree_c",
+      "x": 13,
+      "z": 8,
+      "ry": 300
+    },
+    {
+      "id": "t5",
+      "prefab": "dead_tree_a",
+      "x": -8,
+      "z": 11,
+      "ry": 60
+    },
+    {
+      "id": "b1",
+      "prefab": "dry_bush",
+      "x": 2,
+      "z": 3,
+      "ry": 0
+    },
+    {
+      "id": "b2",
+      "prefab": "dry_bush",
+      "x": -15,
+      "z": 2,
+      "ry": 40
+    },
+    {
+      "id": "w1",
+      "prefab": "deadwood",
+      "x": 5,
+      "z": 14,
+      "ry": 75
+    }
+  ],
+  "anchors": []
+}

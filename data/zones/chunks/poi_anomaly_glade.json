@@ -1,0 +1,75 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_anomaly_glade",
+  "kind": "poi",
+  "name": "Аномальная поляна",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "pvp",
+    "pvpFullDrop",
+    "pvpBlack"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": -12,
+      "z": -6,
+      "ry": 0
+    },
+    {
+      "id": "r2",
+      "prefab": "rubble_rock",
+      "x": 11,
+      "z": -9,
+      "ry": 90
+    },
+    {
+      "id": "r3",
+      "prefab": "rubble_rock",
+      "x": 9,
+      "z": 11,
+      "ry": 180
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_c",
+      "x": -10,
+      "z": 12,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "anom1",
+      "type": "anomaly",
+      "x": -3,
+      "z": 0,
+      "radius": 3.2
+    },
+    {
+      "id": "anom2",
+      "type": "anomaly",
+      "x": 5,
+      "z": 3,
+      "radius": 2.8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 0,
+      "z": -12,
+      "tier": "rare"
+    }
+  ]
+}

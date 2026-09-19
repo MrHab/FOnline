@@ -1,0 +1,73 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_camp",
+  "kind": "poi",
+  "name": "Брошенная стоянка",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "f1",
+      "prefab": "campfire_rest",
+      "x": 0,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "c1",
+      "prefab": "cot_bed",
+      "x": -5,
+      "z": 3,
+      "ry": 20
+    },
+    {
+      "id": "c2",
+      "prefab": "cot_bed",
+      "x": 4,
+      "z": -5,
+      "ry": 110
+    },
+    {
+      "id": "l1",
+      "prefab": "storage_lean_to",
+      "x": 7,
+      "z": 6,
+      "ry": 200
+    },
+    {
+      "id": "k1",
+      "prefab": "rust_barrel_v1",
+      "x": -7,
+      "z": -6,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 5,
+      "z": 8,
+      "tier": "survival"
+    },
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": -10,
+      "z": 10,
+      "radius": 9
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_shack",
+  "kind": "poi",
+  "name": "Лачуга",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "s1",
+      "prefab": "wasteland_shack",
+      "x": 0,
+      "z": -2,
+      "ry": 0
+    },
+    {
+      "id": "f1",
+      "prefab": "fence_segment",
+      "x": -8,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f2",
+      "prefab": "fence_segment",
+      "x": -6,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "f3",
+      "prefab": "fence_segment",
+      "x": 8,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "k1",
+      "prefab": "rust_barrel_v1",
+      "x": 6,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_a",
+      "x": -12,
+      "z": -10,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 0,
+      "z": 5,
+      "tier": "basic"
+    },
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": 12,
+      "z": 12,
+      "radius": 7
+    }
+  ]
+}

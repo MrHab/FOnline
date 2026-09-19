@@ -1,0 +1,89 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "lair_den_rocks",
+  "kind": "lair",
+  "name": "Логово в камнях",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "pve",
+    "pvp",
+    "pvpFullDrop",
+    "pvpBlack"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": -9,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "r2",
+      "prefab": "rubble_rock",
+      "x": 0,
+      "z": -11,
+      "ry": 60
+    },
+    {
+      "id": "r3",
+      "prefab": "rubble_rock",
+      "x": 9,
+      "z": -7,
+      "ry": 120
+    },
+    {
+      "id": "r4",
+      "prefab": "rubble_rock",
+      "x": 11,
+      "z": 3,
+      "ry": 180
+    },
+    {
+      "id": "r5",
+      "prefab": "rubble_rock",
+      "x": -11,
+      "z": 2,
+      "ry": 240
+    },
+    {
+      "id": "w1",
+      "prefab": "deadwood",
+      "x": 0,
+      "z": 2,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "den",
+      "type": "lair",
+      "x": 0,
+      "z": -3
+    },
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": 0,
+      "z": 10,
+      "radius": 9
+    },
+    {
+      "id": "pack2",
+      "type": "spawnArea",
+      "x": -12,
+      "z": 12,
+      "radius": 7
+    }
+  ]
+}

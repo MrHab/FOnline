@@ -1,0 +1,80 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_billboard_crossing",
+  "kind": "landmark",
+  "name": "Перекрёсток со щитами",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "b1",
+      "prefab": "ruined_billboard",
+      "x": -9,
+      "z": -8,
+      "ry": 20
+    },
+    {
+      "id": "b2",
+      "prefab": "ruined_billboard",
+      "x": 10,
+      "z": 7,
+      "ry": 200
+    },
+    {
+      "id": "h1",
+      "prefab": "highway_sign",
+      "x": 0,
+      "z": -13,
+      "ry": 0
+    },
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": 7,
+      "z": -6,
+      "ry": 120
+    },
+    {
+      "id": "s1",
+      "prefab": "asphalt_slab",
+      "x": -3,
+      "z": 2,
+      "ry": 0
+    },
+    {
+      "id": "s2",
+      "prefab": "asphalt_slab",
+      "x": 3,
+      "z": 6,
+      "ry": 90
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": -12,
+      "z": 12,
+      "radius": 10
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 12,
+      "z": -12,
+      "tier": "wasteland"
+    }
+  ]
+}

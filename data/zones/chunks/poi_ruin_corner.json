@@ -1,0 +1,86 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_ruin_corner",
+  "kind": "poi",
+  "name": "Угол руины",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "w1",
+      "prefab": "concrete_wall",
+      "x": -6,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w2",
+      "prefab": "concrete_wall",
+      "x": -2,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w3",
+      "prefab": "concrete_wall",
+      "x": -8,
+      "z": -8,
+      "ry": 90
+    },
+    {
+      "id": "w4",
+      "prefab": "concrete_wall",
+      "x": -8,
+      "z": -4,
+      "ry": 90
+    },
+    {
+      "id": "w5",
+      "prefab": "concrete_wall",
+      "x": 6,
+      "z": 4,
+      "ry": 0
+    },
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": 2,
+      "z": -2,
+      "ry": 40
+    },
+    {
+      "id": "d1",
+      "prefab": "perimeter_debris",
+      "x": -3,
+      "z": -5,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -5,
+      "z": -7
+    },
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": 8,
+      "z": 10,
+      "radius": 8
+    }
+  ]
+}

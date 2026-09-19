@@ -1,0 +1,87 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_relay_mast",
+  "kind": "landmark",
+  "name": "Мачта связи",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "m1",
+      "prefab": "relay_antenna",
+      "x": 0,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "w1",
+      "prefab": "concrete_wall",
+      "x": -7,
+      "z": -7,
+      "ry": 0
+    },
+    {
+      "id": "w2",
+      "prefab": "concrete_wall",
+      "x": 7,
+      "z": -7,
+      "ry": 0
+    },
+    {
+      "id": "w3",
+      "prefab": "concrete_wall",
+      "x": -9,
+      "z": 3,
+      "ry": 90
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": 12,
+      "z": 8,
+      "ry": 0
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": -12,
+      "z": 12,
+      "ry": 0
+    },
+    {
+      "id": "b1",
+      "prefab": "workshop_bench",
+      "x": 4,
+      "z": 8,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -4,
+      "z": 6,
+      "tier": "tools"
+    },
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": -14,
+      "radius": 10
+    }
+  ]
+}

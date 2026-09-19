@@ -1,0 +1,68 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "lair_wreck_nest",
+  "kind": "lair",
+  "name": "Гнездо в остовах",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "pve",
+    "pvp",
+    "pvpFullDrop",
+    "pvpBlack"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "objects": [
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": -7,
+      "z": -4,
+      "ry": 30
+    },
+    {
+      "id": "c2",
+      "prefab": "car_wreck",
+      "x": 6,
+      "z": -6,
+      "ry": 200
+    },
+    {
+      "id": "s1",
+      "prefab": "scrap_heap",
+      "x": 0,
+      "z": 6,
+      "ry": 0
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": 10,
+      "z": 8,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "den",
+      "type": "lair",
+      "x": 0,
+      "z": -2
+    },
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": 0,
+      "z": 13,
+      "radius": 8
+    }
+  ]
+}

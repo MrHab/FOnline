@@ -13206,6 +13206,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), optio
     ? Number(options.sourceZ) : Number(p.z || enemy.z || 0);
   finalizeNpcDeathState(enemy, now);
   serverNoteWorldBossKill(room, enemy, now);
+  serverNotePublicEventBossKill(room, enemy, now);
   enemy.looted = false;
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
@@ -21972,7 +21973,16 @@ function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
     // Босс убит: событие можно зачищать, награда откроется по таймеру.
     return notePublicEventBoss(event, { killedAt: now });
   }
-  if (event.boss?.spawned === true) return false;
+  // Босса в комнате нет. Если его ставила эта же комната, значит, он погиб и
+  // труп уже убран: обыск удаляет тело сразу, а этот опрос идёт раз в 5 с. Раньше
+  // такое событие навсегда оставалось «босс появился, не убит» — зачистка не
+  // засчитывалась, тайник не открывался.
+  if (String(room.publicEventBossSpawnedFor || '') === String(event.id || '')) {
+    return notePublicEventBoss(event, { killedAt: now });
+  }
+  // Иначе комната собрана заново (перезапуск сервера): встречу возвращает
+  // serverEnsurePublicEventEncounter, и босс обязан вернуться вместе с ней —
+  // отметка spawned в сохранённом событии говорит о прошлой комнате, не об этой.
   ensureRoomWorld(room);
   const dims = roomTileDims(room);
   const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
@@ -21995,7 +22005,27 @@ function serverEnsurePublicEventBoss(room, event, now = Date.now()) {
   boss.hp = boss.maxHp;
   boss.atk = Math.round(Number(boss.atk || 8) * Math.min(2, multiplier));
   room.structureDirty = true;
-  return notePublicEventBoss(event, { spawned: true });
+  room.publicEventBossSpawnedFor = String(event.id || '').slice(0, 64);
+  notePublicEventBoss(event, { spawned: true });
+  return true;
+}
+
+// Гибель босса события фиксируется сразу, не дожидаясь опроса: к следующему
+// тику тело уже может быть обыскано и убрано из комнаты.
+function serverNotePublicEventBossKill(room, enemy, now = Date.now()) {
+  const supportId = String(enemy?.publicEventSupportId || '');
+  const eventId = String(enemy?.publicEventBossId || (supportId ? enemy?.publicEventId : '') || '');
+  if (!eventId) return false;
+  const event = serverPublicEventById(eventId);
+  if (!event) return false;
+  if (supportId) {
+    if (!noteScenarioSupportDestroyed(event.scenario, supportId)) return false;
+    serverEmitPublicEventState(event, { supportDestroyed: supportId }, now);
+  } else if (!notePublicEventBoss(event, { killedAt: now })) {
+    return false;
+  }
+  scheduleServerPublicEventPersist();
+  return true;
 }
 
 /**
@@ -22019,7 +22049,18 @@ function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
       continue;
     }
     if (!scenarioSupportAlive(event.scenario, support.id)) continue;
-    if (event.scenario.spawned === true) continue;
+    // Опоры в комнате нет, а по событию она цела. Если её ставила эта комната —
+    // она разрушена и тело уже убрано (пустой труп живёт 0,5 с, опрос идёт раз в
+    // 5 с): без этой отметки гнездо вечно слало подкрепления, а главарь под
+    // генератором оставался неуязвимым. Если комната новая (перезапуск), опора
+    // возвращается вместе со встречей, как и босс.
+    if (String(room.publicEventSupportsSpawnedFor || '') === String(event.id || '')) {
+      if (noteScenarioSupportDestroyed(event.scenario, support.id)) {
+        changed = true;
+        serverEmitPublicEventState(event, { supportDestroyed: support.id }, now);
+      }
+      continue;
+    }
     const dims = roomTileDims(room);
     const center = { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
     const world = tileToWorld(center.tx, center.tz, dims);
@@ -22049,6 +22090,9 @@ function serverEnsurePublicEventSupports(room, event, now = Date.now()) {
     event.scenario.spawned = true;
     room.structureDirty = true;
   }
+  // Отметка живёт на комнате, а не на событии: после перезапуска комната новая,
+  // и опоры в ней нужно ставить заново.
+  room.publicEventSupportsSpawnedFor = String(event.id || '').slice(0, 64);
   return changed;
 }
 

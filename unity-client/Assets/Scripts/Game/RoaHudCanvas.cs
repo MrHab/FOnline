@@ -204,7 +204,6 @@ namespace RealmOfAshes.Game
         private RoaMinimap _minimap;
         private RoaCombat _combat;
         private RoaMobileControls _mobile;
-        private RoaGlobalMap _globalMap;
         private RoaWorldActivityCanvas _worldActivity;
         private Canvas _canvas;
         private RectTransform _safeRoot;
@@ -346,21 +345,18 @@ namespace RealmOfAshes.Game
                 topRight.x - bottomLeft.x, topRight.y - bottomLeft.y));
         }
 
-        private string _lastGlobalStatus = string.Empty;
-        private float _globalStatusUntil;
         private Rect _lastSafeArea;
         private bool _lastMobile;
         private const float MinimapPixels = 164f;
 
         public void Configure(RoaHud hud, RoaQuickbar quickbar, RoaMinimap minimap,
-                              RoaCombat combat, RoaMobileControls mobile, RoaGlobalMap globalMap)
+                              RoaCombat combat, RoaMobileControls mobile)
         {
             _hud = hud;
             _quickbar = quickbar;
             _minimap = minimap;
             _combat = combat;
             _mobile = mobile;
-            _globalMap = globalMap;
             ConfigureEconomyFeedback(hud != null ? hud.Socket : null);
             ClaimLegacyRenderers(true);
             if (_canvas == null) Build();
@@ -392,8 +388,6 @@ namespace RealmOfAshes.Game
             // До входа в мир (экран аккаунта) HUD не показывается — как в web,
             // где #character-screen перекрывает всё.
             if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.FrontendVisible) worldHud = false;
-            // На глобальной карте web-окно карты перекрывает HUD целиком.
-            if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.OnGlobalMap) worldHud = false;
             bool mobile = MobileHudMode; // mobile HUD and touch controls use one authoritative mode
             bool detailsHeld = !mobile && (Input.GetKey(KeyCode.LeftAlt)
                 || Input.GetKey(KeyCode.RightAlt));
@@ -549,7 +543,7 @@ namespace RealmOfAshes.Game
                               TextAnchor.MiddleLeft, MutedInk);
             _cellText.gameObject.SetActive(false);
 
-            // Карта мира: обзор глобальной карты с флажком там, где игрок.
+            // Карта мира: сетка зон с флажком там, где игрок.
             RectTransform world = Rect("WorldMap", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
                                        new Vector2(0f, 1f), new Vector2(13f, -201f), new Vector2(MinimapPixels, 24f));
             Image worldImage = world.gameObject.AddComponent<Image>();
@@ -1195,18 +1189,6 @@ namespace RealmOfAshes.Game
 
         private void RefreshSystemStatus(bool worldHud)
         {
-            string status = _globalMap != null ? (_globalMap.StatusText ?? string.Empty) : string.Empty;
-            if (status != _lastGlobalStatus)
-            {
-                _lastGlobalStatus = status;
-                if (!string.IsNullOrEmpty(status) && (_globalMap == null || !_globalMap.IsActive))
-                    _globalStatusUntil = Time.unscaledTime + 5f;
-            }
-
-            if (!string.IsNullOrEmpty(status) && (_globalMap == null || !_globalMap.IsActive)
-                && Time.unscaledTime < _globalStatusUntil)
-                PushSystemLine(status);
-
             // Отказ подобрать находку тоже попадает в журнал: своей панели у
             // детектора нет.
             if (_artifacts != null)
@@ -1230,8 +1212,7 @@ namespace RealmOfAshes.Game
             // Журнал виден, пока есть свежие строки (последняя — не старше 12 с).
             // Как #system-log-panel: виден, пока есть строки (в web панель постоянная).
             bool visible = worldHud && _systemLines.Count > 0
-                && Time.unscaledTime - _systemLastPushAt < 6f
-                && (_globalMap == null || !_globalMap.IsActive);
+                && Time.unscaledTime - _systemLastPushAt < 6f;
             _systemPanel.SetActive(visible);
             if (visible) _systemText.text = string.Join("\n", _systemLines);
         }

@@ -7,21 +7,16 @@
     "role": "Обычная торговая единица: цены, награды, комиссии и расчёты между игроками. Лежат на счёте аккаунта, общие для его персонажей, не выпадают и не выбрасываются."
   },
   "worldModel": {
-    "settlementLife": false,
-    "npcProduction": false,
-    "worldCaravans": false,
     "npcTraders": true,
     "wildTraders": false,
     "npcStations": false,
     "npcGearDrops": false,
-    "visibleWorldParties": false,
     "blackMarket": true,
     "cityAuctions": true,
     "dangerCells": true,
     "accountSin": true,
     "accountMarks": true,
-    "dangerEcology": true,
-    "hostileWorldParties": false
+    "dangerEcology": true
   },
   "npcTradeHubs": {
     "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",
@@ -84,31 +79,21 @@
       "maxOrdersPerTrader": 10
     }
   },
+  "fastTravel": {
+    "note": "Перенос между столицами фракций у диспетчера: цена = baseFee + feePerKm × км между зонами столиц; из боя (combatLockMs после урона или выстрела) и с грузом категорий blockedCategories в рюкзаке не отправляют.",
+    "baseFee": 40,
+    "feePerKm": 0.5,
+    "combatLockMs": 15000,
+    "blockedCategories": ["artifacts"]
+  },
   "dangerCells": {
-    "subCellKm": 1.6,
     "capitals": ["sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "balanceBunker"],
     "safeRadiusKm": 12,
     "blueRadiusKm": 38,
     "blueExtraCenters": ["settlement"],
     "blackCenters": [{ "locationId": "coreZone", "radiusKm": 22 }],
     "regionModes": { "silent_ring": "pvpFullDrop", "glasslands": "pvpFullDrop", "zero_basin": "pvpFullDrop" },
-    "defaultMode": "pvp",
-    "encounterChance": { "peaceful": 0, "pve": 0, "pvp": 0.04, "pvpFullDrop": 0.1, "pvpBlack": 0.18 },
-    "wandererReduction": 0.5,
-    "edgeGraceKm": 3,
-    "templates": {
-      "default": "randomRuinedRoad",
-      "silent_ring": "randomDryBasin",
-      "zero_basin": "randomDryBasin",
-      "glasslands": "randomAshGrove",
-      "chalk_lowland": "randomAshGrove"
-    },
-    "sceneModes": ["pvpBlack"],
-    "encounters": {
-      "pvp": ["raider_ambush", "gecko_pack", "mutant_ant_swarm", "ghoul_pack"],
-      "pvpFullDrop": ["raider_ambush", "radscorpion_nest", "fire_gecko_ambush", "gari_pack", "super_mutant_lair"],
-      "pvpBlack": ["super_mutant_lair", "gari_pack", "fire_gecko_ambush", "lantern_grazing"]
-    }
+    "defaultMode": "pvp"
   },
   "blackMarket": {
     "service": "blackMarket",

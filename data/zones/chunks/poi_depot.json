@@ -1,0 +1,116 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_depot",
+  "kind": "poi",
+  "name": "Перевалочный склад",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "g1",
+      "prefab": "cargo_stack",
+      "x": -7,
+      "z": -6,
+      "ry": 0
+    },
+    {
+      "id": "g2",
+      "prefab": "cargo_stack",
+      "x": -7,
+      "z": -3.5,
+      "ry": 0
+    },
+    {
+      "id": "g3",
+      "prefab": "cargo_stack",
+      "x": -7,
+      "z": -1,
+      "ry": 0
+    },
+    {
+      "id": "g4",
+      "prefab": "cargo_stack",
+      "x": 5,
+      "z": -8,
+      "ry": 90
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": 8,
+      "z": 5,
+      "ry": 30
+    },
+    {
+      "id": "l1",
+      "prefab": "storage_lean_to",
+      "x": -2,
+      "z": 10,
+      "ry": 180
+    },
+    {
+      "id": "l2",
+      "prefab": "storage_lean_to",
+      "x": 3,
+      "z": 10,
+      "ry": 180
+    },
+    {
+      "id": "w1",
+      "prefab": "workshop_bench",
+      "x": 4,
+      "z": 0,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 1,
+      "z": -3,
+      "tier": "tools"
+    },
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 12,
+      "z": -12,
+      "radius": 9
+    }
+  ]
+}

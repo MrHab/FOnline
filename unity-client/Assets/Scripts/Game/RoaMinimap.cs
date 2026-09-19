@@ -76,7 +76,7 @@ namespace RealmOfAshes.Game
         private JArray _worldMap;
         private Texture2D _staticTexture;
         private Texture2D _arrowTexture;
-        private bool _globalMapExitAllowed = true;
+        private bool _edgeExitAllowed = true;
         private float _nextRefresh;
 
         public void Configure(RoaEnemies enemies, RoaRemotePlayers remotePlayers,
@@ -122,10 +122,10 @@ namespace RealmOfAshes.Game
             BuildStaticTexture(_location);
         }
 
-        public void SetGlobalMapExitAllowed(bool allowed)
+        public void SetEdgeExitAllowed(bool allowed)
         {
-            if (_globalMapExitAllowed == allowed) return;
-            _globalMapExitAllowed = allowed;
+            if (_edgeExitAllowed == allowed) return;
+            _edgeExitAllowed = allowed;
             if (_location == null || MapWidth <= 0 || MapDepth <= 0) return;
             DestroyRuntime(_staticTexture);
             _staticTexture = null;
@@ -302,14 +302,14 @@ namespace RealmOfAshes.Game
                 }
             }
 
-            if ((_location == null || _location.CanExitToGlobalMap) && _globalMapExitAllowed)
-                PaintGlobalMapExitBand(pixels);
+            if (_location != null && _location.ExitZone != null && _location.CanExitAtEdge && _edgeExitAllowed)
+                PaintEdgeExitBand(pixels);
 
             _staticTexture.SetPixels32(pixels);
             _staticTexture.Apply(false, false);
         }
 
-        private void PaintGlobalMapExitBand(Color32[] pixels)
+        private void PaintEdgeExitBand(Color32[] pixels)
         {
             int band = Mathf.Min(RoaWorldExitBoundary.ExitBandTileCount,
                 Mathf.Max(1, Mathf.Min(MapWidth, MapDepth) / 2));

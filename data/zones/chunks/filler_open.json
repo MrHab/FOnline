@@ -1,0 +1,53 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_open",
+  "kind": "filler",
+  "name": "Голая земля",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 5,
+  "maxPerZone": 18,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        14
+      ],
+      "spacing": 3
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        6
+      ]
+    },
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        1,
+        3
+      ],
+      "spacing": 8
+    }
+  ],
+  "objects": [],
+  "anchors": []
+}

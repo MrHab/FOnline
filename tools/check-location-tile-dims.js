@@ -53,7 +53,7 @@ const context = vm.createContext({
   normalizeLocationId: id => String(id || 'settlement'),
   WORLD_MAP_EXIT_BAND_TILES: 2,
   PLAYER_COLLISION_RADIUS: 0.48,
-  serverPlayerAllowsGlobalMapExit: () => false,
+  serverPlayerCanLeaveByEdge: () => false,
   roomLocation: room => LOCATIONS[room.locationId]
 });
 vm.runInContext('const TILE = 2.0; const MAP_W = 38; const MAP_H = 38;', context);

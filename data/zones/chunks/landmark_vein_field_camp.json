@@ -1,0 +1,112 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_vein_field_camp",
+  "kind": "landmark",
+  "name": "Полевой стан",
+  "biomes": [
+    "middle_vein"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "g1",
+      "prefab": "garden_patch",
+      "x": -8,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "g2",
+      "prefab": "garden_patch",
+      "x": -2,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "g3",
+      "prefab": "garden_patch",
+      "x": 4,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "g4",
+      "prefab": "garden_patch",
+      "x": 10,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "p1",
+      "prefab": "brahmin_pen",
+      "x": -7,
+      "z": 6,
+      "ry": 90
+    },
+    {
+      "id": "s1",
+      "prefab": "wasteland_shack",
+      "x": 7,
+      "z": 6,
+      "ry": 180
+    },
+    {
+      "id": "c1",
+      "prefab": "campfire_rest",
+      "x": 1,
+      "z": 1,
+      "ry": 0
+    },
+    {
+      "id": "b1",
+      "prefab": "cot_bed",
+      "x": 4,
+      "z": 11,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": -12,
+      "z": 13,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 10,
+      "z": 2,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

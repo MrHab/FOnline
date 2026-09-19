@@ -1,0 +1,119 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_sluice_pylons",
+  "kind": "landmark",
+  "name": "Линия опор",
+  "biomes": [
+    "northern_sluices"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "p0",
+      "prefab": "utility_pole",
+      "x": -16,
+      "z": -4,
+      "ry": 346,
+      "s": 2.3
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": -8,
+      "z": -2,
+      "ry": 346,
+      "s": 2.3
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": 0,
+      "z": 0,
+      "ry": 346,
+      "s": 2.3
+    },
+    {
+      "id": "p3",
+      "prefab": "utility_pole",
+      "x": 8,
+      "z": 2,
+      "ry": 346,
+      "s": 2.3
+    },
+    {
+      "id": "p4",
+      "prefab": "utility_pole",
+      "x": 16,
+      "z": 4,
+      "ry": 346,
+      "s": 2.3
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": -6,
+      "z": 9,
+      "ry": 30
+    },
+    {
+      "id": "w1",
+      "prefab": "workshop_bench",
+      "x": 7,
+      "z": 10,
+      "ry": 180
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": -13,
+      "radius": 9
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 11,
+      "z": 12,
+      "tier": "tools"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

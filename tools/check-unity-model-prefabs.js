@@ -138,27 +138,24 @@ function run() {
     .map(match => ({ url: match[1], guid: match[2] }));
   const runtimeUrls = entries.map(entry => entry.url).sort();
   assert(JSON.stringify(runtimeUrls) === JSON.stringify(expectedRuntimeUrls()),
-    `runtime global-map catalog is incomplete: found ${runtimeUrls.length} entries`);
+    `runtime model catalog is incomplete: found ${runtimeUrls.length} entries`);
   for (const entry of entries) {
     assert(prefabGuids.has(entry.guid), `catalog references a missing prefab: ${entry.url}`);
   }
 
   const generator = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Editor',
     'RoaModelPrefabGenerator.cs'), 'utf8');
-  const actor = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game',
-    'RoaGlobalMapActorView.cs'), 'utf8');
   const character = fs.readFileSync(path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game',
     'RoaCharacterView.cs'), 'utf8');
   assert(generator.includes('PREFAB GENERATION PASS')
       && generator.includes('ConfigureLegacyAnimation(sourcePaths)'),
     'deterministic Unity prefab generator is incomplete');
-  assert(actor.includes('RoaModelPrefabCatalog.TryInstantiate')
-      && character.includes('RoaModelPrefabCatalog.TryInstantiate')
+  assert(character.includes('RoaModelPrefabCatalog.TryInstantiate')
       && character.includes('RoaModelPrefabCatalog.AnimationClips'),
-    'global-map actors are not prefab-first with an animation catalog');
+    'characters are not prefab-first with an animation catalog');
 
   console.log(`Unity model prefabs OK: ${models.length} linked prefabs, `
-    + `${entries.length} runtime global-map models, glTFast ${gltfVersion}`);
+    + `${entries.length} runtime catalog models, glTFast ${gltfVersion}`);
 }
 
 if (require.main === module) run();

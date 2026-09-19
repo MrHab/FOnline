@@ -18,7 +18,6 @@ const artifactCatalog = JSON.parse(fs.readFileSync(path.join(root, 'data/artifac
 const simulationConfig = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/world-simulation.json'), 'utf8'));
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const simSource = fs.readFileSync(path.join(root, 'src/server/wasteland-sim.js'), 'utf8');
-const globalMapSource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaGlobalMap.cs'), 'utf8');
 const pipboySource = fs.readFileSync(path.join(root, 'unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs'), 'utf8');
 
 const locations = normalizeLocations(locationCatalog.locations);
@@ -112,7 +111,6 @@ for (const needle of [
 for (const needle of ['anomalyCycle:', 'artifactOpportunities:', 'shiftImpact:', 'recordAnomalyShift']) {
   assert(simSource.includes(needle), `World simulation public contract is missing ${needle}.`);
 }
-for (const needle of ['ВЫБРОС:', 'АРТЕФАКТЫ: после волны']) assert(globalMapSource.includes(needle));
 for (const needle of ['ВЫБРОС · СИЛА', 'Артефактная возможность']) assert(pipboySource.includes(needle));
 
 console.log('Wasteland anomaly cycle passed: deterministic regions, protected consequences, causal artifacts and Unity warnings.');

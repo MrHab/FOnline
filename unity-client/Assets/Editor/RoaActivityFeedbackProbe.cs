@@ -133,9 +133,6 @@ namespace RealmOfAshes.EditorTools
                     && RoaActivityFeedback.SamplePulse(0.4f) > 0.7f
                     && RoaActivityFeedback.SamplePulse(RoaActivityFeedback.PulseSeconds) == 0f,
                 "objective pulse envelope is not bounded");
-            Require(RoaActivityFeedback.GlobalMapResultSeconds <= 8f
-                    && RoaActivityFeedback.GlobalMapResultSeconds < RoaActivityFeedback.ResultSeconds,
-                "activity result blocks the global map for too long");
             Require(!RoaWorldActivityCanvas.UseFocusedActivityHud(false, false)
                     && RoaWorldActivityCanvas.UseFocusedActivityHud(true, false)
                     && RoaWorldActivityCanvas.UseFocusedActivityHud(false, true)

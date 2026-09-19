@@ -44,7 +44,7 @@ const containerOf = (account, defId) => (account.join.worldState?.containers || 
   place(finder, 'scrapOutpost', -1.5, 9);
   finder.player.level = 30;
   finder.characterProfile.special = { str: 5, per: 6, end: 5, cha: 4, int: 5, agi: 5, luck: 10 };
-  finder.skillRanks = { ...(finder.skillRanks || {}), wanderer: 60 };
+  finder.skillRanks = { ...(finder.skillRanks || {}), lockpick: 60 };
   finder.talentRanks = { cacheSense: 2 };
   delete finder.progressionLedger;
   fs.writeFileSync(savesPath, JSON.stringify(saves));

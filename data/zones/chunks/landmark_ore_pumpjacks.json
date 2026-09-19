@@ -1,0 +1,111 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_ore_pumpjacks",
+  "kind": "landmark",
+  "name": "Качалки",
+  "biomes": [
+    "ore_arc"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rust_barrel_v1",
+        "tire_stack"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "j1",
+      "prefab": "oil_pump_jack",
+      "x": -8,
+      "z": -4,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "j2",
+      "prefab": "oil_pump_jack",
+      "x": 2,
+      "z": -7,
+      "ry": 30,
+      "s": 1.6
+    },
+    {
+      "id": "j3",
+      "prefab": "oil_pump_jack",
+      "x": 10,
+      "z": -1,
+      "ry": 60,
+      "s": 1.5
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": -4,
+      "z": 7,
+      "ry": 0
+    },
+    {
+      "id": "b2",
+      "prefab": "barrel_cluster",
+      "x": 6,
+      "z": 8,
+      "ry": 90
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": -12,
+      "z": 6,
+      "ry": 0
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 13,
+      "z": 10,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

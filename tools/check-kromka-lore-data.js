@@ -97,22 +97,6 @@ const unityAuthoringContracts = [
   {
     file: 'unity-client/Assets/Scripts/Kromka/Authoring/KromkaAnomalyAuthoring.cs',
     tokens: ['class KromkaAnomalyAuthoring']
-  },
-  {
-    file: 'unity-client/Assets/Scripts/Kromka/Authoring/KromkaWorldAuthoring.cs',
-    tokens: ['class KromkaWorldAuthoring']
-  },
-  {
-    file: 'unity-client/Assets/Scripts/Kromka/Authoring/KromkaWorldLocationAuthoring.cs',
-    tokens: ['class KromkaWorldLocationAuthoring']
-  },
-  {
-    file: 'unity-client/Assets/Scripts/Kromka/Authoring/KromkaRouteAuthoring.cs',
-    tokens: ['class KromkaRouteAuthoring']
-  },
-  {
-    file: 'unity-client/Assets/Scripts/Kromka/Authoring/KromkaRegionAuthoring.cs',
-    tokens: ['class KromkaRegionAuthoring']
   }
 ];
 for (const contract of unityAuthoringContracts) {

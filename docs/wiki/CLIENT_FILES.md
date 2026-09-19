@@ -13,13 +13,11 @@
 Сцены:
 
 - `Assets/Scenes/Wasteland.unity` — точка входа: bootstrap, камера, свет;
-- `Assets/Scenes/Kromka/KromkaGlobalMap.unity` — глобальная карта;
-- `Assets/Scenes/Kromka/Locations/` — авторские сцены локаций, по одной на
+- `Assets/Scenes/Kromka/Locations/` — авторские сцены мест, по одной на
   `locationId`; загружаются аддитивно (`KromkaLocationSceneCatalog`).
 
-Все они включены в Build Settings. `Assets/Scenes/GlobalMapAuthored.unity` в
-сборку не входит — с ней работают редакторские инструменты
-`RoaGlobalMap*Authoring`.
+Все они включены в Build Settings. У зон мира сцен нет: их собирает
+`RoaZoneAssembler` из префабов набора.
 
 ## Пакеты
 
@@ -60,25 +58,22 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 |---|---|
 | `RoaCoords.cs` | **единственное** место преобразования координат и углов сервер ↔ Unity |
 | `RoaLocationData.cs` | модель `data/locations/*.json` (`realm.location.v1`) |
-| `RoaLocationLoader.cs` | каталог `/api/locations`, аддитивная загрузка авторской сцены локации и привязка объектов JSON к объектам сцены по `id`; для локаций без сцены — GLB через glTFast |
+| `RoaLocationLoader.cs` | каталог `/api/locations`, аддитивная загрузка авторской сцены локации и привязка объектов JSON к объектам сцены по `id`; для локаций без сцены — GLB через glTFast; зону мира (`generated`) берёт по `/api/locations/<id>` и собирает из набора |
+| `RoaZoneAssembler.cs`, `RoaZoneKitCatalog.cs` | сборка зоны мира из префабов набора (`Resources/RealmOfAshes/ZoneKitPrefabs`) с пулами и коллайдерами из `collisionParts` |
+| `RoaZoneGroundCover.cs` | покров земли зоны: кусты и камни по зерну зоны мимо троп и объектов, на сцене — только слоты 3×3 вокруг камеры |
 | `RoaUnityLocationScene.cs`, `RoaUnityLocationObject.cs` | маркер авторской сцены локации и мост «id серверного объекта → объект сцены» |
 | `RoaSceneEnvironment.cs` | снимок освещения авторской сцены (ambient, туман, небо, солнце), применяемый к активной сцене |
 | `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`, рельеф, вода, физика тайлов и границы `playableBounds` |
 | `RoaGroundDressing.cs` | процедурная растительность и разбивка однообразия земли |
-| `RoaWorldExitBoundary.cs` | край локации: полоса выхода на карту или замкнутый пунктирный периметр |
+| `RoaWorldExitBoundary.cs` | край места: золотая полоса выхода в его зону мира или замкнутый пунктирный периметр |
 | `RoaEnvironmentPalette.cs` | палитра моделей окружения из `Resources` |
-| `RoaGlobalMapData.cs` | модель `data/global-map.json`, приходящая через `/api/global-map` |
-| `RoaUnityGlobalMapScene.cs` | маркер сцены карты и каталог префабов: вся живая графика карты — сохранённые префабы |
-| `RoaGlobalMapBoundary.cs`, `RoaGlobalMapNodeAnchor.cs`, `RoaGlobalMapZoneShapes.cs` | играбельный контур карты, стабильные id миниатюр узлов, силуэты областей встреч |
-| `RoaGlobalMapRelief.cs` | запечённое поле высот карты (ассет в Resources); рантайм сажает маркеры на рельеф через `PointToWorld` |
 
 ## Авторинг Кромки (`Assets/Scripts/Kromka/`)
 
 `KromkaLocationSceneCatalog.cs` — контракт имён сцен: `locationId` → сцена в
-`Assets/Scenes/Kromka/Locations/` и имя сцены глобальной карты. Компоненты
-`Authoring/Kromka*Authoring.cs` размечают редактируемые сцены (мир, узлы,
-регионы, маршруты, локации, размещённые объекты, точки появления, аномалии);
-экспортёр читает их при выгрузке в `data/`. Порядок работы —
+`Assets/Scenes/Kromka/Locations/`. Компоненты `Authoring/Kromka*Authoring.cs`
+размечают сцены мест (локация, размещённые объекты, точки появления,
+аномалии); экспортёр читает их при выгрузке в `data/`. Порядок работы —
 [`KROMKA_UNITY_AUTHORING.md`](../KROMKA_UNITY_AUTHORING.md).
 
 ## Игровой слой (`Assets/Scripts/Game/`)
@@ -114,8 +109,8 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaBoltThrower` (бросок болта для проверки аномалий).
 Прогноз читает опубликованный сервером профиль защиты цели и показывает ОД,
 режим, требование Мощи, а с «Осведомлённостью» — порог, броню и сопротивление.
-`RoaHudCanvas` всегда обозначает режим зоны; `RoaGlobalMapCanvas` отдельно
-подтверждает первый вход в полный лут.
+`RoaHudCanvas` всегда обозначает режим зоны; `RoaInteraction` перед входом в
+зону с потерями показывает её правила и пропускает только со второго шага.
 
 **Камера, свет и видимость** — `RoaCameraRig` (+`.Presentation`),
 `RoaWorldLighting` (день/ночь и авторские профили), `RoaFogOfWar`,
@@ -130,8 +125,9 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaSuitModelCatalog`, `RoaWornUtilityCatalog`, `RoaItemPropView`,
 `RoaWeaponArt` (рендер оружия для оружейной консоли HUD).
 
-**Взаимодействия и мир** — `RoaInteraction` (диалоги, квесты, бартер, переходы,
-лут, ресурсы, станки, доски работ), `RoaCraftingData`, `RoaCraftingPlots`
+**Взаимодействия и мир** — `RoaInteraction` (диалоги, квесты, бартер,
+переходы, ворота и порталы зон, лут, ресурсы, станки, доски работ),
+`RoaCraftingData`, `RoaCraftingPlots`
 (участки станков и комиссия заказа), `RoaPipboy` и `RoaPipboyCanvas`
 (+`.Progression`, `.KromkaQuests`, `.KromkaClans`, `.Base`) — пользовательский
 ПУТНИК: семь характеристик, навыки, перки, задания, контракты, мир, фракции,
@@ -144,19 +140,19 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 
 **Рынок и сетевые обёртки** — `RoaAuctionCanvas` и `RoaAuctionNet` (рынок
 фракции: книга ордеров), `RoaAccountSinNet` (синь на счёте аккаунта, премиум,
-обменник синь↔марки), `RoaTerritoryNet` (принадлежность к фракции и сервисы
-базы), `RoaPveAreaNet` (PvE-области, «Искать следы»).
+обменник синь↔марки), `RoaTerritoryNet` (принадлежность к фракции, сервисы
+базы и диспетчер переноса), `RoaTerritoryContractCanvas` (окно контракта у
+ворот Сердцевины), `RoaPveAreaNet` (PvE-области, «Искать следы»).
 
-**Глобальная карта и активности** — `RoaGlobalMap` (серверный маршрут,
-территории, живой слой), `RoaGlobalMapCanvas`, `RoaGlobalMapActorView`,
-`RoaGlobalMapAtmosphere` (пост-обработка, время суток, тени облаков),
-`RoaWorldActivityCanvas` (+`.Feedback` и partial-файл
-`RoaWorldActivityNavigation.cs`), `RoaActivityHubCanvas` (+`.Presentation`),
+**Карта мира и активности** — `RoaWorldOverviewCanvas` (окно «КАРТА МИРА»:
+подписи зон и мест, карточка, путь и строка пути под миникартой; плоская сетка —
+запасной вид), `RoaWorldMap3D` (3D-вид: сцена `KromkaGlobalMap` поверх зоны в
+своём слое и своей камерой, сетка зон по `GET /api/world-map` на рельефе,
+флажок, выбор и путь), `RoaWorldMapRoute` (путь по зонам через открытые ворота),
+`RoaMapWindowCanvas` (карта локации), `RoaWorldActivityCanvas`
+(+`.Feedback` и partial-файл `RoaWorldActivityNavigation.cs`),
 `RoaActivityBeacon`, `RoaActivityZoneMarker`, `RoaActivityFeedback`,
-`RoaCaravanStagingCanvas`, `RoaMapWindowCanvas`, `RoaWorldOverlayCanvas`,
-`RoaWorldOverviewCanvas`
-(«КАРТА МИРА» из сцены: обзор глобальной карты по `/api/global-map` с
-сеткой и номерами клеток Сердцевины и флажком игрока).
+`RoaCaravanStagingCanvas`, `RoaWorldOverlayCanvas`.
 
 **HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.EconomyFeedback`
 и partial-файл `RoaHudInteractionPrompt.cs`), `RoaHudLayout`,
@@ -179,29 +175,22 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 
 - **Пробы** `Roa*Probe.cs` — детерминированные проверки подсистем в меню
   **Realm of Ashes**. Проверки авторского мира (`Kromka*`) находятся в меню
-  **Кромка → Проверки**, снимки и валидаторы итераций глобальной карты — в
-  меню **Kromka → Checks**.
+  **Кромка → Проверки**.
 - `RoaClientAuditRunner.cs` — запускает набор проб одним batchmode-процессом и
   завершает Unity с кодом 1 при любой ошибке.
-- `RoaCoreMapCaptureProbe.cs` — снимки клеток Сердцевины на глобальной карте,
-  окна «КАРТА МИРА» (десктоп, телефон, обычная локация) и панели миникарты в
-  `Library/AgentCaptures/`. Берёт `global-map-public.json`,
-  `wasteland-public.json` и `locations-names.json` оттуда же (снять с
-  временного сервера); сцены не сохраняет.
-- Авторинг мира Кромки: `KromkaWorldSceneBuilder` (создание и пересборка
-  сцен), `KromkaGlobalMapSceneComposer` и `KromkaLocationSceneComposer`
-  (композиция карты и локаций), `KromkaWorldSceneExporter` (выгрузка
-  положений в `data/`), `KromkaTerritoryAuthoring` (сцены Сердцевины),
-  `KromkaSceneCapture` (контрольные кадры), `KromkaLocalPrefabRecovery`
-  (префабы `Assets/Prefabs/Kromka/RecoveredEnvironment/`); меню
-  **Кромка → Авторинг**.
+- `RoaZoneAssemblyProbe.cs` — «Realm of Ashes → Zones → Check zone assembly»:
+  собирает зону мира из JSON, сверяет коллайдеры клиента с боксами сервера,
+  пулы и покров и снимает кадры сверху и с игровой камеры.
+- Авторинг мест Кромки: `KromkaWorldSceneBuilder` (создание и пересборка
+  сцен), `KromkaLocationSceneComposer` (композиция локаций),
+  `KromkaWorldSceneExporter` (выгрузка положений в `data/`),
+  `KromkaTerritoryAuthoring` (сцены Сердцевины), `KromkaSceneShot`
+  (контрольные кадры), `KromkaLocalPrefabRecovery` (префабы
+  `Assets/Prefabs/Kromka/RecoveredEnvironment/`); меню **Кромка → Авторинг**.
 - Генераторы: `RoaUiPrefabGenerator` (библиотека UI-шаблонов в
   `Assets/Resources/RealmUi/Prefabs/`), `RoaModelPrefabGenerator` (префабы
-  общих GLB в `Assets/Prefabs/Models/`), `RoaItemRenderBaker` (иконки
-  предметов из 3D-моделей) и инструменты сцены `GlobalMapAuthored`
-  (`RoaGlobalMap*Authoring`): рельеф `RoaGlobalMapReliefAuthoring`, горы и реки
-  `RoaGlobalMapMountainsRiversAuthoring`, ориентиры
-  `RoaGlobalMapLandmarkAuthoring`.
+  общих GLB в `Assets/Prefabs/Models/`) и `RoaItemRenderBaker` (иконки
+  предметов из 3D-моделей).
 - `RoaWebGlBuild.cs` — меню «Кромка → Build WebGL», результат в
   `public/unity/` (в .gitignore); `RoaWebGlTextureBudget.cs` — предел размера
   текстур художественных паков для WebGL; `RoaRuntimeShaderGuard.cs` держит в
@@ -210,8 +199,7 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
   `AutoLoginOnStart` и очищает поля логина и пароля.
 - `RoaAgentGate.cs` — файловый канал команд для внешней автоматизации
   (`Library/roa-agent-request.json` → `roa-agent-response.json`): ping,
-  `AssetDatabase.Refresh` без фокуса окна, детерминированные снимки
-  загруженной сцены карты и запуск разрешённых пунктов меню (`Realm of Ashes/`,
+  `AssetDatabase.Refresh` без фокуса окна и запуск разрешённых пунктов меню (`Realm of Ashes/`,
   `Кромка/Авторинг/`, `Кромка/Проверки/`, `Кромка/Build WebGL`); сцены не
   сохраняет. Единственная команда, трогающая несохранённые правки, —
   `revertOpenScene` (перечитать активную сцену с диска), и она выполняется

@@ -21,17 +21,11 @@ const { clamp, safeId, seededRandom } = require('./wasteland-sim-utils');
 
 const DISTRICT_INTEREST_SECTOR_CELLS = 3;
 const DISTRICT_INTEREST_REFRESH_HOURS = 72;
-const DISTRICT_INTEREST_WATER_MARGIN_POINTS = 18;
 const CAPITAL_CLEAR_RADIUS_POINTS = 100;
 const NEAR_CAPITAL_SITE_LAYOUT_VERSION = 2;
 const ROAD_LOCATION_CLEARANCE_POINTS = 20;
 const ROAD_SITE_LAYOUT_VERSION = 1;
 const ROAD_OUTPOST_SITE_IDS = new Set(['roadOutpost', 'scrapOutpost', 'relayOutpost']);
-const DISTRICT_INTEREST_COASTLINE = [
-  { x: 0.105, y: 0.00 }, { x: 0.070, y: 0.08 }, { x: 0.082, y: 0.16 }, { x: 0.055, y: 0.25 },
-  { x: 0.106, y: 0.36 }, { x: 0.090, y: 0.48 }, { x: 0.142, y: 0.62 }, { x: 0.126, y: 0.73 },
-  { x: 0.184, y: 0.86 }, { x: 0.154, y: 1.00 }
-];
 
 function districtInterestCycleFor(sx = 0, sy = 0, worldHour = 0) {
   const rng = seededRandom(`district-interest-offset:${sx}:${sy}`);
@@ -53,30 +47,11 @@ function districtInterestCellIsOcean(cell = {}) {
   return terrain === 'океан' || terrain === 'ocean' || texture === 'water' || texture === 'ocean' || texture === 'sea' || cell.water === true;
 }
 
-function districtInterestCoastNormXAtY(ny = 0) {
-  const y = clamp(ny, 0, 1);
-  const points = DISTRICT_INTEREST_COASTLINE;
-  if (y <= points[0].y) return points[0].x;
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const a = points[i];
-    const b = points[i + 1];
-    if (y <= b.y) {
-      const t = (y - a.y) / Math.max(0.0001, b.y - a.y);
-      return a.x + (b.x - a.x) * t;
-    }
-  }
-  return points[points.length - 1].x;
-}
-
-function districtInterestPointIsWater(globalMap = {}, x = 0, y = 0, marginPoints = 0) {
+// Вода — только клетки с водной текстурой: берега прежнего мира у карты нет.
+function districtInterestPointIsWater(globalMap = {}, x = 0, y = 0) {
   const size = districtInterestMapSize(globalMap);
   const px = clamp(x, 0, Math.max(0, size.width - 0.001));
   const py = clamp(y, 0, Math.max(0, size.height - 0.001));
-  const nx = px / Math.max(1, size.width);
-  const ny = py / Math.max(1, size.height);
-  if (globalMap?.legacyCoastline !== false
-    && nx <= districtInterestCoastNormXAtY(ny)
-      + Math.max(0, Number(marginPoints || 0)) / Math.max(1, size.width)) return true;
   const cx = clamp(Math.floor(px / size.cellPoints), 0, size.cols - 1);
   const cy = clamp(Math.floor(py / size.cellPoints), 0, size.rows - 1);
   const cell = (globalMap.cells && globalMap.cells[`${cx}:${cy}`]) || {};
@@ -147,7 +122,7 @@ function nearestRoadClearLandPoint(globalMap = {}, point = {}, exceptId = '') {
   const start = globalMapCellCenter(point, globalMap);
   const roads = globalMapRoadRows(globalMap);
   const candidateIsValid = candidate => (
-    !districtInterestPointIsWater(globalMap, candidate.x, candidate.y, DISTRICT_INTEREST_WATER_MARGIN_POINTS)
+    !districtInterestPointIsWater(globalMap, candidate.x, candidate.y)
     && !globalMapPointInCapitalClearZone(globalMap, candidate, CAPITAL_CLEAR_RADIUS_POINTS, exceptId)
     && !globalMapPointInRoadCorridor(globalMap, candidate, ROAD_LOCATION_CLEARANCE_POINTS, roads)
   );
@@ -167,7 +142,7 @@ function nearestRoadClearLandPoint(globalMap = {}, point = {}, exceptId = '') {
 function nearestCapitalClearLandPoint(globalMap = {}, point = {}, exceptId = '') {
   const size = districtInterestMapSize(globalMap);
   const start = globalMapCellCenter(point, globalMap);
-  if (!districtInterestPointIsWater(globalMap, start.x, start.y, 0) && !globalMapPointInCapitalClearZone(globalMap, start, CAPITAL_CLEAR_RADIUS_POINTS, exceptId)) {
+  if (!districtInterestPointIsWater(globalMap, start.x, start.y) && !globalMapPointInCapitalClearZone(globalMap, start, CAPITAL_CLEAR_RADIUS_POINTS, exceptId)) {
     return start;
   }
   const skipId = safeId(exceptId || '', '');
@@ -186,7 +161,7 @@ function nearestCapitalClearLandPoint(globalMap = {}, point = {}, exceptId = '')
         x: (nearest?.x ?? start.x) + Math.cos(angle) * distance,
         y: (nearest?.y ?? start.y) + Math.sin(angle) * distance
       }, globalMap);
-      if (districtInterestPointIsWater(globalMap, candidate.x, candidate.y, DISTRICT_INTEREST_WATER_MARGIN_POINTS)) continue;
+      if (districtInterestPointIsWater(globalMap, candidate.x, candidate.y)) continue;
       if (globalMapPointInCapitalClearZone(globalMap, candidate, CAPITAL_CLEAR_RADIUS_POINTS, exceptId)) continue;
       return candidate;
     }
@@ -216,7 +191,7 @@ function nearestDistrictInterestLandCell(globalMap = {}, centerCx = 0, centerCy 
       if (districtInterestCellIsOcean(cell)) continue;
       const point = districtInterestCellCenter(globalMap, cx, cy);
       if (occupiedPoints?.has(districtInterestPointKey(point))) continue;
-      if (districtInterestPointIsWater(globalMap, point.x, point.y, DISTRICT_INTEREST_WATER_MARGIN_POINTS)) continue;
+      if (districtInterestPointIsWater(globalMap, point.x, point.y)) continue;
       if (globalMapPointInCapitalClearZone(globalMap, point)) continue;
       if (globalMapPointInRoadCorridor(globalMap, point, ROAD_LOCATION_CLEARANCE_POINTS, roads)) continue;
       const dist = Math.hypot(cx - centerCx, cy - centerCy);
@@ -241,7 +216,7 @@ function districtInterestCells(globalMap = {}, sx = 0, sy = 0) {
       if (districtInterestCellIsOcean(cell)) continue;
       sectorHasLand = true;
       const point = districtInterestCellCenter(globalMap, cx, cy);
-      if (districtInterestPointIsWater(globalMap, point.x, point.y, DISTRICT_INTEREST_WATER_MARGIN_POINTS)) continue;
+      if (districtInterestPointIsWater(globalMap, point.x, point.y)) continue;
       if (globalMapPointInCapitalClearZone(globalMap, point)) continue;
       if (globalMapPointInRoadCorridor(globalMap, point, ROAD_LOCATION_CLEARANCE_POINTS, roads)) continue;
       const dist = Math.hypot(cx - centerCx, cy - centerCy);

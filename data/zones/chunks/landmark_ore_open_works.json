@@ -1,0 +1,147 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_ore_open_works",
+  "kind": "landmark",
+  "name": "Открытый цех",
+  "biomes": [
+    "ore_arc"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "b1",
+      "prefab": "workshop_bench",
+      "x": -4,
+      "z": -3,
+      "ry": 0
+    },
+    {
+      "id": "b2",
+      "prefab": "workshop_bench",
+      "x": 4,
+      "z": -3,
+      "ry": 0
+    },
+    {
+      "id": "r1",
+      "prefab": "armory_rack",
+      "x": 0,
+      "z": 3,
+      "ry": 180
+    },
+    {
+      "id": "h1",
+      "prefab": "scrap_heap",
+      "x": -10,
+      "z": 6,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "h2",
+      "prefab": "scrap_heap",
+      "x": 10,
+      "z": 7,
+      "ry": 90,
+      "s": 1.5
+    },
+    {
+      "id": "w0",
+      "prefab": "scrap_wall_segment",
+      "x": -12,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w1",
+      "prefab": "scrap_wall_segment",
+      "x": -6,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w2",
+      "prefab": "scrap_wall_segment",
+      "x": 0,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w3",
+      "prefab": "scrap_wall_segment",
+      "x": 6,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w4",
+      "prefab": "scrap_wall_segment",
+      "x": 12,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": 13,
+      "z": -4,
+      "ry": 0,
+      "s": 1.8
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 8
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -7,
+      "z": 1,
+      "tier": "tools"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -15,
+      "z": 0,
+      "radius": 3
+    }
+  ]
+}

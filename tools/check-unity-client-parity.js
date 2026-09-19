@@ -289,8 +289,8 @@ assert.deepStrictEqual(unityEmitsWithoutServerHandler, [],
 const serverOnlyHandlers = [
   'changeRoom', // синоним changeLocation (тот же обработчик) для прежних клиентов и инструментов
   'disconnect', // жизненный цикл Socket.IO: событие поднимает сам транспорт, а не клиентский emit
-  'globalMapCreateAmbush', // заглушка совместимости: засады на карте отключены, всегда отказ
   'input', // прежний канал осевого ввода; движение Unity идёт через state
+  'qaTravel', // перенос для сквозной проверки кампании: есть только при NODE_ENV=test и KROMKA_TEST_TRAVEL=1
   'worldTaskJoinParty', // заглушка совместимости: вступление в группу только через работу пустоши (worldTaskAction)
   'worldTaskLeaveParty' // заглушка совместимости: выход из группы только отменой работы пустоши (worldTaskAction)
 ];
@@ -550,32 +550,14 @@ assert(unityCharacterView.includes('public bool ApplyAppearance(CharacterAppeara
   && unityBootstrap.includes('_characterPreview.Show(BaseUrl, _creator.Appearance,'),
   'Unity creator must update face/hair variants on the live GLB preview');
 
-// Local camera zoom persists between sessions. The strategic map adds a
-// mass-market pointer contract: a short primary click routes, a primary drag
-// pans, right drag pans, and middle drag rotates the angled strategic camera.
+// Local camera zoom persists between sessions.
 const unityCamera = read('unity-client/Assets/Scripts/Game/RoaCameraRig.cs');
-const unityGlobalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
-const unityGlobalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
-const unityCameraProbe = read('unity-client/Assets/Editor/RoaCameraProbe.cs');
-const unityGlobalMapPresentationProbe = read('unity-client/Assets/Editor/RoaGlobalMapPresentationProbe.cs');
 assert(unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v4";')
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
   && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
-// The strategic camera pose (anchor, pitch, yaw, distance) survives entering a
-// location and restarting the client; the authored default is only for the
-// first launch, and saved values are clamped to the current map bounds.
-assert(unityGlobalMap.includes('private const string CameraPosePrefsPrefix = "roa.globalMap.camera.v1";')
-  && unityGlobalMap.includes('TryLoadStrategicCameraPose(out savedAnchorLocal, out savedPitch, out savedYaw, out savedDistance)')
-  && unityGlobalMap.includes('public static Vector3 ClampStrategicCameraPose(')
-  && unityGlobalMap.includes('PersistStrategicCameraPoseIfChanged();')
-  && unityGlobalMap.indexOf('CameraRig.PitchDeg = StrategicDefaultPitchDeg;')
-    < unityGlobalMap.indexOf('TryLoadStrategicCameraPose(out savedAnchorLocal')
-  && /SaveStrategicCameraPose\(\);\s*RestoreCamera\(\);/.test(unityGlobalMap),
-  'Unity strategic camera pose must persist across location entry and client restarts');
-
 // Pip-Boy radio: the client exposes the four Kromka stations, and the
 // selected channel streams real records from the built library
 // (tools/radio-library.py → public/radio/manifest.json + MP3): one station per
@@ -608,140 +590,9 @@ assert(unityRadio.includes('public const string ManifestPath = "/radio/manifest.
   && !unityRadio.includes('AudioClip.Create(')
   && read('tools/radio-library.py').includes('return [CHANNEL_SAFETY]'),
   'Unity Pip-Boy radio must stream the built radio library on one shared server-time schedule, one station per track, with no synthesized sounds');
-assert(unityGlobalMap.includes('private bool UpdateCameraOrbit()')
-  && unityGlobalMap.includes('Input.GetMouseButtonDown(2)')
-  && unityGlobalMap.includes('StrategicCameraOrbit(CameraRig.PitchDeg, CameraRig.YawDeg, delta)')
-  && unityGlobalMap.includes('bool pressed = Input.GetMouseButton(1);')
-  && unityGlobalMap.includes('bool began = Input.GetMouseButtonDown(1);')
-  && unityGlobalMap.includes('CameraRig.PitchDeg = StrategicDefaultPitchDeg;')
-  && unityGlobalMap.includes('CameraRig.YawDeg = StrategicDefaultYawDeg;')
-  && unityGlobalMap.includes('|| _cameraOrbiting || _mousePrimaryTracking')
-  && unityGlobalMap.includes('_cameraOrbiting = false;')
-  && unityGlobalMap.includes('CameraRig.ZoomPersistenceEnabled = false;')
-  && unityGlobalMap.includes('private bool UpdateKeyboardCameraPan()')
-  && unityGlobalMap.includes('KeyboardCameraPanMovement(input, CameraRig.Distance,')
-  && unityGlobalMap.includes('ApplyCameraPanDelta(RightMousePanDelta(delta));')
-  && unityGlobalMap.includes('return new Vector2(pointerDelta.x, -pointerDelta.y);')
-  && unityGlobalMap.includes('CameraRig.MinDistance = StrategicMinimumCameraDistance(span);')
-  && unityGlobalMap.includes('CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);')
-  && unityGlobalMap.includes('_cameraAnchor.transform.position = ClampCameraPan('),
-  'Unity global map must retain independent zoom, camera-relative WASD, vertical-only inverted right-button panning and clamped middle-button orbit');
-assert(unityGlobalMap.includes('private bool UpdateTouchMapInput()')
-  && unityGlobalMap.includes('int count = Input.touchCount;')
-  && unityGlobalMap.includes('events.IsPointerOverGameObject(touch.fingerId)')
-  && unityGlobalMap.includes('CameraRig.SetDistance(PinchZoomDistance(')
-  && unityGlobalMap.includes('ApplyCameraPanDelta(center - _pinchLastCenter);')
-  && unityGlobalMap.includes('TouchTapEligible(')
-  && unityGlobalMap.includes('private bool UpdateMouseMapInput()')
-  && unityGlobalMap.includes('Input.GetMouseButtonDown(0)')
-  && unityGlobalMap.includes('Input.GetMouseButtonUp(0)')
-  && unityGlobalMap.includes('MouseTapEligible(')
-  && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(screenPoint)')
-  && unityGlobalMap.includes('Time.unscaledTime < _suppressSyntheticMouseUntil'),
-  'Unity global map mouse/touch must share route selection while separating tap, drag, pinch and synthetic mouse input');
-assert(unityGlobalMapCanvas.includes('TouchGestureHelp')
-  && unityGlobalMapCanvas.includes('КАСАНИЕ — МАРШРУТ')
-  && unityGlobalMapCanvas.includes('ПОТЯНУТЬ — ОБЗОР')
-  && unityGlobalMapCanvas.includes('ЩИПОК — МАСШТАБ')
-  && unityGlobalMapCanvas.includes('ЗАЖАТЬ КОЛЕСО — УГОЛ')
-  && unityGlobalMapCanvas.includes('WASD/ТЯНУТЬ — ОБЗОР')
-  && unityGlobalMapCanvas.includes('ПКМ — ИНВ. Y'),
-  'Unity global map does not explain its mobile gestures, WASD, inverted RMB and desktop middle-button orbit');
-assert(unityCameraProbe.includes('короткое касание не выбирает маршрут')
-  && unityCameraProbe.includes('ЛКМ не отделяет короткий выбор маршрута от перетаскивания карты')
-  && unityCameraProbe.includes('pinch карты меняет масштаб в неверном направлении')
-  && unityCameraProbe.includes('Canvas-подпись активности перекрывает панель')
-  && unityCameraProbe.includes('экранная подпись неверно переводится')
-  && unityCameraProbe.includes('пул Canvas-подписей карты не ограничен')
-  && unityCameraProbe.includes('orbit=55/45+MMB')
-  && unityCameraProbe.includes('pointer=tap/drag/pinch-pan, labels=canvas/activities'),
-  'Unity camera probe does not cover the global-map gesture and Canvas-label contract');
-assert(unityGlobalMap.includes('public int CollectOverlayLabels(List<OverlayLabel> output)')
-  && unityGlobalMap.includes('_activityOverlayLabels.Add(new ActivityOverlayState')
-  && unityGlobalMap.includes('case "escort_caravan": return "Караван";')
-  && unityGlobalMap.includes('case "assault_diversion": return "Штурм / диверсия";')
-  && unityGlobalMap.includes('public static bool TryResolveOverlayLabelRect(')
-  && unityGlobalMap.includes('blocked.Contains(point)')
-  && unityGlobalMap.includes('candidate.Overlaps(blocked)'),
-  'Unity global map no longer exports collision-safe settlement and activity labels');
-assert(unityGlobalMapCanvas.includes('MapOverlayLabels')
-  && unityGlobalMapCanvas.includes('private void LateUpdate()')
-  && unityGlobalMapCanvas.includes('EnsureMapLabelPool(8)')
-  && unityGlobalMapCanvas.includes('background.raycastTarget = false;')
-  && unityGlobalMapCanvas.includes('TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels')
-  && unityGlobalMapCanvas.includes('_occupiedMapLabels.Add(resolved);')
-  && unityGlobalMapCanvas.includes('CanvasPositionForScreenRect(')
-  && unityGlobalMapCanvas.includes('RouteProgressTrack')
-  && unityGlobalMapCanvas.includes('SetRouteProgress(Map.TravelActive, Map.TravelProgress, Map.HasPendingContact)')
-  && unityGlobalMapCanvas.includes('RouteProgressColor(bool contact)')
-  && unityGlobalMapCanvas.includes('ListSignatureChanged(ref _workSignature')
-  && unityGlobalMapCanvas.includes('ListSignatureChanged(ref _partySignature')
-  && unityGlobalMapCanvas.includes('BuildWorkSignature(string siteKey')
-  && unityGlobalMap.includes('if (!IsActive || !InputEnabled || CanvasDriven) return;'),
-  'Unity global-map labels are not rendered by a pooled, input-transparent and scale-aware Canvas');
-assert(unityCameraProbe.includes('route=progress/contact')
-  && unityCameraProbe.includes('mapCanvas.RouteProgressFill - 0.42f')
-  && unityCameraProbe.includes('полоса маршрута остаётся без активного пути'),
-  'Unity camera probe does not cover route progress visibility and contact warning');
-assert(unityCameraProbe.includes('lists=stable')
-  && unityCameraProbe.includes('!RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workSame)')
-  && unityCameraProbe.includes('неизменная доска контрактов пересобирается'),
-  'Unity camera probe does not protect stable global-map lists from periodic rebuilds');
-assert(unityGlobalMap.includes('public bool FocusPlayerOnMap()')
-  && unityGlobalMap.includes('public static Color RouteVisualColor(')
-  && unityGlobalMap.includes('public static float RouteVisualScale(')
-  && unityGlobalMap.includes('InfrastructureLabelLimit = 3')
-  && unityGlobalMap.includes('InfrastructureShortTitle(')
-  && unityGlobalMap.includes('_routeVisualProgress.Add(routeProgress);')
-  && unityGlobalMap.includes('PresentationWinners(DynamicVisualLayer.Site')
-  && unityGlobalMapCanvas.includes('RouteStateBadge')
-  && unityGlobalMapCanvas.includes('RouteRiskBadge')
-  && unityGlobalMapCanvas.includes('JourneyFlow')
-  && unityGlobalMapCanvas.includes('"ЦЕЛЬ", "ПУТЬ", "ПРИБЫТИЕ", "ЛОКАЦИЯ"')
-  && unityGlobalMapCanvas.includes('ResolveJourneyStage(')
-  && unityGlobalMapCanvas.includes('Вход — автоматически')
-  && unityGlobalMapCanvas.includes('Кликните по локации ещё раз, чтобы войти')
-  && unityGlobalMapCanvas.includes('_mapLabelFrames.Sort(CompareOverlayLabels);')
-  && unityGlobalMapCanvas.includes('SidebarHeight(mobile, expanded, contact, viewHeight)')
-  && unityGlobalMapCanvas.includes('MapContextText(Map.DetailTierLabel')
-  && unityGlobalMapCanvas.includes('Map.RouteRequestPending')
-  && unityGlobalMapCanvas.includes('"МЕНЯЕМ ПУТЬ" : "РАСЧЁТ ПУТИ"')
-  && !unityGlobalMapCanvas.includes('Нажмите «Войти»'),
-  'Unity global map 2.0 must keep a decision card, prioritized labels, route stages and click-to-enter guidance');
-assert(unityGlobalMapPresentationProbe.includes('[GLOBAL MAP & TRAVEL 4.6] готово')
-  && unityGlobalMapPresentationProbe.includes('labels[0].Id == "selected"')
-  && unityGlobalMapPresentationProbe.includes('MapJourneyStage.Arrival')
-  && unityGlobalMapPresentationProbe.includes('RouteVisualColor(0.2f, 0.6f')
-  && unityGlobalMapPresentationProbe.includes('RouteVisualScale(0.6f, 0.6f')
-  && unityGlobalMapPresentationProbe.includes('InfrastructureLabelLimit == 3')
-  && unityGlobalMapPresentationProbe.includes('buttons.Contains("К ИГРОКУ")')
-  && unityGlobalMapPresentationProbe.includes('!buttons.Contains("Войти")')
-  && auditRunner.includes('typeof(RoaGlobalMapPresentationProbe)'),
-  'Unity audit does not protect the global map 2.0 presentation contract');
-assert(unityGlobalMap.includes('public bool RouteRequestPending')
-  && unityGlobalMap.includes('_routeRequestPending = true;')
-  && unityGlobalMap.includes('if (rerouting) RestoreTravelDestinationSelection();')
-  && unityGlobalMap.includes('private void RestoreTravelDestinationSelection()')
-  && unityGlobalMap.includes('bool selectedActivityLabelAdded = false;')
-  && unityGlobalMap.includes('&& !selectedActivityLabelAdded'),
-  'Unity global-map reroute must remain transactional and selected labels must not duplicate');
-assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
-  && unityGlobalMap.includes('bool preserveFreshTravel = preserveIdleSelection')
-  && unityGlobalMap.includes('else if (!preserveFreshTravel) ClearTravel();')
-  && unityGlobalMap.includes('_travelDescriptorGraceUntil = Time.realtimeSinceStartup + TravelDescriptorGraceSeconds;'),
-  'Unity must not let a queued stale global-map snapshot erase a newly acknowledged route');
-assert(unityGlobalMap.includes('public bool LocationEntryPending')
-  && unityGlobalMap.includes('|| _locationEntryPending) return;')
-  && unityGlobalMap.includes('_locationEntryPending = true;')
-  && unityGlobalMap.includes('_locationEntryPending = false;')
-  && server.includes('selectRoomWorldActivityTask(tasks.filter')
-  && server.includes('selectRoomWorldActivityTask')
-  && server.includes('worldTaskTrackedId'),
-  'Global-map arrival must be single-flight and start the tracked world activity');
-
 console.log(`Unity client parity OK: ${unityEmits.length} outgoing events `
   + `(${serverOnlyHandlers.length} reviewed server-only handlers), ${unityHandlers.length} incoming events, `
   + `${unityHttpRoutes.length} HTTP routes, `
   + `${Object.keys(unityItems).length} items, ${actualRecipes.length} recipes, `
   + `${Object.keys(unityMods).length} weapon modifications, ${unityTraitRows.length} starting traits, `
-  + 'live GLB preview, persistent camera zoom/map pan/touch and live Canvas labels');
+  + 'live GLB preview and persistent camera zoom');

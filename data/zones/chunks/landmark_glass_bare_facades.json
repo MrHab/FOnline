@@ -1,0 +1,217 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_glass_bare_facades",
+  "kind": "landmark",
+  "name": "Пустые фасады",
+  "biomes": [
+    "glasslands"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        3,
+        5
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "a0",
+      "prefab": "scrap_wall_segment",
+      "x": -13,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "a1",
+      "prefab": "scrap_wall_segment",
+      "x": -7.8,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "a2",
+      "prefab": "scrap_wall_segment",
+      "x": -2.6,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "a3",
+      "prefab": "scrap_wall_segment",
+      "x": 2.6,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "a4",
+      "prefab": "scrap_wall_segment",
+      "x": 7.8,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "a5",
+      "prefab": "scrap_wall_segment",
+      "x": 13,
+      "z": -9,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b0",
+      "prefab": "scrap_wall_segment",
+      "x": -13,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b1",
+      "prefab": "scrap_wall_segment",
+      "x": -7.8,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b2",
+      "prefab": "scrap_wall_segment",
+      "x": -2.6,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b3",
+      "prefab": "scrap_wall_segment",
+      "x": 2.6,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b4",
+      "prefab": "scrap_wall_segment",
+      "x": 7.8,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "b5",
+      "prefab": "scrap_wall_segment",
+      "x": 13,
+      "z": -1,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c0",
+      "prefab": "scrap_wall_segment",
+      "x": -13,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c1",
+      "prefab": "scrap_wall_segment",
+      "x": -7.8,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c2",
+      "prefab": "scrap_wall_segment",
+      "x": -2.6,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c3",
+      "prefab": "scrap_wall_segment",
+      "x": 2.6,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c4",
+      "prefab": "scrap_wall_segment",
+      "x": 7.8,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "c5",
+      "prefab": "scrap_wall_segment",
+      "x": 13,
+      "z": 7,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": 14,
+      "z": 13,
+      "ry": 0,
+      "s": 1.4
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 14,
+      "radius": 7
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -6,
+      "z": 3,
+      "tier": "rare"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

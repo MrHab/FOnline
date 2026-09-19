@@ -87,7 +87,7 @@ namespace RealmOfAshes.Game
             _step = state["step"] as JObject;
             HasReceivedState = true;
             _requestPending = false;
-            _bootstrap?.RefreshGlobalMapExitAvailability();
+            _bootstrap?.RefreshEdgeExitAvailability();
             RefreshPresentation();
             RebuildBeacon();
         }
@@ -114,8 +114,7 @@ namespace RealmOfAshes.Game
             }
             if (_beacon != null)
             {
-                _beacon.gameObject.SetActive(_bootstrap != null && !_bootstrap.OnGlobalMap
-                    && !RoaGameBootstrap.BlocksWorldHud);
+                _beacon.gameObject.SetActive(_bootstrap != null && !RoaGameBootstrap.BlocksWorldHud);
                 _beacon.position = StepTarget();
                 float wave = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.7f);
                 _beam.startWidth = _beam.endWidth = 0.045f + wave * 0.025f;

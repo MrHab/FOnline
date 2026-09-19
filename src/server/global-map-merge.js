@@ -12,10 +12,7 @@
 
 const MERGED_COLLECTIONS = Object.freeze([
   'nodes',
-  'infrastructure',
-  'objects',
-  'encounters',
-  'randomLocations'
+  'infrastructure'
 ]);
 
 function mergeRows(storedRows, bundledRows) {

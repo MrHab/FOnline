@@ -183,9 +183,9 @@ namespace RealmOfAshes.Game
                 WorldLabelSlot slot = _worldLabelPool[visible++];
                 slot.Root.SetActive(true);
                 slot.Root.name = "WorldObjectiveLabel:" + frame.Id;
-                slot.Rect.anchoredPosition = RoaGlobalMapCanvas.CanvasPositionForScreenRect(
+                slot.Rect.anchoredPosition = CanvasPositionForScreenRect(
                     resolved, Screen.width, Screen.height, scale);
-                slot.Rect.sizeDelta = RoaGlobalMapCanvas.CanvasSizeForScreenRect(resolved, scale);
+                slot.Rect.sizeDelta = CanvasSizeForScreenRect(resolved, scale);
                 slot.Text.text = WorldLabelText(frame.Label, frame.Distance, frame.Completed);
                 slot.Text.color = frame.Completed ? Safe : frame.Color;
                 float alpha = frame.Completed ? 0.72f : 0.93f;
@@ -570,6 +570,20 @@ namespace RealmOfAshes.Game
             marker.transform.SetParent(_markerRoot.transform, false);
             marker.transform.position = position;
             marker.AddComponent<RoaActivityBeacon>().Configure(color, completed);
+        }
+
+        /// <summary>Центр прямоугольника экрана в координатах канвы с центром в середине экрана.</summary>
+        public static Vector2 CanvasPositionForScreenRect(Rect screenRect, int screenWidth, int screenHeight, float canvasScale)
+        {
+            float scale = Mathf.Max(0.01f, canvasScale);
+            return new Vector2((screenRect.center.x - screenWidth * 0.5f) / scale,
+                (screenHeight - screenRect.center.y - screenHeight * 0.5f) / scale);
+        }
+
+        public static Vector2 CanvasSizeForScreenRect(Rect screenRect, float canvasScale)
+        {
+            float scale = Mathf.Max(0.01f, canvasScale);
+            return new Vector2(screenRect.width / scale, screenRect.height / scale);
         }
     }
 }

@@ -63,8 +63,7 @@ namespace RealmOfAshes.Game
 
             bool editing = RoaHudLayout.Editing;
             _gearButton.SetActive(!editing);
-            // На глобальной карте справа сайдбар — шестерёнка уходит левее него.
-            ((RectTransform)_gearButton.transform).anchoredPosition = new Vector2(Bootstrap.OnGlobalMap ? -(RoaGlobalMapCanvas.SidebarWidth + 24f) : -10f, -10f);
+            ((RectTransform)_gearButton.transform).anchoredPosition = new Vector2(-10f, -10f);
             _menu.SetActive(Bootstrap.GameMenuOpen && !editing);
             _graphics.SetActive(Bootstrap.GraphicsOpen && !editing);
             _tutorial.SetActive(Bootstrap.TutorialOpen && !editing);
@@ -75,7 +74,7 @@ namespace RealmOfAshes.Game
             if (_menu.activeSelf)
             {
                 _menuStatus.text = Bootstrap.GameMenuActionPending ? Bootstrap.StatusText
-                    : (Bootstrap.OnGlobalMap ? "Глобальная карта" : "Локальная локация") + " · Esc — закрыть";
+                    : "Локальная локация · Esc — закрыть";
                 foreach (Button button in _menu.GetComponentsInChildren<Button>())
                     if (button.name == "SwitchCharacter" || button.name == "Logout")
                         button.interactable = !Bootstrap.GameMenuActionPending;
@@ -286,8 +285,8 @@ namespace RealmOfAshes.Game
                 new[] { "Взаимодействие", "Короткое E открывает разговор, торговлю, хранилище, контейнер, ресурс, станок, доску работ или переход между локациями. Удержание E открывает круг быстрых слотов; клавиши 1–8 используют слот сразу." },
                 new[] { "ПУТНИК", "Tab — состояние, I — инвентарь, K — навыки, P — крафт, Esc — закрыть. M — карта локации, B — достать болт. В инвентаре вкладки категорий и сортировка; кнопка «быстро» назначает предмет в быстрый слот." },
                 new[] { "HUD", "Удержание Alt раскрывает имя, уровень, опыт, воду и полную оружейную панель. В меню ⚙ включите «Редактировать HUD» и перетащите золотые рамки; «Сбросить HUD» возвращает раскладку." },
-                new[] { "Глобальная карта", "G у границы локации — выход на глобальную карту. Выберите точку и подтвердите маршрут: время, встречи, состав группы, отмену и прибытие ведёт сервер." },
-                new[] { "Активности", "В центре событий выберите карточку и нажмите «ВЗЯТЬ И ЕХАТЬ». В локации следуйте золотым целям; после основной задачи доберитесь до зелёной «ЭВАКУАЦИИ». Результат и начисленную награду подтверждает сервер." }
+                new[] { "Зоны и ворота", "Мир — сетка зон. Ворота на краю зоны ведут в соседнюю, золотая полоса на краю поселения — в его зону. Кнопка «КАРТА МИРА» у миникарты показывает, где вы. Между столицами фракций можно перенестись за марки у диспетчера." },
+                new[] { "Активности", "Задания берут на доске работ. В локации следуйте золотым целям; после основной задачи доберитесь до зелёной «ЭВАКУАЦИИ». Результат и начисленную награду подтверждает сервер." }
             };
             foreach (string[] section in sections)
             {

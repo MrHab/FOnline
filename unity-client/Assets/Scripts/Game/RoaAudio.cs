@@ -181,7 +181,7 @@ namespace RealmOfAshes.Game
 
             bool inGame = _bootstrap != null && _bootstrap.InGame;
             bool panelOpen = inGame && RoaGameBootstrap.BlocksWorldHud;
-            float ambientTarget = inGame ? (_bootstrap.OnGlobalMap ? 0.075f : 0.105f) : 0f;
+            float ambientTarget = inGame ? 0.105f : 0f;
             if (panelOpen) ambientTarget *= 0.5f;
             _ambience.volume = Mathf.MoveTowards(_ambience.volume, ambientTarget, dt * 0.08f);
 

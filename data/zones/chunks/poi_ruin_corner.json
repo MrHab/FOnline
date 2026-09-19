@@ -1,0 +1,169 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "poi_ruin_corner",
+  "kind": "poi",
+  "name": "Угол руины",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "n0",
+      "prefab": "concrete_wall",
+      "x": -9,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "n1",
+      "prefab": "concrete_wall",
+      "x": -7.2,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "n2",
+      "prefab": "concrete_wall",
+      "x": -5.4,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "n3",
+      "prefab": "concrete_wall",
+      "x": -3.5999999999999996,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "n4",
+      "prefab": "concrete_wall",
+      "x": -1.7999999999999998,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "n5",
+      "prefab": "concrete_wall",
+      "x": 0,
+      "z": -10,
+      "ry": 0
+    },
+    {
+      "id": "w0",
+      "prefab": "concrete_wall",
+      "x": -10.5,
+      "z": -8.4,
+      "ry": 90
+    },
+    {
+      "id": "w1",
+      "prefab": "concrete_wall",
+      "x": -10.5,
+      "z": -6.6000000000000005,
+      "ry": 90
+    },
+    {
+      "id": "w2",
+      "prefab": "concrete_wall",
+      "x": -10.5,
+      "z": -4.800000000000001,
+      "ry": 90
+    },
+    {
+      "id": "w3",
+      "prefab": "concrete_wall",
+      "x": -10.5,
+      "z": -3,
+      "ry": 90
+    },
+    {
+      "id": "w4",
+      "prefab": "concrete_wall",
+      "x": -10.5,
+      "z": -1.2000000000000002,
+      "ry": 90
+    },
+    {
+      "id": "e0",
+      "prefab": "concrete_wall",
+      "x": 3,
+      "z": 5,
+      "ry": 0
+    },
+    {
+      "id": "e1",
+      "prefab": "concrete_wall",
+      "x": 4.8,
+      "z": 5,
+      "ry": 0
+    },
+    {
+      "id": "e2",
+      "prefab": "concrete_wall",
+      "x": 6.6,
+      "z": 5,
+      "ry": 0
+    },
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": 2,
+      "z": -2,
+      "ry": 40
+    },
+    {
+      "id": "r2",
+      "prefab": "rubble_rock",
+      "x": -4,
+      "z": 3,
+      "ry": 110
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -6,
+      "z": -6
+    },
+    {
+      "id": "pack",
+      "type": "spawnArea",
+      "x": 9,
+      "z": 11,
+      "radius": 8
+    }
+  ]
+}

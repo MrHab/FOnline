@@ -111,7 +111,7 @@ for (const talent of talents) {
 }
 
 const unitySkills = [...data.matchAll(/new SkillDef\("([^"]+)"/g)].map(row => row[1]);
-assert.equal(unitySkills.length, 16, 'Unity must expose all 16 canonical skills');
+assert.equal(unitySkills.length, 15, 'Unity must expose all 15 canonical skills');
 assert.deepEqual(unitySkills, progressionCatalog.skills.items.map(row => row.id), 'Unity skill ids/order drifted');
 
 [
@@ -154,4 +154,4 @@ const missingServerMechanics = serverIds.filter(id => {
 });
 assert.deepEqual(missingServerMechanics, [], 'talent without authoritative server mechanic');
 
-console.log('Unity progression OK: 16 skills, 41 talents, exact ranks/requirements, authority and client previews');
+console.log('Unity progression OK: 15 skills, 41 talents, exact ranks/requirements, authority and client previews');

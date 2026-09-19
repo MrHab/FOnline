@@ -1,0 +1,186 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_zero_settling_bowl",
+  "kind": "landmark",
+  "name": "Отстойник",
+  "biomes": [
+    "zero_basin"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rust_barrel_v1"
+      ],
+      "count": [
+        5,
+        8
+      ],
+      "spacing": 1.6
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "w0",
+      "prefab": "concrete_wall",
+      "x": 0,
+      "z": 8,
+      "ry": 90
+    },
+    {
+      "id": "w1",
+      "prefab": "concrete_wall",
+      "x": 3.47,
+      "z": 7.21,
+      "ry": 116
+    },
+    {
+      "id": "w2",
+      "prefab": "concrete_wall",
+      "x": 6.25,
+      "z": 4.99,
+      "ry": 141
+    },
+    {
+      "id": "w3",
+      "prefab": "concrete_wall",
+      "x": 7.8,
+      "z": 1.78,
+      "ry": 167
+    },
+    {
+      "id": "w4",
+      "prefab": "concrete_wall",
+      "x": 7.8,
+      "z": -1.78,
+      "ry": 193
+    },
+    {
+      "id": "w5",
+      "prefab": "concrete_wall",
+      "x": 6.25,
+      "z": -4.99,
+      "ry": 219
+    },
+    {
+      "id": "w6",
+      "prefab": "concrete_wall",
+      "x": 3.47,
+      "z": -7.21,
+      "ry": 244
+    },
+    {
+      "id": "w7",
+      "prefab": "concrete_wall",
+      "x": 0,
+      "z": -8,
+      "ry": 270
+    },
+    {
+      "id": "w8",
+      "prefab": "concrete_wall",
+      "x": -3.47,
+      "z": -7.21,
+      "ry": 296
+    },
+    {
+      "id": "w9",
+      "prefab": "concrete_wall",
+      "x": -6.25,
+      "z": -4.99,
+      "ry": 321
+    },
+    {
+      "id": "w10",
+      "prefab": "concrete_wall",
+      "x": -7.8,
+      "z": -1.78,
+      "ry": 347
+    },
+    {
+      "id": "w11",
+      "prefab": "concrete_wall",
+      "x": -7.8,
+      "z": 1.78,
+      "ry": 13
+    },
+    {
+      "id": "w12",
+      "prefab": "concrete_wall",
+      "x": -6.25,
+      "z": 4.99,
+      "ry": 39
+    },
+    {
+      "id": "w13",
+      "prefab": "concrete_wall",
+      "x": -3.47,
+      "z": 7.21,
+      "ry": 64
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": -13,
+      "z": 10,
+      "ry": 30
+    },
+    {
+      "id": "b2",
+      "prefab": "barrel_cluster",
+      "x": 13,
+      "z": -11,
+      "ry": 200
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": 14,
+      "z": 12,
+      "ry": 0,
+      "s": 1.6
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 0,
+      "radius": 5
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": -14,
+      "z": -12,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -15,
+      "z": 0,
+      "radius": 3
+    }
+  ]
+}

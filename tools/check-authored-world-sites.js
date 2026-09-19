@@ -23,10 +23,10 @@ const normalizerSource = serverSource.slice(serverSource.indexOf('function norma
   serverSource.indexOf('function normalizeLocationDefinition('));
 const normalizeMap = vm.runInNewContext(`(${normalizerSource.trim()})`, {
   clamp: (n, min, max) => Math.max(min, Math.min(max, n)), GLOBAL_MAP_GRID_DEFAULT: map.grid,
-  safeLocationFileId: value => value, normalizeGlobalMapWeightRows: rows => rows,
+  safeLocationFileId: value => value,
   normalizeGlobalInfrastructure: require('../src/server/global-infrastructure').normalizeGlobalInfrastructure
 });
-const normalized = normalizeMap({ worldRevision: 'kromka-1', grid: map.grid, randomLocations: [],
+const normalized = normalizeMap({ worldRevision: 'kromka-1', grid: map.grid,
   nodes: [{ id: 'settlement', x: 0, y: 15.125 }] });
 assert.equal(normalized.sitePlacement, 'unity-authored');
 assert.equal(normalized.nodes[0].x, 0);

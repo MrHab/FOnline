@@ -127,7 +127,7 @@ function runJourney() {
       DATA_DIR,
       SESSION_LOCK_MS: '250',
       WASTELAND_SIM_SAVE_INTERVAL_MS: '3000',
-      SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION: '100000'
+      KROMKA_TEST_TRAVEL: '1'
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });

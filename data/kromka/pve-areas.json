@@ -17,7 +17,6 @@
   "areas": [
     {
       "id": "antHive",
-      "wandererRequired": 40,
       "boss": { "id": "antHive_matriarch", "displayName": "Пыльник-матка", "creatureTypeId": "dustling", "hpMultiplier": 2.6 },
       "encounters": [
         { "id": "swarm", "encounterId": "mutant_ant_swarm", "locationId": "randomDryBasin", "weight": 6, "title": "Стая пыльников" },
@@ -45,7 +44,6 @@
     },
     {
       "id": "geckoCanyon",
-      "wandererRequired": 50,
       "boss": { "id": "geckoCanyon_leader", "displayName": "Вожак гарей", "creatureTypeId": "gari", "hpMultiplier": 2.4 },
       "encounters": [
         { "id": "pack", "encounterId": "gari_pack", "locationId": "randomDryBasin", "weight": 6, "title": "Чёрная дуга" },
@@ -72,7 +70,6 @@
     },
     {
       "id": "mutantCrater",
-      "wandererRequired": 60,
       "boss": { "id": "mutantCrater_elder", "displayName": "Старший складень", "creatureTypeId": "fold", "hpMultiplier": 2.8 },
       "encounters": [
         { "id": "brood", "encounterId": "super_mutant_lair", "locationId": "randomAshGrove", "weight": 5, "title": "Тканевый выводок" },
@@ -98,7 +95,6 @@
     },
     {
       "id": "radscorpionNest",
-      "wandererRequired": 70,
       "boss": { "id": "radscorpionNest_matriarch", "displayName": "Матка рыхляков", "creatureTypeId": "rykhlyak", "hpMultiplier": 2.8 },
       "encounters": [
         { "id": "nest", "encounterId": "radscorpion_nest", "locationId": "randomDryBasin", "weight": 6, "title": "Лёжка рыхляков" },
@@ -124,7 +120,6 @@
     },
     {
       "id": "oldDepot",
-      "wandererRequired": 30,
       "boss": { "id": "oldDepot_foreman", "displayName": "Выжженный старшина", "creatureTypeId": "burned", "hpMultiplier": 2.4 },
       "encounters": [
         { "id": "burned", "encounterId": "ghoul_pack", "locationId": "randomAshGrove", "weight": 5, "title": "Сорванные выжженные" },

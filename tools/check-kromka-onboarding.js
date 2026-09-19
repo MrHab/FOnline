@@ -22,16 +22,6 @@ const interaction = fs.readFileSync(path.join(root,
   'unity-client/Assets/Scripts/Game/RoaInteraction.cs'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(root,
   'unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs'), 'utf8');
-const globalMap = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/Game/RoaGlobalMap.cs'), 'utf8');
-const minimap = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/Game/RoaMinimap.cs'), 'utf8');
-const locationData = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/World/RoaLocationData.cs'), 'utf8');
-const locationLoader = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/World/RoaLocationLoader.cs'), 'utf8');
-const worldExitBoundary = fs.readFileSync(path.join(root,
-  'unity-client/Assets/Scripts/World/RoaWorldExitBoundary.cs'), 'utf8');
 const cinematic = fs.readFileSync(path.join(root,
   'unity-client/Assets/Scripts/Game/RoaCaravanDepartureCinematic.cs'), 'utf8');
 const cinematicProbe = fs.readFileSync(path.join(root,
@@ -220,25 +210,11 @@ assert(interaction.includes('TryPlayDeparture(cinematicId')
   'Unity departure/ambush cinematic is not completely wired or audited');
 assert(server.includes('if (loc.allowGlobalMapExit === false) return false;')
   && server.includes("p.kromkaOnboarding?.phase === 'firstMission'")
-  && server.includes('!serverPlayerAllowsGlobalMapExit(leader)')
   && server.includes('serverClosedLocationMovementBounds(player, room, PLAYER_COLLISION_RADIUS)')
   && server.includes('serverPointInsideClosedLocationBounds(toX, toZ, closedBounds)')
   && server.includes('serverClosedLocationMovementBounds(p, room, PLAYER_COLLISION_RADIUS)')
-  && server.includes('serverPointInsideClosedLocationBounds(nextX, nextZ, closedBounds)')
-  && server.includes('Выход на глобальную карту закрыт до завершения пролога.')
-  && locationData.includes('public bool CanExitToGlobalMap')
-  && locationLoader.includes('_currentRoot.AddComponent<RoaWorldExitBoundary>()')
-  && minimap.includes('SetGlobalMapExitAllowed(bool allowed)')
-  && minimap.includes('&& _globalMapExitAllowed')
-  && bootstrap.includes('CurrentLocationAllowsGlobalMapExit')
-  && bootstrap.includes('location.Id, "randomRuinedRoad"')
-  && unity.includes('_bootstrap?.RefreshGlobalMapExitAvailability()')
-  && worldExitBoundary.includes('bootstrap.CurrentLocationAllowsGlobalMapExit')
-  && worldExitBoundary.includes('ClosedLocationBoundary')
-  && worldExitBoundary.includes('LockedDashedPerimeter')
-  && worldExitBoundary.includes('AddComponent<BoxCollider>()')
-  && globalMap.includes('!_bootstrap.CurrentLocationAllowsGlobalMapExit'),
-  'Tutorial and prologue edges are not blocked consistently by server and Unity client');
+  && server.includes('serverPointInsideClosedLocationBounds(nextX, nextZ, closedBounds)'),
+  'Tutorial and prologue edges are not blocked by the server');
 assert(/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(fs.readFileSync(path.join(root,
   'unity-client/Assets/Scripts/Game/RoaKromkaOnboarding.cs.meta'), 'utf8')),
   'Onboarding component metadata is invalid');

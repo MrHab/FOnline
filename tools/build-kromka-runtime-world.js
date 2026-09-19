@@ -161,17 +161,10 @@ for (let cy = 0; cy < seed.grid.rows; cy += 1) {
     cells[`${cx}:${cy}`] = {
       terrain: visual.terrain,
       pvpMode: regionId === 'middle_vein' && cx >= 7 && cx <= 16 ? 'peaceful' : 'pvp',
-      chance: regionId === 'silent_ring' ? 65 : 8 + region.dangerBand * 9,
       difficulty: region.dangerBand,
       texture: visual.texture,
       fill: visual.fill,
-      macroRegion: regionId,
-      encounters: [],
-      randomLocations: regionId === 'middle_vein'
-        ? [{ id: 'randomAshGrove', weight: 20 }]
-        : regionId === 'chalk_lowland'
-          ? [{ id: 'randomDryBasin', weight: 20 }]
-          : [{ id: 'randomRuinedRoad', weight: 16 }]
+      macroRegion: regionId
     };
   }
 }
@@ -181,19 +174,10 @@ const globalMap = {
   version: 3,
   worldRevision: seed.worldRevision,
   sitePlacement: 'unity-authored',
-  legacyCoastline: false,
   unityScene: catalog.unityGlobalMapScene,
   grid: seed.grid,
   nodes,
   infrastructure,
-  objects: [],
-  encounters: [],
-  randomLocations: [
-    { id: 'randomAshGrove', weight: 25 },
-    { id: 'randomDryBasin', weight: 25 },
-    { id: 'randomRuinedRoad', weight: 25 },
-    { id: 'randomEncounter', weight: 25 }
-  ],
   cells
 };
 

@@ -7,7 +7,7 @@ const {
   WEEK_MS,
   benefitOrdersForProfile,
   claimWeeklyBaseGrant,
-  clanCaravanSpeedMultiplier,
+  clanFastTravelFeeMultiplier,
   commitClanCraftBenefit,
   markBenefitOrderCompleted,
   ownedClanBaseContext,
@@ -34,7 +34,7 @@ const knownItems = new Set([
 const implementedBenefitKeys = new Set([
   'clanStationFuelCostPct', 'weeklyGrant', 'weeklySine', 'filterCostPct',
   'processedOreOutputPct', 'reagentOutputPct', 'specialOrders', 'clanStoragePct',
-  'clanCaravanSpeedPct', 'medicalRawOutputPct', 'productionWaterCostPct',
+  'clanFastTravelDiscountPct', 'medicalRawOutputPct', 'productionWaterCostPct',
   'earlyShiftForecastMinutes', 'eventDetectionPct', 'militaryContracts', 'protectedRally'
 ]);
 
@@ -99,7 +99,7 @@ assert.equal(repeatedCraft(profile('chalk_sluice'), 'medicinecraft', { chemicals
   'Меловой шлюз must add 25% medical raw output.');
 assert.equal(repeatedCraft(profile('chalk_sluice'), 'medicinecraft', { chemicals: 2, water: 1 }, { id: 'medicine', qty: 3 }, 10).saved.water, 1,
   'Меловой шлюз must save exactly 10% production water.');
-assert.equal(clanCaravanSpeedMultiplier(profile('bypass_depot')), 1.15, 'Депо must provide a 15% convoy multiplier.');
+assert.equal(clanFastTravelFeeMultiplier(profile('bypass_depot')), 0.85, 'Депо must cut the capital transfer fee by 15%.');
 
 for (const baseId of ['reverse_cycle', 'fort14']) {
   const baseProfile = profile(baseId);
@@ -125,11 +125,11 @@ for (const needle of [
   "action === 'protectedRally'",
   'serverClaimWeeklyClanBaseGrant',
   'serverPreviewClanCraftBenefit',
-  'members.every(member => serverKromkaClanForPlayer(member)?.id === leaderClan.id)',
+  'clanFastTravelFeeMultiplier(serverClanBaseContextForPlayer(p)',
   'serverPlayerHasProtectedClanRally'
 ]) assert(serverSource.includes(needle), `Server integration is missing ${needle}.`);
 for (const needle of ['ОСОБЫЕ ЗАКАЗЫ ВЛАДЕНИЯ', 'ЗАЩИЩЁННЫЙ СБОР', 'completeBenefitOrder']) {
   assert(unitySource.includes(needle), `Unity clan UI is missing ${needle}.`);
 }
 
-console.log('Kromka clan benefits passed: eight weekly economies, exact craft modifiers, orders, convoy speed, rally protection and ownership revocation.');
+console.log('Kromka clan benefits passed: eight weekly economies, exact craft modifiers, orders, the transfer discount, rally protection and ownership revocation.');

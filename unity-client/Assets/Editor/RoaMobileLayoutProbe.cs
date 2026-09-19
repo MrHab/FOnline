@@ -57,54 +57,6 @@ namespace RealmOfAshes.EditorTools
                     }
                 }
 
-                // --- модал правил зоны -------------------------------------------------
-                var rules = JObject.Parse(@"{'mode':'pvpFullDrop','label':'Сердцевина: PvP между фракциями',
-                    'lossLabel':'Выпадает рюкзак; экипировка и установленные артефакты остаются.',
-                    'pvpLabel':'PvP разрешено между разными фракциями.',
-                    'accessLabel':'Вход только для членов фракций Сердцевины.','confirmBeforeEntry':true}");
-                // Окно правил несёт ещё и вводную события: меряется с самой
-                // длинной авторской строкой.
-                const string Briefing = "Налётчики укрепились на разбитом тракте. Кто первым доберётся до их схрона — тот и заберёт добычу.";
-                float zoneNeeded = TextHeight(host, RoaGlobalMapCanvas.ZoneRulesDescription(rules, Briefing), 12, 416f);
-                Debug.Log("[MOBILE LAYOUT] zone rules modal: " + Mathf.CeilToInt(zoneNeeded) + " / 142 px");
-                Require(zoneNeeded <= 142f,
-                    "the zone rules modal cuts its own text — " + Mathf.CeilToInt(zoneNeeded) + " px of text in a 142 px box");
-
-                // --- окно контракта фракции --------------------------------------------
-                // Панель 540×380: вступление, четыре строки фракций и подсказка.
-                var contract = JObject.Parse(@"{'displayName':'Сердцевина','characters':128,'signedCharacters':96,'canSign':true,
-                    'changeLocked':true,'changeAllowedInHours':71,'changeCooldownMs':259200000}");
-                // Коробкам с жёсткой высотой нужен запас: текст меняется по числу
-                // подписавших и по длине названий фракций.
-                const float Headroom = 6f;
-                float introNeeded = TextHeight(host, RoaGlobalMapCanvas.ContractIntroText(contract), 12, 500f);
-                Debug.Log("[MOBILE LAYOUT] contract intro: " + Mathf.CeilToInt(introNeeded) + " / 70 px");
-                Require(introNeeded + Headroom <= 70f,
-                    "the contract window leaves no room for its intro — " + Mathf.CeilToInt(introNeeded) + " px of text in a 70 px box");
-                var contractRow = JObject.Parse(@"{'factionId':'free_artels','displayName':'Вольные артели','sharePct':37,
-                    'characters':47,'baseDisplayName':'Артельный узел','canSign':false,'reason':'Смена фракции будет доступна через 71 ч.'}");
-                float rowNeeded = TextHeight(host, RoaGlobalMapCanvas.ContractRowText(contractRow, false), 12, 480f);
-                Debug.Log("[MOBILE LAYOUT] contract row: " + Mathf.CeilToInt(rowNeeded) + " / 34 px");
-                Require(rowNeeded <= 34f,
-                    "a faction row in the contract window does not fit its button — " + Mathf.CeilToInt(rowNeeded) + " px in a 34 px box");
-                // Четыре строки фракций не должны налезть на подсказку внизу окна.
-                float lastRowBottom = 158f + 3f * 38f;
-                float hintTop = 380f - 98f;
-                Debug.Log("[MOBILE LAYOUT] contract rows end at " + lastRowBottom + " px, hint starts at " + hintTop + " px");
-                Require(lastRowBottom <= hintTop,
-                    "the faction rows of the contract window overlap its hint");
-
-                // --- строка цели на карте ----------------------------------------------
-                // RouteMeta в карточке маршрута — одна строка 21 px шириной с
-                // боковую панель: расстояние, риск и остаток события.
-                var mapEvent = JObject.Parse(@"{'displayName':'Логово Складней','remainingSeconds':1471,'warning':true}");
-                string routeMeta = "12.4 км · риск высокий · " + RoaGlobalMap.PublicEventMetaLabel(mapEvent);
-                float metaNeeded = TextHeight(host, routeMeta, 11, RoaGlobalMapCanvas.SidebarWidth - 18f);
-                Debug.Log("[MOBILE LAYOUT] route meta: " + Mathf.CeilToInt(metaNeeded) + " / 21 px — " + routeMeta);
-                Require(metaNeeded <= 21f,
-                    "the target line of the map does not fit its row — " + Mathf.CeilToInt(metaNeeded)
-                    + " px of text in a 21 px row: " + routeMeta);
-
                 // --- панель счёта осады ---------------------------------------------------
                 // Худший случай: фаза передатчиков, три претендента с обрезанными
                 // длинными именами, прогноз квалификации, реплика и строка возрождений.
@@ -193,7 +145,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 Finish();
-                Debug.Log("[MOBILE LAYOUT] OK: world events panel, zone rules modal, contract window, container security row, map target line, siege score and item tooltip keep their text on desktop and on a landscape phone.");
+                Debug.Log("[MOBILE LAYOUT] OK: world events panel, container security row, siege score and item tooltip keep their text on desktop and on a landscape phone.");
             }
             finally
             {

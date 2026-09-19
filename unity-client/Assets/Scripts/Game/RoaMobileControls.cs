@@ -29,7 +29,6 @@ namespace RealmOfAshes.Game
         private RoaPipboyCanvas _terminal;
         private RoaKromkaShiftAndDetector _artifacts;
         private RoaEnemies _enemies;
-        private RoaGlobalMap _globalMap;
         private RoaGroundItems _groundItems;
         private RoaPlayerController _player;
 
@@ -96,7 +95,7 @@ namespace RealmOfAshes.Game
         public string FireLabel { get { return _combat != null && _combat.HasHeldMedkit ? "ЛЕЧИТЬ" : "ОГОНЬ"; } }
 
         public void Configure(RoaCombat combat, RoaInteraction interaction, RoaInventory inventory,
-                              RoaPipboy pipboy, RoaEnemies enemies, RoaGlobalMap globalMap,
+                              RoaPipboy pipboy, RoaEnemies enemies,
                               RoaGroundItems groundItems = null)
         {
             _combat = combat;
@@ -104,7 +103,6 @@ namespace RealmOfAshes.Game
             _inventory = inventory;
             _pipboy = pipboy;
             _enemies = enemies;
-            _globalMap = globalMap;
             _groundItems = groundItems;
             _remoteTargetFilter = combat != null ? (Func<PublicPlayer, bool>)combat.CanOfferRemoteTarget : null;
             ApplyMode();
@@ -535,7 +533,8 @@ namespace RealmOfAshes.Game
         public void TriggerMap()
         {
             if (InputSuppressed || IsPanelOpen()) return;
-            _globalMap?.RequestEnterFromLocation();
+            // Карта мира: зоны, их цвета и где вы стоите.
+            RoaGameBootstrap.Active?.WorldOverview?.Toggle();
         }
 
         public void TriggerTargetCycle()

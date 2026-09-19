@@ -27,7 +27,6 @@ namespace RealmOfAshes.EditorTools
                 "Yellow banner must promise that items stay");
             Require(RoaHudCanvas.ZoneModeBannerText("pvpBlack").Contains("ВЫПАДАЕТ ВСЁ") && !RoaHudCanvas.ZoneModeBannerText("pvpBlack").Contains("ЦЕЛА"),
                 "Black banner must warn that everything drops");
-            Require(RoaGlobalMap.ZoneRulesRequireConfirmation("pvpBlack", null), "The black zone asks before entry");
 
             var territory = JObject.Parse(@"{'zoneLocationId':'coreZone','factionNames':{'uprava':'Управа','free_artels':'Артели'},'outposts':[
                 {'id':'north','displayName':'Северный','ownerFactionId':'uprava','eventStatus':'closed','eventOpensInMs':754000,'capture':{'progress':{},'leadingFactionId':'','contested':false},'garrison':{'state':'arrived'}},
@@ -144,41 +143,6 @@ namespace RealmOfAshes.EditorTools
                 "The countdown runs out with the local clock");
 
             Require(RoaWorldEventsPresentation.Clock(754) == "12:34", "Clock formatting");
-
-            // Постоянная PvE-область на карте: название, опасность, обитатели и
-            // характерные категории добычи видны до входа.
-            var area = JObject.Parse(@"{'id':'antHive','displayName':'Колония Пыльников','danger':2,
-                'inhabitants':['рой пыльников','пара рыхляков'],
-                'lootCategories':['хитин и железы пыльников','ремесленный лом']}");
-            string areaLine = RoaGlobalMap.PveAreaLabel(area);
-            Require(areaLine.Contains("ОБЛАСТЬ: Колония Пыльников") && areaLine.Contains("опасность 2"),
-                "Area summary names the area and its danger: " + areaLine);
-            Require(areaLine.Contains("обитатели: рой пыльников, пара рыхляков"), "Area summary lists its inhabitants: " + areaLine);
-            Require(areaLine.Contains("добыча: хитин и железы пыльников"), "Area summary lists loot categories: " + areaLine);
-            Require(areaLine.Contains("встреча личная"), "Area summary explains that the encounter is personal");
-            Require(RoaGlobalMap.PveAreaLabel(null) == string.Empty, "Without an area the summary stays empty");
-
-            // Временное событие под целью маршрута: имя и остаток времени.
-            var mapEvent = JObject.Parse(@"{'displayName':'Логово Гари','remainingSeconds':1471,'warning':false,
-                'status':'active','x':10,'y':10,'radius':9}");
-            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31",
-                "The map names the event and how long it lasts: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
-            mapEvent["warning"] = true;
-            Require(RoaGlobalMap.PublicEventMetaLabel(mapEvent) == "Логово Гари 24:31!",
-                "A closing event warns on the map: " + RoaGlobalMap.PublicEventMetaLabel(mapEvent));
-            Require(RoaGlobalMap.PublicEventMetaLabel(null) == string.Empty, "Without an event the target line is unchanged");
-            Require(RoaGlobalMap.PveAreaMetaLabel(area) == "Колония Пыльников · опасность 2",
-                "The target line names the area and its danger: " + RoaGlobalMap.PveAreaMetaLabel(area));
-            Require(RoaGlobalMap.PveAreaMetaLabel(null) == string.Empty, "Outside an area the target line is unchanged");
-            // Вводная сценария объясняет, за что там дерутся, и читается перед
-            // входом — в окне правил зоны.
-            var eventRules = JObject.Parse(@"{'mode':'pvpEvent','label':'Событие','lossLabel':'Вещи сохраняются.',
-                'pvpLabel':'PvP разрешено.','confirmBeforeEntry':true}");
-            string briefed = RoaGlobalMapCanvas.ZoneRulesDescription(eventRules, "Стая гари засела в меловой чаше.");
-            Require(briefed.Contains("Стая гари засела в меловой чаше."),
-                "The zone rules window carries the briefing of the event: " + briefed);
-            Require(!RoaGlobalMapCanvas.ZoneRulesDescription(eventRules).Contains("чаше"),
-                "Without a briefing the window is unchanged");
 
             // Зал боковой лаборатории: шкала угрозы, объявленный удар и
             // готовность узлов на стенах.
@@ -363,21 +327,21 @@ namespace RealmOfAshes.EditorTools
             var contract = JObject.Parse(@"{'displayName':'Сердцевина','signedCharacters':12,'characters':30,'canSign':true,'factions':[
                 {'factionId':'uprava','displayName':'Управа','baseDisplayName':'Узел Управы','characters':8,'sharePct':66.7,'canSign':true,'reason':''},
                 {'factionId':'contour','displayName':'Контур','baseDisplayName':'Узел Контура','characters':4,'sharePct':33.3,'canSign':false,'reason':'Смена фракции пока закрыта.'}]}");
-            string intro = RoaGlobalMapCanvas.ContractIntroText(contract);
+            string intro = RoaTerritoryContractCanvas.ContractIntroText(contract);
             Require(intro.Contains("Сердцевина") && intro.Contains("12"), "Contract window explains the territory and how many signed");
-            Require(RoaGlobalMapCanvas.ContractIntroText(JObject.Parse(@"{'signedCharacters':0}")).Contains("не подписал никто"),
+            Require(RoaTerritoryContractCanvas.ContractIntroText(JObject.Parse(@"{'signedCharacters':0}")).Contains("не подписал никто"),
                 "An empty territory says so instead of showing zeroes");
             // Подпись связывает на срок, и срок этот приходит в самом предложении.
             Require(!intro.Contains("сменить фракцию"), "Without a published cooldown nothing is promised: " + intro);
             contract["changeCooldownMs"] = 259200000L;
-            string bound = RoaGlobalMapCanvas.ContractIntroText(contract);
+            string bound = RoaTerritoryContractCanvas.ContractIntroText(contract);
             Require(bound.Contains("сменить фракцию можно будет только через 72 ч."),
                 "The contract window says how long the choice binds before it is signed: " + bound);
-            string upravaRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][0], true);
+            string upravaRow = RoaTerritoryContractCanvas.ContractRowText((JObject)contract["factions"][0], true);
             Require(upravaRow.Contains("Управа") && upravaRow.Contains("66.7%") && upravaRow.Contains("8 чел.") && upravaRow.Contains("Узел Управы"),
                 "Faction row shows the share, the people and the base: " + upravaRow);
             Require(upravaRow.StartsWith("> "), "The selected faction is marked in the row");
-            string contourRow = RoaGlobalMapCanvas.ContractRowText((JObject)contract["factions"][1], false);
+            string contourRow = RoaTerritoryContractCanvas.ContractRowText((JObject)contract["factions"][1], false);
             Require(contourRow.Contains("33.3%") && contourRow.Contains("Смена фракции пока закрыта."),
                 "A faction that cannot be signed explains why: " + contourRow);
 

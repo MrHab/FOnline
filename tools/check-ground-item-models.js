@@ -197,7 +197,7 @@ const unityMobile = fs.readFileSync(UNITY_MOBILE_SOURCE, 'utf8');
 assert(unityMobile.includes('_groundItems?.RequestPickupNearest()'),
   'Мобильное действие Unity больше не подбирает предмет с земли');
 const unityBootstrap = fs.readFileSync(UNITY_BOOTSTRAP_SOURCE, 'utf8');
-assert(unityBootstrap.includes('MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);'),
+assert(unityBootstrap.includes('MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GroundItems);'),
   'Bootstrap Unity больше не передаёт GroundItems мобильному управлению');
 assert(unityBootstrap.includes('gameObject.AddComponent<RoaWorldOverlayCanvas>()')
   && unityBootstrap.includes('worldOverlay.Configure(GroundItems, Enemies, movementFxCamera);')

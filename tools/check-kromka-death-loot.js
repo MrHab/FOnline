@@ -215,17 +215,9 @@ assert(hud.includes('МИРНЫЙ · PvP ОТКЛЮЧЁН'));
 assert(hud.includes('ЭКИПИРОВКА ЦЕЛА'));
 assert(hud.includes('ВЕЩИ СОХРАНЯЮТСЯ'));
 assert(!hud.includes('ПОЛНЫЙ ЛУТ'));
-const map = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
-const canvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
 const recovery = read('unity-client/Assets/Scripts/Game/RoaRecoveryCanvas.cs');
-assert(map.includes('ConfirmFullLootEntry'));
-assert(map.includes('CancelFullLootEntry'));
-assert(map.includes('zoneRules'));
-assert(map.includes('инвентарь выпадает, экипировка сохраняется'));
-assert(canvas.includes('ВОЙТИ И ПРИНЯТЬ РИСК'));
-assert(canvas.includes('ПРАВИЛА ЗОНЫ'));
 assert(recovery.includes('Экипировка сохранена'));
-for (const [file, source] of [['RoaHudCanvas', hud], ['RoaGlobalMap', map], ['RoaGlobalMapCanvas', canvas], ['RoaRecoveryCanvas', recovery]]) {
+for (const [file, source] of [['RoaHudCanvas', hud], ['RoaRecoveryCanvas', recovery]]) {
   assert(!/полн(ый|ого|ым) (лут|дроп)|ПОЛНЫЙ ЛУТ/i.test(source), `${file} must not call the partial-loss mode full loot`);
 }
 

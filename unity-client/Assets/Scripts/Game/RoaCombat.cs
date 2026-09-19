@@ -33,7 +33,6 @@ namespace RealmOfAshes.Game
         public RoaPipboy Pipboy;
         public RoaPipboyCanvas PipboyCanvas;
         public RoaInventory Inventory;
-        public RoaGlobalMap GlobalMap;
         public RoaCombatFx Fx;
         public RoaAudio Audio;
         public RoaHud Hud;
@@ -367,17 +366,13 @@ namespace RealmOfAshes.Game
                 Interaction != null && Interaction.IsPanelOpen,
                 PipboyCanvas != null && PipboyCanvas.IsOpen,
                 Pipboy != null && Pipboy.PointerOverUi,
-                Inventory != null && Inventory.IsOpen,
-                (GlobalMap != null && GlobalMap.IsActive)
-                    || (Bootstrap != null && Bootstrap.GlobalMapBlocksCombat));
+                Inventory != null && Inventory.IsOpen);
         }
 
         public static bool UiBlocksAttack(bool interactionOpen, bool pipboyCanvasOpen,
-                                          bool pipboyOpen, bool inventoryOpen,
-                                          bool globalMapOpen)
+                                          bool pipboyOpen, bool inventoryOpen)
         {
-            return interactionOpen || pipboyCanvasOpen || pipboyOpen
-                || inventoryOpen || globalMapOpen;
+            return interactionOpen || pipboyCanvasOpen || pipboyOpen || inventoryOpen;
         }
 
         private void UpdateHoverTarget(bool enabled)

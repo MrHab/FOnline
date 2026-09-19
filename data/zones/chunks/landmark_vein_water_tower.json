@@ -1,0 +1,151 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_vein_water_tower",
+  "kind": "landmark",
+  "name": "Водонапорная башня",
+  "biomes": [
+    "middle_vein"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dead_tree_a",
+        "dead_tree_c"
+      ],
+      "count": [
+        4,
+        7
+      ],
+      "spacing": 4,
+      "scale": [
+        1.3,
+        1.9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "k1",
+      "prefab": "water_tank",
+      "x": 0,
+      "z": 0,
+      "ry": 0,
+      "s": 2.8
+    },
+    {
+      "id": "f0",
+      "prefab": "fence_segment",
+      "x": 0,
+      "z": 9,
+      "ry": 90
+    },
+    {
+      "id": "f1",
+      "prefab": "fence_segment",
+      "x": 6.36,
+      "z": 6.36,
+      "ry": 135
+    },
+    {
+      "id": "f2",
+      "prefab": "fence_segment",
+      "x": 9,
+      "z": 0,
+      "ry": 180
+    },
+    {
+      "id": "f3",
+      "prefab": "fence_segment",
+      "x": 6.36,
+      "z": -6.36,
+      "ry": 225
+    },
+    {
+      "id": "f4",
+      "prefab": "fence_segment",
+      "x": 0,
+      "z": -9,
+      "ry": 270
+    },
+    {
+      "id": "f5",
+      "prefab": "fence_segment",
+      "x": -6.36,
+      "z": -6.36,
+      "ry": 315
+    },
+    {
+      "id": "f6",
+      "prefab": "fence_segment",
+      "x": -9,
+      "z": 0,
+      "ry": 0
+    },
+    {
+      "id": "f7",
+      "prefab": "fence_segment",
+      "x": -6.36,
+      "z": 6.36,
+      "ry": 45
+    },
+    {
+      "id": "p1",
+      "prefab": "utility_pole",
+      "x": 13,
+      "z": 11,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "p2",
+      "prefab": "utility_pole",
+      "x": -13,
+      "z": 11,
+      "ry": 0,
+      "s": 1.6
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": -14,
+      "radius": 9
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 5,
+      "z": 4,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 0,
+      "z": 15,
+      "radius": 3
+    }
+  ]
+}

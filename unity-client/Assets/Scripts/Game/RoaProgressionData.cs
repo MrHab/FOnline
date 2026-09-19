@@ -79,8 +79,7 @@ namespace RealmOfAshes.Game
             new SkillDef("science", "Наука", "Мирные"),
             new SkillDef("repair", "Ремонт", "Мирные"),
             new SkillDef("speech", "Красноречие", "Мирные"),
-            new SkillDef("barter", "Бартер", "Мирные"),
-            new SkillDef("wanderer", "Странник", "Мирные")
+            new SkillDef("barter", "Бартер", "Мирные")
         };
 
         public static readonly TalentDef[] Talents =
@@ -112,7 +111,7 @@ namespace RealmOfAshes.Game
             new TalentDef("merchant", "Торговец", "Техника и торговля", 3, 3, "cha", 5, "barter", 50),
             new TalentDef("diplomat", "Дипломат", "Техника и торговля", 2, 6, "cha", 6, "speech", 50),
             new TalentDef("scrounger", "Редкая находка", "Техника и торговля", 3, 6, "luck", 6),
-            new TalentDef("cacheSense", "Нюх на тайники", "Техника и торговля", 2, 9, "luck", 6, "wanderer", 50),
+            new TalentDef("cacheSense", "Нюх на тайники", "Техника и торговля", 2, 9, "luck", 6, "lockpick", 50),
             new TalentDef("weaponSmith", "Оружейник", "Техника и торговля", 2, 6, "int", 6, "repair", 55),
             new TalentDef("recycler", "Утилизация", "Техника и торговля", 2, 6, "int", 5, "repair", 45),
 
@@ -290,7 +289,6 @@ namespace RealmOfAshes.Game
                 case "repair": return "Починка оружия и брони.";
                 case "speech": return "Повышает шанс проверок диалога, опыт и награды за квесты.";
                 case "barter": return "Более выгодные цены у торговцев.";
-                case "wanderer": return "Добыча ресурсов, встречи и скорость движения по глобальной карте; дальше видит на карте группы и игроков и сам заметен хуже.";
                 default: return string.Empty;
             }
         }

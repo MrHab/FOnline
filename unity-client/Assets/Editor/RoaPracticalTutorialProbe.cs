@@ -146,8 +146,8 @@ namespace RealmOfAshes.EditorTools
                 var coverFocus = cover.transform.position + Vector3.up * .55f;
                 camera.transform.position = coverFocus + new Vector3(4, 3, -5);
                 camera.transform.LookAt(coverFocus);
-                KromkaOuterWastelandPlayAudit.Capture(camera, Path.Combine(Output, "cover-desktop.png"), 1920, 1080);
-                KromkaOuterWastelandPlayAudit.Capture(camera, Path.Combine(Output, "cover-mobile.png"), 844, 390);
+                KromkaSceneShot.Capture(camera, Path.Combine(Output, "cover-desktop.png"), 1920, 1080);
+                KromkaSceneShot.Capture(camera, Path.Combine(Output, "cover-mobile.png"), 844, 390);
                 if (SessionState.GetBool(Key + ".coverOnly", false))
                 {
                     File.WriteAllText(Path.Combine(Output, "cover-result.txt"),
@@ -195,7 +195,7 @@ namespace RealmOfAshes.EditorTools
                         Vector3 focus = isMobile ? RoaCoords.ToUnity(10,10) : RoaCoords.ToUnity(-10,18);
                         camera.transform.position = focus + new Vector3(11,17,-11); camera.transform.LookAt(focus);
                         if ((string)step["id"] == (isMobile ? "first_aid" : "range"))
-                            KromkaOuterWastelandPlayAudit.Capture(camera, Path.Combine(Output, isMobile ? "mobile-landscape.png" : "desktop.png"), width, height);
+                            KromkaSceneShot.Capture(camera, Path.Combine(Output, isMobile ? "mobile-landscape.png" : "desktop.png"), width, height);
                         Canvas.ForceUpdateCanvases();
                         foreach (Text label in coach.GetComponentsInChildren<Text>(true).Where(t => new[] { "ControlHint", "Instruction", "Requirements" }.Contains(t.name)))
                             Require(label.preferredHeight <= label.rectTransform.rect.height + 1, step["id"] + ": clipped " + label.name);

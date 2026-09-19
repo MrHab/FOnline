@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace RealmOfAshes.Game
 {
-    /// <summary>Личный, невидимый на глобальной карте дом и серверный режим строительства.</summary>
+    /// <summary>Личный, невидимый на карте мира дом и серверный режим строительства.</summary>
     [DisallowMultipleComponent]
     public sealed class RoaPersonalBaseCanvas : MonoBehaviour
     {

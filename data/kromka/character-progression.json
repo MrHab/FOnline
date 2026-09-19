@@ -46,8 +46,7 @@
       { "id": "science", "name": "Наука", "group": "Мирные", "description": "Терминалы, технологический крафт, техпроверки и энергетическое оружие." },
       { "id": "repair", "name": "Ремонт", "group": "Мирные", "description": "Починка оружия, брони и техники." },
       { "id": "speech", "name": "Красноречие", "group": "Мирные", "description": "Шанс диалоговых проверок, опыт и награды за задания." },
-      { "id": "barter", "name": "Бартер", "group": "Мирные", "description": "Более выгодные цены покупки и продажи." },
-      { "id": "wanderer", "name": "Странник", "group": "Мирные", "description": "Сбор ресурсов, дорожные встречи и скорость на глобальной карте; дальше видит на карте группы и игроков и сам заметен хуже." }
+      { "id": "barter", "name": "Бартер", "group": "Мирные", "description": "Более выгодные цены покупки и продажи." }
     ]
   },
   "perks": {
@@ -77,7 +76,7 @@
       { "id": "merchant", "name": "Торговец", "group": "Техника и торговля", "maxRank": 3, "requirements": { "level": 3, "cha": 5, "skill": { "barter": 50 } }, "description": "+8% к продаже и +3 п.п. к скидке покупки за ранг." },
       { "id": "diplomat", "name": "Дипломат", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "cha": 6, "skill": { "speech": 50 } }, "description": "+8 п.п. к диалоговым проверкам и +8% к наградам заданий за ранг." },
       { "id": "scrounger", "name": "Редкая находка", "group": "Техника и торговля", "maxRank": 3, "requirements": { "level": 6, "luck": 6 }, "description": "Останки снаряжения с убитых вами людей: +15% деталей и лома за ранг." },
-      { "id": "cacheSense", "name": "Нюх на тайники", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 9, "luck": 6, "skill": { "wanderer": 50 } }, "description": "Первым открыв тайник, находите в нём на 25% больше материалов за ранг; награды боссов и событий не растут." },
+      { "id": "cacheSense", "name": "Нюх на тайники", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 9, "luck": 6, "skill": { "lockpick": 50 } }, "description": "Первым открыв тайник, находите в нём на 25% больше материалов за ранг; награды боссов и событий не растут." },
       { "id": "weaponSmith", "name": "Оружейник", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "int": 6, "skill": { "repair": 55 } }, "description": "Ремонт оружия +8/+4, крафт +7 состояния; износ max(0,25, 0,55−0,12×ранг)." },
       { "id": "recycler", "name": "Утилизация", "group": "Техника и торговля", "maxRank": 2, "requirements": { "level": 6, "int": 5, "skill": { "repair": 45 } }, "description": "Открывает разбор; +12 п.п. к успеху и +2 п.п. к дополнительному ресурсу за ранг." },
       { "id": "actionBoy", "name": "Живчик", "group": "Защита и удача", "maxRank": 3, "requirements": { "level": 6, "agi": 6 }, "description": "+1 максимальное ОД и ускоренное восстановление ОД за ранг." },
@@ -102,7 +101,7 @@
       "aliases": ["quick", "quickStart", "mercenary", "legacyQuickStart"],
       "name": "Независимый наёмник",
       "special": { "str": 5, "per": 7, "end": 6, "cha": 5, "int": 5, "agi": 7, "luck": 5 },
-      "taggedSkills": ["lightWeapons", "wanderer"],
+      "taggedSkills": ["lightWeapons", "stealth"],
       "traits": ["trainedEye", "scavengerStart"]
     }
   ]

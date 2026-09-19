@@ -183,7 +183,7 @@ function checkDistrictSites() {
   for (const site of sites) {
     assert.strictEqual(site.locationId, worldSiteLocationId(site.id));
     assert.strictEqual(site.roadLayoutVersion, ROAD_SITE_LAYOUT_VERSION);
-    assert(!districtInterestPointIsWater(globalMap, site.x, site.y, 0), `${site.id} is in water`);
+    assert(!districtInterestPointIsWater(globalMap, site.x, site.y), `${site.id} is in water`);
     assert(!globalMapPointInCapitalClearZone(globalMap, site, CAPITAL_CLEAR_RADIUS_POINTS, site.id),
       `${site.id} is inside a capital clear zone`);
     for (const road of roads) {

@@ -1,0 +1,60 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_rock_field",
+  "kind": "filler",
+  "name": "Каменная россыпь",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 5,
+  "maxPerZone": 14,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        8,
+        13
+      ],
+      "spacing": 3.2,
+      "scale": [
+        0.8,
+        2
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        9
+      ],
+      "scale": [
+        0.9,
+        1.5
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        9
+      ]
+    }
+  ],
+  "objects": [],
+  "anchors": []
+}

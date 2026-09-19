@@ -44,53 +44,50 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Movement,
-                        true, false, false, false, false, false)
+                        true, false, false, false, false)
                         == RoaFirstRunCoach.CoachStep.Interaction,
                         "movement does not advance the coach");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Interaction,
-                        false, true, false, false, false, false)
+                        false, true, false, false, false)
                         == RoaFirstRunCoach.CoachStep.Activity,
                         "a real interaction does not advance the coach");
-                Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Interaction,
-                        false, false, true, false, false, false)
-                        == RoaFirstRunCoach.CoachStep.Activity,
-                        "reaching the global map can trap the interaction step");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Activity,
-                        false, false, false, true, false, false)
+                        false, false, true, false, false)
                         == RoaFirstRunCoach.CoachStep.Mission,
                         "starting an activity must hand guidance to the mission HUD");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
-                        false, false, false, false, true, false)
+                        false, false, false, true, false)
                         == RoaFirstRunCoach.CoachStep.Complete,
                         "a matching successful result does not complete onboarding");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
-                        false, false, false, false, false, true)
+                        false, false, false, false, true)
                         == RoaFirstRunCoach.CoachStep.Activity,
                         "a failed result does not return onboarding to activity selection");
-                Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
-                        false, false, true, false, false, false)
-                        == RoaFirstRunCoach.CoachStep.Activity,
-                        "an abandoned mission traps onboarding");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Movement,
-                        false, false).Contains("WASD"), "desktop movement copy is missing");
+                        false).Contains("WASD"), "desktop movement copy is missing");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Movement,
-                        true, false).Contains("Левый палец"), "mobile movement copy is missing");
+                        true).Contains("Левый палец"), "mobile movement copy is missing");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Activity,
-                        false, true).Contains("ВЗЯТЬ И ЕХАТЬ"), "global-map action is unclear");
+                        false).Contains("ворота"), "the way out to the next zone is unclear");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Mission,
-                        false, false).Contains("ЭВАКУАЦИЯ"), "mission extraction guidance is missing");
+                        false).Contains("ЭВАКУАЦИЯ"), "mission extraction guidance is missing");
 
-                var regularLocation = new LocationDefinition();
-                var lockedTutorialLocation = new LocationDefinition { AllowGlobalMapExit = false };
-                Require(regularLocation.CanExitToGlobalMap,
-                    "locations without an authored override lost their global-map exit");
-                Require(!lockedTutorialLocation.CanExitToGlobalMap,
-                    "the tutorial location cannot disable its global-map exit");
-                var brokenTract = new LocationDefinition { Id = "randomRuinedRoad" };
-                Require(!RoaGameBootstrap.AllowsGlobalMapExit(brokenTract, "firstMission"),
-                    "Broken Tract exposes the global map while the prologue is active");
-                Require(RoaGameBootstrap.AllowsGlobalMapExit(brokenTract, "complete"),
-                    "ordinary Broken Tract instances lost their global-map exit");
+                var zone = new ParentZoneInfo { Id = "z_09_10", N = 1, Title = "Зона 1" };
+                var regularLocation = new LocationDefinition { ParentZone = zone };
+                var lockedTutorialLocation = new LocationDefinition { ParentZone = zone, AllowEdgeExit = false };
+                var zoneLocation = new LocationDefinition { Id = "z_09_10" };
+                Require(regularLocation.CanExitAtEdge && RoaGameBootstrap.AllowsEdgeExit(regularLocation, "complete"),
+                    "a place inside a zone lost its edge exit");
+                Require(!lockedTutorialLocation.CanExitAtEdge
+                        && !RoaGameBootstrap.AllowsEdgeExit(lockedTutorialLocation, "complete"),
+                    "the tutorial location cannot close its edge");
+                Require(!RoaGameBootstrap.AllowsEdgeExit(zoneLocation, "complete"),
+                    "a zone got an edge exit: its borders belong to the gates");
+                var brokenTract = new LocationDefinition { Id = "randomRuinedRoad", ParentZone = zone };
+                Require(!RoaGameBootstrap.AllowsEdgeExit(brokenTract, "firstMission"),
+                    "Broken Tract opens its edge while the prologue is active");
+                Require(RoaGameBootstrap.AllowsEdgeExit(brokenTract, "complete"),
+                    "ordinary Broken Tract instances lost their edge exit");
 
                 host = new GameObject("FirstRunCoachProbe");
                 RoaFirstRunCoach coach = host.AddComponent<RoaFirstRunCoach>();
@@ -137,8 +134,8 @@ namespace RealmOfAshes.EditorTools
                 exitHost = new GameObject("WorldExitBoundaryProbe");
                 RoaWorldExitBoundary boundary = exitHost.AddComponent<RoaWorldExitBoundary>();
                 boundary.Configure(38, 38);
-                Transform visual = exitHost.transform.Find("GlobalMapExitBoundary");
-                Require(visual != null, "global-map exit boundary was not built");
+                Transform visual = exitHost.transform.Find("PlaceExitBoundary");
+                Require(visual != null, "place exit boundary was not built");
                 Require(visual.Find("ExitBand") != null
                         && visual.Find("ExitThresholdLine") != null
                         && visual.Find("OutwardExitArrows") != null,
@@ -156,7 +153,7 @@ namespace RealmOfAshes.EditorTools
                     "visual two-tile threshold does not match automatic exit coordinates");
                 Debug.Log("[WORLD EXIT BOUNDARY] PASS: exit band plus dashed four-wall locked perimeter");
 
-                Debug.Log("[ПЕРВЫЙ ВЫХОД] готово: движение → взаимодействие → живая карта → активность → результат");
+                Debug.Log("[ПЕРВЫЙ ВЫХОД] готово: движение → взаимодействие → ворота → активность → результат");
             }
             catch (Exception error)
             {

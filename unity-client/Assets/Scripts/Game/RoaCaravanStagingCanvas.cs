@@ -5,9 +5,8 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Компактный HUD караванной активности. До старта показывает минутный сбор,
-    /// после старта сопровождает прикрепленного игрока на глобальной карте:
-    /// маршрут, расчетное время, груз, охрану и живую угрозу симуляции.
+    /// Компактный HUD караванной активности: минутный сбор до выхода каравана —
+    /// точка погрузки, цель, таймер и очередь сопровождающих.
     /// </summary>
     public sealed class RoaCaravanStagingCanvas : MonoBehaviour
     {
@@ -46,9 +45,7 @@ namespace RealmOfAshes.Game
             bool staging = party != null
                 ? party["state"]?.ToString() == "staging"
                 : details?["staging"]?.ToObject<bool>() == true && details["joinClosed"]?.ToObject<bool>() != true;
-            bool onGlobalMap = Bootstrap != null && Bootstrap.OnGlobalMap;
-            bool hide = task == null || (Bootstrap != null && Bootstrap.FrontendVisible)
-                || (!staging && !onGlobalMap);
+            bool hide = task == null || !staging || (Bootstrap != null && Bootstrap.FrontendVisible);
             if (hide)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
@@ -59,18 +56,13 @@ namespace RealmOfAshes.Game
             if (!_root.activeSelf) { _root.SetActive(true); _refreshAt = 0f; }
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 1f; // web обновляет раз в секунду
-            Refresh(task, party, staging);
+            Refresh(task);
         }
 
-        private void Refresh(JObject task, JObject party, bool staging)
+        private void Refresh(JObject task)
         {
             JObject details = task["details"] as JObject ?? new JObject();
             _taskId = task["id"]?.ToString() ?? string.Empty;
-            if (!staging)
-            {
-                RefreshLiveRaid(task, party, details);
-                return;
-            }
             _title.text = "СБОР КАРАВАНА";
             _timerLabel.text = "ДО ВЫХОДА";
             _site.text = Pipboy.SiteName(task["siteId"]?.ToString());
@@ -92,50 +84,6 @@ namespace RealmOfAshes.Game
             _leave.interactable = !Pipboy.ActionPending;
             _leaveLabel.color = _leave.interactable ? Ink : new Color(Ink.r, Ink.g, Ink.b, 0.5f);
             _leaveLabel.text = "Выйти из очереди";
-        }
-
-        private void RefreshLiveRaid(JObject task, JObject party, JObject details)
-        {
-            _title.text = "КАРАВАН В ПУТИ";
-            _timerLabel.text = "ДО ПРИБЫТИЯ";
-            _name.text = task["title"]?.ToString() ?? party?["name"]?.ToString() ?? "Сопровождение каравана";
-            string from = Pipboy.SiteName(party?["homeSiteId"]?.ToString() ?? details["stagingSiteId"]?.ToString());
-            string to = Pipboy.SiteName(party?["destinationSiteId"]?.ToString() ?? details["destinationSiteId"]?.ToString());
-            _route.text = (string.IsNullOrEmpty(from) ? "Маршрут" : from)
-                + (string.IsNullOrEmpty(to) ? string.Empty : " → " + to);
-            string state = party?["state"]?.ToString() ?? "moving";
-            int risk = Mathf.Clamp(party?["riskLevel"]?.ToObject<int>() ?? 0, 0, 100);
-            _site.text = state == "engaged" ? "бой" : risk >= 55 ? "опасный маршрут" : "маршрут";
-            float? seconds = CaravanSecondsLeft(party);
-            _timer.text = state == "engaged" ? "БОЙ"
-                : seconds.HasValue ? RoaPipboy.CountdownText(seconds.Value) : "--:--";
-            _timer.color = state == "engaged" || risk >= 55 ? UrgentInk : NameInk;
-            int cargo = Mathf.Max(0, party?["cargoFillPercent"]?.ToObject<int>() ?? 0);
-            int guards = Mathf.Max(0, party?["npcMemberCount"]?.ToObject<int>() ?? 0);
-            int initial = Mathf.Max(guards, details["initialNpcMembers"]?.ToObject<int>() ?? guards);
-            int players = Mathf.Max(0, party?["playerMemberCount"]?.ToObject<int>() ?? details["playerCount"]?.ToObject<int>() ?? 0);
-            string threat = party?["threatName"]?.ToString() ?? string.Empty;
-            float threatKm = Mathf.Max(0f, party?["threatDistanceKm"]?.ToObject<float>() ?? 0f);
-            _roster.text = "Груз: " + cargo + "% · охрана: " + guards + "/" + initial + " · игроков: " + players
-                + (risk > 0 ? "\nРиск " + risk + "%" + (!string.IsNullOrEmpty(threat) ? ": " + threat + " · " + threatKm.ToString("0.0") + " км" : string.Empty) : string.Empty);
-            _leave.interactable = !Pipboy.ActionPending;
-            _leaveLabel.color = _leave.interactable ? Ink : new Color(Ink.r, Ink.g, Ink.b, 0.5f);
-            _leaveLabel.text = "Покинуть караван";
-        }
-
-        private float? CaravanSecondsLeft(JObject party)
-        {
-            if (party == null || Bootstrap?.GlobalMap == null || Pipboy?.Wasteland == null) return null;
-            string destinationId = party["destinationSiteId"]?.ToString() ?? string.Empty;
-            JObject destination = null;
-            foreach (JToken token in Pipboy.Wasteland["sites"] as JArray ?? new JArray())
-                if (token?["id"]?.ToString() == destinationId) { destination = token as JObject; break; }
-            if (destination == null) return null;
-            Vector2 current = new Vector2(party["x"]?.ToObject<float>() ?? 0f, party["y"]?.ToObject<float>() ?? 0f);
-            Vector2 target = new Vector2(destination["x"]?.ToObject<float>() ?? 0f, destination["y"]?.ToObject<float>() ?? 0f);
-            float worldHours = Bootstrap.GlobalMap.DistanceKm(current, target) / Mathf.Max(1f, party["speedKmh"]?.ToObject<float>() ?? 1f);
-            float dayRealMs = Mathf.Max(60000f, Pipboy.Wasteland["gameDayRealMs"]?.ToObject<float>() ?? 60f * 60f * 1000f);
-            return Mathf.Max(0f, worldHours / 24f * dayRealMs / 1000f);
         }
 
         private void EnsureBuilt()

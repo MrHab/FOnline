@@ -107,6 +107,10 @@ namespace RealmOfAshes.Game
             new Dictionary<string, ResourceView>();
         private readonly HashSet<string> _authoredResourceIds = new HashSet<string>();
         private readonly List<StaticTarget> _staticTargets = new List<StaticTarget>();
+        // Порталы зоны из последнего состояния мира: к какой локации они относятся и их подпись.
+        private JArray _portalRows;
+        private string _portalLocationId = string.Empty;
+        private string _portalSignature = string.Empty;
         private readonly Dictionary<string, int> _tradeBuys = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _tradeSells = new Dictionary<string, int>();
 
@@ -790,6 +794,11 @@ namespace RealmOfAshes.Game
         }
         public void JobBoardJoinOwner() { string owner = JobBoardSite().Owner; if (!string.IsNullOrEmpty(owner)) JoinWorldFaction(owner); }
         public void JobBoardRefresh() { if (!_worldRequestPending) StartCoroutine(LoadWastelandState()); }
+        /// <summary>Быстрый вход с доски: сервер подбирает ближайшую короткую вылазку и отмечает маршрут.</summary>
+        public void JobBoardQuickActivity()
+        {
+            SubmitQuickWorldActivity(_active?["boardSiteId"]?.ToString() ?? _locationId, _ => JobBoardRefresh());
+        }
 
         // --- Фасад для страницы CONTRACTS PIP-ASH (pipboyWorldTaskCard, 03a:1309). ---
 
@@ -1194,6 +1203,9 @@ namespace RealmOfAshes.Game
         public void SetLocation(LocationDefinition location)
         {
             ClearStaticTargets();
+            // Новое место: игрок появляется у входа, а не в проёме, из которого пришёл.
+            _autoGateInside = string.Empty;
+            _autoGateRetryAt = 0f;
             _authoredResourceIds.Clear();
             _locationReady = location != null;
             _locationId = location?.Id ?? string.Empty;
@@ -1253,6 +1265,8 @@ namespace RealmOfAshes.Game
             if (location.Transitions != null)
                 foreach (LocationTransition transition in location.Transitions)
                     AddTransitionTarget(transition, transitionIds);
+            // Состояние мира могло прийти раньше самой локации.
+            RebuildPortalTargets();
 
             RefreshResourceViews();
         }
@@ -1274,6 +1288,8 @@ namespace RealmOfAshes.Game
                 {
                     ["id"] = string.IsNullOrEmpty(transition.Id) ? "location_exit" : transition.Id,
                     ["name"] = string.IsNullOrEmpty(transition.Label) ? "Переход" : transition.Label,
+                    ["type"] = transition.Type ?? string.Empty,
+                    ["auto"] = transition.Auto,
                     ["to"] = transition.To,
                     ["entryKey"] = transition.EntryKey ?? string.Empty,
                     ["locationId"] = _locationId,
@@ -1475,6 +1491,58 @@ namespace RealmOfAshes.Game
             if (payload?["map"] is JArray stateMap) Loader?.ApplyWorldMap(stateMap);
             ApplyContainers(payload?["containers"] as JArray);
             ApplyResources(payload?["resources"] as JArray);
+            if (payload?["portals"] is JArray portals)
+            {
+                _portalRows = portals;
+                _portalLocationId = payload["locationId"]?.ToString() ?? string.Empty;
+                RebuildPortalTargets();
+            }
+        }
+
+        /// <summary>
+        /// Порталы зоны к точкам мира — публичному событию, бою, следам угодий —
+        /// приходят в состоянии мира и стоят рядом с переходами локации: та же
+        /// метка, та же клавиша E и то же предупреждение о правилах зоны. Вход
+        /// шлёт id портала, билет в комнату точки выдаёт сервер.
+        /// </summary>
+        private void RebuildPortalTargets()
+        {
+            JArray rows = _locationReady && _portalLocationId == _locationId ? _portalRows : null;
+            var signature = new System.Text.StringBuilder();
+            if (rows != null)
+                foreach (JToken row in rows)
+                    signature.Append(row?["id"]).Append('@').Append(row?["tx"]).Append(',').Append(row?["tz"]).Append('|');
+            string next = signature.ToString();
+            if (next == _portalSignature) return;
+            _portalSignature = next;
+
+            for (int index = _staticTargets.Count - 1; index >= 0; index--)
+            {
+                StaticTarget target = _staticTargets[index];
+                if (string.IsNullOrEmpty(target?.Data?["portalId"]?.ToString())) continue;
+                if (target.Marker != null) Destroy(target.Marker);
+                _staticTargets.RemoveAt(index);
+            }
+            if (rows == null) return;
+            foreach (JToken token in rows)
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id)) continue;
+                int before = _staticTargets.Count;
+                AddTransitionTarget(new LocationTransition
+                {
+                    Id = id,
+                    Type = "worldPortal",
+                    Label = row["name"]?.ToString(),
+                    To = row["to"]?.ToString(),
+                    Tx = row["tx"]?.ToObject<int>() ?? 0,
+                    Tz = row["tz"]?.ToObject<int>() ?? 0,
+                    Radius = row["radius"]?.ToObject<float>() ?? 3.2f,
+                    TargetZoneRules = row["targetZoneRules"] as JObject
+                }, new HashSet<string>());
+                if (_staticTargets.Count > before) _staticTargets[_staticTargets.Count - 1].Data["portalId"] = id;
+            }
         }
 
         private void HandleContainerSnapshot(JObject payload)
@@ -1712,10 +1780,84 @@ namespace RealmOfAshes.Game
             }
 
             FindCandidate();
+            UpdateAutoGates();
             if (KeyboardInputEnabled && Input.GetKeyDown(InteractKey))
             {
                 if (!TryPickupGroundBeforeInteract()) Interact();
             }
+        }
+
+        // --- ворота зон и край места: переход срабатывает, когда игрок входит в проём ----------
+        private string _autoGateInside = string.Empty;
+        private string _autoGateWarned = string.Empty;
+        private bool _autoGateLeftSinceWarning;
+        private float _autoGateRetryAt;
+
+        private void UpdateAutoGates()
+        {
+            JObject inside = null;
+            Vector3 position = Player.transform.position;
+            foreach (StaticTarget target in _staticTargets)
+            {
+                if (target.Kind != TargetKind.Transition || target.Data?["auto"]?.ToObject<bool>() != true) continue;
+                Vector3 delta = target.Position - position;
+                delta.y = 0f;
+                if (delta.magnitude <= target.Range) { inside = target.Data; break; }
+            }
+            StepIntoAutoTransition(inside);
+        }
+
+        /// <summary>Край места ведёт в зону мира: вызывает бутстрап, пока игрок в краевой полосе.</summary>
+        public void UpdateZoneEdge(ParentZoneInfo zone, bool inBand)
+        {
+            JObject data = null;
+            if (inBand && zone != null && !string.IsNullOrEmpty(zone.Id))
+            {
+                data = new JObject
+                {
+                    ["id"] = "zone_edge",
+                    ["name"] = string.IsNullOrEmpty(zone.Title) ? "Зона" : zone.Title,
+                    ["to"] = zone.Id,
+                    ["entryKey"] = zone.EntryKey ?? string.Empty,
+                    ["targetZoneRules"] = zone.TargetZoneRules != null ? (JToken)zone.TargetZoneRules.DeepClone() : JValue.CreateNull()
+                };
+            }
+            StepIntoAutoTransition(data);
+        }
+
+        private void StepIntoAutoTransition(JObject data)
+        {
+            string target = data?["to"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(target))
+            {
+                if (!string.IsNullOrEmpty(_autoGateInside) && !string.IsNullOrEmpty(_autoGateWarned)) _autoGateLeftSinceWarning = true;
+                _autoGateInside = string.Empty;
+                return;
+            }
+            if (target == _autoGateInside || _transitionPending || Socket == null) return;
+            if (Time.realtimeSinceStartup < _autoGateRetryAt) return;
+            _autoGateInside = target;
+
+            // В более опасную зону — только со второго шага в проём: первый показывает правила.
+            JObject rules = data["targetZoneRules"] as JObject;
+            bool confirmed = _autoGateWarned == target && _autoGateLeftSinceWarning && Time.realtimeSinceStartup <= _zoneWarningUntil;
+            if (TransitionNeedsConfirmation(rules, _acknowledgedZoneMode) && !confirmed)
+            {
+                _autoGateWarned = target;
+                _autoGateLeftSinceWarning = false;
+                _zoneWarningUntil = Time.realtimeSinceStartup + ZoneWarningWindowSeconds;
+                Show(TransitionZoneWarning(rules, data["name"]?.ToString()) + "\nШагните в проход ещё раз, чтобы войти.", ZoneWarningWindowSeconds);
+                return;
+            }
+            _autoGateWarned = string.Empty;
+            if (rules != null) _acknowledgedZoneMode = rules["mode"]?.ToString() ?? _acknowledgedZoneMode;
+            SendLocationTransition(data, failed =>
+            {
+                // Сервер не пустил (например, игрок ещё не у проёма по его данным) — повтор чуть позже.
+                if (!failed) return;
+                _autoGateInside = string.Empty;
+                _autoGateRetryAt = Time.realtimeSinceStartup + 1.5f;
+            });
         }
 
         private void UpdateContainerVisibility()
@@ -1979,28 +2121,47 @@ namespace RealmOfAshes.Game
             _zoneWarningTarget = string.Empty;
             _zoneWarningUntil = 0f;
             if (targetRules != null) _acknowledgedZoneMode = targetRules["mode"]?.ToString() ?? _acknowledgedZoneMode;
+            SendLocationTransition(transition, null);
+        }
+
+        private void SendLocationTransition(JObject transition, Action<bool> onFinished)
+        {
+            string target = transition["to"]?.ToString() ?? string.Empty;
             string entryKey = transition["entryKey"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(entryKey))
                 entryKey = target == "settlement" ? "entryFromWasteland" : "entryFromSettlement";
 
             _transitionPending = true;
-            Show("Переход в локацию…", 3f);
-            Socket.EmitWithAck("changeLocation", new Dictionary<string, object>
+            Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
+            var payload = new Dictionary<string, object>
             {
                 ["locationId"] = target,
                 ["entryKey"] = entryKey,
                 ["deviceType"] = Application.isMobilePlatform ? "mobile" : "desktop",
                 ["controlType"] = Application.isMobilePlatform ? "touch" : "keyboard_mouse"
-            }, ack =>
+            };
+            string portalId = transition["portalId"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(portalId)) payload["portalId"] = portalId;
+            Socket.EmitWithAck("changeLocation", payload, ack =>
             {
                 _transitionPending = false;
                 if (ack?["ok"]?.ToObject<bool>() != true)
                 {
+                    // Портал Сердцевины без контракта: окно выбора фракции, после подписи — тот же переход.
+                    if (ack?["contractRequired"]?.ToObject<bool>() == true && ack["contract"] is JObject contract)
+                    {
+                        RoaTerritoryContractCanvas.Ensure(gameObject, Socket).Open(contract, ack["error"]?.ToString(),
+                            () => SendLocationTransition(transition, onFinished));
+                        onFinished?.Invoke(true);
+                        return;
+                    }
                     Show(ack?["error"]?.ToString() ?? "Сервер не разрешил переход.", 4f);
+                    onFinished?.Invoke(true);
                     return;
                 }
                 if (Socket.ApplyLocationTransitionAck(ack) == null)
                     Show("Ответ перехода не удалось разобрать.", 4f);
+                onFinished?.Invoke(false);
             });
         }
 
@@ -2538,12 +2699,15 @@ namespace RealmOfAshes.Game
         /// Просит авторитетный сервер подобрать наиболее срочную короткую вылазку.
         /// Сервер сам принимает и помечает задачу; клиент только применяет ack и строит маршрут.
         /// </summary>
-        public bool SubmitQuickWorldActivity(Action<JObject> completed = null)
+        public bool SubmitQuickWorldActivity(string boardSiteId, Action<JObject> completed = null)
         {
             if (_worldRequestPending || Socket == null) return false;
             _worldRequestPending = true;
             Show("Ищем активную вылазку…", 3f);
-            Socket.EmitWithAck("worldActivityQuickJoin", new Dictionary<string, object>(), ack =>
+            Socket.EmitWithAck("worldActivityQuickJoin", new Dictionary<string, object>
+            {
+                ["boardSiteId"] = boardSiteId ?? string.Empty
+            }, ack =>
             {
                 _worldRequestPending = false;
                 ApplyActionAck(ack);
@@ -2718,6 +2882,7 @@ namespace RealmOfAshes.Game
             foreach (StaticTarget target in _staticTargets)
                 if (target?.Marker != null) Destroy(target.Marker);
             _staticTargets.Clear();
+            _portalSignature = string.Empty;
         }
 
         private void RemoveContainer(string id)

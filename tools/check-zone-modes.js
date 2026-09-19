@@ -87,6 +87,5 @@ assert(server.includes('loc.lossPolicy = deathLootPolicy(loc.pvpMode).loss;'));
 assert(server.includes("function locationAllowsPvp(loc = {}) { return zoneModeAllowsPvp(locationPvpMode(loc)); }"));
 assert(server.includes('lossPolicy: deathLootPolicy(override).loss'));
 assert(server.includes('zoneRules: zoneRules(currentPvpMode'));
-assert(server.includes("zoneRules: zoneRules(resolution.pvpMode || 'pvp'"));
 
 console.log(`Zone modes OK: ${ZONE_MODES.length} modes, PvP/loss policies and pre-entry rules are server-derived.`);

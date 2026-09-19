@@ -28,7 +28,8 @@ namespace RealmOfAshes.World
         [JsonProperty("worldSiteInstance")] public bool WorldSiteInstance;
         [JsonProperty("templateLocationId")] public string TemplateLocationId;
         [JsonProperty("noRespawn")] public bool NoRespawn;
-        [JsonProperty("allowGlobalMapExit")] public bool? AllowGlobalMapExit;
+        /// <summary>false — край места закрыт сюжетом (поле данных сохранило старое имя).</summary>
+        [JsonProperty("allowGlobalMapExit")] public bool? AllowEdgeExit;
         [JsonProperty("enemyCap")] public int EnemyCap;
         [JsonProperty("spawnCount")] public int SpawnCount;
         [JsonProperty("visualProfile")] public JObject VisualProfile;
@@ -47,8 +48,26 @@ namespace RealmOfAshes.World
         [JsonProperty("containers")] public JArray Containers;
         [JsonProperty("storage")] public JObject Storage;
 
+        /// <summary>Зона мира, собранная конструктором: сцены Unity у неё нет, объекты — префабы набора.</summary>
+        [JsonProperty("generated")] public bool Generated;
+        [JsonProperty("revision")] public string Revision;
+        /// <summary>Блок зоны мира: ворота, куски, граф троп nav {nodes, links}.</summary>
+        [JsonProperty("zone")] public JObject Zone;
+
+        /// <summary>Место внутри зоны мира: куда выводит его край.</summary>
+        [JsonProperty("parentZone")] public ParentZoneInfo ParentZone;
+
+        /// <summary>
+        /// Зона комнаты точки мира (событие, бой, встреча в угодьях): её присылает
+        /// состояние мира, потому что шаблон локации один на много точек.
+        /// </summary>
+        [JsonIgnore] public ParentZoneInfo RoomParentZone;
+
+        /// <summary>Куда выводит край: зона комнаты точки мира, иначе зона места.</summary>
+        [JsonIgnore] public ParentZoneInfo ExitZone { get { return RoomParentZone ?? ParentZone; } }
+
         [JsonIgnore]
-        public bool CanExitToGlobalMap { get { return AllowGlobalMapExit != false; } }
+        public bool CanExitAtEdge { get { return AllowEdgeExit != false; } }
 
         /// <summary>
         /// map.width/map.depth are authored in world metres (76 for the standard
@@ -150,7 +169,7 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("label")] public string Label;
-        /// <summary>globalMap (выход) или factionPlatform (платформа фракции в Сердцевине).</summary>
+        /// <summary>Тип зоны места, например factionPlatform (платформа фракции в Сердцевине).</summary>
         [JsonProperty("type")] public string Type;
         [JsonProperty("factionId")] public string FactionId;
         [JsonProperty("tx")] public int Tx;
@@ -158,10 +177,24 @@ namespace RealmOfAshes.World
         [JsonProperty("radius")] public float Radius;
     }
 
+    /// <summary>Зона мира за краем места: её номер, название, цвет и точка входа.</summary>
+    public sealed class ParentZoneInfo
+    {
+        [JsonProperty("id")] public string Id;
+        [JsonProperty("n")] public int N;
+        [JsonProperty("title")] public string Title;
+        [JsonProperty("mode")] public string Mode;
+        [JsonProperty("entryKey")] public string EntryKey;
+        [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
+    }
+
     public sealed class LocationTransition
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("type")] public string Type;
+        /// <summary>Ворота зоны срабатывают, когда игрок входит в проём (type zoneGate).</summary>
+        [JsonProperty("auto")] public bool Auto;
+        [JsonProperty("direction")] public string Direction;
         [JsonProperty("label")] public string Label;
         [JsonProperty("to")] public string To;
         [JsonProperty("entryKey")] public string EntryKey;
@@ -193,6 +226,8 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("model")] public string Model;
+        /// <summary>Ключ префаба набора зон (data/zones/kit.json); только у объектов сгенерированных зон.</summary>
+        [JsonProperty("prefab")] public string Prefab;
         [JsonProperty("name")] public string Name;
         [JsonProperty("kind")] public string Kind;
 

@@ -107,12 +107,7 @@ const {
   isReleasedLocationId,
   publicLocationRelease
 } = require('./src/server/location-release');
-const {
-  normalizeGlobalInfrastructure,
-  planInfrastructureRoute,
-  pointAtRouteProgress,
-  routeDistance
-} = require('./src/server/global-infrastructure');
+const { normalizeGlobalInfrastructure } = require('./src/server/global-infrastructure');
 const {
   loadModelColliderCatalog,
   modelColliderRadius,
@@ -203,7 +198,6 @@ const {
   pveAreaRewardIds,
   pveAreaZone,
   rollAreaEncounter,
-  wandererPassesArea,
   publicPveRoomState,
   pveAreaForLocation,
   pveLairRoomId,
@@ -251,17 +245,23 @@ const {
   rollPlotReturns,
   publicPlot
 } = require('./src/server/crafting-plots');
+const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/server/danger-cells');
+const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
+const { createZoneRuntime } = require('./src/server/zone-runtime');
+const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
+const { migrateSaveStateToZones } = require('./src/server/zone-migration');
+const { zoneAtPoint, zoneById, zoneRecipe } = require('./src/server/zone-graph');
+const { portalSignature, zonePortals } = require('./src/server/zone-portals');
+const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
-  subCellAt: dangerSubCellAt,
-  encounterChance: dangerEncounterChance,
-  cellEncounter: dangerCellEncounter,
-  cellDangerModes,
-  isSceneMode: dangerIsSceneMode,
-  neighbourCell: dangerNeighbourCell,
-  entryKeyForDirection: dangerEntryKeyForDirection,
-  directionBetween: dangerDirectionBetween,
-  boundaryPoint: dangerBoundaryPoint
-} = require('./src/server/danger-cells');
+  ZONE_CHANNEL_SOFT_CAP,
+  ZONE_SLEEP_AFTER_MS,
+  channelOf: zoneChannelOf,
+  pickChannel: pickZoneChannel
+} = require('./src/server/zone-channels');
+// Проверки поднимают сервер с крошечным пределом канала и быстрым сном зон.
+const ZONE_CHANNEL_CAP = Math.max(1, Math.floor(Number(process.env.KROMKA_ZONE_CHANNEL_CAP) || ZONE_CHANNEL_SOFT_CAP));
+const ZONE_SLEEP_MS = Math.max(1000, Number(process.env.KROMKA_ZONE_SLEEP_MS) || ZONE_SLEEP_AFTER_MS);
 const {
   normalizeEcologyConfig,
   normalizeEcologyState,
@@ -270,13 +270,13 @@ const {
   resetLairs: ecologyResetLairs,
   tickEcology,
   groupsAt: ecologyGroupsAt,
-  nearestOfflineGroup: ecologyNearestOfflineGroup,
   moveGroup: ecologyMoveGroup,
   setGroupOnline: ecologySetGroupOnline,
   setGroupOffline: ecologySetGroupOffline,
   memberKilled: ecologyMemberKilled,
   ecologySummary,
   cellKey: ecologyCellKey,
+  directionBetweenCells: ecologyDirectionBetweenCells,
   hash01: ecologyHash01,
   STEPS: ECOLOGY_STEPS,
   LIVING_MODES: ECOLOGY_LIVING_MODES
@@ -392,8 +392,8 @@ const {
 const {
   benefitOrdersForProfile: serverClanBenefitOrders,
   claimWeeklyBaseGrant: serverClaimWeeklyClanBaseGrant,
-  clanCaravanSpeedMultiplier: serverClanCaravanSpeedMultiplier,
   commitClanCraftBenefit: serverCommitClanCraftBenefit,
+  clanFastTravelFeeMultiplier,
   markBenefitOrderCompleted: serverMarkClanBenefitOrderCompleted,
   ownedClanBaseContext: serverOwnedClanBaseContext,
   previewClanCraftBenefit: serverPreviewClanCraftBenefit,
@@ -466,14 +466,7 @@ const {
   isTwoHandedWeapon: equipmentIsTwoHandedWeapon,
   normalizeHandEquipment: normalizeServerHandEquipment
 } = require('./src/server/equipment-hands');
-const {
-  globalExitDirectionFromTile,
-  directedGlobalExitPoint
-} = require('./src/server/global-exit-direction');
-const {
-  sanitizePendingLocationTransition,
-  stagePendingLocationTransition
-} = require('./src/server/global-arrival-transition');
+const { sanitizePendingLocationTransition } = require('./src/server/global-arrival-transition');
 const {
   createDevAccessMiddleware,
   createDevAccessPolicy,
@@ -829,14 +822,11 @@ const SERVER_MODEL_COLLIDERS = loadModelColliderCatalog(MODEL_COLLIDERS_FILE);
 const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));
 // A-Life опасных клеток: виды, логова и темп жизни групп. KROMKA_DANGER_ECOLOGY_FILE
 // подменяет их в сетевых проверках; состояние мира групп живёт в DATA_DIR.
+// Перенос между столицами: цена, пауза после боя и груз, который не перевозят.
+const FAST_TRAVEL_RULES = normalizeFastTravelRules(readJson(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'), {}).fastTravel);
 const DANGER_ECOLOGY = normalizeEcologyConfig(readJson(
   process.env.KROMKA_DANGER_ECOLOGY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'danger-ecology.json'), {}));
 const DANGER_ECOLOGY_STATE_FILE = path.join(DATA_DIR, 'danger-ecology.json');
-// Играбельный контур глобальной карты в точках карты — из сцены Unity
-// (tools/build-global-map-playable.js): за ним логов и групп нет.
-const GLOBAL_MAP_PLAYABLE_POINTS = (readJson(path.join(BUNDLED_DATA_DIR, 'kromka', 'global-map-playable.json'), {}).points || [])
-  .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
-  .map(point => [Number(point[0]), Number(point[1])]);
 
 // Прогрессия добычу не создаёт вовсе: перки поиска только усиливают останки,
 // трофеи и авторские тайники (src/server/loot-perks.js).
@@ -878,6 +868,8 @@ function readJson(file, fallback) {
 // equipment, carry weight, prices and crafting all derive from the same rows.
 const KROMKA_ITEM_CATALOG = normalizeItemCatalog(readJson(KROMKA_ITEMS_FILE, { items: [] }));
 const KROMKA_ITEM_INDEXES = itemCatalogIndexes(KROMKA_ITEM_CATALOG);
+const SERVER_ITEM_CATEGORY = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.category || '')]));
+const SERVER_ITEM_NAME = new Map(KROMKA_ITEM_CATALOG.items.map(item => [item.id, String(item.name || item.id)]));
 const KROMKA_FIELD_RECIPE_CATALOG = normalizeFieldRecipeCatalog(
   readJson(KROMKA_FIELD_RECIPES_FILE, { recipes: [] }),
   KROMKA_ITEM_CATALOG
@@ -1224,41 +1216,8 @@ const DEFAULT_GLOBAL_MAP_CONFIG = {
     { id: 'relayStation', x: 675, y: 315, kind: 'settlement', locationCount: 1, model: 'relayStation', modelScale: 1, rotationY: 0, note: 'Техническая станция с защищённым тайником.' }
   ],
   infrastructure: [],
-  objects: [],
-  encounters: [
-    { id: 'ghoul_pack', title: 'Сорванные Выжженные', text: 'Впереди спорят знакомыми голосами. Слова человеческие, движения уже нет.', kind: 'hostile' },
-    { id: 'radscorpion_nest', title: 'Лежка Рыхляков', text: 'Грунт вздымается под белыми костяными щитами. Проход занят.', kind: 'hostile' },
-    { id: 'mutant_ant_swarm', title: 'Колония Пыльников', text: 'Ржавая пыль движется против ветра и уже пробует крепёж на вкус.', kind: 'hostile' },
-    { id: 'super_mutant_lair', title: 'Тканевый выводок', text: 'В руинах медленно складывается и распрямляется что-то многослойное.', kind: 'hostile' },
-    { id: 'gecko_pack', title: 'Гнездо Слухачей', text: 'Впереди тихо. Настолько тихо, что лучше не проверять выстрелом.', kind: 'hostile' },
-    { id: 'fire_gecko_ambush', title: 'Чужие голоса', text: 'Кто-то из тумана зовёт вас по имени. Никто в караване этого имени не знает.', kind: 'hostile' },
-    { id: 'peaceful_caravan', title: 'Мирный караван', text: 'На старой трассе остановился торговец с охраной. Можно торговать, уйти или напасть.', kind: 'caravan' },
-    { id: 'caravan_patrol_vs_ghouls', title: 'Дозор против Выжженных', text: 'Люди Управы отбиваются от людей, которых Управа уже вычеркнула.', kind: 'battle' },
-    { id: 'ants_vs_geckos', title: 'Пыльники против Слухачей', text: 'Две разновидности плохой новости сцепились у сухого русла.', kind: 'battle' },
-    { id: 'radscorpions_vs_patrol', title: 'Дозор против Рыхляков', text: 'Дозор Управы держит круговую оборону от костяной стены.', kind: 'battle' }
-  ],
-  randomLocations: [
-    { id: 'randomAshGrove', weight: 4 },
-    { id: 'randomDryBasin', weight: 3 },
-    { id: 'randomRuinedRoad', weight: 3 }
-  ],
   cells: {}
 };
-
-function normalizeGlobalMapWeightRows(input = [], allowedIds = null) {
-  const rows = Array.isArray(input) ? input : [];
-  const out = [];
-  for (const row of rows.slice(0, 64)) {
-    const id = String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    if (!id || (allowedIds && !allowedIds.has(id))) continue;
-    const weight = clamp(Math.round(Number(row?.weight ?? row?.qty ?? 0)), 0, 999);
-    if (weight <= 0) continue;
-    const existing = out.find(x => x.id === id);
-    if (existing) existing.weight = Math.min(999, existing.weight + weight);
-    else out.push({ id, weight });
-  }
-  return out;
-}
 
 function normalizeGlobalMapConfig(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
@@ -1320,34 +1279,7 @@ function normalizeGlobalMapConfig(raw = {}) {
       worldRevision: String(node?.worldRevision || src.worldRevision || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
     };
   }).filter(node => node.id);
-  const objects = (Array.isArray(src.objects) ? src.objects : []).slice(0, 300).map((object, index) => {
-    const x = clamp(Math.round(Number(object?.x || 0)), 0, maxX);
-    const y = clamp(Math.round(Number(object?.y || 0)), 0, maxY);
-    return {
-      id: String(object?.id || `world_object_${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
-      kind: String(object?.kind || 'landmark').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
-      cx: clamp(Math.floor(Number(object?.cx ?? Math.floor(x / grid.cellPoints))), 0, grid.cols - 1),
-      cy: clamp(Math.floor(Number(object?.cy ?? Math.floor(y / grid.cellPoints))), 0, grid.rows - 1),
-      x,
-      y,
-      model: String(object?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-      modelScale: clamp(Number(object?.modelScale || 1), 0.2, 5),
-      rotationY: clamp(Number(object?.rotationY || 0), 0, 360),
-      note: String(object?.note || '').slice(0, 160)
-    };
-  }).filter(object => object.id && object.model);
   const infrastructure = normalizeGlobalInfrastructure(src.infrastructure || [], { grid, nodes });
-  const encounters = (Array.isArray(src.encounters) ? src.encounters : []).slice(0, 120).map(row => ({
-    id: String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-    title: String(row?.title || row?.id || 'Событие мира').slice(0, 120),
-    text: String(row?.text || '').slice(0, 600),
-    kind: String(row?.kind || 'hostile').slice(0, 32),
-    locationId: row?.locationId ? safeLocationFileId(row.locationId) : ''
-  })).filter(row => row.id);
-  const encounterIds = new Set(encounters.map(row => row.id));
-  const randomLocations = normalizeGlobalMapWeightRows(
-    Array.isArray(src.randomLocations) ? src.randomLocations : []
-  ).map(row => ({ id: safeLocationFileId(row.id), weight: row.weight }));
   const cells = {};
   const rawCells = src.cells && typeof src.cells === 'object' ? src.cells : {};
   for (const [key, value] of Object.entries(rawCells)) {
@@ -1355,16 +1287,15 @@ function normalizeGlobalMapConfig(raw = {}) {
     if (!match || !value || typeof value !== 'object') continue;
     const cx = clamp(Math.floor(Number(match[1])), 0, grid.cols - 1);
     const cy = clamp(Math.floor(Number(match[2])), 0, grid.rows - 1);
+    // Шанс стычки и её состав задаёт цвет клетки (economy.json → dangerCells),
+    // поэтому авторских chance/encounters/randomLocations у клетки нет.
     const cell = {
       terrain: String(value.terrain || '').slice(0, 80),
       pvpMode: normalizeLocationPvpMode(value.pvpMode || value.zone || value.pvp || 'pvp', false),
-      chance: clamp(Math.round(Number(value.chance || 0)), 0, 100),
       difficulty: clamp(Math.round(Number(value.difficulty || 1)), 1, 5),
       texture: String(value.texture || value.textureId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       macroRegion: String(value.macroRegion || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-      fill: String(value.fill || '').slice(0, 48),
-      encounters: normalizeGlobalMapWeightRows(value.encounters || [], encounterIds),
-      randomLocations: normalizeGlobalMapWeightRows(value.randomLocations || []).map(row => ({ id: safeLocationFileId(row.id), weight: row.weight }))
+      fill: String(value.fill || '').slice(0, 48)
     };
     cells[`${cx}:${cy}`] = cell;
   }
@@ -1375,13 +1306,9 @@ function normalizeGlobalMapConfig(raw = {}) {
     unityScene: String(src.unityScene || '').replace(/[^a-zA-Z0-9_./-]/g, '').slice(0, 180),
     sitePlacement: src.worldRevision === 'kromka-1' || src.sitePlacement === 'unity-authored'
       ? 'unity-authored' : 'procedural',
-    legacyCoastline: src.legacyCoastline !== false,
     grid,
     nodes,
     infrastructure,
-    objects,
-    encounters,
-    randomLocations,
     cells
   };
 }
@@ -1505,7 +1432,7 @@ function normalizeLocationDefinition(raw, fallback = null) {
       return {
         ...row,
         id: String(row?.id || `world_exit_${index + 1}`).slice(0, 48),
-        label: String(row?.label || 'Выход на глобальную карту').slice(0, 80),
+        label: String(row?.label || 'Выход в зону').slice(0, 80),
         tx: point.tx,
         tz: point.tz,
         radius: clamp(Number(row?.radius || 3), 0.5, 18)
@@ -2218,7 +2145,9 @@ app.post('/api/dev/locations/:id', (req, res) => {
 app.get('/api/locations', (_, res) => {
   const locations = {};
   for (const loc of Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})) {
-    if (!loc || !loc.id) continue;
+    // Зоны мира не входят в общий список: их почти две сотни по ~65 КБ, клиент
+    // берёт нужную по одной через /api/locations/:id.
+    if (!loc || !loc.id || loc.generated) continue;
     locations[loc.id] = kromkaPublicLocationDefinition(loc);
   }
   res.json({
@@ -2227,6 +2156,33 @@ app.get('/api/locations', (_, res) => {
     locationRelease: publicLocationRelease(),
     locations
   });
+});
+
+// Одна локация, в том числе зона мира (её собирает конструктор при первом
+// обращении). Ответ сжат и кэшируется по ревизии зоны.
+// Обзорная карта мира зон: одна на всех, сжата и кэширована до смены графа.
+let worldMapResponse = null;
+app.get('/api/world-map', (_, res) => {
+  if (!worldMapResponse || worldMapResponse.revision !== ZONE_RUNTIME.graph.worldRevision) {
+    const body = Buffer.from(JSON.stringify({ ok: true, map: ZONE_RUNTIME.worldMap(serverLocationPublicName) }), 'utf8');
+    worldMapResponse = { revision: ZONE_RUNTIME.graph.worldRevision, body, gzip: gzipJsonBuffer(body) };
+  }
+  sendJsonBuffer(res, worldMapResponse.body, worldMapResponse.gzip);
+});
+
+const locationResponseCache = new Map();
+app.get('/api/locations/:id', (req, res) => {
+  const id = normalizeLocationId(req.params.id);
+  if (!LOCATIONS[id]) return res.status(404).json({ ok: false, error: 'Неизвестная локация.' });
+  const loc = ensureZoneLocation(id) || LOCATIONS[id];
+  const key = `${id}:${loc.revision || ''}`;
+  let cached = locationResponseCache.get(id);
+  if (!cached || cached.key !== key) {
+    const body = Buffer.from(JSON.stringify({ ok: true, location: kromkaPublicLocationDefinition(loc) }), 'utf8');
+    cached = { key, body, gzip: gzipJsonBuffer(body) };
+    locationResponseCache.set(id, cached);
+  }
+  sendJsonBuffer(res, cached.body, cached.gzip);
 });
 
 app.get('/api/quests', (_, res) => {
@@ -2258,17 +2214,6 @@ app.get('/api/kromka/artifacts', (_, res) => {
   res.json({ ok: true, catalog: publicArtifactCatalog(KROMKA_ARTIFACT_CATALOG) });
 });
 
-let globalMapResponseCache = null;
-
-function invalidateGlobalMapResponseCache() {
-  globalMapResponseCache = null;
-}
-
-/**
- * Карта для клиента: скрытые узлы не уходят игрокам. Базы фракций Сердцевины
- * остаются точками мира на сервере, но метками на карте больше не являются —
- * попасть туда можно только по контракту через узел Сердцевины.
- */
 /** Точка узла глобальной карты по локации: центр области для клиента. */
 function serverGlobalMapPointForLocation(locationId = '') {
   const id = normalizeLocationId(locationId);
@@ -2277,274 +2222,90 @@ function serverGlobalMapPointForLocation(locationId = '') {
   return node ? { x: Number(node.x || 0), y: Number(node.y || 0) } : null;
 }
 
-function publicGlobalMap(map = null) {
-  const src = map && typeof map === 'object' ? map : {};
-  const nodes = (Array.isArray(src.nodes) ? src.nodes : []).filter(node => node?.hidden !== true);
-  // Экономика v3: клиенты видят цвет опасных клеток; файл карты не меняется.
-  const modes = src === GLOBAL_MAP ? serverDangerCellModes() : null;
-  if (!modes) return { ...src, nodes };
-  const cells = {};
-  for (const [key, cell] of Object.entries(src.cells || {})) {
-    cells[key] = modes[key] ? { ...cell, pvpMode: modes[key] } : cell;
-  }
-  return {
-    ...src,
-    nodes,
-    cells,
-    dangerWalkCells: serverPublicDangerWalkCells(),
-    // Играбельный контур (точки карты): клиент рисует край мира и в локальной сцене.
-    playableContour: GLOBAL_MAP_PLAYABLE_POINTS
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Опасные клетки (экономика v3, библия 18.1): цвет клетки карты по правилам
-// economy.json и серверные стычки в пути по мелким клеткам 1,6 км — каждая
-// мелкая клетка своя общая сцена.
-// ---------------------------------------------------------------------------
-let serverDangerCellCache = null;
-
-function serverGlobalMapPointKm(map = GLOBAL_MAP) {
-  const grid = map?.grid || GLOBAL_MAP_GRID_DEFAULT;
-  return Number(grid.cellKm || 10) / Math.max(1, Number(grid.cellPoints || 10));
-}
-
-function serverDangerCellModes() {
-  if (!WORLD_ECONOMY.worldModel.dangerCells) return null;
-  if (serverDangerCellCache?.map === GLOBAL_MAP) return serverDangerCellCache.modes;
-  const nodes = {};
-  for (const node of Array.isArray(GLOBAL_MAP.nodes) ? GLOBAL_MAP.nodes : []) {
-    const id = String(node?.locationId || node?.id || '');
-    if (id && Number.isFinite(Number(node.x)) && Number.isFinite(Number(node.y))) nodes[id] = { x: Number(node.x), y: Number(node.y) };
-  }
-  const modes = cellDangerModes(WORLD_ECONOMY.dangerCells, GLOBAL_MAP.grid, GLOBAL_MAP.cells, nodes);
-  serverDangerCellCache = { map: GLOBAL_MAP, modes };
-  return modes;
-}
-
-function serverGlobalMapCellKeyAt(point = {}) {
-  const grid = GLOBAL_MAP.grid || GLOBAL_MAP_GRID_DEFAULT;
-  const cx = clamp(Math.floor(Number(point.x || 0) / grid.cellPoints), 0, grid.cols - 1);
-  const cy = clamp(Math.floor(Number(point.y || 0) / grid.cellPoints), 0, grid.rows - 1);
-  return `${cx}:${cy}`;
-}
-
-function serverDangerModeAtPoint(point = {}) {
-  const modes = serverDangerCellModes();
-  const key = serverGlobalMapCellKeyAt(point);
-  return modes?.[key] || GLOBAL_MAP.cells?.[key]?.pvpMode || 'pvp';
-}
+// --- A-Life зон ---------------------------------------------------------------------------
 
 /**
- * Стычка в мелкой клетке: общая сцена клетки (шаблон по региону, встреча из
- * пула цвета), весь отряд путешествия переносится туда сервером со стороны
- * прихода. Выход с края сцены ведёт в соседнюю мелкую клетку.
- */
-function serverStartDangerCellEncounter(session, leader, point, cell, mode, entryKey = 'entryFromWorld') {
-  const memberIds = [...new Set([String(session.leaderId || leader.id || ''), ...(Array.isArray(session.memberIds) ? session.memberIds : [])]
-    .map(id => String(id || '')).filter(Boolean))];
-  const members = memberIds.map(id => players.get(id)).filter(player => player && player.onGlobalMap && !player.dead);
-  // Под A-Life шанс стычки — шанс наткнуться на группу, что бродит рядом;
-  // вокруг никого — путь идёт дальше. Сквозные клетки заходят и без группы.
-  if (serverEcologyActive() && !dangerIsSceneMode(WORLD_ECONOMY.dangerCells, mode) && !serverEcologyEncounterGroup(cell, mode)) return false;
-  return serverEnterDangerCell(members, point, cell, mode, entryKey, 'dangerCell') > 0;
-}
-
-/**
- * Перенос группы в общую сцену мелкой клетки: шаблон по макрорегиону, угроза
- * из пула цвета, правила зоны по центру клетки. Опустевшая сцена
- * начинается заново; точка карты каждого — место входа, выход с края ведёт
- * к соседней клетке.
- */
-function serverEnterDangerCell(members = [], point = null, cell = null, mode = 'pvp', entryKey = 'entryFromWorld', reason = 'dangerCell') {
-  if (!cell || !members.length) return 0;
-  const region = GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(cell.center || point)]?.macroRegion || '';
-  const encounter = dangerCellEncounter(WORLD_ECONOMY.dangerCells, mode, region, cell);
-  if (!encounter || !LOCATIONS[encounter.locationId]) return 0;
-  const roomId = canonicalLocationRealityId(encounter.roomId, encounter.locationId);
-  // Опустевшая сцена начинается заново: следующий отряд не попадает в уже
-  // зачищенную и обобранную стычку.
-  const previous = rooms.get(roomId);
-  if (previous && previous.encounterSetupDone && !livePlayersInRoom(previous).length) {
-    serverEcologyReleaseRoom(previous);
-    rooms.delete(roomId);
-  }
-  const room = getOrCreateRoom(roomId, encounter.locationId);
-  if (!room.encounterSetupDone) {
-    // Правила сцены ставятся один раз: игроки внутри не видят смены цвета.
-    const loc = roomLocation(room);
-    room.pvpModeOverride = normalizeLocationPvpMode(encounter.pvpMode, loc.safe !== false);
-    room.encounterWorldPoint = { x: Number(point?.x || cell.center.x), y: Number(point?.y || cell.center.y) };
-    room.dangerCellKey = cell.key;
-    room.dangerCell = { sx: cell.sx, sy: cell.sy, key: cell.key, center: { ...cell.center } };
-    room.dangerMode = encounter.pvpMode;
-    // Под A-Life врагов в сцену приводят группы клетки, а не встреча из пула.
-    if (serverEcologyActive()) serverSetupEcologyRoom(room);
-    else setupRandomEncounterRoom(room, encounter.encounterId, { pvpMode: room.pvpModeOverride });
-  }
-  refreshRoomWorldState(room);
-  const title = zoneRules(room.pvpModeOverride).label || 'опасная клетка';
-  const walk = dangerIsSceneMode(WORLD_ECONOMY.dangerCells, room.dangerMode);
-  const worldPoint = sanitizeServerGlobalMapPoint(point || cell.center);
-  let moved = 0;
-  for (const player of members) {
-    if (!player || player.dead) continue;
-    // Выход со сцены ведёт к соседней клетке, а не в начало пути.
-    const previousPoint = player.globalWorldPoint;
-    const previousSiteId = player.currentWorldSiteId;
-    player.globalWorldPoint = worldPoint;
-    player.currentWorldSiteId = '';
-    if (transferPlayerToServerRoom(player, room, {
-      reason,
-      message: walk
-        ? `Сердцевина: ${title}. Путь идёт пешком — выход с края ведёт в соседнюю клетку.`
-        : `Стычка в пути: ${title}. Уйти можно через край локации.`,
-      worldPoint,
-      entryKey
-    })) {
-      player.dangerCellKey = cell.key;
-      moved += 1;
-    } else {
-      player.globalWorldPoint = previousPoint;
-      player.currentWorldSiteId = previousSiteId;
-    }
-  }
-  // Группы, что сейчас в этой клетке, — в сцене, подальше от края входа.
-  if (moved > 0 && serverEcologyActive()) serverEcologyMaterializeCell(room, entryKey);
-  return moved;
-}
-
-/** Места карты (узлы и площадки): у них сквозных сцен нет — туда можно дойти. */
-let serverDangerPlacesCache = null;
-function serverDangerPlaces() {
-  if (serverDangerPlacesCache?.map === GLOBAL_MAP) return serverDangerPlacesCache.places;
-  const places = [];
-  for (const node of Array.isArray(GLOBAL_MAP.nodes) ? GLOBAL_MAP.nodes : []) {
-    const point = sanitizeServerGlobalMapPoint(node);
-    if (point && LOCATIONS[normalizeLocationId(node?.locationId || node?.id || '')]) places.push(point);
-  }
-  serverDangerPlacesCache = { map: GLOBAL_MAP, places };
-  return places;
-}
-
-function serverDangerCellNearPlace(cell = null) {
-  if (!cell?.center) return false;
-  const config = WORLD_ECONOMY.dangerCells;
-  const reach = (config.edgeGraceKm + config.subCellKm / 2) / serverGlobalMapPointKm();
-  return serverDangerPlaces().some(place => serverGlobalPointDistance(place, cell.center) <= reach);
-}
-
-/** Мелкая клетка, где путь идёт только пешком по сценам (чёрная Сердцевина). */
-function serverDangerWalkCell(cell = null) {
-  if (!cell) return false;
-  const mode = serverDangerModeAtPoint(cell.center);
-  return dangerIsSceneMode(WORLD_ECONOMY.dangerCells, mode) && !serverDangerCellNearPlace(cell) ? mode : false;
-}
-
-/** Положение игрока вдоль края сцены (0…1) — туда же он выйдет на границе клетки. */
-function serverDangerExitAlong(player = {}, direction = '') {
-  const loc = LOCATIONS[normalizeLocationId(player.locationId || '')] || {};
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const tile = worldToTile(Number(player.x || 0), Number(player.z || 0), locationTileDims(loc));
-  if (direction === 'north' || direction === 'south') {
-    return clamp((tile.tx - bounds.minX) / Math.max(1, bounds.width), 0, 1);
-  }
-  return clamp((tile.tz - bounds.minZ) / Math.max(1, bounds.height), 0, 1);
-}
-
-// --- A-Life опасных клеток ---------------------------------------------------------------------------
-
-/**
- * A-Life опасных клеток (src/server/danger-ecology.js, data/kromka/danger-ecology.json):
- * группы монстров Кромки и налётчиков живут на сетке мелких клеток и сами
- * приходят в сцены. Сервер даёт им цвет земли и занятость сцен, превращает
- * группу в настоящих NPC, когда она оказывается в сцене с игроками, и
- * возвращает её в мир с ранами выживших, когда сцена пустеет. Досыпки угроз
- * по таймеру нет: новые враги в сцене — это пришедшая группа.
+ * A-Life зон (src/server/danger-ecology.js, data/kromka/danger-ecology.json):
+ * группы монстров Кромки и налётчиков живут на графе зон, ходят через открытые
+ * ворота и сами приходят в каналы зон. Сервер даёт им цвет зоны и занятость
+ * каналов, превращает группу в настоящих NPC, когда она оказывается в канале с
+ * игроками, и возвращает её в мир с ранами выживших, когда канал пустеет.
+ * Досыпки угроз по таймеру нет: новые враги в зоне — это пришедшая группа.
  */
 let dangerEcologyState = null;
 let dangerEcologySavedAt = 0;
-let dangerEcologyModeCacheMap = null;
-const dangerEcologyModeCache = new Map();
 // Сторона, с которой входит группа, идущая в эту сторону света.
 const ECOLOGY_SIDE_FROM = Object.freeze({ north: 'С юга', south: 'С севера', east: 'С запада', west: 'С востока' });
 // Край сцены в сторону света: точка входа с той же стороны.
 const ECOLOGY_EXIT_KEYS = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
 
 function serverEcologyActive() {
-  return WORLD_ECONOMY.worldModel.dangerCells === true
-    && WORLD_ECONOMY.worldModel.dangerEcology === true
-    && DANGER_ECOLOGY.species.length > 0;
+  return WORLD_ECONOMY.worldModel.dangerEcology === true && DANGER_ECOLOGY.species.length > 0;
 }
 
-/** Точка внутри играбельного контура карты (контур — из сцены Unity). */
-function serverGlobalMapPointPlayable(point = {}) {
-  const points = GLOBAL_MAP_PLAYABLE_POINTS;
-  if (points.length < 3) return true;
-  const x = Number(point?.x);
-  const y = Number(point?.y);
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-  let inside = false;
-  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
-    const a = points[i];
-    const b = points[j];
-    if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / ((b[1] - a[1]) || 1e-9) + a[0]) inside = !inside;
+// --- A-Life на сетке зон мира -------------------------------------------------------------
+// Клетка экологии — зона мира (col, row): группа стоит в зоне, её шаг — переход в
+// соседнюю зону через открытые ворота. Зона может быть разбита на каналы: группа,
+// стоящая в занятой зоне, есть в каждом канале, где есть игроки.
+
+let ecologyZoneIndex = null;
+
+function serverEcologyZones() {
+  if (!ecologyZoneIndex) {
+    ecologyZoneIndex = { byCell: new Map(), byId: new Map() };
+    for (const zone of ZONE_RUNTIME.graph.zones) {
+      ecologyZoneIndex.byCell.set(ecologyCellKey(zone.col, zone.row), zone);
+      ecologyZoneIndex.byId.set(zone.id, zone);
+    }
   }
-  return inside;
+  return ecologyZoneIndex;
 }
 
-function serverEcologyCellCenter(sx, sy) {
-  const size = WORLD_ECONOMY.dangerCells.subCellKm / serverGlobalMapPointKm();
-  return { x: (sx + 0.5) * size, y: (sy + 0.5) * size };
+function serverEcologyZoneAt(sx, sy) {
+  return serverEcologyZones().byCell.get(ecologyCellKey(sx, sy)) || null;
 }
 
-/** Цвет мелкой клетки для жизни групп; за играбельным контуром — пусто. */
+/** Цвет клетки экологии — цвет зоны; мирные зоны и места вне мира пусты. */
 function serverEcologyModeAt(sx, sy) {
-  if (dangerEcologyModeCacheMap !== GLOBAL_MAP) {
-    dangerEcologyModeCache.clear();
-    dangerEcologyModeCacheMap = GLOBAL_MAP;
-  }
-  const key = ecologyCellKey(sx, sy);
-  if (dangerEcologyModeCache.has(key)) return dangerEcologyModeCache.get(key);
-  const center = serverEcologyCellCenter(sx, sy);
-  const bounds = serverGlobalMapBounds();
-  const mode = center.x > 0 && center.y > 0 && center.x < bounds.width && center.y < bounds.height
-    && serverGlobalMapPointPlayable(center)
-    ? serverDangerModeAtPoint(center)
-    : '';
-  dangerEcologyModeCache.set(key, mode);
-  return mode;
+  return serverEcologyZoneAt(sx, sy)?.mode || '';
 }
 
-/** Клетки для логов: играбельные мелкие клетки живых цветов вдали от мест карты. */
+/** Между соседними зонами группа проходит только открытыми воротами. */
+function serverEcologyCanStep(fromSx, fromSy, sx, sy) {
+  const from = serverEcologyZoneAt(fromSx, fromSy);
+  const to = serverEcologyZoneAt(sx, sy);
+  const direction = ecologyDirectionBetweenCells({ sx: fromSx, sy: fromSy }, { sx, sy });
+  const edge = from && to && direction ? from.edges?.[direction] : null;
+  return !!edge && edge.open !== false && edge.to === to.id;
+}
+
+/** Клетка комнаты: зона, чей это канал; прочие комнаты вне экологии. */
+function serverEcologyRoomCell(room) {
+  const zone = room ? serverEcologyZones().byId.get(room.locationId) : null;
+  return zone ? { sx: zone.col, sy: zone.row, key: ecologyCellKey(zone.col, zone.row), zoneId: zone.id } : null;
+}
+
+/** Логова: места логов каждой немирной зоны — столько, сколько ставит конструктор. */
 function serverEcologyCandidates() {
-  const size = WORLD_ECONOMY.dangerCells.subCellKm / serverGlobalMapPointKm();
-  const bounds = serverGlobalMapBounds();
-  const clear = DANGER_ECOLOGY.lairs.placeClearKm / serverGlobalMapPointKm();
-  const places = serverDangerPlaces();
   const rows = [];
-  for (let sy = 0; sy < Math.floor(bounds.height / size); sy += 1) {
-    for (let sx = 0; sx < Math.floor(bounds.width / size); sx += 1) {
-      const mode = serverEcologyModeAt(sx, sy);
-      if (!ECOLOGY_LIVING_MODES.includes(mode)) continue;
-      const center = serverEcologyCellCenter(sx, sy);
-      if (places.some(place => serverGlobalPointDistance(place, center) < clear)) continue;
-      rows.push({ sx, sy, mode, region: GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(center)]?.macroRegion || '' });
+  for (const zone of ZONE_RUNTIME.graph.zones) {
+    if (!ECOLOGY_LIVING_MODES.includes(zone.mode)) continue;
+    const count = normalizeZoneRecipe(zoneRecipe(ZONE_RUNTIME.graph, zone.id)).budget.lairs;
+    for (let slot = 0; slot < count; slot += 1) {
+      rows.push({ id: `lair_${zone.id}_${slot}`, slot, sx: zone.col, sy: zone.row, mode: zone.mode, region: zone.region || '' });
     }
   }
   return rows;
 }
 
-/** Ревизия логов: другая карта, цвета земель или настройки логов — логова ставятся заново. */
+/** Ревизия логов: другой граф зон, их цвета или настройки логов — логова ставятся заново. */
 function serverEcologyRevision() {
   const source = JSON.stringify([
     DANGER_ECOLOGY.lairs,
     DANGER_ECOLOGY.species.map(row => [row.id, row.habitat, row.regions]),
-    WORLD_ECONOMY.dangerCells.subCellKm,
-    serverDangerCellModes(),
-    GLOBAL_MAP_PLAYABLE_POINTS.length
+    ZONE_RUNTIME.graph.zones.map(zone => [zone.id, zone.mode])
   ]);
-  return `${GLOBAL_MAP.worldRevision || 'map'}:${Math.floor(ecologyHash01(source) * 4294967296).toString(36)}`;
+  return `zones:${Math.floor(ecologyHash01(source) * 4294967296).toString(36)}`;
 }
 
 function serverEcologyState() {
@@ -2621,32 +2382,39 @@ function serverEcologyNotice(room, text = '') {
  * (входит со стороны, откуда шла, и идёт к середине), без него — уже была в
  * клетке и стоит в глубине сцены, подальше от края входа игроков.
  */
+/**
+ * Где стоит группа, уже бывшая в зоне: у своего логова, если оно в этой зоне,
+ * иначе в одной из зон появления — они по построению не ближе 40 м к воротам.
+ */
+function serverEcologyZoneAnchor(loc, group, state) {
+  const zone = loc?.zone || {};
+  const lairs = Array.isArray(zone.lairs) ? zone.lairs : [];
+  const areas = Array.isArray(zone.spawnAreas) ? zone.spawnAreas : [];
+  const lair = state.lairs.get(group.lairId);
+  if (lair && lair.sx === zone.col && lair.sy === zone.row && lairs.length) return lairs[lair.slot % lairs.length];
+  const pool = areas.length ? areas : lairs;
+  return pool.length ? pool[Math.floor(ecologyHash01(`${group.id}:anchor`) * pool.length)] : null;
+}
+
 function serverEcologyMaterialize(room, group, options = {}) {
   const state = serverEcologyState();
   const species = DANGER_ECOLOGY.speciesById[group?.speciesId];
-  if (!room || !group || group.online || !species) return 0;
+  const cell = serverEcologyRoomCell(room);
+  if (!room || !group || !species || !cell) return 0;
+  // Группа стоит в одной зоне; в каждом её занятом канале — свои особи.
+  if (group.online && group.online !== cell.zoneId) return 0;
+  if (room.ecologyGroupIds instanceof Set && room.ecologyGroupIds.has(group.id)) return 0;
   const loc = roomLocation(room);
   const dims = roomTileDims(room);
   const direction = String(options.direction || '');
   const entryKey = direction ? dangerEntryKeyForDirection(direction) : '';
   const entry = entryKey && loc[entryKey] && Number.isFinite(Number(loc[entryKey].tx)) ? loc[entryKey] : null;
-  let anchor = entry ? { tx: Number(entry.tx), tz: Number(entry.tz) } : null;
-  if (!anchor) {
-    const avoid = options.avoidEntryKey && loc[options.avoidEntryKey] ? loc[options.avoidEntryKey] : null;
-    const cx = Math.floor(dims.w / 2);
-    const cz = Math.floor(dims.h / 2);
-    const rng = room.rng || Math.random;
-    const spread = Math.max(3, Math.floor(Math.min(dims.w, dims.h) / 5));
-    let tx = cx + Math.round((rng() * 2 - 1) * spread);
-    let tz = cz + Math.round((rng() * 2 - 1) * spread);
-    if (avoid && Number.isFinite(Number(avoid.tx)) && Number.isFinite(Number(avoid.tz))) {
-      // Дальняя от входа игроков половина сцены.
-      tx = Math.round(cx + (cx - Number(avoid.tx)) * 0.35 + (rng() * 2 - 1) * spread * 0.5);
-      tz = Math.round(cz + (cz - Number(avoid.tz)) * 0.35 + (rng() * 2 - 1) * spread * 0.5);
-    }
-    anchor = { tx: clamp(tx, 3, dims.w - 4), tz: clamp(tz, 3, dims.h - 4) };
-  }
-  const center = serverEcologyRoomCenter(room);
+  const placed = entry || serverEcologyZoneAnchor(loc, group, state);
+  const anchor = placed && Number.isFinite(Number(placed.tx))
+    ? { tx: Number(placed.tx), tz: Number(placed.tz) }
+    : { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const hub = loc.spawn && Number.isFinite(Number(loc.spawn.tx)) ? tileToWorld(Number(loc.spawn.tx), Number(loc.spawn.tz), dims) : null;
+  const center = hub || serverEcologyRoomCenter(room);
   let spawned = 0;
   for (const member of group.members) {
     const enemy = spawnServerEnemy(room, {
@@ -2670,7 +2438,7 @@ function serverEcologyMaterialize(room, group, options = {}) {
     spawned += 1;
   }
   if (!spawned) return 0;
-  ecologySetGroupOnline(state, group, room.id);
+  ecologySetGroupOnline(state, group, cell.zoneId);
   if (!(room.ecologyGroupIds instanceof Set)) room.ecologyGroupIds = new Set();
   room.ecologyGroupIds.add(group.id);
   refreshRoomWorldState(room);
@@ -2681,16 +2449,37 @@ function serverEcologyMaterialize(room, group, options = {}) {
   return spawned;
 }
 
-/** Все группы вне сети, что сейчас в клетке этой сцены, — в сцену. */
-function serverEcologyMaterializeCell(room, avoidEntryKey = '') {
-  if (!room?.dangerCell || !serverEcologyActive()) return 0;
+/** Все группы зоны, которых ещё нет в этом канале, — в него. */
+function serverEcologyMaterializeCell(room) {
+  const cell = serverEcologyRoomCell(room);
+  if (!cell || !serverEcologyActive()) return 0;
   const state = serverEcologyState();
   let count = 0;
-  for (const group of ecologyGroupsAt(state, room.dangerCell.sx, room.dangerCell.sy)) {
-    if (group.online) continue;
-    if (serverEcologyMaterialize(room, group, { avoidEntryKey }) > 0) count += 1;
+  for (const group of ecologyGroupsAt(state, cell.sx, cell.sy)) {
+    if (serverEcologyMaterialize(room, group) > 0) count += 1;
   }
   return count;
+}
+
+/** Каналы, где сейчас стоят особи группы. */
+function serverEcologyRoomsHolding(groupId, except = null) {
+  return [...rooms.values()].filter(room => room !== except && room?.ecologyGroupIds instanceof Set && room.ecologyGroupIds.has(groupId));
+}
+
+/** Убрать из канала особей группы (или одну особь): группы там больше нет. */
+function serverEcologyDespawn(room, groupId, memberId = '') {
+  let removed = 0;
+  for (const enemy of [...(room.enemies instanceof Map ? room.enemies.values() : [])]) {
+    if (!enemy || enemy.ecologyGroupId !== groupId || (memberId && enemy.ecologyMemberId !== memberId)) continue;
+    roomEnemyDelete(room, enemy.id);
+    removed += 1;
+  }
+  if (!memberId || ![...room.enemies.values()].some(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === groupId)) {
+    room.ecologyGroupIds?.delete(groupId);
+    if (room.ecologyLeaving instanceof Map) room.ecologyLeaving.delete(groupId);
+  }
+  if (removed) emitEnemySnapshot(room, true);
+  return removed;
 }
 
 /** Здоровье особи в сцене в масштабе записи группы. */
@@ -2700,7 +2489,10 @@ function serverEcologyMemberHp(group, enemy) {
   return { id: member.id, hp: Math.round(Number(enemy.hp || 0) / Math.max(1, Number(enemy.maxHp || 1)) * member.maxHp) };
 }
 
-/** Сцена опустела: группы уходят в мир с ранами выживших и остаются в этой клетке. */
+/**
+ * Канал опустел: его особи уходят со сцены. Последний канал, где стояла группа,
+ * отпускает её в мир с ранами выживших — она остаётся в этой зоне.
+ */
 function serverEcologyReleaseRoom(room, now = Date.now()) {
   if (!(room?.ecologyGroupIds instanceof Set) || !room.ecologyGroupIds.size || !dangerEcologyState) return 0;
   const state = dangerEcologyState;
@@ -2714,27 +2506,35 @@ function serverEcologyReleaseRoom(room, now = Date.now()) {
       if (row) hp.set(row.id, row.hp);
       roomEnemyDelete(room, enemy.id);
     }
-    if (group) {
+    room.ecologyGroupIds.delete(groupId);
+    if (room.ecologyLeaving instanceof Map) room.ecologyLeaving.delete(groupId);
+    if (group && !serverEcologyRoomsHolding(groupId).length) {
       ecologySetGroupOffline(state, group, hp, now);
       released += 1;
     }
-    room.ecologyGroupIds.delete(groupId);
-    if (room.ecologyLeaving instanceof Map) room.ecologyLeaving.delete(groupId);
   }
   return released;
 }
 
-/** Гибель особи группы — насовсем; большие потери обращают группу в бегство. */
+/**
+ * Гибель особи группы — насовсем и во всех каналах сразу: её копии в других
+ * каналах исчезают. Большие потери обращают группу в бегство.
+ */
 function serverEcologyNoteDeath(room, enemy) {
   if (!enemy?.ecologyGroupId || enemy.ecologyDeathNoted || !dangerEcologyState) return;
   enemy.ecologyDeathNoted = true;
-  const result = ecologyMemberKilled(dangerEcologyState, DANGER_ECOLOGY, enemy.ecologyGroupId, enemy.ecologyMemberId);
+  const groupId = enemy.ecologyGroupId;
+  const result = ecologyMemberKilled(dangerEcologyState, DANGER_ECOLOGY, groupId, enemy.ecologyMemberId);
   if (!result.ok) return;
+  const elsewhere = serverEcologyRoomsHolding(groupId, room);
+  for (const other of elsewhere) serverEcologyDespawn(other, groupId, result.destroyed ? '' : enemy.ecologyMemberId);
   if (result.destroyed) {
-    if (room?.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(enemy.ecologyGroupId);
+    if (room?.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(groupId);
     return;
   }
-  if (result.fleeing && room) serverEcologyStartLeaving(room, result.group);
+  if (result.fleeing) {
+    for (const where of [room, ...elsewhere]) if (where) serverEcologyStartLeaving(where, result.group);
+  }
 }
 
 /** Бегство: уцелевшие идут к краю сцены, дальнему от игроков, и уходят в соседнюю клетку. */
@@ -2786,26 +2586,31 @@ function serverEcologyActorLeft(room, enemy, now = Date.now()) {
   if (stillHere) return;
   room.ecologyLeaving.delete(group.id);
   if (room.ecologyGroupIds instanceof Set) room.ecologyGroupIds.delete(group.id);
+  // Группа ушла воротами: в остальных каналах этой зоны её больше нет.
+  for (const other of serverEcologyRoomsHolding(group.id)) serverEcologyDespawn(other, group.id);
   const step = ECOLOGY_STEPS[leaving.direction];
   const species = DANGER_ECOLOGY.speciesById[group.speciesId];
   if (step && species) {
     const sx = group.sx + step.dx;
     const sy = group.sy + step.dy;
     const mode = serverEcologyModeAt(sx, sy);
-    if (ECOLOGY_LIVING_MODES.includes(mode) && species.habitat[mode] > 0) ecologyMoveGroup(state, group, sx, sy);
+    if (ECOLOGY_LIVING_MODES.includes(mode) && species.habitat[mode] > 0 && serverEcologyCanStep(group.sx, group.sy, sx, sy)) {
+      ecologyMoveGroup(state, group, sx, sy);
+    }
   }
   ecologySetGroupOffline(state, group, leaving.hp, now, DANGER_ECOLOGY);
   emitEnemySnapshot(room, true);
-  // Соседняя клетка тоже занята — группа входит туда с этого края.
-  const next = serverEcologyOccupiedRoomAt(group.sx, group.sy);
-  if (next && next !== room && step) serverEcologyMaterialize(next, group, { direction: leaving.direction });
+  // Соседняя зона занята — группа входит в каждый её канал с этой стороны.
+  if (!step) return;
+  for (const next of serverEcologyOccupiedRooms(group.sx, group.sy)) {
+    if (next !== room) serverEcologyMaterialize(next, group, { direction: leaving.direction });
+  }
 }
 
-function serverEcologyOccupiedRoomAt(sx, sy) {
-  for (const room of rooms.values()) {
-    if (room?.dangerCell && room.dangerCell.sx === sx && room.dangerCell.sy === sy && livePlayersInRoom(room).length) return room;
-  }
-  return null;
+/** Каналы зоны (клетки экологии), где сейчас есть игроки. */
+function serverEcologyOccupiedRooms(sx, sy) {
+  const key = ecologyCellKey(sx, sy);
+  return [...rooms.values()].filter(room => serverEcologyRoomCell(room)?.key === key && serverLiveSocketCount(room) > 0);
 }
 
 /**
@@ -2869,46 +2674,12 @@ function serverEcologyReconcileRoom(room, now = Date.now()) {
     }
     const present = [...room.enemies.values()].some(enemy => enemy && !enemy.dead && enemy.ecologyGroupId === groupId);
     if (!present && !(room.ecologyLeaving instanceof Map && room.ecologyLeaving.has(groupId))) {
-      // Особей в сцене нет, а группа жива (сцену почистил другой код): снова в мире.
-      ecologySetGroupOffline(dangerEcologyState, group, new Map(), now);
+      // Особей в сцене нет, а группа жива (сцену почистил другой код): снова в мире,
+      // если её не держит другой канал.
       room.ecologyGroupIds.delete(groupId);
+      if (!serverEcologyRoomsHolding(groupId).length) ecologySetGroupOffline(dangerEcologyState, group, new Map(), now);
     }
   }
-}
-
-/** Сцена клетки под A-Life: без встречи из пула — врагов приводят группы. */
-function serverSetupEcologyRoom(room) {
-  if (!room) return;
-  ensureRoomWorld(room);
-  clearRoomEnemies(room);
-  room.encounterId = 'danger_ecology';
-  room.encounterOutcomeFlags = {};
-  room.encounterInitialFactions = [];
-  room.encounterSetupDone = true;
-  refreshRoomWorldState(room);
-}
-
-/**
- * Стычка в пути: отряд натыкается на враждебную группу в этой клетке или
- * ближайшую вокруг (pullRadiusCells) — она оказывается в клетке. Никого
- * рядом — стычки нет.
- */
-function serverEcologyEncounterGroup(cell = null, mode = '') {
-  if (!cell) return null;
-  const state = serverEcologyState();
-  const cellMode = ECOLOGY_LIVING_MODES.includes(mode) ? mode : serverEcologyModeAt(cell.sx, cell.sy);
-  const fits = group => {
-    const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-    return species?.hostile === true && Number(species.habitat[cellMode] || 0) > 0;
-  };
-  const here = ecologyGroupsAt(state, cell.sx, cell.sy).find(group => !group.online && fits(group));
-  if (here) return here;
-  const near = ecologyNearestOfflineGroup(state, cell.sx, cell.sy, DANGER_ECOLOGY.pullRadiusCells, fits);
-  if (!near) return null;
-  ecologyMoveGroup(state, near, cell.sx, cell.sy);
-  near.state = 'hunt';
-  near.target = { sx: cell.sx, sy: cell.sy };
-  return near;
 }
 
 /** Имя локации, как его видит игрок (лор Кромки поверх файла локации). */
@@ -2928,180 +2699,20 @@ function serverLocationPublicName(locationId = '') {
  * видит на карте и в сцене, где он — «Меловая чаша №47». Номера идут по
  * строкам карты с севера на юг, внутри строки — с запада на восток.
  */
-let serverDangerWalkCellCache = null;
-function serverDangerWalkCellIndex() {
-  if (serverDangerWalkCellCache?.map === GLOBAL_MAP) return serverDangerWalkCellCache;
-  const config = WORLD_ECONOMY.dangerCells;
-  const size = config.subCellKm / serverGlobalMapPointKm();
-  const bounds = serverGlobalMapBounds();
-  const rows = [];
-  if (WORLD_ECONOMY.worldModel.dangerCells) {
-    for (let sy = 0; sy < Math.floor(bounds.height / size); sy += 1) {
-      for (let sx = 0; sx < Math.floor(bounds.width / size); sx += 1) {
-        const mode = serverEcologyModeAt(sx, sy);
-        if (!mode || !dangerIsSceneMode(config, mode)) continue;
-        const center = serverEcologyCellCenter(sx, sy);
-        const cell = { sx, sy, key: `${sx}_${sy}`, center };
-        if (serverDangerCellNearPlace(cell)) continue;
-        const region = GLOBAL_MAP.cells?.[serverGlobalMapCellKeyAt(center)]?.macroRegion || '';
-        const encounter = dangerCellEncounter(config, mode, region, cell);
-        rows.push({ sx, sy, key: cell.key, mode, locationId: encounter?.locationId || '' });
-      }
-    }
-  }
-  const names = [];
-  const nameIndex = new Map();
-  const nameByLocation = new Map();
-  const byKey = new Map();
-  rows.forEach((row, index) => {
-    row.n = index + 1;
-    if (!nameByLocation.has(row.locationId)) nameByLocation.set(row.locationId, serverLocationPublicName(row.locationId));
-    row.name = nameByLocation.get(row.locationId);
-    if (!nameIndex.has(row.name)) {
-      nameIndex.set(row.name, names.length);
-      names.push(row.name);
-    }
-    row.nameIndex = nameIndex.get(row.name);
-    byKey.set(row.key, row);
-  });
-  serverDangerWalkCellCache = { map: GLOBAL_MAP, rows, names, byKey };
-  return serverDangerWalkCellCache;
-}
-
-/** Клетки Сердцевины для клиента: [sx, sy, номер, индекс имени]. */
-function serverPublicDangerWalkCells() {
-  const index = serverDangerWalkCellIndex();
-  return {
-    subCellKm: WORLD_ECONOMY.dangerCells.subCellKm,
-    names: index.names,
-    cells: index.rows.map(row => [row.sx, row.sy, row.n, row.nameIndex])
-  };
-}
-
-/** Опасная клетка сцены игрока: где это на карте и как её зовут. */
-function serverDangerCellView(p = {}) {
-  const room = p?.roomId ? rooms.get(String(p.roomId)) : null;
-  const cell = room?.dangerCell;
-  if (!cell) return null;
-  const entry = serverDangerWalkCellIndex().byKey.get(ecologyCellKey(cell.sx, cell.sy)) || null;
-  const name = entry?.name || serverLocationPublicName(room.locationId);
-  return {
-    key: String(cell.key || ''),
-    sx: cell.sx,
-    sy: cell.sy,
-    x: Number(Number(cell.center?.x || 0).toFixed(2)),
-    y: Number(Number(cell.center?.y || 0).toFixed(2)),
-    mode: String(room.dangerMode || ''),
-    walk: !!entry,
-    number: entry?.n || 0,
-    name,
-    title: entry ? `${name} №${entry.n}` : name
-  };
-}
-
-/** Радиус, на котором игрок видит группы и других игроков на карте. */
-function serverSightingsRadiusKm(p = {}) {
-  const cfg = DANGER_ECOLOGY.sightings;
-  return cfg.baseKm + cfg.wandererKm * serverSkillNorm(p, 'wanderer');
-}
-
-/** Доля чужого радиуса, на которой видно этого игрока: «Странник» прячет. */
-function serverSightingsExposure(p = {}) {
-  return 1 - DANGER_ECOLOGY.sightings.stealthShare * serverSkillNorm(p, 'wanderer');
-}
-
-const serverSightingsSent = new Map();
-
 /**
- * Наблюдения на глобальной карте: каждому игроку на карте — группы A-Life и
- * другие игроки в пределах его радиуса. Сервер решает, кого видно; клиент
- * только рисует. Одинаковый ответ не повторяется чаще раза в 6 с.
+ * Такт A-Life: каналы зон без игроков отпускают группы, мир живёт, группы входят
+ * в занятые зоны — в каждый их канал с игроками.
  */
-function serverTickSightings(now = Date.now()) {
-  if (!WORLD_ECONOMY.worldModel.dangerCells) return 0;
-  const cfg = DANGER_ECOLOGY.sightings;
-  const pointKm = serverGlobalMapPointKm();
-  const viewers = [...players.values()].filter(p => p?.onGlobalMap && !p.dead && socketIsLive(p.id));
-  const live = new Set(viewers.map(p => p.id));
-  for (const id of [...serverSightingsSent.keys()]) if (!live.has(id)) serverSightingsSent.delete(id);
-  if (!viewers.length) return 0;
-  const positions = new Map(viewers.map(p => {
-    const state = serverAuthoritativeGlobalMapState(p);
-    return [p.id, { x: Number(state.playerX || 0), y: Number(state.playerY || 0) }];
-  }));
-  const ecology = serverEcologyActive() ? serverEcologyState() : null;
-  const subPoints = WORLD_ECONOMY.dangerCells.subCellKm / pointKm;
-  let sent = 0;
-  for (const viewer of viewers) {
-    const at = positions.get(viewer.id);
-    const radiusKm = serverSightingsRadiusKm(viewer);
-    const radius = radiusKm / pointKm;
-    const groups = [];
-    if (ecology && cfg.maxGroups > 0) {
-      const cx = Math.floor(at.x / subPoints);
-      const cy = Math.floor(at.y / subPoints);
-      const reach = Math.ceil(radius / subPoints) + 1;
-      for (let dy = -reach; dy <= reach; dy += 1) {
-        for (let dx = -reach; dx <= reach; dx += 1) {
-          for (const group of ecologyGroupsAt(ecology, cx + dx, cy + dy)) {
-            const x = (group.sx + 0.5) * subPoints;
-            const y = (group.sy + 0.5) * subPoints;
-            const distance = Math.hypot(x - at.x, y - at.y);
-            if (distance > radius) continue;
-            const species = DANGER_ECOLOGY.speciesById[group.speciesId];
-            groups.push({
-              id: group.id,
-              name: species?.name || group.speciesId,
-              kind: species?.kind || 'monster',
-              faction: species?.faction || '',
-              creatureTypeId: group.members[0]?.type || '',
-              hostile: species?.hostile !== false,
-              x: Number(x.toFixed(2)),
-              y: Number(y.toFixed(2)),
-              size: group.members.length,
-              engaged: !!group.online,
-              distance
-            });
-          }
-        }
-      }
-    }
-    groups.sort((a, b) => a.distance - b.distance);
-    const others = [];
-    for (const other of viewers) {
-      if (other.id === viewer.id) continue;
-      const pos = positions.get(other.id);
-      const distance = Math.hypot(pos.x - at.x, pos.y - at.y);
-      if (distance > radius * serverSightingsExposure(other)) continue;
-      others.push({ id: other.id, name: String(other.name || 'Игрок').slice(0, 40), x: Number(pos.x.toFixed(2)), y: Number(pos.y.toFixed(2)), distance });
-    }
-    others.sort((a, b) => a.distance - b.distance);
-    const payload = {
-      radiusKm: Number(radiusKm.toFixed(1)),
-      groups: groups.slice(0, cfg.maxGroups).map(({ distance, ...row }) => row),
-      players: others.slice(0, cfg.maxPlayers).map(({ distance, ...row }) => row)
-    };
-    const json = JSON.stringify(payload);
-    const last = serverSightingsSent.get(viewer.id);
-    if (last?.json === json && now - last.at < 6000) continue;
-    const socket = io.sockets.sockets.get(viewer.id);
-    if (!socket) continue;
-    serverSightingsSent.set(viewer.id, { json, at: now });
-    socket.emit('globalMapSightings', { ...payload, t: now });
-    sent += 1;
-  }
-  return sent;
-}
-
-/** Такт A-Life: сцены без игроков отпускают группы, мир живёт, группы входят в занятые сцены. */
 function serverTickEcology(now = Date.now()) {
   if (!serverEcologyActive()) return 0;
   const state = serverEcologyState();
   const occupied = new Map();
   for (const room of rooms.values()) {
-    if (!room?.dangerCell) continue;
-    if (livePlayersInRoom(room).length) {
-      occupied.set(ecologyCellKey(room.dangerCell.sx, room.dangerCell.sy), room);
+    const cell = serverEcologyRoomCell(room);
+    if (!cell) continue;
+    if (serverLiveSocketCount(room) > 0) {
+      if (!occupied.has(cell.key)) occupied.set(cell.key, { cell, rooms: [] });
+      occupied.get(cell.key).rooms.push(room);
       serverEcologyReconcileRoom(room, now);
     } else if (room.ecologyGroupIds instanceof Set && room.ecologyGroupIds.size) {
       serverEcologyReleaseRoom(room, now);
@@ -3109,110 +2720,24 @@ function serverTickEcology(now = Date.now()) {
   }
   const events = tickEcology(state, DANGER_ECOLOGY, {
     modeAt: serverEcologyModeAt,
+    canStep: serverEcologyCanStep,
     occupied: (sx, sy) => occupied.has(ecologyCellKey(sx, sy)),
-    occupiedCells: [...occupied.values()].map(room => room.dangerCell),
+    occupiedCells: [...occupied.values()].map(row => row.cell),
     createMember: serverEcologyMemberStats
   }, now);
   let arrivals = 0;
   for (const event of events) {
     if (event.type !== 'arrive') continue;
-    const room = occupied.get(ecologyCellKey(event.sx, event.sy));
     const group = state.groups.get(event.groupId);
-    if (room && group && serverEcologyMaterialize(room, group, { direction: event.direction }) > 0) arrivals += 1;
+    for (const room of occupied.get(ecologyCellKey(event.sx, event.sy))?.rooms || []) {
+      if (group && serverEcologyMaterialize(room, group, { direction: event.direction }) > 0) arrivals += 1;
+    }
   }
-  // Группы в занятой клетке вне сцены (после перезапуска, возвращения игрока) — в сцену.
-  for (const room of occupied.values()) serverEcologyMaterializeCell(room);
+  // Группы в занятой зоне, которых ещё нет в канале (перезапуск, новый канал), — в него.
+  for (const row of occupied.values()) for (const room of row.rooms) serverEcologyMaterializeCell(room);
   serverSaveEcology(false, now);
   return arrivals;
 }
-
-/** Окрестность, где стычек нет: только у настоящих мест, не у точки в пустоши. */
-function serverDangerGracePoint(point = null) {
-  const target = sanitizeServerGlobalMapPoint(point);
-  const destination = target ? serverGlobalDestinationAtPoint(target) : null;
-  return destination && (destination.siteId || (destination.locationId && destination.locationId !== 'wasteland'))
-    ? target
-    : null;
-}
-
-function serverGlobalTravelRouteKm(session = null) {
-  const points = (Array.isArray(session?.routePoints) && session.routePoints.length >= 2
-    ? session.routePoints
-    : [session?.fromPoint, session?.targetPoint])
-    .map(point => sanitizeServerGlobalMapPoint(point))
-    .filter(Boolean);
-  let length = 0;
-  for (let i = 1; i < points.length; i += 1) length += serverGlobalPointDistance(points[i - 1], points[i]);
-  return length * serverGlobalMapPointKm();
-}
-
-/**
- * Разбор пути со времени прошлой проверки: при сжатии времени отряд за тик
- * проходит несколько мелких клеток, и бросок делается на каждую пройденную,
- * по точкам через полклетки. Стычка случается в первой сработавшей клетке.
- */
-function serverTickDangerCells(now = Date.now()) {
-  if (!WORLD_ECONOMY.worldModel.dangerCells) return 0;
-  const config = WORLD_ECONOMY.dangerCells;
-  const pointKm = serverGlobalMapPointKm();
-  let started = 0;
-  for (const [leaderId, session] of [...globalTravelSessions.entries()]) {
-    if (!session || session.terminating || session.pendingEncounter) continue;
-    const leader = players.get(String(session.leaderId || leaderId));
-    if (!leader || !leader.onGlobalMap || leader.dead) continue;
-    const startedAt = Number(session.startedAt || 0);
-    const durationMs = Math.max(1, Number(session.durationMs || 0));
-    const endAt = Math.min(Number(now), startedAt + durationMs);
-    const routeKm = serverGlobalTravelRouteKm(session);
-    if (!(routeKm > 0) || endAt <= startedAt) continue;
-    const stepMs = Math.max(20, durationMs * (config.subCellKm / 2) / routeKm);
-    const grace = config.edgeGraceKm / pointKm;
-    // Окрестности мест, откуда вышли и куда идут; смена маршрута их не обновляет.
-    const from = sanitizeServerGlobalMapPoint(session.dangerGraceFrom || null);
-    const to = sanitizeServerGlobalMapPoint(session.dangerGraceTo || null);
-    let t = Number.isFinite(Number(session.dangerCheckedAt)) ? Number(session.dangerCheckedAt) : startedAt;
-    let hit = null;
-    let previousPoint = serverGlobalTravelCurrentPoint(session, t) || from;
-    for (let guard = 0; guard < 400 && t < endAt && !hit; guard += 1) {
-      t = Math.min(endAt, t + stepMs);
-      const point = serverGlobalTravelCurrentPoint(session, t);
-      if (!point) break;
-      const cameFrom = previousPoint || point;
-      previousPoint = point;
-      const cell = dangerSubCellAt(config, point, pointKm);
-      if (session.dangerCellKey === cell.key) continue;
-      const firstCell = !session.dangerCellKey;
-      session.dangerCellKey = cell.key;
-      leader.dangerCellKey = cell.key;
-      // Клетка, где путь начался после входа в игру, и окрестности мест не нападают.
-      if (firstCell) continue;
-      // Сквозная клетка (чёрная Сердцевина): по карте её не пройти — вход в
-      // её сцену обязателен, со стороны, откуда пришёл отряд.
-      const walkMode = serverDangerWalkCell(cell);
-      if (walkMode) {
-        hit = { point, cell, mode: walkMode, entryKey: dangerEntryKeyForDirection(dangerDirectionBetween(cameFrom, point)) };
-        break;
-      }
-      if ((from && serverGlobalPointDistance(point, from) < grace) || (to && serverGlobalPointDistance(point, to) < grace)) continue;
-      const mode = serverDangerModeAtPoint(cell.center);
-      const chance = dangerEncounterChance(config, mode, serverSkillNorm(leader, 'wanderer'));
-      if (chance > 0 && Math.random() < chance) {
-        hit = { point, cell, mode, entryKey: dangerEntryKeyForDirection(dangerDirectionBetween(cameFrom, point)) };
-      }
-    }
-    session.dangerCheckedAt = t;
-    if (hit && serverStartDangerCellEncounter(session, leader, hit.point, hit.cell, hit.mode, hit.entryKey)) started += 1;
-  }
-  return started;
-}
-
-app.get('/api/global-map', (req, res) => {
-  if (!globalMapResponseCache) {
-    const body = Buffer.from(JSON.stringify({ ok: true, map: publicGlobalMap(GLOBAL_MAP) }), 'utf8');
-    globalMapResponseCache = { body, gzip: gzipJsonBuffer(body) };
-  }
-  sendJsonBuffer(res, globalMapResponseCache.body, globalMapResponseCache.gzip);
-});
 
 let wastelandPublicCache = null;
 let wastelandPublicCacheHits = 0;
@@ -3328,12 +2853,10 @@ app.get('/api/dev/danger-ecology', (req, res) => {
         state: group.state,
         online: group.online,
         members: group.members.map(member => ({ id: member.id, type: member.type, hp: member.hp, maxHp: member.maxHp })),
-        // Особи группы в сцене: фаза (вход, отступление) и место.
-        actors: group.online && rooms.get(group.online)?.enemies instanceof Map
-          ? [...rooms.get(group.online).enemies.values()]
-            .filter(enemy => enemy?.ecologyGroupId === group.id)
-            .map(enemy => ({ memberId: enemy.ecologyMemberId, phase: enemy.ecologyPhase || '', dead: !!enemy.dead, x: Math.round(enemy.x), z: Math.round(enemy.z) }))
-          : []
+        // Особи группы в каналах зоны: канал, фаза (вход, отступление) и место.
+        actors: serverEcologyRoomsHolding(group.id).flatMap(room => [...room.enemies.values()]
+          .filter(enemy => enemy?.ecologyGroupId === group.id)
+          .map(enemy => ({ roomId: room.id, memberId: enemy.ecologyMemberId, phase: enemy.ecologyPhase || '', dead: !!enemy.dead, x: Math.round(enemy.x), z: Math.round(enemy.z) })))
       }))
     : [];
   res.json({
@@ -3352,7 +2875,8 @@ app.post('/api/dev/danger-ecology/kill', (req, res) => {
   const state = serverEcologyState();
   const group = state.groups.get(String(req.body?.groupId || ''));
   if (!group) return res.status(404).json({ ok: false, error: 'Группы нет.' });
-  const room = group.online ? rooms.get(group.online) : null;
+  const holding = serverEcologyRoomsHolding(group.id);
+  const room = holding.find(row => row.id === String(req.body?.roomId || '')) || holding[0] || null;
   if (!room) return res.status(409).json({ ok: false, error: 'Группа не в сцене.' });
   const count = clamp(Math.floor(Number(req.body?.count || 1)), 1, 12);
   const now = Date.now();
@@ -3386,7 +2910,6 @@ app.post('/api/dev/global-map', (req, res) => {
   const incoming = req.body && typeof req.body === 'object' && req.body.map ? req.body.map : req.body;
   if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON глобальной карты.' });
   GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
-  invalidateGlobalMapResponseCache();
   WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
   syncWorldSiteLocationDefinitions();
   writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });
@@ -4001,7 +3524,6 @@ const io = new Server(server, {
 
 const players = new Map();
 const rooms = new Map();
-const globalTravelSessions = new Map();
 const SOCIAL_ACTIONS = {
   trade: 'торговля',
   friend: 'друзья',
@@ -4895,12 +4417,18 @@ const FILE_GLOBAL_MAP_FALLBACK = {
   grid: GLOBAL_MAP_GRID_DEFAULT,
   nodes: [],
   infrastructure: [],
-  objects: [],
-  encounters: [],
-  randomLocations: [],
   cells: {}
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();
+// Зоны мира (граф 20‑километровых зон): заглушки сейчас, полное определение —
+// конструктором при первом входе в зону (ensureZoneLocation).
+const ZONE_RUNTIME = createZoneRuntime({
+  graph: readJson(path.join(BUNDLED_DATA_DIR, 'kromka', 'zone-graph.json'), { zones: [] }),
+  zonesDir: path.join(BUNDLED_DATA_DIR, 'zones'),
+  normalize: definition => normalizeLocationDefinition(definition),
+  validate: validateZoneLocationDefinition
+});
+ZONE_RUNTIME.registerStubs(LOCATIONS);
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
   safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
@@ -5140,18 +4668,48 @@ function serverTransitionZoneRules(row = {}) {
   return zoneRules(locationPvpMode(target), serverZoneRulesExtra(target));
 }
 
+/**
+ * Старый выход места «в мир»: строка `exit`/`transitions` с дорогой к месту,
+ * которое теперь стоит в другой зоне (раньше — «в пустошь» или на глобальную
+ * карту). В мире зон такая дорога ведёт в зону самого места, иначе она
+ * переносила бы через полмира. Метро внутри одной территории остаётся метро.
+ */
+function serverLegacyWorldExit(loc = {}, row = {}) {
+  const to = normalizeLocationId(row?.to || '');
+  const own = ZONE_RUNTIME.parentZoneOf(loc?.id || '');
+  if (!to || !own) return false;
+  const other = ZONE_RUNTIME.parentZoneOf(to);
+  if (!other || other === own) return false;
+  const target = LOCATIONS[to] || {};
+  return !(loc.territoryId && target.territoryId && loc.territoryId === target.territoryId);
+}
+
 function kromkaPublicLocationDefinition(location = {}) {
   const next = transformKromkaPublicValue(location);
+  // Куда выводит край места: зона мира, её название и правила.
+  const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
+  const parentRules = parentZone ? serverTransitionZoneRules({ to: parentZone.id }) : null;
+  // Старые дороги «в мир» клиент видит выходом в зону места.
+  const asZoneExit = row => ({
+    ...row, type: 'zoneExit', to: parentZone.id, entryKey: parentZone.entryKey,
+    label: `Выход: ${parentZone.title}`,
+    ...(parentRules ? { targetPvpMode: parentRules.mode, targetZoneRules: parentRules } : {})
+  });
   if (Array.isArray(next.transitions)) {
     next.transitions = next.transitions.map(row => {
+      if (parentZone && serverLegacyWorldExit(location, row)) return asZoneExit(row);
       const rules = serverTransitionZoneRules(row);
       return rules ? { ...row, targetPvpMode: rules.mode, targetZoneRules: rules } : row;
     });
   }
   if (next.exit && next.exit.to) {
-    const rules = serverTransitionZoneRules(next.exit);
-    if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
+    if (parentZone && serverLegacyWorldExit(location, next.exit)) next.exit = asZoneExit(next.exit);
+    else {
+      const rules = serverTransitionZoneRules(next.exit);
+      if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
+    }
   }
+  if (parentZone) next.parentZone = parentRules ? { ...parentZone, targetZoneRules: parentRules } : parentZone;
   const lore = kromkaLocationLore(next.id);
   const node = kromkaGlobalNode(next.id);
   if (lore?.displayName) next.name = lore.displayName;
@@ -5974,48 +5532,67 @@ function serverTerritoryGateArrival(leader = null, members = [], now = Date.now(
   return { ok: true, locationId: baseLocationId };
 }
 
-function serverTerritoryGatePoint() {
-  const zoneId = serverTerritoryZoneLocationId();
-  const node = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])
-    .find(row => normalizeLocationId(row?.locationId || row?.id || '') === zoneId);
-  return node ? { x: Number(node.x || 0), y: Number(node.y || 0) } : null;
+/** Портал в Сердцевину в её зоне мира — ворота территории. */
+function serverTerritoryGatePortal() {
+  const coreId = serverTerritoryZoneLocationId();
+  const zoneId = ZONE_RUNTIME.parentZoneOf(coreId);
+  const loc = zoneId ? ensureZoneLocation(zoneId) : null;
+  const portal = (loc?.transitions || []).find(row => normalizeLocationId(row?.to || '') === coreId);
+  return portal ? { zoneId, point: tileToWorld(Number(portal.tx), Number(portal.tz), locationTileDims(loc)) } : null;
 }
 
 /**
- * Контракт подписывают только у ворот: игрок на глобальной карте рядом с
- * узлом Сердцевины. Это исключает вступление из любой точки мира и оставляет
- * регистратора базы для смены и выхода.
+ * Контракт подписывают только у ворот: игрок в зоне Сердцевины у её портала.
+ * Это исключает вступление из любой точки мира и оставляет регистратора базы
+ * для смены и выхода.
  */
-function serverPlayerAtTerritoryGate(player = null, now = Date.now()) {
-  if (!player || !player.onGlobalMap || player.roomId || player.dead) return false;
-  const gate = serverTerritoryGatePoint();
-  if (!gate) return false;
-  const session = globalTravelSessionForMember(player.id);
-  const point = session
-    ? serverGlobalTravelCurrentPoint(session, now)
-    : sanitizeServerGlobalMapPoint(player.globalWorldPoint);
-  if (!point) return false;
-  const dx = Number(point.x || 0) - gate.x;
-  const dy = Number(point.y || 0) - gate.y;
-  return Math.sqrt(dx * dx + dy * dy) <= SERVER_GLOBAL_LOCATION_RADIUS;
+function serverPlayerAtTerritoryGate(player = null) {
+  if (!player?.roomId || player.dead) return false;
+  const gate = serverTerritoryGatePortal();
+  if (!gate || normalizeLocationId(player.locationId || '') !== gate.zoneId) return false;
+  return Math.hypot(Number(player.x || 0) - gate.point.x, Number(player.z || 0) - gate.point.z) <= 10;
 }
 
 /**
- * Спутники, подписывающие контракт вместе с лидером группы. Свою фракцию они
- * не меняют: вступают только те, кто ещё не подписал контракт.
+ * Спутники, подписывающие контракт вместе с лидером: товарищи по отряду рядом
+ * с ним у ворот. Свою фракцию они не меняют: вступают только те, кто ещё не
+ * подписал контракт.
  */
 function serverTerritoryGateCompanions(leader = null) {
   if (!leader) return [];
-  const session = globalTravelSessions.get(leader.id);
-  if (!session || String(session.leaderId || '') !== String(leader.id)) return [];
-  return (Array.isArray(session.memberIds) ? session.memberIds : [])
-    .filter(id => String(id || '') !== String(leader.id))
-    .map(id => players.get(id))
-    .filter(member => member && !territoryMembershipActive(member.territoryFaction));
+  return serverWorldPartyMatesOnline(leader)
+    .filter(member => member.roomId === leader.roomId && !territoryMembershipActive(member.territoryFaction)
+      && Math.hypot(Number(member.x || 0) - Number(leader.x || 0), Number(member.z || 0) - Number(leader.z || 0)) <= ZONE_GATE_FOLLOW_METRES);
+}
+
+// Щит прибытия: 4 с после входа в зону через ворота игрока не задеть, пока он
+// сам не выстрелит, — у ворот не караулят тех, кто ещё не видит, куда пришёл.
+const ZONE_ARRIVAL_SHIELD_MS = 4000;
+// Пауза ворот: 6 с после урона от игрока или по игроку ворота не пропускают —
+// из перестрелки не уходят шагом в соседнюю зону.
+const ZONE_GATE_PVP_PAUSE_MS = 6000;
+// Отряд проходит ворота вслед за тем, кто шагнул первым, если стоит рядом.
+const ZONE_GATE_FOLLOW_METRES = 8.5;
+
+function serverZoneArrivalShielded(p = {}, now = Date.now()) {
+  return Number(p?.zoneArrivalShieldUntil || 0) > now;
+}
+
+function serverZoneGatePvpPauseLeft(p = {}, now = Date.now()) {
+  return Math.max(0, Number(p?.lastPvpAt || 0) + ZONE_GATE_PVP_PAUSE_MS - now);
+}
+
+function serverNotePvpExchange(attacker, target, now = Date.now()) {
+  if (attacker) {
+    attacker.lastPvpAt = now;
+    attacker.zoneArrivalShieldUntil = 0;
+  }
+  if (target) target.lastPvpAt = now;
 }
 
 function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
   return locationAllowsPvp(roomLocation(room))
+    && !serverZoneArrivalShielded(target, now)
     && !serverPlayersAllied(attacker, target)
     && !serverPlayerHasProtectedClanRally(target, room, now)
     && !serverTerritoryPvpBlock(attacker, target, room, now);
@@ -6028,6 +5605,7 @@ function serverPlayerCanDamagePlayer(attacker, target, room, now = Date.now()) {
  */
 function serverPvpBlockLabel(attacker = {}, target = {}, room = null, now = Date.now()) {
   if (!locationAllowsPvp(roomLocation(room))) return 'Здесь по игрокам не стреляют: мирная зона.';
+  if (serverZoneArrivalShielded(target, now)) return 'Игрок только что вошёл в зону: несколько секунд его не задеть.';
   if (serverPlayersAllied(attacker, target)) return 'Это свой: по союзникам огонь не ведётся.';
   if (serverPlayerHasProtectedClanRally(target, room, now)) return 'Цель под защитой сбора клана.';
   switch (serverTerritoryPvpBlock(attacker, target, room, now)) {
@@ -6242,8 +5820,7 @@ const WASTELAND_SIM = createWastelandSimulation({
   traderProfiles: SERVER_TRADER_PROFILES,
   publicSiteIds: RELEASED_LOCATION_IDS,
   locationRelease: publicLocationRelease(),
-  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || [],
-  worldModel: WORLD_ECONOMY.worldModel
+  anomalyLocations: KROMKA_LOCATION_CATALOG.locations || []
 });
 const rawWastelandPublicState = WASTELAND_SIM.publicState.bind(WASTELAND_SIM);
 const rawWastelandPublicWorldTasks = typeof WASTELAND_SIM.publicWorldTasks === 'function'
@@ -6398,7 +5975,7 @@ function syncWorldSiteLocationDefinitions(force = false) {
     source.entryFromEast = { tx: Math.max(bounds.minX + 2, bounds.maxX - 3), tz: centerZ };
     source.worldZones = [{
       id: 'world_exit_edges',
-      label: 'Уйти на глобальную карту',
+      label: 'Выход в зону',
       type: 'globalMap',
       tx: centerX,
       tz: bounds.minZ + 1,
@@ -6432,7 +6009,6 @@ function syncWorldSiteLocationDefinitions(force = false) {
 syncWorldSiteLocationDefinitions(true);
 const WORLD_ESCORT_BATTLE_TRANSFERS = new Set();
 const WORLD_ESCORT_ARRIVAL_TRANSFERS = new Set();
-const WORLD_AMBUSH_TRANSFERS = new Set();
 const WORLD_ONSITE_TRANSFERS = new Set();
 const WORLD_BATTLE_ROOM_SYNC_MS = 1000;
 
@@ -8909,7 +8485,6 @@ function detachServerPlayerFromActiveWorldParties(player = {}) {
     if (detachedIds.has(String(player.worldTaskTrackedId || ''))) player.worldTaskTrackedId = '';
   }
   syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
-  removePlayerFromIndependentGlobalTravelSessions(player.id);
   return [...detachedIds];
 }
 
@@ -8965,15 +8540,6 @@ function serverWorldTaskSite(state = {}, siteId = '') {
 function serverPlayerAtWorldSite(player = {}, site = null) {
   if (!player || !site) return false;
   const siteId = String(site.id || '');
-  if (player.onGlobalMap) {
-    if (siteId && String(player.currentWorldSiteId || '') === siteId) return true;
-    const point = sanitizeServerGlobalMapPoint(player.globalWorldPoint || null);
-    if (point && Number.isFinite(Number(site.x)) && Number.isFinite(Number(site.y))) {
-      const radius = Math.max(10, Number(site.radius || site.interactionRadius || 0));
-      return Math.hypot(point.x - Number(site.x), point.y - Number(site.y)) <= radius;
-    }
-    return false;
-  }
   const locationId = normalizeLocationId(site.locationId || '');
   if (!locationId || locationId !== normalizeLocationId(player.locationId || '')) return false;
   const room = rooms.get(String(player.roomId || '')) || null;
@@ -9092,12 +8658,17 @@ function setServerWorldActivityResult(player = {}, task = {}, options = {}) {
   return true;
 }
 
+/**
+ * Быстрый вход с доски работ: сервер подбирает ближайшую к зоне игрока
+ * короткую вылазку, принимает её и отмечает маршрут — дальше игрок идёт сам.
+ */
 function performServerWorldActivityQuickJoin(player = {}, data = {}) {
-  if (!player?.onGlobalMap) {
-    return { ok: false, error: 'Быстрая вылазка доступна на глобальной карте.' };
+  const boardSiteId = String(data.boardSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  if (!serverPlayerAtWorldSite(player, serverWorldTaskSite(WASTELAND_SIM.state(), boardSiteId))) {
+    return { ok: false, error: 'Вылазку подбирают у доски работ.' };
   }
   const sim = WASTELAND_SIM.publicState();
-  const globalMap = serverAuthoritativeGlobalMapState(player);
+  const playerPoint = serverGlobalPointForPlayer(player);
   const acceptedTaskIds = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
   const acceptedRows = typeof WASTELAND_SIM.publicWorldTasks === 'function'
     ? WASTELAND_SIM.publicWorldTasks(acceptedTaskIds)
@@ -9111,8 +8682,8 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
     .map(row => [String(row.id), row])).values()];
   const task = selectQuickWorldActivityTask(candidateRows, {
     acceptedTaskIds,
-    playerX: globalMap.playerX,
-    playerY: globalMap.playerY,
+    playerX: Number(playerPoint?.x || 0),
+    playerY: Number(playerPoint?.y || 0),
     worldHour: sim?.worldHour,
     now: Date.now(),
     preference: data.preference
@@ -9122,7 +8693,7 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
   const accepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(taskId);
   let actionResult = null;
   if (!accepted) {
-    actionResult = performServerWorldTaskAction(player, { action: 'accept', taskId });
+    actionResult = performServerWorldTaskAction(player, { action: 'accept', taskId }, { fromBoard: true });
     if (!actionResult?.ok) return actionResult;
   } else {
     player.worldTaskTrackedId = taskId;
@@ -9144,7 +8715,7 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
   };
 }
 
-function performServerWorldTaskAction(player = {}, data = {}) {
+function performServerWorldTaskAction(player = {}, data = {}, options = {}) {
   const action = String(data.action || '').toLowerCase();
   const { id, state, task } = serverWorldTaskById(data.taskId || data.worldTaskId || '');
   if (!id || !task) return { ok: false, error: 'Работа пустоши больше не найдена.' };
@@ -9170,7 +8741,8 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       'outpost_defense',
       'assault_diversion'
     ]);
-    const remoteActivity = player.onGlobalMap && remoteActivityTypes.has(String(task.type || ''));
+    // Короткую вылазку берут с любой доски работ: быстрый вход её и подбирает.
+    const remoteActivity = options.fromBoard === true && remoteActivityTypes.has(String(task.type || ''));
     if (!remoteActivity) {
     if (!serverPlayerAtWorldSite(player, issuer)) return { ok: false, error: 'Нужно подойти к доске работ в точке выдачи.' };
     }
@@ -9181,10 +8753,6 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     if (isWorldPartyTask(task)) {
       const activeGroupTask = serverPlayerActiveWorldPartyTask(player, id);
       if (activeGroupTask) return { ok: false, error: 'Сначала отмените текущую работу с отрядом пустоши.' };
-      if (globalTravelSessionForMember(player.id)
-        || (player.onGlobalMap && !serverPlayerAtWorldSite(player, issuer))) {
-        return { ok: false, error: 'Сначала завершите собственный маршрут и вернитесь к доске работ.' };
-      }
       const joined = WASTELAND_SIM.joinWorldParty({
         taskId: id, partyId: task.partyId, socketId: player.id, playerId: player.id,
         userId: player.userId || '', characterId: player.characterId || '',
@@ -10927,7 +10495,8 @@ function serverLocationContextFromPlayer(player = {}) {
     : null;
   return sanitizeServerLocationContext({
     locationId,
-    roomId: room && !locationUsesSharedReality(roomLocation(room)) ? room.id : '',
+    // Общая локация своей комнаты не помнит, кроме канала зоны: реконнект возвращает в него.
+    roomId: room && (!locationUsesSharedReality(roomLocation(room)) || zoneChannelOf(room.id, room.locationId) > 1) ? room.id : '',
     encounterId: onsiteZone?.encounterId || room?.encounterId || '',
     worldZoneId: onsiteZone?.id || room?.worldZoneId || '',
     partyId: onsiteZone?.partyId || onsiteZone?.details?.partyId || room?.worldPartyId || '',
@@ -11421,8 +10990,7 @@ function serverSkillBasePercent(p = {}, id = '') {
     science: 10 + s.int * 3,
     repair: 10 + s.int * 2 + s.per,
     speech: 10 + s.cha * 3,
-    barter: 10 + s.cha * 2 + s.int,
-    wanderer: 10 + s.end + s.per + s.luck * 2
+    barter: 10 + s.cha * 2 + s.int
   };
   const base = clamp(Math.round(formulas[id] ?? 20), 20, 45);
   const taggedBonus = sanitizeTaggedSkills(p.taggedSkills || []).includes(id)
@@ -13310,6 +12878,21 @@ function rememberPlayerSettlement(p, locationId = '') {
   return p.lastVisitedSettlementId;
 }
 
+// Зона строится при первом обращении; для обычной локации ничего не делает.
+function ensureZoneLocation(locationId = '') {
+  return ZONE_RUNTIME.ensure(LOCATIONS, normalizeLocationId(locationId));
+}
+
+function validateZoneLocationDefinition(definition = {}) {
+  for (const row of definition.containers || []) {
+    const tier = String(row.tier || 'basic');
+    if (!SERVER_CONTAINER_LOOT_TABLES[tier]) throw new Error(`zone ${definition.id}: unknown container tier ${tier}`);
+    for (const item of row.loot || []) {
+      if (!SERVER_ITEM_IDS.has(serverBaseItemId(item.id))) throw new Error(`zone ${definition.id}: unknown loot item ${item.id}`);
+    }
+  }
+}
+
 function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
   const current = LOCATIONS[normalizeLocationId(p.locationId || '')];
   const target = normalizeLocationId(targetLocationId);
@@ -13321,11 +12904,19 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
-  return candidates.find(row => {
+  const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)).find(row => {
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
+  if (authored) return authored;
+  // Край места ведёт в зону мира, где это место стоит; край комнаты точки
+  // мира — в зону точки, к её порталу.
+  const parent = serverWorldPointRoomExit(rooms.get(String(p.roomId || ''))) || ZONE_RUNTIME.parentZoneView(current.id);
+  if (parent && parent.id === target && serverPlayerAtPlaceEdge(p)) {
+    return { id: 'zone_edge', type: 'zoneEdge', to: parent.id, entryKey: parent.entryKey, ...(parent.entryTile ? { entryTile: parent.entryTile } : {}) };
+  }
+  return null;
 }
 
 function serverPlayerNearTransitionTo(p = {}, targetLocationId = '') {
@@ -14589,85 +14180,18 @@ function invalidateEnemyPath(enemy) {
   enemy.nextPathAt = 0;
   enemy.pathStuckSince = 0;
 }
+// Сам поиск — в src/server/enemy-pathing.js: он получает сетку этой комнаты, поэтому
+// точки пути верны и в сцене 160×160, а не только в обычной 38×38.
 function findNearestWalkablePathTile(room, tx, tz, maxRadius = 8) {
-  tx = Math.round(Number(tx || 0));
-  tz = Math.round(Number(tz || 0));
-  if (isEnemyPathTileOpen(room, tx, tz)) return { tx, tz };
-  let best = null;
-  let bestD = Infinity;
-  for (let r = 1; r <= maxRadius; r++) {
-    for (let dz = -r; dz <= r; dz++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-        const nx = tx + dx;
-        const nz = tz + dz;
-        if (!isEnemyPathTileOpen(room, nx, nz)) continue;
-        const d = Math.hypot(dx, dz);
-        if (d < bestD) { bestD = d; best = { tx: nx, tz: nz }; }
-      }
-    }
-    if (best) return best;
-  }
-  return null;
-}
-function canEnemyUseDiagonalStep(room, tx, tz, nx, nz) {
-  const dx = nx - tx;
-  const dz = nz - tz;
-  if (Math.abs(dx) !== 1 || Math.abs(dz) !== 1) return true;
-  // Запрещаем срезать угол между водой/деревом/камнем. Иначе моб визуально
-  // пытается протиснуться через диагональную щель и снова выглядит застрявшим.
-  return isEnemyPathTileOpen(room, tx + dx, tz) && isEnemyPathTileOpen(room, tx, tz + dz);
+  return nearestOpenPathTile((x, z) => isEnemyPathTileOpen(room, x, z), tx, tz, maxRadius);
 }
 function findEnemyGridPath(room, startTx, startTz, goalTx, goalTz) {
-  const start = findNearestWalkablePathTile(room, startTx, startTz, 3);
-  const goal = findNearestWalkablePathTile(room, goalTx, goalTz, 8);
-  if (!start || !goal) return null;
-  if (start.tx === goal.tx && start.tz === goal.tz) return [];
-  const dirs = [
-    [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-    [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]
-  ];
-  const startKey = enemyPathKey(start.tx, start.tz);
-  const goalKey = enemyPathKey(goal.tx, goal.tz);
-  const open = [{ tx: start.tx, tz: start.tz, key: startKey, f: Math.hypot(goal.tx - start.tx, goal.tz - start.tz) }];
-  const cameFrom = new Map();
-  const gScore = new Map([[startKey, 0]]);
-  const closed = new Set();
-  let iterations = 0;
-  while (open.length && iterations++ < 900) {
-    let bestIndex = 0;
-    for (let i = 1; i < open.length; i++) if (open[i].f < open[bestIndex].f) bestIndex = i;
-    const current = open.splice(bestIndex, 1)[0];
-    if (!current || closed.has(current.key)) continue;
-    if (current.key === goalKey) {
-      const out = [];
-      let key = current.key;
-      while (key && key !== startKey) {
-        const [x, z] = key.split(',').map(Number);
-        out.push({ tx: x, tz: z, ...tileToWorld(x, z) });
-        key = cameFrom.get(key);
-      }
-      out.reverse();
-      return out;
-    }
-    closed.add(current.key);
-    const baseG = gScore.get(current.key) ?? Infinity;
-    for (const [dx, dz, cost] of dirs) {
-      const nx = current.tx + dx;
-      const nz = current.tz + dz;
-      if (!isEnemyPathTileOpen(room, nx, nz)) continue;
-      if (!canEnemyUseDiagonalStep(room, current.tx, current.tz, nx, nz)) continue;
-      const key = enemyPathKey(nx, nz);
-      if (closed.has(key)) continue;
-      const nextG = baseG + cost;
-      if (nextG >= (gScore.get(key) ?? Infinity)) continue;
-      cameFrom.set(key, current.key);
-      gScore.set(key, nextG);
-      const h = Math.hypot(goal.tx - nx, goal.tz - nz);
-      open.push({ tx: nx, tz: nz, key, f: nextG + h });
-    }
-  }
-  return null;
+  const dims = roomTileDims(room);
+  return findGridPath({
+    isOpen: (x, z) => isEnemyPathTileOpen(room, x, z),
+    toWorld: (x, z) => tileToWorld(x, z, dims),
+    startTx, startTz, goalTx, goalTz
+  });
 }
 const ROOM_ENEMY_SPATIAL_CELL_SIZE = 8;
 // Hard safety cap for a speed-20 actor during the longest empty-room tick.
@@ -17808,7 +17332,43 @@ function spawnAuthoredLocationActors(room, loc) {
     serverPrepareNpcCorpseLoot(actor, room);
     count++;
   });
-  return count;
+  return count + serverSpawnFastTravelDispatcher(room, loc);
+}
+
+/**
+ * Диспетчер переноса: в каждой столице фракции сервер ставит его у точки входа
+ * (авторские сцены столиц не трогаются). Разговор с ним — список других столиц с
+ * ценой; поездку ведёт обработчик fastTravel.
+ */
+function serverSpawnFastTravelDispatcher(room, loc) {
+  if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
+  const dims = locationTileDims(loc);
+  const anchor = loc.entryFromWorld || loc.spawn || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  const actor = spawnServerEnemy(room, {
+    force: true,
+    allowSafeLocation: true,
+    tx: clamp(Math.floor(Number(anchor.tx) + 3), 2, dims.w - 3),
+    tz: clamp(Math.floor(Number(anchor.tz) + 2), 2, dims.h - 3),
+    maxSpawnSearchRadius: 6,
+    minEnemyDistance: 0.65,
+    minPlayerDistance: 0,
+    visual: 'wastelandSettler',
+    modelKey: 'wastelandSettler',
+    npcSeed: `${loc.id}:fastTravelDispatcher`,
+    npcId: `${loc.id}_dispatcher`,
+    service: 'fastTravel',
+    canDialogue: true,
+    name: 'Диспетчер переноса',
+    role: 'npc',
+    faction: 'neutral',
+    hostileToPlayer: false,
+    stationary: true
+  });
+  if (!actor) return 0;
+  actor.authoredLocationId = loc.id;
+  actor.homeX = actor.x;
+  actor.homeZ = actor.z;
+  return 1;
 }
 
 function ensureKromkaNamedLocationActors(room, loc) {
@@ -19537,6 +19097,7 @@ function ensureRoomWorld(room) {
     const environmentRebuild = room.worldReady && room.environmentVersion !== WORLD_ENVIRONMENT_VERSION;
     if (environmentRebuild || worldSiteDefinitionChanged) clearRoomEnemies(room);
     generateRoomWorld(room);
+    serverWakeZoneRoom(room);
     const loc = roomLocation(room);
     if (!loc.safe && !loc.noRespawn) for (let i = 0; i < (loc.spawnCount || 8); i++) spawnServerEnemy(room);
     refreshRoomWorldState(room);
@@ -22421,25 +21982,17 @@ function serverNotePublicEventDeath(room, player, now = Date.now()) {
   return until;
 }
 
-// Истечение: все игроки комнаты выходят на глобальную карту в точку события.
+// Истечение: все игроки комнаты выходят в зону мира, где было событие.
 function serverEvictPublicEventRoom(event, now = Date.now()) {
   const room = rooms.get(String(event?.roomId || ''));
   if (!room) return 0;
+  const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(event.x || 0), Number(event.y || 0));
   let evicted = 0;
   for (const p of livePlayersInRoom(room)) {
-    const socket = io.sockets.sockets.get(p.id);
-    if (socket) leaveCurrentRoom(socket, 'publicEventExpired', { leaderId: p.id });
-    p.roomId = '';
-    p.onGlobalMap = true;
-    p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: event.x, y: event.y }) || p.globalWorldPoint || null;
     p.pendingLocationTransition = null;
-    p.input = { forward: 0, right: 0 };
-    p.vx = 0;
-    p.vz = 0;
-    p.moving = false;
-    persistActivePlayerState(p);
+    const target = zone ? chooseRoomForLocation(zone.id) : chooseRoomForLocation(normalizeRespawnSettlementId(p.lastVisitedSettlementId || 'settlement'));
+    if (!transferPlayerToServerRoom(p, target, { entryKey: 'entryFromWorld', reason: 'publicEventExpired', message: 'Событие закончилось.' })) continue;
     io.to(p.id).emit('publicEventState', serverPublicEventPayload(event, now, { expired: true, evicted: true }));
-    emitAuthoritativePlayerState(p, { reason: 'publicEventExpired' });
     evicted += 1;
   }
   for (const [id, container] of [...room.containers.entries()]) if (container?.publicEventId === event.id) room.containers.delete(id);
@@ -22512,6 +22065,133 @@ function serverRestorePublicEventZones() {
 }
 
 // ---------------------------------------------------------------------------
+// Порталы зон (src/server/zone-portals.js): точки мира симуляции — публичное
+// событие, бой отрядов, угодья — стоят в своей зоне порталом у якоря событий.
+// Вход через портал выдаёт тот же билет, что раньше выдавало путешествие, а
+// край комнаты точки выводит обратно к её порталу.
+// ---------------------------------------------------------------------------
+function serverZoneCentrePoint(zone) {
+  const size = ZONE_RUNTIME.graph.grid.zoneKm;
+  return { x: (zone.col + 0.5) * size, y: (zone.row + 0.5) * size };
+}
+
+function serverZonePortalsIn(zoneId = '') {
+  const zone = zoneById(ZONE_RUNTIME.graph, zoneId);
+  if (!zone) return [];
+  const loc = ensureZoneLocation(zone.id) || LOCATIONS[zone.id];
+  if (!loc?.zone) return [];
+  return zonePortals(zone.id, WASTELAND_SIM.state()?.worldZones || [], {
+    zoneIdAt: (x, y) => zoneAtPoint(ZONE_RUNTIME.graph, x, y)?.id || '',
+    centre: serverZoneCentrePoint(zone),
+    anchors: loc.zone.eventAnchors,
+    fallback: loc.entryFromWorld || loc.spawn,
+    locationExists: id => !!LOCATIONS[normalizeLocationId(id)]
+  });
+}
+
+function serverPublicZonePortal(row) {
+  return {
+    id: row.id, kind: row.kind, to: row.to, name: row.name, tx: row.tx, tz: row.tz, radius: row.radius,
+    targetZoneRules: zoneRules(row.pvpMode)
+  };
+}
+
+/**
+ * Куда выводит край комнаты точки мира (событие, бой, встреча в угодьях):
+ * в зону этой точки, к её порталу, пока он стоит, иначе в центр зоны. У мест
+ * зон свой выход (parentZoneView), у самих зон края нет.
+ */
+function serverWorldPointRoomExit(room) {
+  if (!room?.encounterWorldPoint) return null;
+  const loc = roomLocation(room);
+  if (!loc.randomTemplate && !loc.encounterOnly) return null;
+  const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(room.encounterWorldPoint.x), Number(room.encounterWorldPoint.y));
+  if (!zone) return null;
+  const portal = room.worldZoneId ? serverZonePortalsIn(zone.id).find(row => row.worldZoneId === room.worldZoneId) : null;
+  return {
+    id: zone.id, n: zone.n, title: zone.title, mode: zone.mode, entryKey: 'entryFromWorld',
+    ...(portal ? { entryTile: { tx: portal.tx, tz: portal.tz } } : {})
+  };
+}
+
+function serverPublicRoomExitZone(room) {
+  const exit = serverWorldPointRoomExit(room);
+  if (!exit) return null;
+  const { entryTile, ...view } = exit;
+  const rules = serverTransitionZoneRules({ to: exit.id });
+  return rules ? { ...view, targetZoneRules: rules } : view;
+}
+
+/**
+ * Шаг в портал зоны: сервер сверяет, что игрок стоит у портала и точка ещё
+ * жива, и выдаёт билет в её комнату. Следы угодий бросают встречу из таблицы
+ * области — у каждого входа своя сцена, выход из неё ведёт в ту же зону.
+ */
+function serverStageZonePortalTicket(p, portalId = '', now = Date.now()) {
+  const room = rooms.get(String(p?.roomId || ''));
+  if (!room || !ZONE_RUNTIME.isZone(room.locationId)) return { ok: false, error: 'Порталы есть только в зонах мира.' };
+  const portal = serverZonePortalsIn(room.locationId).find(row => row.id === portalId);
+  if (!portal) return { ok: false, error: 'Этой точки здесь больше нет.' };
+  const point = tileToWorld(portal.tx, portal.tz, locationTileDims(roomLocation(room)));
+  if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > portal.radius + 1.5) {
+    return { ok: false, error: 'Подойдите к порталу.' };
+  }
+  const worldZone = serverActiveWorldZoneById(portal.worldZoneId);
+  if (!worldZone) return { ok: false, error: 'Эта встреча уже завершилась.' };
+  let ticket;
+  if (portal.kind === 'grounds') {
+    const area = KROMKA_PVE_AREA_CATALOG.areas.find(row => row.id === portal.areaId);
+    const roll = area ? rollAreaEncounter(area) : null;
+    const target = normalizeLocationId(roll?.locationId || '');
+    if (!roll || !LOCATIONS[target]) return { ok: false, error: 'Следы оборвались.' };
+    const owner = pveOwnerKey(p.characterId || p.userId || p.id || '').slice(0, 24);
+    ticket = {
+      targetLocationId: target,
+      roomId: sanitizeEncounterRoomId(`${target}#enc_${owner}_${roll.id}_${Math.floor(now).toString(36).slice(-8)}`, target),
+      encounterId: roll.encounterId,
+      encounter: true,
+      pvpMode: normalizeLocationPvpMode(LOCATIONS[target].pvpMode || 'pve', LOCATIONS[target].safe !== false),
+      // Встреча в угодьях возвращает в ту зону, откуда в неё шагнули.
+      worldPoint: serverZoneCentrePoint(zoneById(ZONE_RUNTIME.graph, room.locationId))
+    };
+  } else {
+    const target = normalizeLocationId(portal.to);
+    const targetLoc = LOCATIONS[target] || {};
+    ticket = {
+      targetLocationId: target,
+      roomId: sanitizeEncounterRoomId(worldZone.roomId || '', target)
+        || (!locationUsesSharedReality(targetLoc) ? `${target}#${portal.worldZoneId}` : ''),
+      worldZoneId: portal.worldZoneId,
+      partyId: String(worldZone.partyId || worldZone.sourceId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
+      siteId: String(worldZone.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
+      encounterId: String(worldZone.encounterId || '').slice(0, 40),
+      encounter: true,
+      pvpMode: normalizeLocationPvpMode(worldZone.pvpMode || locationPvpMode(targetLoc), targetLoc.safe !== false),
+      worldPoint: portal.point
+    };
+  }
+  p.pendingLocationTransition = sanitizePendingLocationTransition({
+    ...ticket, entryKey: 'entryFromWorld', expiresAt: now + 30 * 1000
+  }, now);
+  if (!p.pendingLocationTransition) return { ok: false, error: 'Портал не открылся.' };
+  return { ok: true, locationId: ticket.targetLocationId };
+}
+
+/** Набор точек сменился — занятые каналы зоны получают новое состояние мира. */
+function serverTickZonePortals() {
+  const signatures = new Map();
+  let emitted = 0;
+  for (const room of rooms.values()) {
+    if (!room.sockets?.size || !ZONE_RUNTIME.isZone(room.locationId)) continue;
+    if (!signatures.has(room.locationId)) signatures.set(room.locationId, portalSignature(serverZonePortalsIn(room.locationId)));
+    if (room.zonePortalSignature === signatures.get(room.locationId)) continue;
+    emitServerWorldActivityState(room, 'zonePortals');
+    emitted += 1;
+  }
+  return emitted;
+}
+
+// ---------------------------------------------------------------------------
 // Постоянные PvE-области: личная комната на игрока или группу, встречи по
 // реальному времени, «Искать следы». Владелец проверяется на каждом пути входа.
 // ---------------------------------------------------------------------------
@@ -22531,43 +22211,6 @@ function serverAreaForWorldZone(zone = null) {
   const areaId = String(zone?.details?.areaId || '').replace(/[^a-zA-Z0-9_-]/g, '');
   if (!areaId) return null;
   return KROMKA_PVE_AREA_CATALOG.areas.find(area => area.id === areaId) || null;
-}
-
-function serverGroundsRollFor(session = null, zone = null, now = Date.now(), options = {}) {
-  const area = serverAreaForWorldZone(zone);
-  if (!session || !area || !area.encounters.length) return null;
-  if (!session.groundsRolls || typeof session.groundsRolls !== 'object') session.groundsRolls = {};
-  const key = String(zone.id || '').slice(0, 64);
-  const existing = session.groundsRolls[key];
-  if (existing && !existing.consumed) return existing;
-  const row = rollAreaEncounter(area, options.random || Math.random);
-  if (!row) return null;
-  const roll = {
-    areaId: area.id,
-    rowId: row.id,
-    encounterId: row.encounterId,
-    locationId: row.locationId,
-    title: row.title,
-    rolledAt: Number(now || Date.now()),
-    consumed: false
-  };
-  session.groundsRolls[key] = roll;
-  return roll;
-}
-
-/**
- * Проверка «Странника» на входе в угодья: не дотянул — отряд выводят прямо на
- * встречу, и «Обойти» недоступно. Порог объявляет сама область.
- */
-function serverGroundsForcedFor(area = null, player = null) {
-  if (!area) return false;
-  return !wandererPassesArea(area, serverSkillPercent(player || {}, 'wanderer'));
-}
-
-function serverGroundsContactTitle(roll = null, area = null) {
-  const title = String(roll?.title || '').trim();
-  if (title) return title;
-  return String(area?.displayName || 'Угодья');
 }
 
 function serverPveOwnerKeyFor(player = {}) {
@@ -23186,6 +22829,13 @@ function publicWorldState(room, includeMap = true) {
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
     fullDrop: zoneModeDropsInventory(pvpMode),
+    // Порталы зоны к точкам мира; у комнаты точки — зона, куда выводит её край.
+    portals: (() => {
+      const portals = ZONE_RUNTIME.isZone(room.locationId) ? serverZonePortalsIn(room.locationId) : [];
+      room.zonePortalSignature = portalSignature(portals);
+      return portals.map(serverPublicZonePortal);
+    })(),
+    parentZone: serverPublicRoomExitZone(room),
     activity: publicWorldActivity(room.worldActivity),
     pveArea: room.pveState
       ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
@@ -24044,8 +23694,8 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
   if (!room || !serverWorldActivityTaskMatchesRoom(task, room)) return { ok: false, error: 'Нужно прибыть в точку вылазки.' };
   const activity = ensureServerWorldActivityForRoom(room, Date.now());
   if (!activity || String(activity.taskId || '') !== String(taskId || '')) return { ok: false, error: 'Активность в этой локации не найдена.' };
-  if (!['outpost_defense', 'distress_signal'].includes(task.type) && !serverPlayerAtGlobalMapExit(player)) {
-    return { ok: false, error: 'Для эвакуации доберитесь до края локации или выхода на глобальную карту.' };
+  if (!['outpost_defense', 'distress_signal'].includes(task.type) && !serverPlayerAtPlaceEdge(player)) {
+    return { ok: false, error: 'Для эвакуации доберитесь до края локации или её выхода.' };
   }
   const extracted = extractWorldActivity(activity, {
     socketId: player.id,
@@ -26599,12 +26249,15 @@ function sanitizeLootRequest(data) {
 function canonicalLocationRealityId(roomId = '', locationId = '') {
   const requested = String(roomId || '').replace(/[^a-zA-Z0-9_#-]/g, '').slice(0, 96);
   const loc = normalizeLocationId(locationId || requested.split('#')[0] || 'settlement');
+  // Зона мира делится на каналы `z_CC_RR#chN`, когда в ней тесно.
+  if (ZONE_RUNTIME.isZone(loc) && zoneChannelOf(requested, loc) > 1) return requested;
   if (locationUsesSharedReality(loc)) return loc;
   return requested && requested.startsWith(`${loc}#`) ? requested : loc;
 }
 
 function getOrCreateRoom(roomId = 'settlement', locationId = '') {
   const loc = normalizeLocationId(locationId || String(roomId || '').split('#')[0] || 'settlement');
+  ensureZoneLocation(loc);
   const id = canonicalLocationRealityId(roomId, loc);
   const authoredWorldSiteId = String(LOCATIONS[loc]?.worldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   if (!rooms.has(id)) {
@@ -26698,6 +26351,51 @@ function pruneExpiredEphemeralRooms(now = Date.now()) {
   });
 }
 
+// Сон зон мира: пустая зона уходит из памяти через 10 минут. Вскрытые тайники
+// и выработанные ресурсы ждут её пробуждения до конца игрового дня — иначе их
+// обновлял бы любой, кто вышел из зоны и вернулся.
+const sleepingZoneRooms = new Map();
+
+function pruneSleepingZoneRooms(now = Date.now()) {
+  const day = currentGameDayIndex(now);
+  for (const [id, stash] of sleepingZoneRooms) if (stash.day !== day) sleepingZoneRooms.delete(id);
+  return pruneIdleRooms(rooms, {
+    now,
+    idleTtlMs: ZONE_SLEEP_MS,
+    shouldPruneRoom: room => ZONE_RUNTIME.isZone(room?.locationId),
+    beforeRemove(room) {
+      if (room.ecologyGroupIds?.size) serverEcologyReleaseRoom(room, now);
+      clearRoomEnemies(room);
+      if (!room.worldReady) return;
+      sleepingZoneRooms.set(room.id, {
+        day,
+        containers: room.containers,
+        containersRestockDay: room.containersRestockDay,
+        resources: room.resources
+      });
+    }
+  });
+}
+
+/** Зона просыпается такой, какой уснула: тайники и ресурсы из сонного снимка. */
+function serverWakeZoneRoom(room) {
+  const stash = sleepingZoneRooms.get(room?.id);
+  if (!stash) return false;
+  sleepingZoneRooms.delete(room.id);
+  if (stash.day !== currentGameDayIndex()) return false;
+  room.containers = stash.containers;
+  room.containersRestockDay = stash.containersRestockDay;
+  for (const [id, fresh] of [...room.resources.entries()]) {
+    const kept = stash.resources.get(id);
+    if (kept) room.resources.set(id, kept);
+    else {
+      room.resources.delete(id);
+      clearRoomResourceTile(room, fresh);
+    }
+  }
+  return true;
+}
+
 function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
   const loc = normalizeLocationId(locationId || 'settlement');
   let count = 0;
@@ -26729,9 +26427,86 @@ function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
   return count;
 }
 
-function chooseRoomForLocation(locationId) {
+function serverLiveSocketCount(room) {
+  if (!room?.sockets) return 0;
+  let count = 0;
+  for (const sid of room.sockets) if (socketIsLive(sid)) count++;
+  return count;
+}
+
+/** Товарищи игрока по отряду мирового задания, которые сейчас в игре. */
+function serverWorldPartyMatesOnline(p = {}) {
+  const attachment = serverWorldPartyAttachmentForPlayer(p);
+  if (!attachment) return [];
+  const members = Array.isArray(attachment.party.playerMembers) ? attachment.party.playerMembers : [];
+  return [...players.values()].filter(other => other && other.id !== p.id && socketIsLive(other.id)
+    && members.some(row => String(row.taskId || '') === String(attachment.task.id || '') && playerMatchesWorldPartyMember(other, row)));
+}
+
+/** Канал зоны, где уже стоит товарищ по отряду: отряд не разбрасывает по копиям зоны. */
+function serverZoneChannelPreference(p = {}, zoneId = '') {
+  for (const mate of serverWorldPartyMatesOnline(p)) {
+    if (zoneChannelOf(mate.roomId, zoneId)) return mate.roomId;
+  }
+  return '';
+}
+
+/**
+ * Отряд у ворот: кто стоит рядом с шагнувшим и не в перестрелке, проходит
+ * вместе с ним в тот же канал; отставшим сервер говорит, какими воротами ушли.
+ */
+function serverZoneGateFollowers(p, fromRoomId, from, room, entryKey, label = '') {
+  const now = Date.now();
+  for (const mate of serverWorldPartyMatesOnline(p)) {
+    if (mate.roomId !== fromRoomId || mate.dead || Number(mate.hp || 0) <= 0) continue;
+    const near = Math.hypot(Number(mate.x || 0) - from.x, Number(mate.z || 0) - from.z) <= ZONE_GATE_FOLLOW_METRES;
+    if (near && serverZoneGatePvpPauseLeft(mate, now) <= 0
+      && transferPlayerToServerRoom(mate, room, { entryKey, reason: 'zoneGateFollow', message: `Отряд прошёл ворота: ${label}`.slice(0, 160) })) {
+      mate.zoneArrivalShieldUntil = now + ZONE_ARRIVAL_SHIELD_MS;
+      continue;
+    }
+    io.to(mate.id).emit('dangerCellNotice', { text: `${p.name || 'Товарищ'} ушёл воротами «${label}» — догоняйте.`.slice(0, 160), t: now });
+  }
+}
+
+/**
+ * Комната локации. Зона мира отдаёт канал: предпочтительный (канал товарища по
+ * отряду или сохранённый), если в нём есть место, иначе первый неполный.
+ */
+// Подсказки первого входа в зону мира: как ходить воротами и где карта мира.
+const ZONE_FIRST_HINTS = Object.freeze([
+  { id: 'zoneGates', text: 'Вы в зоне мира. Проходы по краям — ворота в соседние зоны: шагните в проход. У ворот видно, куда они ведут и насколько там опасно.' },
+  { id: 'worldMap', text: 'Карта мира — кнопка у миникарты: зоны, их цвета, места и где вы стоите.' }
+]);
+
+function serverShowZoneFirstHints(p = {}) {
+  if (!p?.id || !ZONE_RUNTIME.isZone(p.locationId) || !p.kromkaOnboarding) return 0;
+  const shown = Array.isArray(p.kromkaOnboarding.hintsShown) ? p.kromkaOnboarding.hintsShown : (p.kromkaOnboarding.hintsShown = []);
+  let sent = 0;
+  for (const hint of ZONE_FIRST_HINTS) {
+    if (shown.includes(hint.id)) continue;
+    shown.push(hint.id);
+    io.to(p.id).emit('dangerCellNotice', { text: hint.text, hint: hint.id, t: Date.now() + sent });
+    sent += 1;
+  }
+  return sent;
+}
+
+/** Столицы фракций для переноса: место, его имя для игрока и его зона. */
+function serverFastTravelCapitals() {
+  return (ZONE_RUNTIME.graph.capitals || []).map(locationId => ({
+    locationId,
+    name: serverLocationPublicName(locationId),
+    zone: ZONE_RUNTIME.graph.zones.find(zone => zone.places.some(place => place.locationId === locationId)) || null
+  })).filter(row => row.zone);
+}
+
+function chooseRoomForLocation(locationId, options = {}) {
   const loc = normalizeLocationId(locationId);
-  const room = getOrCreateRoom(roomIdFor(loc), loc);
+  const roomId = ZONE_RUNTIME.isZone(loc)
+    ? pickZoneChannel({ zoneId: loc, prefer: options.prefer || '', cap: ZONE_CHANNEL_CAP, occupancy: id => serverLiveSocketCount(rooms.get(id)) })
+    : roomIdFor(loc);
+  const room = getOrCreateRoom(roomId, loc);
   for (const sid of [...room.sockets]) if (!socketIsLive(sid)) room.sockets.delete(sid);
   return room;
 }
@@ -26795,40 +26570,6 @@ function serverWorldPartyAttachmentForPlayer(p = {}, simState = null) {
   return null;
 }
 
-function removePlayerFromIndependentGlobalTravelSessions(playerId = '') {
-  const id = String(playerId || '');
-  if (!id) return;
-  for (const [leaderId, session] of [...globalTravelSessions.entries()]) {
-    if (!session) {
-      globalTravelSessions.delete(leaderId);
-      continue;
-    }
-    if (String(leaderId || '') === id || String(session.leaderId || '') === id) {
-      globalTravelSessions.delete(leaderId);
-      continue;
-    }
-    if (Array.isArray(session.memberIds)) {
-      session.memberIds = session.memberIds.filter(memberId => String(memberId || '') !== id);
-      if (session.memberIds.length <= 0) globalTravelSessions.delete(leaderId);
-    }
-  }
-}
-
-function serverPlayerIsInAttachedPartyRoom(p = {}, party = {}, simState = null) {
-  const room = p.roomId ? rooms.get(p.roomId) : null;
-  const partyId = String(party.id || '');
-  if (!room || !partyId) return false;
-  const state = simState || (typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null);
-  return (Array.isArray(state?.worldZones) ? state.worldZones : []).some(zone => {
-    if (!zone || zone.status !== 'active' || String(zone.partyId || zone.details?.partyId || '') !== partyId) return false;
-    const zoneId = worldTransferId(zone.id || '');
-    if (zoneId && String(room.worldZoneId || '') === zoneId) return true;
-    if (zoneId && room.onsiteWorldZoneIds instanceof Set && room.onsiteWorldZoneIds.has(zoneId)) return true;
-    const zoneRoomId = sanitizeEncounterRoomId(zone.roomId || zone.details?.roomId || '', zone.locationId || room.locationId || '');
-    return !!zoneRoomId && zoneRoomId === room.id;
-  });
-}
-
 function syncServerPlayerWorldPartyAttachment(p = {}, simState = null, options = {}) {
   if (!p?.id) return { changed: false, attachment: null };
   const retryPersistence = p.worldPartyAttachmentPersistPending === true;
@@ -26849,19 +26590,8 @@ function syncServerPlayerWorldPartyAttachment(p = {}, simState = null, options =
     p.attachedPartyTaskId = String(task.id || '');
     p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: party.x, y: party.y }) || p.globalWorldPoint || null;
     p.currentWorldSiteId = '';
-    removePlayerFromIndependentGlobalTravelSessions(p.id);
-    if (serverPlayerIsInAttachedPartyRoom(p, party, state)) {
-      p.onGlobalMap = false;
-    } else {
-      const socket = io.sockets.sockets.get(p.id);
-      if (socket && p.roomId) leaveCurrentRoom(socket, 'worldPartyAttach', { leaderId: p.id });
-      p.roomId = '';
-      p.onGlobalMap = true;
-      p.input = { forward: 0, right: 0 };
-      p.vx = 0;
-      p.vz = 0;
-      p.moving = false;
-    }
+    // Карты нет: игрок остаётся в своей комнате, отряд идёт по миру сам.
+    p.onGlobalMap = false;
   } else {
     const hadAttachment = !!(p.attachedPartyId || p.attachedPartyTaskId);
     const previousParty = p.attachedPartyId ? state?.parties?.[p.attachedPartyId] : null;
@@ -26870,7 +26600,6 @@ function syncServerPlayerWorldPartyAttachment(p = {}, simState = null, options =
     }
     p.attachedPartyId = '';
     p.attachedPartyTaskId = '';
-    if (hadAttachment && !p.roomId) p.onGlobalMap = true;
     const orphanedTask = serverPlayerActiveWorldPartyTask(p);
     if (orphanedTask) {
       const orphanedId = String(orphanedTask.id || '');
@@ -26962,17 +26691,6 @@ function onlinePlayerForWorldPartyMember(member = {}) {
   for (const p of players.values()) {
     if (!p || p.dead || !socketIsLive(p.id)) continue;
     if (playerMatchesWorldPartyMember(p, member)) return p;
-  }
-  return null;
-}
-
-function onlinePlayerByWorldId(value = '') {
-  const key = worldTransferId(value);
-  if (!key) return null;
-  for (const p of players.values()) {
-    if (!p || p.dead || !socketIsLive(p.id)) continue;
-    const playerIds = [p.id, p.characterId, p.userId].map(worldTransferId).filter(Boolean);
-    if (playerIds.includes(key)) return p;
   }
   return null;
 }
@@ -27176,7 +26894,6 @@ function transferPlayerToServerRoom(p, room, options = {}) {
     console.error('World transfer room membership failed:', p.id, room.id, error);
     return false;
   }
-  removePlayerFromIndependentGlobalTravelSessions(p.id);
   const questProgress = serverRecordKromkaLocationArrival(p, room.locationId);
   try {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
@@ -27272,37 +26989,6 @@ function syncWorldCaravanBattleTransfers(state = null) {
         reason: 'caravanBattle',
         message: 'Караван попал в засаду. Сопровождение втянуто в бой.',
         partyId: party.id || zone.partyId || '',
-        worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
-      }));
-    }
-  }
-}
-
-function syncWorldPlayerAmbushTransfers(state = null) {
-  const simState = state || (typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null);
-  const zones = Array.isArray(simState?.worldZones) ? simState.worldZones : [];
-  for (const zone of zones) {
-    if (!zone || zone.status !== 'active' || !zone.details?.playerAmbush || !zone.details?.triggered || !zone.partyId) continue;
-    const room = prepareWorldZoneTransferRoom(zone);
-    if (!room) continue;
-    const targets = [];
-    const owner = onlinePlayerByWorldId(zone.ownerPlayerId || zone.sourceId || zone.details?.ownerPlayerId || '');
-    if (owner) targets.push({ player: owner, role: 'ambushOwner' });
-    const party = simState.parties && simState.parties[zone.partyId];
-    const members = Array.isArray(party?.playerMembers) ? party.playerMembers : [];
-    for (const member of members) {
-      const player = onlinePlayerForWorldPartyMember(member);
-      if (player && !targets.some(row => row.player.id === player.id)) targets.push({ player, role: 'escort' });
-    }
-    for (const target of targets) {
-      const p = target.player;
-      const key = `${worldTransferId(zone.id)}:${p.id}:${target.role}`;
-      runServerWorldTransferOnce(WORLD_AMBUSH_TRANSFERS, key, () => transferPlayerToServerRoom(p, room, {
-        reason: 'playerAmbushTriggered',
-        message: target.role === 'ambushOwner'
-          ? 'В засаду вошёл отряд. Локация ожила.'
-          : 'Ваш отряд попал в засаду.',
-        partyId: party?.id || zone.partyId || '',
         worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
       }));
     }
@@ -27442,7 +27128,6 @@ function syncWorldCaravanPlayerTransfers() {
   syncWorldBattleRooms(simState);
   syncWorldPartyPlayerAttachments(simState);
   syncWorldCaravanBattleTransfers(simState);
-  syncWorldPlayerAmbushTransfers(simState);
   syncWorldCaravanArrivalTransfers(simState);
   syncWorldOnsitePartyTransfers(simState);
   settleServerWorldActivityPlayers();
@@ -27490,8 +27175,6 @@ function publicPlayer(p) {
 }
 
 function serverAuthoritativeGlobalMapState(p = {}) {
-  const candidateSession = globalTravelSessionForMember(p.id || '');
-  const session = candidateSession && !candidateSession.terminating ? candidateSession : null;
   const serverNow = Date.now();
   const attachedPartyId = worldTransferId(p.attachedPartyId || '');
   const attachedPartyTaskId = worldTransferRecordId(p.attachedPartyTaskId || '');
@@ -27500,12 +27183,12 @@ function serverAuthoritativeGlobalMapState(p = {}) {
   const point = sanitizeServerGlobalMapPoint(
     attachedParty
       ? { x: attachedParty.x, y: attachedParty.y }
-      : (session ? serverGlobalTravelCurrentPoint(session, serverNow) : p.globalWorldPoint)
+      : p.globalWorldPoint
   ) || serverGlobalPointForPlayer(p);
   const siteId = String(p.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   return {
     version: 1,
-    onWorldMap: !!p.onGlobalMap,
+    onWorldMap: false,
     fromLocationId: normalizeLocationId(p.locationId || 'settlement'),
     playerX: Number(point?.x || 0),
     playerY: Number(point?.y || 0),
@@ -27520,10 +27203,10 @@ function serverAuthoritativeGlobalMapState(p = {}) {
     currentWorldSiteId: siteId,
     attachedPartyId,
     attachedPartyTaskId,
-    travelLeaderId: session?.leaderId || (p.onGlobalMap && !attachedPartyId ? String(p.id || '') : ''),
-    travelLeaderName: session?.leaderName || (p.onGlobalMap && !attachedPartyId ? String(p.name || 'Игрок') : ''),
+    travelLeaderId: '',
+    travelLeaderName: '',
     lastEntryCircle: null,
-    travel: serverGlobalTravelPublicDescriptor(session, serverNow),
+    travel: null,
     encounter: null
   };
 }
@@ -27596,7 +27279,7 @@ function publicAuthoritativePlayerState(p = {}) {
       temporaryParty: {
         scope: 'temporaryParty',
         partyId: String(p.attachedPartyId || ''),
-        member: !!String(p.attachedPartyId || '') || !!globalTravelSessionForMember(p.id || ''),
+        member: !!String(p.attachedPartyId || ''),
         leader: String(globalMap.travelLeaderId || '') === String(p.id || '')
       },
       clan: {
@@ -27674,8 +27357,21 @@ function publicAuthoritativePlayerState(p = {}) {
     globalWorldPoint: { x: globalMap.playerX, y: globalMap.playerY },
     currentWorldSiteId: globalMap.currentWorldSiteId,
     globalMap,
-    // Сцена опасной клетки: какая это клетка карты и как её зовут («Меловая чаша №47»).
-    dangerCell: serverDangerCellView(p)
+    // Зона мира, в которой стоит игрок: номер, название, цвет, куда ведут ворота,
+    // канал и сколько ещё держатся щит прибытия и пауза ворот.
+    zone: serverZoneSelfView(p)
+  };
+}
+
+function serverZoneSelfView(p = {}) {
+  const view = ZONE_RUNTIME.view(p.locationId);
+  if (!view) return null;
+  const now = Date.now();
+  return {
+    ...view,
+    channel: zoneChannelOf(p.roomId, p.locationId) || 1,
+    arrivalShieldMs: Math.max(0, Number(p.zoneArrivalShieldUntil || 0) - now),
+    gatePauseMs: serverZoneGatePvpPauseLeft(p, now)
   };
 }
 
@@ -27954,72 +27650,8 @@ function serverStateInventoryWithout(inventory, itemId = '') {
   return next;
 }
 
-function publicTravelPartyMember(p, leaderId = '') {
-  return {
-    id: p.id,
-    characterId: p.characterId || '',
-    name: p.name || 'Игрок',
-    factionId: serverWorldFactionKey(p.worldFactionId || p.factionId || ''),
-    leader: p.id === leaderId,
-    locationId: p.locationId || 'settlement',
-    roomId: p.roomId || ''
-  };
-}
-
-function nearbyGlobalTravelParty(leader, radius = 8.5) {
-  if (!leader || !leader.roomId) return [];
-  const out = [];
-  for (const p of players.values()) {
-    if (!p || !socketIsLive(p.id) || p.dead || Number(p.hp || 0) <= 0) continue;
-    if (p.roomId !== leader.roomId) continue;
-    const d = Math.hypot(Number(p.x || 0) - Number(leader.x || 0), Number(p.z || 0) - Number(leader.z || 0));
-    if (p.id === leader.id || d <= radius) out.push(p);
-  }
-  out.sort((a, b) => (a.id === leader.id ? -1 : 0) - (b.id === leader.id ? -1 : 0) || String(a.name || '').localeCompare(String(b.name || '')));
-  return out;
-}
-
-function emitGlobalTravelToParty(session, eventName, payload = {}, includeLeader = false) {
-  if (!session || !Array.isArray(session.memberIds)) return;
-  for (const memberId of session.memberIds) {
-    if (!includeLeader && memberId === session.leaderId) continue;
-    const memberSocket = io.sockets.sockets.get(memberId);
-    if (memberSocket) memberSocket.emit(eventName, payload);
-  }
-}
-
-function globalTravelSessionForMember(memberId = '') {
-  const id = String(memberId || '');
-  if (!id) return null;
-  for (const session of globalTravelSessions.values()) {
-    if (!session || !Array.isArray(session.memberIds)) continue;
-    if (session.memberIds.some(row => String(row || '') === id)) return session;
-  }
-  return null;
-}
-
-const SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION = clamp(
-  Number(process.env.SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION || 900),
-  1,
-  100000
-);
-const SERVER_GLOBAL_PLAYER_RADIUS = 5.2;
 const SERVER_GLOBAL_LOCATION_RADIUS = 15;
-const SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE = 5.5;
-const SERVER_GLOBAL_ENCOUNTER_DECISION_MS = 15000;
 const WORLD_MAP_EXIT_BAND_TILES = 2;
-
-function serverGlobalMapMetrics() {
-  const grid = GLOBAL_MAP?.grid || GLOBAL_MAP_GRID_DEFAULT;
-  const cellPoints = clamp(Number(grid.cellPoints || GLOBAL_MAP_GRID_DEFAULT.cellPoints), 4, 200);
-  const cellKm = clamp(Number(grid.cellKm || GLOBAL_MAP_GRID_DEFAULT.cellKm), 1, 100);
-  return { cellPoints, cellKm, pointKm: cellKm / cellPoints };
-}
-
-function serverGlobalPointDistance(a = null, b = null) {
-  if (!a || !b) return Infinity;
-  return Math.hypot(Number(a.x || 0) - Number(b.x || 0), Number(a.y || 0) - Number(b.y || 0));
-}
 
 function serverGlobalMapNode(locationId = '') {
   const id = normalizeLocationId(locationId || '');
@@ -28051,9 +27683,13 @@ function serverGlobalSiteForLocation(locationId = '', state = null) {
 }
 
 function serverGlobalPointForPlayer(p = {}) {
-  if (p.onGlobalMap) {
-    const livePoint = sanitizeServerGlobalMapPoint(p.globalWorldPoint || null);
-    if (livePoint) return livePoint;
+  // Мир — граф зон: в зоне точка игрока — её центр, в комнате точки мира
+  // (событие, бой, встреча) — сама точка, в месте — его узел или площадка.
+  const zone = ZONE_RUNTIME.isZone(p.locationId) ? zoneById(ZONE_RUNTIME.graph, p.locationId) : null;
+  if (zone) return sanitizeServerGlobalMapPoint(serverZoneCentrePoint(zone));
+  const worldPointRoom = rooms.get(p.roomId || '');
+  if (worldPointRoom?.encounterWorldPoint && serverWorldPointRoomExit(worldPointRoom)) {
+    return sanitizeServerGlobalMapPoint(worldPointRoom.encounterWorldPoint);
   }
   const simState = serverGlobalSimState();
   const site = serverGlobalSite(p.currentWorldSiteId || '', simState)
@@ -28070,285 +27706,7 @@ function serverGlobalPointForPlayer(p = {}) {
   return sanitizeServerGlobalMapPoint(fallback);
 }
 
-function serverGlobalTravelSpeedKmh(p = {}, options = {}) {
-  const baseSpeed = 16 + 8 * serverSkillNorm(p, 'wanderer');
-  if (options.clanConvoy !== true) return baseSpeed;
-  const context = serverClanBaseContextForPlayer(p);
-  return baseSpeed * serverClanCaravanSpeedMultiplier(context?.profile || {});
-}
-
-function serverGlobalTravelTiming(p = {}, fromPoint = null, targetPoint = null, routePoints = null, options = {}) {
-  const plannedPoints = Array.isArray(routePoints) && routePoints.length >= 2 ? routePoints : [fromPoint, targetPoint];
-  const distancePoints = routeDistance(plannedPoints);
-  const { pointKm } = serverGlobalMapMetrics();
-  const distanceKm = Number.isFinite(distancePoints) ? Math.max(0, distancePoints * pointKm) : 0;
-  const baseSpeedKmh = serverGlobalTravelSpeedKmh(p);
-  const speedKmh = serverGlobalTravelSpeedKmh(p, options);
-  const worldHours = speedKmh > 0 ? distanceKm / speedKmh : 0;
-  const durationMs = distanceKm <= 0.001
-    ? 0
-    : Math.max(100, worldHours * 3600 * 1000 / SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION);
-  return {
-    distancePoints,
-    distanceKm,
-    speedKmh,
-    worldHours,
-    durationMs,
-    clanConvoy: options.clanConvoy === true,
-    clanCaravanSpeedPct: baseSpeedKmh > 0 ? Number(Math.max(0, speedKmh / baseSpeedKmh - 1).toFixed(4)) : 0
-  };
-}
-
-function serverGlobalTravelCurrentPoint(session = null, now = Date.now()) {
-  const fromPoint = sanitizeServerGlobalMapPoint(session?.fromPoint || session?.worldPoint || null);
-  const targetPoint = sanitizeServerGlobalMapPoint(session?.targetPoint || fromPoint);
-  if (!fromPoint || !targetPoint) return fromPoint || targetPoint || null;
-  const durationMs = Math.max(0, Number(session?.durationMs || 0));
-  const effectiveNow = session?.pendingEncounter?.pauseAt
-    ? Math.min(Number(now || Date.now()), Number(session.pendingEncounter.pauseAt))
-    : Number(now || Date.now());
-  const progress = durationMs > 0
-    ? clamp((effectiveNow - Number(session?.startedAt || 0)) / durationMs, 0, 1)
-    : 1;
-  const routePoints = (Array.isArray(session?.routePoints) ? session.routePoints : [])
-    .map(point => sanitizeServerGlobalMapPoint(point))
-    .filter(Boolean);
-  if (routePoints.length >= 2) return sanitizeServerGlobalMapPoint(pointAtRouteProgress(routePoints, progress));
-  return sanitizeServerGlobalMapPoint({
-    x: fromPoint.x + (targetPoint.x - fromPoint.x) * progress,
-    y: fromPoint.y + (targetPoint.y - fromPoint.y) * progress
-  });
-}
-
-function serverRestoredGlobalTravelSession(player = {}, savedGlobalMap = {}, now = Date.now()) {
-  const travel = savedGlobalMap?.travel && typeof savedGlobalMap.travel === 'object'
-    ? savedGlobalMap.travel
-    : null;
-  if (!travel || travel.serverAuthoritative !== true) return null;
-  const fromPoint = sanitizeServerGlobalMapPoint(travel.fromPoint || travel.currentPoint || null);
-  const targetPoint = sanitizeServerGlobalMapPoint(travel.toPoint || null);
-  if (!fromPoint || !targetPoint) return null;
-  const routePoints = (Array.isArray(travel.routePoints) ? travel.routePoints : [])
-    .map(point => sanitizeServerGlobalMapPoint(point))
-    .filter(Boolean);
-  const durationMs = clamp(Number(travel.durationMs || Number(travel.duration || 0) * 1000), 0, 86400000);
-  const savedProgress = clamp(Number(travel.progress || 0), 0, 1);
-  const authoredStartedAt = Number(travel.startedAt || 0);
-  const startedAt = authoredStartedAt > 0 ? authoredStartedAt : Number(now || Date.now()) - durationMs * savedProgress;
-  const targetSiteId = String(travel.targetWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-  const targetLocationId = normalizeLocationId(travel.targetSettlementId || (targetSiteId ? 'wasteland' : 'wasteland'));
-  return {
-    id: String(travel.travelId || `travel_${player.id}_${Math.floor(now)}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96),
-    leaderId: player.id,
-    leaderName: player.name || 'Игрок',
-    fromLocationId: normalizeLocationId(savedGlobalMap.fromLocationId || player.locationId || 'settlement'),
-    targetLocationId,
-    targetSiteId,
-    fromPoint,
-    targetPoint,
-    routePoints: routePoints.length >= 2 ? routePoints : [fromPoint, targetPoint],
-    worldPoint: sanitizeServerGlobalMapPoint(travel.currentPoint || savedGlobalMap) || fromPoint,
-    distanceKm: Math.max(0, Number(travel.distanceKm || 0)),
-    speedKmh: Math.max(0, Number(travel.speedKmh || serverGlobalTravelSpeedKmh(player))),
-    clanConvoy: travel.clanConvoy === true,
-    clanCaravanSpeedPct: Math.max(0, Number(travel.clanCaravanSpeedPct || 0)),
-    worldHours: Math.max(0, Number(travel.worldHours || 0)),
-    durationMs,
-    memberIds: [player.id],
-    startedAt,
-    arrivalAt: Number(travel.arrivalAt || startedAt + durationMs),
-    restoredFromSave: true
-  };
-}
-
-function serverGlobalTravelEncounterContact(session = null, encounterId = '', now = Date.now()) {
-  const id = String(encounterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-  const point = serverGlobalTravelCurrentPoint(session, now);
-  const state = serverGlobalSimState();
-  if (!id || !point || !state) return null;
-  const zone = (Array.isArray(state.worldZones) ? state.worldZones : [])
-    .find(row => String(row?.id || '') === id && serverGlobalZoneVisible(row));
-  if (zone) {
-    const zonePoint = sanitizeServerGlobalMapPoint(zone);
-    const radius = clamp(Number(zone.radius || 9), 2, 40);
-    if (zonePoint && serverGlobalPointDistance(point, zonePoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      // Угодья предлагают не себя, а ту встречу, которая на них выпала, и
-      // «Обойти» зависит от «Странника» отряда: не дотянул — втянут без выбора.
-      const groundsArea = serverAreaForWorldZone(zone);
-      if (groundsArea) {
-        const roll = serverGroundsRollFor(session, zone, now);
-        return {
-          id,
-          kind: 'zone',
-          title: safeName(serverGroundsContactTitle(roll, groundsArea)),
-          point: zonePoint,
-          forced: serverGroundsForcedFor(groundsArea, players.get(String(session?.leaderId || '')))
-        };
-      }
-      return {
-        id,
-        kind: 'zone',
-        title: safeName(zone.details?.title || zone.title || zone.name || 'Событие пустоши'),
-        point: zonePoint,
-        forced: zone.details?.forced === true
-      };
-    }
-  }
-  // Невидимые отряды NPC встречей в пути не бывают: угрозы живут в клетках.
-  const party = WORLD_ECONOMY.worldModel.visibleWorldParties === false ? null : (state.parties?.[id] || null);
-  const partyPoint = party && !party.destroyed && String(party.state || '') !== 'destroyed'
-    ? sanitizeServerGlobalMapPoint(party)
-    : null;
-  const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
-  if (partyPoint && serverGlobalPointDistance(point, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-    return {
-      id,
-      kind: 'party',
-      title: safeName(party.name || 'Отряд пустоши'),
-      point: partyPoint,
-      forced: party.forced === true
-    };
-  }
-  return null;
-}
-
-function serverFinishGlobalTravelEncounterDecision(session = null, decision = 'skip', now = Date.now()) {
-  const pending = session?.pendingEncounter || null;
-  if (!session || !pending) return null;
-  const pausedMs = Math.max(0, Number(now || Date.now()) - Number(pending.pauseAt || now));
-  session.startedAt = Number(session.startedAt || now) + pausedMs;
-  session.arrivalAt = Number(session.arrivalAt || now) + pausedMs;
-  session.pendingEncounter = null;
-  // Обойдённая встреча угодий израсходована: следующий шанс на том же пути
-  // выкатит другую сцену, а не предложит ту же самую снова.
-  if (decision !== 'enter' && session.groundsRolls?.[pending.id]) session.groundsRolls[pending.id].consumed = true;
-  return {
-    leaderId: session.leaderId,
-    leaderName: session.leaderName,
-    pending: false,
-    decision: decision === 'enter' ? 'enter' : 'skip',
-    encounterId: pending.id,
-    encounterKind: pending.kind,
-    title: pending.title,
-    targetLocationId: session.targetLocationId,
-    decisionId: pending.decisionId,
-    serverNow: Number(now || Date.now())
-  };
-}
-
-function scheduleServerGlobalTravelEncounterTimeout(session = null) {
-  const decisionId = String(session?.pendingEncounter?.decisionId || '');
-  const deadlineAt = Number(session?.pendingEncounter?.deadlineAt || 0);
-  if (!session || !decisionId || deadlineAt <= 0) return;
-  setTimeout(() => {
-    const live = globalTravelSessions.get(session.leaderId);
-    if (live !== session || String(live.pendingEncounter?.decisionId || '') !== decisionId) return;
-    const payload = serverFinishGlobalTravelEncounterDecision(live, 'skip', Date.now());
-    if (!payload) return;
-    payload.reason = 'leaderDecisionTimeout';
-    emitGlobalTravelToParty(live, 'globalTravelEncounterDecision', payload, true);
-  }, Math.max(1, deadlineAt - Date.now()));
-}
-
-function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
-  if (!session || session.terminating) return null;
-  const serverNow = Number(now || Date.now());
-  const progressNow = session.pendingEncounter?.pauseAt
-    ? Math.min(serverNow, Number(session.pendingEncounter.pauseAt))
-    : serverNow;
-  const durationMs = Math.max(0, Number(session.durationMs || 0));
-  const elapsedMs = durationMs > 0
-    ? clamp(progressNow - Number(session.startedAt || progressNow), 0, durationMs)
-    : durationMs;
-  const fromPoint = sanitizeServerGlobalMapPoint(session.fromPoint || session.worldPoint || null);
-  const toPoint = sanitizeServerGlobalMapPoint(session.targetPoint || fromPoint);
-  const routePoints = (Array.isArray(session.routePoints) ? session.routePoints : [])
-    .map(point => sanitizeServerGlobalMapPoint(point))
-    .filter(Boolean);
-  return {
-    travelId: String(session.id || ''),
-    fromPoint,
-    toPoint,
-    currentPoint: serverGlobalTravelCurrentPoint(session, serverNow),
-    routePoints,
-    targetSettlementId: session.targetSiteId ? '' : normalizeLocationId(session.targetLocationId || ''),
-    targetWorldSiteId: String(session.targetSiteId || ''),
-    progress: durationMs > 0 ? clamp(elapsedMs / durationMs, 0, 1) : 1,
-    duration: durationMs / 1000,
-    durationMs,
-    distanceKm: Math.max(0, Number(session.distanceKm || 0)),
-    speedKmh: Math.max(0, Number(session.speedKmh || 0)),
-    clanConvoy: session.clanConvoy === true,
-    clanCaravanSpeedPct: Math.max(0, Number(session.clanCaravanSpeedPct || 0)),
-    worldHours: Math.max(0, Number(session.worldHours || 0)),
-    wandererSkill: 0,
-    serverAuthoritative: true,
-    encounterDecision: session.pendingEncounter ? {
-      encounterId: session.pendingEncounter.id,
-      encounterKind: session.pendingEncounter.kind,
-      title: session.pendingEncounter.title,
-      forced: session.pendingEncounter.forced === true,
-      decisionId: session.pendingEncounter.decisionId,
-      deadlineAt: session.pendingEncounter.deadlineAt
-    } : null,
-    startedAt: Number(session.startedAt || serverNow),
-    arrivalAt: Number(session.arrivalAt || serverNow),
-    serverNow,
-    elapsedMs
-  };
-}
-
-function serverGlobalWorldPartyRadius(party = {}) {
-  const kind = String(party.kind || '').toLowerCase();
-  const faction = serverWorldFactionKey(party.faction || '');
-  const speciesText = [party.species, party.visual, party.modelKey, party.name]
-    .map(value => String(value || '').toLowerCase()).join(' ');
-  let radius = 5.8;
-  if (kind === 'caravan') radius = 8.2;
-  else if (kind === 'patrol') radius = 6.4;
-  else if (faction === 'raiders' || kind === 'raider') radius = 6.2;
-  else if (faction === 'mutants') radius = 7.0;
-  else if (/radscorpion|scorpion|скорпион/.test(speciesText)) radius = 7.2;
-  else if (/gecko|геккон/.test(speciesText)) radius = 6.8;
-  else if (/brahmin|брамин/.test(speciesText)) radius = 7.4;
-  else if (/ant|мурав/.test(speciesText)) radius = 6.0;
-  else if (/wolf|волк/.test(speciesText)) radius = 6.4;
-  return clamp(radius, 5.2, 8.8);
-}
-
-function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', preferredSiteId = '') {
-  const target = sanitizeServerGlobalMapPoint(point);
-  if (!target) return null;
-  const preferredLocation = normalizeLocationId(preferredLocationId || '');
-  const preferredSite = String(preferredSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-  const candidates = [];
-  const simState = serverGlobalSimState();
-  for (const site of Object.values(simState?.sites || {})) {
-    const locationId = normalizeLocationId(site?.locationId || '');
-    if (!site || String(site.type || '').toLowerCase() === 'settlement' || !LOCATIONS[locationId]
-      || !isReleasedLocationId(site.id || '') || !isReleasedLocationId(locationId)) continue;
-    const center = sanitizeServerGlobalMapPoint(site);
-    const distance = serverGlobalPointDistance(target, center);
-    if (!center || distance > SERVER_GLOBAL_LOCATION_RADIUS + 1) continue;
-    const preferred = (preferredSite && String(site.id || '') === preferredSite) || (preferredLocation && locationId === preferredLocation);
-    candidates.push({ kind: 'site', point: center, radius: SERVER_GLOBAL_LOCATION_RADIUS, site, siteId: String(site.id || ''), locationId, distance, preferred });
-  }
-  for (const node of (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])) {
-    const locationId = normalizeLocationId(node?.locationId || node?.id || '');
-    if (!LOCATIONS[locationId] || !isReleasedLocationId(locationId)) continue;
-    const center = sanitizeServerGlobalMapPoint(node);
-    const distance = serverGlobalPointDistance(target, center);
-    if (!center || distance > SERVER_GLOBAL_LOCATION_RADIUS + 1) continue;
-    candidates.push({
-      kind: 'location', point: center, radius: SERVER_GLOBAL_LOCATION_RADIUS,
-      node, siteId: '', locationId, distance, preferred: !!preferredLocation && locationId === preferredLocation
-    });
-  }
-  candidates.sort((a, b) => Number(b.preferred) - Number(a.preferred) || a.distance - b.distance);
-  return candidates[0] || { kind: 'point', point: target, radius: 0, siteId: '', locationId: 'wasteland', distance: 0, preferred: false };
-}
-
-function serverPlayerAllowsGlobalMapExit(p = {}) {
+function serverPlayerCanLeaveByEdge(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   if (loc.allowGlobalMapExit === false) return false;
   const prologueLocationId = normalizeLocationId(KROMKA_ONBOARDING_CATALOG.firstMissionLocationId || 'randomRuinedRoad');
@@ -28357,7 +27715,7 @@ function serverPlayerAllowsGlobalMapExit(p = {}) {
 }
 
 function serverClosedLocationMovementBounds(p = {}, room = null, radius = PLAYER_COLLISION_RADIUS) {
-  if (!room || serverPlayerAllowsGlobalMapExit(p)) return null;
+  if (!room || serverPlayerCanLeaveByEdge(p)) return null;
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
   const inset = Math.max(1, WORLD_MAP_EXIT_BAND_TILES);
   const minTileX = Math.min(bounds.maxX, bounds.minX + inset);
@@ -28381,48 +27739,22 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
     && Number(z) >= bounds.minZ && Number(z) <= bounds.maxZ;
 }
 
-function serverPlayerAtGlobalMapExit(p = {}) {
-  if (!p?.roomId || !serverPlayerAllowsGlobalMapExit(p)) return false;
+function serverPlayerAtPlaceEdge(p = {}) {
+  if (!p?.roomId || !serverPlayerCanLeaveByEdge(p)) return false;
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   const bounds = normalizedLocationPlayableBounds(loc);
-  const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
+  // Клиент просит выход, едва сам вошёл в полосу, а сервер видит его на шаг
+  // позади: один тайл отставания прощается, иначе первый шаг в полосу отказывал.
+  const innerOffset = WORLD_MAP_EXIT_BAND_TILES;
   if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {
-    if (row.to && normalizeLocationId(row.to || '') !== 'wasteland') return false;
+    if (row.to && normalizeLocationId(row.to || '') !== 'wasteland' && !serverLegacyWorldExit(loc, row)) return false;
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(loc));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   });
-}
-
-function serverGlobalExitDirection(p = {}) {
-  const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
-  const bounds = normalizedLocationPlayableBounds(loc);
-  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
-  return globalExitDirectionFromTile(
-    { tx: tile.tx - bounds.minX, tz: tile.tz - bounds.minZ },
-    bounds.width,
-    bounds.height
-  );
-}
-
-function serverGlobalExitPoint(p = {}, exitDirection = '') {
-  // Сцена опасной клетки — не место на карте: выход там же, где застала стычка.
-  if (rooms.get(p.roomId || '')?.dangerCellKey) {
-    const point = sanitizeServerGlobalMapPoint(p.globalWorldPoint || rooms.get(p.roomId).encounterWorldPoint || null);
-    if (point) return point;
-  }
-  const center = serverGlobalPointForPlayer(p);
-  if (!center) return null;
-  const radius = clamp(Number(p.lastWorldEntryRadius || SERVER_GLOBAL_LOCATION_RADIUS), 2, 40);
-  return directedGlobalExitPoint(
-    center,
-    exitDirection || serverGlobalExitDirection(p),
-    radius + SERVER_GLOBAL_PLAYER_RADIUS + 1.5,
-    serverGlobalMapBounds()
-  );
 }
 
 function serverGlobalEntryKey(locationId = '', targetPoint = null, originPoint = null) {
@@ -28438,401 +27770,6 @@ function serverGlobalEntryKey(locationId = '', targetPoint = null, originPoint =
     if (loc[key]) return key;
   }
   return loc.entryFromWorld ? 'entryFromWorld' : 'spawn';
-}
-
-function serverGlobalZoneVisible(zone = null) {
-  return !!zone
-    && String(zone.status || '') === 'active'
-    && zone.details?.hidden !== true
-    && zone.details?.visible !== false
-    && zone.details?.playerAmbush !== true;
-}
-
-function serverGlobalZoneResolution(zone = null, originPoint = null) {
-  if (!serverGlobalZoneVisible(zone)) return null;
-  const locationId = normalizeLocationId(zone.locationId || '');
-  if (!LOCATIONS[locationId]) return null;
-  const point = sanitizeServerGlobalMapPoint(zone);
-  if (!point) return null;
-  const loc = LOCATIONS[locationId] || {};
-  const encounterRoomId = sanitizeEncounterRoomId(zone.roomId || '', locationId)
-    || (!locationUsesSharedReality(loc) ? `${locationId}#${String(zone.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)}` : '');
-  return {
-    kind: 'zone', point, radius: clamp(Number(zone.radius || 9), 2, 40),
-    locationId, siteId: String(zone.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-    partyId: String(zone.partyId || zone.sourceId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
-    worldZoneId: String(zone.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-    encounterId: String(zone.encounterId || '').slice(0, 40), encounterRoomId,
-    pvpMode: normalizeLocationPvpMode(zone.pvpMode || locationPvpMode(loc), loc.safe !== false),
-    encounter: true, entryKey: serverGlobalEntryKey(locationId, point, originPoint)
-  };
-}
-
-function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}, now = Date.now()) {
-  const expectedPoint = serverGlobalTravelCurrentPoint(session, now);
-  if (!expectedPoint) return null;
-  const simState = serverGlobalSimState();
-  const worldZoneId = String(data.worldZoneId || data.zoneId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-  const partyId = String(data.partyId || data.worldPartyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-  const siteId = String(data.siteId || data.worldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-  const zones = Array.isArray(simState?.worldZones) ? simState.worldZones : [];
-  let zone = worldZoneId ? zones.find(row => String(row?.id || '') === worldZoneId) || null : null;
-  if (!zone && partyId) zone = zones.find(row => serverGlobalZoneVisible(row) && String(row?.partyId || '') === partyId) || null;
-  if (zone) {
-    const resolution = serverGlobalZoneResolution(zone, session?.fromPoint || null);
-    const touchRadius = Number(resolution?.radius || 0) + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE;
-    if (resolution && serverGlobalPointDistance(expectedPoint, resolution.point) <= touchRadius) {
-      // Путь сквозь угодья ведёт во встречу, а не в именное логово: сцена
-      // одноразовая, её комната своя у каждого отряда, и выпавший бросок
-      // снимается — следующий круг по угодьям даст другую встречу.
-      const groundsArea = serverAreaForWorldZone(zone);
-      const roll = groundsArea ? serverGroundsRollFor(session, zone, now) : null;
-      if (roll && LOCATIONS[normalizeLocationId(roll.locationId)]) {
-        const encounterLocationId = normalizeLocationId(roll.locationId);
-        const ownerKey = pveOwnerKey(leader?.characterId || leader?.userId || leader?.id || '').slice(0, 24);
-        const stamp = Math.floor(Number(roll.rolledAt || now)).toString(36).slice(-8);
-        roll.consumed = true;
-        return {
-          ...resolution,
-          locationId: encounterLocationId,
-          encounterId: roll.encounterId,
-          encounterRoomId: sanitizeEncounterRoomId(
-            `${encounterLocationId}#enc_${ownerKey}_${roll.rowId}_${stamp}`, encounterLocationId),
-          // Комната встречи живёт сама по себе: билет не должен требовать,
-          // чтобы зона угодий всё ещё стояла на карте.
-          worldZoneId: '',
-          groundsAreaId: groundsArea.id,
-          groundsTitle: roll.title,
-          pvpMode: normalizeLocationPvpMode(
-            LOCATIONS[encounterLocationId]?.pvpMode || 'pve',
-            LOCATIONS[encounterLocationId]?.safe !== false),
-          entryKey: serverGlobalEntryKey(encounterLocationId, resolution.point, session?.fromPoint || null)
-        };
-      }
-      return resolution;
-    }
-  }
-  if (partyId) {
-    const party = simState?.parties?.[partyId] || null;
-    const partyStateKey = String(party?.state || '');
-    // Зверь на фуражировке («onsite» посреди пустоши) остаётся встречаемым:
-    // стая видна на карте, и игрок вправе в неё врезаться. Караваны и патрули
-    // в «onsite» стоят внутри поселений — для них ограничение сохраняется.
-    const foragingBeast = String(party?.kind || '').toLowerCase() === 'monster'
-      && partyStateKey === 'onsite';
-    const encounterable = party && !party.destroyed && partyStateKey !== 'destroyed'
-      && (foragingBeast || !['onsite', 'engaged'].includes(partyStateKey))
-      && Number(party.members || party.strength || 0) > 0;
-    const partyPoint = encounterable ? sanitizeServerGlobalMapPoint(party) : null;
-    const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
-    if (partyPoint && serverGlobalPointDistance(expectedPoint, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      try {
-        const result = WASTELAND_SIM.beginPartyEncounterZone({
-          partyId,
-          playerId: leader.characterId || leader.id || '',
-          playerName: leader.name || '',
-          point: partyPoint
-        });
-        const resolution = serverGlobalZoneResolution(result?.zone || null, session?.fromPoint || null);
-        if (result?.ok && resolution) return resolution;
-      } catch (err) {
-        console.error('beginPartyEncounterZone failed:', err);
-      }
-    }
-  }
-  if (siteId) {
-    const site = serverGlobalSite(siteId, simState);
-    const locationId = normalizeLocationId(site?.locationId || '');
-    const point = site && LOCATIONS[locationId] && isReleasedLocationId(site.id || '') && isReleasedLocationId(locationId)
-      ? sanitizeServerGlobalMapPoint(site)
-      : null;
-    if (point && serverGlobalPointDistance(expectedPoint, point) <= SERVER_GLOBAL_LOCATION_RADIUS + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      const loc = LOCATIONS[locationId] || {};
-      return {
-        kind: 'site', point, radius: SERVER_GLOBAL_LOCATION_RADIUS, locationId, siteId,
-        partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
-        pvpMode: normalizeLocationPvpMode(site.pvpMode || locationPvpMode(loc), loc.safe !== false),
-        entryKey: serverGlobalEntryKey(locationId, point, session?.fromPoint || null)
-      };
-    }
-  }
-  const requestedLocationId = normalizeLocationId(data.targetLocationId || '');
-  if (requestedLocationId && requestedLocationId !== 'wasteland' && LOCATIONS[requestedLocationId]
-    && isReleasedLocationId(requestedLocationId)) {
-    const node = serverGlobalMapNode(requestedLocationId);
-    const locationSite = node ? null : serverGlobalSiteForLocation(requestedLocationId, simState);
-    const point = sanitizeServerGlobalMapPoint(node || locationSite || null);
-    if (point && serverGlobalPointDistance(expectedPoint, point) <= SERVER_GLOBAL_LOCATION_RADIUS + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
-      const loc = LOCATIONS[requestedLocationId] || {};
-      const resolvedSiteId = String(locationSite?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-      return {
-        kind: node ? 'location' : 'site', point, radius: SERVER_GLOBAL_LOCATION_RADIUS,
-        locationId: requestedLocationId, siteId: resolvedSiteId,
-        partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
-        pvpMode: normalizeLocationPvpMode(locationSite?.pvpMode || locationPvpMode(loc), loc.safe !== false),
-        entryKey: serverGlobalEntryKey(requestedLocationId, point, session?.fromPoint || null)
-      };
-    }
-  }
-  return null;
-}
-
-function handleServerGlobalTravelArrival(socket, data = {}, ack) {
-  const leader = players.get(socket.id);
-  const session = globalTravelSessions.get(socket.id);
-  const fail = (error, extra = {}) => {
-    if (typeof ack === 'function') ack({ ok: false, error, ...extra });
-    return false;
-  };
-  if (globalTravelMemberIsFollower(socket.id)) {
-    const memberSession = globalTravelSessionForMember(socket.id);
-    return fail('Маршрут выбирает лидер группы.', { leaderId: memberSession?.leaderId || '', leaderName: memberSession?.leaderName || '' });
-  }
-  if (!leader || !leader.onGlobalMap || leader.dead || Number(leader.hp || 0) <= 0) return fail('Лидер группы недоступен на глобальной карте.');
-  if (!session) return fail('Сервер не нашёл активный маршрут. Начните движение заново.');
-  const invalidMemberId = (Array.isArray(session.memberIds) ? session.memberIds : [])
-    .find(id => {
-      const member = players.get(id);
-      return !member || !member.onGlobalMap || !!member.roomId;
-    });
-  if (invalidMemberId) {
-    globalTravelSessions.delete(socket.id);
-    return fail('Состав маршрута изменился; маршрут отменён и должен быть построен заново.');
-  }
-  const committedMember = (Array.isArray(session.memberIds) ? session.memberIds : [])
-    .map(id => players.get(id))
-    .filter(Boolean)
-    .find(member => serverPlayerActiveWorldPartyTask(member) || member.attachedPartyTaskId);
-  if (committedMember) {
-    removePlayerFromIndependentGlobalTravelSessions(committedMember.id);
-    return fail(`${committedMember.name || 'Участник группы'} привязан к отряду пустоши; самостоятельный маршрут отменён.`);
-  }
-
-  const now = Date.now();
-  let resolution = serverResolveGlobalTravelContact(session, data, leader, now);
-  if (!resolution && now + 450 < Number(session.arrivalAt || 0)) {
-    return fail('До точки входа ещё нужно дойти.', {
-      worldPoint: serverGlobalTravelCurrentPoint(session, now),
-      arrivalAt: Number(session.arrivalAt || 0)
-    });
-  }
-
-  if (!resolution) {
-    const destination = serverGlobalDestinationAtPoint(session.targetPoint, session.targetLocationId, session.targetSiteId);
-    if (!destination) return fail('Сервер потерял точку назначения. Начните маршрут заново.');
-    if (destination.kind === 'site') {
-      const loc = LOCATIONS[destination.locationId] || {};
-      resolution = {
-        kind: 'site', point: destination.point, radius: destination.radius,
-        locationId: destination.locationId, siteId: destination.siteId,
-        partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
-        pvpMode: normalizeLocationPvpMode(destination.site?.pvpMode || locationPvpMode(loc), loc.safe !== false),
-        entryKey: serverGlobalEntryKey(destination.locationId, destination.point, session.fromPoint)
-      };
-    } else if (destination.kind === 'location') {
-      const loc = LOCATIONS[destination.locationId] || {};
-      resolution = {
-        kind: 'location', point: destination.point, radius: destination.radius,
-        locationId: destination.locationId, siteId: '',
-        partyId: '', worldZoneId: '', encounterId: '', encounterRoomId: '', encounter: false,
-        pvpMode: locationPvpMode(loc),
-        entryKey: serverGlobalEntryKey(destination.locationId, destination.point, session.fromPoint)
-      };
-    } else {
-      resolution = {
-        kind: 'point', point: sanitizeServerGlobalMapPoint(session.targetPoint), radius: 0,
-        locationId: 'wasteland', siteId: '', partyId: '', worldZoneId: '', encounterId: '',
-        encounterRoomId: '', encounter: false, pvpMode: 'pvp', entryKey: 'spawn'
-      };
-    }
-  }
-
-  if (!resolution?.point) return fail('Сервер не смог подтвердить точку входа.');
-  let stayOnWorldMap = resolution.kind === 'point';
-  let targetLocationId = stayOnWorldMap ? 'wasteland' : normalizeLocationId(resolution.locationId || '');
-  if (!stayOnWorldMap && !LOCATIONS[targetLocationId]) return fail('Локация встречи больше недоступна.');
-  // Узел Сердцевины — ворота территории: сервер заводит прибывших на базу их
-  // фракции, а без подписанного контракта возвращает предложение выбрать её.
-  // Сама зона по-прежнему открывается только с платформы метро своей базы.
-  let territoryGateEntry = false;
-  // Маршрут был нацелен на Сердцевину, но прибытие свелось к точке карты
-  // (клик рядом с узлом, сдвинутая точка контакта): ворота всё равно должны
-  // сработать, иначе игрок «доехал и ничего не произошло».
-  if (stayOnWorldMap && serverIsTerritoryGateLocation(session.targetLocationId)) {
-    const gatePoint = serverTerritoryGatePoint();
-    const arrival = sanitizeServerGlobalMapPoint(resolution.point);
-    if (gatePoint && arrival
-      && serverGlobalPointDistance(arrival, gatePoint) <= SERVER_GLOBAL_LOCATION_RADIUS) {
-      stayOnWorldMap = false;
-      targetLocationId = serverTerritoryZoneLocationId();
-      resolution.kind = 'location';
-      resolution.locationId = targetLocationId;
-    }
-  }
-  if (!stayOnWorldMap && serverIsTerritoryGateLocation(targetLocationId)) {
-    const gateParty = (Array.isArray(session.memberIds) ? session.memberIds : [])
-      .map(id => players.get(id))
-      .filter(Boolean);
-    const gate = serverTerritoryGateArrival(leader, gateParty, now);
-    if (!gate.ok) {
-      return fail(gate.error, {
-        contractRequired: true,
-        contract: gate.contract,
-        worldPoint: serverGlobalTravelCurrentPoint(session, now)
-      });
-    }
-    territoryGateEntry = true;
-    targetLocationId = gate.locationId;
-    resolution.locationId = gate.locationId;
-    resolution.entryKey = 'entryFromWorld';
-    resolution.pvpMode = locationPvpMode(LOCATIONS[gate.locationId] || {});
-  }
-  if (!stayOnWorldMap) {
-    const targetLoc = LOCATIONS[targetLocationId] || {};
-    if (targetLoc.noGlobalMapEntry === true && !territoryGateEntry) {
-      return fail('В Сердцевину нельзя войти с глобальной карты: используйте платформу метро на базе своей фракции.');
-    }
-    for (const id of session.memberIds) {
-      const member = players.get(id);
-      if (!member) continue;
-      const access = territoryLocationAccess(targetLoc, member.territoryFaction, KROMKA_TERRITORY_CATALOG);
-      if (!access.allowed) return fail(`${member.name || 'Участник группы'}: ${access.error}`);
-      const arrivalEvent = resolution.worldZoneId ? serverPublicEventForZone(serverActiveWorldZoneById(resolution.worldZoneId)) : null;
-      const eventError = arrivalEvent ? publicEventEntryError(arrivalEvent, member.characterId, now) : '';
-      if (eventError) return fail(`${member.name || 'Участник группы'}: ${eventError}`);
-    }
-  }
-  // Группа путешествия входит в PvE-область одной личной комнатой лидера:
-  // билет выдаёт сервер, поэтому проверка владельца на входе его пропустит.
-  // Считается до payload: он тоже называет эту комнату.
-  const pveArrivalRoomId = !stayOnWorldMap && LOCATIONS[targetLocationId]?.pveArea === true
-    ? serverResolvePveRoomId(leader, targetLocationId, '')
-    : '';
-  const payload = {
-    leaderId: socket.id,
-    leaderName: leader.name || session.leaderName || 'Игрок',
-    targetLocationId,
-    entryKey: resolution.entryKey || 'entryFromWorld',
-    encounter: !!resolution.encounter,
-    encounterId: resolution.encounterId || '',
-    encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || '',
-    worldZoneId: resolution.worldZoneId || '',
-    siteId: resolution.siteId || '',
-    partyId: resolution.partyId || '',
-    worldPoint: resolution.point,
-    pvpMode: resolution.pvpMode || 'pvp',
-    zoneRules: zoneRules(resolution.pvpMode || 'pvp', serverZoneRulesExtra(stayOnWorldMap ? null : LOCATIONS[targetLocationId])),
-    stayOnWorldMap,
-    party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
-  };
-
-  session.terminating = true;
-  const arrivingMembers = [];
-  if (pveArrivalRoomId) {
-    const pveRoom = getOrCreateRoom(pveArrivalRoomId, targetLocationId);
-    serverEnsurePveRoom(pveRoom, leader, now);
-    for (const id of session.memberIds) {
-      const member = players.get(id);
-      if (member) pveRoom.pveMembers.add(serverPveOwnerKeyFor(member));
-    }
-  }
-  for (const id of session.memberIds) {
-    const member = players.get(id);
-    if (!member) continue;
-    member.globalWorldPoint = resolution.point;
-    member.currentWorldSiteId = resolution.siteId || '';
-    member.lastWorldEntryOrigin = sanitizeServerGlobalMapPoint(session.fromPoint || null);
-    member.lastWorldEntryRadius = clamp(Number(resolution.radius || SERVER_GLOBAL_LOCATION_RADIUS), 2, 40);
-    if (stayOnWorldMap) {
-      member.pendingLocationTransition = null;
-      member.onGlobalMap = true;
-    } else {
-      stagePendingLocationTransition(member, {
-        targetLocationId,
-        // Комната группы идёт первой: у зоны угодий есть собственный roomId,
-        // и он бы увёл каждого спутника в его личный инстанс, хотя сервер уже
-        // приготовил одну комнату лидера и вписал в неё всю группу.
-        roomId: pveArrivalRoomId || resolution.encounterRoomId || '',
-        worldZoneId: resolution.worldZoneId || '',
-        partyId: resolution.partyId || '',
-        siteId: resolution.siteId || '',
-        encounterId: resolution.encounterId || '',
-        encounter: !!resolution.encounter,
-        pvpMode: resolution.pvpMode || 'pvp',
-        worldPoint: resolution.point,
-        entryKey: payload.entryKey
-      }, now);
-    }
-    arrivingMembers.push(member);
-  }
-  persistActivePlayerStates(arrivingMembers);
-
-  emitGlobalTravelToParty(session, 'globalTravelArrived', payload, false);
-  globalTravelSessions.delete(socket.id);
-  if (typeof ack === 'function') ack({ ok: true, ...payload });
-  return true;
-}
-
-function globalTravelMemberIsFollower(memberId = '') {
-  const id = String(memberId || '');
-  const session = globalTravelSessionForMember(id);
-  return !!(session && !session.terminating && String(session.leaderId || '') && String(session.leaderId || '') !== id);
-}
-
-function cleanupGlobalTravelSessionsForSocket(socketId = '') {
-  const id = String(socketId || '');
-  if (!id) return;
-  for (const [leaderId, session] of [...globalTravelSessions.entries()]) {
-    if (!session) {
-      globalTravelSessions.delete(leaderId);
-      continue;
-    }
-    if (String(leaderId || '') === id || String(session.leaderId || '') === id) {
-      session.terminating = true;
-      const point = serverGlobalTravelCurrentPoint(session, Date.now());
-      const memberIds = Array.isArray(session.memberIds) ? [...session.memberIds] : [];
-      // Remove the authority lock before persistence. A failed disk write must
-      // never leave the remaining online members trapped behind a dead leader.
-      globalTravelSessions.delete(leaderId);
-      const releasedMembers = [];
-      const membersToPersist = [];
-      for (const memberId of memberIds) {
-        const member = players.get(memberId);
-        if (!member) continue;
-        member.globalWorldPoint = point || member.globalWorldPoint || null;
-        member.onGlobalMap = true;
-        member.pendingLocationTransition = null;
-        membersToPersist.push(member);
-        if (String(memberId || '') !== id) releasedMembers.push(member);
-      }
-      try {
-        persistActivePlayerStates(membersToPersist);
-      } catch (error) {
-        console.error('Global travel release persistence failed:', membersToPersist.map(member => member.id).join(','), error);
-      }
-      for (const member of releasedMembers) {
-        const memberSocket = io.sockets.sockets.get(member.id);
-        if (!memberSocket) continue;
-        memberSocket.emit('globalTravelGroupReleased', {
-          previousLeaderId: id,
-          previousLeaderName: String(session.leaderName || ''),
-          leaderId: member.id,
-          leaderName: member.name || 'Игрок',
-          worldPoint: point || member.globalWorldPoint || null,
-          reason: 'leaderDisconnected'
-        });
-      }
-      continue;
-    }
-    // Точку берёт только участник этой сессии: иначе отключение переносило
-    // игрока в точку чужого отряда.
-    if (Array.isArray(session.memberIds) && session.memberIds.some(memberId => String(memberId || '') === id)) {
-      const member = players.get(id);
-      if (member) member.globalWorldPoint = serverGlobalTravelCurrentPoint(session, Date.now()) || member.globalWorldPoint || null;
-      session.memberIds = session.memberIds.filter(memberId => String(memberId || '') !== id);
-      if (session.memberIds.length <= 0) globalTravelSessions.delete(leaderId);
-    }
-  }
 }
 
 function publicPlayerMovement(p) {
@@ -29022,6 +27959,8 @@ io.on('connection', (socket) => {
     if (!characterRow?.state) return rejectJoin(socket, ack, 'Сервер не смог загрузить персонажа.');
     const savedState = characterRow.state;
     migrateSavedStateToKromka(savedState, KROMKA_SAVE_MIGRATION, GLOBAL_MAP);
+    // Глобальной карты нет: сохранённый «на карте» или в сцене её клетки встаёт в зону своей точки.
+    migrateSaveStateToZones(savedState, ZONE_RUNTIME.graph);
     const savedProfile = savedState.characterProfile || {};
     const savedPlayer = savedState.player || {};
     const savedDownedState = restoreDownedState(savedPlayer);
@@ -29030,6 +27969,7 @@ io.on('connection', (socket) => {
     const savedLocationId = normalizeLocationId(savedState.currentLocationId || 'settlement');
     let locationId = resumableSiege ? 'clanSiege' : (LOCATIONS[savedLocationId] ? savedLocationId : 'settlement');
     if (!resumableSiege && locationId === 'clanSiege') locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
+    ensureZoneLocation(locationId);
     let baseLoc = LOCATIONS[locationId] || {};
     if (locationId === 'personalBase' && serverPersonalBaseForAccount(auth.user.id, false)?.rights?.granted !== true) {
       locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
@@ -29072,6 +28012,7 @@ io.on('connection', (socket) => {
       ? candidateSavedZone
       : null;
     const savedRoomId = !sharedRealityLocation ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId) : '';
+    const savedZoneChannel = ZONE_RUNTIME.isZone(locationId) ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId) : '';
     const joinSiteRoomId = !sharedRealityLocation && savedLocationContext.siteId
       ? roomIdForWorldSite(locationId, savedLocationContext.siteId)
       : '';
@@ -29087,6 +28028,8 @@ io.on('connection', (socket) => {
       : '';
     const room = pveJoinRoomId
       ? getOrCreateRoom(pveJoinRoomId, locationId)
+      : ZONE_RUNTIME.isZone(locationId)
+        ? chooseRoomForLocation(locationId, { prefer: savedZoneChannel })
       : savedRoomId
         ? getOrCreateRoom(savedRoomId, locationId)
         : (joinSiteRoomId ? getOrCreateRoom(joinSiteRoomId, locationId)
@@ -29249,7 +28192,7 @@ io.on('connection', (socket) => {
       lastWorldActivityResult: sanitizeServerWorldActivityResult(savedState.lastWorldActivityResult),
       socialState: sanitizeServerSocialState(savedState.socialState || {}),
       globalMap: savedGlobalMap,
-      onGlobalMap: !!savedGlobalMap.onWorldMap && !!savedGlobalWorldPoint,
+      onGlobalMap: false,
       globalWorldPoint: savedGlobalWorldPoint,
       pendingLocationTransition: savedPendingLocationTransition,
       attachedPartyId: worldTransferId(savedGlobalMap.attachedPartyId || ''),
@@ -29306,52 +28249,6 @@ io.on('connection', (socket) => {
     settleServerWorldActivityPlayers(p.worldTaskAccepted);
     syncServerPlayerWorldPartyAttachment(p, WASTELAND_SIM.state(), { persist: false, emit: false });
     p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
-    if (p.onGlobalMap && p.globalWorldPoint) {
-      const point = sanitizeServerGlobalMapPoint(p.globalWorldPoint);
-      leaveCurrentRoom(socket, 'resumeGlobalMap', { leaderId: socket.id });
-      p.roomId = '';
-      p.globalWorldPoint = point;
-      if (!p.attachedPartyTaskId && !p.pendingLocationTransition) {
-        const startedAt = Date.now();
-        const restoredTravel = serverRestoredGlobalTravelSession(p, savedGlobalMap, startedAt);
-        globalTravelSessions.set(socket.id, restoredTravel || {
-          id: `travel_${socket.id}_${startedAt}`,
-          leaderId: socket.id,
-          leaderName: p.name || 'Игрок',
-          fromLocationId: p.locationId || 'settlement',
-          targetLocationId: 'wasteland',
-          targetSiteId: '',
-          fromPoint: point,
-          targetPoint: point,
-          worldPoint: point,
-          memberIds: [socket.id],
-          startedAt,
-          arrivalAt: startedAt,
-          durationMs: 0,
-          distanceKm: 0,
-          speedKmh: serverGlobalTravelSpeedKmh(p),
-          worldHours: 0
-        });
-      }
-      if (typeof ack === 'function') ack({
-        ok: true,
-        id: socket.id,
-        roomId: '',
-        locationId: p.locationId,
-        lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement',
-        characterId,
-        characterLeaseId,
-        x: Number(p.x.toFixed(3)),
-        z: Number(p.z.toFixed(3)),
-        combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
-        combats: serverCombatAcksForPlayer(p),
-        self: publicAuthoritativePlayerState(p),
-        players: [],
-        worldState: null,
-        serverAuthoritativeEnemies: true
-      });
-      return;
-    }
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
@@ -29921,7 +28818,6 @@ io.on('connection', (socket) => {
   socket.on('labNodeAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const mechanics = room ? serverLabMechanicsForRoom(room) : null;
@@ -29944,7 +28840,6 @@ io.on('connection', (socket) => {
   socket.on('publicEventAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const event = room ? serverPublicEventForRoom(room) : null;
@@ -31226,333 +30121,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('globalTravelStart', (data = {}, ack) => {
-    const leader = players.get(socket.id);
-    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (globalTravelMemberIsFollower(socket.id)) {
-      const session = globalTravelSessionForMember(socket.id);
-      return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
-    }
-    if (!leader || !leader.onGlobalMap || leader.dead || Number(leader.hp || 0) <= 0) return fail('Лидер группы должен находиться на глобальной карте.');
-    if (serverPlayerActiveWorldPartyTask(leader)) {
-      return fail('Сначала отмените работу с отрядом пустоши, затем выберите собственный маршрут.');
-    }
-    const targetPoint = sanitizeServerGlobalMapPoint(data.worldPoint || data.targetPoint || null);
-    if (!targetPoint) return fail('Не удалось определить точку назначения.');
-    const candidateExisting = globalTravelSessions.get(socket.id);
-    if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id);
-    const existing = candidateExisting && !candidateExisting.terminating ? candidateExisting : null;
-    const fromPoint = serverGlobalTravelCurrentPoint(existing, Date.now()) || serverGlobalPointForPlayer(leader);
-    if (!fromPoint || serverGlobalPointDistance(fromPoint, targetPoint) <= 0.35) return fail('Вы уже находитесь в этой точке.');
-    const preferredLocationId = normalizeLocationId(data.targetLocationId || 'wasteland');
-    const preferredSiteId = String(data.siteId || data.worldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    const destination = serverGlobalDestinationAtPoint(targetPoint, preferredLocationId, preferredSiteId);
-    const targetLocationId = destination?.locationId || 'wasteland';
-    const targetSiteId = destination?.siteId || '';
-    const fromLocationId = normalizeLocationId(existing?.fromLocationId || leader.locationId || 'settlement');
-    const party = existing?.memberIds?.length
-      ? existing.memberIds.map(id => players.get(id)).filter(Boolean)
-      : [leader];
-    const members = party.filter(member => member && member.onGlobalMap && !member.dead && Number(member.hp || 0) > 0);
-    if (!members.some(member => member.id === leader.id)) members.unshift(leader);
-    const committedMember = members.find(member => serverPlayerActiveWorldPartyTask(member));
-    if (committedMember) {
-      return fail(`${committedMember.name || 'Участник группы'} сначала должен отменить работу с отрядом пустоши.`);
-    }
-    const routePoints = planInfrastructureRoute(GLOBAL_MAP, fromPoint, targetPoint);
-    if (routePoints.length < 2) return fail('Маршрут к этой точке перекрыт водой. Выберите доступную точку на суше.');
-    const leaderClan = serverKromkaClanForPlayer(leader);
-    const clanConvoy = members.length >= 2 && !!leaderClan
-      && members.every(member => serverKromkaClanForPlayer(member)?.id === leaderClan.id);
-    const timing = serverGlobalTravelTiming(leader, fromPoint, targetPoint, routePoints, {
-      clanConvoy
-    });
-    const startedAt = Date.now();
-    const session = {
-      id: existing?.id || `travel_${socket.id}_${Date.now()}`,
-      leaderId: socket.id,
-      leaderName: leader.name || 'Игрок',
-      fromLocationId,
-      targetLocationId,
-      targetSiteId,
-      fromPoint,
-      targetPoint,
-      routePoints,
-      worldPoint: fromPoint,
-      distanceKm: timing.distanceKm,
-      speedKmh: timing.speedKmh,
-      clanConvoy: timing.clanConvoy,
-      clanCaravanSpeedPct: timing.clanCaravanSpeedPct,
-      worldHours: timing.worldHours,
-      durationMs: timing.durationMs,
-      memberIds: members.map(member => member.id),
-      startedAt,
-      arrivalAt: startedAt + timing.durationMs,
-      // Опасные клетки: новый маршрут не даёт бесплатной клетки и не
-      // переносит окрестность старта в текущую точку.
-      dangerCellKey: existing?.dangerCellKey || leader.dangerCellKey || '',
-      dangerGraceFrom: existing ? (existing.dangerGraceFrom || null) : serverDangerGracePoint(fromPoint),
-      dangerGraceTo: targetLocationId !== 'wasteland' || targetSiteId ? targetPoint : null
-    };
-    globalTravelSessions.set(socket.id, session);
-    for (const member of members) {
-      member.onGlobalMap = true;
-      member.globalWorldPoint = fromPoint;
-      member.pendingLocationTransition = null;
-    }
-    const publicParty = members.map(member => publicTravelPartyMember(member, socket.id));
-    const serverNow = Date.now();
-    const payload = {
-      travelId: session.id,
-      leaderId: socket.id,
-      leaderName: session.leaderName,
-      fromLocationId,
-      targetLocationId,
-      targetSiteId,
-      fromPoint,
-      targetPoint,
-      routePoints,
-      worldPoint: fromPoint,
-      distanceKm: timing.distanceKm,
-      speedKmh: timing.speedKmh,
-      clanConvoy: timing.clanConvoy,
-      clanCaravanSpeedPct: timing.clanCaravanSpeedPct,
-      worldHours: timing.worldHours,
-      durationMs: timing.durationMs,
-      duration: timing.durationMs / 1000,
-      party: publicParty,
-      startedAt: session.startedAt,
-      arrivalAt: session.arrivalAt,
-      serverNow,
-      elapsedMs: Math.max(0, Math.min(session.durationMs, serverNow - session.startedAt))
-    };
-    emitGlobalTravelToParty(session, 'globalTravelStarted', payload, false);
-    if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
-
-  socket.on('globalTravelEnterWorld', (data = {}, ack) => {
-    const leader = players.get(socket.id);
-    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (leader?.roomId && !serverPlayerAllowsGlobalMapExit(leader)) {
-      const phase = String(leader.kromkaOnboarding?.phase || '');
-      return fail(phase === 'firstMission'
-        ? 'Выход на глобальную карту закрыт до завершения пролога.'
-        : 'Выход на глобальную карту откроется после завершения обучения.');
-    }
-    if (globalTravelMemberIsFollower(socket.id)) {
-      const session = globalTravelSessionForMember(socket.id);
-      return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
-    }
-    if (!leader || !leader.roomId || leader.dead || Number(leader.hp || 0) <= 0) return fail('Игрок недоступен.');
-    if (serverPlayerActiveWorldPartyTask(leader)) {
-      return fail('Сначала отмените работу с отрядом пустоши, затем выходите на собственный маршрут.');
-    }
-    if (!serverPlayerAtGlobalMapExit(leader)) return fail('Сначала дойдите до границы локации.');
-    const fromLocationId = normalizeLocationId(leader.locationId || 'settlement');
-    const exitDirection = serverGlobalExitDirection(leader);
-    const dangerRoom = rooms.get(leader.roomId || '');
-    const fromDangerCell = !!dangerRoom?.dangerCellKey;
-    let worldPoint = serverGlobalExitPoint(leader, exitDirection);
-    let exitCellKey = '';
-    if (fromDangerCell && dangerRoom.dangerCell && WORLD_ECONOMY.worldModel.dangerCells) {
-      // Край сцены клетки ведёт в соседнюю мелкую клетку в сторону выхода.
-      const config = WORLD_ECONOMY.dangerCells;
-      const pointKm = serverGlobalMapPointKm();
-      const neighbour = dangerNeighbourCell(config, dangerRoom.dangerCell, exitDirection, pointKm);
-      const boundary = neighbour
-        ? sanitizeServerGlobalMapPoint(dangerBoundaryPoint(config, dangerRoom.dangerCell, exitDirection, pointKm,
-          serverDangerExitAlong(leader, exitDirection)))
-        : null;
-      const walkMode = neighbour ? serverDangerWalkCell(neighbour) : false;
-      if (walkMode && boundary) {
-        const walkers = nearbyGlobalTravelParty(leader).filter(member => serverPlayerAtGlobalMapExit(member));
-        if (!walkers.some(member => member.id === leader.id)) walkers.unshift(leader);
-        const moved = serverEnterDangerCell(walkers, boundary, neighbour, walkMode,
-          dangerEntryKeyForDirection(exitDirection), 'dangerCellWalk');
-        if (moved > 0) {
-          if (typeof ack === 'function') ack({ ok: true, transferred: true, reason: 'dangerCellWalk', worldPoint: boundary });
-          return;
-        }
-      }
-      if (neighbour && boundary) {
-        worldPoint = boundary;
-        exitCellKey = neighbour.key;
-      }
-    }
-    if (!worldPoint) return fail('Сервер не смог определить выход на глобальную карту.');
-    const party = nearbyGlobalTravelParty(leader).filter(member => serverPlayerAtGlobalMapExit(member));
-    if (!party.some(member => member.id === leader.id)) party.unshift(leader);
-    const committedMember = party.find(member => serverPlayerActiveWorldPartyTask(member));
-    if (committedMember) {
-      return fail(`${committedMember.name || 'Участник группы'} сначала должен отменить работу с отрядом пустоши.`);
-    }
-    const startedAt = Date.now();
-    const session = {
-      id: `travel_${socket.id}_${Date.now()}`,
-      leaderId: socket.id,
-      leaderName: leader.name || 'Игрок',
-      fromLocationId,
-      targetLocationId: fromLocationId,
-      targetSiteId: '',
-      fromPoint: worldPoint,
-      targetPoint: worldPoint,
-      worldPoint,
-      memberIds: party.map(p => p.id),
-      startedAt,
-      arrivalAt: startedAt,
-      durationMs: 0,
-      distanceKm: 0,
-      speedKmh: serverGlobalTravelSpeedKmh(leader),
-      worldHours: 0,
-      // Со сцены опасной клетки выходят к соседней клетке, без окрестности места.
-      dangerCellKey: fromDangerCell ? exitCellKey || leader.dangerCellKey || '' : '',
-      dangerGraceFrom: fromDangerCell ? null : worldPoint
-    };
-    globalTravelSessions.set(socket.id, session);
-    const publicParty = party.map(p => publicTravelPartyMember(p, socket.id));
-    const payload = {
-      leaderId: socket.id,
-      leaderName: session.leaderName,
-      fromLocationId,
-      exitDirection,
-      worldPoint,
-      party: publicParty,
-      startedAt: session.startedAt
-    };
-    const enteringMembers = [];
-    for (const member of party) {
-      const memberSocket = io.sockets.sockets.get(member.id);
-      if (!memberSocket) continue;
-      leaveCurrentRoom(memberSocket, 'globalMap', { leaderId: socket.id });
-      member.roomId = '';
-      member.locationId = fromLocationId;
-      member.onGlobalMap = true;
-      member.globalWorldPoint = worldPoint;
-      member.currentWorldSiteId = '';
-      member.pendingLocationTransition = null;
-      enteringMembers.push(member);
-    }
-    persistActivePlayerStates(enteringMembers);
-    emitGlobalTravelToParty(session, 'globalTravelEnteredWorld', payload, false);
-    if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
-
-  socket.on('globalTravelCancel', (_data = {}, ack) => {
-    const leader = players.get(socket.id);
-    const session = globalTravelSessions.get(socket.id);
-    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (globalTravelMemberIsFollower(socket.id)) {
-      const memberSession = globalTravelSessionForMember(socket.id);
-      return fail('Маршрут останавливает лидер группы.', { leaderId: memberSession?.leaderId || '', leaderName: memberSession?.leaderName || '' });
-    }
-    if (!leader || !session) return fail('Активный маршрут не найден.');
-    const worldPoint = serverGlobalTravelCurrentPoint(session, Date.now()) || serverGlobalPointForPlayer(leader);
-    const payload = {
-      leaderId: socket.id,
-      leaderName: leader.name || session.leaderName || 'Игрок',
-      worldPoint,
-      party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
-    };
-    session.terminating = true;
-    const cancellingMembers = [];
-    for (const id of session.memberIds) {
-      const member = players.get(id);
-      if (!member) continue;
-      member.onGlobalMap = true;
-      member.globalWorldPoint = worldPoint;
-      member.pendingLocationTransition = null;
-      cancellingMembers.push(member);
-    }
-    persistActivePlayerStates(cancellingMembers);
-    emitGlobalTravelToParty(session, 'globalTravelCancelled', payload, false);
-    globalTravelSessions.delete(socket.id);
-    if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
-
-  socket.on('globalMapCreateAmbush', (_data = {}, ack) => {
-    if (typeof ack === 'function') ack({ ok: false, error: 'Маркеры засад и связанные с ними искусственные встречи отключены.' });
-  });
-
-  socket.on('globalTravelEncounterDecision', (data = {}, ack) => {
-    const leader = players.get(socket.id);
-    const session = globalTravelSessions.get(socket.id);
-    if (!leader || !session) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Маршрут группы не найден.' });
-      return;
-    }
-    const now = Date.now();
-    const encounterId = String(data.encounterId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-    const requestedContact = serverGlobalTravelEncounterContact(session, encounterId, now);
-    if (data.pending === true) {
-      if (!requestedContact) {
-        if (typeof ack === 'function') ack({ ok: false, error: 'Сервер не подтвердил контакт на текущем участке маршрута.' });
-        return;
-      }
-      const existing = session.pendingEncounter;
-      if (existing && existing.id !== requestedContact.id) {
-        if (typeof ack === 'function') ack({ ok: false, error: 'Сначала завершите решение по текущей встрече.' });
-        return;
-      }
-      if (!existing) {
-        session.pendingEncounter = {
-          ...requestedContact,
-          pauseAt: now,
-          deadlineAt: now + SERVER_GLOBAL_ENCOUNTER_DECISION_MS,
-          decisionId: `decision_${session.id}_${now}`.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96)
-        };
-        scheduleServerGlobalTravelEncounterTimeout(session);
-      }
-      const pending = session.pendingEncounter;
-      const payload = {
-        leaderId: socket.id,
-        leaderName: leader.name || session.leaderName || 'Игрок',
-        pending: true,
-        decision: '',
-        encounterId: pending.id,
-        encounterKind: pending.kind,
-        title: pending.title,
-        forced: pending.forced === true,
-        decisionId: pending.decisionId,
-        deadlineAt: pending.deadlineAt,
-        serverNow: now,
-        targetLocationId: session.targetLocationId
-      };
-      emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', payload, false);
-      if (typeof ack === 'function') ack({ ok: true, ...payload });
-      return;
-    }
-
-    const decision = String(data.decision || '').toLowerCase();
-    let pending = session.pendingEncounter;
-    if (!pending && decision === 'enter' && requestedContact) {
-      pending = {
-        ...requestedContact,
-        pauseAt: now,
-        deadlineAt: now + SERVER_GLOBAL_ENCOUNTER_DECISION_MS,
-        decisionId: `decision_${session.id}_${now}`.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96)
-      };
-      session.pendingEncounter = pending;
-    }
-    if (!pending || pending.id !== encounterId) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Сервер не нашёл ожидающую решения встречу.' });
-      return;
-    }
-    if (!['enter', 'skip'].includes(decision) || (pending.forced && decision === 'skip')) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Это решение для встречи недоступно.' });
-      return;
-    }
-    if (now > Number(pending.deadlineAt || 0)) {
-      const timeoutPayload = serverFinishGlobalTravelEncounterDecision(session, 'skip', now);
-      timeoutPayload.reason = 'leaderDecisionTimeout';
-      emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', timeoutPayload, false);
-      if (typeof ack === 'function') ack({ ok: false, error: 'Время решения истекло.', ...timeoutPayload });
-      return;
-    }
-    const payload = serverFinishGlobalTravelEncounterDecision(session, decision, now);
-    emitGlobalTravelToParty(session, 'globalTravelEncounterDecision', payload, false);
-    if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
-
   socket.on('worldTaskJoinParty', (_data = {}, ack) => {
     if (typeof ack === 'function') {
       ack({ ok: false, error: 'Вступление в группу доступно только через принятие работы пустоши.' });
@@ -31697,7 +30265,7 @@ io.on('connection', (socket) => {
     if (action === 'offer') {
       if (typeof ack === 'function') ack({
         ok: true,
-        atGate: serverPlayerAtTerritoryGate(p, now),
+        atGate: serverPlayerAtTerritoryGate(p),
         contract: serverTerritoryContractOffer(p, now),
         membership: publicTerritoryMembership(p.territoryFaction, KROMKA_TERRITORY_CATALOG, now),
         catalog: publicTerritoryCatalog()
@@ -31708,7 +30276,7 @@ io.on('connection', (socket) => {
     // Первый контракт подписывают у ворот Сердцевины прямо с глобальной карты;
     // смена фракции и выход по-прежнему оформляются у регистратора базы или в
     // столице фракции.
-    const atGate = action === 'join' && serverPlayerAtTerritoryGate(p, now);
+    const atGate = action === 'join' && serverPlayerAtTerritoryGate(p);
     if (!atGate && (p.onGlobalMap || !p.roomId)) {
       return fail('Контракт подписывают у ворот Сердцевины, на базе или в столице фракции.');
     }
@@ -32023,6 +30591,56 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Диспетчер переноса в столице: куда можно и за сколько, и сама поездка —
+  // марки списываются, персонаж переходит в столицу назначения.
+  socket.on('fastTravel', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    const capitals = serverFastTravelCapitals();
+    // Клан‑владелец депо платит за перенос меньше: цена в списке — уже со скидкой.
+    const discount = clanFastTravelFeeMultiplier(serverClanBaseContextForPlayer(p) || {});
+    const destinations = fastTravelDestinations(FAST_TRAVEL_RULES, capitals, p.locationId, discount);
+    if (String(data.action || 'list') !== 'go') {
+      if (typeof ack === 'function') ack({ ok: destinations.length > 0, destinations, error: destinations.length ? '' : 'Диспетчер переноса есть только в столицах фракций.' });
+      return;
+    }
+    // Отправляет только сам диспетчер: заказ издалека по столице не принимается.
+    if (!serverNearbyServiceActor(p, 'fastTravel')) return fail('Диспетчер переноса должен быть рядом.');
+    const to = normalizeLocationId(data.to || '');
+    const refusal = fastTravelRefusal({
+      rules: FAST_TRAVEL_RULES, capitals, fromLocationId: p.locationId, toLocationId: to, feeMultiplier: discount,
+      silver: serverInventoryQty(p.inventory || [], 'silver'),
+      lastCombatAt: Math.max(Number(p.lastServerDamageAt || 0), Number(p.serverCombat?.lastAttackAt || 0)),
+      now: Date.now(),
+      cargo: sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: false })
+        .map(row => ({ id: row.id, category: SERVER_ITEM_CATEGORY.get(row.id) || '', name: SERVER_ITEM_NAME.get(row.id) || row.id }))
+    });
+    if (refusal) return fail(refusal);
+    const trip = destinations.find(row => row.locationId === to);
+    const room = chooseRoomForLocation(to);
+    serverInventoryRemove(p, 'silver', trip.fee);
+    if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'fastTravel', message: `Перенос в ${trip.name} — ${trip.fee} марок.` })) {
+      serverInventoryAdd(p, 'silver', trip.fee);
+      return fail('Перенос сорвался: попробуйте ещё раз.');
+    }
+    if (typeof ack === 'function') ack({ ok: true, to, fee: trip.fee, self: publicAuthoritativePlayerState(p) });
+  });
+
+  // Сквозная проверка кампании (tools/check-kromka-live-journey) переезжает между местами
+  // сразу: дорогу через ворота зон проверяют проверки зон. Есть только в тестовом сервере.
+  if (process.env.NODE_ENV === 'test' && process.env.KROMKA_TEST_TRAVEL === '1') {
+    socket.on('qaTravel', (data = {}, ack) => {
+      const p = players.get(socket.id);
+      const to = normalizeLocationId(data.to || '');
+      const reply = payload => { if (typeof ack === 'function') ack({ ...payload, self: p ? publicAuthoritativePlayerState(p) : null }); };
+      if (!p || !p.roomId || !LOCATIONS[to]) return reply({ ok: false, error: 'Нет такого места.' });
+      const room = chooseRoomForLocation(to);
+      if (!transferPlayerToServerRoom(p, room, { entryKey: 'entryFromWorld', reason: 'qaTravel' })) return reply({ ok: false, error: 'Перенос сорвался.' });
+      reply({ ok: true, locationId: to, roomId: room.id });
+    });
+  }
+
   // Синь: счёт, покупка премиума и обменник синь↔марки у аукционера.
   socket.on('accountSinAction', (data = {}, ack) => {
     const p = players.get(socket.id);
@@ -32133,7 +30751,6 @@ io.on('connection', (socket) => {
   socket.on('craftingPlotAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     const room = rooms.get(p.roomId);
     const loc = room ? roomLocation(room) : null;
@@ -32181,7 +30798,6 @@ io.on('connection', (socket) => {
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (p && p.onGlobalMap) return fail('На глобальной карте это недоступно.');
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
@@ -32215,10 +30831,6 @@ io.on('connection', (socket) => {
       fail('Сервер не смог зачислить комиссию станка.');
     }
   });
-
-  socket.on('globalTravelArrive', (data = {}, ack) => (
-    handleServerGlobalTravelArrival(socket, data, ack)
-  ));
 
   socket.on('shoot', (data = {}) => {
     const p = players.get(socket.id);
@@ -32491,6 +31103,7 @@ io.on('connection', (socket) => {
       if (!secondChance) target.hp = Math.max(0, serverCurrentHp(target) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
+      if (!isSelf) serverNotePvpExchange(p, target, now);
       serverApplyArtifactImpact(target, room, { x: impactX, z: impactZ }, 'explosive', 2 * falloff, now);
       const downed = !secondChance && Number(target.hp || 0) <= 0
         && serverTryDownWorldActivityPlayer(target, room, now);
@@ -32911,6 +31524,7 @@ io.on('connection', (socket) => {
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
+    serverNotePvpExchange(attacker, target, now);
     if (anyHit) serverApplyArtifactImpact(target, room, attacker,
       hits.some(row => row.hit && row.damageType === 'electric') ? 'electric' : '', 0, now);
     const downed = anyHit && Number(target.hp || 0) <= 0
@@ -33049,7 +31663,6 @@ io.on('connection', (socket) => {
       Math.max(0, intVal - 5) * 0.025 +
       Math.max(0, luckVal - 5) * 0.01 +
       (serverHasTrait(p, 'craftsmanStart') ? 0.18 : 0) +
-      serverSkillNorm(p, 'wanderer') * 0.12 +
       serverSkillNorm(p, 'repair') * 0.08 +
       serverTalentLevel(p, 'engineer') * 0.025 +
       serverTalentLevel(p, 'recycler') * 0.02,
@@ -33788,11 +32401,35 @@ io.on('connection', (socket) => {
   const changeLocationHandler = (data = {}, ack) => {
     const p = players.get(socket.id);
     if (!p) return rejectJoin(socket, ack, 'Сначала войдите в сетевую игру.');
-    const locationId = normalizeLocationId(data.locationId || p.locationId || 'settlement');
+    let locationId = normalizeLocationId(data.locationId || p.locationId || 'settlement');
     if (!LOCATIONS[locationId]) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Неизвестная локация.' });
       return;
     }
+    // Портал зоны к точке мира: билет в её комнату выдаёт сам сервер.
+    const portalId = String(data.portalId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 72);
+    if (portalId) {
+      const staged = serverStageZonePortalTicket(p, portalId, Date.now());
+      if (!staged.ok) {
+        if (typeof ack === 'function') ack({ ok: false, error: staged.error });
+        return;
+      }
+      locationId = staged.locationId;
+    }
+    // Портал в Сердцевину в её зоне мира — ворота территории: с подписанным
+    // контрактом сервер заводит игрока на базу его фракции (в саму Сердцевину —
+    // только метро базы), без контракта возвращает предложение фракций.
+    let territoryGateEntry = false;
+    if (serverIsTerritoryGateLocation(locationId) && ZONE_RUNTIME.isZone(p.locationId) && serverNearbyTransitionTo(p, locationId)) {
+      const gate = serverTerritoryGateArrival(p, [p], Date.now());
+      if (!gate.ok) {
+        if (typeof ack === 'function') ack({ ok: false, error: gate.error, contractRequired: true, contract: gate.contract || null });
+        return;
+      }
+      locationId = gate.locationId;
+      territoryGateEntry = true;
+    }
+    ensureZoneLocation(locationId);
     const requestedRoomId = sanitizeEncounterRoomId(data.roomId || '', locationId);
     const baseLoc = LOCATIONS[locationId] || {};
     const sharedRealityLocation = locationUsesSharedReality(baseLoc);
@@ -33800,7 +32437,9 @@ io.on('connection', (socket) => {
     const transitionTicket = ticketMatches ? p.pendingLocationTransition : null;
     const hasWorldEventPayload = !!String(data.worldZoneId || data.zoneId || data.encounterId || '').trim();
     const sameLocation = normalizeLocationId(p.locationId || '') === locationId && !!p.roomId;
-    const localTransition = serverNearbyTransitionTo(p, locationId);
+    const localTransition = territoryGateEntry
+      ? { id: 'territory_gate', type: 'territoryGate', to: locationId, entryKey: 'entryFromWorld' }
+      : serverNearbyTransitionTo(p, locationId);
     const ticketedRuntimeLocation = !!transitionTicket && !!(baseLoc.randomTemplate || baseLoc.encounterOnly);
     if (!sameLocation) {
       // Сердцевина, базы и лаборатории: членство проверяется на каждом входе,
@@ -33808,6 +32447,11 @@ io.on('connection', (socket) => {
       const territoryAccess = territoryLocationAccess(baseLoc, p.territoryFaction, KROMKA_TERRITORY_CATALOG);
       if (!territoryAccess.allowed) {
         if (typeof ack === 'function') ack({ ok: false, error: territoryAccess.error || 'Вход закрыт.', zoneRules: zoneRules(locationPvpMode(baseLoc), serverZoneRulesExtra(baseLoc)) });
+        return;
+      }
+      // В Сердцевину из пустоши не входят: только метро своей базы.
+      if (baseLoc.noGlobalMapEntry === true && !territoryGateEntry && !ZONE_RUNTIME.isZone(locationId) && ZONE_RUNTIME.isZone(p.locationId)) {
+        if (typeof ack === 'function') ack({ ok: false, error: 'В Сердцевину входят только через платформу метро на базе своей фракции.' });
         return;
       }
       const platformFaction = String(localTransition?.factionAccess || '');
@@ -33830,9 +32474,20 @@ io.on('connection', (socket) => {
       return;
     }
     if (!sameLocation && !transitionTicket && !localTransition) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или завершите путь на глобальной карте.' });
+      if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или воротам.' });
       return;
     }
+    // Ворота и выходы зоны мира не пропускают из перестрелки с игроком.
+    const zoneCrossing = !sameLocation && !transitionTicket && !!localTransition
+      && (ZONE_RUNTIME.isZone(p.locationId) || ZONE_RUNTIME.isZone(locationId));
+    if (zoneCrossing) {
+      const pauseMs = serverZoneGatePvpPauseLeft(p);
+      if (pauseMs > 0) {
+        if (typeof ack === 'function') ack({ ok: false, gatePauseMs: pauseMs, error: `Проход закрыт ещё ${Math.ceil(pauseMs / 1000)} с: после перестрелки с игроком ворота не пропускают.` });
+        return;
+      }
+    }
+    const crossedFrom = { roomId: p.roomId, x: Number(p.x || 0), z: Number(p.z || 0) };
     if ((baseLoc.randomTemplate || baseLoc.encounterOnly) && !transitionTicket && !sameLocation) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Временная встреча требует серверного билета.' });
       return;
@@ -33895,7 +32550,8 @@ io.on('connection', (socket) => {
       ? getOrCreateRoom(pveResolvedRoomId, locationId)
       : canUseRequestedRoom
         ? getOrCreateRoom(effectiveRoomId, locationId)
-        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId) : chooseRoomForLocation(locationId));
+        : (siteRoomId ? getOrCreateRoom(siteRoomId, locationId)
+          : chooseRoomForLocation(locationId, { prefer: serverZoneChannelPreference(p, locationId) }));
     if (pveResolvedRoomId) serverPveRoomEntered(room, p, Date.now());
     const effectiveEncounterId = String(activeTransitionZone?.encounterId || transitionTicket?.encounterId || '').slice(0, 40);
     const hasEncounterPayload = !!effectiveEncounterId;
@@ -33948,9 +32604,13 @@ io.on('connection', (socket) => {
     p.locationId = room.locationId;
     rememberPlayerSettlement(p, room.locationId);
     const entryKey = serverEntryKeyForTransition(locationId, {}, transitionTicket || localTransition);
-    const spawn = playerSpawnWorld(locationId, entryKey);
+    const entryTile = !transitionTicket ? localTransition?.entryTile : null;
+    const spawn = entryTile
+      ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
+      : playerSpawnWorld(locationId, entryKey);
     p.x = spawn.x;
     p.z = spawn.z;
+    if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
     p.input = { forward: 0, right: 0 };
     p.moving = false;
     p.vx = 0;
@@ -34003,6 +32663,10 @@ io.on('connection', (socket) => {
     emitGroundItemsSnapshot(room, true, socket.id);
     emitWorldContainersSnapshot(room, true, socket.id);
     emitServerArtifactState(p, 'locationChanged');
+    if (zoneCrossing && localTransition?.type === 'zoneGate') {
+      serverZoneGateFollowers(p, crossedFrom.roomId, crossedFrom, room, entryKey, String(localTransition.label || room.locationId));
+    }
+    if (serverShowZoneFirstHints(p)) persistActivePlayerState(p);
   };
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);
@@ -34033,11 +32697,6 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const trade = p ? serverPlayerTradeFor(p.id) : null;
     if (trade) cancelServerPlayerTrade(trade, 'disconnected', 'Торговля отменена: один из игроков отключился.');
-    try {
-      cleanupGlobalTravelSessionsForSocket(socket.id);
-    } catch (error) {
-      console.error('Global travel disconnect cleanup failed:', socket.id, error);
-    }
     try {
       if (p) persistActivePlayerState(p);
     } catch (error) {
@@ -34085,20 +32744,6 @@ setInterval(() => {
   }
 }, 60000);
 
-// Опасные клетки: стычки в пути по мелким клеткам.
-setInterval(() => {
-  try {
-    serverTickDangerCells(Date.now());
-  } catch (error) {
-    console.error('Danger cell tick failed:', error);
-  }
-  try {
-    serverTickSightings(Date.now());
-  } catch (error) {
-    console.error('Global map sightings tick failed:', error);
-  }
-}, 2000);
-
 // A-Life опасных клеток: жизнь групп без игроков и приход в занятые сцены.
 setInterval(() => {
   try {
@@ -34135,6 +32780,7 @@ serverRestorePublicEventZones();
 setInterval(() => {
   try {
     serverTickPublicEvents(Date.now());
+    serverTickZonePortals();
   } catch (error) {
     console.error('Public event tick failed:', error);
   }
@@ -34184,6 +32830,7 @@ setInterval(() => {
     if (WASTELAND_SIM.tick(Date.now())) invalidateWastelandPublicCache();
     syncWorldSiteLocationDefinitions();
     pruneExpiredEphemeralRooms(Date.now());
+    pruneSleepingZoneRooms(Date.now());
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
   } finally {

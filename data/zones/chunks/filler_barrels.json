@@ -1,0 +1,68 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_barrels",
+  "kind": "filler",
+  "name": "Свалка бочек",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 5,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rust_barrel_v1"
+      ],
+      "count": [
+        6,
+        11
+      ],
+      "spacing": 1.6,
+      "radius": 10
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        8
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "c1",
+      "prefab": "barrel_cluster",
+      "x": -4,
+      "z": -3,
+      "ry": 25
+    },
+    {
+      "id": "c2",
+      "prefab": "barrel_cluster",
+      "x": 6,
+      "z": 5,
+      "ry": 200
+    }
+  ],
+  "anchors": []
+}

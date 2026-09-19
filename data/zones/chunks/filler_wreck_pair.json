@@ -1,0 +1,59 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_wreck_pair",
+  "kind": "filler",
+  "name": "Два остова",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 2,
+  "maxPerZone": 3,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        7,
+        11
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "c1",
+      "prefab": "car_wreck",
+      "x": -8,
+      "z": -5,
+      "ry": 35
+    },
+    {
+      "id": "c2",
+      "prefab": "car_wreck",
+      "x": 9,
+      "z": 7,
+      "ry": 250
+    }
+  ],
+  "anchors": []
+}

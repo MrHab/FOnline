@@ -21,7 +21,7 @@ const terminology = JSON.parse(read('data/kromka/terminology.json'));
 assert.equal(catalog.schema, 'realm.kromka.character-progression.v1');
 assert.equal(catalog.special.budget, 40);
 assert.deepEqual(catalog.special.stats.map(row => row.id), CANONICAL_SPECIAL_IDS);
-assert.equal(catalog.skills.items.length, 16);
+assert.equal(catalog.skills.items.length, 15);
 assert.equal(catalog.perks.items.length, 41);
 assert.equal(catalog.startTraits.items.length, 6);
 for (const group of [catalog.special.stats, catalog.skills.items, catalog.perks.items, catalog.startTraits.items]) {
@@ -114,4 +114,4 @@ assert(socket.includes('EmitWithAck("state", payload, ack =>')
   && pipboy.includes('HandleProgressionAck'),
   'Unity progression rejection reason is not returned to the player');
 
-console.log('Kromka character progression OK: 7 stats, 16 skills, 41 perks, 40-point quick start, shared Unity/server catalog.');
+console.log('Kromka character progression OK: 7 stats, 15 skills, 41 perks, 40-point quick start, shared Unity/server catalog.');

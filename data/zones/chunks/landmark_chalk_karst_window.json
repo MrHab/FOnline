@@ -1,0 +1,174 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_chalk_karst_window",
+  "kind": "landmark",
+  "name": "Карстовое окно",
+  "biomes": [
+    "chalk_lowland"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        4,
+        7
+      ],
+      "spacing": 4,
+      "scale": [
+        0.8,
+        1.6
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "r0",
+      "prefab": "rubble_rock",
+      "x": 0,
+      "z": 9,
+      "ry": 90,
+      "s": 2.1
+    },
+    {
+      "id": "r1",
+      "prefab": "rubble_rock",
+      "x": 4.87,
+      "z": 7.57,
+      "ry": 123,
+      "s": 2.1
+    },
+    {
+      "id": "r2",
+      "prefab": "rubble_rock",
+      "x": 8.19,
+      "z": 3.74,
+      "ry": 155,
+      "s": 2.1
+    },
+    {
+      "id": "r3",
+      "prefab": "rubble_rock",
+      "x": 8.91,
+      "z": -1.28,
+      "ry": 188,
+      "s": 2.1
+    },
+    {
+      "id": "r4",
+      "prefab": "rubble_rock",
+      "x": 6.8,
+      "z": -5.89,
+      "ry": 221,
+      "s": 2.1
+    },
+    {
+      "id": "r5",
+      "prefab": "rubble_rock",
+      "x": 2.54,
+      "z": -8.64,
+      "ry": 254,
+      "s": 2.1
+    },
+    {
+      "id": "r6",
+      "prefab": "rubble_rock",
+      "x": -2.54,
+      "z": -8.64,
+      "ry": 286,
+      "s": 2.1
+    },
+    {
+      "id": "r7",
+      "prefab": "rubble_rock",
+      "x": -6.8,
+      "z": -5.89,
+      "ry": 319,
+      "s": 2.1
+    },
+    {
+      "id": "r8",
+      "prefab": "rubble_rock",
+      "x": -8.91,
+      "z": -1.28,
+      "ry": 352,
+      "s": 2.1
+    },
+    {
+      "id": "r9",
+      "prefab": "rubble_rock",
+      "x": -8.19,
+      "z": 3.74,
+      "ry": 25,
+      "s": 2.1
+    },
+    {
+      "id": "r10",
+      "prefab": "rubble_rock",
+      "x": -4.87,
+      "z": 7.57,
+      "ry": 57,
+      "s": 2.1
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_b",
+      "x": 12,
+      "z": 11,
+      "ry": 0,
+      "s": 1.6
+    },
+    {
+      "id": "t2",
+      "prefab": "dead_tree_b",
+      "x": -12,
+      "z": -11,
+      "ry": 0,
+      "s": 1.5
+    }
+  ],
+  "anchors": [
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": 0,
+      "z": 0,
+      "radius": 6
+    },
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 14,
+      "z": -13,
+      "tier": "basic"
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": -14,
+      "z": 14,
+      "radius": 3
+    }
+  ]
+}

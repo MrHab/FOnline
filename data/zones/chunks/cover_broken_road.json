@@ -1,0 +1,52 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "cover_broken_road",
+  "kind": "cover",
+  "name": "Покров: битый асфальт",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 2,
+  "maxPerZone": 8,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "asphalt_slab"
+      ],
+      "count": [
+        3,
+        6
+      ],
+      "spacing": 5
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        9
+      ]
+    }
+  ],
+  "objects": [],
+  "anchors": []
+}

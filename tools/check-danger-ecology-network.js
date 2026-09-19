@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка A-Life опасных клеток на настоящем сервере. Файл экономики
-// проверки делает красные клетки сквозными, логов нет — в мире только группы,
-// заранее положенные в состояние:
-//  - группа, живущая в клетке, стоит в её сцене существами бестиария Кромки;
-//  - группа из соседней клетки чует игрока и входит с того края, откуда шла,
-//    а игрок видит предупреждение;
-//  - погибшие особи не возвращаются, большие потери уводят группу за край в
-//    соседнюю клетку;
-//  - опустевшая сцена отпускает группы в мир с ранами;
-//  - шанс стычки в пути сводит отряд с ближайшей группой, а без групп рядом
-//    стычки нет.
+// Сетевая проверка A-Life на сетке зон мира, на настоящем сервере. Логова стоят
+// в каждой немирной зоне, но пусты (ёмкость 0) — в мире только группы, заранее
+// положенные в состояние; предел канала 1, поэтому двое в одной зоне стоят в
+// двух каналах:
+//  - группа, живущая в зоне, стоит в каждом её канале с игроками;
+//  - группа из соседней зоны чует игроков и входит воротами с той стороны,
+//    откуда шла, — в оба канала, игроки видят предупреждение;
+//  - погибшая особь исчезает во всех каналах сразу, большие потери уводят
+//    группу воротами в соседнюю зону;
+//  - синяя зона тоже живая;
+//  - опустевшая зона отпускает группы в мир с ранами.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -22,93 +22,54 @@ const assert = require('node:assert/strict');
 const DEV_TOKEN = 'danger-ecology-network-check-0123456789abcdef';
 process.env.DEV_API_MODE = 'token';
 process.env.DEV_ADMIN_TOKEN = DEV_TOKEN;
-// Путь по карте медленнее обычного: стычки в пути успевают разыграться.
-process.env.SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION = '120';
+process.env.KROMKA_ZONE_CHANNEL_CAP = '1';
 const h = require('./check-combat-runtime');
-const cells = require('../src/server/danger-cells');
+const { zoneOfPlace, zoneById } = require('../src/server/zone-graph');
+const { loadZoneCatalog } = require('../src/server/zone-chunks');
+const { buildZone, normalizeRecipe } = require('../src/server/zone-builder');
+const { zoneRecipe } = require('../src/server/zone-graph');
 const accounts = {};
+const zoneWalk = require('./lib/zone-walk');
+const { world } = zoneWalk;
+const placeInZone = (role, locationId, point) => zoneWalk.placeInZone(h, accounts, role, locationId, point);
 
 const root = path.resolve(__dirname, '..');
+const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
+const catalog = loadZoneCatalog(path.join(root, 'data', 'zones'));
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'economy.json'), 'utf8'));
-economy.dangerCells.sceneModes = ['pvpBlack', 'pvpFullDrop'];
-economy.dangerCells.encounterChance = { peaceful: 0, pve: 0, pvp: 1, pvpFullDrop: 0, pvpBlack: 0 };
-economy.dangerCells.edgeGraceKm = 0.5;
 economy.worldModel.dangerEcology = true;
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-danger-ecology-'));
-const economyFile = path.join(scratch, 'economy.json');
-fs.writeFileSync(economyFile, JSON.stringify(economy));
-process.env.KROMKA_ECONOMY_FILE = economyFile;
-const ecologyFile = path.join(scratch, 'danger-ecology.json');
-fs.writeFileSync(ecologyFile, JSON.stringify({
+fs.writeFileSync(path.join(scratch, 'economy.json'), JSON.stringify(economy));
+process.env.KROMKA_ECONOMY_FILE = path.join(scratch, 'economy.json');
+fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
   tickSeconds: 1,
   maxGroups: 40,
-  pullRadiusCells: 3,
   woundHealPerMinute: 0,
-  lairs: { density: { pvp: 0, pvpFullDrop: 0, pvpBlack: 0 } },
+  lairs: { capacity: { pve: 0, pvp: 0, pvpFullDrop: 0, pvpBlack: 0 } },
   roam: { restMinutes: [60, 60], stepSeconds: [600, 600], huntStepSeconds: [1, 1], senseSeconds: 1, radius: 1 },
   species: [
-    // Группы у путника не нападают на него и друг на друга (одна фракция):
+    // Группы не нападают на игроков и друг на друга (одна фракция, не враждебны):
     // проверка смотрит на жизнь групп, а не на исход боя.
     { id: 'test_gari', name: 'Стая гари', kind: 'monster', faction: 'gari', hostile: false,
       members: [{ type: 'gari', name: 'Гарь', min: 3, max: 3 }],
-      habitat: { pvp: 1, pvpFullDrop: 2, pvpBlack: 1 }, perceptionCells: 0, aggression: 0, fleeAt: 0.6 },
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 0, aggression: 0, fleeAt: 0.6 },
     { id: 'test_scouts', name: 'Стая гари', kind: 'monster', faction: 'gari', hostile: false,
       members: [{ type: 'gari', name: 'Гарь-разведчик', min: 3, max: 3 }],
-      habitat: { pvp: 1, pvpFullDrop: 2, pvpBlack: 1 }, perceptionCells: 2, aggression: 1, fleeAt: 0.6 },
-    { id: 'test_raiders', name: 'Банда налётчиков', kind: 'raider', faction: 'raiders',
-      members: [{ type: 'raider', name: 'Налётчик', min: 2, max: 2, equipment: { weapon: 'pistol', armor: 'leather' } }],
-      habitat: { pvp: 3, pvpFullDrop: 1 }, perceptionCells: 0, aggression: 0, fleeAt: 0.5 }
+      habitat: { pve: 1, pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 1, aggression: 1, fleeAt: 0.6 }
   ]
 }));
-process.env.KROMKA_DANGER_ECOLOGY_FILE = ecologyFile;
+process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const SUB = economy.dangerCells.subCellKm; // 1 точка карты = 1 км
-const cellOf = point => ({ sx: Math.floor(point.x / SUB), sy: Math.floor(point.y / SUB) });
-const centerOf = (sx, sy) => ({ x: Number(((sx + 0.5) * SUB).toFixed(3)), y: Number(((sy + 0.5) * SUB).toFixed(3)) });
-
-// --- цвета мелких клеток так же, как их видит сервер -------------------------------------------
-const map = JSON.parse(fs.readFileSync(path.join(root, 'data', 'global-map.json'), 'utf8'));
-const nodes = {};
-for (const node of map.nodes) {
-  const id = String(node.locationId || node.id || '');
-  if (id) nodes[id] = { x: Number(node.x), y: Number(node.y) };
-}
-const modes = cells.cellDangerModes(cells.normalizeDangerCellConfig(economy.dangerCells), map.grid, map.cells, nodes);
-const playable = require('../data/kromka/global-map-playable.json').points;
-function inside(x, y) {
-  let hit = false;
-  for (let i = 0, j = playable.length - 1; i < playable.length; j = i, i += 1) {
-    const a = playable[i];
-    const b = playable[j];
-    if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / ((b[1] - a[1]) || 1e-9) + a[0]) hit = !hit;
-  }
-  return hit;
-}
-const places = map.nodes.map(node => ({ x: Number(node.x), y: Number(node.y) }));
-function modeAt(sx, sy) {
-  const { x, y } = centerOf(sx, sy);
-  if (!inside(x, y)) return '';
-  return modes[`${Math.floor(x / map.grid.cellPoints)}:${Math.floor(y / map.grid.cellPoints)}`] || '';
-}
-/** Горизонтальные полосы жёлтой земли без мест карты рядом. */
-function yellowRuns(length) {
-  const runs = [];
-  for (let sy = 5; sy < 180; sy += 3) {
-    for (let sx = 5; sx < 225; sx += 1) {
-      let ok = true;
-      for (let k = -1; k <= length && ok; k += 1) {
-        for (let dy = -4; dy <= 4 && ok; dy += 1) {
-          if (modeAt(sx + k, sy + dy) !== 'pvp') ok = false;
-        }
-        const c = centerOf(sx + k, sy);
-        if (places.some(place => Math.hypot(place.x - c.x, place.y - c.y) < 8)) ok = false;
-      }
-      if (ok) runs.push({ sx, sy });
-    }
-  }
-  return runs;
-}
+const home = zoneOfPlace(graph, 'settlement');
+const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
+// Сосед с открытыми воротами, откуда придёт охотник: он идёт на юг и входит с севера.
+const north = zoneById(graph, home.edges.north.to);
+assert(home.edges.north.open !== false && north && north.mode !== 'peaceful', 'Keys has an open gate to a live zone in the north');
+// Синяя зона без игроков в соседях: живая, в ней своя группа.
+const blue = graph.zones.find(zone => zone.mode === 'pve' && Math.abs(zone.col - home.col) + Math.abs(zone.row - home.row) > 3);
+assert(blue, 'the world has a blue zone away from Keys');
+const blueDef = buildZone(zoneRecipe(graph, blue.id), catalog);
 
 const devGet = route => new Promise((resolve, reject) => {
   http.get(h.baseUrl() + route, { headers: { 'x-dev-token': DEV_TOKEN } }, res => {
@@ -134,215 +95,129 @@ const devPost = (route, body) => new Promise((resolve, reject) => {
   req.on('error', reject);
   req.end(payload);
 });
-async function groupNear(id, sx, sy, radius = 3) {
-  const view = await devGet(`/api/dev/danger-ecology?sx=${sx}&sy=${sy}&radius=${radius}`);
-  assert(view.ok && view.active, 'A-Life is on: ' + JSON.stringify(view).slice(0, 200));
-  return view.near.find(group => group.id === id) || null;
+async function group(id, zone, radius = 2) {
+  const view = await devGet(`/api/dev/danger-ecology?sx=${zone.col}&sy=${zone.row}&radius=${radius}`);
+  assert(view.active, 'A-Life is on');
+  return view.near.find(row => row.id === id) || null;
 }
-async function waitFor(check, timeoutMs, label) {
-  const until = Date.now() + timeoutMs;
-  for (;;) {
-    const value = await check();
-    if (value) return value;
-    if (Date.now() > until) throw new Error('timed out: ' + label);
-    await delay(250);
+async function waitFor(label, probe, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  let last = null;
+  while (Date.now() < deadline) {
+    last = await probe();
+    if (last) return last;
+    await delay(300);
   }
+  throw new Error(`timed out: ${label}`);
 }
-
-const waitForTransfer = (account, timeoutMs = 15000) => new Promise((resolve, reject) => {
-  const timer = setTimeout(() => {
-    account.socket.off('serverWorldTransfer', onTransfer);
-    reject(new Error(`no danger cell transfer for ${account.role} in ${timeoutMs} ms`));
-  }, timeoutMs);
-  function onTransfer(payload) {
-    if (!/^dangerCell/.test(String(payload?.reason || ''))) return;
-    clearTimeout(timer);
-    account.socket.off('serverWorldTransfer', onTransfer);
-    resolve(payload);
-  }
-  account.socket.on('serverWorldTransfer', onTransfer);
-});
-
-async function driveTo(account, state, x, z, maxFrames = 160) {
-  let seq = 1;
-  for (let frame = 0; frame < maxFrames; frame += 1) {
-    const dx = x - state.x;
-    const dz = z - state.z;
-    const length = Math.hypot(dx, dz);
-    if (length <= 0.4) return true;
-    const result = await h.socketAck(account.socket, 'state', {
-      seq: seq++, x, z, angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
-      vx: 5.5 * dx / Math.max(0.001, length), vz: 5.5 * dz / Math.max(0.001, length)
-    });
-    const self = result?.self || result || {};
-    if (Number.isFinite(Number(self.x))) state.x = Number(self.x);
-    if (Number.isFinite(Number(self.z))) state.z = Number(self.z);
-    await delay(58);
-  }
-  return false;
-}
-
-const member = (id, type, hp) => ({ id, type, hp, maxHp: hp });
+const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.roomId === roomId && !actor.dead);
 
 (async () => {
   await h.bootstrapCharacters(accounts);
-  const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json')));
-  const savesPath = path.join(h.DATA_DIR, 'saves.json');
-  const saves = JSON.parse(fs.readFileSync(savesPath));
-  const onMap = (role, x, y) => {
-    const state = saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
-    state.globalMap = { onWorldMap: true, playerX: x, playerY: y };
-  };
-
-  // Путник у западного края — красный «Глухой обвод», как в check-danger-walk-network.
-  const walkerStart = { x: 15, y: 150 };
-  const scene = { sx: cellOf(walkerStart).sx, sy: cellOf(walkerStart).sy - 1 };
-  onMap('untargeted', walkerStart.x, walkerStart.y);
-  // Две полосы жёлтой земли далеко друг от друга: без групп и с группой рядом.
-  const runs = yellowRuns(6);
-  assert(runs.length >= 2, 'the map has long yellow runs');
-  const quietRun = runs[0];
-  const lurkRun = runs.find(run => Math.abs(run.sx - quietRun.sx) + Math.abs(run.sy - quietRun.sy) > 30);
-  assert(lurkRun, 'two yellow runs far apart');
-  onMap('harvest', centerOf(quietRun.sx, quietRun.sy).x, centerOf(quietRun.sx, quietRun.sy).y);
-  onMap('trade', centerOf(lurkRun.sx, lurkRun.sy).x, centerOf(lurkRun.sx, lurkRun.sy).y);
-  fs.writeFileSync(savesPath, JSON.stringify(saves));
+  const hub = world(homeDef.spawn);
+  placeInZone('untargeted', home.id, hub);
+  placeInZone('harvest', home.id, { x: hub.x + 2, z: hub.z });
+  placeInZone('trade', blue.id, world(blueDef.spawn));
 
   const far = Date.now() + 3600000;
-  const group = (id, speciesId, sx, sy, members) => ({
-    id, speciesId, lairId: '', sx, sy, members, state: 'rest', target: null,
-    restUntil: far, nextStepAt: far, size0: members.length, bornAt: 0
+  const members = () => [1, 2, 3].map(n => ({ id: `m${n}`, type: 'gari', spec: 0, name: 'Гарь', hp: 39, maxHp: 39 }));
+  const resting = (id, speciesId, zone) => ({
+    id, speciesId, lairId: '', sx: zone.col, sy: zone.row, members: members(), state: 'rest', target: null,
+    restUntil: far, nextStepAt: far, shakenUntil: 0, size0: 3, bornAt: 0
   });
   fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({
-    version: 1,
-    mapRevision: 'network-check',
-    nextId: 100,
-    lairs: [],
-    groups: [
-      group('resident', 'test_gari', scene.sx, scene.sy, [member('m1', 'gari', 39), member('m2', 'gari', 39), member('m3', 'gari', 39)]),
-      group('hunter', 'test_scouts', scene.sx, scene.sy - 1, [member('m1', 'gari', 39), member('m2', 'gari', 39), member('m3', 'gari', 39)]),
-      group('lurker', 'test_raiders', lurkRun.sx + 1, lurkRun.sy - 2, [member('m1', 'raider', 55), member('m2', 'raider', 55)])
-    ]
+    version: 1, mapRevision: 'check', nextId: 50, lairs: [],
+    groups: [resting('resident', 'test_gari', home), resting('hunter', 'test_scouts', north), resting('bluebirds', 'test_gari', blue)]
   }));
 
   await h.startServer();
+  const notices = [];
   try {
-    const walker = accounts.untargeted;
-    await h.connectAndJoin(walker);
-    const snapshots = [];
-    const notices = [];
-    walker.socket.on('enemySnapshot', payload => snapshots.push(payload?.enemies || []));
-    walker.socket.on('dangerCellNotice', payload => notices.push(String(payload?.text || '')));
+    await h.connectAndJoin(accounts.untargeted);
+    await h.connectAndJoin(accounts.harvest);
+    const channels = [accounts.untargeted.join.roomId, accounts.harvest.join.roomId];
+    assert.deepEqual(channels, [home.id, `${home.id}#ch2`], 'two players in one zone stand in two channels');
+    for (const account of [accounts.untargeted, accounts.harvest]) {
+      account.socket.on('dangerCellNotice', payload => notices.push({ role: account.role, text: String(payload?.text || '') }));
+    }
 
-    // --- группа клетки стоит в её сцене ---------------------------------------------------
-    const entered = waitForTransfer(walker);
-    const started = await h.socketAck(walker.socket, 'globalTravelStart', { targetLocationId: 'wasteland', worldPoint: { x: walkerStart.x, y: 110 } });
-    assert(started.ok, JSON.stringify(started).slice(0, 300));
-    const first = await entered;
-    assert.equal(first.pvpMode, 'pvpFullDrop');
-    assert.deepEqual(cellOf(first.worldPoint), scene, 'the walker is in the scene of the resident group');
-    const gari = rows => rows.filter(row => !row.dead && row.creatureTypeId === 'gari' && row.name === 'Гарь');
-    const residents = await waitFor(() => {
-      const last = snapshots[snapshots.length - 1] || [];
-      return gari(last).length >= 3 ? gari(last) : null;
-    }, 6000, 'resident gari in the scene');
-    assert(residents.every(row => row.name === 'Гарь' && row.faction === 'gari'), 'Kromka creatures, not random types: ' + JSON.stringify(residents.map(row => [row.name, row.faction])));
-    const walkerZ = Number(first.z ?? 0);
-    assert(residents.every(row => Math.abs(Number(row.z) - walkerZ) > 6), 'the resident group stands away from the entry edge');
-    console.log(`PASS a group living in the cell stands in its scene as Kromka creatures (${residents.length} × Гарь)`);
+    // --- группа зоны — в каждом канале --------------------------------------------------------
+    const resident = await waitFor('the resident group stands in both channels', async () => {
+      const row = await group('resident', home, 0);
+      return channels.every(roomId => actorsIn(row, roomId).length === 3) ? row : null;
+    });
+    assert.equal(resident.online, home.id, 'the group is online in its zone');
+    // Логова — места логов, которые конструктор ставит в каждой немирной зоне.
+    const expectedLairs = graph.zones.filter(zone => zone.mode !== 'peaceful')
+      .reduce((sum, zone) => sum + normalizeRecipe(zoneRecipe(graph, zone.id)).budget.lairs, 0);
+    const summary = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`)).summary;
+    assert.equal(summary.lairs, expectedLairs, 'every live zone has its lairs');
+    assert(summary.lairsByMode.pve > 0 && summary.lairsByMode.pvpBlack > 0, 'blue and black zones have lairs: ' + JSON.stringify(summary.lairsByMode));
+    console.log(`PASS the group living in ${home.title} stands in both of its channels (3 + 3 creatures); ${expectedLairs} lairs across the live zones`);
 
-    // --- соседняя группа чует игрока и входит с края ----------------------------------------------
-    const mourners = rows => rows.filter(row => !row.dead && row.creatureTypeId === 'gari' && row.name === 'Гарь-разведчик');
-    let firstSeen = null;
-    const newcomers = await waitFor(() => {
-      for (const rows of snapshots) {
-        if (mourners(rows).length >= 3) {
-          firstSeen = firstSeen || mourners(rows);
-          return firstSeen;
-        }
+    // --- охотник из соседней зоны входит воротами -----------------------------------------------
+    const hunter = await waitFor('the hunter comes through the north gate', async () => {
+      const row = await group('hunter', home, 1);
+      return row && row.sx === home.col && row.sy === home.row && channels.every(roomId => actorsIn(row, roomId).length === 3) ? row : null;
+    });
+    const entry = world(homeDef.entryFromNorth);
+    // Воротами группа входит в каналы, открытые в миг прихода. Первый канал
+    // открыт всегда: без игрока группу ничто не зовёт. Тик экологии может пройти
+    // между двумя входами — тогда второй канал откроется позже и получит уже
+    // стоящую в зоне группу на её точках появления, как любой новый канал; его
+    // проверяем, только если он слышал приход с севера.
+    await delay(600);
+    const heard = new Set(notices.filter(row => /север/i.test(row.text)).map(row => row.role));
+    [accounts.untargeted, accounts.harvest].forEach((account, index) => {
+      if (index > 0 && !heard.has(account.role)) return;
+      for (const actor of actorsIn(hunter, channels[index])) {
+        assert(Math.hypot(actor.x - entry.x, actor.z - entry.z) < 24, `the hunter enters by the north gate: ${actor.x},${actor.z} vs ${entry.x},${entry.z}`);
       }
-      return null;
-    }, 10000, 'the hunter group arrives');
-    assert.equal(newcomers.length, 3);
-    assert(newcomers.every(row => Number(row.z) < -12), 'coming from the north, the group walks in at the north edge: ' + JSON.stringify(newcomers.map(row => row.z)));
-    await waitFor(() => notices.some(text => /С севера/.test(text)), 3000, 'the arrival notice');
-    const hunter = await groupNear('hunter', scene.sx, scene.sy, 2);
-    assert.equal(hunter.sx, scene.sx);
-    assert.equal(hunter.sy, scene.sy, 'the hunter moved into the scene cell');
-    assert(hunter.online, 'the hunter is in the scene');
-    console.log(`PASS a group next door senses the player and walks in from the edge it came from ("${notices.find(text => /С севера/.test(text))}")`);
+    });
+    console.log(`PASS a group from ${north.title} senses the players, walks in by the north gate and stands in both channels`);
 
-    // --- потери насовсем, бегство за край ------------------------------------------------------------
-    const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'hunter', count: 2 });
-    assert(killed.ok && killed.killed === 2, JSON.stringify(killed));
-    assert.equal(killed.members, 1, 'dead members are gone from the group');
-    assert.equal(killed.state, 'flee', 'heavy losses break the group');
-    const fled = await waitFor(async () => {
-      const row = await groupNear('hunter', scene.sx, scene.sy, 3);
+    // --- гибель во всех каналах, бегство в соседнюю зону ---------------------------------------
+    const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'resident', roomId: home.id, count: 2 });
+    assert.equal(killed.killed, 2);
+    assert.equal(killed.members, 1, 'the dead do not come back');
+    assert.equal(killed.state, 'flee', 'two of three dead: the group flees');
+    const after = await group('resident', home, 0);
+    assert.equal(actorsIn(after, `${home.id}#ch2`).length, 1, 'a creature killed in one channel is gone from the other too');
+    const fled = await waitFor('the broken group leaves through a gate', async () => {
+      const row = await group('resident', home, 1);
+      return row && (row.sx !== home.col || row.sy !== home.row) ? row : null;
+    }, 45000);
+    const direction = Object.entries(home.edges).find(([, edge]) => edge.to === zoneById(graph, graph.zones.find(z => z.col === fled.sx && z.row === fled.sy).id)?.id);
+    assert(direction && direction[1].open !== false, 'the group left through an open gate');
+    assert.equal(fled.online, '', 'the group left the scenes');
+    const leftover = await group('resident', home, 1);
+    assert(!(leftover.actors || []).length, 'no copies of the fled group stay in the other channel');
+    console.log(`PASS a creature dies in every channel at once and the broken group leaves by the ${direction[0]} gate`);
+
+    // --- синяя зона живая ------------------------------------------------------------------------
+    await h.connectAndJoin(accounts.trade);
+    assert.equal(accounts.trade.join.roomId, blue.id);
+    await waitFor('the blue zone group stands in its scene', async () => actorsIn(await group('bluebirds', blue, 0), blue.id).length === 3);
+    console.log(`PASS the blue zone ${blue.title} is alive too`);
+
+    // --- опустевшая зона отпускает группы ------------------------------------------------------------
+    const woundedBefore = await group('hunter', home, 1);
+    h.closeSocket(accounts.untargeted);
+    h.closeSocket(accounts.harvest);
+    const released = await waitFor('the empty zone releases the hunter', async () => {
+      const row = await group('hunter', home, 1);
       return row && !row.online ? row : null;
-    }, 40000, 'the survivor leaves the scene');
-    assert.equal(fled.members.length, 1, 'the dead do not come back');
-    assert.equal(Math.abs(fled.sx - scene.sx) + Math.abs(fled.sy - scene.sy), 1, 'the survivor left for a neighbouring cell: ' + JSON.stringify(fled));
-    console.log(`PASS deaths are permanent and a broken group leaves through the far edge (${fled.sx}_${fled.sy})`);
-
-    // --- сцена опустела: группа в мире с ранами ------------------------------------------------------------
-    const liveResidents = gari(snapshots[snapshots.length - 1] || []);
-    const residentHpBefore = liveResidents.map(row => Math.round(Number(row.hp))).sort((a, b) => a - b);
-    const state = { x: Number(first.x ?? 0), z: Number(first.z ?? 0) };
-    assert(await driveTo(walker, state, state.x, 36), 'reached the south edge: ' + JSON.stringify(state));
-    const back = waitForTransfer(walker);
-    const exit = await h.socketAck(walker.socket, 'globalTravelEnterWorld', {});
-    assert(exit.ok, JSON.stringify(exit).slice(0, 300));
-    if (exit.transferred) await back;
-    const released = await waitFor(async () => {
-      const row = await groupNear('resident', scene.sx, scene.sy, 0);
-      return row && !row.online ? row : null;
-    }, 6000, 'the resident group goes back to the world');
-    assert.equal(released.sx, scene.sx);
-    assert.equal(released.sy, scene.sy, 'the released group stays in its cell');
-    assert.deepEqual(released.members.map(row => row.hp).sort((a, b) => a - b), residentHpBefore,
-      'the released group keeps its members and their health');
-    console.log('PASS an emptied scene releases its groups back to the world with their health');
-
-    // --- стычка в пути: без групп рядом её нет ---------------------------------------------------------------
-    const quiet = accounts.harvest;
-    await h.connectAndJoin(quiet);
-    let quietTransfer = null;
-    quiet.socket.on('serverWorldTransfer', payload => { if (/^dangerCell/.test(String(payload?.reason || ''))) quietTransfer = payload; });
-    const quietTarget = centerOf(quietRun.sx + 6, quietRun.sy);
-    const quietStart = await h.socketAck(quiet.socket, 'globalTravelStart', { targetLocationId: 'wasteland', worldPoint: quietTarget });
-    assert(quietStart.ok, JSON.stringify(quietStart).slice(0, 300));
-    await delay(7000);
-    assert.equal(quietTransfer, null, 'a chance encounter needs a group nearby: ' + JSON.stringify(quietTransfer)?.slice(0, 200));
-    console.log('PASS with no group around, the route through yellow land passes without an encounter');
-
-    // --- стычка в пути: ближайшая группа ---------------------------------------------------------------------------
-    const scout = accounts.trade;
-    await h.connectAndJoin(scout);
-    const scoutSnapshots = [];
-    scout.socket.on('enemySnapshot', payload => scoutSnapshots.push(payload?.enemies || []));
-    const ambushed = waitForTransfer(scout, 20000);
-    const scoutTarget = centerOf(lurkRun.sx + 6, lurkRun.sy);
-    const scoutStart = await h.socketAck(scout.socket, 'globalTravelStart', { targetLocationId: 'wasteland', worldPoint: scoutTarget });
-    assert(scoutStart.ok, JSON.stringify(scoutStart).slice(0, 300));
-    const ambush = await ambushed;
-    assert.equal(ambush.reason, 'dangerCell');
-    const ambushCell = cellOf(ambush.worldPoint);
-    const lurker = await waitFor(() => groupNear('lurker', ambushCell.sx, ambushCell.sy, 0), 5000, 'the lurker in the ambush cell');
-    assert(lurker.online, 'the nearby group is the encounter');
-    const raiders = await waitFor(() => {
-      const rows = scoutSnapshots[scoutSnapshots.length - 1] || [];
-      const found = rows.filter(row => !row.dead && row.faction === 'raiders' && row.name === 'Налётчик');
-      return found.length >= 2 ? found : null;
-    }, 5000, 'the raiders in the ambush scene');
-    console.log(`PASS a chance encounter on the road pulls in the nearest group (${raiders.length} × Налётчик at ${ambushCell.sx}_${ambushCell.sy})`);
+    });
+    assert.equal(released.sx, home.col, 'the released group stays in the zone');
+    assert.deepEqual(released.members.map(row => row.hp), woundedBefore.members.map(row => row.hp), 'wounds are kept');
+    console.log('PASS an emptied zone releases its groups into the world with their wounds');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  console.log('Danger ecology network OK: cell groups stand in their scenes as Kromka creatures, neighbours walk in from the edge they came from, deaths are permanent, broken groups leave, emptied scenes release groups with their health, and road encounters meet the nearest group or none.');
+  console.log('Danger ecology network OK: groups live on the zone grid, stand in every channel, hunt through open gates, die in every channel at once, flee through gates, live in blue zones and are released with their wounds.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

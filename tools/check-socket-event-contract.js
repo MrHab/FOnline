@@ -44,10 +44,6 @@ const serverDirectEmits = collectMatches(
   serverSource,
   /\.emit\(\s*(['"])([^'"]+)\1/g
 );
-const serverPartyEmits = collectMatches(
-  serverSource,
-  /\bemitGlobalTravelToParty\(\s*[^,\n]+,\s*(['"])([^'"]+)\1/g
-);
 const unityClientHandlers = sortedUnique(collectMatches(
   unityClientSource,
   /\b_connection\.On\(\s*"([^"]+)"/g,
@@ -73,32 +69,13 @@ const serverHandlers = sortedUnique(collectMatches(
   /\bsocket\.on\(\s*(['"])([^'"]+)\1/g
 ));
 
-const serverDynamicEmitArguments = collectMatches(
-  serverSource,
-  /\.emit\(\s*(?!['"`])([A-Za-z_$][\w$]*)/g,
-  1
-);
-
-assert.deepStrictEqual(
-  serverDynamicEmitArguments,
-  ['eventName'],
-  'Every dynamic server emit must stay inside emitGlobalTravelToParty so its literal call sites can be audited'
-);
 assert.strictEqual(
   countMatches(serverSource, /\.emit\(/g),
-  serverDirectEmits.length + serverDynamicEmitArguments.length,
-  'The production server contains an unsupported non-literal Socket.IO emit'
+  serverDirectEmits.length,
+  'Every server Socket.IO emit must name its event literally so the contract can be audited'
 );
 
-const serverPartyCallCount = countMatches(serverSource, /\bemitGlobalTravelToParty\(/g)
-  - countMatches(serverSource, /\bfunction emitGlobalTravelToParty\(/g);
-assert.strictEqual(
-  serverPartyEmits.length,
-  serverPartyCallCount,
-  'Every emitGlobalTravelToParty call must use a literal event name'
-);
-
-const serverEmits = sortedUnique([...serverDirectEmits, ...serverPartyEmits]);
+const serverEmits = sortedUnique(serverDirectEmits);
 const clientEmits = sortedUnique([...unityClientLiteralEmits, ...unityDynamicEmits]);
 const clientHandlerSet = new Set(unityClientHandlers);
 const serverHandlerSet = new Set(serverHandlers);
@@ -132,8 +109,8 @@ assert.deepStrictEqual(
   [
     'changeRoom',
     'disconnect',
-    'globalMapCreateAmbush',
     'input',
+    'qaTravel',
     'worldTaskJoinParty',
     'worldTaskLeaveParty'
   ],

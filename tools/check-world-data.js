@@ -302,11 +302,6 @@ const UNITY_AUTHORED_GLOBAL_MAP_MODEL_KEYS = new Set([
 const LOCATION_EDITOR_MODEL_ALIASES = {
   rustBarrel: 'barrel'
 };
-const GLOBAL_MAP_COASTLINE = [
-  { x: 0.105, y: 0.00 }, { x: 0.070, y: 0.08 }, { x: 0.082, y: 0.16 }, { x: 0.055, y: 0.25 },
-  { x: 0.106, y: 0.36 }, { x: 0.090, y: 0.48 }, { x: 0.142, y: 0.62 }, { x: 0.126, y: 0.73 },
-  { x: 0.184, y: 0.86 }, { x: 0.154, y: 1.00 }
-];
 const GLOBAL_MAP_WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
 const ROAD_LOCATION_CLEARANCE_POINTS = 20;
 const PIPELINE_ROAD_EDGE_CLEARANCE_POINTS = 18;
@@ -332,21 +327,6 @@ function resolveLocationEditorModelKey(value) {
   return LOCATION_EDITOR_MODEL_ALIASES[key] || key;
 }
 
-function globalMapCoastNormXAtY(ny = 0) {
-  const y = Math.max(0, Math.min(1, Number(ny || 0)));
-  const points = GLOBAL_MAP_COASTLINE;
-  if (y <= points[0].y) return points[0].x;
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i];
-    const b = points[i + 1];
-    if (y <= b.y) {
-      const t = (y - a.y) / Math.max(0.0001, b.y - a.y);
-      return a.x + (b.x - a.x) * t;
-    }
-  }
-  return points[points.length - 1].x;
-}
-
 function globalMapPointCellForMap(globalMap, x = 0, y = 0) {
   const grid = globalMap?.grid || {};
   const cols = Math.max(1, Number(grid.cols || 30));
@@ -367,9 +347,6 @@ function globalMapPointIsWaterForMap(globalMap, x = 0, y = 0) {
   const height = rows * cellPoints;
   const px = Math.max(0, Math.min(width, Number(x || 0)));
   const py = Math.max(0, Math.min(height, Number(y || 0)));
-  const nx = px / width;
-  const ny = py / height;
-  if (globalMap?.legacyCoastline !== false && nx <= globalMapCoastNormXAtY(ny)) return true;
   const cell = globalMapPointCellForMap(globalMap, px, py);
   const override = globalMap?.cells?.[`${cell.cx}:${cell.cy}`];
   const texture = String(override?.texture || override?.textureId || '').trim().toLowerCase();
@@ -1333,11 +1310,6 @@ if (!globalMap) {
       }
     });
   });
-  const encounterIds = new Set((Array.isArray(globalMap.encounters) ? globalMap.encounters : [])
-    .map(row => safeId(row && row.id)).filter(Boolean));
-  encounterIds.forEach(id => {
-    if (encounterDefs.size && !encounterDefs.has(id)) errors.push(`${rel}: encounter "${id}" has no composition in data/encounters.json`);
-  });
   // Клиент вписывает модель узла так, чтобы её самое длинное ребро было равно
   // цели (2.1 для одиночной локации), см. fitGlobalMapStaticModelInstance.
   const GLOBAL_MAP_NODE_FIT_TARGET = 2.1;
@@ -1366,11 +1338,6 @@ if (!globalMap) {
     return Number(size.y || 0) * target / longest;
   }
 
-  const randomLocationRows = Array.isArray(globalMap.randomLocations) ? globalMap.randomLocations : [];
-  randomLocationRows.forEach((row, index) => {
-    const id = safeId(row && row.id);
-    if (id && !locations.has(id)) errors.push(`${rel}: randomLocations[${index}] points to missing location "${id}"`);
-  });
   (Array.isArray(globalMap.nodes) ? globalMap.nodes : []).forEach((node, index) => {
     const locationId = safeId(node && node.locationId);
     if (locationId && !locations.has(locationId)) errors.push(`${rel}: node "${node.id || index}" points to missing location "${locationId}"`);
@@ -1397,15 +1364,6 @@ if (!globalMap) {
       if (nearest && nearest.distance <= requiredDistance && node?.roadAccess !== true) {
         errors.push(`${rel}: node "${node.id || index}" overlaps road "${nearest.road.id}" (${nearest.distance.toFixed(1)} <= ${requiredDistance.toFixed(1)})`);
       }
-    }
-  });
-  (Array.isArray(globalMap.objects) ? globalMap.objects : []).forEach((obj, index) => {
-    if (obj?.url && !publicAssetExists(obj.url)) errors.push(`${rel}: map object "${obj.id || index}" missing asset ${obj.url}`);
-    checkGlobalMapModelKey(obj?.model, `map object "${obj?.id || index}"`, rel);
-    const locationId = safeId(obj && obj.locationId);
-    if (locationId && !locations.has(locationId)) errors.push(`${rel}: map object "${obj.id || index}" points to missing location "${locationId}"`);
-    if (finiteNumber(obj?.x) && finiteNumber(obj?.y) && globalMapPointIsWaterForMap(globalMap, obj.x, obj.y)) {
-      errors.push(`${rel}: map object "${obj.id || index}" is placed on water`);
     }
   });
   const runtimeMapMatches = String(wastelandSim?.worldRevision || '') === String(globalMap.worldRevision || '');
@@ -1445,28 +1403,8 @@ if (!globalMap) {
     }
   }
   const cells = globalMap.cells && typeof globalMap.cells === 'object' ? globalMap.cells : {};
-  for (const [key, cell] of Object.entries(cells)) {
+  for (const key of Object.keys(cells)) {
     if (!/^\d+:\d+$/.test(key)) errors.push(`${rel}: invalid cell key "${key}"`);
-    const waterCell = GLOBAL_MAP_WATER_TEXTURES.has(String(cell?.texture || cell?.textureId || '').trim().toLowerCase());
-    if (waterCell) {
-      if ((Array.isArray(cell?.encounters) ? cell.encounters : []).length) {
-        errors.push(`${rel}: water cell ${key} must not contain random encounters`);
-      }
-      if ((Array.isArray(cell?.randomLocations) ? cell.randomLocations : []).length) {
-        errors.push(`${rel}: water cell ${key} must not contain random locations`);
-      }
-      if (Number(cell?.chance || 0) > 0) errors.push(`${rel}: water cell ${key} must have encounter chance 0`);
-    }
-    (Array.isArray(cell?.encounters) ? cell.encounters : []).forEach((row, index) => {
-      const id = safeId(row && row.id);
-      if (id && encounterIds.size && !encounterIds.has(id)) {
-        errors.push(`${rel}: cell ${key} encounter[${index}] points to missing encounter "${id}"`);
-      }
-    });
-    (Array.isArray(cell?.randomLocations) ? cell.randomLocations : []).forEach((row, index) => {
-      const id = safeId(row && row.id);
-      if (id && !locations.has(id)) errors.push(`${rel}: cell ${key} randomLocations[${index}] points to missing location "${id}"`);
-    });
   }
 }
 

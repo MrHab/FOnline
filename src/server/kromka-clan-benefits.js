@@ -129,8 +129,9 @@ function commitClanCraftBenefit(runtime = {}, preview = {}) {
   return runtime.benefitCredits;
 }
 
-function clanCaravanSpeedMultiplier(profile = {}) {
-  return 1 + Math.max(0, Math.min(0.5, Number(profile?.benefit?.clanCaravanSpeedPct || 0)));
+/** Доля цены переноса между столицами, которую платит член клана‑владельца (0,85 — скидка 15%). */
+function clanFastTravelFeeMultiplier(profile = {}) {
+  return 1 - Math.max(0, Math.min(0.5, Number(profile?.benefit?.clanFastTravelDiscountPct || 0)));
 }
 
 function benefitOrdersForProfile(profile = {}, runtime = {}, now = Date.now()) {
@@ -167,7 +168,7 @@ module.exports = {
   benefitOrdersForProfile,
   claimWeeklyBaseGrant,
   clanBaseProfile,
-  clanCaravanSpeedMultiplier,
+  clanFastTravelFeeMultiplier,
   commitClanCraftBenefit,
   markBenefitOrderCompleted,
   ownedClanBaseContext,

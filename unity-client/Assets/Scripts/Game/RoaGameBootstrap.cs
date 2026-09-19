@@ -11,7 +11,7 @@ namespace RealmOfAshes.Game
 {
     /// <summary>
     /// Главная последовательность Unity-клиента: аккаунт → персонаж → join →
-    /// локальная сцена или глобальная карта. Здесь же живут игровые меню и
+    /// зона мира или место в ней. Здесь же живут игровые меню и
     /// переключение всех экранных подсистем.
     /// </summary>
     public sealed class RoaGameBootstrap : MonoBehaviour
@@ -45,8 +45,7 @@ namespace RealmOfAshes.Game
                 if (AuthCanvasDriven && FrontendVisible) return false;
                 // Экран загрузки — тоже канва (RoaLoadingCanvas).
                 if (LoadingCanvasDriven && LoadingVisible) return false;
-                return _stage != Stage.InWorld && _stage != Stage.GlobalMap
-                    && _stage != Stage.LoadingGlobalMap;
+                return _stage != Stage.InWorld;
             }
         }
 
@@ -105,9 +104,6 @@ namespace RealmOfAshes.Game
         [Tooltip("Сумка и оружейная мастерская. Если пусто, используется компонент этого объекта.")]
         public RoaInventory Inventory;
 
-        [Tooltip("Глобальная карта. Если пусто, создаётся автоматически.")]
-        public RoaGlobalMap GlobalMap;
-
         [Tooltip("Туман войны. Если пусто, создаётся автоматически при входе в мир.")]
         public RoaFogOfWar Fog;
 
@@ -131,8 +127,6 @@ namespace RealmOfAshes.Game
             Joining,
             LoadingLocation,
             InWorld,
-            LoadingGlobalMap,
-            GlobalMap,
             Failed
         }
 
@@ -267,10 +261,6 @@ namespace RealmOfAshes.Game
             if (GroundItems != null) GroundItems.CanvasDriven = true;
             if (CombatFx != null) CombatFx.CanvasDriven = true;
 
-            if (GlobalMap == null) GlobalMap = GetComponent<RoaGlobalMap>();
-            if (GlobalMap == null) GlobalMap = gameObject.AddComponent<RoaGlobalMap>();
-            GlobalMap.Configure(this, Socket, CameraRig, BaseUrl);
-
             if (Interaction == null) Interaction = GetComponent<RoaInteraction>();
             if (Interaction == null) Interaction = gameObject.AddComponent<RoaInteraction>();
             Interaction.Configure(BaseUrl, Socket, Enemies, Fog, Loader);
@@ -307,7 +297,6 @@ namespace RealmOfAshes.Game
             {
                 Combat.Bootstrap = this;
                 Combat.Pipboy = Pipboy;
-                Combat.GlobalMap = GlobalMap;
                 Combat.RemotePlayers = RemotePlayers;
                 Combat.Inventory = Inventory;
                 Combat.Fx = CombatFx;
@@ -322,7 +311,7 @@ namespace RealmOfAshes.Game
             if (MobileControls == null) MobileControls = GetComponent<RoaMobileControls>();
             if (MobileControls == null) MobileControls = gameObject.AddComponent<RoaMobileControls>();
             if (_automationForceMobile) MobileControls.ForceVisible = true;
-            MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);
+            MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GroundItems);
             MobileControls.MenuRequested = ToggleGameMenu;
 
             if (Anomalies == null) Anomalies = GetComponent<RoaAnomalyFieldRenderer>();
@@ -374,7 +363,7 @@ namespace RealmOfAshes.Game
             }
             if (HudCanvas == null) HudCanvas = GetComponent<RoaHudCanvas>();
             if (HudCanvas == null) HudCanvas = gameObject.AddComponent<RoaHudCanvas>();
-            HudCanvas.Configure(Hud, Quickbar, Minimap, Combat, MobileControls, GlobalMap);
+            HudCanvas.Configure(Hud, Quickbar, Minimap, Combat, MobileControls);
             HudCanvas.SetInteraction(Interaction);
             HudCanvas.SetArtifactSource(ShiftAndDetector);
 
@@ -448,21 +437,6 @@ namespace RealmOfAshes.Game
             system.Bootstrap = this;
             SystemCanvasDriven = true;
 
-            // Сайдбар глобальной карты в web-виде (#global-map-window .global-map-side).
-            var mapCanvas = GetComponent<RoaGlobalMapCanvas>();
-            if (mapCanvas == null) mapCanvas = gameObject.AddComponent<RoaGlobalMapCanvas>();
-            mapCanvas.Map = GlobalMap;
-            mapCanvas.Interaction = Interaction;
-            mapCanvas.HudCanvas = HudCanvas;
-            if (GlobalMap != null) GlobalMap.CanvasDriven = true;
-
-            // Primary entry point for short activities on the global map.
-            var activityHub = GetComponent<RoaActivityHubCanvas>();
-            if (activityHub == null) activityHub = gameObject.AddComponent<RoaActivityHubCanvas>();
-            activityHub.Bootstrap = this;
-            activityHub.Map = GlobalMap;
-            activityHub.Interaction = Interaction;
-
             // Экран загрузки локации в web-виде (#location-loading-screen).
             var loadingCanvas = GetComponent<RoaLoadingCanvas>();
             if (loadingCanvas == null) loadingCanvas = gameObject.AddComponent<RoaLoadingCanvas>();
@@ -516,7 +490,6 @@ namespace RealmOfAshes.Game
             // Карта мира из локальной сцены: кнопка на миникарте, флажок там, где игрок.
             var worldOverview = GetComponent<RoaWorldOverviewCanvas>();
             if (worldOverview == null) worldOverview = gameObject.AddComponent<RoaWorldOverviewCanvas>();
-            worldOverview.GlobalMap = GlobalMap;
             worldOverview.Socket = Socket;
             worldOverview.Minimap = Minimap;
             worldOverview.Loader = Loader;
@@ -667,21 +640,14 @@ namespace RealmOfAshes.Game
             if (_characterPreview != null)
                 _characterPreview.SetVisible(_stage == Stage.CreateCharacter);
 
-            // G у границы уводит на глобальную карту, но той же клавишей поднимается
-            // проявленный артефакт. Находка под ногами важнее выхода из локации.
-            if (!_cinematicActive && CurrentLocationAllowsGlobalMapExit
-                && _stage == Stage.InWorld && !_gameMenuOpen
-                && Input.GetKeyDown(KeyCode.G) && GlobalMap != null
-                && (ShiftAndDetector == null || !ShiftAndDetector.HasRevealedArtifactInRange))
-                GlobalMap.RequestEnterFromLocation();
-            UpdateWorldMapEdgeExit();
+            UpdatePlaceEdgeExit();
 
-            if (!_cinematicActive && (_stage == Stage.InWorld || _stage == Stage.GlobalMap)
+            if (!_cinematicActive && _stage == Stage.InWorld
                 && Input.GetKeyDown(KeyCode.F1)
                 && !RoaHudLayout.Editing && (_tutorialOpen || !AnyGameplayPanelOpen()))
                 SetTutorialOpen(!_tutorialOpen);
 
-            if (!_cinematicActive && (_stage == Stage.InWorld || _stage == Stage.GlobalMap)
+            if (!_cinematicActive && _stage == Stage.InWorld
                 && Input.GetKeyDown(KeyCode.Escape))
             {
                 if (RoaHudLayout.Editing) EndHudEdit();
@@ -700,8 +666,7 @@ namespace RealmOfAshes.Game
             }
 
             bool gameplaySession = _stage == Stage.Joining || _stage == Stage.LoadingLocation
-                || _stage == Stage.InWorld || _stage == Stage.LoadingGlobalMap
-                || _stage == Stage.GlobalMap;
+                || _stage == Stage.InWorld;
             RoaSocketClient.ConnectionPhase socketPhase = Socket != null
                 ? Socket.Phase
                 : RoaSocketClient.ConnectionPhase.Disconnected;
@@ -724,7 +689,7 @@ namespace RealmOfAshes.Game
 
         private void ToggleGameMenu()
         {
-            if (_stage != Stage.InWorld && _stage != Stage.GlobalMap) return;
+            if (_stage != Stage.InWorld) return;
             if (RoaHudLayout.Editing) RoaHudLayout.SetEditing(false);
             if (_graphicsOpen) _graphicsOpen = false;
             if (_tutorialOpen) _tutorialOpen = false;
@@ -734,14 +699,15 @@ namespace RealmOfAshes.Game
         private float _edgeExitRetryAt;
 
         /// <summary>
-        /// updateWorldMapEdgeExit web (12b:234): игрок в полосе выхода (2 клетки от края
-        /// играбельной области) и ни одно окно не открыто — выход на глобальную карту
+        /// Край места внутри зоны: игрок в полосе выхода (2 клетки от края играбельной
+        /// области) и ни одно окно не открыто — переход в родительскую зону
         /// запрашивается сам, без клавиши. Отказ сервера повторяется через 0.75 с.
         /// </summary>
-        private void UpdateWorldMapEdgeExit()
+        private void UpdatePlaceEdgeExit()
         {
-            if (_stage != Stage.InWorld || GlobalMap == null || _controller == null || Minimap == null) return;
-            if (!CurrentLocationAllowsGlobalMapExit) return;
+            if (_stage != Stage.InWorld || _controller == null || Minimap == null || Interaction == null) return;
+            ParentZoneInfo parentZone = Loader != null ? Loader.Current?.ExitZone : null;
+            if (parentZone == null || !CurrentLocationHasEdgeExit) return;
             if (_cinematicActive || _gameMenuOpen || _tutorialOpen || _graphicsOpen
                 || RoaHudLayout.Editing || AnyGameplayPanelOpen()) return;
             if (Time.unscaledTime < _edgeExitRetryAt) return;
@@ -749,9 +715,8 @@ namespace RealmOfAshes.Game
             if (width <= 0 || depth <= 0) return;
             bool inBand = RoaWorldExitBoundary.IsInExitBand(
                 _controller.transform.position, width, depth);
-            if (!inBand) return;
-            _edgeExitRetryAt = Time.unscaledTime + 0.75f;
-            GlobalMap.RequestEnterFromLocation();
+            Interaction.UpdateZoneEdge(parentZone, inBand);
+            if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
         }
 
         private void SetGameMenuOpen(bool open)
@@ -790,7 +755,6 @@ namespace RealmOfAshes.Game
             if (Combat != null) Combat.InputEnabled = input;
             if (Quickbar != null) Quickbar.InputEnabled = input;
             if (MobileControls != null) MobileControls.InputSuppressed = !input;
-            if (GlobalMap != null) GlobalMap.InputEnabled = input;
             if (Inventory != null) Inventory.InputEnabled = input;
             if (Pipboy != null) Pipboy.InputEnabled = input;
             if (PipboyCanvas != null) PipboyCanvas.InputEnabled = input;
@@ -799,22 +763,23 @@ namespace RealmOfAshes.Game
         }
 
         public bool CinematicActive { get { return _cinematicActive; } }
-        public bool CurrentLocationAllowsGlobalMapExit
+        /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
+        public bool CurrentLocationHasEdgeExit
         {
-            get { return AllowsGlobalMapExit(Loader?.Current, Onboarding?.Phase); }
+            get { return AllowsEdgeExit(Loader?.Current, Onboarding?.Phase); }
         }
 
-        public static bool AllowsGlobalMapExit(LocationDefinition location, string onboardingPhase)
+        public static bool AllowsEdgeExit(LocationDefinition location, string onboardingPhase)
         {
-            if (location == null) return true;
-            if (!location.CanExitToGlobalMap) return false;
+            if (location == null || location.ExitZone == null) return false;
+            if (!location.CanExitAtEdge) return false;
             return !(string.Equals(location.Id, "randomRuinedRoad", StringComparison.Ordinal)
                 && onboardingPhase == "firstMission");
         }
 
-        public void RefreshGlobalMapExitAvailability()
+        public void RefreshEdgeExitAvailability()
         {
-            Minimap?.SetGlobalMapExitAllowed(CurrentLocationAllowsGlobalMapExit);
+            Minimap?.SetEdgeExitAllowed(CurrentLocationHasEdgeExit);
         }
 
         public void SetCinematicActive(bool active)
@@ -932,9 +897,7 @@ namespace RealmOfAshes.Game
         public bool GraphicsOpen { get { return _graphicsOpen; } }
         public bool TutorialOpen { get { return _tutorialOpen; } }
         public bool GameMenuActionPending { get { return _gameMenuActionPending; } }
-        public bool InGame { get { return _stage == Stage.InWorld || _stage == Stage.GlobalMap; } }
-        public bool OnGlobalMap { get { return _stage == Stage.GlobalMap; } }
-        public bool GlobalMapBlocksCombat { get { return _stage == Stage.LoadingGlobalMap || _stage == Stage.GlobalMap; } }
+        public bool InGame { get { return _stage == Stage.InWorld; } }
 
         public void MenuOpenGameMenu(bool open) { SetGameMenuOpen(open); }
         public void MenuOpenGraphics(bool open) { SetGraphicsOpen(open); }
@@ -1147,7 +1110,7 @@ namespace RealmOfAshes.Game
         /// <summary>«Сменить персонажа» из игрового меню — для канвы и автоматизации.</summary>
         public void ReturnToCharacterPicker()
         {
-            if (_stage != Stage.InWorld && _stage != Stage.GlobalMap) return;
+            if (_stage != Stage.InWorld) return;
             StartCoroutine(DoReturnToCharacterPicker());
         }
 
@@ -1433,9 +1396,7 @@ namespace RealmOfAshes.Game
             Inventory?.CloseWorkbench();
             SetGraphicsOpen(false);
             SetTutorialOpen(false);
-            PrepareForGlobalMap();
-            GlobalMap?.Leave();
-            Quickbar?.SetGlobalMapActive(false);
+            ClearLocalWorld();
             Quickbar?.SetWorldActive(false);
             PipboyCanvas?.Close();
             MapWindow?.Close();
@@ -1492,27 +1453,16 @@ namespace RealmOfAshes.Game
         private void HandleJoined(JoinAck ack)
         {
             _joiningNewCharacter = false;
-            // Пустой roomId означает, что сервер держит персонажа на глобальной карте
-            // (server.js:19384 — ветка p.onGlobalMap: leaveCurrentRoom + roomId = '').
-            // Такой персонаж не состоит ни в одной комнате, поэтому не получает ни
-            // playerState, ни enemyFrame. Рисовать ему локальную сцену — значит
-            // показывать мир, в котором его нет.
+            // Мир — граф зон: сервер всегда сажает персонажа в комнату. Без комнаты
+            // не придут ни playerState, ни enemyFrame, и сцена осталась бы пустой.
             if (string.IsNullOrEmpty(ack.RoomId))
             {
-                JObject state = ack.Self != null ? ack.Self["globalMap"] as JObject : null;
-                if (state == null)
-                {
-                    _stage = Stage.Failed;
-                    _status = "Сервер поместил персонажа на глобальную карту, но не прислал self.globalMap.";
-                    Debug.LogError("[ROA] " + _status);
-                    return;
-                }
-
-                EnterGlobalMapFromServer(state);
+                _stage = Stage.Failed;
+                _status = "Сервер не выдал персонажу комнату.";
+                Debug.LogError("[ROA] " + _status);
                 return;
             }
 
-            if (GlobalMap != null && GlobalMap.IsActive) GlobalMap.Leave();
             if (_player != null) _player.SetActive(true);
             if (Fog != null) Fog.enabled = true;
 
@@ -1523,43 +1473,8 @@ namespace RealmOfAshes.Game
             StartCoroutine(EnterWorld(ack));
         }
 
-        /// <summary>
-        /// Общий вход на глобальную карту: из join, с края локации или вслед за
-        /// лидером группы. Локальная геометрия и сущности удаляются до построения
-        /// карты, чтобы два мира не существовали в сцене одновременно.
-        /// </summary>
-        public void EnterGlobalMapFromServer(JObject state)
-        {
-            if (GlobalMap == null)
-            {
-                _stage = Stage.Failed;
-                _status = "Компонент глобальной карты не создан.";
-                return;
-            }
-
-            RoaHudLayout.SetEditing(false);
-            SetGraphicsOpen(false);
-            SetTutorialOpen(false);
-            SetGameMenuOpen(false);
-            PrepareForGlobalMap();
-            _stage = Stage.LoadingGlobalMap;
-            _status = "Загрузка глобальной карты...";
-            _loadingTitle = "Глобальная карта";
-            _loadingShownAt = Time.unscaledTime;
-            SetLoading("Получаю состояние пустоши...", 0.3f);
-            StartCoroutine(GlobalMap.Enter(state, (ok, summary) =>
-            {
-                _status = summary;
-                SetLoading(ok ? "Карта готова." : "Ошибка загрузки карты.", 1f);
-                _loadingShownAt = Time.unscaledTime;
-                _loadingStartup = false;
-                _stage = ok ? Stage.GlobalMap : Stage.Failed;
-                if (ok) Debug.Log("[ROA] " + summary);
-                else Debug.LogError("[ROA] " + summary);
-            }));
-        }
-
-        private void PrepareForGlobalMap()
+        /// <summary>Убрать локальную сцену и её сущности (выход к экрану персонажей).</summary>
+        private void ClearLocalWorld()
         {
             if (Lighting != null)
             {
@@ -1585,7 +1500,6 @@ namespace RealmOfAshes.Game
                 MobileControls.Clear();
             }
             if (Quickbar != null) Quickbar.SetWorldActive(false);
-            if (Quickbar != null) Quickbar.SetGlobalMapActive(true);
             if (Loader != null) Loader.ClearLocation();
             if (RemotePlayers != null) RemotePlayers.Clear();
             if (Enemies != null) Enemies.Clear();
@@ -1641,15 +1555,15 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                bool loading = _stage == Stage.Joining || _stage == Stage.LoadingLocation || _stage == Stage.LoadingGlobalMap;
-                return loading || (Time.unscaledTime - _loadingShownAt < LoadingMinVisible && _loadingShownAt > 0f && (_stage == Stage.InWorld || _stage == Stage.GlobalMap));
+                bool loading = _stage == Stage.Joining || _stage == Stage.LoadingLocation;
+                return loading || (Time.unscaledTime - _loadingShownAt < LoadingMinVisible && _loadingShownAt > 0f && _stage == Stage.InWorld);
             }
         }
         public bool LoadingStartup { get { return _loadingStartup; } }
         public bool LoadingCanvasDriven { get; set; }
         public string LoadingKicker { get { return _loadingStartup ? "Вход в игру" : "Переход между локациями"; } }
         public string LoadingTitle { get { return _loadingTitle; } }
-        public string LoadingSubtitle { get { return _stage == Stage.LoadingGlobalMap ? "Разворачиваю карту пустоши..." : "Подготовка мира..."; } }
+        public string LoadingSubtitle { get { return "Подготовка мира..."; } }
         public string LoadingStep
         {
             get
@@ -1689,23 +1603,28 @@ namespace RealmOfAshes.Game
             _loadingTitle = known != null && !string.IsNullOrEmpty(known.Name) ? known.Name : ack.LocationId;
             _loadingShownAt = Time.unscaledTime;
             SetLoading(_loadingStartup ? "Подготовка персонажа..." : "Подготовка перехода...", 0.04f);
-            if (GlobalMap != null && GlobalMap.IsActive) GlobalMap.Leave();
             if (_player != null) _player.SetActive(true);
             if (Fog != null) Fog.enabled = true;
 
             if (Loader.GetDefinition(ack.LocationId) == null)
             {
-                bool ok = false;
-                yield return StartCoroutine(Loader.FetchLocationCatalog((success, error) =>
+                // Зона мира не входит в общий каталог — сначала она одна, по id.
+                bool fetched = false;
+                yield return StartCoroutine(Loader.FetchDefinition(ack.LocationId, (success, error) => fetched = success));
+                if (!fetched)
                 {
-                    ok = success;
-                    if (!success) _status = "Каталог локаций не загружен: " + error;
-                }));
+                    bool ok = false;
+                    yield return StartCoroutine(Loader.FetchLocationCatalog((success, error) =>
+                    {
+                        ok = success;
+                        if (!success) _status = "Каталог локаций не загружен: " + error;
+                    }));
 
-                if (!ok)
-                {
-                    _stage = Stage.Failed;
-                    yield break;
+                    if (!ok)
+                    {
+                        _stage = Stage.Failed;
+                        yield break;
+                    }
                 }
             }
 
@@ -1730,6 +1649,14 @@ namespace RealmOfAshes.Game
                 }
                 ack.WorldState = recovered;
             }
+
+            // Комната точки мира (событие, бой, встреча в угодьях) выводит краем в
+            // зону своей точки: эту зону присылает состояние мира.
+            LocationDefinition entered = Loader.GetDefinition(ack.LocationId);
+            if (entered != null)
+                entered.RoomParentZone = ack.WorldState?["parentZone"] is JObject roomZone
+                    ? roomZone.ToObject<ParentZoneInfo>()
+                    : null;
 
             _status = "Загрузка локации " + ack.LocationId + "...";
             known = Loader.GetDefinition(ack.LocationId);
@@ -1760,7 +1687,7 @@ namespace RealmOfAshes.Game
             if (Minimap != null)
             {
                 Minimap.SetLocation(location, ack.WorldState?["map"] as JArray);
-                RefreshGlobalMapExitAvailability();
+                RefreshEdgeExitAvailability();
             }
             if (Fog != null) Fog.Build(location, ack.WorldState?["map"] as JArray);
             if (Interaction != null) Interaction.SetLocation(location);
@@ -1828,28 +1755,6 @@ namespace RealmOfAshes.Game
         {
             if (payload == null) return;
             Audio?.ApplyArtifactEffects(payload);
-
-            // Group world tasks can move a player out of the local Socket.IO room immediately.
-            // The ack carries the same authoritative onGlobalMap/self.globalMap contract as join,
-            // so switch scenes before touching local-only views.
-            if (payload["onGlobalMap"]?.ToObject<bool>() == true)
-            {
-                JObject globalState = payload["globalMap"] as JObject;
-                if (globalState != null)
-                {
-                    if (_stage == Stage.InWorld || _stage == Stage.LoadingLocation)
-                    {
-                        EnterGlobalMapFromServer((JObject)globalState.DeepClone());
-                        return;
-                    }
-
-                    if (_stage == Stage.GlobalMap && GlobalMap != null && GlobalMap.IsActive)
-                    {
-                        GlobalMap.ApplyAuthoritativeState(globalState);
-                        return;
-                    }
-                }
-            }
 
             // Контроллер создаётся активным, а Socket назначается ему уже после
             // OnEnable. Поэтому bootstrap явно передаёт каждую серверную сверку:
@@ -1932,7 +1837,7 @@ namespace RealmOfAshes.Game
                 HandleAuthoritativeSelf(ack.Self);
             }
 
-            // При возврате с глобальной карты объект игрока переиспользуется,
+            // После смены персонажа объект игрока переиспользуется,
             // но Observer был снят при очистке локальной сцены.
             if (_controller != null)
             {
@@ -1974,30 +1879,28 @@ namespace RealmOfAshes.Game
         private void OnGUI()
         {
             RoaUiTheme.Apply();
-            if (RoaHudLayout.Editing && (_stage == Stage.InWorld || _stage == Stage.GlobalMap))
+            if (RoaHudLayout.Editing && _stage == Stage.InWorld)
             {
                 if (!SystemCanvasDriven) DrawHudEditor();
                 return;
             }
-            if (_graphicsOpen && (_stage == Stage.InWorld || _stage == Stage.GlobalMap))
+            if (_graphicsOpen && _stage == Stage.InWorld)
             {
                 if (!SystemCanvasDriven) DrawGraphicsSettings();
                 return;
             }
-            if (_tutorialOpen && (_stage == Stage.InWorld || _stage == Stage.GlobalMap))
+            if (_tutorialOpen && _stage == Stage.InWorld)
             {
                 if (!SystemCanvasDriven) DrawTutorial();
                 return;
             }
-            if (_gameMenuOpen && (_stage == Stage.InWorld || _stage == Stage.GlobalMap))
+            if (_gameMenuOpen && _stage == Stage.InWorld)
             {
                 if (!SystemCanvasDriven) DrawGameMenu();
                 return;
             }
-            // The global-map component owns its full information panel. Drawing
-            // this bootstrap panel at the same time duplicated its status/help
-            // and covered almost the entire map at common Unity Game-view sizes.
-            if (_stage == Stage.InWorld || _stage == Stage.GlobalMap) return;
+            // В мире всё рисуют канвы; эта панель — только вход, выбор персонажа и ошибки.
+            if (_stage == Stage.InWorld) return;
             if (LoadingCanvasDriven && LoadingVisible) return; // #location-loading-screen рисует канва
             if (_stage == Stage.CreateCharacter)
             {
@@ -2010,9 +1913,7 @@ namespace RealmOfAshes.Game
             float width = frontendPanel
                 ? Mathf.Clamp(Screen.width * 0.68f, 520f, 820f)
                 : Mathf.Clamp(Screen.width * 0.44f, 280f, 420f);
-            float height = _stage == Stage.GlobalMap || _stage == Stage.LoadingGlobalMap
-                ? 150f
-                : (frontendPanel ? (_stage == Stage.PickCharacter ? 530f : 455f) : 230f);
+            float height = frontendPanel ? (_stage == Stage.PickCharacter ? 530f : 455f) : 230f;
             height = Mathf.Min(height, Screen.height - 24f);
             var area = frontendPanel
                 ? new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height)
@@ -2048,26 +1949,6 @@ namespace RealmOfAshes.Game
                     DrawCharacterPicker();
                     break;
 
-                case Stage.InWorld:
-                    GUILayout.Label("WASD — движение, Ctrl — присесть, колесо — зум.");
-                    if (Socket != null && Socket.Session != null)
-                    {
-                        GUILayout.Label("Комната: " + Socket.Session.RoomId);
-                        GUILayout.Label("Локация: " + Socket.Session.LocationId);
-                    }
-                    if (CurrentLocationAllowsGlobalMapExit
-                        && GUILayout.Button("Выйти на глобальную карту (G)"))
-                        GlobalMap?.RequestEnterFromLocation();
-                    if (GlobalMap != null && !string.IsNullOrEmpty(GlobalMap.StatusText))
-                        GUILayout.Label(GlobalMap.StatusText);
-                    break;
-
-                case Stage.LoadingGlobalMap:
-                case Stage.GlobalMap:
-                    GUILayout.Label("ЛКМ — выбрать точку, колесо — зум.");
-                    GUILayout.Label("Маршрут и время движения подтверждает сервер.");
-                    if (_stage == Stage.GlobalMap && GUILayout.Button("Меню (Esc)")) SetGameMenuOpen(true);
-                    break;
             }
 
             GUILayout.EndArea();
@@ -2093,7 +1974,7 @@ namespace RealmOfAshes.Game
             DrawPanelBackdrop(area);
             GUILayout.BeginArea(area, GUI.skin.window);
             GUILayout.Label("<b>Меню игры</b>", RichLabel());
-            GUILayout.Label(_stage == Stage.GlobalMap ? "Глобальная карта" : "Локальная локация");
+            GUILayout.Label("Локальная локация");
             GUILayout.Space(10f);
             GUI.enabled = !_gameMenuActionPending;
             if (GUILayout.Button("Продолжить", GUILayout.Height(38f))) SetGameMenuOpen(false);
@@ -2199,10 +2080,10 @@ namespace RealmOfAshes.Game
             GUILayout.Label("Короткое E открывает разговор, торговлю, хранилище, контейнер, ресурс или станок. Удержание E открывает круг быстрых слотов; клавиши 1–8 используют слот сразу.", WrappedLabel());
             GUILayout.Space(6f);
             GUILayout.Label("<b>Окна</b>", RichLabel());
-            GUILayout.Label("Tab — состояние, I — инвентарь, K — навыки, P — крафт, G у границы — глобальная карта, Esc — меню. В инвентаре кнопка «быстро» назначает предмет; количество стека выбирается отдельным ползунком.", WrappedLabel());
+            GUILayout.Label("Tab — состояние, I — инвентарь, K — навыки, P — крафт, Esc — меню. В инвентаре кнопка «быстро» назначает предмет; количество стека выбирается отдельным ползунком.", WrappedLabel());
             GUILayout.Space(6f);
-            GUILayout.Label("<b>Глобальная карта</b>", RichLabel());
-            GUILayout.Label("Выберите точку и подтвердите маршрут. Время, встречи, состав группы, отмену и прибытие ведёт сервер; закрытие меню не останавливает путь.", WrappedLabel());
+            GUILayout.Label("<b>Зоны и ворота</b>", RichLabel());
+            GUILayout.Label("Ворота на краю зоны ведут в соседнюю, золотая полоса на краю поселения — в его зону.", WrappedLabel());
             GUILayout.EndScrollView();
             GUILayout.Label("F1 / Esc — закрыть");
             GUILayout.EndArea();

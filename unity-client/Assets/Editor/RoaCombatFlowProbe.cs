@@ -46,10 +46,9 @@ namespace RealmOfAshes.EditorTools
                         && RoaEnemies.AttackRootLockSeconds(0.38f, true) < 0.49f,
                     "attack root lock lost melee follow-through or bounded ranged recovery");
 
-                Require(!RoaCombat.UiBlocksAttack(false, false, false, false, false)
-                        && RoaCombat.UiBlocksAttack(false, true, false, false, false)
-                        && RoaCombat.UiBlocksAttack(false, false, false, false, true),
-                    "PIP-ASH or the global map no longer blocks combat input");
+                Require(!RoaCombat.UiBlocksAttack(false, false, false, false)
+                        && RoaCombat.UiBlocksAttack(false, true, false, false),
+                    "PIP-ASH no longer blocks combat input");
                 var capital = new LocationDefinition
                 {
                     Id = "settlement",

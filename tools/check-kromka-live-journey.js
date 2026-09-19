@@ -18,6 +18,8 @@ const onboarding = require('../data/kromka/onboarding.json');
 const questCatalog = require('../data/kromka/quests.json');
 const npcCatalog = require('../data/kromka/npcs.json');
 const kromkaLocationCatalog = require('../data/kromka/locations.json');
+const zoneGraph = require('../data/kromka/zone-graph.json');
+const zoneOfPlace = locationId => (zoneGraph.zones || []).find(zone => (zone.places || []).some(place => place.locationId === locationId));
 const locationCatalog = Object.fromEntries((world.nodes || [])
   .map(node => String(node.locationId || node.id || ''))
   .filter(Boolean)
@@ -56,12 +58,6 @@ const ack = (socket, event, payload = {}, timeoutMs = 8000) => new Promise((reso
 function assertOk(result, label) {
   assert(result?.ok, `${label}: ${result?.error || JSON.stringify(result)}`);
   return result;
-}
-
-function worldPoint(locationId) {
-  const node = (world.nodes || []).find(row => String(row.locationId || row.id || '') === locationId);
-  assert(node, `Global map point is missing: ${locationId}`);
-  return { x: Number(node.x), y: Number(node.y) };
 }
 
 function questRow(self, questId) {
@@ -118,7 +114,9 @@ async function connect() {
   const locations = await request('/api/locations', { headers });
   assert.equal(locations.status, 200, 'Could not load the Unity location catalog.');
   assert.equal(locations.json.locations?.[onboarding.tutorialLocationId]?.allowGlobalMapExit, false,
-    'Unity location catalog exposed a global-map exit in the tutorial yard.');
+    'Unity location catalog exposed a world exit in the tutorial yard.');
+  const keysZone = zoneOfPlace(onboarding.arrivalLocationId);
+  assert(keysZone, `The arrival place ${onboarding.arrivalLocationId} stands in no world zone.`);
   const list = await request('/api/characters', { headers });
   assert.equal(list.status, 200, 'Could not list QA characters.');
   if ((list.json.characters || []).some(row => row.id === characterId)) {
@@ -145,7 +143,11 @@ async function connect() {
   socket.on('worldState', payload => {
     if (Array.isArray(payload?.map)) worldMap = payload.map;
   });
-  socket.on('serverWorldTransfer', payload => { latestWorldTransfer = payload || null; });
+  socket.on('serverWorldTransfer', payload => {
+    latestWorldTransfer = payload || null;
+    if (Array.isArray(payload?.worldState?.map)) worldMap = payload.worldState.map;
+    if (payload?.locationId) currentLocationId = payload.locationId;
+  });
 
   const update = result => {
     if (result?.self) self = result.self;
@@ -183,8 +185,13 @@ async function connect() {
     }
     return false;
   };
-  const worldToTile = (x, z) => ({ tx: Math.floor(Number(x) / 2 + 19), tz: Math.floor(Number(z) / 2 + 19) });
-  const tileToWorld = (tx, tz) => ({ x: (tx - 19 + 0.5) * 2, z: (tz - 19 + 0.5) * 2 });
+  // Тайл — 2 м, центр карты — 0,0: места 38×38 тайлов, зоны мира 160×160.
+  const mapHalf = () => ({
+    w: Math.max(0, ...worldMap.map(row => Array.isArray(row) ? row.length : 0)) / 2 || 19,
+    h: worldMap.length / 2 || 19
+  });
+  const worldToTile = (x, z) => ({ tx: Math.floor(Number(x) / 2 + mapHalf().w), tz: Math.floor(Number(z) / 2 + mapHalf().h) });
+  const tileToWorld = (tx, tz) => ({ x: (tx - mapHalf().w + 0.5) * 2, z: (tz - mapHalf().h + 0.5) * 2 });
   const navigationPath = (targetX, targetZ, targetRadius = 0) => {
     if (!Array.isArray(worldMap) || !worldMap.length) return [];
     const height = worldMap.length;
@@ -206,7 +213,10 @@ async function connect() {
     let reached = null;
     for (let index = 0; index < queue.length; index++) {
       const node = queue[index];
-      if (closeEnough(node)) { reached = node; break; }
+      // A path is planned only after the straight walk from here has failed, so
+      // the tile the character stands on is never the goal, even when its centre
+      // is within reach of the target and the character itself is not.
+      if (index > 0 && closeEnough(node)) { reached = node; break; }
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const next = { tx: node.tx + dx, tz: node.tz + dz };
         const nextKey = key(next.tx, next.tz);
@@ -249,7 +259,7 @@ async function connect() {
     characterId, name: characterName,
     appearance: { schema: 'realm.character-appearance.v1', sex: 'male', bodyType: 'medium', faceId: 'male_01', hairId: 'short_crop', skinToneId: 'skin_03', hairColorId: 'hair_01' },
     special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
-    traits: ['trainedEye', 'scavengerStart'], taggedSkills: ['lightWeapons', 'wanderer']
+    traits: ['trainedEye', 'scavengerStart'], taggedSkills: ['lightWeapons', 'stealth']
   }), 'create and join QA character');
   update(joined);
   assert.equal((self.inventory || []).length, 0, 'New character started with equipment instead of collecting it');
@@ -258,12 +268,11 @@ async function connect() {
   assert.equal(self?.name, characterName, 'Unicode QA character name was corrupted.');
   console.log(`CHARACTER ${characterName} (${characterId}) created in ${currentLocationId}`);
 
-  const tutorialExit = await ack(socket, 'globalTravelEnterWorld', {});
-  assert.equal(tutorialExit.ok, false, 'Tutorial yard allowed a direct global-map exit request.');
-  assert.match(String(tutorialExit.error || ''), /после завершения обучения/i,
-    'Tutorial yard returned the wrong global-map exit rejection.');
+  // Из обучения и пролога в мир не выйти: край закрыт, а прямой запрос в зону Ключей отклоняется.
+  const tutorialExit = await ack(socket, 'changeLocation', { locationId: keysZone.id });
+  assert.equal(tutorialExit.ok, false, 'Tutorial yard let the player walk out into a world zone.');
   assert.equal(currentLocationId, onboarding.tutorialLocationId,
-    'Rejected global-map exit moved the player out of the tutorial yard.');
+    'Rejected world exit moved the player out of the tutorial yard.');
 
   const performOnboardingAction = async (step, choiceId = '', expectBlocked = false) => {
     let actor = null;
@@ -349,12 +358,10 @@ async function connect() {
     console.log(`PRACTICE ${step.id}: real action checked; dialogue turn-in accepted`);
   }
   assert.equal(currentLocationId, onboarding.firstMissionLocationId, 'Tutorial did not transfer into the first mission.');
-  const prologueExit = await ack(socket, 'globalTravelEnterWorld', {});
-  assert.equal(prologueExit.ok, false, 'Broken Tract allowed a direct global-map exit during the prologue.');
-  assert.match(String(prologueExit.error || ''), /пролога/i,
-    'Broken Tract returned the wrong prologue exit rejection.');
+  const prologueExit = await ack(socket, 'changeLocation', { locationId: keysZone.id });
+  assert.equal(prologueExit.ok, false, 'Broken Tract let the player walk out into a world zone during the prologue.');
   assert.equal(currentLocationId, onboarding.firstMissionLocationId,
-    'Rejected global-map exit moved the player out of Broken Tract.');
+    'Rejected world exit moved the player out of Broken Tract.');
   console.log('TUTORIAL complete; caravan ambush entered');
 
   for (const step of onboarding.firstMission.steps) {
@@ -381,6 +388,33 @@ async function connect() {
   assert.equal(self.kromkaOnboarding?.phase, 'complete', 'Onboarding state did not complete.');
   assert(questRow(self, 'campaign_prologue_twelfth')?.status === 'completed', 'Campaign prologue was not recorded.');
   console.log('FIRST MISSION complete; Keys reached and prologue recorded');
+
+  // Первый выход в мир зон: край Ключей выводит в их зону, портал зоны возвращает в Ключи.
+  const keysExit = locations.json.locations?.[onboarding.arrivalLocationId]?.parentZone;
+  assert.equal(keysExit?.id, keysZone.id, 'The Keys edge does not lead into the Keys zone of the graph.');
+  const keysEdge = locationCatalog[onboarding.arrivalLocationId]?.exit;
+  assert(keysEdge?.x != null, 'Keys have no authored edge exit.');
+  await moveNear(Number(keysEdge.x), Number(keysEdge.z), 1.4, 'Keys edge exit');
+  enemies = [];
+  update(assertOk(await ack(socket, 'changeLocation', { locationId: keysExit.id, entryKey: keysExit.entryKey || '' }),
+    'walk out of Keys into the world zone'));
+  await delay(250);
+  assert.equal(currentLocationId, keysZone.id, 'Leaving Keys did not enter the Keys zone.');
+  await refresh();
+  assert.equal(self.zone?.id, keysZone.id, 'The player state does not name the zone the player stands in.');
+  assert.equal(self.zone?.title, keysZone.title, 'The zone title in the player state differs from the zone graph.');
+  const zoneDefinition = await request(`/api/locations/${encodeURIComponent(keysZone.id)}`, { headers });
+  assert.equal(zoneDefinition.status, 200, 'The Keys zone definition is not served by id.');
+  const keysPortal = (zoneDefinition.json.location?.transitions || [])
+    .find(row => row.type === 'location' && row.to === onboarding.arrivalLocationId);
+  assert(keysPortal, 'The Keys zone has no portal back into Keys.');
+  const portalPoint = tileToWorld(Number(keysPortal.tx), Number(keysPortal.tz));
+  await moveNear(portalPoint.x, portalPoint.z, 1.6, 'Keys portal in the zone');
+  enemies = [];
+  update(assertOk(await ack(socket, 'changeLocation', { locationId: onboarding.arrivalLocationId }), 'enter Keys from its zone'));
+  await delay(250);
+  assert.equal(currentLocationId, onboarding.arrivalLocationId, 'The zone portal did not lead back into Keys.');
+  console.log(`WORLD ZONES: walked out of Keys into «${keysZone.title}» and back through its portal`);
 
   if (journeyScope === 'onboarding') {
     console.log('ONBOARDING JOURNEY PASSED: departure, private ambush and arrival at Keys');
@@ -489,42 +523,18 @@ async function connect() {
     assert.equal(progress.partial === true, expectedPartial, `${objectId}: partial state mismatch.`);
     return result;
   };
-  const exitToWorld = async () => {
-    const loc = locationCatalog[currentLocationId] || {};
-    const preferred = loc.exit?.x != null
-      ? { x: Number(loc.exit.x), z: Number(loc.exit.z) }
-      : { x: 0, z: -35 };
-    const candidates = [preferred, { x: -35, z: 0 }, { x: 35, z: 0 }, { x: 0, z: 35 }];
-    let result = null;
-    for (const point of candidates) {
-      try { await moveNear(point.x, point.z, 1.4, `exit ${currentLocationId}`); } catch (_) { continue; }
-      result = await ack(socket, 'globalTravelEnterWorld', {});
-      if (result.ok) break;
-    }
-    assertOk(result, `exit ${currentLocationId} to global map`);
-    self.onGlobalMap = true;
-  };
+  // Дорогу через ворота зон проверяют проверки зон; кампания переезжает тестовым переносом
+  // сервера (KROMKA_TEST_TRAVEL), который входит в место тем же путём, что и быстрый путь.
   const travelTo = async locationId => {
     if (currentLocationId === locationId) return;
-    await exitToWorld();
-    const point = worldPoint(locationId);
-    const travel = assertOk(await ack(socket, 'globalTravelStart', {
-      worldPoint: point, targetLocationId: locationId, siteId: locationId
-    }), `travel to ${locationId}`);
-    console.log(`TRAVEL ${currentLocationId} -> ${locationId}: ${(travel.durationMs / 1000).toFixed(1)}s`);
-    await delay(Math.max(150, Number(travel.durationMs || 0) + 550));
-    const arrived = assertOk(await ack(socket, 'globalTravelArrive', {
-      worldPoint: point, targetLocationId: locationId, siteId: locationId
-    }), `arrive at ${locationId}`);
-    assert(!arrived.stayOnWorldMap, `${locationId}: destination resolved as empty world point.`);
+    const from = currentLocationId;
     enemies = [];
-    const changed = assertOk(await ack(socket, 'changeLocation', {
-      locationId,
-      worldZoneId: arrived.worldZoneId || '', partyId: arrived.partyId || '',
-      siteId: arrived.siteId || '', encounterId: arrived.encounterId || ''
-    }), `enter ${locationId}`);
-    update(changed);
+    latestWorldTransfer = null;
+    update(assertOk(await ack(socket, 'qaTravel', { to: locationId }), `travel to ${locationId}`));
+    for (let wait = 0; wait < 40 && latestWorldTransfer?.locationId !== locationId; wait++) await delay(50);
+    assert.equal(latestWorldTransfer?.locationId, locationId, `${locationId}: the world transfer did not reach the client.`);
     currentLocationId = locationId;
+    console.log(`TRAVEL ${from} -> ${locationId}`);
     await delay(250);
   };
 

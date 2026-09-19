@@ -1,0 +1,55 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "filler_scrub",
+  "kind": "filler",
+  "name": "Сухой кустарник",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 6,
+  "maxPerZone": 18,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        22,
+        34
+      ],
+      "spacing": 1.9,
+      "scale": [
+        1,
+        2
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        6
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "k1",
+      "prefab": "rust_barrel_v1",
+      "x": -5,
+      "z": 2,
+      "ry": 0
+    }
+  ],
+  "anchors": []
+}

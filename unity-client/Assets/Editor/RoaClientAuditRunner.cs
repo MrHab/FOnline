@@ -39,8 +39,6 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaUiPrefabProbe),
             typeof(RoaLightingProbe),
             typeof(RoaCameraProbe),
-            typeof(RoaGlobalMapPresentationProbe),
-            typeof(RoaGlobalMapLiveActorsProbe),
             typeof(RoaModelPrefabCatalogProbe),
             typeof(RoaVisualCohesionProbe),
             typeof(RoaMovementFxProbe),
@@ -64,7 +62,6 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaCaravanDepartureCinematicProbe),
             typeof(RoaWorldActivityNavigationProbe),
             typeof(RoaActivityFeedbackProbe),
-            typeof(RoaActivityHubPresentationProbe),
             typeof(RoaPipboyQuestSurfacesProbe),
             typeof(RoaEconomyFeedbackProbe),
             typeof(RoaBarterProbe),
@@ -74,8 +71,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaPipboyClanStatusProbe),
             typeof(RoaKromkaSiegeUiProbe),
             typeof(RoaPersonalBaseResidentsProbe),
-            typeof(RoaGlobalMapZoneCardProbe)
-            ,typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
+            typeof(Kromka.EditorTools.KromkaWorldSceneProbe)
         };
 
         public static async void Run()

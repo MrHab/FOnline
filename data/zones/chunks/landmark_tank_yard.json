@@ -1,0 +1,118 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "landmark_tank_yard",
+  "kind": "landmark",
+  "name": "Двор цистерн",
+  "biomes": [
+    "zero_basin"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 1,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "t1",
+      "prefab": "water_tank",
+      "x": -5,
+      "z": -3,
+      "ry": 0,
+      "s": 2.2
+    },
+    {
+      "id": "t2",
+      "prefab": "water_tank",
+      "x": 3,
+      "z": -5,
+      "ry": 40,
+      "s": 2
+    },
+    {
+      "id": "b1",
+      "prefab": "workshop_bench",
+      "x": 7,
+      "z": 5,
+      "ry": 90
+    },
+    {
+      "id": "l1",
+      "prefab": "storage_lean_to",
+      "x": -7,
+      "z": 8,
+      "ry": 180
+    },
+    {
+      "id": "s1",
+      "prefab": "scrap_wall_segment",
+      "x": 0,
+      "z": -13,
+      "ry": 0
+    },
+    {
+      "id": "s2",
+      "prefab": "scrap_wall_segment",
+      "x": 13,
+      "z": 0,
+      "ry": 90
+    },
+    {
+      "id": "s3",
+      "prefab": "scrap_wall_segment",
+      "x": -13,
+      "z": 0,
+      "ry": 90
+    }
+  ],
+  "anchors": [
+    {
+      "id": "cache",
+      "type": "container",
+      "x": 0,
+      "z": 3,
+      "tier": "basic"
+    },
+    {
+      "id": "event",
+      "type": "eventAnchor",
+      "x": -12,
+      "z": -12,
+      "radius": 9
+    },
+    {
+      "id": "anom",
+      "type": "anomaly",
+      "x": 14,
+      "z": -14,
+      "radius": 3
+    }
+  ]
+}

@@ -115,7 +115,7 @@ namespace Kromka.EditorTools
                 Require(reviewed, "Missing reviewed machinery palette: " + suffix);
                 return reviewed;
             }
-            Material atlas = KromkaGlobalMapNativeModelMaterialAuthoring.Resolve(modelPath, null);
+            Material atlas = KromkaNativeModelMaterial.Resolve(modelPath, null);
             if (atlas)
             {
                 bool rubber = modelPath.EndsWith("/debris-tire.fbx", StringComparison.Ordinal);

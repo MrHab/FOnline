@@ -1,0 +1,47 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "cover_scrub",
+  "kind": "cover",
+  "name": "Покров: кустарник",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 4,
+  "maxPerZone": 20,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        12,
+        18
+      ],
+      "spacing": 2.4,
+      "scale": [
+        0.9,
+        1.7
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        6
+      ]
+    }
+  ],
+  "objects": [],
+  "anchors": []
+}

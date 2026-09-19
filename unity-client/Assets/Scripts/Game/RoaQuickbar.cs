@@ -34,7 +34,6 @@ namespace RealmOfAshes.Game
         private bool _dirty;
         private bool _saving;
         private bool _worldActive;
-        private bool _globalMapActive;
         private int _loadVersion;
         private GUIStyle _slotStyle;
         private GUIStyle _hintStyle;
@@ -49,7 +48,7 @@ namespace RealmOfAshes.Game
 
         public bool IsMobileVisible
         {
-            get { return (_worldActive || _globalMapActive) && _mobile != null && _mobile.ControlsEnabled; }
+            get { return _worldActive && _mobile != null && _mobile.ControlsEnabled; }
         }
 
         public IReadOnlyList<string> Slots { get { return _slots; } }
@@ -61,7 +60,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (!InputEnabled || (!_worldActive && !_globalMapActive)) return false;
+                if (!InputEnabled || !_worldActive) return false;
                 bool pipboyOpen = _combat != null && _combat.Pipboy != null && _combat.Pipboy.IsOpen;
                 bool interactionOpen = _interaction != null && _interaction.IsPanelOpen;
                 if (pipboyOpen || interactionOpen) return false;
@@ -110,19 +109,11 @@ namespace RealmOfAshes.Game
         public void SetWorldActive(bool active)
         {
             _worldActive = active;
-            if (active) _globalMapActive = false;
             if (!active)
             {
                 _assignItem = string.Empty;
                 _clearMode = false;
             }
-        }
-
-        public void SetGlobalMapActive(bool active)
-        {
-            _globalMapActive = active;
-            if (active) _worldActive = false;
-            ResetHeldRadial();
         }
 
         public void BeginAssign(string itemRuntimeId)
@@ -209,17 +200,6 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            if (_globalMapActive)
-            {
-                if (!AnyPanelOpen())
-                {
-                    for (int i = 0; i < SlotCount; i++)
-                        if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
-                            Activate(i);
-                }
-                return;
-            }
-
             bool desktopWorld = _worldActive && (_mobile == null || !_mobile.ControlsEnabled);
             if (!desktopWorld || AnyPanelOpen())
             {
@@ -227,8 +207,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            // Цифры применяют слот сразу — так обещают обучение и README, и так же
-            // это работает на глобальной карте. Раньше в локации ветка знала только E.
+            // Цифры применяют слот сразу — так обещают обучение и README.
             // Пока открыт круг, выбор ведёт он: иначе цифра и отпускание E применили бы
             // два предмета за одно нажатие.
             if (!_radialOpen && !RoaPipboyCanvas.TypingInInputField())
@@ -377,7 +356,7 @@ namespace RealmOfAshes.Game
         {
             RoaUiTheme.Apply();
             if (!InputEnabled && !RoaHudLayout.Editing) return;
-            if (!_worldActive && !_globalMapActive && !_radialOpen) return;
+            if (!_worldActive && !_radialOpen) return;
             bool inventoryOpen = _inventory != null && _inventory.IsOpen;
             bool pipboyOpen = _combat != null && _combat.Pipboy != null && _combat.Pipboy.IsOpen;
             bool interactionOpen = _interaction != null && _interaction.IsPanelOpen;

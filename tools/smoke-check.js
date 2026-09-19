@@ -1154,7 +1154,7 @@ async function joinQuickStartCharacter(socket, account) {
     appearance: account.appearance,
     special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
     traits: ['trainedEye', 'scavengerStart'],
-    taggedSkills: ['lightWeapons', 'wanderer']
+    taggedSkills: ['lightWeapons', 'stealth']
   });
 }
 
@@ -1653,16 +1653,10 @@ async function assertSocketMultiplayerLifecycle() {
     if (!partyAccept.ok
       || partyAccept.self?.globalMap?.attachedPartyId !== 'smoke_world_party'
       || partyAccept.self?.globalMap?.attachedPartyTaskId !== 'smoke_world_party_task'
-      || partyAccept.self?.onGlobalMap !== true
-      || partyAccept.self?.roomId) {
+      || partyAccept.self?.onGlobalMap === true
+      || !partyAccept.self?.roomId) {
+      // Карты больше нет: отряд задания идёт по миру сам, игрок остаётся в своей комнате.
       fail('world-party accept did not atomically attach server player state', JSON.stringify(partyAccept));
-    }
-    const attachedTravel = await socketAck(first.socket, 'globalTravelStart', {
-      worldPoint: { x: 300, y: 600 },
-      targetLocationId: 'wasteland'
-    });
-    if (attachedTravel.ok) {
-      fail('attached world-party player started an independent route', JSON.stringify(attachedTravel));
     }
 
     first.socket.close();
@@ -1732,15 +1726,11 @@ async function assertSocketMultiplayerLifecycle() {
       || rejoin.lastVisitedSettlementId !== 'settlement') {
       fail('inactive HTTP save replaced authoritative identity or character creation choices', JSON.stringify(rejoin.self));
     }
-    if (rejoin.roomId
+    if (!rejoin.roomId
       || rejoin.self?.globalMap?.attachedPartyId !== 'smoke_world_party'
       || rejoin.self?.globalMap?.attachedPartyTaskId !== 'smoke_world_party_task'
-      || rejoin.self?.onGlobalMap !== true) {
+      || rejoin.self?.onGlobalMap === true) {
       fail('world-party attachment did not survive reconnect authoritatively', JSON.stringify(rejoin));
-    }
-    const legacyArrivalBypass = await socketAck(first.socket, 'globalTravelArrive', {});
-    if (legacyArrivalBypass.ok) {
-      fail('reconnected world-party attachment inherited an independent arrival route', JSON.stringify(legacyArrivalBypass));
     }
     const partyCancel = await socketAck(first.socket, 'worldTaskAction', {
       action: 'cancel',
@@ -1751,22 +1741,6 @@ async function assertSocketMultiplayerLifecycle() {
       || partyCancel.self?.globalMap?.attachedPartyTaskId
       || partyCancel.self?.worldTaskAccepted?.includes('smoke_world_party_task')) {
       fail('world-party cancel did not atomically detach authoritative state', JSON.stringify(partyCancel));
-    }
-    const soloTravel = await socketAck(first.socket, 'globalTravelStart', {
-      worldPoint: { x: 300, y: 600 },
-      targetLocationId: 'wasteland'
-    });
-    if (!soloTravel.ok || !soloTravel.fromPoint || !soloTravel.targetPoint) {
-      fail('detached global-map player could not start an independent route', JSON.stringify(soloTravel));
-    }
-    await delay(300);
-    const soloTravelCancel = await socketAck(first.socket, 'globalTravelCancel', {});
-    const soloDistance = Math.hypot(
-      Number(soloTravelCancel.worldPoint?.x || 0) - Number(soloTravel.fromPoint.x || 0),
-      Number(soloTravelCancel.worldPoint?.y || 0) - Number(soloTravel.fromPoint.y || 0)
-    );
-    if (!soloTravelCancel.ok || soloDistance <= 0.01) {
-      fail('authoritative global-map route did not advance the player', JSON.stringify({ soloTravel, soloTravelCancel, soloDistance }));
     }
 
     const quickAccount = await registerSocketTestAccount(4, suffix);

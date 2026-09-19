@@ -5,12 +5,9 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const {
-  advanceSettlementHour,
   normalizeSettlementLife,
-  publicSettlementLife,
-  settlementReserveDays
+  publicSettlementLife
 } = require('../src/server/wasteland-settlements');
-const { advancePopulation } = require('../src/server/wasteland-population');
 const {
   registerCargoDeparture,
   settleCargoArrival,
@@ -39,35 +36,24 @@ function site(overrides = {}) {
 const initialized = site();
 initialized.settlementLife = normalizeSettlementLife(initialized, config, 0);
 assert(initialized.settlementLife.population >= initialized.settlementLife.protectedMinimum);
-assert(Object.values(settlementReserveDays(initialized.stockpile, initialized.settlementLife, config)).every(Number.isFinite));
+assert.equal(initialized.settlementLife.condition, 'stable', 'a new settlement starts stable');
 
-const crisis = site({ stockpile: { water: 0, food: 0, medicine: 0 }, security: 18 });
-for (let hour = 1; hour <= 80; hour += 1) advanceSettlementHour(crisis, config, 1, hour);
-assert.equal(crisis.settlementLife.condition, 'crisis');
-assert(crisis.settlementLife.population >= crisis.settlementLife.protectedMinimum,
-  'a protected settlement fell below its population floor');
-const maximumSingleDayMigration = Math.floor(180 * 0.05);
-assert(crisis.settlementLife.migratedTotal <= maximumSingleDayMigration * 2,
-  'migration exceeded five percent per eligible game day');
-
-crisis.stockpile.water = 500;
-crisis.stockpile.food = 500;
-crisis.stockpile.medicine = 100;
-crisis.security = 70;
-crisis.settlementLife.integrity = 60;
-advanceSettlementHour(crisis, config, 1, 81);
-assert.equal(crisis.settlementLife.condition, 'recovering');
-const publicLife = publicSettlementLife(crisis, config);
+// Запись из старого сохранения публикуется как есть: симуляция её не меняет.
+const legacy = site({
+  settlementLife: {
+    version: 1, population: 140, condition: 'crisis', causeCode: 'low_water', reason: 'Нет воды.',
+    forecast: 'вода: резерва на 0,4 суток', actions: ['доставить воду'], reserveDays: { water: 0.41 },
+    consequences: [1, 2, 3, 4, 5].map(n => ({ worldHour: n, text: `запись ${n}` }))
+  }
+});
+const publicLife = publicSettlementLife(legacy, config);
 ['stateLabel', 'reason', 'forecast', 'actions', 'reserveDays', 'consequences'].forEach(key => {
   assert(Object.prototype.hasOwnProperty.call(publicLife, key), `public settlement life is missing ${key}`);
 });
+assert.equal(publicLife.state, 'crisis');
+assert.equal(publicLife.reserveDays.water, 0.4);
 assert(publicLife.consequences.length <= 3);
-
-const population = advancePopulation({ population: 100, protectedMinimum: 50, crisisHours: 48 }, 'crisis', 24, 72, {
-  maxDailyMigrationRate: 0.05,
-  crisisMigrationDelayHours: 48
-});
-assert.equal(population.migrated, 5);
+assert.equal(publicSettlementLife(site(), config), null, 'a site without a life record publishes none');
 
 const ledger = {};
 const caravan = { id: 'test_caravan', kind: 'caravan', homeSiteId: 'a', destinationSiteId: 'b', createdHour: 4, cargo: { water: 12 } };
@@ -85,10 +71,7 @@ assert(!loss.duplicate && loss.transaction.status === 'lost' && loss.transaction
 assert(settleCargoLoss(ledger, lostCaravan, 'ambush', 12).duplicate,
   'the same lost cargo transaction can be settled twice');
 
-const unityMap = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGlobalMap.cs'), 'utf8');
 const unityPipboy = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaPipboyCanvas.cs'), 'utf8');
-['Состояние: ', 'Причина: ', 'Прогноз: ', 'Помощь: ', 'Резерв: ', 'Последствие: ']
-  .forEach(text => assert(unityMap.includes(text), `global-map settlement card is missing ${text}`));
 assert(unityPipboy.includes('site["settlementLife"] is JObject life')
   && unityPipboy.includes('Mathf.Min(3, consequences.Count)'),
   'Pipboy world page does not expose settlement causes and three consequences');
@@ -96,9 +79,8 @@ assert(unityPipboy.includes('site["settlementLife"] is JObject life')
 const coordinator = fs.readFileSync(path.join(ROOT, 'src', 'server', 'wasteland-sim.js'), 'utf8');
 assert(coordinator.includes("const SCHEMA = 'realm.wastelandSim.v2'")
   && coordinator.includes('WORLD_SIM_MAX_CATCHUP_STEPS')
-  && coordinator.includes('settleCargoArrival(')
   && coordinator.includes('settleCargoLoss(')
   && coordinator.includes('publicSettlementLife(site, worldSimulationConfig)'),
   'wasteland coordinator is missing the v2 life/logistics integration');
 
-console.log('Wasteland life OK: causal settlement states, protected migration, bounded catch-up, cargo idempotency and Unity explanations');
+console.log('Wasteland life OK: settlement records normalize and publish as stored, the cargo ledger is idempotent, and Unity shows the explanations.');

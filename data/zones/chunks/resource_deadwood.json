@@ -1,0 +1,94 @@
+{
+  "schema": "kromka.zoneChunk.v1",
+  "id": "resource_deadwood",
+  "kind": "resource",
+  "name": "Валежник",
+  "biomes": [
+    "*"
+  ],
+  "modes": [
+    "*"
+  ],
+  "weight": 3,
+  "maxPerZone": 4,
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dead_tree_a",
+        "dead_tree_c"
+      ],
+      "count": [
+        5,
+        9
+      ],
+      "spacing": 4,
+      "scale": [
+        1.2,
+        1.9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "w1",
+      "prefab": "deadwood",
+      "x": -8,
+      "z": -5,
+      "ry": 10
+    },
+    {
+      "id": "w2",
+      "prefab": "deadwood",
+      "x": 4,
+      "z": -9,
+      "ry": 100
+    },
+    {
+      "id": "w3",
+      "prefab": "deadwood",
+      "x": 7,
+      "z": 7,
+      "ry": 190
+    },
+    {
+      "id": "t1",
+      "prefab": "dead_tree_b",
+      "x": -4,
+      "z": 8,
+      "ry": 0,
+      "s": 1.5
+    },
+    {
+      "id": "t2",
+      "prefab": "dead_tree_b",
+      "x": 12,
+      "z": -2,
+      "ry": 0,
+      "s": 1.4
+    },
+    {
+      "id": "t3",
+      "prefab": "dead_tree_b",
+      "x": -13,
+      "z": -12,
+      "ry": 0,
+      "s": 1.6
+    }
+  ],
+  "anchors": []
+}

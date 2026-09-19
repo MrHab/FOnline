@@ -454,10 +454,7 @@ namespace RealmOfAshes.Game
                 {
                     _resultPending = false;
                     _resultStartedAt = Time.unscaledTime;
-                    float resultLifetime = Bootstrap != null && Bootstrap.OnGlobalMap
-                        ? RoaActivityFeedback.GlobalMapResultSeconds
-                        : RoaActivityFeedback.ResultSeconds;
-                    _resultUntil = Time.unscaledTime + resultLifetime;
+                    _resultUntil = Time.unscaledTime + RoaActivityFeedback.ResultSeconds;
                     EmitActivityFeedback(_pendingResultCue);
                     _pendingResultCue = RoaActivityFeedbackCue.None;
                 }
@@ -466,7 +463,7 @@ namespace RealmOfAshes.Game
                 if (_resultRoot.activeSelf != showResult) _resultRoot.SetActive(showResult);
                 UpdateResultCardAnimation(showResult);
             }
-            bool hiddenByScreen = Bootstrap != null && (Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap
+            bool hiddenByScreen = Bootstrap != null && (Bootstrap.FrontendVisible
                 || RoaGameBootstrap.BlocksWorldHud);
             if (_activity == null || hiddenByScreen)
             {
@@ -1060,7 +1057,7 @@ namespace RealmOfAshes.Game
                 bool ready = ack?["ready"]?.ToObject<bool>() == true;
                 string title = ack?["nextTask"]?["title"]?.ToString() ?? "Следующая вылазка";
                 _resultContinueLabel.text = ready ? "ОТРЯД ГОТОВ · ЦЕЛЬ ОТМЕЧЕНА" : "ВЫ СОГЛАСНЫ · " + votes;
-                _resultReward.text += "\nСледующая цель: " + title + ". Вернитесь на глобальную карту.";
+                _resultReward.text += "\nСледующая цель: " + title + ". Цель отмечена на карте мира.";
             });
         }
 

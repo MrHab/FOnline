@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
-// Экономика v3 (KRM-22): флаги worldModel выключают части прежней живой
-// пустоши. Симуляция без настроек работает целиком (на этом держатся старые
-// проверки), а с настройками сервера — без караванов, производства, потребления
-// и беженцев. Сервер обязан передавать ей флаги из data/kromka/economy.json.
+// Экономика v3 (KRM-22): прежняя живая пустошь снята совсем. В симуляции нет
+// караванов, производства и потребления поселений, беженцев и враждебных
+// отрядов на карте — ни с настройками, ни без них, ни после загрузки старого
+// сохранения, в котором они были.
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -18,21 +18,21 @@ const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-world-model-'));
 const economy = loadWorldEconomy(path.join(root, 'data', 'kromka', 'economy.json'));
 const globalMap = JSON.parse(fs.readFileSync(path.join(root, 'data', 'global-map.json'), 'utf8'));
 
-assert.equal(economy.worldModel.settlementLife, false, 'v3 turns settlement consumption, population and refugees off');
-assert.equal(economy.worldModel.npcProduction, false, 'v3 turns settlement harvest and production off');
-assert.equal(economy.worldModel.worldCaravans, false, 'v3 takes caravans off the map');
 assert.deepEqual(Object.keys(economy.worldModel).sort(), Object.keys(DEFAULT_WORLD_MODEL).sort());
+for (const retired of ['settlementLife', 'npcProduction', 'worldCaravans', 'visibleWorldParties', 'hostileWorldParties']) {
+  assert(!(retired in economy.worldModel), `${retired} is no longer a switch: the mechanic is gone`);
+}
 
-function simulation(name, worldModel) {
+function simulation(name) {
   return createWastelandSimulation({
     stateFile: path.join(tempRoot, `${name}.json`),
     getGlobalMap: () => globalMap,
-    gameDayRealMs: 60 * 60 * 1000,
-    ...(worldModel ? { worldModel } : {})
+    gameDayRealMs: 60 * 60 * 1000
   });
 }
 
-const caravans = state => Object.values(state.parties || {}).filter(party => String(party?.kind || '') === 'caravan');
+const partiesOfKind = (state, kinds) => Object.values(state.parties || {})
+  .filter(party => kinds.includes(String(party?.kind || '').toLowerCase()));
 const goods = state => Object.values(state.sites || {}).reduce((sum, site) => {
   const pile = Object.entries(site?.stockpile || {})
     .filter(([id]) => id !== 'silver')
@@ -43,43 +43,45 @@ const goods = state => Object.values(state.sites || {}).reduce((sum, site) => {
   return sum + pile + shelves;
 }, 0);
 
-const hostileParties = state => Object.values(state.parties || {})
-  .filter(party => ['raider', 'monster'].includes(String(party?.kind || '').toLowerCase()));
-
-// --- прежняя пустошь без настроек: караваны и враждебные отряды на месте -------------
-{
-  const legacy = simulation('legacy');
-  assert(caravans(legacy.state()).length > 0, 'without settings the simulation keeps its caravans');
-  legacy.tick(Date.now() + 1000, { hours: 1, force: true });
-  assert(hostileParties(legacy.state()).length > 0, 'without settings raiders and monsters still roam the old wasteland');
-}
-
-// --- экономика v3 -------------------------------------------------------------------
-{
-  const sim = simulation('v3', economy.worldModel);
-  const state = sim.state();
-  const before = goods(state);
+function assertQuietWorld(sim, label) {
+  const before = goods(sim.state());
   const seenTasks = new Set();
   const start = Date.now();
   for (let hour = 1; hour <= 48; hour += 1) {
     sim.tick(start + hour * 1000, { hours: 1, force: true });
     const current = sim.state();
-    assert.equal(caravans(current).length, 0, `hour ${hour}: no caravan exists`);
-    assert.equal(hostileParties(current).length, 0, `hour ${hour}: raiders and monsters live in danger cells, not as old wasteland parties`);
+    assert.equal(partiesOfKind(current, ['caravan']).length, 0, `${label}, hour ${hour}: no caravan exists`);
+    assert.equal(partiesOfKind(current, ['raider', 'monster']).length, 0,
+      `${label}, hour ${hour}: raiders and monsters live in danger cells, not as wasteland parties`);
+    assert.equal(Object.keys(current.refugeeFlows?.active || {}).length, 0, `${label}, hour ${hour}: no refugees move`);
     for (const task of current.worldTasks || []) seenTasks.add(String(task?.type || ''));
-    assert.equal(Object.keys(current.refugeeFlows?.active || {}).length, 0, `hour ${hour}: no refugees move`);
   }
   for (const type of ['escort_caravan', 'deliver_supplies']) {
-    assert(!seenTasks.has(type), `v3 creates no ${type} task`);
+    assert(!seenTasks.has(type), `${label}: no ${type} task appears`);
   }
   const after = goods(sim.state());
-  assert(after <= before + 0.001, `settlements produce nothing: goods ${before.toFixed(2)} -> ${after.toFixed(2)}`);
+  assert(after <= before + 0.001, `${label}: settlements produce nothing: goods ${before.toFixed(2)} -> ${after.toFixed(2)}`);
+  assert.deepEqual(sim.publicState().parties, [], `${label}: NPC parties are not shown on the map`);
 }
 
-// --- сервер передаёт флаги симуляции -------------------------------------------------
-const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-assert(server.includes("const WORLD_ECONOMY = loadWorldEconomy(process.env.KROMKA_ECONOMY_FILE || path.join(BUNDLED_DATA_DIR, 'kromka', 'economy.json'));"));
-assert(server.includes('worldModel: WORLD_ECONOMY.worldModel'), 'the server must hand the world model to the simulation');
+// --- новый мир ------------------------------------------------------------------------
+assertQuietWorld(simulation('fresh'), 'fresh world');
+
+// --- старое сохранение с караваном, налётчиками и беженцами ---------------------------
+{
+  const seed = simulation('legacy-seed');
+  seed.tick(Date.now() + 1000, { hours: 1, force: true });
+  const saved = JSON.parse(JSON.stringify(seed.state()));
+  const home = Object.values(saved.sites).find(site => String(site?.type || '') === 'settlement');
+  const base = { x: home.x, y: home.y, homeSiteId: home.id, faction: home.faction || 'neutral', members: 6, strength: 6, state: 'travel' };
+  saved.parties.legacy_caravan = { ...base, id: 'legacy_caravan', kind: 'caravan', name: 'Старый караван', cargo: { water: 12 } };
+  saved.parties.legacy_raiders = { ...base, id: 'legacy_raiders', kind: 'raider', name: 'Старые налётчики', faction: 'raiders' };
+  saved.refugeeFlows = { active: { legacy_refugees: { id: 'legacy_refugees', members: 9, originSiteId: home.id, status: 'moving', x: home.x, y: home.y } } };
+  const legacyFile = path.join(tempRoot, 'legacy.json');
+  fs.writeFileSync(legacyFile, JSON.stringify(saved));
+  const legacy = createWastelandSimulation({ stateFile: legacyFile, getGlobalMap: () => globalMap, gameDayRealMs: 60 * 60 * 1000 });
+  assertQuietWorld(legacy, 'legacy save');
+}
 
 fs.rmSync(tempRoot, { recursive: true, force: true });
-console.log('World model flags OK: without settings the old wasteland runs, with the v3 settings there are no caravans, no production, no consumption, no refugees and no old hostile parties.');
+console.log('World model OK: no caravans, production, consumption, refugees or hostile map parties — in a fresh world and after loading a legacy save.');

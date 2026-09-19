@@ -19,7 +19,6 @@ namespace RealmOfAshes.Game
     {
         public const float IntroSeconds = 4f;
         public const float ResultSeconds = 18f;
-        public const float GlobalMapResultSeconds = 7.5f;
         public const float PulseSeconds = 0.82f;
 
         public readonly struct CardSample

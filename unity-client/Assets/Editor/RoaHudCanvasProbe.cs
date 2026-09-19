@@ -235,7 +235,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
-                canvasOwner.Configure(hud, null, null, null, null, null);
+                canvasOwner.Configure(hud, null, null, null, null);
                 MethodInfo update = typeof(RoaHudCanvas).GetMethod("Update",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Require(update != null, "HUD capture cannot invoke presentation update");

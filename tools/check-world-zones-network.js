@@ -13,7 +13,16 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
+const zoneWalk = require('./lib/zone-walk');
+const { zoneOfPlace, zoneRecipe } = require('../src/server/zone-graph');
+const { loadZoneCatalog } = require('../src/server/zone-chunks');
+const { buildZone } = require('../src/server/zone-builder');
 const accounts = {};
+// Зона Сердцевины и её портал — ворота территории.
+const zoneGraph = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'zone-graph.json'), 'utf8'));
+const coreHome = zoneOfPlace(zoneGraph, 'coreZone');
+const coreHomeDef = buildZone(zoneRecipe(zoneGraph, coreHome.id), loadZoneCatalog(path.join(__dirname, '..', 'data', 'zones')));
+const corePortal = zoneWalk.world(coreHomeDef.transitions.find(row => row.to === 'coreZone'));
 
 const qty = (self, id) => (self.inventory || []).filter(r => r.id === id).reduce((s, r) => s + r.qty, 0);
 const getJson = route => new Promise((resolve, reject) => {
@@ -71,17 +80,13 @@ const getJson = route => new Promise((resolve, reject) => {
     state.equipment.detector = 'artifactDetectorMk1';
   }
 
-  // Наёмник без контракта стоит на глобальной карте у узла Сердцевины: там
-  // подписывают первый контракт и оттуда заводят на базу фракции.
+  // Наёмник без контракта стоит в зоне Сердцевины у её портала: там подписывают
+  // первый контракт и оттуда заводят на базу фракции.
   const mercenary = stateFor('untargeted');
   mercenary.territoryFaction = { version: 1, factionId: '', joinedAt: 0, changeAllowedAt: 0, history: [] };
-  mercenary.globalMap = { onWorldMap: true, playerX: 190, playerY: 156 };
-
-  // Член «Управы» на глобальной карте у самого узла Сердцевины: его маршрут
-  // проверяет, что ворота срабатывают и без точного попадания в узел.
-  const courier = stateFor('harvest');
-  courier.territoryFaction = membership('uprava');
-  courier.globalMap = { onWorldMap: true, playerX: 190, playerY: 162 };
+  mercenary.currentLocationId = coreHome.id;
+  mercenary.player = { ...(mercenary.player || {}), x: corePortal.x, z: corePortal.z + 2 };
+  delete mercenary.serverLocationContext;
 
   // Член «Управы» в зале боковой лаборатории «Цепь».
   const technician = stateFor('modification');
@@ -158,34 +163,24 @@ const getJson = route => new Promise((resolve, reject) => {
   console.log('PASS territory membership on reconnect and transitions');
 
   // --- контракт наёмника у ворот Сердцевины -----------------------------------------
-  const publicMap = await getJson('/api/global-map');
-  const nodeIds = (publicMap.json.map?.nodes || []).map(node => node.id);
-  assert(nodeIds.includes('coreZone'), 'The territory node stays on the map: it is the only entrance.');
+  const worldMap = await getJson('/api/world-map');
+  const places = (worldMap.json.map?.zones || []).flatMap(zone => zone.places.map(place => place.id));
+  assert(places.includes('coreZone'), 'The territory stays on the world map: it is the only entrance.');
   for (const baseId of ['coreBaseUprava', 'coreBaseArtels', 'coreBaseContour', 'coreBaseLeague']) {
-    assert(!nodeIds.includes(baseId), `Faction base markers are hidden from the client map: ${baseId}`);
+    assert(!places.includes(baseId), `Faction bases are hidden from the world map: ${baseId}`);
   }
   await h.connectAndJoin(accounts.untargeted);
+  assert.equal(accounts.untargeted.join.locationId, coreHome.id);
   const gateOffer = await request(accounts.untargeted, 'territoryFactionAction', { action: 'offer' });
-  assert.equal(gateOffer.atGate, true, 'A player standing at the territory node is at the contract gate.');
+  assert.equal(gateOffer.atGate, true, 'A player at the Core portal of its zone is at the contract gate.');
   assert.equal(gateOffer.contract.canSign, true, 'A character without a contract may sign one.');
   assert.equal(gateOffer.contract.factions.length, 4, 'The window offers every territory faction.');
   assert(gateOffer.contract.factions.every(row => typeof row.sharePct === 'number' && row.displayName),
     'Every faction row carries a share and a display name: ' + JSON.stringify(gateOffer.contract.factions).slice(0, 400));
-  // Маршрут к узлу Сердцевины: без контракта сервер возвращает предложение,
-  // после подписи тот же маршрут заводит на базу выбранной фракции.
-  await request(accounts.untargeted, 'globalTravelStart',
-    { targetLocationId: 'coreZone', worldPoint: { x: 190, y: 150 } });
-  const arriveAtGate = async () => {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const response = await h.socketAck(accounts.untargeted.socket, 'globalTravelArrive',
-        { targetLocationId: 'coreZone', worldPoint: { x: 190, y: 150 } });
-      if (!/ещё нужно дойти/.test(response.error || '')) return response;
-      await new Promise(resolve => setTimeout(resolve, 400));
-    }
-    throw new Error('the traveller never reached the territory node');
-  };
-  const refused = await arriveAtGate();
-  assert.equal(refused.ok, false, 'Without a contract the gate does not let the traveller in.');
+  // Портал Сердцевины: без контракта сервер возвращает предложение, после
+  // подписи тот же портал заводит на базу выбранной фракции.
+  const refused = await h.socketAck(accounts.untargeted.socket, 'changeLocation', { locationId: 'coreZone' });
+  assert.equal(refused.ok, false, 'Without a contract the gate does not let the player in.');
   assert.equal(refused.contractRequired, true, 'The refusal carries the contract offer: ' + JSON.stringify(refused).slice(0, 400));
   assert.equal(refused.contract.factions.length, 4);
   const signed = await request(accounts.untargeted, 'territoryFactionAction',
@@ -193,31 +188,10 @@ const getJson = route => new Promise((resolve, reject) => {
   assert.equal(signed.atGate, true);
   assert.equal(signed.membership.factionId, 'contour', 'Signing at the gate joins the chosen faction.');
   assert.equal(signed.contract.baseLocationId, 'coreBaseContour', 'The contract names the base the player will arrive at.');
-  const arrived = await arriveAtGate();
-  assert.equal(arrived.ok, true, 'A signed contract opens the territory gate: ' + JSON.stringify(arrived).slice(0, 400));
-  assert.equal(arrived.targetLocationId, 'coreBaseContour', 'The gate routes the traveller to the base of the signed faction.');
-  assert.equal(arrived.entryKey, 'entryFromWorld');
-  assert.equal(arrived.pvpMode, 'peaceful', 'The base is a protected area, not the contested zone.');
-  const entered = await request(accounts.untargeted, 'changeLocation',
-    { locationId: 'coreBaseContour', entryKey: 'entryFromWorld' });
-  assert.equal(entered.locationId, 'coreBaseContour', 'The traveller really lands on the faction base.');
-  // Маршрут к Сердцевине, завершившийся точкой рядом с узлом, тоже открывает
-  // ворота: игрок не должен «доехать и ничего не получить».
-  await h.connectAndJoin(accounts.harvest);
-  await request(accounts.harvest, 'globalTravelStart',
-    { targetLocationId: 'coreZone', worldPoint: { x: 196, y: 156 } });
-  const nearGate = await (async () => {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const response = await h.socketAck(accounts.harvest.socket, 'globalTravelArrive',
-        { targetLocationId: 'coreZone', worldPoint: { x: 196, y: 156 } });
-      if (!/ещё нужно дойти/.test(response.error || '')) return response;
-      await new Promise(resolve => setTimeout(resolve, 400));
-    }
-    throw new Error('the traveller never reached the point near the territory node');
-  })();
-  assert.equal(nearGate.ok, true, 'Arriving near the node still opens the gate: ' + JSON.stringify(nearGate).slice(0, 300));
-  assert.equal(nearGate.targetLocationId, 'coreBaseUprava',
-    'A route aimed at the territory routes to the base even when the arrival degrades to a map point.');
+  const entered = await h.socketAck(accounts.untargeted.socket, 'changeLocation', { locationId: 'coreZone' });
+  assert.equal(entered.ok, true, 'A signed contract opens the territory gate: ' + JSON.stringify(entered).slice(0, 400));
+  assert.equal(entered.locationId, 'coreBaseContour', 'The gate routes the player to the base of the signed faction.');
+  assert.equal(entered.self.pvpMode ?? entered.self.zoneRules?.mode ?? 'peaceful', 'peaceful', 'The base is a protected area, not the contested zone.');
   const switchAtGate = await h.socketAck(accounts.untargeted.socket, 'territoryFactionAction',
     { action: 'join', factionId: 'uprava', requestId: 'gate-contract-2' });
   assert(!switchAtGate.ok && /регистратора/.test(switchAtGate.error || ''),
@@ -225,7 +199,7 @@ const getJson = route => new Promise((resolve, reject) => {
   const farFromGate = await h.socketAck(accounts.target.socket, 'territoryFactionAction',
     { action: 'join', factionId: 'uprava', requestId: 'far-contract-1' });
   assert(!farFromGate.ok, 'A contract is not signed from an arbitrary location.');
-  console.log('PASS mercenary contract at the territory gate and hidden base markers');
+  console.log('PASS mercenary contract at the Core portal of its zone and hidden bases');
 
   // --- артефакты: скрытые свойства, платная стабилизация, разбор ---------------------------
   await h.connectAndJoin(accounts.trade);

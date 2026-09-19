@@ -201,11 +201,6 @@ for (const needle of [
   '? serverResolvePveRoomId(p, locationId, effectiveRoomId || requestedRoomId)',
   '? serverResolvePveRoomId({ characterId, userId: auth.user.id }, locationId, savedRoomId)',
   'if (pveJoinRoomId) serverPveRoomEntered(room, p, Date.now());',
-  '? serverResolvePveRoomId(leader, targetLocationId, \'\')',
-  // Комната группы идёт первой, иначе roomId зоны угодий уводит каждого
-  // спутника в его личный инстанс. Для прочих встреч ничего не меняется:
-  // pveArrivalRoomId непуст только у локаций с pveArea === true.
-  "roomId: pveArrivalRoomId || resolution.encounterRoomId || '',",
   "socket.on('pveAreaAction'",
   "emit('pveAreaState', payload)",
   'serverTickPveRooms(Date.now())',
@@ -290,13 +285,6 @@ assert.equal(silhouettes.size, publicAreas.length, 'Every area gets its own silh
 assert(server.includes('pveAreas: publicPveAreaCatalog(KROMKA_PVE_AREA_CATALOG, serverGlobalMapPointForLocation, {')
   && server.includes('rewardIdsFor: serverPveAreaRewardIds'),
   '/api/wasteland must publish the area catalog: without it the client cannot draw borders.');
-const clientMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
-for (const token of ['_wasteland["pveAreas"]', 'DrawWorldRing("PveArea:', 'PveAreaLabel(', 'PveAreaAt('])
-  assert(clientMap.includes(token), `RoaGlobalMap must show the area: ${token}`);
-// Снимок пустоши обязан донести области до карты: без переноса рядом с sim
-// клиент рисует пустоту, а не контуры.
-assert(clientMap.includes('sim["pveAreas"] = pveAreaRows'),
-  'FetchWasteland must carry pveAreas into the snapshot the map draws from.');
 
 // --- путь сквозь угодья ------------------------------------------------------------
 // Контур на карте обязан что-то значить: отряд, вошедший в угодья, получает
@@ -331,17 +319,6 @@ for (const row of publicAreas) {
   assert.equal(pve.pveRoomOwner(`${row.locationId}#${row.worldZoneId}`, row.locationId), '',
     `${row.id}: the zone room id must never pass as a personal-room ticket`);
 }
-// Комната группы объявляется раньше всех, кто её называет. Это не придирка к
-// стилю: `const` в temporal dead zone роняет сервер прямо на прибытии отряда —
-// `node --check` такой файл разбирает молча, падает уже живой процесс.
-{
-  const declaredAt = server.indexOf('const pveArrivalRoomId =');
-  assert(declaredAt > 0, 'server.js must resolve the party room for a PvE arrival.');
-  for (const use of [...server.matchAll(/pveArrivalRoomId/g)].map(match => match.index)) {
-    assert(use >= declaredAt,
-      'pveArrivalRoomId is used before it is declared: the arrival handler would throw on the first party.');
-  }
-}
 assert(server.includes('return pveLairRoomId(locationId);'),
   'A hunting-ground lair must resolve to one shared room, not a personal instance.');
 // Внутри логова стоит главарь со свитой и больше никто: ни стартовых стай, ни
@@ -358,67 +335,7 @@ assert(server.includes('return pveLairRoomId(locationId);'),
     && server.includes('if (boss.faction) guard.faction = boss.faction;'),
     'The escort must share the boss faction, or the lair fights itself in front of the player.');
 }
-// Сервер обязан катить встречу на контакте и гасить бросок после входа.
-for (const needle of [
-  'function serverGroundsRollFor(session = null, zone = null, now = Date.now(), options = {})',
-  'roll.consumed = true;',
-  'function serverEnsurePveAreaBoss(room, area, now = Date.now())'
-]) assert(server.includes(needle), `server.js is missing the hunting-ground encounter contract: ${needle}`);
-// Клиент обязан продолжать выкатывать встречи, пока отряд идёт внутри контура.
-for (const token of ['private float GroundsContactFraction(', '_groundsWalked', 'public static float GroundsChanceFraction('])
-  assert(clientMap.includes(token), `RoaGlobalMap must keep offering encounters inside the grounds: ${token}`);
-
-// Билет прибытия обязан нести комнату группы, а не комнату зоны.
-assert(server.includes("roomId: pveArrivalRoomId || resolution.encounterRoomId || ''")
-  && server.includes("encounterRoomId: pveArrivalRoomId || resolution.encounterRoomId || ''"),
-  'A travel party must arrive in the leader personal room, not scatter into one instance each.');
-// Предложение на маршруте обязано называть угодья по имени: сверка читает
-// details.title, потом title зоны — без второго игрок видит «Событие пустоши».
-assert(server.includes("title: safeName(zone.details?.title || zone.title || zone.name || 'Событие пустоши')"),
-  'The route contact must name the hunting grounds it offers.');
-assert(server.includes('function serverSyncPveAreaZones()')
-  && server.includes('WASTELAND_SIM.upsertWorldZone(pveAreaZone(area, point, worldHour))')
-  && server.includes('serverSyncPveAreaZones();\n\n// Публичные события'),
-  'The server must publish the hunting-ground zones at boot, or a route through the outline confirms nothing.');
-const tickAt = server.indexOf('function serverTickPveRooms(');
-assert(tickAt > 0 && server.slice(tickAt, tickAt + 160).includes('serverSyncPveAreaZones();'),
-  'The area tick must republish the zones: the simulation rebuilds its zone list.');
-for (const token of ['row["worldZoneId"]', 'EncounterZoneSemantic', 'public static float RouteEntryFraction('])
-  assert(clientMap.includes(token), `RoaGlobalMap must turn an area into a route contact: ${token}`);
-// Грепа по файлу мало: поломка, ради которой писался контакт по контуру, жила
-// внутри самого метода — правило угодий обязано стоять в нём.
-const contactAt = clientMap.indexOf('private bool MaybeTriggerTravelContact(');
-assert(contactAt > 0, 'RoaGlobalMap must keep the travel contact trigger.');
-const contactBody = clientMap.slice(contactAt, contactAt + 2400);
-assert(contactBody.includes('EncounterZoneSemantic') && contactBody.includes('GroundsContactFraction('),
-  'The contact trigger must decide hunting grounds by their own rule, not by the circle around them.');
-// А само правило — по контуру и по пройденному внутри пути.
-const groundsAt = clientMap.indexOf('private float GroundsContactFraction(');
-assert(groundsAt > 0, 'RoaGlobalMap must keep the hunting-ground contact rule.');
-const groundsBody = clientMap.slice(groundsAt, groundsAt + 1400);
-// Граница сама ничего не выкатывает: правило обязано бросать шанс за путь
-// внутри контура, а не звать на встречу при входе.
-assert(groundsBody.includes('PointInsideArea(') && groundsBody.includes('GroundsChanceFraction(')
-  && groundsBody.includes('encounterChance') && !groundsBody.includes('RouteEntryFraction('),
-  'Hunting grounds must roll a chance while walking inside, not fire on crossing the outline.');
-// Карта получает шанс от сервера, а не держит свои числа.
-for (const row of publicAreas) {
-  assert(row.encounterStepPoints === catalog.rules.encounterStepPoints
-    && row.encounterChance === catalog.rules.encounterChance,
-    `${row.id}: the map must receive the encounter chance from the server`);
-  assert(row.encounterChance > 0 && row.encounterChance < 1,
-    `${row.id}: an encounter on the grounds is a chance, neither never nor always`);
-}
-// Обойдённая встреча израсходована: следующий шанс выкатит другую сцену.
-assert(server.includes("if (decision !== 'enter' && session.groundsRolls?.[pending.id]) session.groundsRolls[pending.id].consumed = true;"),
-  'A declined hunting-ground encounter must be spent, or the next chance offers the same scene.');
-// Цель угодий не должна воровать клик и наведение у площадки в том же центре.
-assert(clientMap.includes('if (target.ContactOnly) continue;') && clientMap.includes('areaTarget.ContactOnly = true;'),
-  'An area target exists for the route contact only.');
-// Отказ сервера обязан закрывать окно встречи: иначе маршрут стоит без выхода.
-const pendingAt = clientMap.indexOf('private bool OpenPendingTravelContact(');
-assert(pendingAt > 0 && clientMap.slice(pendingAt, pendingAt + 1200).includes('EmitWithAck'),
-  'A refused contact must not leave the route frozen with an open prompt.');
+assert(server.includes('function serverEnsurePveAreaBoss(room, area, now = Date.now())'), 'server.js is missing the lair boss contract.');
 
 // --- обстоятельства встречи ------------------------------------------------------
 // Одна и та же область встречает по-разному: обычно стая бродит поодаль,

@@ -46,7 +46,7 @@ function fastTravelFee(rules, fromZone, toZone) {
  * Направления из столицы: остальные столицы с ценой. capitals — [{locationId,
  * name, zone}], где zone — зона столицы в графе ({col, row}).
  */
-function fastTravelDestinations(rules, capitals = [], fromLocationId = '') {
+function fastTravelDestinations(rules, capitals = [], fromLocationId = '', feeMultiplier = 1) {
   const from = capitals.find(row => row.locationId === fromLocationId);
   if (!from) return [];
   return capitals
@@ -55,20 +55,20 @@ function fastTravelDestinations(rules, capitals = [], fromLocationId = '') {
       locationId: row.locationId,
       name: row.name,
       distanceKm: Math.round(zoneDistanceKm(from.zone, row.zone)),
-      fee: fastTravelFee(rules, from.zone, row.zone)
+      fee: Math.max(1, Math.round(fastTravelFee(rules, from.zone, row.zone) * Math.max(0, Math.min(1, Number(feeMultiplier) || 1))))
     }))
     .sort((a, b) => a.fee - b.fee || a.name.localeCompare(b.name, 'ru'));
 }
 
 /**
  * Почему перенос невозможен ('' — можно). trip: {rules, capitals, fromLocationId,
- * toLocationId, silver, lastCombatAt, now, cargo: [{id, category, name}]}.
+ * toLocationId, silver, lastCombatAt, now, cargo: [{id, category, name}], feeMultiplier}.
  */
 function fastTravelRefusal(trip = {}) {
   const rules = trip.rules || DEFAULT_RULES;
   const capitals = Array.isArray(trip.capitals) ? trip.capitals : [];
   if (!capitals.some(row => row.locationId === trip.fromLocationId)) return 'Диспетчер переноса есть только в столицах фракций.';
-  const destination = fastTravelDestinations(rules, capitals, trip.fromLocationId).find(row => row.locationId === trip.toLocationId);
+  const destination = fastTravelDestinations(rules, capitals, trip.fromLocationId, trip.feeMultiplier ?? 1).find(row => row.locationId === trip.toLocationId);
   if (!destination) return 'Туда диспетчер не отправляет: перенос идёт только между столицами.';
   const now = Number(trip.now || Date.now());
   const since = now - Number(trip.lastCombatAt || 0);

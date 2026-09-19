@@ -107,15 +107,11 @@ for (const token of [
   // Поле пишется только у скрытых узлов: перезапуск сервера не должен
   // проставлять `hidden: false` каждой точке авторской карты.
   "...(node?.hidden === true ? { hidden: true } : {}),",
-  'if (!stayOnWorldMap && serverIsTerritoryGateLocation(targetLocationId)) {',
+  'if (serverIsTerritoryGateLocation(locationId) && ZONE_RUNTIME.isZone(p.locationId) && serverNearbyTransitionTo(p, locationId)) {',
   'contractRequired: true,',
-  "resolution.entryKey = 'entryFromWorld';",
-  "if (targetLoc.noGlobalMapEntry === true && !territoryGateEntry) {",
   "if (action === 'offer') {",
-  "const atGate = action === 'join' && serverPlayerAtTerritoryGate(p, now);",
-  'invalidateTerritoryFactionSharesCache();',
-  // Маршрут к Сердцевине открывает ворота даже если прибытие свелось к точке.
-  'if (stayOnWorldMap && serverIsTerritoryGateLocation(session.targetLocationId)) {'
+  "const atGate = action === 'join' && serverPlayerAtTerritoryGate(p);",
+  'invalidateTerritoryFactionSharesCache();'
 ]) assert(server.includes(token), `server.js is missing the territory contract wiring: ${token}`);
 assert(server.includes('Сменить фракцию можно только у регистратора на её базе.'),
   'у ворот подписывают первый контракт, смена фракции остаётся у регистратора');

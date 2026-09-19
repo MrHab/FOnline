@@ -125,7 +125,7 @@ function fixture(mode = 'pvpFullDrop', targetHp = 5) {
   for (const name of [
     'normalizeLocationPvpMode', 'capitalLocationId', 'locationIsFactionCapital',
     'locationPvpMode', 'locationAllowsPvp', 'zoneModeDropsInventory', 'locationHasFullInventoryDrop',
-    'locationDropsEverything', 'serverCurrentHp'
+    'locationDropsEverything', 'serverCurrentHp', 'serverNotePvpExchange'
   ]) vm.runInContext(functionSource(name), context);
   vm.runInContext(handlerSource('explosionAttack'), context);
   return { handlers, drops, respawns, players, p, target, room, events };

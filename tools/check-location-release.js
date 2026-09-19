@@ -121,17 +121,5 @@ assert(!simSource.includes('worldSiteLocationId(site)'),
   'site activity generator must not stringify a site object as a location ID');
 assert(serverSource.includes('!WASTELAND_SIM.isWorldTaskInPublicRelease(task)'),
   'direct acceptance of a hidden task is not guarded');
-assert(serverSource.includes('!isReleasedLocationId(site.id || \'\') || !isReleasedLocationId(locationId)'),
-  'global-map destination resolver is not guarded by the release list');
-assert(serverSource.includes('&& isReleasedLocationId(requestedLocationId)'),
-  'direct global-map arrival by hidden location ID is not guarded');
-const destinationResolverStart = serverSource.indexOf('function serverGlobalDestinationAtPoint(');
-const destinationResolverEnd = serverSource.indexOf('\nfunction ', destinationResolverStart + 10);
-const destinationResolver = serverSource.slice(destinationResolverStart, destinationResolverEnd);
-assert(destinationResolverStart >= 0, 'global-map destination resolver is missing');
-assert(!destinationResolver.includes("String(node?.kind || 'settlement').toLowerCase() !== 'settlement'"),
-  'visible non-settlement nodes are still excluded from global-map destinations');
-assert(destinationResolver.includes("kind: 'location'"),
-  'authored global-map nodes are not represented as enterable locations');
 
 console.log(`Location release check passed: ${RELEASED_LOCATION_IDS.length} visible, ${authoredFiles.length - RELEASED_LOCATION_IDS.length} preserved.`);

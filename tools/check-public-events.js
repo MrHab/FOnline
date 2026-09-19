@@ -214,7 +214,6 @@ for (const needle of [
   'serverTickPublicEvents(Date.now())',
   'serverRestorePublicEventZones();',
   'const transitionPublicEvent = serverPublicEventForZone(activeTransitionZone);',
-  'const eventError = arrivalEvent ? publicEventEntryError(arrivalEvent, member.characterId, now) : \'\';',
   'serverNotePublicEventDeath(oldRoom, p, now);',
   'const eventChestError = serverPublicEventChestError(room, container, p, Date.now());',
   'publicEvents: publicPublicEvents(serverPublicEventStore(), now)',

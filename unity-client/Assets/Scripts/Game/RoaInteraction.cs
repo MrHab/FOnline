@@ -2081,6 +2081,14 @@ namespace RealmOfAshes.Game
                 _transitionPending = false;
                 if (ack?["ok"]?.ToObject<bool>() != true)
                 {
+                    // Портал Сердцевины без контракта: окно выбора фракции, после подписи — тот же переход.
+                    if (ack?["contractRequired"]?.ToObject<bool>() == true && ack["contract"] is JObject contract)
+                    {
+                        RoaTerritoryContractCanvas.Ensure(gameObject, Socket).Open(contract, ack["error"]?.ToString(),
+                            () => SendLocationTransition(transition, onFinished));
+                        onFinished?.Invoke(true);
+                        return;
+                    }
                     Show(ack?["error"]?.ToString() ?? "Сервер не разрешил переход.", 4f);
                     onFinished?.Invoke(true);
                     return;

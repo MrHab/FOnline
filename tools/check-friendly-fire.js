@@ -103,6 +103,8 @@ function fixture(mode = 'pvp') {
     'serverFactionKey', 'serverWorldFactionKey', 'serverCombatFactionGroup', 'serverFactionRelation',
     'serverFactionsHostile', 'serverActorHostileToPlayer', 'serverCombatFactionsAllied', 'serverPlayersAllied',
     'serverPlayerCanDamageNpc', 'serverPlayerCanDamagePlayer', 'serverProtectedAttackAck',
+    // Щит прибытия и пауза ворот зон: обмен уроном между игроками отмечается в обоих.
+    'serverZoneArrivalShielded', 'serverNotePvpExchange',
     // Названия правил: принятый выстрел без урона обязан объяснить себя.
     'serverPvpBlockLabel', 'serverNpcBlockLabel',
     // Учёт попаданий по токену, безопасное чтение здоровья и лимит косметических

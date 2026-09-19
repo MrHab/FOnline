@@ -1161,7 +1161,7 @@ function assertServerPersistenceFaultRecovery() {
   let persistenceShouldThrow = true;
   const persistenceApi = evaluateServerFunctions(
     serverSource,
-    [['function persistActivePlayerStates(', 'function publicTravelPartyMember(']],
+    [['function persistActivePlayerStates(', 'function serverStateInventoryWithout(']],
     ['persistActivePlayerState', 'persistActivePlayerStates'],
     {
       performance: { now: () => 1 },
@@ -1220,7 +1220,6 @@ function assertServerPersistenceFaultRecovery() {
         return true;
       },
       emitAuthoritativePlayerState: (_player, payload) => attachmentEmissions.push(payload),
-      removePlayerFromIndependentGlobalTravelSessions() {},
       serverPlayerIsInAttachedPartyRoom: () => false,
       io: { sockets: { sockets: new Map() } },
       leaveCurrentRoom() {}
@@ -1287,110 +1286,12 @@ function assertServerPersistenceFaultRecovery() {
     'join/task attachment mutation without an inline save did not schedule a durable retry');
 }
 
-function assertGlobalTravelLeaderDisconnectRecovery() {
-  const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
-  const globalTravelSessions = new Map();
-  const emitted = [];
-  const persisted = [];
-  const persistenceErrors = [];
-  let failingPersistId = '';
-  const leader = {
-    id: 'socket_leader', name: 'Leader', onGlobalMap: true,
-    globalWorldPoint: { x: 10, y: 20 }, pendingLocationTransition: null
-  };
-  const follower = {
-    id: 'socket_follower', name: 'Follower', onGlobalMap: true,
-    globalWorldPoint: { x: 10, y: 20 }, pendingLocationTransition: null
-  };
-  const players = new Map([[leader.id, leader], [follower.id, follower]]);
-  const api = evaluateServerFunctions(
-    serverSource,
-    [['function cleanupGlobalTravelSessionsForSocket(', 'function publicPlayerMovement(']],
-    ['cleanupGlobalTravelSessionsForSocket'],
-    {
-      globalTravelSessions,
-      players,
-      serverGlobalTravelCurrentPoint: () => ({ x: 33, y: 44 }),
-      persistActivePlayerStates: members => {
-        persisted.push(...members.map(member => member.id));
-        if (members.some(member => member.id === failingPersistId)) throw new Error('injected global travel write failure');
-        return true;
-      },
-      console: { error: (...args) => persistenceErrors.push(args) },
-      io: {
-        sockets: {
-          sockets: new Map([[follower.id, {
-            emit: (eventName, payload) => emitted.push({ eventName, payload })
-          }]])
-        }
-      }
-    }
-  );
-  globalTravelSessions.set(leader.id, {
-    id: 'travel_a', leaderId: leader.id, leaderName: leader.name,
-    memberIds: [leader.id, follower.id], terminating: false
-  });
-  api.cleanupGlobalTravelSessionsForSocket(leader.id);
-  assert.strictEqual(globalTravelSessions.size, 0,
-    'leader disconnect retained a dead global travel session');
-  assert.deepStrictEqual(persisted.sort(), [follower.id, leader.id].sort(),
-    'leader disconnect did not persist every released member at the route point');
-  assert.strictEqual(emitted.length, 1,
-    'leader disconnect did not emit exactly one release to the remaining follower');
-  assert.strictEqual(emitted[0].eventName, 'globalTravelGroupReleased');
-  assert.deepStrictEqual(
-    {
-      previousLeaderId: emitted[0].payload.previousLeaderId,
-      leaderId: emitted[0].payload.leaderId,
-      worldPoint: emitted[0].payload.worldPoint
-    },
-    {
-      previousLeaderId: leader.id,
-      leaderId: follower.id,
-      worldPoint: { x: 33, y: 44 }
-    },
-    'released follower did not receive a self-led authoritative world-map state'
-  );
-
-  emitted.length = 0;
-  globalTravelSessions.set(leader.id, {
-    id: 'travel_b', leaderId: leader.id, leaderName: leader.name,
-    memberIds: [leader.id, follower.id], terminating: false
-  });
-  api.cleanupGlobalTravelSessionsForSocket(follower.id);
-  assert.strictEqual(globalTravelSessions.get(leader.id)?.memberIds.length, 1,
-    'follower disconnect incorrectly dissolved the leader route');
-  assert.strictEqual(globalTravelSessions.get(leader.id)?.memberIds[0], leader.id);
-  assert.strictEqual(emitted.length, 0,
-    'follower disconnect emitted a false leader-release event');
-
-  emitted.length = 0;
-  persisted.length = 0;
-  failingPersistId = leader.id;
-  globalTravelSessions.set(leader.id, {
-    id: 'travel_c', leaderId: leader.id, leaderName: leader.name,
-    memberIds: [leader.id, follower.id], terminating: false
-  });
-  api.cleanupGlobalTravelSessionsForSocket(leader.id);
-  assert.strictEqual(globalTravelSessions.size, 0,
-    'failed release persistence retained the dead leader session lock');
-  assert.deepStrictEqual(persisted, [leader.id, follower.id],
-    'one failed release persistence prevented later members from being processed');
-  assert.strictEqual(emitted.length, 1,
-    'one failed release persistence prevented the online follower release event');
-  assert.strictEqual(emitted[0].payload.leaderId, follower.id,
-    'persistence failure released the follower under the wrong leader');
-  assert.strictEqual(persistenceErrors.length, 1,
-    'release persistence failure was not contained and reported exactly once');
-}
-
 function assertServerWorldTransferFaultRecovery() {
   const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
   const transferErrors = [];
   const transferEvents = [];
   const departureEvents = [];
   let persistCalls = 0;
-  let removeTravelCalls = 0;
   let hostilityCalls = 0;
   let activityEnsureCalls = 0;
   let refreshCalls = 0;
@@ -1487,9 +1388,6 @@ function assertServerWorldTransferFaultRecovery() {
         return persistCalls >= 3;
       },
       markRoomEmptyIfNeeded() {},
-      removePlayerFromIndependentGlobalTravelSessions: () => {
-        removeTravelCalls++;
-      },
       applyRememberedEncounterHostilityForPlayer: () => {
         hostilityCalls++;
       },
@@ -1545,8 +1443,6 @@ function assertServerWorldTransferFaultRecovery() {
       'failed world transfer added the player to the target room');
     assert(socket.rooms.has(oldRoom.id) && !socket.rooms.has(targetRoom.id),
       'failed world transfer changed Socket.IO room membership');
-    assert.strictEqual(removeTravelCalls, 0,
-      'failed world transfer destroyed an independent travel session');
     assert.strictEqual(hostilityCalls, 0,
       'failed world transfer changed target-room hostility');
     assert.strictEqual(activityEnsureCalls, 0,
@@ -1576,7 +1472,6 @@ function assertServerWorldTransferFaultRecovery() {
     'successful retry did not replace Socket.IO room membership');
   assert.strictEqual(joinCalls, 1, 'successful retry joined the target room more than once');
   assert.strictEqual(leaveCalls, 1, 'successful retry left the old room more than once');
-  assert.strictEqual(removeTravelCalls, 1, 'successful retry did not clear independent travel exactly once');
   assert.strictEqual(hostilityCalls, 1, 'successful retry did not restore remembered hostility exactly once');
   assert.strictEqual(activityEnsureCalls, 1, 'successful retry did not create the target activity exactly once');
   assert.strictEqual(refreshCalls, 1, 'successful retry did not refresh the target room exactly once');
@@ -1658,84 +1553,11 @@ function assertSocketContract() {
       && arrivalTransfer.includes('const persistentPlayerId = worldPartyServerMemberKey(p)'),
     'claiming before the arrival poll can suppress transfer or collapse account identity'
   );
-  const travelStart = serverSource.slice(
-    serverSource.indexOf("socket.on('globalTravelStart'"),
-    serverSource.indexOf("socket.on('globalTravelEnterWorld'", serverSource.indexOf("socket.on('globalTravelStart'"))
-  );
-  assert(travelStart.includes('serverPlayerActiveWorldPartyTask(leader)'),
-    'independent global travel can start without cancelling active world-party work');
-  assert(travelStart.includes('members.find(member => serverPlayerActiveWorldPartyTask(member))'),
-    'a travel leader can take an attached follower onto an independent route');
-  assert(travelStart.includes('if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id)')
-    && travelStart.includes('candidateExisting && !candidateExisting.terminating'),
-  'a completed route can remain authoritative and reject a new destination');
-  assert(travelStart.includes('serverGlobalTravelCurrentPoint(existing, Date.now())'),
-    'changing destination does not continue from the current authoritative route position');
-  const enterWorld = serverSource.slice(
-    serverSource.indexOf("socket.on('globalTravelEnterWorld'"),
-    serverSource.indexOf("socket.on('globalTravelCancel'", serverSource.indexOf("socket.on('globalTravelEnterWorld'"))
-  );
-  assert(enterWorld.includes('serverPlayerActiveWorldPartyTask(leader)'),
-    'an attached player can enter an independent world route without cancelling group work');
-  assert(enterWorld.includes('party.find(member => serverPlayerActiveWorldPartyTask(member))'),
-    'world entry can carry a nearby attached member onto an independent route');
-  const arrivalHandler = serverSource.slice(
-    serverSource.indexOf('function handleServerGlobalTravelArrival('),
-    serverSource.indexOf('function globalTravelMemberIsFollower(', serverSource.indexOf('function handleServerGlobalTravelArrival('))
-  );
-  const arrivalSocketHandler = serverSource.slice(
-    serverSource.indexOf("socket.on('globalTravelArrive'"),
-    serverSource.indexOf("socket.on('shoot'", serverSource.indexOf("socket.on('globalTravelArrive'"))
-  );
-  assert(arrivalSocketHandler.includes('handleServerGlobalTravelArrival(socket, data, ack)')
-    && !arrivalSocketHandler.includes('globalTravelSessions')
-    && !arrivalSocketHandler.includes('emitGlobalTravelToParty')
-    && !arrivalSocketHandler.includes('pendingLocationTransition'),
-  'globalTravelArrive socket handler contains a second unreachable implementation instead of one authoritative delegate');
-  assert(arrivalHandler.includes('find(member => serverPlayerActiveWorldPartyTask(member) || member.attachedPartyTaskId)'),
-    'a legacy independent route can arrive with a member attached to a world party');
-  const travelDescriptor = serverSource.slice(
-    serverSource.indexOf('function serverGlobalTravelPublicDescriptor('),
-    serverSource.indexOf('function serverGlobalWorldPartyRadius(', serverSource.indexOf('function serverGlobalTravelPublicDescriptor('))
-  );
-  assert(travelDescriptor.includes('session.terminating'),
-    'terminal global travel can still be serialized as an active route');
-  assert(arrivalHandler.indexOf('session.terminating = true') >= 0
-    && arrivalHandler.indexOf('session.terminating = true') < arrivalHandler.indexOf('persistActivePlayerStates(arrivingMembers)'),
-  'global travel arrival persists players before suppressing the completed route descriptor');
-  const travelCleanup = serverSource.slice(
-    serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('),
-    serverSource.indexOf('function publicPlayerMovement(', serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('))
-  );
-  assert(travelCleanup.indexOf('session.terminating = true') >= 0
-    && travelCleanup.indexOf('session.terminating = true') < travelCleanup.indexOf('persistActivePlayerStates(membersToPersist)'),
-  'leader disconnect persists players before suppressing the cancelled route descriptor');
-  assert(travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') >= 0
-    && travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') < travelCleanup.indexOf('persistActivePlayerStates(membersToPersist)')
-    && travelCleanup.includes("console.error('Global travel release persistence failed:'"),
-  'leader disconnect can leave a follower locked when one release save fails');
-  const travelCancel = serverSource.slice(
-    serverSource.indexOf("socket.on('globalTravelCancel'"),
-    serverSource.indexOf("socket.on('globalTravelEncounterDecision'", serverSource.indexOf("socket.on('globalTravelCancel'"))
-  );
-  assert(travelCancel.indexOf('session.terminating = true') >= 0
-    && travelCancel.indexOf('session.terminating = true') < travelCancel.indexOf('persistActivePlayerStates(cancellingMembers)'),
-  'global travel cancellation persists players before suppressing the cancelled route descriptor');
   assert(serverSource.includes('syncWorldPartyPlayerAttachments(simState);'),
     'world-party attachment is not reconciled on the server tick');
-  assert(serverSource.includes('if (!p.attachedPartyTaskId && !p.pendingLocationTransition) {')
-    && serverSource.includes('attachedPartyId: worldTransferId(savedGlobalMap.attachedPartyId'),
-  'reconnect creates an independent route instead of restoring a world-party attachment or pending arrival');
   assert(serverSource.includes('attachedPartyId,')
     && serverSource.includes('attachedPartyTaskId,'),
   'authoritative global-map state omits server world-party attachment');
-  const authoritativeGlobalMap = serverSource.slice(
-    serverSource.indexOf('function serverAuthoritativeGlobalMapState('),
-    serverSource.indexOf('function publicAuthoritativePlayerState(', serverSource.indexOf('function serverAuthoritativeGlobalMapState('))
-  );
-  assert(authoritativeGlobalMap.includes('travelLeaderId: session?.leaderId')
-    && authoritativeGlobalMap.includes('travelLeaderName: session?.leaderName'),
-  'authoritative global-map state omits the reconnect-safe travel leader');
   assert(serverSource.includes('SERVER_JOINABLE_WORLD_FACTIONS.has(frozenFactionId)'),
     'reward reputation does not prioritize the faction frozen at task completion');
   assert(serverSource.includes("p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);"),
@@ -1828,7 +1650,6 @@ try {
   assertUnrelatedEncounterCannotFinishEscorts();
   assertServerFactionMigrationContract();
   assertServerPersistenceFaultRecovery();
-  assertGlobalTravelLeaderDisconnectRecovery();
   assertServerWorldTransferFaultRecovery();
   assertSocketContract();
   console.log('World-party integrity check passed: authoritative attachment, reconnect-safe travel leaders, motion snapshots, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');

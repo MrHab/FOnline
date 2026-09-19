@@ -905,12 +905,6 @@ function assertPartyPersistenceIsBatched() {
   assert.strictEqual(failure.context.activePlayerPersistenceMetrics.writeFailures, 1,
     'failed active-player batch writes are not observable');
 
-  for (const marker of [
-    'persistActivePlayerStates(arrivingMembers);',
-    'persistActivePlayerStates(enteringMembers);',
-    'persistActivePlayerStates(cancellingMembers);',
-    'persistActivePlayerStates(membersToPersist);'
-  ]) assert(serverSource.includes(marker), `global travel does not use batched persistence: ${marker}`);
   assert(serverSource.includes('activePlayerPersistence: publicActivePlayerPersistenceMetrics()'),
     'active-player write latency and coalescing metrics are missing from /health');
 }

@@ -474,17 +474,23 @@ namespace RealmOfAshes.Game
         /// <summary>Зона, в которой игрок: сама зона или зона, куда выводит край места.</summary>
         private string CurrentZoneId()
         {
-            string zoneId = Socket?.Session?.Self?["zone"]?["id"]?.ToString() ?? string.Empty;
+            string zoneId = SelfZoneId(Socket?.Session?.Self);
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.ContainsKey(zoneId)) return zoneId;
             ParentZoneInfo exit = Loader != null && Loader.Current != null ? Loader.Current.ExitZone : null;
             return exit != null && _zonesById.ContainsKey(exit.Id ?? string.Empty) ? exit.Id : string.Empty;
+        }
+
+        /// <summary>Id зоны из self.zone; вне зоны сервер шлёт null — это JValue, а не объект.</summary>
+        public static string SelfZoneId(JObject self)
+        {
+            return (self?["zone"] as JObject)?["id"]?.ToString() ?? string.Empty;
         }
 
         /// <summary>Точка игрока на карте (км): в зоне — по его месту в ней, в месте — точка места.</summary>
         private Vector2? PlayerPoint(JObject self, out JObject zone)
         {
             zone = null;
-            string zoneId = self?["zone"]?["id"]?.ToString() ?? string.Empty;
+            string zoneId = SelfZoneId(self);
             float u = 0.5f, v = 0.5f;
             if (!string.IsNullOrEmpty(zoneId) && _zonesById.TryGetValue(zoneId, out zone))
             {
@@ -789,10 +795,11 @@ namespace RealmOfAshes.Game
             Place(title.rectTransform, 0f, 0f, 0.4f, 1f, new Vector2(16f, 22f), new Vector2(0f, -6f));
             _viewSubtitle = Label("Subtitle", top, 13, TextAnchor.MiddleLeft, Ink);
             Place(_viewSubtitle.rectTransform, 0f, 0f, 0.7f, 0f, new Vector2(16f, 4f), new Vector2(0f, 26f));
+            // Правый угол (60 px) занят шестерёнкой меню: её канва лежит выше карты.
             Button focus = MakeButton("FocusPlayer", top, "К СЕБЕ", 13, FocusPlayer);
-            Place((RectTransform)focus.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-170f, -17f), new Vector2(-58f, 17f));
+            Place((RectTransform)focus.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-230f, -17f), new Vector2(-118f, 17f));
             Button close = MakeButton("Close", top, "×", 22, Close);
-            Place((RectTransform)close.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-50f, -19f), new Vector2(-10f, 19f));
+            Place((RectTransform)close.transform, 1f, 0.5f, 1f, 0.5f, new Vector2(-110f, -19f), new Vector2(-70f, 19f));
 
             _card = Child("Card", _view);
             Place(_card, 1f, 1f, 1f, 1f, new Vector2(-336f, -330f), new Vector2(-12f, -74f));

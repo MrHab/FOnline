@@ -146,6 +146,10 @@ namespace RealmOfAshes.EditorTools
                 map.CaptureTo(Path.Combine(outDir, "world-core.png"), 1600, 900);
             }
 
+            // В месте (не в зоне) сервер шлёт self.zone = null: карта не должна на нём падать.
+            Require(RoaWorldOverviewCanvas.SelfZoneId(JObject.Parse("{\"zone\":null}")) == string.Empty, "self.zone = null breaks the map");
+            Require(RoaWorldOverviewCanvas.SelfZoneId(JObject.Parse("{\"zone\":{\"id\":\"z_09_10\"}}")) == "z_09_10", "self.zone.id is not read");
+
             // Клик в центр кадра попадает в рельеф, и точка — внутри мира.
             Vector3 centre = map.MapCamera.ViewportToScreenPoint(new Vector3(0.5f, 0.5f, 0f));
             Require(map.ScreenToPoint(centre, out Vector2 picked), "a click in the middle of the map does not reach the relief");

@@ -26,9 +26,12 @@ process.env.KROMKA_ZONE_CHANNEL_CAP = '1';
 const h = require('./check-combat-runtime');
 const { zoneOfPlace, zoneById } = require('../src/server/zone-graph');
 const { loadZoneCatalog } = require('../src/server/zone-chunks');
-const { TILES, buildZone, normalizeRecipe } = require('../src/server/zone-builder');
+const { buildZone, normalizeRecipe } = require('../src/server/zone-builder');
 const { zoneRecipe } = require('../src/server/zone-graph');
 const accounts = {};
+const zoneWalk = require('./lib/zone-walk');
+const { world } = zoneWalk;
+const placeInZone = (role, locationId, point) => zoneWalk.placeInZone(h, accounts, role, locationId, point);
 
 const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
@@ -58,7 +61,6 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
 process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const world = tile => ({ x: (tile.tx - TILES / 2 + 0.5) * 2, z: (tile.tz - TILES / 2 + 0.5) * 2 });
 const home = zoneOfPlace(graph, 'settlement');
 const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
 // Сосед с открытыми воротами, откуда придёт охотник: он идёт на юг и входит с севера.
@@ -109,18 +111,6 @@ async function waitFor(label, probe, timeoutMs = 15000) {
   throw new Error(`timed out: ${label}`);
 }
 const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.roomId === roomId && !actor.dead);
-
-function placeInZone(role, locationId, point) {
-  const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json')));
-  const savesPath = path.join(h.DATA_DIR, 'saves.json');
-  const saves = JSON.parse(fs.readFileSync(savesPath));
-  const state = saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
-  state.currentLocationId = locationId;
-  state.player = { ...(state.player || {}), x: point.x, z: point.z };
-  state.globalMap = { ...(state.globalMap || {}), onWorldMap: false };
-  delete state.serverLocationContext;
-  fs.writeFileSync(savesPath, JSON.stringify(saves));
-}
 
 (async () => {
   await h.bootstrapCharacters(accounts);

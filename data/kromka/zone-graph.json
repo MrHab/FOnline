@@ -1,0 +1,7899 @@
+{
+ "schema": "kromka.zoneGraph.v1",
+ "version": 1,
+ "worldRevision": "kromka-1",
+ "grid": {
+  "cols": 19,
+  "rows": 15,
+  "zoneKm": 20,
+  "cellsPerZone": 2
+ },
+ "capitals": [
+  "balanceBunker",
+  "caravanCamp",
+  "relayStation",
+  "scrapTown",
+  "secondHaven",
+  "sluiceCity"
+ ],
+ "zones": [
+  {
+   "id": "z_10_00",
+   "col": 10,
+   "row": 0,
+   "n": 1,
+   "name": "Глухой обвод",
+   "title": "Глухой обвод №1",
+   "region": "silent_ring",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "silent_ring",
+   "seed": 2125659631,
+   "edges": {
+    "south": {
+     "to": "z_10_01",
+     "open": true,
+     "along": 0.397
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_01",
+   "col": 5,
+   "row": 1,
+   "n": 2,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №2",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1627434918,
+   "edges": {
+    "south": {
+     "to": "z_05_02",
+     "open": true,
+     "along": 0.542
+    },
+    "east": {
+     "to": "z_06_01",
+     "open": true,
+     "along": 0.301
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_01",
+   "col": 6,
+   "row": 1,
+   "n": 3,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №3",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2004699225,
+   "edges": {
+    "south": {
+     "to": "z_06_02",
+     "open": true,
+     "along": 0.278
+    },
+    "west": {
+     "to": "z_05_01",
+     "open": true,
+     "along": 0.301
+    },
+    "east": {
+     "to": "z_07_01",
+     "open": true,
+     "along": 0.722
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_01",
+   "col": 7,
+   "row": 1,
+   "n": 4,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №4",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3454701764,
+   "edges": {
+    "south": {
+     "to": "z_07_02",
+     "open": true,
+     "along": 0.602
+    },
+    "west": {
+     "to": "z_06_01",
+     "open": true,
+     "along": 0.722
+    },
+    "east": {
+     "to": "z_08_01",
+     "open": true,
+     "along": 0.551
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_01",
+   "col": 8,
+   "row": 1,
+   "n": 5,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №5",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3742868711,
+   "edges": {
+    "south": {
+     "to": "z_08_02",
+     "open": true,
+     "along": 0.306
+    },
+    "west": {
+     "to": "z_07_01",
+     "open": true,
+     "along": 0.551
+    },
+    "east": {
+     "to": "z_09_01",
+     "open": true,
+     "along": 0.634
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_01",
+   "col": 9,
+   "row": 1,
+   "n": 6,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №6",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 361020146,
+   "edges": {
+    "south": {
+     "to": "z_09_02",
+     "open": true,
+     "along": 0.55
+    },
+    "west": {
+     "to": "z_08_01",
+     "open": true,
+     "along": 0.634
+    },
+    "east": {
+     "to": "z_10_01",
+     "open": true,
+     "along": 0.72
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_01",
+   "col": 10,
+   "row": 1,
+   "n": 7,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №7",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2108882012,
+   "edges": {
+    "north": {
+     "to": "z_10_00",
+     "open": true,
+     "along": 0.397
+    },
+    "south": {
+     "to": "z_10_02",
+     "open": true,
+     "along": 0.506
+    },
+    "west": {
+     "to": "z_09_01",
+     "open": true,
+     "along": 0.72
+    },
+    "east": {
+     "to": "z_11_01",
+     "open": true,
+     "along": 0.658
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_01",
+   "col": 11,
+   "row": 1,
+   "n": 8,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №8",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1413163313,
+   "edges": {
+    "south": {
+     "to": "z_11_02",
+     "open": true,
+     "along": 0.34
+    },
+    "west": {
+     "to": "z_10_01",
+     "open": true,
+     "along": 0.658
+    },
+    "east": {
+     "to": "z_12_01",
+     "open": true,
+     "along": 0.754,
+     "road": "zero_admin_access"
+    }
+   },
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [
+    {
+     "locationId": "clanFortZero",
+     "kind": "clan_base",
+     "name": "Форт 14",
+     "u": 0.6,
+     "v": 0.6,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_12_01",
+   "col": 12,
+   "row": 1,
+   "n": 9,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №9",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1035899006,
+   "edges": {
+    "south": {
+     "to": "z_12_02",
+     "open": true,
+     "along": 0.275,
+     "road": "zero_admin_access"
+    },
+    "west": {
+     "to": "z_11_01",
+     "open": true,
+     "along": 0.754,
+     "road": "zero_admin_access"
+    },
+    "east": {
+     "to": "z_13_01",
+     "open": true,
+     "along": 0.736
+    }
+   },
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_01",
+   "col": 13,
+   "row": 1,
+   "n": 10,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №10",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3104676691,
+   "edges": {
+    "south": {
+     "to": "z_13_02",
+     "open": true,
+     "along": 0.714
+    },
+    "west": {
+     "to": "z_12_01",
+     "open": true,
+     "along": 0.736
+    },
+    "east": {
+     "to": "z_14_01",
+     "open": true,
+     "along": 0.635
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_01",
+   "col": 14,
+   "row": 1,
+   "n": 11,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №11",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3488033984,
+   "edges": {
+    "south": {
+     "to": "z_14_02",
+     "open": true,
+     "along": 0.302
+    },
+    "west": {
+     "to": "z_13_01",
+     "open": true,
+     "along": 0.635
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "radscorpionNest",
+     "kind": "lair",
+     "name": "Гнездовье Рыхляков",
+     "u": 0.3,
+     "v": 0.7,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_03_02",
+   "col": 3,
+   "row": 2,
+   "n": 12,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №12",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2307074177,
+   "edges": {
+    "south": {
+     "to": "z_03_03",
+     "open": true,
+     "along": 0.517
+    },
+    "east": {
+     "to": "z_04_02",
+     "open": true,
+     "along": 0.329
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_02",
+   "col": 4,
+   "row": 2,
+   "n": 13,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №13",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3075240718,
+   "edges": {
+    "south": {
+     "to": "z_04_03",
+     "open": true,
+     "along": 0.487
+    },
+    "west": {
+     "to": "z_03_02",
+     "open": true,
+     "along": 0.329
+    },
+    "east": {
+     "to": "z_05_02",
+     "open": true,
+     "along": 0.268
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_02",
+   "col": 5,
+   "row": 2,
+   "n": 14,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №14",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1610657299,
+   "edges": {
+    "north": {
+     "to": "z_05_01",
+     "open": true,
+     "along": 0.542
+    },
+    "south": {
+     "to": "z_05_03",
+     "open": true,
+     "along": 0.447
+    },
+    "west": {
+     "to": "z_04_02",
+     "open": true,
+     "along": 0.268
+    },
+    "east": {
+     "to": "z_06_02",
+     "open": true,
+     "along": 0.589
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_02",
+   "col": 6,
+   "row": 2,
+   "n": 15,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №15",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1954366368,
+   "edges": {
+    "north": {
+     "to": "z_06_01",
+     "open": true,
+     "along": 0.278
+    },
+    "south": {
+     "to": "z_06_03",
+     "open": true,
+     "along": 0.317
+    },
+    "west": {
+     "to": "z_05_02",
+     "open": true,
+     "along": 0.589
+    },
+    "east": {
+     "to": "z_07_02",
+     "open": true,
+     "along": 0.466
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_02",
+   "col": 7,
+   "row": 2,
+   "n": 16,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №16",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3505034621,
+   "edges": {
+    "north": {
+     "to": "z_07_01",
+     "open": true,
+     "along": 0.602
+    },
+    "south": {
+     "to": "z_07_03",
+     "open": true,
+     "along": 0.541
+    },
+    "west": {
+     "to": "z_06_02",
+     "open": true,
+     "along": 0.466
+    },
+    "east": {
+     "to": "z_08_02",
+     "open": true,
+     "along": 0.846,
+     "road": "fuel_ramp_access"
+    }
+   },
+   "roads": [
+    "fuel_ramp_access"
+   ],
+   "places": [
+    {
+     "locationId": "resourceOilPump",
+     "kind": "resource",
+     "name": "Топливная рампа",
+     "u": 0.35,
+     "v": 0.8,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_08_02",
+   "col": 8,
+   "row": 2,
+   "n": 17,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №17",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3759646330,
+   "edges": {
+    "north": {
+     "to": "z_08_01",
+     "open": true,
+     "along": 0.306
+    },
+    "south": {
+     "to": "z_08_03",
+     "open": true,
+     "along": 0.15,
+     "road": "fuel_ramp_access"
+    },
+    "west": {
+     "to": "z_07_02",
+     "open": true,
+     "along": 0.846,
+     "road": "fuel_ramp_access"
+    },
+    "east": {
+     "to": "z_09_02",
+     "open": true,
+     "along": 0.3
+    }
+   },
+   "roads": [
+    "fuel_ramp_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_02",
+   "col": 9,
+   "row": 2,
+   "n": 18,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №18",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 344242527,
+   "edges": {
+    "north": {
+     "to": "z_09_01",
+     "open": true,
+     "along": 0.55
+    },
+    "south": {
+     "to": "z_09_03",
+     "open": true,
+     "along": 0.459
+    },
+    "west": {
+     "to": "z_08_02",
+     "open": true,
+     "along": 0.3
+    },
+    "east": {
+     "to": "z_10_02",
+     "open": true,
+     "along": 0.678
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_02",
+   "col": 10,
+   "row": 2,
+   "n": 19,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №19",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2159214869,
+   "edges": {
+    "north": {
+     "to": "z_10_01",
+     "open": true,
+     "along": 0.506
+    },
+    "south": {
+     "to": "z_10_03",
+     "open": true,
+     "along": 0.495
+    },
+    "west": {
+     "to": "z_09_02",
+     "open": true,
+     "along": 0.678
+    },
+    "east": {
+     "to": "z_11_02",
+     "open": true,
+     "along": 0.496
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_02",
+   "col": 11,
+   "row": 2,
+   "n": 20,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №20",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1362830456,
+   "edges": {
+    "north": {
+     "to": "z_11_01",
+     "open": true,
+     "along": 0.34
+    },
+    "south": {
+     "to": "z_11_03",
+     "open": true,
+     "along": 0.701
+    },
+    "west": {
+     "to": "z_10_02",
+     "open": true,
+     "along": 0.496
+    },
+    "east": {
+     "to": "z_12_02",
+     "open": true,
+     "along": 0.407
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_02",
+   "col": 12,
+   "row": 2,
+   "n": 21,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №21",
+   "region": "zero_basin",
+   "mode": "peaceful",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1019121387,
+   "edges": {
+    "north": {
+     "to": "z_12_01",
+     "open": true,
+     "along": 0.275,
+     "road": "zero_admin_access"
+    },
+    "south": {
+     "to": "z_12_03",
+     "open": true,
+     "along": 0.647
+    },
+    "west": {
+     "to": "z_11_02",
+     "open": true,
+     "along": 0.407
+    },
+    "east": {
+     "to": "z_13_02",
+     "open": true,
+     "along": 0.4,
+     "road": "zero_admin_access"
+    }
+   },
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [
+    {
+     "locationId": "balanceBunker",
+     "kind": "complex",
+     "name": "Бункер «Баланс»",
+     "u": 0.35,
+     "v": 0.45,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_13_02",
+   "col": 13,
+   "row": 2,
+   "n": 22,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №22",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3121454310,
+   "edges": {
+    "north": {
+     "to": "z_13_01",
+     "open": true,
+     "along": 0.714
+    },
+    "south": {
+     "to": "z_13_03",
+     "open": true,
+     "along": 0.385
+    },
+    "west": {
+     "to": "z_12_02",
+     "open": true,
+     "along": 0.4,
+     "road": "zero_admin_access"
+    },
+    "east": {
+     "to": "z_14_02",
+     "open": true,
+     "along": 0.335,
+     "road": "zero_admin_access"
+    }
+   },
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_02",
+   "col": 14,
+   "row": 2,
+   "n": 23,
+   "name": "Меловая низь",
+   "title": "Меловая низь №23",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 4,
+   "ground": "chalk",
+   "seed": 3538366841,
+   "edges": {
+    "north": {
+     "to": "z_14_01",
+     "open": true,
+     "along": 0.302
+    },
+    "south": {
+     "to": "z_14_03",
+     "open": true,
+     "along": 0.85,
+     "road": "zero_service_line"
+    },
+    "west": {
+     "to": "z_13_02",
+     "open": true,
+     "along": 0.335,
+     "road": "zero_admin_access"
+    },
+    "east": {
+     "to": "z_15_02",
+     "open": true,
+     "along": 0.608,
+     "road": "zero_admin_access"
+    }
+   },
+   "roads": [
+    "zero_admin_access",
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_02",
+   "col": 15,
+   "row": 2,
+   "n": 24,
+   "name": "Меловая низь",
+   "title": "Меловая низь №24",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 1748395324,
+   "edges": {
+    "south": {
+     "to": "z_15_03",
+     "open": true,
+     "along": 0.721
+    },
+    "west": {
+     "to": "z_14_02",
+     "open": true,
+     "along": 0.608,
+     "road": "zero_admin_access"
+    }
+   },
+   "roads": [
+    "zero_admin_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_03",
+   "col": 2,
+   "row": 3,
+   "n": 25,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №25",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3866391415,
+   "edges": {
+    "south": {
+     "to": "z_02_04",
+     "open": true,
+     "along": 0.398
+    },
+    "east": {
+     "to": "z_03_03",
+     "open": true,
+     "along": 0.706
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_03",
+   "col": 3,
+   "row": 3,
+   "n": 26,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №26",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2290296558,
+   "edges": {
+    "north": {
+     "to": "z_03_02",
+     "open": true,
+     "along": 0.517
+    },
+    "south": {
+     "to": "z_03_04",
+     "open": true,
+     "along": 0.328
+    },
+    "west": {
+     "to": "z_02_03",
+     "open": true,
+     "along": 0.706
+    },
+    "east": {
+     "to": "z_04_03",
+     "open": true,
+     "along": 0.741
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "wasteland",
+     "kind": "outpost",
+     "name": "Глухой обвод",
+     "u": 0.9,
+     "v": 0.25,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_04_03",
+   "col": 4,
+   "row": 3,
+   "n": 27,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №27",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3092018337,
+   "edges": {
+    "north": {
+     "to": "z_04_02",
+     "open": true,
+     "along": 0.487
+    },
+    "south": {
+     "to": "z_04_04",
+     "open": true,
+     "along": 0.494
+    },
+    "west": {
+     "to": "z_03_03",
+     "open": true,
+     "along": 0.741
+    },
+    "east": {
+     "to": "z_05_03",
+     "open": true,
+     "along": 0.258
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_03",
+   "col": 5,
+   "row": 3,
+   "n": 28,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №28",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1593879680,
+   "edges": {
+    "north": {
+     "to": "z_05_02",
+     "open": true,
+     "along": 0.447
+    },
+    "south": {
+     "to": "z_05_04",
+     "open": true,
+     "along": 0.392
+    },
+    "west": {
+     "to": "z_04_03",
+     "open": true,
+     "along": 0.258
+    },
+    "east": {
+     "to": "z_06_03",
+     "open": true,
+     "along": 0.527
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_03",
+   "col": 6,
+   "row": 3,
+   "n": 29,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №29",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1971143987,
+   "edges": {
+    "north": {
+     "to": "z_06_02",
+     "open": true,
+     "along": 0.317
+    },
+    "south": {
+     "to": "z_06_04",
+     "open": true,
+     "along": 0.494
+    },
+    "west": {
+     "to": "z_05_03",
+     "open": true,
+     "along": 0.527
+    },
+    "east": {
+     "to": "z_07_03",
+     "open": true,
+     "along": 0.55
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_03",
+   "col": 7,
+   "row": 3,
+   "n": 30,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №30",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3488257002,
+   "edges": {
+    "north": {
+     "to": "z_07_02",
+     "open": true,
+     "along": 0.541
+    },
+    "south": {
+     "to": "z_07_04",
+     "open": true,
+     "along": 0.568
+    },
+    "west": {
+     "to": "z_06_03",
+     "open": true,
+     "along": 0.55
+    },
+    "east": {
+     "to": "z_08_03",
+     "open": true,
+     "along": 0.409
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_03",
+   "col": 8,
+   "row": 3,
+   "n": 31,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №31",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3776423949,
+   "edges": {
+    "north": {
+     "to": "z_08_02",
+     "open": true,
+     "along": 0.15,
+     "road": "fuel_ramp_access"
+    },
+    "south": {
+     "to": "z_08_04",
+     "open": true,
+     "along": 0.15,
+     "road": "fuel_ramp_access"
+    },
+    "west": {
+     "to": "z_07_03",
+     "open": true,
+     "along": 0.409
+    },
+    "east": {
+     "to": "z_09_03",
+     "open": true,
+     "along": 0.506
+    }
+   },
+   "roads": [
+    "fuel_ramp_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_03",
+   "col": 9,
+   "row": 3,
+   "n": 32,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №32",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 327464908,
+   "edges": {
+    "north": {
+     "to": "z_09_02",
+     "open": true,
+     "along": 0.459
+    },
+    "south": {
+     "to": "z_09_04",
+     "open": true,
+     "along": 0.78,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_03",
+     "open": true,
+     "along": 0.506
+    },
+    "east": {
+     "to": "z_10_03",
+     "open": true,
+     "along": 0.59
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_03",
+   "col": 10,
+   "row": 3,
+   "n": 33,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №33",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2142437250,
+   "edges": {
+    "north": {
+     "to": "z_10_02",
+     "open": true,
+     "along": 0.495
+    },
+    "south": {
+     "to": "z_10_04",
+     "open": true,
+     "along": 0.613,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_03",
+     "open": true,
+     "along": 0.59
+    },
+    "east": {
+     "to": "z_11_03",
+     "open": true,
+     "along": 0.734
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [
+    {
+     "locationId": "cascadeRegenerator",
+     "kind": "complex",
+     "name": "Регенератор Р-12",
+     "u": 0.25,
+     "v": 0.25,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_11_03",
+   "col": 11,
+   "row": 3,
+   "n": 34,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №34",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1379608075,
+   "edges": {
+    "north": {
+     "to": "z_11_02",
+     "open": true,
+     "along": 0.701
+    },
+    "south": {
+     "to": "z_11_04",
+     "open": true,
+     "along": 0.394
+    },
+    "west": {
+     "to": "z_10_03",
+     "open": true,
+     "along": 0.734
+    },
+    "east": {
+     "to": "z_12_03",
+     "open": true,
+     "along": 0.569
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_03",
+   "col": 12,
+   "row": 3,
+   "n": 35,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №35",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1002343768,
+   "edges": {
+    "north": {
+     "to": "z_12_02",
+     "open": true,
+     "along": 0.647
+    },
+    "south": {
+     "to": "z_12_04",
+     "open": true,
+     "along": 0.724
+    },
+    "west": {
+     "to": "z_11_03",
+     "open": true,
+     "along": 0.569
+    },
+    "east": {
+     "to": "z_13_03",
+     "open": true,
+     "along": 0.728
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_03",
+   "col": 13,
+   "row": 3,
+   "n": 36,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №36",
+   "region": "zero_basin",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3138231929,
+   "edges": {
+    "north": {
+     "to": "z_13_02",
+     "open": true,
+     "along": 0.385
+    },
+    "south": {
+     "to": "z_13_04",
+     "open": true,
+     "along": 0.464
+    },
+    "west": {
+     "to": "z_12_03",
+     "open": true,
+     "along": 0.728
+    },
+    "east": {
+     "to": "z_14_03",
+     "open": true,
+     "along": 0.701
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_03",
+   "col": 14,
+   "row": 3,
+   "n": 37,
+   "name": "Меловая низь",
+   "title": "Меловая низь №37",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3521589222,
+   "edges": {
+    "north": {
+     "to": "z_14_02",
+     "open": true,
+     "along": 0.85,
+     "road": "zero_service_line"
+    },
+    "south": {
+     "to": "z_14_04",
+     "open": true,
+     "along": 0.179,
+     "road": "zero_service_line"
+    },
+    "west": {
+     "to": "z_13_03",
+     "open": true,
+     "along": 0.701
+    },
+    "east": {
+     "to": "z_15_03",
+     "open": true,
+     "along": 0.61
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_03",
+   "col": 15,
+   "row": 3,
+   "n": 38,
+   "name": "Меловая низь",
+   "title": "Меловая низь №38",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 1765172943,
+   "edges": {
+    "north": {
+     "to": "z_15_02",
+     "open": true,
+     "along": 0.721
+    },
+    "south": {
+     "to": "z_15_04",
+     "open": true,
+     "along": 0.374
+    },
+    "west": {
+     "to": "z_14_03",
+     "open": true,
+     "along": 0.61
+    },
+    "east": {
+     "to": "z_16_03",
+     "open": true,
+     "along": 0.553
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_03",
+   "col": 16,
+   "row": 3,
+   "n": 39,
+   "name": "Меловая низь",
+   "title": "Меловая низь №39",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 4083785148,
+   "edges": {
+    "south": {
+     "to": "z_16_04",
+     "open": true,
+     "along": 0.552
+    },
+    "west": {
+     "to": "z_15_03",
+     "open": true,
+     "along": 0.553
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_04",
+   "col": 2,
+   "row": 4,
+   "n": 40,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №40",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 3,
+   "ground": "tract_dust",
+   "seed": 3816058558,
+   "edges": {
+    "north": {
+     "to": "z_02_03",
+     "open": true,
+     "along": 0.398
+    },
+    "south": {
+     "to": "z_02_05",
+     "open": true,
+     "along": 0.479
+    },
+    "east": {
+     "to": "z_03_04",
+     "open": true,
+     "along": 0.49
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_04",
+   "col": 3,
+   "row": 4,
+   "n": 41,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №41",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 3,
+   "ground": "tract_dust",
+   "seed": 2340629415,
+   "edges": {
+    "north": {
+     "to": "z_03_03",
+     "open": true,
+     "along": 0.328
+    },
+    "south": {
+     "to": "z_03_05",
+     "open": true,
+     "along": 0.621
+    },
+    "west": {
+     "to": "z_02_04",
+     "open": true,
+     "along": 0.49
+    },
+    "east": {
+     "to": "z_04_04",
+     "open": true,
+     "along": 0.423
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_04",
+   "col": 4,
+   "row": 4,
+   "n": 42,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №42",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3108795956,
+   "edges": {
+    "north": {
+     "to": "z_04_03",
+     "open": true,
+     "along": 0.494
+    },
+    "south": {
+     "to": "z_04_05",
+     "open": true,
+     "along": 0.337
+    },
+    "west": {
+     "to": "z_03_04",
+     "open": true,
+     "along": 0.423
+    },
+    "east": {
+     "to": "z_05_04",
+     "open": true,
+     "along": 0.74
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_04",
+   "col": 5,
+   "row": 4,
+   "n": 43,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №43",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1711323013,
+   "edges": {
+    "north": {
+     "to": "z_05_03",
+     "open": true,
+     "along": 0.392
+    },
+    "south": {
+     "to": "z_05_05",
+     "open": true,
+     "along": 0.271
+    },
+    "west": {
+     "to": "z_04_04",
+     "open": true,
+     "along": 0.74
+    },
+    "east": {
+     "to": "z_06_04",
+     "open": true,
+     "along": 0.659
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_04",
+   "col": 6,
+   "row": 4,
+   "n": 44,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №44",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2055032082,
+   "edges": {
+    "north": {
+     "to": "z_06_03",
+     "open": true,
+     "along": 0.494
+    },
+    "south": {
+     "to": "z_06_05",
+     "open": true,
+     "along": 0.459
+    },
+    "west": {
+     "to": "z_05_04",
+     "open": true,
+     "along": 0.659
+    },
+    "east": {
+     "to": "z_07_04",
+     "open": true,
+     "along": 0.314
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_04",
+   "col": 7,
+   "row": 4,
+   "n": 45,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №45",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3404368907,
+   "edges": {
+    "north": {
+     "to": "z_07_03",
+     "open": true,
+     "along": 0.568
+    },
+    "south": {
+     "to": "z_07_05",
+     "open": true,
+     "along": 0.301
+    },
+    "west": {
+     "to": "z_06_04",
+     "open": true,
+     "along": 0.314
+    },
+    "east": {
+     "to": "z_08_04",
+     "open": true,
+     "along": 0.455
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "resourceChemSpring",
+     "kind": "resource",
+     "name": "Сток 4-Б",
+     "u": 0.9,
+     "v": 0.1,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_08_04",
+   "col": 8,
+   "row": 4,
+   "n": 46,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №46",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3658980616,
+   "edges": {
+    "north": {
+     "to": "z_08_03",
+     "open": true,
+     "along": 0.15,
+     "road": "fuel_ramp_access"
+    },
+    "south": {
+     "to": "z_08_05",
+     "open": true,
+     "along": 0.425,
+     "road": "fuel_ramp_access"
+    },
+    "west": {
+     "to": "z_07_04",
+     "open": true,
+     "along": 0.455
+    },
+    "east": {
+     "to": "z_09_04",
+     "open": true,
+     "along": 0.38
+    }
+   },
+   "roads": [
+    "fuel_ramp_access"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_04",
+   "col": 9,
+   "row": 4,
+   "n": 47,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №47",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 310687289,
+   "edges": {
+    "north": {
+     "to": "z_09_03",
+     "open": true,
+     "along": 0.78,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_05",
+     "open": true,
+     "along": 0.75,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_04",
+     "open": true,
+     "along": 0.38
+    },
+    "east": {
+     "to": "z_10_04",
+     "open": true,
+     "along": 0.584
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_04",
+   "col": 10,
+   "row": 4,
+   "n": 48,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №48",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2058549155,
+   "edges": {
+    "north": {
+     "to": "z_10_03",
+     "open": true,
+     "along": 0.613,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_05",
+     "open": true,
+     "along": 0.481
+    },
+    "west": {
+     "to": "z_09_04",
+     "open": true,
+     "along": 0.584
+    },
+    "east": {
+     "to": "z_11_04",
+     "open": true,
+     "along": 0.8,
+     "road": "cascade_canal"
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_04",
+   "col": 11,
+   "row": 4,
+   "n": 49,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №49",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1463496170,
+   "edges": {
+    "north": {
+     "to": "z_11_03",
+     "open": true,
+     "along": 0.394
+    },
+    "south": {
+     "to": "z_11_05",
+     "open": true,
+     "along": 0.15,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_10_04",
+     "open": true,
+     "along": 0.8,
+     "road": "cascade_canal"
+    },
+    "east": {
+     "to": "z_12_04",
+     "open": true,
+     "along": 0.349
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_04",
+   "col": 12,
+   "row": 4,
+   "n": 50,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №50",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1119787101,
+   "edges": {
+    "north": {
+     "to": "z_12_03",
+     "open": true,
+     "along": 0.724
+    },
+    "south": {
+     "to": "z_12_05",
+     "open": true,
+     "along": 0.435,
+     "road": "zero_service_line"
+    },
+    "west": {
+     "to": "z_11_04",
+     "open": true,
+     "along": 0.349
+    },
+    "east": {
+     "to": "z_13_04",
+     "open": true,
+     "along": 0.695,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_04",
+   "col": 13,
+   "row": 4,
+   "n": 51,
+   "name": "Меловая низь",
+   "title": "Меловая низь №51",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3155009548,
+   "edges": {
+    "north": {
+     "to": "z_13_03",
+     "open": true,
+     "along": 0.464
+    },
+    "south": {
+     "to": "z_13_05",
+     "open": true,
+     "along": 0.441
+    },
+    "west": {
+     "to": "z_12_04",
+     "open": true,
+     "along": 0.695,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_14_04",
+     "open": true,
+     "along": 0.154,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [
+    {
+     "locationId": "clanChalkSluice",
+     "kind": "clan_base",
+     "name": "Меловой шлюз",
+     "u": 0.35,
+     "v": 0.4,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_14_04",
+   "col": 14,
+   "row": 4,
+   "n": 52,
+   "name": "Меловая низь",
+   "title": "Меловая низь №52",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3571922079,
+   "edges": {
+    "north": {
+     "to": "z_14_03",
+     "open": true,
+     "along": 0.179,
+     "road": "zero_service_line"
+    },
+    "south": {
+     "to": "z_14_05",
+     "open": true,
+     "along": 0.489
+    },
+    "west": {
+     "to": "z_13_04",
+     "open": true,
+     "along": 0.154,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_15_04",
+     "open": true,
+     "along": 0.452
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_04",
+   "col": 15,
+   "row": 4,
+   "n": 53,
+   "name": "Меловая низь",
+   "title": "Меловая низь №53",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 1714840086,
+   "edges": {
+    "north": {
+     "to": "z_15_03",
+     "open": true,
+     "along": 0.374
+    },
+    "south": {
+     "to": "z_15_05",
+     "open": true,
+     "along": 0.305
+    },
+    "west": {
+     "to": "z_14_04",
+     "open": true,
+     "along": 0.452
+    },
+    "east": {
+     "to": "z_16_04",
+     "open": true,
+     "along": 0.341
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_04",
+   "col": 16,
+   "row": 4,
+   "n": 54,
+   "name": "Меловая низь",
+   "title": "Меловая низь №54",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 4067007529,
+   "edges": {
+    "north": {
+     "to": "z_16_03",
+     "open": true,
+     "along": 0.552
+    },
+    "south": {
+     "to": "z_16_05",
+     "open": true,
+     "along": 0.45,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_15_04",
+     "open": true,
+     "along": 0.341
+    },
+    "east": {
+     "to": "z_17_04",
+     "open": true,
+     "along": 0.838,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "geckoCanyon",
+     "kind": "lair",
+     "name": "Овраг Слухачей",
+     "u": 0.6,
+     "v": 0.15,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_17_04",
+   "col": 17,
+   "row": 4,
+   "n": 55,
+   "name": "Меловая низь",
+   "title": "Меловая низь №55",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 2364934840,
+   "edges": {
+    "south": {
+     "to": "z_17_05",
+     "open": true,
+     "along": 0.257
+    },
+    "west": {
+     "to": "z_16_04",
+     "open": true,
+     "along": 0.838,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_01_05",
+   "col": 1,
+   "row": 5,
+   "n": 56,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №56",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 883682334,
+   "edges": {
+    "south": {
+     "to": "z_01_06",
+     "open": true,
+     "along": 0.718
+    },
+    "east": {
+     "to": "z_02_05",
+     "open": true,
+     "along": 0.565
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_05",
+   "col": 2,
+   "row": 5,
+   "n": 57,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №57",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3832836177,
+   "edges": {
+    "north": {
+     "to": "z_02_04",
+     "open": true,
+     "along": 0.479
+    },
+    "south": {
+     "to": "z_02_06",
+     "open": true,
+     "along": 0.59
+    },
+    "west": {
+     "to": "z_01_05",
+     "open": true,
+     "along": 0.565
+    },
+    "east": {
+     "to": "z_03_05",
+     "open": true,
+     "along": 0.47
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_05",
+   "col": 3,
+   "row": 5,
+   "n": 58,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №58",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2323851796,
+   "edges": {
+    "north": {
+     "to": "z_03_04",
+     "open": true,
+     "along": 0.621
+    },
+    "south": {
+     "to": "z_03_06",
+     "open": true,
+     "along": 0.442
+    },
+    "west": {
+     "to": "z_02_05",
+     "open": true,
+     "along": 0.47
+    },
+    "east": {
+     "to": "z_04_05",
+     "open": true,
+     "along": 0.363
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_05",
+   "col": 4,
+   "row": 5,
+   "n": 59,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №59",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3125573575,
+   "edges": {
+    "north": {
+     "to": "z_04_04",
+     "open": true,
+     "along": 0.337
+    },
+    "south": {
+     "to": "z_04_06",
+     "open": true,
+     "along": 0.442
+    },
+    "west": {
+     "to": "z_03_05",
+     "open": true,
+     "along": 0.363
+    },
+    "east": {
+     "to": "z_05_05",
+     "open": true,
+     "along": 0.322
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_05",
+   "col": 5,
+   "row": 5,
+   "n": 60,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №60",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 3,
+   "ground": "tract_dust",
+   "seed": 1694545394,
+   "edges": {
+    "north": {
+     "to": "z_05_04",
+     "open": true,
+     "along": 0.271
+    },
+    "south": {
+     "to": "z_05_06",
+     "open": true,
+     "along": 0.554
+    },
+    "west": {
+     "to": "z_04_05",
+     "open": true,
+     "along": 0.322
+    },
+    "east": {
+     "to": "z_06_05",
+     "open": true,
+     "along": 0.605
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_05",
+   "col": 6,
+   "row": 5,
+   "n": 61,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №61",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "zero_soil",
+   "seed": 2071809701,
+   "edges": {
+    "north": {
+     "to": "z_06_04",
+     "open": true,
+     "along": 0.459
+    },
+    "south": {
+     "to": "z_06_06",
+     "open": true,
+     "along": 0.534
+    },
+    "west": {
+     "to": "z_05_05",
+     "open": true,
+     "along": 0.605
+    },
+    "east": {
+     "to": "z_07_05",
+     "open": true,
+     "along": 0.414
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_05",
+   "col": 7,
+   "row": 5,
+   "n": 62,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №62",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3387591288,
+   "edges": {
+    "north": {
+     "to": "z_07_04",
+     "open": true,
+     "along": 0.301
+    },
+    "south": {
+     "to": "z_07_06",
+     "open": true,
+     "along": 0.514
+    },
+    "west": {
+     "to": "z_06_05",
+     "open": true,
+     "along": 0.414
+    },
+    "east": {
+     "to": "z_08_05",
+     "open": true,
+     "along": 0.635
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_05",
+   "col": 8,
+   "row": 5,
+   "n": 63,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №63",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 3675758235,
+   "edges": {
+    "north": {
+     "to": "z_08_04",
+     "open": true,
+     "along": 0.425,
+     "road": "fuel_ramp_access"
+    },
+    "south": {
+     "to": "z_08_06",
+     "open": true,
+     "along": 0.72,
+     "road": "zero_service_line"
+    },
+    "west": {
+     "to": "z_07_05",
+     "open": true,
+     "along": 0.635
+    },
+    "east": {
+     "to": "z_09_05",
+     "open": true,
+     "along": 0.58,
+     "road": "fuel_ramp_access"
+    }
+   },
+   "roads": [
+    "fuel_ramp_access",
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_05",
+   "col": 9,
+   "row": 5,
+   "n": 64,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №64",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 293909670,
+   "edges": {
+    "north": {
+     "to": "z_09_04",
+     "open": true,
+     "along": 0.75,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_06",
+     "open": true,
+     "along": 0.75,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_05",
+     "open": true,
+     "along": 0.58,
+     "road": "fuel_ramp_access"
+    },
+    "east": {
+     "to": "z_10_05",
+     "open": true,
+     "along": 0.7,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "fuel_ramp_access",
+    "tesma_service_road",
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_05",
+   "col": 10,
+   "row": 5,
+   "n": 65,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №65",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 2041771536,
+   "edges": {
+    "north": {
+     "to": "z_10_04",
+     "open": true,
+     "along": 0.481
+    },
+    "south": {
+     "to": "z_10_06",
+     "open": true,
+     "along": 0.746
+    },
+    "west": {
+     "to": "z_09_05",
+     "open": true,
+     "along": 0.7,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_11_05",
+     "open": true,
+     "along": 0.584,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_05",
+   "col": 11,
+   "row": 5,
+   "n": 66,
+   "name": "Нулевая котловина",
+   "title": "Нулевая котловина №66",
+   "region": "zero_basin",
+   "mode": "pvpFullDrop",
+   "difficulty": 5,
+   "ground": "zero_soil",
+   "seed": 1480273789,
+   "edges": {
+    "north": {
+     "to": "z_11_04",
+     "open": true,
+     "along": 0.15,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_11_06",
+     "open": true,
+     "along": 0.167,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_10_05",
+     "open": true,
+     "along": 0.584,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_12_05",
+     "open": true,
+     "along": 0.197,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "cascade_canal",
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_05",
+   "col": 12,
+   "row": 5,
+   "n": 67,
+   "name": "Меловая низь",
+   "title": "Меловая низь №67",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 4,
+   "ground": "chalk",
+   "seed": 1103009482,
+   "edges": {
+    "north": {
+     "to": "z_12_04",
+     "open": true,
+     "along": 0.435,
+     "road": "zero_service_line"
+    },
+    "south": {
+     "to": "z_12_06",
+     "open": true,
+     "along": 0.616
+    },
+    "west": {
+     "to": "z_11_05",
+     "open": true,
+     "along": 0.197,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_13_05",
+     "open": true,
+     "along": 0.348
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_05",
+   "col": 13,
+   "row": 5,
+   "n": 68,
+   "name": "Меловая низь",
+   "title": "Меловая низь №68",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3171787167,
+   "edges": {
+    "north": {
+     "to": "z_13_04",
+     "open": true,
+     "along": 0.441
+    },
+    "south": {
+     "to": "z_13_06",
+     "open": true,
+     "along": 0.59
+    },
+    "west": {
+     "to": "z_12_05",
+     "open": true,
+     "along": 0.348
+    },
+    "east": {
+     "to": "z_14_05",
+     "open": true,
+     "along": 0.431
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_05",
+   "col": 14,
+   "row": 5,
+   "n": 69,
+   "name": "Меловая низь",
+   "title": "Меловая низь №69",
+   "region": "chalk_lowland",
+   "mode": "peaceful",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3555144460,
+   "edges": {
+    "north": {
+     "to": "z_14_04",
+     "open": true,
+     "along": 0.489
+    },
+    "south": {
+     "to": "z_14_06",
+     "open": true,
+     "along": 0.295,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_13_05",
+     "open": true,
+     "along": 0.431
+    },
+    "east": {
+     "to": "z_15_05",
+     "open": true,
+     "along": 0.426,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "secondHaven",
+     "kind": "settlement",
+     "name": "Меловой двор",
+     "u": 0.85,
+     "v": 0.5,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_15_05",
+   "col": 15,
+   "row": 5,
+   "n": 70,
+   "name": "Меловая низь",
+   "title": "Меловая низь №70",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 1731617705,
+   "edges": {
+    "north": {
+     "to": "z_15_04",
+     "open": true,
+     "along": 0.305
+    },
+    "south": {
+     "to": "z_15_06",
+     "open": true,
+     "along": 0.592
+    },
+    "west": {
+     "to": "z_14_05",
+     "open": true,
+     "along": 0.426,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_16_05",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_05",
+   "col": 16,
+   "row": 5,
+   "n": 71,
+   "name": "Меловая низь",
+   "title": "Меловая низь №71",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 4050229910,
+   "edges": {
+    "north": {
+     "to": "z_16_04",
+     "open": true,
+     "along": 0.45,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_16_06",
+     "open": true,
+     "along": 0.508
+    },
+    "west": {
+     "to": "z_15_05",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_17_05",
+     "open": true,
+     "along": 0.66
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_17_05",
+   "col": 17,
+   "row": 5,
+   "n": 72,
+   "name": "Меловая низь",
+   "title": "Меловая низь №72",
+   "region": "chalk_lowland",
+   "mode": "pvp",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 2381712459,
+   "edges": {
+    "north": {
+     "to": "z_17_04",
+     "open": true,
+     "along": 0.257
+    },
+    "south": {
+     "to": "z_17_06",
+     "open": true,
+     "along": 0.634
+    },
+    "west": {
+     "to": "z_16_05",
+     "open": true,
+     "along": 0.66
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_01_06",
+   "col": 1,
+   "row": 6,
+   "n": 73,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №73",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 866904715,
+   "edges": {
+    "north": {
+     "to": "z_01_05",
+     "open": true,
+     "along": 0.718
+    },
+    "south": {
+     "to": "z_01_07",
+     "open": true,
+     "along": 0.719
+    },
+    "east": {
+     "to": "z_02_06",
+     "open": true,
+     "along": 0.541
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_06",
+   "col": 2,
+   "row": 6,
+   "n": 74,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №74",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3782503320,
+   "edges": {
+    "north": {
+     "to": "z_02_05",
+     "open": true,
+     "along": 0.59
+    },
+    "south": {
+     "to": "z_02_07",
+     "open": true,
+     "along": 0.305
+    },
+    "west": {
+     "to": "z_01_06",
+     "open": true,
+     "along": 0.541
+    },
+    "east": {
+     "to": "z_03_06",
+     "open": true,
+     "along": 0.27
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_06",
+   "col": 3,
+   "row": 6,
+   "n": 75,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №75",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2374184653,
+   "edges": {
+    "north": {
+     "to": "z_03_05",
+     "open": true,
+     "along": 0.442
+    },
+    "south": {
+     "to": "z_03_07",
+     "open": true,
+     "along": 0.353
+    },
+    "west": {
+     "to": "z_02_06",
+     "open": true,
+     "along": 0.27
+    },
+    "east": {
+     "to": "z_04_06",
+     "open": true,
+     "along": 0.449
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_06",
+   "col": 4,
+   "row": 6,
+   "n": 76,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №76",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3142351194,
+   "edges": {
+    "north": {
+     "to": "z_04_05",
+     "open": true,
+     "along": 0.442
+    },
+    "south": {
+     "to": "z_04_07",
+     "open": true,
+     "along": 0.275
+    },
+    "west": {
+     "to": "z_03_06",
+     "open": true,
+     "along": 0.449
+    },
+    "east": {
+     "to": "z_05_06",
+     "open": true,
+     "along": 0.572
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_06",
+   "col": 5,
+   "row": 6,
+   "n": 77,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №77",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 1677767775,
+   "edges": {
+    "north": {
+     "to": "z_05_05",
+     "open": true,
+     "along": 0.554
+    },
+    "south": {
+     "to": "z_05_07",
+     "open": true,
+     "along": 0.319
+    },
+    "west": {
+     "to": "z_04_06",
+     "open": true,
+     "along": 0.572
+    },
+    "east": {
+     "to": "z_06_06",
+     "open": true,
+     "along": 0.405
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_06",
+   "col": 6,
+   "row": 6,
+   "n": 78,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №78",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2021476844,
+   "edges": {
+    "north": {
+     "to": "z_06_05",
+     "open": true,
+     "along": 0.534
+    },
+    "south": {
+     "to": "z_06_07",
+     "open": true,
+     "along": 0.485
+    },
+    "west": {
+     "to": "z_05_06",
+     "open": true,
+     "along": 0.405
+    },
+    "east": {
+     "to": "z_07_06",
+     "open": true,
+     "along": 0.714
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_06",
+   "col": 7,
+   "row": 6,
+   "n": 79,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №79",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3437924145,
+   "edges": {
+    "north": {
+     "to": "z_07_05",
+     "open": true,
+     "along": 0.514
+    },
+    "south": {
+     "to": "z_07_07",
+     "open": true,
+     "along": 0.155,
+     "road": "zero_service_line"
+    },
+    "west": {
+     "to": "z_06_06",
+     "open": true,
+     "along": 0.714
+    },
+    "east": {
+     "to": "z_08_06",
+     "open": true,
+     "along": 0.3,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_06",
+   "col": 8,
+   "row": 6,
+   "n": 80,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №80",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3692535854,
+   "edges": {
+    "north": {
+     "to": "z_08_05",
+     "open": true,
+     "along": 0.72,
+     "road": "zero_service_line"
+    },
+    "south": {
+     "to": "z_08_07",
+     "open": true,
+     "along": 0.351
+    },
+    "west": {
+     "to": "z_07_06",
+     "open": true,
+     "along": 0.3,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_09_06",
+     "open": true,
+     "along": 0.308
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_06",
+   "col": 9,
+   "row": 6,
+   "n": 81,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №81",
+   "region": "tract_isthmus",
+   "mode": "pvpBlack",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 277132051,
+   "edges": {
+    "north": {
+     "to": "z_09_05",
+     "open": true,
+     "along": 0.75,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_07",
+     "open": true,
+     "along": 0.67,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_06",
+     "open": true,
+     "along": 0.308
+    },
+    "east": {
+     "to": "z_10_06",
+     "open": true,
+     "along": 0.538
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_06",
+   "col": 10,
+   "row": 6,
+   "n": 82,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №82",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2092104393,
+   "edges": {
+    "north": {
+     "to": "z_10_05",
+     "open": true,
+     "along": 0.746
+    },
+    "south": {
+     "to": "z_10_07",
+     "open": true,
+     "along": 0.483
+    },
+    "west": {
+     "to": "z_09_06",
+     "open": true,
+     "along": 0.538
+    },
+    "east": {
+     "to": "z_11_06",
+     "open": true,
+     "along": 0.712
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_06",
+   "col": 11,
+   "row": 6,
+   "n": 83,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №83",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 1429940932,
+   "edges": {
+    "north": {
+     "to": "z_11_05",
+     "open": true,
+     "along": 0.167,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_11_07",
+     "open": true,
+     "along": 0.158,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_10_06",
+     "open": true,
+     "along": 0.712
+    },
+    "east": {
+     "to": "z_12_06",
+     "open": true,
+     "along": 0.315
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_06",
+   "col": 12,
+   "row": 6,
+   "n": 84,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №84",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 1086231863,
+   "edges": {
+    "north": {
+     "to": "z_12_05",
+     "open": true,
+     "along": 0.616
+    },
+    "south": {
+     "to": "z_12_07",
+     "open": true,
+     "along": 0.395
+    },
+    "west": {
+     "to": "z_11_06",
+     "open": true,
+     "along": 0.315
+    },
+    "east": {
+     "to": "z_13_06",
+     "open": true,
+     "along": 0.704
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_06",
+   "col": 13,
+   "row": 6,
+   "n": 85,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №85",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "tract_dust",
+   "seed": 3188564786,
+   "edges": {
+    "north": {
+     "to": "z_13_05",
+     "open": true,
+     "along": 0.59
+    },
+    "south": {
+     "to": "z_13_07",
+     "open": true,
+     "along": 0.386,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_12_06",
+     "open": true,
+     "along": 0.704
+    },
+    "east": {
+     "to": "z_14_06",
+     "open": true,
+     "along": 0.325,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "resourceSiliconRidge",
+     "kind": "resource",
+     "name": "Керамический уступ",
+     "u": 0.7,
+     "v": 0.92,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_14_06",
+   "col": 14,
+   "row": 6,
+   "n": 86,
+   "name": "Меловая низь",
+   "title": "Меловая низь №86",
+   "region": "chalk_lowland",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "chalk",
+   "seed": 3605477317,
+   "edges": {
+    "north": {
+     "to": "z_14_05",
+     "open": true,
+     "along": 0.295,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_14_07",
+     "open": true,
+     "along": 0.279
+    },
+    "west": {
+     "to": "z_13_06",
+     "open": true,
+     "along": 0.325,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_15_06",
+     "open": true,
+     "along": 0.7
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_06",
+   "col": 15,
+   "row": 6,
+   "n": 87,
+   "name": "Стеколье",
+   "title": "Стеколье №87",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "chalk",
+   "seed": 1681284848,
+   "edges": {
+    "north": {
+     "to": "z_15_05",
+     "open": true,
+     "along": 0.592
+    },
+    "south": {
+     "to": "z_15_07",
+     "open": true,
+     "along": 0.665
+    },
+    "west": {
+     "to": "z_14_06",
+     "open": true,
+     "along": 0.7
+    },
+    "east": {
+     "to": "z_16_06",
+     "open": true,
+     "along": 0.331
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_06",
+   "col": 16,
+   "row": 6,
+   "n": 88,
+   "name": "Стеколье",
+   "title": "Стеколье №88",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "chalk",
+   "seed": 4033452291,
+   "edges": {
+    "north": {
+     "to": "z_16_05",
+     "open": true,
+     "along": 0.508
+    },
+    "south": {
+     "to": "z_16_07",
+     "open": true,
+     "along": 0.475
+    },
+    "west": {
+     "to": "z_15_06",
+     "open": true,
+     "along": 0.331
+    },
+    "east": {
+     "to": "z_17_06",
+     "open": true,
+     "along": 0.416
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_17_06",
+   "col": 17,
+   "row": 6,
+   "n": 89,
+   "name": "Стеколье",
+   "title": "Стеколье №89",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "chalk",
+   "seed": 2398490078,
+   "edges": {
+    "north": {
+     "to": "z_17_05",
+     "open": true,
+     "along": 0.634
+    },
+    "south": {
+     "to": "z_17_07",
+     "open": true,
+     "along": 0.481
+    },
+    "west": {
+     "to": "z_16_06",
+     "open": true,
+     "along": 0.416
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_01_07",
+   "col": 1,
+   "row": 7,
+   "n": 90,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №90",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 850127096,
+   "edges": {
+    "north": {
+     "to": "z_01_06",
+     "open": true,
+     "along": 0.719
+    },
+    "south": {
+     "to": "z_01_08",
+     "open": true,
+     "along": 0.432
+    },
+    "east": {
+     "to": "z_02_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_07",
+   "col": 2,
+   "row": 7,
+   "n": 91,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №91",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3799280939,
+   "edges": {
+    "north": {
+     "to": "z_02_06",
+     "open": true,
+     "along": 0.305
+    },
+    "south": {
+     "to": "z_02_08",
+     "open": true,
+     "along": 0.534
+    },
+    "west": {
+     "to": "z_01_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_03_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_07",
+   "col": 3,
+   "row": 7,
+   "n": 92,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №92",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2357407034,
+   "edges": {
+    "north": {
+     "to": "z_03_06",
+     "open": true,
+     "along": 0.353
+    },
+    "south": {
+     "to": "z_03_08",
+     "open": true,
+     "along": 0.364
+    },
+    "west": {
+     "to": "z_02_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_04_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_07",
+   "col": 4,
+   "row": 7,
+   "n": 93,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №93",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3159128813,
+   "edges": {
+    "north": {
+     "to": "z_04_06",
+     "open": true,
+     "along": 0.275
+    },
+    "south": {
+     "to": "z_04_08",
+     "open": true,
+     "along": 0.698
+    },
+    "west": {
+     "to": "z_03_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_05_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "resourceTireDepot",
+     "kind": "resource",
+     "name": "Полимерный склад",
+     "u": 0.1,
+     "v": 0.55,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_05_07",
+   "col": 5,
+   "row": 7,
+   "n": 94,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №94",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 1660990156,
+   "edges": {
+    "north": {
+     "to": "z_05_06",
+     "open": true,
+     "along": 0.319
+    },
+    "south": {
+     "to": "z_05_08",
+     "open": true,
+     "along": 0.356
+    },
+    "west": {
+     "to": "z_04_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_06_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_07",
+   "col": 6,
+   "row": 7,
+   "n": 95,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №95",
+   "region": "tract_isthmus",
+   "mode": "peaceful",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2038254463,
+   "edges": {
+    "north": {
+     "to": "z_06_06",
+     "open": true,
+     "along": 0.485
+    },
+    "south": {
+     "to": "z_06_08",
+     "open": true,
+     "along": 0.6,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_05_07",
+     "open": true,
+     "along": 0.75,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_07_07",
+     "open": true,
+     "along": 0.15,
+     "road": "zero_service_line"
+    }
+   },
+   "roads": [
+    "tract_main",
+    "zero_service_line"
+   ],
+   "places": [
+    {
+     "locationId": "caravanCamp",
+     "kind": "settlement",
+     "name": "Перекрёсток",
+     "u": 0.25,
+     "v": 0.75,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_07_07",
+   "col": 7,
+   "row": 7,
+   "n": 96,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №96",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3421146526,
+   "edges": {
+    "north": {
+     "to": "z_07_06",
+     "open": true,
+     "along": 0.155,
+     "road": "zero_service_line"
+    },
+    "south": {
+     "to": "z_07_08",
+     "open": true,
+     "along": 0.652
+    },
+    "west": {
+     "to": "z_06_07",
+     "open": true,
+     "along": 0.15,
+     "road": "zero_service_line"
+    },
+    "east": {
+     "to": "z_08_07",
+     "open": true,
+     "along": 0.469
+    }
+   },
+   "roads": [
+    "zero_service_line"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_07",
+   "col": 8,
+   "row": 7,
+   "n": 97,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №97",
+   "region": "tract_isthmus",
+   "mode": "pvpBlack",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 3709313473,
+   "edges": {
+    "north": {
+     "to": "z_08_06",
+     "open": true,
+     "along": 0.351
+    },
+    "south": {
+     "to": "z_08_08",
+     "open": true,
+     "along": 0.614
+    },
+    "west": {
+     "to": "z_07_07",
+     "open": true,
+     "along": 0.469
+    },
+    "east": {
+     "to": "z_09_07",
+     "open": true,
+     "along": 0.598
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_07",
+   "col": 9,
+   "row": 7,
+   "n": 98,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №98",
+   "region": "tract_isthmus",
+   "mode": "pvpBlack",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 260354432,
+   "edges": {
+    "north": {
+     "to": "z_09_06",
+     "open": true,
+     "along": 0.67,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_08",
+     "open": true,
+     "along": 0.53,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_07",
+     "open": true,
+     "along": 0.598
+    },
+    "east": {
+     "to": "z_10_07",
+     "open": true,
+     "along": 0.51
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [
+    {
+     "locationId": "coreZone",
+     "kind": "complex",
+     "name": "Сердцевина",
+     "u": 0.5,
+     "v": 0.5,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_10_07",
+   "col": 10,
+   "row": 7,
+   "n": 99,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №99",
+   "region": "tract_isthmus",
+   "mode": "pvpBlack",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2075326774,
+   "edges": {
+    "north": {
+     "to": "z_10_06",
+     "open": true,
+     "along": 0.483
+    },
+    "south": {
+     "to": "z_10_08",
+     "open": true,
+     "along": 0.85,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_07",
+     "open": true,
+     "along": 0.51
+    },
+    "east": {
+     "to": "z_11_07",
+     "open": true,
+     "along": 0.683,
+     "road": "cascade_canal"
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_07",
+   "col": 11,
+   "row": 7,
+   "n": 100,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №100",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 1446718551,
+   "edges": {
+    "north": {
+     "to": "z_11_06",
+     "open": true,
+     "along": 0.158,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_11_08",
+     "open": true,
+     "along": 0.322
+    },
+    "west": {
+     "to": "z_10_07",
+     "open": true,
+     "along": 0.683,
+     "road": "cascade_canal"
+    },
+    "east": {
+     "to": "z_12_07",
+     "open": true,
+     "along": 0.585
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_07",
+   "col": 12,
+   "row": 7,
+   "n": 101,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №101",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "tract_dust",
+   "seed": 1069454244,
+   "edges": {
+    "north": {
+     "to": "z_12_06",
+     "open": true,
+     "along": 0.395
+    },
+    "south": {
+     "to": "z_12_08",
+     "open": true,
+     "along": 0.477,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_11_07",
+     "open": true,
+     "along": 0.585
+    },
+    "east": {
+     "to": "z_13_07",
+     "open": true,
+     "along": 0.425,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "clanDepotBypass",
+     "kind": "clan_base",
+     "name": "Депо Обводное",
+     "u": 0.75,
+     "v": 0.15,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_13_07",
+   "col": 13,
+   "row": 7,
+   "n": 102,
+   "name": "Стеколье",
+   "title": "Стеколье №102",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3205342405,
+   "edges": {
+    "north": {
+     "to": "z_13_06",
+     "open": true,
+     "along": 0.386,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_13_08",
+     "open": true,
+     "along": 0.656
+    },
+    "west": {
+     "to": "z_12_07",
+     "open": true,
+     "along": 0.425,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_14_07",
+     "open": true,
+     "along": 0.453
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_07",
+   "col": 14,
+   "row": 7,
+   "n": 103,
+   "name": "Стеколье",
+   "title": "Стеколье №103",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3588699698,
+   "edges": {
+    "north": {
+     "to": "z_14_06",
+     "open": true,
+     "along": 0.279
+    },
+    "south": {
+     "to": "z_14_08",
+     "open": true,
+     "along": 0.442
+    },
+    "west": {
+     "to": "z_13_07",
+     "open": true,
+     "along": 0.453
+    },
+    "east": {
+     "to": "z_15_07",
+     "open": true,
+     "along": 0.426
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_07",
+   "col": 15,
+   "row": 7,
+   "n": 104,
+   "name": "Стеколье",
+   "title": "Стеколье №104",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1698062467,
+   "edges": {
+    "north": {
+     "to": "z_15_06",
+     "open": true,
+     "along": 0.665
+    },
+    "south": {
+     "to": "z_15_08",
+     "open": true,
+     "along": 0.466
+    },
+    "west": {
+     "to": "z_14_07",
+     "open": true,
+     "along": 0.426
+    },
+    "east": {
+     "to": "z_16_07",
+     "open": true,
+     "along": 0.301
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "mutantCrater",
+     "kind": "lair",
+     "name": "Воронка Складней",
+     "u": 0.75,
+     "v": 0.15,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_16_07",
+   "col": 16,
+   "row": 7,
+   "n": 105,
+   "name": "Стеколье",
+   "title": "Стеколье №105",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 4016674672,
+   "edges": {
+    "north": {
+     "to": "z_16_06",
+     "open": true,
+     "along": 0.475
+    },
+    "south": {
+     "to": "z_16_08",
+     "open": true,
+     "along": 0.316
+    },
+    "west": {
+     "to": "z_15_07",
+     "open": true,
+     "along": 0.301
+    },
+    "east": {
+     "to": "z_17_07",
+     "open": true,
+     "along": 0.748
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_17_07",
+   "col": 17,
+   "row": 7,
+   "n": 106,
+   "name": "Стеколье",
+   "title": "Стеколье №106",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 2415267697,
+   "edges": {
+    "north": {
+     "to": "z_17_06",
+     "open": true,
+     "along": 0.481
+    },
+    "south": {
+     "to": "z_17_08",
+     "open": true,
+     "along": 0.524
+    },
+    "west": {
+     "to": "z_16_07",
+     "open": true,
+     "along": 0.748
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "solarArray",
+     "kind": "resource",
+     "name": "Солнечное поле №4",
+     "u": 0.25,
+     "v": 0.7,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_01_08",
+   "col": 1,
+   "row": 8,
+   "n": 107,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №107",
+   "region": "tract_isthmus",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 833349477,
+   "edges": {
+    "north": {
+     "to": "z_01_07",
+     "open": true,
+     "along": 0.432
+    },
+    "south": {
+     "to": "z_01_09",
+     "open": true,
+     "along": 0.691
+    },
+    "east": {
+     "to": "z_02_08",
+     "open": true,
+     "along": 0.259
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_08",
+   "col": 2,
+   "row": 8,
+   "n": 108,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №108",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 3748948082,
+   "edges": {
+    "north": {
+     "to": "z_02_07",
+     "open": true,
+     "along": 0.534
+    },
+    "south": {
+     "to": "z_02_09",
+     "open": true,
+     "along": 0.435
+    },
+    "west": {
+     "to": "z_01_08",
+     "open": true,
+     "along": 0.259
+    },
+    "east": {
+     "to": "z_03_08",
+     "open": true,
+     "along": 0.45
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "antHive",
+     "kind": "lair",
+     "name": "Колония Пыльников",
+     "u": 0.1,
+     "v": 0.7,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_03_08",
+   "col": 3,
+   "row": 8,
+   "n": 109,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №109",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2139297987,
+   "edges": {
+    "north": {
+     "to": "z_03_07",
+     "open": true,
+     "along": 0.364
+    },
+    "south": {
+     "to": "z_03_09",
+     "open": true,
+     "along": 0.673
+    },
+    "west": {
+     "to": "z_02_08",
+     "open": true,
+     "along": 0.45
+    },
+    "east": {
+     "to": "z_04_08",
+     "open": true,
+     "along": 0.443
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_08",
+   "col": 4,
+   "row": 8,
+   "n": 110,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №110",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2907464528,
+   "edges": {
+    "north": {
+     "to": "z_04_07",
+     "open": true,
+     "along": 0.698
+    },
+    "south": {
+     "to": "z_04_09",
+     "open": true,
+     "along": 0.433
+    },
+    "west": {
+     "to": "z_03_08",
+     "open": true,
+     "along": 0.443
+    },
+    "east": {
+     "to": "z_05_08",
+     "open": true,
+     "along": 0.644
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_08",
+   "col": 5,
+   "row": 8,
+   "n": 111,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №111",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1778433489,
+   "edges": {
+    "north": {
+     "to": "z_05_07",
+     "open": true,
+     "along": 0.356
+    },
+    "south": {
+     "to": "z_05_09",
+     "open": true,
+     "along": 0.335
+    },
+    "west": {
+     "to": "z_04_08",
+     "open": true,
+     "along": 0.644
+    },
+    "east": {
+     "to": "z_06_08",
+     "open": true,
+     "along": 0.255
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_08",
+   "col": 6,
+   "row": 8,
+   "n": 112,
+   "name": "Трактовый перешеек",
+   "title": "Трактовый перешеек №112",
+   "region": "tract_isthmus",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "tract_dust",
+   "seed": 2122142558,
+   "edges": {
+    "north": {
+     "to": "z_06_07",
+     "open": true,
+     "along": 0.6,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_06_09",
+     "open": true,
+     "along": 0.287
+    },
+    "west": {
+     "to": "z_05_08",
+     "open": true,
+     "along": 0.255
+    },
+    "east": {
+     "to": "z_07_08",
+     "open": true,
+     "along": 0.286,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_08",
+   "col": 7,
+   "row": 8,
+   "n": 113,
+   "name": "Срединная жила",
+   "title": "Срединная жила №113",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3337258431,
+   "edges": {
+    "north": {
+     "to": "z_07_07",
+     "open": true,
+     "along": 0.652
+    },
+    "south": {
+     "to": "z_07_09",
+     "open": true,
+     "along": 0.85,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_06_08",
+     "open": true,
+     "along": 0.286,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_08_08",
+     "open": true,
+     "along": 0.85,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "oldDepot",
+     "kind": "complex",
+     "name": "Арсенал №6",
+     "u": 0.35,
+     "v": 0.3,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_08_08",
+   "col": 8,
+   "row": 8,
+   "n": 114,
+   "name": "Срединная жила",
+   "title": "Срединная жила №114",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3591870140,
+   "edges": {
+    "north": {
+     "to": "z_08_07",
+     "open": true,
+     "along": 0.614
+    },
+    "south": {
+     "to": "z_08_09",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_07_08",
+     "open": true,
+     "along": 0.85,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_09_08",
+     "open": true,
+     "along": 0.412
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_08",
+   "col": 9,
+   "row": 8,
+   "n": 115,
+   "name": "Срединная жила",
+   "title": "Срединная жила №115",
+   "region": "middle_vein",
+   "mode": "pvpBlack",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 512018717,
+   "edges": {
+    "north": {
+     "to": "z_09_07",
+     "open": true,
+     "along": 0.53,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_09",
+     "open": true,
+     "along": 0.425,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_08",
+     "open": true,
+     "along": 0.412
+    },
+    "east": {
+     "to": "z_10_08",
+     "open": true,
+     "along": 0.624
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_08",
+   "col": 10,
+   "row": 8,
+   "n": 116,
+   "name": "Срединная жила",
+   "title": "Срединная жила №116",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 2259880583,
+   "edges": {
+    "north": {
+     "to": "z_10_07",
+     "open": true,
+     "along": 0.85,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_09",
+     "open": true,
+     "along": 0.654,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_08",
+     "open": true,
+     "along": 0.624
+    },
+    "east": {
+     "to": "z_11_08",
+     "open": true,
+     "along": 0.532
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_08",
+   "col": 11,
+   "row": 8,
+   "n": 117,
+   "name": "Срединная жила",
+   "title": "Срединная жила №117",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 1262164742,
+   "edges": {
+    "north": {
+     "to": "z_11_07",
+     "open": true,
+     "along": 0.322
+    },
+    "south": {
+     "to": "z_11_09",
+     "open": true,
+     "along": 0.313,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_10_08",
+     "open": true,
+     "along": 0.532
+    },
+    "east": {
+     "to": "z_12_08",
+     "open": true,
+     "along": 0.45,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_08",
+   "col": 12,
+   "row": 8,
+   "n": 118,
+   "name": "Стеколье",
+   "title": "Стеколье №118",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 918455673,
+   "edges": {
+    "north": {
+     "to": "z_12_07",
+     "open": true,
+     "along": 0.477,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_12_09",
+     "open": true,
+     "along": 0.677
+    },
+    "west": {
+     "to": "z_11_08",
+     "open": true,
+     "along": 0.45,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_13_08",
+     "open": true,
+     "along": 0.512
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_08",
+   "col": 13,
+   "row": 8,
+   "n": 119,
+   "name": "Стеколье",
+   "title": "Стеколье №119",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3222120024,
+   "edges": {
+    "north": {
+     "to": "z_13_07",
+     "open": true,
+     "along": 0.656
+    },
+    "south": {
+     "to": "z_13_09",
+     "open": true,
+     "along": 0.301
+    },
+    "west": {
+     "to": "z_12_08",
+     "open": true,
+     "along": 0.512
+    },
+    "east": {
+     "to": "z_14_08",
+     "open": true,
+     "along": 0.439
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_08",
+   "col": 14,
+   "row": 8,
+   "n": 120,
+   "name": "Стеколье",
+   "title": "Стеколье №120",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3639032555,
+   "edges": {
+    "north": {
+     "to": "z_14_07",
+     "open": true,
+     "along": 0.442
+    },
+    "south": {
+     "to": "z_14_09",
+     "open": true,
+     "along": 0.309
+    },
+    "west": {
+     "to": "z_13_08",
+     "open": true,
+     "along": 0.439
+    },
+    "east": {
+     "to": "z_15_08",
+     "open": true,
+     "along": 0.644
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_08",
+   "col": 15,
+   "row": 8,
+   "n": 121,
+   "name": "Стеколье",
+   "title": "Стеколье №121",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1916171514,
+   "edges": {
+    "north": {
+     "to": "z_15_07",
+     "open": true,
+     "along": 0.466
+    },
+    "south": {
+     "to": "z_15_09",
+     "open": true,
+     "along": 0.381
+    },
+    "west": {
+     "to": "z_14_08",
+     "open": true,
+     "along": 0.644
+    },
+    "east": {
+     "to": "z_16_08",
+     "open": true,
+     "along": 0.537
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_08",
+   "col": 16,
+   "row": 8,
+   "n": 122,
+   "name": "Стеколье",
+   "title": "Стеколье №122",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 4268338957,
+   "edges": {
+    "north": {
+     "to": "z_16_07",
+     "open": true,
+     "along": 0.316
+    },
+    "south": {
+     "to": "z_16_09",
+     "open": true,
+     "along": 0.281
+    },
+    "west": {
+     "to": "z_15_08",
+     "open": true,
+     "along": 0.537
+    },
+    "east": {
+     "to": "z_17_08",
+     "open": true,
+     "along": 0.424
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_17_08",
+   "col": 17,
+   "row": 8,
+   "n": 123,
+   "name": "Стеколье",
+   "title": "Стеколье №123",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 2297824364,
+   "edges": {
+    "north": {
+     "to": "z_17_07",
+     "open": true,
+     "along": 0.524
+    },
+    "south": {
+     "to": "z_17_09",
+     "open": true,
+     "along": 0.437
+    },
+    "west": {
+     "to": "z_16_08",
+     "open": true,
+     "along": 0.424
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_01_09",
+   "col": 1,
+   "row": 9,
+   "n": 124,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №124",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 816571858,
+   "edges": {
+    "north": {
+     "to": "z_01_08",
+     "open": true,
+     "along": 0.691
+    },
+    "east": {
+     "to": "z_02_09",
+     "open": true,
+     "along": 0.637
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_09",
+   "col": 2,
+   "row": 9,
+   "n": 125,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №125",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 3765725701,
+   "edges": {
+    "north": {
+     "to": "z_02_08",
+     "open": true,
+     "along": 0.435
+    },
+    "south": {
+     "to": "z_02_10",
+     "open": true,
+     "along": 0.648
+    },
+    "west": {
+     "to": "z_01_09",
+     "open": true,
+     "along": 0.637
+    },
+    "east": {
+     "to": "z_03_09",
+     "open": true,
+     "along": 0.354
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_09",
+   "col": 3,
+   "row": 9,
+   "n": 126,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №126",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2122520368,
+   "edges": {
+    "north": {
+     "to": "z_03_08",
+     "open": true,
+     "along": 0.673
+    },
+    "south": {
+     "to": "z_03_10",
+     "open": true,
+     "along": 0.712
+    },
+    "west": {
+     "to": "z_02_09",
+     "open": true,
+     "along": 0.354
+    },
+    "east": {
+     "to": "z_04_09",
+     "open": true,
+     "along": 0.267
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_09",
+   "col": 4,
+   "row": 9,
+   "n": 127,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №127",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2924242147,
+   "edges": {
+    "north": {
+     "to": "z_04_08",
+     "open": true,
+     "along": 0.433
+    },
+    "south": {
+     "to": "z_04_10",
+     "open": true,
+     "along": 0.26
+    },
+    "west": {
+     "to": "z_03_09",
+     "open": true,
+     "along": 0.267
+    },
+    "east": {
+     "to": "z_05_09",
+     "open": true,
+     "along": 0.37
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_09",
+   "col": 5,
+   "row": 9,
+   "n": 128,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №128",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1761655870,
+   "edges": {
+    "north": {
+     "to": "z_05_08",
+     "open": true,
+     "along": 0.335
+    },
+    "south": {
+     "to": "z_05_10",
+     "open": true,
+     "along": 0.712
+    },
+    "west": {
+     "to": "z_04_09",
+     "open": true,
+     "along": 0.37
+    },
+    "east": {
+     "to": "z_06_09",
+     "open": true,
+     "along": 0.721
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "resourceScrapFields",
+     "kind": "resource",
+     "name": "Сортировочные поля",
+     "u": 0.9,
+     "v": 0.8,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_06_09",
+   "col": 6,
+   "row": 9,
+   "n": 129,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №129",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2138920177,
+   "edges": {
+    "north": {
+     "to": "z_06_08",
+     "open": true,
+     "along": 0.287
+    },
+    "south": {
+     "to": "z_06_10",
+     "open": true,
+     "along": 0.508
+    },
+    "west": {
+     "to": "z_05_09",
+     "open": true,
+     "along": 0.721
+    },
+    "east": {
+     "to": "z_07_09",
+     "open": true,
+     "along": 0.422
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_09",
+   "col": 7,
+   "row": 9,
+   "n": 130,
+   "name": "Срединная жила",
+   "title": "Срединная жила №130",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3320480812,
+   "edges": {
+    "north": {
+     "to": "z_07_08",
+     "open": true,
+     "along": 0.85,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_07_10",
+     "open": true,
+     "along": 0.6,
+     "road": "ore_freight_rail"
+    },
+    "west": {
+     "to": "z_06_09",
+     "open": true,
+     "along": 0.422
+    },
+    "east": {
+     "to": "z_08_09",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail",
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_09",
+   "col": 8,
+   "row": 9,
+   "n": 131,
+   "name": "Срединная жила",
+   "title": "Срединная жила №131",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3608647759,
+   "edges": {
+    "north": {
+     "to": "z_08_08",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_08_10",
+     "open": true,
+     "along": 0.7,
+     "road": "ore_freight_rail"
+    },
+    "west": {
+     "to": "z_07_09",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_09_09",
+     "open": true,
+     "along": 0.714,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "ore_freight_rail",
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "resourceOldKlimFarm",
+     "kind": "resource",
+     "name": "Ферма «Дальний ряд»",
+     "u": 0.3,
+     "v": 0.4,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_09_09",
+   "col": 9,
+   "row": 9,
+   "n": 132,
+   "name": "Срединная жила",
+   "title": "Срединная жила №132",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 495241098,
+   "edges": {
+    "north": {
+     "to": "z_09_08",
+     "open": true,
+     "along": 0.425,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_10",
+     "open": true,
+     "along": 0.4,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_09",
+     "open": true,
+     "along": 0.714,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_10_09",
+     "open": true,
+     "along": 0.732
+    }
+   },
+   "roads": [
+    "tesma_service_road",
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_09",
+   "col": 10,
+   "row": 9,
+   "n": 133,
+   "name": "Срединная жила",
+   "title": "Срединная жила №133",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 2243102964,
+   "edges": {
+    "north": {
+     "to": "z_10_08",
+     "open": true,
+     "along": 0.654,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_10",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    },
+    "west": {
+     "to": "z_09_09",
+     "open": true,
+     "along": 0.732
+    },
+    "east": {
+     "to": "z_11_09",
+     "open": true,
+     "along": 0.25,
+     "road": "tract_main"
+    }
+   },
+   "roads": [
+    "cascade_canal",
+    "tract_main"
+   ],
+   "places": [
+    {
+     "locationId": "clanFilterT6",
+     "kind": "clan_base",
+     "name": "Фильтровальная Т-6",
+     "u": 0.65,
+     "v": 0.1,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_11_09",
+   "col": 11,
+   "row": 9,
+   "n": 134,
+   "name": "Срединная жила",
+   "title": "Срединная жила №134",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 1278942361,
+   "edges": {
+    "north": {
+     "to": "z_11_08",
+     "open": true,
+     "along": 0.313,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_11_10",
+     "open": true,
+     "along": 0.634
+    },
+    "west": {
+     "to": "z_10_09",
+     "open": true,
+     "along": 0.25,
+     "road": "tract_main"
+    },
+    "east": {
+     "to": "z_12_09",
+     "open": true,
+     "along": 0.627
+    }
+   },
+   "roads": [
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_09",
+   "col": 12,
+   "row": 9,
+   "n": 135,
+   "name": "Стеколье",
+   "title": "Стеколье №135",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 3,
+   "ground": "fused_soil",
+   "seed": 901678054,
+   "edges": {
+    "north": {
+     "to": "z_12_08",
+     "open": true,
+     "along": 0.677
+    },
+    "south": {
+     "to": "z_12_10",
+     "open": true,
+     "along": 0.6,
+     "road": "ore_freight_rail"
+    },
+    "west": {
+     "to": "z_11_09",
+     "open": true,
+     "along": 0.627
+    },
+    "east": {
+     "to": "z_13_09",
+     "open": true,
+     "along": 0.739,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_09",
+   "col": 13,
+   "row": 9,
+   "n": 136,
+   "name": "Стеколье",
+   "title": "Стеколье №136",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3238897643,
+   "edges": {
+    "north": {
+     "to": "z_13_08",
+     "open": true,
+     "along": 0.301
+    },
+    "south": {
+     "to": "z_13_10",
+     "open": true,
+     "along": 0.332
+    },
+    "west": {
+     "to": "z_12_09",
+     "open": true,
+     "along": 0.739,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_14_09",
+     "open": true,
+     "along": 0.579
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_09",
+   "col": 14,
+   "row": 9,
+   "n": 137,
+   "name": "Стеколье",
+   "title": "Стеколье №137",
+   "region": "glasslands",
+   "mode": "peaceful",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3622254936,
+   "edges": {
+    "north": {
+     "to": "z_14_08",
+     "open": true,
+     "along": 0.309
+    },
+    "south": {
+     "to": "z_14_10",
+     "open": true,
+     "along": 0.36
+    },
+    "west": {
+     "to": "z_13_09",
+     "open": true,
+     "along": 0.579
+    },
+    "east": {
+     "to": "z_15_09",
+     "open": true,
+     "along": 0.402
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "relayStation",
+     "kind": "settlement",
+     "name": "Контур-3",
+     "u": 0.2,
+     "v": 0.08,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_15_09",
+   "col": 15,
+   "row": 9,
+   "n": 138,
+   "name": "Стеколье",
+   "title": "Стеколье №138",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1932949133,
+   "edges": {
+    "north": {
+     "to": "z_15_08",
+     "open": true,
+     "along": 0.381
+    },
+    "south": {
+     "to": "z_15_10",
+     "open": true,
+     "along": 0.342
+    },
+    "west": {
+     "to": "z_14_09",
+     "open": true,
+     "along": 0.402
+    },
+    "east": {
+     "to": "z_16_09",
+     "open": true,
+     "along": 0.383
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_09",
+   "col": 16,
+   "row": 9,
+   "n": 139,
+   "name": "Стеколье",
+   "title": "Стеколье №139",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 4251561338,
+   "edges": {
+    "north": {
+     "to": "z_16_08",
+     "open": true,
+     "along": 0.281
+    },
+    "south": {
+     "to": "z_16_10",
+     "open": true,
+     "along": 0.458
+    },
+    "west": {
+     "to": "z_15_09",
+     "open": true,
+     "along": 0.383
+    },
+    "east": {
+     "to": "z_17_09",
+     "open": true,
+     "along": 0.616
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "relayWorkshop",
+     "kind": "outpost",
+     "name": "Опытная мастерская К-3",
+     "u": 0.5,
+     "v": 0.8,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_17_09",
+   "col": 17,
+   "row": 9,
+   "n": 140,
+   "name": "Стеколье",
+   "title": "Стеколье №140",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 2314601983,
+   "edges": {
+    "north": {
+     "to": "z_17_08",
+     "open": true,
+     "along": 0.437
+    },
+    "west": {
+     "to": "z_16_09",
+     "open": true,
+     "along": 0.616
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "clanRelayEast",
+     "kind": "clan_base",
+     "name": "Ретранслятор В-9",
+     "u": 0.9,
+     "v": 0.2,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_02_10",
+   "col": 2,
+   "row": 10,
+   "n": 141,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №141",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1299665971,
+   "edges": {
+    "north": {
+     "to": "z_02_09",
+     "open": true,
+     "along": 0.648
+    },
+    "south": {
+     "to": "z_02_11",
+     "open": true,
+     "along": 0.465
+    },
+    "east": {
+     "to": "z_03_10",
+     "open": true,
+     "along": 0.532
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_03_10",
+   "col": 3,
+   "row": 10,
+   "n": 142,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №142",
+   "region": "ore_arc",
+   "mode": "peaceful",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2172706130,
+   "edges": {
+    "north": {
+     "to": "z_03_09",
+     "open": true,
+     "along": 0.712
+    },
+    "south": {
+     "to": "z_03_11",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    },
+    "west": {
+     "to": "z_02_10",
+     "open": true,
+     "along": 0.532
+    },
+    "east": {
+     "to": "z_04_10",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [
+    {
+     "locationId": "scrapTown",
+     "kind": "settlement",
+     "name": "Раздолье",
+     "u": 0.8,
+     "v": 0.5,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_04_10",
+   "col": 4,
+   "row": 10,
+   "n": 143,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №143",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 3142498289,
+   "edges": {
+    "north": {
+     "to": "z_04_09",
+     "open": true,
+     "along": 0.26
+    },
+    "south": {
+     "to": "z_04_11",
+     "open": true,
+     "along": 0.267
+    },
+    "west": {
+     "to": "z_03_10",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_05_10",
+     "open": true,
+     "along": 0.7,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_10",
+   "col": 5,
+   "row": 10,
+   "n": 144,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №144",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1543399728,
+   "edges": {
+    "north": {
+     "to": "z_05_09",
+     "open": true,
+     "along": 0.712
+    },
+    "south": {
+     "to": "z_05_11",
+     "open": true,
+     "along": 0.429
+    },
+    "west": {
+     "to": "z_04_10",
+     "open": true,
+     "along": 0.7,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_06_10",
+     "open": true,
+     "along": 0.384,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_10",
+   "col": 6,
+   "row": 10,
+   "n": 145,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №145",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2088734415,
+   "edges": {
+    "north": {
+     "to": "z_06_09",
+     "open": true,
+     "along": 0.508
+    },
+    "south": {
+     "to": "z_06_11",
+     "open": true,
+     "along": 0.305
+    },
+    "west": {
+     "to": "z_05_10",
+     "open": true,
+     "along": 0.384,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_07_10",
+     "open": true,
+     "along": 0.15,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [
+    {
+     "locationId": "scrapOutpost",
+     "kind": "outpost",
+     "name": "Сторожевая артель",
+     "u": 0.65,
+     "v": 0.25,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_07_10",
+   "col": 7,
+   "row": 10,
+   "n": 146,
+   "name": "Срединная жила",
+   "title": "Срединная жила №146",
+   "region": "middle_vein",
+   "mode": "pvp",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3370666574,
+   "edges": {
+    "north": {
+     "to": "z_07_09",
+     "open": true,
+     "along": 0.6,
+     "road": "ore_freight_rail"
+    },
+    "south": {
+     "to": "z_07_11",
+     "open": true,
+     "along": 0.395
+    },
+    "west": {
+     "to": "z_06_10",
+     "open": true,
+     "along": 0.15,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_08_10",
+     "open": true,
+     "along": 0.15,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_10",
+   "col": 8,
+   "row": 10,
+   "n": 147,
+   "name": "Срединная жила",
+   "title": "Срединная жила №147",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 3826903901,
+   "edges": {
+    "north": {
+     "to": "z_08_09",
+     "open": true,
+     "along": 0.7,
+     "road": "ore_freight_rail"
+    },
+    "south": {
+     "to": "z_08_11",
+     "open": true,
+     "along": 0.511
+    },
+    "west": {
+     "to": "z_07_10",
+     "open": true,
+     "along": 0.15,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_09_10",
+     "open": true,
+     "along": 0.409,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_10",
+   "col": 9,
+   "row": 10,
+   "n": 148,
+   "name": "Срединная жила",
+   "title": "Срединная жила №148",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 276984956,
+   "edges": {
+    "north": {
+     "to": "z_09_09",
+     "open": true,
+     "along": 0.4,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_11",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_10",
+     "open": true,
+     "along": 0.409,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_10_10",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail",
+    "tesma_service_road"
+   ],
+   "places": [
+    {
+     "locationId": "roadOutpost",
+     "kind": "outpost",
+     "name": "Застава 17",
+     "u": 0.4,
+     "v": 0.85,
+     "road": true
+    },
+    {
+     "locationId": "settlement",
+     "kind": "settlement",
+     "name": "Ключи",
+     "u": 0.75,
+     "v": 0.25,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_10_10",
+   "col": 10,
+   "row": 10,
+   "n": 149,
+   "name": "Срединная жила",
+   "title": "Срединная жила №149",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 4172278886,
+   "edges": {
+    "north": {
+     "to": "z_10_09",
+     "open": true,
+     "along": 0.15,
+     "road": "tract_main"
+    },
+    "south": {
+     "to": "z_10_11",
+     "open": true,
+     "along": 0.446,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_10",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_11_10",
+     "open": true,
+     "along": 0.68,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "cascade_canal",
+    "ore_freight_rail",
+    "tract_main"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_10",
+   "col": 11,
+   "row": 10,
+   "n": 150,
+   "name": "Срединная жила",
+   "title": "Срединная жила №150",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 1497198503,
+   "edges": {
+    "north": {
+     "to": "z_11_09",
+     "open": true,
+     "along": 0.634
+    },
+    "south": {
+     "to": "z_11_11",
+     "open": true,
+     "along": 0.549
+    },
+    "west": {
+     "to": "z_10_10",
+     "open": true,
+     "along": 0.68,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_12_10",
+     "open": true,
+     "along": 0.391,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_10",
+   "col": 12,
+   "row": 10,
+   "n": 151,
+   "name": "Стеколье",
+   "title": "Стеколье №151",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 3,
+   "ground": "fused_soil",
+   "seed": 951863816,
+   "edges": {
+    "north": {
+     "to": "z_12_09",
+     "open": true,
+     "along": 0.6,
+     "road": "ore_freight_rail"
+    },
+    "south": {
+     "to": "z_12_11",
+     "open": true,
+     "along": 0.345
+    },
+    "west": {
+     "to": "z_11_10",
+     "open": true,
+     "along": 0.391,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_13_10",
+     "open": true,
+     "along": 0.616
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_10",
+   "col": 13,
+   "row": 10,
+   "n": 152,
+   "name": "Стеколье",
+   "title": "Стеколье №152",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1041279817,
+   "edges": {
+    "north": {
+     "to": "z_13_09",
+     "open": true,
+     "along": 0.332
+    },
+    "south": {
+     "to": "z_13_11",
+     "open": true,
+     "along": 0.585
+    },
+    "west": {
+     "to": "z_12_10",
+     "open": true,
+     "along": 0.616
+    },
+    "east": {
+     "to": "z_14_10",
+     "open": true,
+     "along": 0.707
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "relayOutpost",
+     "kind": "outpost",
+     "name": "Периметр К-3",
+     "u": 0.5,
+     "v": 0.08,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_14_10",
+   "col": 14,
+   "row": 10,
+   "n": 153,
+   "name": "Стеколье",
+   "title": "Стеколье №153",
+   "region": "glasslands",
+   "mode": "pve",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3940882602,
+   "edges": {
+    "north": {
+     "to": "z_14_09",
+     "open": true,
+     "along": 0.36
+    },
+    "south": {
+     "to": "z_14_11",
+     "open": true,
+     "along": 0.465
+    },
+    "west": {
+     "to": "z_13_10",
+     "open": true,
+     "along": 0.707
+    },
+    "east": {
+     "to": "z_15_10",
+     "open": true,
+     "along": 0.384
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_10",
+   "col": 15,
+   "row": 10,
+   "n": 154,
+   "name": "Стеколье",
+   "title": "Стеколье №154",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1882763371,
+   "edges": {
+    "north": {
+     "to": "z_15_09",
+     "open": true,
+     "along": 0.342
+    },
+    "south": {
+     "to": "z_15_11",
+     "open": true,
+     "along": 0.533
+    },
+    "west": {
+     "to": "z_14_10",
+     "open": true,
+     "along": 0.384
+    },
+    "east": {
+     "to": "z_16_10",
+     "open": true,
+     "along": 0.485
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_10",
+   "col": 16,
+   "row": 10,
+   "n": 155,
+   "name": "Стеколье",
+   "title": "Стеколье №155",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 4033305196,
+   "edges": {
+    "north": {
+     "to": "z_16_09",
+     "open": true,
+     "along": 0.458
+    },
+    "south": {
+     "to": "z_16_11",
+     "open": true,
+     "along": 0.725
+    },
+    "west": {
+     "to": "z_15_10",
+     "open": true,
+     "along": 0.485
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_02_11",
+   "col": 2,
+   "row": 11,
+   "n": 156,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №156",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1282888352,
+   "edges": {
+    "north": {
+     "to": "z_02_10",
+     "open": true,
+     "along": 0.465
+    },
+    "south": {
+     "to": "z_02_12",
+     "open": true,
+     "along": 0.646
+    },
+    "east": {
+     "to": "z_03_11",
+     "open": true,
+     "along": 0.427,
+     "road": "ore_freight_rail"
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [
+    {
+     "locationId": "scrapFoundry",
+     "kind": "outpost",
+     "name": "Литейная Раздолья",
+     "u": 0.6,
+     "v": 0.8,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_03_11",
+   "col": 3,
+   "row": 11,
+   "n": 157,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №157",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2189483749,
+   "edges": {
+    "north": {
+     "to": "z_03_10",
+     "open": true,
+     "along": 0.85,
+     "road": "ore_freight_rail"
+    },
+    "south": {
+     "to": "z_03_12",
+     "open": true,
+     "along": 0.438
+    },
+    "west": {
+     "to": "z_02_11",
+     "open": true,
+     "along": 0.427,
+     "road": "ore_freight_rail"
+    },
+    "east": {
+     "to": "z_04_11",
+     "open": true,
+     "along": 0.459
+    }
+   },
+   "roads": [
+    "ore_freight_rail"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_11",
+   "col": 4,
+   "row": 11,
+   "n": 158,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №158",
+   "region": "ore_arc",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 3125720670,
+   "edges": {
+    "north": {
+     "to": "z_04_10",
+     "open": true,
+     "along": 0.267
+    },
+    "south": {
+     "to": "z_04_12",
+     "open": true,
+     "along": 0.354
+    },
+    "west": {
+     "to": "z_03_11",
+     "open": true,
+     "along": 0.459
+    },
+    "east": {
+     "to": "z_05_11",
+     "open": true,
+     "along": 0.31
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_11",
+   "col": 5,
+   "row": 11,
+   "n": 159,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №159",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1560177347,
+   "edges": {
+    "north": {
+     "to": "z_05_10",
+     "open": true,
+     "along": 0.429
+    },
+    "south": {
+     "to": "z_05_12",
+     "open": true,
+     "along": 0.282
+    },
+    "west": {
+     "to": "z_04_11",
+     "open": true,
+     "along": 0.31
+    },
+    "east": {
+     "to": "z_06_11",
+     "open": true,
+     "along": 0.557
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_11",
+   "col": 6,
+   "row": 11,
+   "n": 160,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №160",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2071956796,
+   "edges": {
+    "north": {
+     "to": "z_06_10",
+     "open": true,
+     "along": 0.305
+    },
+    "south": {
+     "to": "z_06_12",
+     "open": true,
+     "along": 0.282
+    },
+    "west": {
+     "to": "z_05_11",
+     "open": true,
+     "along": 0.557
+    },
+    "east": {
+     "to": "z_07_11",
+     "open": true,
+     "along": 0.386
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_11",
+   "col": 7,
+   "row": 11,
+   "n": 161,
+   "name": "Северные затворы",
+   "title": "Северные затворы №161",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "river_loam",
+   "seed": 3387444193,
+   "edges": {
+    "north": {
+     "to": "z_07_10",
+     "open": true,
+     "along": 0.395
+    },
+    "south": {
+     "to": "z_07_12",
+     "open": true,
+     "along": 0.43
+    },
+    "west": {
+     "to": "z_06_11",
+     "open": true,
+     "along": 0.386
+    },
+    "east": {
+     "to": "z_08_11",
+     "open": true,
+     "along": 0.427
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_11",
+   "col": 8,
+   "row": 11,
+   "n": 162,
+   "name": "Северные затворы",
+   "title": "Северные затворы №162",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "river_loam",
+   "seed": 3810126282,
+   "edges": {
+    "north": {
+     "to": "z_08_10",
+     "open": true,
+     "along": 0.511
+    },
+    "south": {
+     "to": "z_08_12",
+     "open": true,
+     "along": 0.807,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_07_11",
+     "open": true,
+     "along": 0.427
+    },
+    "east": {
+     "to": "z_09_11",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_11",
+   "col": 9,
+   "row": 11,
+   "n": 163,
+   "name": "Срединная жила",
+   "title": "Срединная жила №163",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 293762575,
+   "edges": {
+    "north": {
+     "to": "z_09_10",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_09_12",
+     "open": true,
+     "along": 0.502
+    },
+    "west": {
+     "to": "z_08_11",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    },
+    "east": {
+     "to": "z_10_11",
+     "open": true,
+     "along": 0.51
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_11",
+   "col": 10,
+   "row": 11,
+   "n": 164,
+   "name": "Срединная жила",
+   "title": "Срединная жила №164",
+   "region": "middle_vein",
+   "mode": "pve",
+   "difficulty": 1,
+   "ground": "river_loam",
+   "seed": 4189056505,
+   "edges": {
+    "north": {
+     "to": "z_10_10",
+     "open": true,
+     "along": 0.446,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_12",
+     "open": true,
+     "along": 0.638,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_11",
+     "open": true,
+     "along": 0.51
+    },
+    "east": {
+     "to": "z_11_11",
+     "open": true,
+     "along": 0.7
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [
+    {
+     "locationId": "resourceDryWaterPump",
+     "kind": "resource",
+     "name": "Водозабор «Сухой»",
+     "u": 0.55,
+     "v": 0.55,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_11_11",
+   "col": 11,
+   "row": 11,
+   "n": 165,
+   "name": "Северные затворы",
+   "title": "Северные затворы №165",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 1480420884,
+   "edges": {
+    "north": {
+     "to": "z_11_10",
+     "open": true,
+     "along": 0.549
+    },
+    "south": {
+     "to": "z_11_12",
+     "open": true,
+     "along": 0.686
+    },
+    "west": {
+     "to": "z_10_11",
+     "open": true,
+     "along": 0.7
+    },
+    "east": {
+     "to": "z_12_11",
+     "open": true,
+     "along": 0.545
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_11",
+   "col": 12,
+   "row": 11,
+   "n": 166,
+   "name": "Стеколье",
+   "title": "Стеколье №166",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 968641435,
+   "edges": {
+    "north": {
+     "to": "z_12_10",
+     "open": true,
+     "along": 0.345
+    },
+    "south": {
+     "to": "z_12_12",
+     "open": true,
+     "along": 0.642
+    },
+    "west": {
+     "to": "z_11_11",
+     "open": true,
+     "along": 0.545
+    },
+    "east": {
+     "to": "z_13_11",
+     "open": true,
+     "along": 0.746
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_11",
+   "col": 13,
+   "row": 11,
+   "n": 167,
+   "name": "Стеколье",
+   "title": "Стеколье №167",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1024502198,
+   "edges": {
+    "north": {
+     "to": "z_13_10",
+     "open": true,
+     "along": 0.585
+    },
+    "south": {
+     "to": "z_13_12",
+     "open": true,
+     "along": 0.552
+    },
+    "west": {
+     "to": "z_12_11",
+     "open": true,
+     "along": 0.746
+    },
+    "east": {
+     "to": "z_14_11",
+     "open": true,
+     "along": 0.365
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_11",
+   "col": 14,
+   "row": 11,
+   "n": 168,
+   "name": "Стеколье",
+   "title": "Стеколье №168",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3957660221,
+   "edges": {
+    "north": {
+     "to": "z_14_10",
+     "open": true,
+     "along": 0.465
+    },
+    "south": {
+     "to": "z_14_12",
+     "open": true,
+     "along": 0.44
+    },
+    "west": {
+     "to": "z_13_11",
+     "open": true,
+     "along": 0.365
+    },
+    "east": {
+     "to": "z_15_11",
+     "open": true,
+     "along": 0.256
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_11",
+   "col": 15,
+   "row": 11,
+   "n": 169,
+   "name": "Стеколье",
+   "title": "Стеколье №169",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1865985752,
+   "edges": {
+    "north": {
+     "to": "z_15_10",
+     "open": true,
+     "along": 0.533
+    },
+    "south": {
+     "to": "z_15_12",
+     "open": true,
+     "along": 0.654
+    },
+    "west": {
+     "to": "z_14_11",
+     "open": true,
+     "along": 0.256
+    },
+    "east": {
+     "to": "z_16_11",
+     "open": true,
+     "along": 0.401
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_16_11",
+   "col": 16,
+   "row": 11,
+   "n": 170,
+   "name": "Стеколье",
+   "title": "Стеколье №170",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 4050082815,
+   "edges": {
+    "north": {
+     "to": "z_16_10",
+     "open": true,
+     "along": 0.725
+    },
+    "west": {
+     "to": "z_15_11",
+     "open": true,
+     "along": 0.401
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "vectorLab",
+     "kind": "complex",
+     "name": "Объект «Вектор»",
+     "u": 0.9,
+     "v": 0.25,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_02_12",
+   "col": 2,
+   "row": 12,
+   "n": 171,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №171",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1333221209,
+   "edges": {
+    "north": {
+     "to": "z_02_11",
+     "open": true,
+     "along": 0.646
+    },
+    "east": {
+     "to": "z_03_12",
+     "open": true,
+     "along": 0.578
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "resourceIronMine",
+     "kind": "resource",
+     "name": "Шахта «Три смены»",
+     "u": 0.9,
+     "v": 0.6,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_03_12",
+   "col": 3,
+   "row": 12,
+   "n": 172,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №172",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 2139150892,
+   "edges": {
+    "north": {
+     "to": "z_03_11",
+     "open": true,
+     "along": 0.438
+    },
+    "west": {
+     "to": "z_02_12",
+     "open": true,
+     "along": 0.578
+    },
+    "east": {
+     "to": "z_04_12",
+     "open": true,
+     "along": 0.593
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_12",
+   "col": 4,
+   "row": 12,
+   "n": 173,
+   "name": "Рудная дуга",
+   "title": "Рудная дуга №173",
+   "region": "ore_arc",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 3108943051,
+   "edges": {
+    "north": {
+     "to": "z_04_11",
+     "open": true,
+     "along": 0.354
+    },
+    "south": {
+     "to": "z_04_13",
+     "open": true,
+     "along": 0.351
+    },
+    "west": {
+     "to": "z_03_12",
+     "open": true,
+     "along": 0.593
+    },
+    "east": {
+     "to": "z_05_12",
+     "open": true,
+     "along": 0.304
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_05_12",
+   "col": 5,
+   "row": 12,
+   "n": 174,
+   "name": "Северные затворы",
+   "title": "Северные затворы №174",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "iron_scree",
+   "seed": 1576954966,
+   "edges": {
+    "north": {
+     "to": "z_05_11",
+     "open": true,
+     "along": 0.282
+    },
+    "south": {
+     "to": "z_05_13",
+     "open": true,
+     "along": 0.627
+    },
+    "west": {
+     "to": "z_04_12",
+     "open": true,
+     "along": 0.304
+    },
+    "east": {
+     "to": "z_06_12",
+     "open": true,
+     "along": 0.345
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "resourceKlimQuarry",
+     "kind": "resource",
+     "name": "Карьер Девятый",
+     "u": 0.6,
+     "v": 0.5,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_06_12",
+   "col": 6,
+   "row": 12,
+   "n": 175,
+   "name": "Северные затворы",
+   "title": "Северные затворы №175",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 2122289653,
+   "edges": {
+    "north": {
+     "to": "z_06_11",
+     "open": true,
+     "along": 0.282
+    },
+    "south": {
+     "to": "z_06_13",
+     "open": true,
+     "along": 0.717
+    },
+    "west": {
+     "to": "z_05_12",
+     "open": true,
+     "along": 0.345
+    },
+    "east": {
+     "to": "z_07_12",
+     "open": true,
+     "along": 0.574
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "clanFactoryCycle",
+     "kind": "clan_base",
+     "name": "Цех обратного цикла",
+     "u": 0.4,
+     "v": 0.2,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_07_12",
+   "col": 7,
+   "row": 12,
+   "n": 176,
+   "name": "Северные затворы",
+   "title": "Северные затворы №176",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 3337111336,
+   "edges": {
+    "north": {
+     "to": "z_07_11",
+     "open": true,
+     "along": 0.43
+    },
+    "south": {
+     "to": "z_07_13",
+     "open": true,
+     "along": 0.585
+    },
+    "west": {
+     "to": "z_06_12",
+     "open": true,
+     "along": 0.574
+    },
+    "east": {
+     "to": "z_08_12",
+     "open": true,
+     "along": 0.493
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "klimAmmoWorks",
+     "kind": "outpost",
+     "name": "Патронный двор «Створ-2»",
+     "u": 0.15,
+     "v": 0.9,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_08_12",
+   "col": 8,
+   "row": 12,
+   "n": 177,
+   "name": "Северные затворы",
+   "title": "Северные затворы №177",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 3793348663,
+   "edges": {
+    "north": {
+     "to": "z_08_11",
+     "open": true,
+     "along": 0.807,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_08_13",
+     "open": true,
+     "along": 0.839,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_07_12",
+     "open": true,
+     "along": 0.493
+    },
+    "east": {
+     "to": "z_09_12",
+     "open": true,
+     "along": 0.524
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_12",
+   "col": 9,
+   "row": 12,
+   "n": 178,
+   "name": "Северные затворы",
+   "title": "Северные затворы №178",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 310540194,
+   "edges": {
+    "north": {
+     "to": "z_09_11",
+     "open": true,
+     "along": 0.502
+    },
+    "south": {
+     "to": "z_09_13",
+     "open": true,
+     "along": 0.431
+    },
+    "west": {
+     "to": "z_08_12",
+     "open": true,
+     "along": 0.524
+    },
+    "east": {
+     "to": "z_10_12",
+     "open": true,
+     "along": 0.744
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_12",
+   "col": 10,
+   "row": 12,
+   "n": 179,
+   "name": "Северные затворы",
+   "title": "Северные затворы №179",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 4138723648,
+   "edges": {
+    "north": {
+     "to": "z_10_11",
+     "open": true,
+     "along": 0.638,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_13",
+     "open": true,
+     "along": 0.785,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_12",
+     "open": true,
+     "along": 0.744
+    },
+    "east": {
+     "to": "z_11_12",
+     "open": true,
+     "along": 0.538
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_12",
+   "col": 11,
+   "row": 12,
+   "n": 180,
+   "name": "Северные затворы",
+   "title": "Северные затворы №180",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 1530753741,
+   "edges": {
+    "north": {
+     "to": "z_11_11",
+     "open": true,
+     "along": 0.686
+    },
+    "south": {
+     "to": "z_11_13",
+     "open": true,
+     "along": 0.651
+    },
+    "west": {
+     "to": "z_10_12",
+     "open": true,
+     "along": 0.538
+    },
+    "east": {
+     "to": "z_12_12",
+     "open": true,
+     "along": 0.421
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_12_12",
+   "col": 12,
+   "row": 12,
+   "n": 181,
+   "name": "Северные затворы",
+   "title": "Северные затворы №181",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 985419054,
+   "edges": {
+    "north": {
+     "to": "z_12_11",
+     "open": true,
+     "along": 0.642
+    },
+    "south": {
+     "to": "z_12_13",
+     "open": true,
+     "along": 0.701
+    },
+    "west": {
+     "to": "z_11_12",
+     "open": true,
+     "along": 0.421
+    },
+    "east": {
+     "to": "z_13_12",
+     "open": true,
+     "along": 0.494
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_12",
+   "col": 13,
+   "row": 12,
+   "n": 182,
+   "name": "Стеколье",
+   "title": "Стеколье №182",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1007724579,
+   "edges": {
+    "north": {
+     "to": "z_13_11",
+     "open": true,
+     "along": 0.552
+    },
+    "south": {
+     "to": "z_13_13",
+     "open": true,
+     "along": 0.647
+    },
+    "west": {
+     "to": "z_12_12",
+     "open": true,
+     "along": 0.494
+    },
+    "east": {
+     "to": "z_14_12",
+     "open": true,
+     "along": 0.459
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_14_12",
+   "col": 14,
+   "row": 12,
+   "n": 183,
+   "name": "Стеколье",
+   "title": "Стеколье №183",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 3907327364,
+   "edges": {
+    "north": {
+     "to": "z_14_11",
+     "open": true,
+     "along": 0.44
+    },
+    "west": {
+     "to": "z_13_12",
+     "open": true,
+     "along": 0.459
+    },
+    "east": {
+     "to": "z_15_12",
+     "open": true,
+     "along": 0.738
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_15_12",
+   "col": 15,
+   "row": 12,
+   "n": 184,
+   "name": "Стеколье",
+   "title": "Стеколье №184",
+   "region": "glasslands",
+   "mode": "pvpFullDrop",
+   "difficulty": 4,
+   "ground": "fused_soil",
+   "seed": 1916318609,
+   "edges": {
+    "north": {
+     "to": "z_15_11",
+     "open": true,
+     "along": 0.654
+    },
+    "west": {
+     "to": "z_14_12",
+     "open": true,
+     "along": 0.738
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_04_13",
+   "col": 4,
+   "row": 13,
+   "n": 185,
+   "name": "Северные затворы",
+   "title": "Северные затворы №185",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 3092165432,
+   "edges": {
+    "north": {
+     "to": "z_04_12",
+     "open": true,
+     "along": 0.351
+    },
+    "east": {
+     "to": "z_05_13",
+     "open": true,
+     "along": 0.664
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "clanOreExchange",
+     "kind": "clan_base",
+     "name": "Рудный перевал",
+     "u": 0.2,
+     "v": 0.25,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_05_13",
+   "col": 5,
+   "row": 13,
+   "n": 186,
+   "name": "Северные затворы",
+   "title": "Северные затворы №186",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 1593732585,
+   "edges": {
+    "north": {
+     "to": "z_05_12",
+     "open": true,
+     "along": 0.627
+    },
+    "west": {
+     "to": "z_04_13",
+     "open": true,
+     "along": 0.664
+    },
+    "east": {
+     "to": "z_06_13",
+     "open": true,
+     "along": 0.353
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_06_13",
+   "col": 6,
+   "row": 13,
+   "n": 187,
+   "name": "Северные затворы",
+   "title": "Северные затворы №187",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 2105512034,
+   "edges": {
+    "north": {
+     "to": "z_06_12",
+     "open": true,
+     "along": 0.717
+    },
+    "west": {
+     "to": "z_05_13",
+     "open": true,
+     "along": 0.353
+    },
+    "east": {
+     "to": "z_07_13",
+     "open": true,
+     "along": 0.748
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_07_13",
+   "col": 7,
+   "row": 13,
+   "n": 188,
+   "name": "Северные затворы",
+   "title": "Северные затворы №188",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 3353888955,
+   "edges": {
+    "north": {
+     "to": "z_07_12",
+     "open": true,
+     "along": 0.585
+    },
+    "west": {
+     "to": "z_06_13",
+     "open": true,
+     "along": 0.748
+    },
+    "east": {
+     "to": "z_08_13",
+     "open": true,
+     "along": 0.423
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_13",
+   "col": 8,
+   "row": 13,
+   "n": 189,
+   "name": "Северные затворы",
+   "title": "Северные затворы №189",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 3776571044,
+   "edges": {
+    "north": {
+     "to": "z_08_12",
+     "open": true,
+     "along": 0.839,
+     "road": "tesma_service_road"
+    },
+    "south": {
+     "to": "z_08_14",
+     "open": true,
+     "along": 0.616
+    },
+    "west": {
+     "to": "z_07_13",
+     "open": true,
+     "along": 0.423
+    },
+    "east": {
+     "to": "z_09_13",
+     "open": true,
+     "along": 0.58,
+     "road": "tesma_service_road"
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_13",
+   "col": 9,
+   "row": 13,
+   "n": 190,
+   "name": "Северные затворы",
+   "title": "Северные затворы №190",
+   "region": "northern_sluices",
+   "mode": "peaceful",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 327317813,
+   "edges": {
+    "north": {
+     "to": "z_09_12",
+     "open": true,
+     "along": 0.431
+    },
+    "south": {
+     "to": "z_09_14",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_13",
+     "open": true,
+     "along": 0.58,
+     "road": "tesma_service_road"
+    },
+    "east": {
+     "to": "z_10_13",
+     "open": true,
+     "along": 0.602
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [
+    {
+     "locationId": "sluiceCity",
+     "kind": "settlement",
+     "name": "Створ",
+     "u": 0.3,
+     "v": 0.1,
+     "road": true
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_10_13",
+   "col": 10,
+   "row": 13,
+   "n": 191,
+   "name": "Северные затворы",
+   "title": "Северные затворы №191",
+   "region": "northern_sluices",
+   "mode": "pve",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 4155501267,
+   "edges": {
+    "north": {
+     "to": "z_10_12",
+     "open": true,
+     "along": 0.785,
+     "road": "cascade_canal"
+    },
+    "south": {
+     "to": "z_10_14",
+     "open": true,
+     "along": 0.85,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_13",
+     "open": true,
+     "along": 0.602
+    },
+    "east": {
+     "to": "z_11_13",
+     "open": true,
+     "along": 0.482
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_11_13",
+   "col": 11,
+   "row": 13,
+   "n": 192,
+   "name": "Северные затворы",
+   "title": "Северные затворы №192",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 1513976122,
+   "edges": {
+    "north": {
+     "to": "z_11_12",
+     "open": true,
+     "along": 0.651
+    },
+    "west": {
+     "to": "z_10_13",
+     "open": true,
+     "along": 0.482
+    },
+    "east": {
+     "to": "z_12_13",
+     "open": true,
+     "along": 0.281
+    }
+   },
+   "roads": [],
+   "places": [
+    {
+     "locationId": "clanHydroNode2",
+     "kind": "clan_base",
+     "name": "ГЭС-2",
+     "u": 0.6,
+     "v": 0.15,
+     "road": false
+    }
+   ],
+   "authored": false
+  },
+  {
+   "id": "z_12_13",
+   "col": 12,
+   "row": 13,
+   "n": 193,
+   "name": "Северные затворы",
+   "title": "Северные затворы №193",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 1002196673,
+   "edges": {
+    "north": {
+     "to": "z_12_12",
+     "open": true,
+     "along": 0.701
+    },
+    "west": {
+     "to": "z_11_13",
+     "open": true,
+     "along": 0.281
+    },
+    "east": {
+     "to": "z_13_13",
+     "open": true,
+     "along": 0.716
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_13_13",
+   "col": 13,
+   "row": 13,
+   "n": 194,
+   "name": "Северные затворы",
+   "title": "Северные затворы №194",
+   "region": "northern_sluices",
+   "mode": "pvp",
+   "difficulty": 2,
+   "ground": "wet_concrete",
+   "seed": 990946960,
+   "edges": {
+    "north": {
+     "to": "z_13_12",
+     "open": true,
+     "along": 0.647
+    },
+    "west": {
+     "to": "z_12_13",
+     "open": true,
+     "along": 0.716
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_08_14",
+   "col": 8,
+   "row": 14,
+   "n": 195,
+   "name": "Глухой обвод",
+   "title": "Глухой обвод №195",
+   "region": "silent_ring",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "silent_ring",
+   "seed": 3759793425,
+   "edges": {
+    "north": {
+     "to": "z_08_13",
+     "open": true,
+     "along": 0.616
+    },
+    "east": {
+     "to": "z_09_14",
+     "open": true,
+     "along": 0.666
+    }
+   },
+   "roads": [],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_09_14",
+   "col": 9,
+   "row": 14,
+   "n": 196,
+   "name": "Глухой обвод",
+   "title": "Глухой обвод №196",
+   "region": "silent_ring",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "silent_ring",
+   "seed": 209874480,
+   "edges": {
+    "north": {
+     "to": "z_09_13",
+     "open": true,
+     "along": 0.15,
+     "road": "tesma_service_road"
+    },
+    "west": {
+     "to": "z_08_14",
+     "open": true,
+     "along": 0.666
+    },
+    "east": {
+     "to": "z_10_14",
+     "open": true,
+     "along": 0.584
+    }
+   },
+   "roads": [
+    "tesma_service_road"
+   ],
+   "places": [],
+   "authored": false
+  },
+  {
+   "id": "z_10_14",
+   "col": 10,
+   "row": 14,
+   "n": 197,
+   "name": "Глухой обвод",
+   "title": "Глухой обвод №197",
+   "region": "silent_ring",
+   "mode": "pve",
+   "difficulty": 5,
+   "ground": "silent_ring",
+   "seed": 4239389362,
+   "edges": {
+    "north": {
+     "to": "z_10_13",
+     "open": true,
+     "along": 0.85,
+     "road": "cascade_canal"
+    },
+    "west": {
+     "to": "z_09_14",
+     "open": true,
+     "along": 0.584
+    }
+   },
+   "roads": [
+    "cascade_canal"
+   ],
+   "places": [],
+   "authored": false
+  }
+ ]
+}

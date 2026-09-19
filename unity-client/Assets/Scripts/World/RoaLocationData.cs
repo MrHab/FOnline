@@ -57,6 +57,15 @@ namespace RealmOfAshes.World
         /// <summary>Место внутри зоны мира: куда выводит его край.</summary>
         [JsonProperty("parentZone")] public ParentZoneInfo ParentZone;
 
+        /// <summary>
+        /// Зона комнаты точки мира (событие, бой, встреча в угодьях): её присылает
+        /// состояние мира, потому что шаблон локации один на много точек.
+        /// </summary>
+        [JsonIgnore] public ParentZoneInfo RoomParentZone;
+
+        /// <summary>Куда выводит край: зона комнаты точки мира, иначе зона места.</summary>
+        [JsonIgnore] public ParentZoneInfo ExitZone { get { return RoomParentZone ?? ParentZone; } }
+
         [JsonIgnore]
         public bool CanExitAtEdge { get { return AllowEdgeExit != false; } }
 

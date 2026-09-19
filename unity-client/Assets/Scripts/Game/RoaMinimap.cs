@@ -302,7 +302,7 @@ namespace RealmOfAshes.Game
                 }
             }
 
-            if (_location != null && _location.ParentZone != null && _location.CanExitAtEdge && _edgeExitAllowed)
+            if (_location != null && _location.ExitZone != null && _location.CanExitAtEdge && _edgeExitAllowed)
                 PaintEdgeExitBand(pixels);
 
             _staticTexture.SetPixels32(pixels);

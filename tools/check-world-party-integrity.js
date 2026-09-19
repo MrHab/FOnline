@@ -1621,9 +1621,13 @@ function assertSocketContract() {
   );
   assert(!publicPlayerBody.includes('accountLogin'),
     'public room player payload exposes the account login');
-  assert(serverSource.includes('if (player.onGlobalMap) {')
-    && serverSource.includes('const roomSiteId = String(room?.worldSiteId || \'\');'),
-  'world-site actions still trust stale global-map coordinates while the player is local');
+  const atWorldSiteBody = serverSource.slice(
+    serverSource.indexOf('function serverPlayerAtWorldSite('),
+    serverSource.indexOf('function serverWorldTaskRequiredFaction(')
+  );
+  assert(!atWorldSiteBody.includes('globalWorldPoint')
+    && atWorldSiteBody.includes('const roomSiteId = String(room?.worldSiteId || \'\');'),
+  'world-site actions trust a remembered map point instead of the room the player stands in');
   assert(serverSource.includes('characterIdOwnerUserIds(characterId)'),
     'new character creation does not defend global character-id collisions');
   assert(serverSource.includes('savesDb.characterIdMigrationJournal?.remaps')

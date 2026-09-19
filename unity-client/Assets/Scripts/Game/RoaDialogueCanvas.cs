@@ -273,6 +273,8 @@ namespace RealmOfAshes.Game
             if (site.Joinable && !site.IsMember)
                 AddOption(site.JoinLabel, () => Interaction.JobBoardJoinOwner());
 
+            AddOption("Подобрать вылазку поблизости", () => Interaction.JobBoardQuickActivity());
+
             AddHeading("КОНТРАКТЫ");
             List<RoaInteraction.JobBoardTask> tasks = Interaction.JobBoardTasks();
             if (tasks.Count == 0) AddCard("На этой доске сейчас нет контрактов", string.Empty, null);

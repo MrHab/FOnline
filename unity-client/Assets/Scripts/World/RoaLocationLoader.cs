@@ -223,7 +223,7 @@ namespace RealmOfAshes.World
 
             // Край места выводит в его зону, а закрытое сюжетом место получает
             // непроходимый пунктир. У самой зоны края нет: её стены и ворота собирает конструктор.
-            if (definition.ParentZone != null || !definition.CanExitAtEdge)
+            if (definition.ExitZone != null || !definition.CanExitAtEdge)
             {
                 var exitBoundary = _currentRoot.AddComponent<RoaWorldExitBoundary>();
                 exitBoundary.Configure(definition.TileWidth, definition.TileDepth);

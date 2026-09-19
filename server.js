@@ -250,7 +250,8 @@ const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/se
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { migrateSaveStateToZones } = require('./src/server/zone-migration');
-const { zoneAtPoint, zoneRecipe } = require('./src/server/zone-graph');
+const { zoneAtPoint, zoneById, zoneRecipe } = require('./src/server/zone-graph');
+const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
   ZONE_CHANNEL_SOFT_CAP,
@@ -8515,15 +8516,6 @@ function serverWorldTaskSite(state = {}, siteId = '') {
 function serverPlayerAtWorldSite(player = {}, site = null) {
   if (!player || !site) return false;
   const siteId = String(site.id || '');
-  if (player.onGlobalMap) {
-    if (siteId && String(player.currentWorldSiteId || '') === siteId) return true;
-    const point = sanitizeServerGlobalMapPoint(player.globalWorldPoint || null);
-    if (point && Number.isFinite(Number(site.x)) && Number.isFinite(Number(site.y))) {
-      const radius = Math.max(10, Number(site.radius || site.interactionRadius || 0));
-      return Math.hypot(point.x - Number(site.x), point.y - Number(site.y)) <= radius;
-    }
-    return false;
-  }
   const locationId = normalizeLocationId(site.locationId || '');
   if (!locationId || locationId !== normalizeLocationId(player.locationId || '')) return false;
   const room = rooms.get(String(player.roomId || '')) || null;
@@ -8642,12 +8634,17 @@ function setServerWorldActivityResult(player = {}, task = {}, options = {}) {
   return true;
 }
 
+/**
+ * Быстрый вход с доски работ: сервер подбирает ближайшую к зоне игрока
+ * короткую вылазку, принимает её и отмечает маршрут — дальше игрок идёт сам.
+ */
 function performServerWorldActivityQuickJoin(player = {}, data = {}) {
-  if (!player?.onGlobalMap) {
-    return { ok: false, error: 'Быстрая вылазка доступна на глобальной карте.' };
+  const boardSiteId = String(data.boardSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  if (!serverPlayerAtWorldSite(player, serverWorldTaskSite(WASTELAND_SIM.state(), boardSiteId))) {
+    return { ok: false, error: 'Вылазку подбирают у доски работ.' };
   }
   const sim = WASTELAND_SIM.publicState();
-  const globalMap = serverAuthoritativeGlobalMapState(player);
+  const playerPoint = serverGlobalPointForPlayer(player);
   const acceptedTaskIds = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
   const acceptedRows = typeof WASTELAND_SIM.publicWorldTasks === 'function'
     ? WASTELAND_SIM.publicWorldTasks(acceptedTaskIds)
@@ -8661,8 +8658,8 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
     .map(row => [String(row.id), row])).values()];
   const task = selectQuickWorldActivityTask(candidateRows, {
     acceptedTaskIds,
-    playerX: globalMap.playerX,
-    playerY: globalMap.playerY,
+    playerX: Number(playerPoint?.x || 0),
+    playerY: Number(playerPoint?.y || 0),
     worldHour: sim?.worldHour,
     now: Date.now(),
     preference: data.preference
@@ -8672,7 +8669,7 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
   const accepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(taskId);
   let actionResult = null;
   if (!accepted) {
-    actionResult = performServerWorldTaskAction(player, { action: 'accept', taskId });
+    actionResult = performServerWorldTaskAction(player, { action: 'accept', taskId }, { fromBoard: true });
     if (!actionResult?.ok) return actionResult;
   } else {
     player.worldTaskTrackedId = taskId;
@@ -8694,7 +8691,7 @@ function performServerWorldActivityQuickJoin(player = {}, data = {}) {
   };
 }
 
-function performServerWorldTaskAction(player = {}, data = {}) {
+function performServerWorldTaskAction(player = {}, data = {}, options = {}) {
   const action = String(data.action || '').toLowerCase();
   const { id, state, task } = serverWorldTaskById(data.taskId || data.worldTaskId || '');
   if (!id || !task) return { ok: false, error: 'Работа пустоши больше не найдена.' };
@@ -8720,7 +8717,8 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       'outpost_defense',
       'assault_diversion'
     ]);
-    const remoteActivity = player.onGlobalMap && remoteActivityTypes.has(String(task.type || ''));
+    // Короткую вылазку берут с любой доски работ: быстрый вход её и подбирает.
+    const remoteActivity = options.fromBoard === true && remoteActivityTypes.has(String(task.type || ''));
     if (!remoteActivity) {
     if (!serverPlayerAtWorldSite(player, issuer)) return { ok: false, error: 'Нужно подойти к доске работ в точке выдачи.' };
     }
@@ -12888,10 +12886,11 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
   if (authored) return authored;
-  // Край места (и его выход «на карту») ведёт в зону мира, где это место стоит.
-  const parent = ZONE_RUNTIME.parentZoneView(current.id);
+  // Край места ведёт в зону мира, где это место стоит; край комнаты точки
+  // мира — в зону точки, к её порталу.
+  const parent = serverWorldPointRoomExit(rooms.get(String(p.roomId || ''))) || ZONE_RUNTIME.parentZoneView(current.id);
   if (parent && parent.id === target && serverPlayerAtPlaceEdge(p)) {
-    return { id: 'zone_edge', type: 'zoneEdge', to: parent.id, entryKey: parent.entryKey };
+    return { id: 'zone_edge', type: 'zoneEdge', to: parent.id, entryKey: parent.entryKey, ...(parent.entryTile ? { entryTile: parent.entryTile } : {}) };
   }
   return null;
 }
@@ -22042,6 +22041,133 @@ function serverRestorePublicEventZones() {
 }
 
 // ---------------------------------------------------------------------------
+// Порталы зон (src/server/zone-portals.js): точки мира симуляции — публичное
+// событие, бой отрядов, угодья — стоят в своей зоне порталом у якоря событий.
+// Вход через портал выдаёт тот же билет, что раньше выдавало путешествие, а
+// край комнаты точки выводит обратно к её порталу.
+// ---------------------------------------------------------------------------
+function serverZoneCentrePoint(zone) {
+  const size = ZONE_RUNTIME.graph.grid.zoneKm;
+  return { x: (zone.col + 0.5) * size, y: (zone.row + 0.5) * size };
+}
+
+function serverZonePortalsIn(zoneId = '') {
+  const zone = zoneById(ZONE_RUNTIME.graph, zoneId);
+  if (!zone) return [];
+  const loc = ensureZoneLocation(zone.id) || LOCATIONS[zone.id];
+  if (!loc?.zone) return [];
+  return zonePortals(zone.id, WASTELAND_SIM.state()?.worldZones || [], {
+    zoneIdAt: (x, y) => zoneAtPoint(ZONE_RUNTIME.graph, x, y)?.id || '',
+    centre: serverZoneCentrePoint(zone),
+    anchors: loc.zone.eventAnchors,
+    fallback: loc.entryFromWorld || loc.spawn,
+    locationExists: id => !!LOCATIONS[normalizeLocationId(id)]
+  });
+}
+
+function serverPublicZonePortal(row) {
+  return {
+    id: row.id, kind: row.kind, to: row.to, name: row.name, tx: row.tx, tz: row.tz, radius: row.radius,
+    targetZoneRules: zoneRules(row.pvpMode)
+  };
+}
+
+/**
+ * Куда выводит край комнаты точки мира (событие, бой, встреча в угодьях):
+ * в зону этой точки, к её порталу, пока он стоит, иначе в центр зоны. У мест
+ * зон свой выход (parentZoneView), у самих зон края нет.
+ */
+function serverWorldPointRoomExit(room) {
+  if (!room?.encounterWorldPoint) return null;
+  const loc = roomLocation(room);
+  if (!loc.randomTemplate && !loc.encounterOnly) return null;
+  const zone = zoneAtPoint(ZONE_RUNTIME.graph, Number(room.encounterWorldPoint.x), Number(room.encounterWorldPoint.y));
+  if (!zone) return null;
+  const portal = room.worldZoneId ? serverZonePortalsIn(zone.id).find(row => row.worldZoneId === room.worldZoneId) : null;
+  return {
+    id: zone.id, n: zone.n, title: zone.title, mode: zone.mode, entryKey: 'entryFromWorld',
+    ...(portal ? { entryTile: { tx: portal.tx, tz: portal.tz } } : {})
+  };
+}
+
+function serverPublicRoomExitZone(room) {
+  const exit = serverWorldPointRoomExit(room);
+  if (!exit) return null;
+  const { entryTile, ...view } = exit;
+  const rules = serverTransitionZoneRules({ to: exit.id });
+  return rules ? { ...view, targetZoneRules: rules } : view;
+}
+
+/**
+ * Шаг в портал зоны: сервер сверяет, что игрок стоит у портала и точка ещё
+ * жива, и выдаёт билет в её комнату. Следы угодий бросают встречу из таблицы
+ * области — у каждого входа своя сцена, выход из неё ведёт в ту же зону.
+ */
+function serverStageZonePortalTicket(p, portalId = '', now = Date.now()) {
+  const room = rooms.get(String(p?.roomId || ''));
+  if (!room || !ZONE_RUNTIME.isZone(room.locationId)) return { ok: false, error: 'Порталы есть только в зонах мира.' };
+  const portal = serverZonePortalsIn(room.locationId).find(row => row.id === portalId);
+  if (!portal) return { ok: false, error: 'Этой точки здесь больше нет.' };
+  const point = tileToWorld(portal.tx, portal.tz, locationTileDims(roomLocation(room)));
+  if (Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) > portal.radius + 1.5) {
+    return { ok: false, error: 'Подойдите к порталу.' };
+  }
+  const worldZone = serverActiveWorldZoneById(portal.worldZoneId);
+  if (!worldZone) return { ok: false, error: 'Эта встреча уже завершилась.' };
+  let ticket;
+  if (portal.kind === 'grounds') {
+    const area = KROMKA_PVE_AREA_CATALOG.areas.find(row => row.id === portal.areaId);
+    const roll = area ? rollAreaEncounter(area) : null;
+    const target = normalizeLocationId(roll?.locationId || '');
+    if (!roll || !LOCATIONS[target]) return { ok: false, error: 'Следы оборвались.' };
+    const owner = pveOwnerKey(p.characterId || p.userId || p.id || '').slice(0, 24);
+    ticket = {
+      targetLocationId: target,
+      roomId: sanitizeEncounterRoomId(`${target}#enc_${owner}_${roll.id}_${Math.floor(now).toString(36).slice(-8)}`, target),
+      encounterId: roll.encounterId,
+      encounter: true,
+      pvpMode: normalizeLocationPvpMode(LOCATIONS[target].pvpMode || 'pve', LOCATIONS[target].safe !== false),
+      // Встреча в угодьях возвращает в ту зону, откуда в неё шагнули.
+      worldPoint: serverZoneCentrePoint(zoneById(ZONE_RUNTIME.graph, room.locationId))
+    };
+  } else {
+    const target = normalizeLocationId(portal.to);
+    const targetLoc = LOCATIONS[target] || {};
+    ticket = {
+      targetLocationId: target,
+      roomId: sanitizeEncounterRoomId(worldZone.roomId || '', target)
+        || (!locationUsesSharedReality(targetLoc) ? `${target}#${portal.worldZoneId}` : ''),
+      worldZoneId: portal.worldZoneId,
+      partyId: String(worldZone.partyId || worldZone.sourceId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
+      siteId: String(worldZone.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
+      encounterId: String(worldZone.encounterId || '').slice(0, 40),
+      encounter: true,
+      pvpMode: normalizeLocationPvpMode(worldZone.pvpMode || locationPvpMode(targetLoc), targetLoc.safe !== false),
+      worldPoint: portal.point
+    };
+  }
+  p.pendingLocationTransition = sanitizePendingLocationTransition({
+    ...ticket, entryKey: 'entryFromWorld', expiresAt: now + 30 * 1000
+  }, now);
+  if (!p.pendingLocationTransition) return { ok: false, error: 'Портал не открылся.' };
+  return { ok: true, locationId: ticket.targetLocationId };
+}
+
+/** Набор точек сменился — занятые каналы зоны получают новое состояние мира. */
+function serverTickZonePortals() {
+  const signatures = new Map();
+  let emitted = 0;
+  for (const room of rooms.values()) {
+    if (!room.sockets?.size || !ZONE_RUNTIME.isZone(room.locationId)) continue;
+    if (!signatures.has(room.locationId)) signatures.set(room.locationId, portalSignature(serverZonePortalsIn(room.locationId)));
+    if (room.zonePortalSignature === signatures.get(room.locationId)) continue;
+    emitServerWorldActivityState(room, 'zonePortals');
+    emitted += 1;
+  }
+  return emitted;
+}
+
+// ---------------------------------------------------------------------------
 // Постоянные PvE-области: личная комната на игрока или группу, встречи по
 // реальному времени, «Искать следы». Владелец проверяется на каждом пути входа.
 // ---------------------------------------------------------------------------
@@ -22679,6 +22805,13 @@ function publicWorldState(room, includeMap = true) {
       modules: { ...(clanBaseRuntime?.modules || {}) }
     } : null,
     fullDrop: zoneModeDropsInventory(pvpMode),
+    // Порталы зоны к точкам мира; у комнаты точки — зона, куда выводит её край.
+    portals: (() => {
+      const portals = ZONE_RUNTIME.isZone(room.locationId) ? serverZonePortalsIn(room.locationId) : [];
+      room.zonePortalSignature = portalSignature(portals);
+      return portals.map(serverPublicZonePortal);
+    })(),
+    parentZone: serverPublicRoomExitZone(room),
     activity: publicWorldActivity(room.worldActivity),
     pveArea: room.pveState
       ? publicPveRoomState(room.pveState, serverPveAreaForLocation(room.locationId), KROMKA_PVE_AREA_CATALOG.rules, Date.now(), {
@@ -27526,9 +27659,13 @@ function serverGlobalSiteForLocation(locationId = '', state = null) {
 }
 
 function serverGlobalPointForPlayer(p = {}) {
-  if (p.onGlobalMap) {
-    const livePoint = sanitizeServerGlobalMapPoint(p.globalWorldPoint || null);
-    if (livePoint) return livePoint;
+  // Мир — граф зон: в зоне точка игрока — её центр, в комнате точки мира
+  // (событие, бой, встреча) — сама точка, в месте — его узел или площадка.
+  const zone = ZONE_RUNTIME.isZone(p.locationId) ? zoneById(ZONE_RUNTIME.graph, p.locationId) : null;
+  if (zone) return sanitizeServerGlobalMapPoint(serverZoneCentrePoint(zone));
+  const worldPointRoom = rooms.get(p.roomId || '');
+  if (worldPointRoom?.encounterWorldPoint && serverWorldPointRoomExit(worldPointRoom)) {
+    return sanitizeServerGlobalMapPoint(worldPointRoom.encounterWorldPoint);
   }
   const simState = serverGlobalSimState();
   const site = serverGlobalSite(p.currentWorldSiteId || '', simState)
@@ -32231,6 +32368,16 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Неизвестная локация.' });
       return;
     }
+    // Портал зоны к точке мира: билет в её комнату выдаёт сам сервер.
+    const portalId = String(data.portalId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 72);
+    if (portalId) {
+      const staged = serverStageZonePortalTicket(p, portalId, Date.now());
+      if (!staged.ok) {
+        if (typeof ack === 'function') ack({ ok: false, error: staged.error });
+        return;
+      }
+      locationId = staged.locationId;
+    }
     // Портал в Сердцевину в её зоне мира — ворота территории: с подписанным
     // контрактом сервер заводит игрока на базу его фракции (в саму Сердцевину —
     // только метро базы), без контракта возвращает предложение фракций.
@@ -32419,7 +32566,10 @@ io.on('connection', (socket) => {
     p.locationId = room.locationId;
     rememberPlayerSettlement(p, room.locationId);
     const entryKey = serverEntryKeyForTransition(locationId, {}, transitionTicket || localTransition);
-    const spawn = playerSpawnWorld(locationId, entryKey);
+    const entryTile = !transitionTicket ? localTransition?.entryTile : null;
+    const spawn = entryTile
+      ? tileToWorld(entryTile.tx, entryTile.tz + 2, locationTileDims(LOCATIONS[locationId]))
+      : playerSpawnWorld(locationId, entryKey);
     p.x = spawn.x;
     p.z = spawn.z;
     if (zoneCrossing && ZONE_RUNTIME.isZone(locationId)) p.zoneArrivalShieldUntil = Date.now() + ZONE_ARRIVAL_SHIELD_MS;
@@ -32592,6 +32742,7 @@ serverRestorePublicEventZones();
 setInterval(() => {
   try {
     serverTickPublicEvents(Date.now());
+    serverTickZonePortals();
   } catch (error) {
     console.error('Public event tick failed:', error);
   }

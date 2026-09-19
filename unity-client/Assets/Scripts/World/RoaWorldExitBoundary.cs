@@ -383,7 +383,7 @@ namespace RealmOfAshes.World
                     "Выход закрыт до завершения задания", detail);
                 return;
             }
-            ParentZoneInfo zone = RoaGameBootstrap.Active?.Loader?.Current?.ParentZone;
+            ParentZoneInfo zone = RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
             string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
             GUI.Label(new Rect(panel.x + 12f, panel.y + 6f, panel.width - 24f, 24f),
                 "ВЫХОД: " + zoneName.ToUpperInvariant(), title);

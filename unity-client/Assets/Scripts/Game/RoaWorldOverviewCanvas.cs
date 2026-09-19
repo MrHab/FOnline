@@ -288,7 +288,7 @@ namespace RealmOfAshes.Game
             else
             {
                 // В месте: зона, куда выводит его край, и точка места в ней.
-                ParentZoneInfo parent = Loader != null && Loader.Current != null ? Loader.Current.ParentZone : null;
+                ParentZoneInfo parent = Loader != null && Loader.Current != null ? Loader.Current.ExitZone : null;
                 zoneId = parent?.Id ?? string.Empty;
                 string placeId = Loader?.Current?.Id ?? string.Empty;
                 if (_zonesById.TryGetValue(zoneId, out JObject host))

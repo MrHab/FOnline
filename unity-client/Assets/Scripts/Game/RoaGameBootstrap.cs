@@ -706,7 +706,7 @@ namespace RealmOfAshes.Game
         private void UpdatePlaceEdgeExit()
         {
             if (_stage != Stage.InWorld || _controller == null || Minimap == null || Interaction == null) return;
-            ParentZoneInfo parentZone = Loader != null ? Loader.Current?.ParentZone : null;
+            ParentZoneInfo parentZone = Loader != null ? Loader.Current?.ExitZone : null;
             if (parentZone == null || !CurrentLocationHasEdgeExit) return;
             if (_cinematicActive || _gameMenuOpen || _tutorialOpen || _graphicsOpen
                 || RoaHudLayout.Editing || AnyGameplayPanelOpen()) return;
@@ -771,7 +771,7 @@ namespace RealmOfAshes.Game
 
         public static bool AllowsEdgeExit(LocationDefinition location, string onboardingPhase)
         {
-            if (location == null || location.ParentZone == null) return false;
+            if (location == null || location.ExitZone == null) return false;
             if (!location.CanExitAtEdge) return false;
             return !(string.Equals(location.Id, "randomRuinedRoad", StringComparison.Ordinal)
                 && onboardingPhase == "firstMission");
@@ -1649,6 +1649,14 @@ namespace RealmOfAshes.Game
                 }
                 ack.WorldState = recovered;
             }
+
+            // Комната точки мира (событие, бой, встреча в угодьях) выводит краем в
+            // зону своей точки: эту зону присылает состояние мира.
+            LocationDefinition entered = Loader.GetDefinition(ack.LocationId);
+            if (entered != null)
+                entered.RoomParentZone = ack.WorldState?["parentZone"] is JObject roomZone
+                    ? roomZone.ToObject<ParentZoneInfo>()
+                    : null;
 
             _status = "Загрузка локации " + ack.LocationId + "...";
             known = Loader.GetDefinition(ack.LocationId);

@@ -161,11 +161,20 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
       return row && row.sx === home.col && row.sy === home.row && channels.every(roomId => actorsIn(row, roomId).length === 3) ? row : null;
     });
     const entry = world(homeDef.entryFromNorth);
-    for (const actor of hunter.actors) {
-      assert(Math.hypot(actor.x - entry.x, actor.z - entry.z) < 24, `the hunter enters by the north gate: ${actor.x},${actor.z} vs ${entry.x},${entry.z}`);
-    }
-    await waitFor('both channels hear it come', async () => channels.length === new Set(notices.filter(row => /север/i.test(row.text)).map(row => row.role)).size);
-    console.log(`PASS a group from ${north.title} senses the players and walks in by the north gate, into both channels`);
+    // Воротами группа входит в каналы, открытые в миг прихода. Первый канал
+    // открыт всегда: без игрока группу ничто не зовёт. Тик экологии может пройти
+    // между двумя входами — тогда второй канал откроется позже и получит уже
+    // стоящую в зоне группу на её точках появления, как любой новый канал; его
+    // проверяем, только если он слышал приход с севера.
+    await delay(600);
+    const heard = new Set(notices.filter(row => /север/i.test(row.text)).map(row => row.role));
+    [accounts.untargeted, accounts.harvest].forEach((account, index) => {
+      if (index > 0 && !heard.has(account.role)) return;
+      for (const actor of actorsIn(hunter, channels[index])) {
+        assert(Math.hypot(actor.x - entry.x, actor.z - entry.z) < 24, `the hunter enters by the north gate: ${actor.x},${actor.z} vs ${entry.x},${entry.z}`);
+      }
+    });
+    console.log(`PASS a group from ${north.title} senses the players, walks in by the north gate and stands in both channels`);
 
     // --- гибель во всех каналах, бегство в соседнюю зону ---------------------------------------
     const killed = await devPost('/api/dev/danger-ecology/kill', { groupId: 'resident', roomId: home.id, count: 2 });

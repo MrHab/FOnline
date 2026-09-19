@@ -9,7 +9,7 @@
 const crypto = require('node:crypto');
 const { SLOT_METRES, chunkFits, rotatePoint, rotatedHalfExtents } = require('./zone-chunks');
 
-const BUILDER_VERSION = 1;
+const BUILDER_VERSION = 3;
 const TILE = 2;
 const TILES = 160;
 const HALF_METRES = TILES * TILE / 2;
@@ -112,7 +112,7 @@ function normalizeRecipe(recipe = {}) {
       landmarks: count('landmarks', 1, 2), poi: count('poi', 5, 12), resources: count('resources', 3, 10),
       lairs: count('lairs', MODE_BUDGET[mode].lairs, 6), containers: count('containers', MODE_BUDGET[mode].containers, 12),
       anomalies: count('anomalies', MODE_BUDGET[mode].anomalies, 8), eventAnchors: count('eventAnchors', 3, 8),
-      fill: clamp(Number(budget.fill ?? 0.55), 0, 1), maxObjects: count('maxObjects', 260, 600)
+      fill: clamp(Number(budget.fill ?? 1), 0, 1), maxObjects: count('maxObjects', 900, 1500)
     }
   };
 }
@@ -215,6 +215,12 @@ function planSlots(rng, recipe, catalog, reserved, arrivalSlots, hub) {
   spread('poi', recipe.budget.poi - anomalyPois);
   spread('resource', recipe.budget.resources);
   for (const slot of order) if (!taken(slot) && rng.chance(recipe.budget.fill)) put(slot, 'filler');
+  // Слоты у центра, ворот и мест получают лёгкий покров: преграды там всё равно не встанут
+  // ближе расчищенного радиуса, а голая земля у каждого входа выглядит пустырём.
+  for (const key of [...reserved].sort()) {
+    const [i, j] = key.split(':').map(Number);
+    if (!placed.has(key)) put({ i, j }, 'cover');
+  }
   return [...placed.values()].sort((a, b) => a.slot.j - b.slot.j || a.slot.i - b.slot.i);
 }
 
@@ -240,12 +246,15 @@ function rasterize(objects) {
     if (row.collision !== 'solid' && !row.resourceType) continue;
     const size = row.collisionSize || { width: TILE * 0.9, depth: TILE * 0.9 };
     const degrees = row.rotation.y * 180 / Math.PI;
+    const part = row.collisionParts?.[0];
+    const offset = part ? rotatePoint(part.center.x * row.scale.x, part.center.z * row.scale.z, degrees) : { x: 0, z: 0 };
+    const body = { x: row.position.x + offset.x, z: row.position.z + offset.z };
     const half = rotatedHalfExtents(size.width + 1, size.depth + 1, degrees);
-    const from = { tx: metresToTile(row.position.x - half.hx), tz: metresToTile(row.position.z - half.hz) };
-    const to = { tx: metresToTile(row.position.x + half.hx), tz: metresToTile(row.position.z + half.hz) };
+    const from = { tx: metresToTile(body.x - half.hx), tz: metresToTile(body.z - half.hz) };
+    const to = { tx: metresToTile(body.x + half.hx), tz: metresToTile(body.z + half.hz) };
     for (let tz = from.tz; tz <= to.tz; tz++) {
       for (let tx = from.tx; tx <= to.tx; tx++) {
-        if (Math.abs(tileCentre(tx) - row.position.x) <= half.hx && Math.abs(tileCentre(tz) - row.position.z) <= half.hz) blocked[tz * TILES + tx] = 1;
+        if (Math.abs(tileCentre(tx) - body.x) <= half.hx && Math.abs(tileCentre(tz) - body.z) <= half.hz) blocked[tz * TILES + tx] = 1;
       }
     }
   }
@@ -340,28 +349,70 @@ function buildZone(recipeInput, catalog) {
     || corridors.some(seg => segmentDistance(point, seg.a, seg.b) < seg.half + reach);
   const farFromArrivals = point => arrivalPoints.every(arrival => Math.hypot(arrival.x - point.x, arrival.z - point.z) >= SPAWN_CLEAR_METRES);
 
-  for (const { slot, chunk, rot } of plan) {
+  // Тропы держатся свободными: мелочь не ложится на середину тропы.
+  const onTrail = point => corridors.some(seg => segmentDistance(point, seg.a, seg.b) < Math.max(1, seg.half - 1));
+  const scatterItems = (chunk, rowIndex, row) => {
+    const items = [];
+    const count = rng.int(row.count[0], row.count[1]);
+    for (let k = 0; k < count; k++) {
+      let spot = null;
+      for (let attempt = 0; attempt < 6 && !spot; attempt++) {
+        const candidate = { x: row.x + (rng.next() * 2 - 1) * row.radius, z: row.z + (rng.next() * 2 - 1) * row.radius };
+        if (Math.abs(candidate.x) > SLOT_METRES / 2 - 0.5 || Math.abs(candidate.z) > SLOT_METRES / 2 - 0.5) continue;
+        if (items.every(other => Math.hypot(other.x - candidate.x, other.z - candidate.z) >= row.spacing)) spot = candidate;
+      }
+      if (!spot) continue;
+      const prefab = rng.pick(row.prefabs);
+      items.push({
+        id: `sc${rowIndex}_${k}`, prefab, x: round2(spot.x), z: round2(spot.z), ry: rng.int(0, 359),
+        s: round2(row.scale[0] + rng.next() * (row.scale[1] - row.scale[0])),
+        solid: row.solid === null ? catalog.kit[prefab].solid : row.solid, tags: ['scatter']
+      });
+    }
+    return items;
+  };
+
+  // Россыпь прореживается равномерно по всем слотам, чтобы потолок объектов не оставлял
+  // последние по порядку слоты пустыми; авторские объекты кусков не прореживаются.
+  const slotItems = plan.map(({ chunk }) => ({ fixed: chunk.objects, rows: chunk.scatter.map((row, index) => scatterItems(chunk, index, row)) }));
+  const fixedTotal = slotItems.reduce((sum, row) => sum + row.fixed.length, 0);
+  const scatterTotal = slotItems.reduce((sum, row) => sum + row.rows.reduce((n, items) => n + items.length, 0), 0);
+  const keepShare = scatterTotal ? Math.min(1, Math.max(0, recipe.budget.maxObjects - fixedTotal) / scatterTotal) : 1;
+
+  plan.forEach(({ slot, chunk, rot }, planIndex) => {
     const centre = slotCentre(slot);
     const prefix = `s${slot.i}${slot.j}`;
-    for (const item of chunk.objects) {
+    const { fixed, rows } = slotItems[planIndex];
+    const items = [...fixed, ...rows.flatMap(list => list.slice(0, Math.floor(list.length * keepShare)))];
+    for (const item of items) {
       if (objects.length >= recipe.budget.maxObjects) break;
       const kit = catalog.kit[item.prefab];
       const local = rotatePoint(item.x, item.z, rot);
       const point = { x: round2(centre.x + local.x), z: round2(centre.z + local.z) };
-      const degrees = ((item.ry + rot) % 360 + 360) % 360;
-      const width = round2(kit.size[0] * item.s);
-      const depth = round2(kit.size[1] * item.s);
+      const degrees = ((item.ry + rot + kit.turn) % 360 + 360) % 360;
+      const scale = kit.scale.map(value => round2(value * item.s));
+      // Габариты и центр меша в мире: масштаб и поворот объекта.
+      const width = round2(kit.size[0] * scale[0]);
+      const depth = round2(kit.size[1] * scale[2]);
+      const offset = rotatePoint(kit.center[0] * scale[0], kit.center[1] * scale[2], degrees);
+      const body = { x: point.x + offset.x, z: point.z + offset.z };
       const half = rotatedHalfExtents(width, depth, degrees);
       const reach = Math.max(half.hx, half.hz);
-      if (Math.abs(point.x) + half.hx > HALF_METRES - 8 || Math.abs(point.z) + half.hz > HALF_METRES - 8) continue;
+      if (Math.abs(body.x) + half.hx > HALF_METRES - 8 || Math.abs(body.z) + half.hz > HALF_METRES - 8) continue;
       const blocks = item.solid || !!kit.resource;
-      if (blocks ? inTheWay(point, reach) : keyPoints.some(key => Math.hypot(key.x - point.x, key.z - point.z) < 2)) continue;
+      if (blocks ? inTheWay(body, reach) : (keyPoints.some(key => Math.hypot(key.x - body.x, key.z - body.z) < 2) || onTrail(body))) continue;
+      const solid = item.solid && !kit.resource;
       objects.push({
         id: `${prefix}_${item.id}`, model: camel(item.prefab), prefab: item.prefab, name: kit.name,
         position: { x: point.x, y: 0, z: point.z }, rotation: { x: 0, y: round2(degrees * Math.PI / 180), z: 0 },
-        scale: { x: item.s, y: item.s, z: item.s },
-        collision: item.solid && !kit.resource ? 'solid' : 'none',
-        ...(item.solid && !kit.resource ? { collisionSize: { width, depth } } : {}),
+        scale: { x: scale[0], y: scale[1], z: scale[2] },
+        collision: solid ? 'solid' : 'none',
+        // Коллизия — бокс меша в осях префаба: сервер сам применит масштаб и поворот объекта,
+        // клиент ставит такой же BoxCollider. Высота нужна только клиенту.
+        ...(solid ? {
+          collisionParts: [{ center: { x: kit.center[0], z: kit.center[1] }, size: { x: kit.size[0], z: kit.size[1] }, height: kit.height }],
+          collisionSize: { width, depth }
+        } : {}),
         footprint: { x: width, z: depth }, vision: { blocks: kit.vision },
         role: kit.resource ? 'scenery' : item.solid ? 'cover' : 'scenery',
         tags: [...new Set([...item.tags, ...(kit.resource ? ['resource', kit.resource] : []), 'zone-kit'])],
@@ -396,7 +447,7 @@ function buildZone(recipeInput, catalog) {
       navNodes.push({ id: `${chunk.kind}_${prefix}`, ...tile });
       navLinks.push([`${chunk.kind}_${prefix}`, nearest.id]);
     }
-  }
+  });
 
   const targets = [
     ...gates.flatMap(gate => [{ ...gate.entry, label: `gate ${gate.dir} entry` }, { ...gate.trigger, label: `gate ${gate.dir}` }]),

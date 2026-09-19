@@ -10,12 +10,35 @@
     "*"
   ],
   "weight": 4,
-  "maxPerZone": 5,
+  "maxPerZone": 6,
   "rotations": [
     0,
     90,
     180,
     270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        13
+      ],
+      "spacing": 2.5
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
   ],
   "objects": [
     {
@@ -28,9 +51,16 @@
     {
       "id": "s2",
       "prefab": "asphalt_slab",
-      "x": 4,
-      "z": 1,
+      "x": -1,
+      "z": -2,
       "ry": 355
+    },
+    {
+      "id": "s3",
+      "prefab": "asphalt_slab",
+      "x": 7,
+      "z": -1,
+      "ry": 5
     },
     {
       "id": "c1",
@@ -38,13 +68,6 @@
       "x": 11,
       "z": -9,
       "ry": 70
-    },
-    {
-      "id": "t1",
-      "prefab": "tire_stack",
-      "x": -13,
-      "z": 8,
-      "ry": 0
     },
     {
       "id": "h1",

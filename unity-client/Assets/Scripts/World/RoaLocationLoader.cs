@@ -41,6 +41,7 @@ namespace RealmOfAshes.World
         private AsyncOperation _unitySceneUnload;
         private RoaSceneEnvironment _bootstrapEnvironment;
         private bool _bootstrapEnvironmentCaptured;
+        private RoaZoneAssembler _zoneAssembler;
 
         public LocationDefinition Current { get; private set; }
         public Renderer CurrentGroundRenderer { get; private set; }
@@ -93,12 +94,66 @@ namespace RealmOfAshes.World
         }
 
         /// <summary>
+        /// GET /api/locations/:id — одна локация. Так приходят зоны мира: их почти две
+        /// сотни, и в общий каталог они не входят. Ответ кладётся в тот же кеш.
+        /// </summary>
+        public IEnumerator FetchDefinition(string locationId, Action<bool, string> onDone)
+        {
+            if (string.IsNullOrEmpty(locationId))
+            {
+                onDone?.Invoke(false, "Не указана локация.");
+                yield break;
+            }
+            string url = BaseUrl.TrimEnd('/') + "/api/locations/" + UnityWebRequest.EscapeURL(locationId);
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                yield return request.SendWebRequest();
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    onDone?.Invoke(false, "Не удалось получить локацию " + locationId + ": " + request.error);
+                    yield break;
+                }
+                try
+                {
+                    JObject payload = JObject.Parse(request.downloadHandler.text);
+                    LocationDefinition definition = payload["location"]?.ToObject<LocationDefinition>();
+                    if (definition == null || string.IsNullOrEmpty(definition.Id))
+                    {
+                        onDone?.Invoke(false, "В ответе нет локации " + locationId + ".");
+                        yield break;
+                    }
+                    if (_locations == null) _locations = new Dictionary<string, LocationDefinition>();
+                    _locations[definition.Id] = definition;
+                    onDone?.Invoke(true, null);
+                }
+                catch (JsonException error)
+                {
+                    onDone?.Invoke(false, "Некорректный JSON локации: " + error.Message);
+                }
+            }
+        }
+
+        private RoaZoneAssembler ZoneAssembler
+        {
+            get
+            {
+                if (_zoneAssembler == null)
+                {
+                    _zoneAssembler = GetComponent<RoaZoneAssembler>();
+                    if (_zoneAssembler == null) _zoneAssembler = gameObject.AddComponent<RoaZoneAssembler>();
+                }
+                return _zoneAssembler;
+            }
+        }
+
+        /// <summary>
         /// Убрать локальную геометрию при выходе на глобальную карту. Каталог и
         /// GLB-кеш сохраняются, поэтому обратный вход не требует повторной загрузки
         /// уже виденных моделей.
         /// </summary>
         public void ClearLocation()
         {
+            _zoneAssembler?.ReleaseAll();
             if (_currentRoot != null)
             {
                 _currentRoot.SetActive(false);
@@ -156,6 +211,8 @@ namespace RealmOfAshes.World
             _unitySceneUnload = null;
             StepText = "Подготавливаю графику и модели мира...";
 
+            // Объекты зоны возвращаются в пулы до уничтожения корня, иначе умрут вместе с ним.
+            _zoneAssembler?.ReleaseAll();
             if (_currentRoot != null) Destroy(_currentRoot);
             _objectRoots.Clear();
             _objectEntries.Clear();
@@ -197,6 +254,26 @@ namespace RealmOfAshes.World
 
             if (unityScene == null)
                 BuildGround(definition, authoritativeMap, _currentRoot.transform);
+
+            if (definition.Generated)
+            {
+                // Зона мира: сцены Unity нет, объекты — префабы набора из пулов.
+                StepText = "Собираю зону...";
+                RoaZoneAssembler assembler = ZoneAssembler;
+                yield return StartCoroutine(assembler.Build(definition, _currentRoot.transform, _objectRoots, _objectEntries,
+                    share => Progress = share));
+                // Мелкий покров земли между объектами — инстансингом, без GameObject на экземпляр.
+                var cover = new GameObject("ZoneGroundCover").AddComponent<RoaZoneGroundCover>();
+                cover.transform.SetParent(_currentRoot.transform, false);
+                cover.Build(definition, Application.isMobilePlatform);
+                IsLoading = false;
+                string zoneSummary = "Зона " + definition.Id + ": объектов " + assembler.ActiveCount
+                    + ", создано новых " + assembler.CreatedCount + ", без префаба " + assembler.MissingPrefabs
+                    + ", покров " + cover.InstanceCount;
+                Debug.Log("[ROA] " + zoneSummary);
+                onDone?.Invoke(true, zoneSummary);
+                yield break;
+            }
 
             int built = 0;
             int skipped = 0;
@@ -455,7 +532,7 @@ namespace RealmOfAshes.World
             return holder;
         }
 
-        private void ApplyTransform(Transform target, LocationObject entry)
+        internal static void ApplyTransform(Transform target, LocationObject entry)
         {
             Vector3 position = entry.Position != null
                 ? RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z)

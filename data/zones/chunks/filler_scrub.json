@@ -10,56 +10,39 @@
     "*"
   ],
   "weight": 6,
-  "maxPerZone": 10,
+  "maxPerZone": 18,
   "rotations": [
     0,
     90,
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        22,
+        34
+      ],
+      "spacing": 1.9,
+      "scale": [
+        1,
+        2
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        6
+      ]
+    }
+  ],
   "objects": [
-    {
-      "id": "b1",
-      "prefab": "dry_bush",
-      "x": -13,
-      "z": -12,
-      "ry": 0
-    },
-    {
-      "id": "b2",
-      "prefab": "dry_bush",
-      "x": -2,
-      "z": -8,
-      "ry": 50
-    },
-    {
-      "id": "b3",
-      "prefab": "dry_bush",
-      "x": 10,
-      "z": -14,
-      "ry": 100
-    },
-    {
-      "id": "b4",
-      "prefab": "dry_bush",
-      "x": 14,
-      "z": 2,
-      "ry": 150
-    },
-    {
-      "id": "b5",
-      "prefab": "dry_bush",
-      "x": 3,
-      "z": 11,
-      "ry": 210
-    },
-    {
-      "id": "b6",
-      "prefab": "dry_bush",
-      "x": -10,
-      "z": 9,
-      "ry": 320
-    },
     {
       "id": "k1",
       "prefab": "rust_barrel_v1",

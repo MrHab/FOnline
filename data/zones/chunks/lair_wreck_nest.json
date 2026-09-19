@@ -20,6 +20,19 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        7,
+        11
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "c1",
@@ -36,10 +49,17 @@
       "ry": 200
     },
     {
+      "id": "c3",
+      "prefab": "car_wreck",
+      "x": -2,
+      "z": 7,
+      "ry": 110
+    },
+    {
       "id": "s1",
       "prefab": "scrap_heap",
       "x": 0,
-      "z": 6,
+      "z": 0,
       "ry": 0
     },
     {

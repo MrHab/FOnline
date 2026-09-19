@@ -17,20 +17,35 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "p1",
       "prefab": "oil_pump_jack",
       "x": 0,
       "z": 0,
-      "ry": 0
-    },
-    {
-      "id": "t1",
-      "prefab": "tire_stack",
-      "x": -8,
-      "z": 5,
-      "ry": 0
+      "ry": 0,
+      "s": 1.4
     },
     {
       "id": "b1",
@@ -40,11 +55,11 @@
       "ry": 45
     },
     {
-      "id": "k1",
-      "prefab": "rust_barrel_v1",
-      "x": 5,
-      "z": 9,
-      "ry": 0
+      "id": "b2",
+      "prefab": "barrel_cluster",
+      "x": -8,
+      "z": 5,
+      "ry": 200
     }
   ],
   "anchors": [

@@ -1194,6 +1194,9 @@ namespace RealmOfAshes.Game
         public void SetLocation(LocationDefinition location)
         {
             ClearStaticTargets();
+            // Новое место: игрок появляется у входа, а не в проёме, из которого пришёл.
+            _autoGateInside = string.Empty;
+            _autoGateRetryAt = 0f;
             _authoredResourceIds.Clear();
             _locationReady = location != null;
             _locationId = location?.Id ?? string.Empty;
@@ -1274,6 +1277,8 @@ namespace RealmOfAshes.Game
                 {
                     ["id"] = string.IsNullOrEmpty(transition.Id) ? "location_exit" : transition.Id,
                     ["name"] = string.IsNullOrEmpty(transition.Label) ? "Переход" : transition.Label,
+                    ["type"] = transition.Type ?? string.Empty,
+                    ["auto"] = transition.Auto,
                     ["to"] = transition.To,
                     ["entryKey"] = transition.EntryKey ?? string.Empty,
                     ["locationId"] = _locationId,
@@ -1712,10 +1717,84 @@ namespace RealmOfAshes.Game
             }
 
             FindCandidate();
+            UpdateAutoGates();
             if (KeyboardInputEnabled && Input.GetKeyDown(InteractKey))
             {
                 if (!TryPickupGroundBeforeInteract()) Interact();
             }
+        }
+
+        // --- ворота зон и край места: переход срабатывает, когда игрок входит в проём ----------
+        private string _autoGateInside = string.Empty;
+        private string _autoGateWarned = string.Empty;
+        private bool _autoGateLeftSinceWarning;
+        private float _autoGateRetryAt;
+
+        private void UpdateAutoGates()
+        {
+            JObject inside = null;
+            Vector3 position = Player.transform.position;
+            foreach (StaticTarget target in _staticTargets)
+            {
+                if (target.Kind != TargetKind.Transition || target.Data?["auto"]?.ToObject<bool>() != true) continue;
+                Vector3 delta = target.Position - position;
+                delta.y = 0f;
+                if (delta.magnitude <= target.Range) { inside = target.Data; break; }
+            }
+            StepIntoAutoTransition(inside);
+        }
+
+        /// <summary>Край места ведёт в зону мира: вызывает бутстрап, пока игрок в краевой полосе.</summary>
+        public void UpdateZoneEdge(ParentZoneInfo zone, bool inBand)
+        {
+            JObject data = null;
+            if (inBand && zone != null && !string.IsNullOrEmpty(zone.Id))
+            {
+                data = new JObject
+                {
+                    ["id"] = "zone_edge",
+                    ["name"] = string.IsNullOrEmpty(zone.Title) ? "Зона" : zone.Title,
+                    ["to"] = zone.Id,
+                    ["entryKey"] = zone.EntryKey ?? string.Empty,
+                    ["targetZoneRules"] = zone.TargetZoneRules != null ? (JToken)zone.TargetZoneRules.DeepClone() : JValue.CreateNull()
+                };
+            }
+            StepIntoAutoTransition(data);
+        }
+
+        private void StepIntoAutoTransition(JObject data)
+        {
+            string target = data?["to"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(target))
+            {
+                if (!string.IsNullOrEmpty(_autoGateInside) && !string.IsNullOrEmpty(_autoGateWarned)) _autoGateLeftSinceWarning = true;
+                _autoGateInside = string.Empty;
+                return;
+            }
+            if (target == _autoGateInside || _transitionPending || Socket == null) return;
+            if (Time.realtimeSinceStartup < _autoGateRetryAt) return;
+            _autoGateInside = target;
+
+            // В более опасную зону — только со второго шага в проём: первый показывает правила.
+            JObject rules = data["targetZoneRules"] as JObject;
+            bool confirmed = _autoGateWarned == target && _autoGateLeftSinceWarning && Time.realtimeSinceStartup <= _zoneWarningUntil;
+            if (TransitionNeedsConfirmation(rules, _acknowledgedZoneMode) && !confirmed)
+            {
+                _autoGateWarned = target;
+                _autoGateLeftSinceWarning = false;
+                _zoneWarningUntil = Time.realtimeSinceStartup + ZoneWarningWindowSeconds;
+                Show(TransitionZoneWarning(rules, data["name"]?.ToString()) + "\nШагните в проход ещё раз, чтобы войти.", ZoneWarningWindowSeconds);
+                return;
+            }
+            _autoGateWarned = string.Empty;
+            if (rules != null) _acknowledgedZoneMode = rules["mode"]?.ToString() ?? _acknowledgedZoneMode;
+            SendLocationTransition(data, failed =>
+            {
+                // Сервер не пустил (например, игрок ещё не у проёма по его данным) — повтор чуть позже.
+                if (!failed) return;
+                _autoGateInside = string.Empty;
+                _autoGateRetryAt = Time.realtimeSinceStartup + 1.5f;
+            });
         }
 
         private void UpdateContainerVisibility()
@@ -1979,12 +2058,18 @@ namespace RealmOfAshes.Game
             _zoneWarningTarget = string.Empty;
             _zoneWarningUntil = 0f;
             if (targetRules != null) _acknowledgedZoneMode = targetRules["mode"]?.ToString() ?? _acknowledgedZoneMode;
+            SendLocationTransition(transition, null);
+        }
+
+        private void SendLocationTransition(JObject transition, Action<bool> onFinished)
+        {
+            string target = transition["to"]?.ToString() ?? string.Empty;
             string entryKey = transition["entryKey"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(entryKey))
                 entryKey = target == "settlement" ? "entryFromWasteland" : "entryFromSettlement";
 
             _transitionPending = true;
-            Show("Переход в локацию…", 3f);
+            Show("Переход: " + (transition["name"]?.ToString() ?? "локация") + "…", 3f);
             Socket.EmitWithAck("changeLocation", new Dictionary<string, object>
             {
                 ["locationId"] = target,
@@ -1997,10 +2082,12 @@ namespace RealmOfAshes.Game
                 if (ack?["ok"]?.ToObject<bool>() != true)
                 {
                     Show(ack?["error"]?.ToString() ?? "Сервер не разрешил переход.", 4f);
+                    onFinished?.Invoke(true);
                     return;
                 }
                 if (Socket.ApplyLocationTransitionAck(ack) == null)
                     Show("Ответ перехода не удалось разобрать.", 4f);
+                onFinished?.Invoke(false);
             });
         }
 

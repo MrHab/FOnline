@@ -20,6 +20,28 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "b1",
@@ -31,7 +53,14 @@
     {
       "id": "b2",
       "prefab": "roadblock_barricade",
-      "x": 6,
+      "x": -3,
+      "z": -2,
+      "ry": 0
+    },
+    {
+      "id": "b3",
+      "prefab": "roadblock_barricade",
+      "x": 4,
       "z": 2,
       "ry": 0
     },
@@ -55,6 +84,13 @@
       "x": 12,
       "z": -8,
       "ry": 270
+    },
+    {
+      "id": "t1",
+      "prefab": "tire_stack",
+      "x": 7,
+      "z": -5,
+      "ry": 0
     }
   ],
   "anchors": [

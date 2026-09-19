@@ -17,6 +17,28 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "g1",
@@ -29,11 +51,18 @@
       "id": "g2",
       "prefab": "cargo_stack",
       "x": -7,
-      "z": 0,
+      "z": -3.5,
       "ry": 0
     },
     {
       "id": "g3",
+      "prefab": "cargo_stack",
+      "x": -7,
+      "z": -1,
+      "ry": 0
+    },
+    {
+      "id": "g4",
       "prefab": "cargo_stack",
       "x": 5,
       "z": -8,
@@ -52,14 +81,28 @@
       "x": -2,
       "z": 10,
       "ry": 180
+    },
+    {
+      "id": "l2",
+      "prefab": "storage_lean_to",
+      "x": 3,
+      "z": 10,
+      "ry": 180
+    },
+    {
+      "id": "w1",
+      "prefab": "workshop_bench",
+      "x": 4,
+      "z": 0,
+      "ry": 0
     }
   ],
   "anchors": [
     {
       "id": "cache",
       "type": "container",
-      "x": 2,
-      "z": -2,
+      "x": 1,
+      "z": -3,
       "tier": "tools"
     },
     {

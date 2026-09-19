@@ -119,7 +119,11 @@ for (const mode of MODES) {
     assertWalkable(def);
 
     // Бюджеты по цвету.
-    assert(def.objects.length <= 260 && def.objects.length >= 40, `${def.id}: ${def.objects.length} objects`);
+    assert(def.objects.length <= 900 && def.objects.length >= 300, `${def.id}: ${def.objects.length} objects`);
+    // Потолок объектов прореживает россыпь равномерно: ни один занятый куском слот не остаётся голым.
+    const filled = new Set(def.objects.map(row => row.id.split('_')[0]));
+    const bare = def.zone.chunks.filter(row => !filled.has(`s${row.slot[0]}${row.slot[1]}`));
+    assert(bare.length <= 2, `${def.id}: ${bare.length} slots got a chunk but no objects`);
     if (mode === 'peaceful') {
       assert.equal(def.zone.lairs.length + def.containers.length + def.anomalyFields.length, 0, 'a peaceful zone has no lairs, caches or anomalies');
     } else {
@@ -155,21 +159,21 @@ assert.throws(() => buildZone(recipe('pvp', 5, { gates: [{ dir: 'up', to: 'z' }]
 // правил конструктора меняет хэш. Изменили правила намеренно — поднимите BUILDER_VERSION
 // и обновите хэши здесь.
 const tinyKit = normalizeKit({ prefabs: { rubble_rock: { size: [2.4, 2], solid: true, vision: true }, dry_bush: { size: [1.5, 1.4] }, ore_outcrop: { size: [1.8, 1.5], resource: 'ore', hp: 6 } } });
-const tiny = (id, kind, anchors = []) => normalizeChunk({
-  schema: 'kromka.zoneChunk.v1', id, kind,
+const tiny = (id, kind, anchors = [], scatter = []) => normalizeChunk({
+  schema: 'kromka.zoneChunk.v1', id, kind, scatter,
   objects: [{ id: 'r', prefab: 'rubble_rock', x: -8, z: -6, ry: 30 }, { id: 'b', prefab: 'dry_bush', x: 6, z: 9 }, { id: 'o', prefab: 'ore_outcrop', x: 10, z: -10 }],
   anchors
 }, tinyKit);
 const tinyCatalog = {
   kit: tinyKit,
   chunks: [
-    tiny('t_filler', 'filler'), tiny('t_landmark', 'landmark', [{ id: 'e', type: 'eventAnchor', x: 0, z: 12, radius: 8 }]),
+    tiny('t_filler', 'filler', [], [{ prefabs: ['dry_bush', 'rubble_rock'], count: [2, 5], spacing: 3, scale: [0.8, 1.4] }]), tiny('t_cover', 'cover', [], [{ prefabs: ['dry_bush'], count: [1, 3] }]), tiny('t_landmark', 'landmark', [{ id: 'e', type: 'eventAnchor', x: 0, z: 12, radius: 8 }]),
     tiny('t_lair', 'lair', [{ id: 'den', type: 'lair', x: 0, z: 0 }, { id: 'p', type: 'spawnArea', x: 5, z: 5, radius: 8 }]),
     tiny('t_poi', 'poi', [{ id: 'c', type: 'container', x: 2, z: 2 }, { id: 'a', type: 'anomaly', x: -4, z: 8, radius: 3 }]),
     tiny('t_resource', 'resource')
   ]
 };
-const GOLDEN = { pve: 'b1-a31cbede', pvpBlack: 'b1-edb5879b' };
+const GOLDEN = { pve: 'b3-0466531c', pvpBlack: 'b3-8517b2eb' };
 for (const [mode, expected] of Object.entries(GOLDEN)) {
   const revision = buildZone(recipe(mode, 20260920), tinyCatalog).revision;
   assert.equal(revision, expected, `constructor rules changed for ${mode}: bump BUILDER_VERSION and update GOLDEN (got ${revision})`);

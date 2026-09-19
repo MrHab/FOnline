@@ -20,13 +20,34 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "t1",
       "prefab": "scrap_watch_tower",
       "x": 0,
       "z": 0,
-      "ry": 0
+      "ry": 0,
+      "s": 2.4
     },
     {
       "id": "s1",
@@ -48,6 +69,13 @@
       "x": 5,
       "z": 6,
       "ry": 0
+    },
+    {
+      "id": "k2",
+      "prefab": "rust_barrel_v1",
+      "x": 6,
+      "z": 7,
+      "ry": 40
     }
   ],
   "anchors": [

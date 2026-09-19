@@ -17,6 +17,31 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        5,
+        8
+      ],
+      "spacing": 4,
+      "scale": [
+        0.9,
+        1.8
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        6
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "o1",
@@ -45,20 +70,6 @@
       "x": -3,
       "z": 9,
       "ry": 250
-    },
-    {
-      "id": "r1",
-      "prefab": "rubble_rock",
-      "x": 12,
-      "z": -12,
-      "ry": 0
-    },
-    {
-      "id": "r2",
-      "prefab": "rubble_rock",
-      "x": -13,
-      "z": 10,
-      "ry": 90
     }
   ],
   "anchors": [

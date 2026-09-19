@@ -10,12 +10,32 @@
     "*"
   ],
   "weight": 3,
-  "maxPerZone": 4,
+  "maxPerZone": 5,
   "rotations": [
     0,
     90,
     180,
     270
+  ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        12,
+        18
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        3,
+        5
+      ]
+    }
   ],
   "objects": [
     {
@@ -28,29 +48,22 @@
     {
       "id": "p2",
       "prefab": "utility_pole",
-      "x": 0,
-      "z": -2,
+      "x": -5,
+      "z": -3,
       "ry": 0
     },
     {
       "id": "p3",
       "prefab": "utility_pole",
-      "x": 15,
-      "z": 0,
+      "x": 5,
+      "z": -2,
       "ry": 0
     },
     {
-      "id": "d1",
-      "prefab": "perimeter_debris",
-      "x": 6,
-      "z": 9,
-      "ry": 45
-    },
-    {
-      "id": "b1",
-      "prefab": "dry_bush",
-      "x": -8,
-      "z": 12,
+      "id": "p4",
+      "prefab": "utility_pole",
+      "x": 15,
+      "z": -1,
       "ry": 0
     }
   ],

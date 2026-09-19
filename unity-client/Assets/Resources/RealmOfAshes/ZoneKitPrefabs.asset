@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8936033b987473aa10ca269a9a7a73b, type: 3}
+  m_Name: ZoneKitPrefabs
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaZoneKitCatalog
+  entries:
+  - key: armory_rack
+    prefab: {fileID: 6406294047207040202, guid: 59bc4ef4283fde04d8418a04cef730b7, type: 3}
+  - key: asphalt_slab
+    prefab: {fileID: 3523857093544941097, guid: 3b8aa06699ed25e46acf0e900e9a272d, type: 3}
+  - key: barrel_cluster
+    prefab: {fileID: 3822310653601932721, guid: ce7597d4ae2841148820b09da9e48067, type: 3}
+  - key: brahmin_pen
+    prefab: {fileID: 7604925974080377240, guid: 056723cb698cc5a4ab1e23c743144d7a, type: 3}
+  - key: campfire_rest
+    prefab: {fileID: 5415190869563851009, guid: 25bca59ab2084d94cb005b63c33aa08a, type: 3}
+  - key: car_wreck
+    prefab: {fileID: 1353393025705223795, guid: 91ef6ff00da720841b44ac5396fc1e4e, type: 3}
+  - key: cargo_stack
+    prefab: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  - key: concrete_wall
+    prefab: {fileID: 7629125791155781697, guid: a49f4cbfb5dc5214a9b980b4345de3e0, type: 3}
+  - key: cot_bed
+    prefab: {fileID: 4437429164138132726, guid: 2b90ee1092acbb841a277e46d9937fc9, type: 3}
+  - key: dead_tree_a
+    prefab: {fileID: 5297443725183497773, guid: 2cb4be01a74613e4fa2898dce8ba01be, type: 3}
+  - key: dead_tree_b
+    prefab: {fileID: 1853635615957969157, guid: 223ecd9ae7793574e98bef8775f486a7, type: 3}
+  - key: dead_tree_c
+    prefab: {fileID: 636634327833599335, guid: af16fb36493048442a0d111683866a5e, type: 3}
+  - key: deadwood
+    prefab: {fileID: 8863697926133637650, guid: 9baaa79c634f4654d94765d56f6b085e, type: 3}
+  - key: dry_bush
+    prefab: {fileID: 7608851103998862245, guid: bbf8795ab9de65544ac59e3cef085b92, type: 3}
+  - key: fence_segment
+    prefab: {fileID: 6323542138365598067, guid: ce2a2da1107d319429b5b7956b5a6703, type: 3}
+  - key: garden_patch
+    prefab: {fileID: 5887329733065994493, guid: 60a5dde5e37fd514586b6e9f075deda0, type: 3}
+  - key: highway_sign
+    prefab: {fileID: 7646853272370256106, guid: 5f5e048a5c876d44281fa316b583191d, type: 3}
+  - key: oil_pump_jack
+    prefab: {fileID: 385656190640750072, guid: ef73a045916b4034bbe8ffd8d203fcc0, type: 3}
+  - key: ore_outcrop
+    prefab: {fileID: 9077499661432099276, guid: c9be0701644078b4596ba698a73b216c, type: 3}
+  - key: perimeter_debris
+    prefab: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  - key: relay_antenna
+    prefab: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+  - key: roadblock_barricade
+    prefab: {fileID: 6264479473349796813, guid: a373d4b2c4266924091c9383b194110d, type: 3}
+  - key: rubble_rock
+    prefab: {fileID: 1397307400844912419, guid: b14c801ea8efcf242814415ca835fb0a, type: 3}
+  - key: ruined_billboard
+    prefab: {fileID: 1021910188801699316, guid: fb5e726b4674cb644822166b7b877883, type: 3}
+  - key: rust_barrel_v1
+    prefab: {fileID: 8671544961417000296, guid: 15dde87d609f8db488555ecb79527184, type: 3}
+  - key: scrap_heap
+    prefab: {fileID: 5626935753536319171, guid: 28f5e7fa2a6021d4cad5d7b12d63bfc6, type: 3}
+  - key: scrap_wall_segment
+    prefab: {fileID: 1156191630513837058, guid: b93c268b48a2227448c08733ec7b9ce0, type: 3}
+  - key: scrap_watch_tower
+    prefab: {fileID: 5514363444047898110, guid: a87733e2dfab3a64e966262c1dbd05a2, type: 3}
+  - key: storage_lean_to
+    prefab: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
+  - key: tire_stack
+    prefab: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  - key: utility_pole
+    prefab: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  - key: wasteland_shack
+    prefab: {fileID: 8811722804630737876, guid: 801db09b744245446a75e9d956e02720, type: 3}
+  - key: watch_post
+    prefab: {fileID: 1063936782628078594, guid: 5f3b8e44d2992e54090b66f9b24c81c1, type: 3}
+  - key: water_tank
+    prefab: {fileID: 1447705290824856971, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+  - key: workshop_bench
+    prefab: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}

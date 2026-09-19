@@ -47,6 +47,15 @@ namespace RealmOfAshes.World
         [JsonProperty("containers")] public JArray Containers;
         [JsonProperty("storage")] public JObject Storage;
 
+        /// <summary>Зона мира, собранная конструктором: сцены Unity у неё нет, объекты — префабы набора.</summary>
+        [JsonProperty("generated")] public bool Generated;
+        [JsonProperty("revision")] public string Revision;
+        /// <summary>Блок зоны мира: ворота, куски, граф троп nav {nodes, links}.</summary>
+        [JsonProperty("zone")] public JObject Zone;
+
+        /// <summary>Место внутри зоны мира: куда выводит его край.</summary>
+        [JsonProperty("parentZone")] public ParentZoneInfo ParentZone;
+
         [JsonIgnore]
         public bool CanExitToGlobalMap { get { return AllowGlobalMapExit != false; } }
 
@@ -158,10 +167,24 @@ namespace RealmOfAshes.World
         [JsonProperty("radius")] public float Radius;
     }
 
+    /// <summary>Зона мира за краем места: её номер, название, цвет и точка входа.</summary>
+    public sealed class ParentZoneInfo
+    {
+        [JsonProperty("id")] public string Id;
+        [JsonProperty("n")] public int N;
+        [JsonProperty("title")] public string Title;
+        [JsonProperty("mode")] public string Mode;
+        [JsonProperty("entryKey")] public string EntryKey;
+        [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
+    }
+
     public sealed class LocationTransition
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("type")] public string Type;
+        /// <summary>Ворота зоны срабатывают, когда игрок входит в проём (type zoneGate).</summary>
+        [JsonProperty("auto")] public bool Auto;
+        [JsonProperty("direction")] public string Direction;
         [JsonProperty("label")] public string Label;
         [JsonProperty("to")] public string To;
         [JsonProperty("entryKey")] public string EntryKey;
@@ -193,6 +216,8 @@ namespace RealmOfAshes.World
     {
         [JsonProperty("id")] public string Id;
         [JsonProperty("model")] public string Model;
+        /// <summary>Ключ префаба набора зон (data/zones/kit.json); только у объектов сгенерированных зон.</summary>
+        [JsonProperty("prefab")] public string Prefab;
         [JsonProperty("name")] public string Name;
         [JsonProperty("kind")] public string Kind;
 

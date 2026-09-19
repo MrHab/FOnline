@@ -18,6 +18,17 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "g1",
@@ -29,7 +40,14 @@
     {
       "id": "g2",
       "prefab": "garden_patch",
-      "x": 4,
+      "x": 0,
+      "z": -4,
+      "ry": 0
+    },
+    {
+      "id": "g3",
+      "prefab": "garden_patch",
+      "x": 5,
       "z": -4,
       "ry": 0
     },
@@ -43,15 +61,22 @@
     {
       "id": "f1",
       "prefab": "fence_segment",
-      "x": -10,
+      "x": -9,
       "z": 2,
       "ry": 90
     },
     {
       "id": "f2",
       "prefab": "fence_segment",
-      "x": 10,
+      "x": 9,
       "z": 2,
+      "ry": 90
+    },
+    {
+      "id": "s1",
+      "prefab": "wasteland_shack",
+      "x": -11,
+      "z": 11,
       "ry": 90
     }
   ],

@@ -60,7 +60,9 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 |---|---|
 | `RoaCoords.cs` | **единственное** место преобразования координат и углов сервер ↔ Unity |
 | `RoaLocationData.cs` | модель `data/locations/*.json` (`realm.location.v1`) |
-| `RoaLocationLoader.cs` | каталог `/api/locations`, аддитивная загрузка авторской сцены локации и привязка объектов JSON к объектам сцены по `id`; для локаций без сцены — GLB через glTFast |
+| `RoaLocationLoader.cs` | каталог `/api/locations`, аддитивная загрузка авторской сцены локации и привязка объектов JSON к объектам сцены по `id`; для локаций без сцены — GLB через glTFast; зону мира (`generated`) берёт по `/api/locations/<id>` и собирает из набора |
+| `RoaZoneAssembler.cs`, `RoaZoneKitCatalog.cs` | сборка зоны мира из префабов набора (`Resources/RealmOfAshes/ZoneKitPrefabs`) с пулами и коллайдерами из `collisionParts` |
+| `RoaZoneGroundCover.cs` | покров земли зоны: кусты и камни по зерну зоны мимо троп и объектов, на сцене — только слоты 3×3 вокруг камеры |
 | `RoaUnityLocationScene.cs`, `RoaUnityLocationObject.cs` | маркер авторской сцены локации и мост «id серверного объекта → объект сцены» |
 | `RoaSceneEnvironment.cs` | снимок освещения авторской сцены (ambient, туман, небо, солнце), применяемый к активной сцене |
 | `RoaLocalTerrain.cs` | земля из авторитетной `worldState.map`, рельеф, вода, физика тайлов и границы `playableBounds` |

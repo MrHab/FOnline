@@ -10,7 +10,7 @@ const path = require('node:path');
 
 const SLOT_METRES = 40;
 const SLOT_HALF = SLOT_METRES / 2;
-const CHUNK_KINDS = Object.freeze(['filler', 'poi', 'landmark', 'resource', 'lair', 'place']);
+const CHUNK_KINDS = Object.freeze(['filler', 'cover', 'poi', 'landmark', 'resource', 'lair', 'place']);
 const ANCHOR_TYPES = Object.freeze(['container', 'resource', 'spawnArea', 'lair', 'eventAnchor', 'anomaly']);
 const ROTATIONS = Object.freeze([0, 90, 180, 270]);
 
@@ -18,15 +18,26 @@ function fail(id, message) { throw new Error(`zone chunk "${id}": ${message}`); 
 function safeId(value) { return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48); }
 function finite(value) { return Number.isFinite(Number(value)); }
 
+// Префаб набора: габариты меша в его осях при масштабе 1 (size [x, z], height),
+// центр меша относительно пивота в осях сервера, авторский масштаб [x, y, z] и
+// доворот turn, после которого длинная сторона лежит вдоль X.
 function normalizeKit(raw = {}) {
   const prefabs = {};
+  const triple = (value, fallback) => (Array.isArray(value) && value.length === 3 && value.every(n => Number(n) > 0) ? value.map(Number) : fallback);
   for (const [key, row] of Object.entries(raw.prefabs || {})) {
     const id = safeId(key);
     const size = Array.isArray(row?.size) ? row.size.map(Number) : [];
-    if (!id || size.length !== 2 || !size.every(n => n > 0)) throw new Error(`zone kit: prefab "${key}" needs size [width, depth]`);
+    if (!id || size.length !== 2 || !size.every(n => n > 0)) throw new Error(`zone kit: prefab "${key}" needs size [x, z]`);
+    const center = Array.isArray(row.center) && row.center.length === 2 ? row.center.map(Number) : [0, 0];
+    const turn = Number(row.turn || 0);
+    if (![0, 90, 180, 270].includes(turn)) throw new Error(`zone kit: prefab "${key}" has turn ${row.turn}`);
     prefabs[id] = Object.freeze({
       name: String(row.name || id).slice(0, 60),
       size: Object.freeze([size[0], size[1]]),
+      height: Math.max(0.05, Number(row.height || 1)),
+      center: Object.freeze([center[0] || 0, center[1] || 0]),
+      scale: Object.freeze(triple(row.scale, [1, 1, 1])),
+      turn,
       solid: row.solid === true,
       vision: row.vision === true,
       resource: row.resource ? safeId(row.resource) : '',
@@ -75,8 +86,25 @@ function normalizeChunk(raw = {}, kit = {}) {
       prefab: safeId(row.prefab), tier: safeId(row.tier), anomalyType: safeId(row.anomalyType)
     });
   });
+  // Россыпь: мелочь (кусты, камни, мусор) раскладывается конструктором по зерну зоны,
+  // чтобы кусок 40×40 м не приходилось заполнять руками предмет за предметом.
+  const scatter = (Array.isArray(raw.scatter) ? raw.scatter : []).map((row, index) => {
+    const prefabs = (Array.isArray(row?.prefabs) ? row.prefabs : []).map(safeId);
+    if (!prefabs.length || !prefabs.every(key => kit[key])) fail(id, `scatter ${index} needs kit prefabs`);
+    const count = Array.isArray(row.count) ? row.count.map(Number) : [Number(row.count || 0), Number(row.count || 0)];
+    if (!(count[0] >= 0 && count[1] >= count[0] && count[1] <= 80)) fail(id, `scatter ${index} count must be [min, max] up to 80`);
+    const radius = Math.min(SLOT_HALF - 0.5, Math.max(1, Number(row.radius || SLOT_HALF - 1)));
+    const scale = Array.isArray(row.scale) ? row.scale.map(Number) : [0.85, 1.2];
+    return Object.freeze({
+      prefabs: Object.freeze(prefabs), count: Object.freeze([Math.round(count[0]), Math.round(count[1])]), radius,
+      x: finite(row.x) ? Number(row.x) : 0, z: finite(row.z) ? Number(row.z) : 0,
+      spacing: Math.max(0.5, Number(row.spacing || 2)),
+      scale: Object.freeze([Math.max(0.3, scale[0] || 1), Math.max(0.3, scale[1] || scale[0] || 1)]),
+      solid: typeof row.solid === 'boolean' ? row.solid : null
+    });
+  });
   return Object.freeze({
-    id, kind: raw.kind, name: String(raw.name || id).slice(0, 60),
+    id, kind: raw.kind, name: String(raw.name || id).slice(0, 60), scatter: Object.freeze(scatter),
     biomes: Object.freeze((Array.isArray(raw.biomes) && raw.biomes.length ? raw.biomes : ['*']).map(String)),
     modes: Object.freeze((Array.isArray(raw.modes) && raw.modes.length ? raw.modes : ['*']).map(String)),
     weight: Math.max(1, Math.round(Number(raw.weight || 1))),

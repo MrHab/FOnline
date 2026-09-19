@@ -17,6 +17,26 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "f1",
@@ -28,15 +48,15 @@
     {
       "id": "c1",
       "prefab": "cot_bed",
-      "x": -5,
+      "x": -4,
       "z": 3,
       "ry": 20
     },
     {
       "id": "c2",
       "prefab": "cot_bed",
-      "x": 4,
-      "z": -5,
+      "x": 3,
+      "z": -4,
       "ry": 110
     },
     {
@@ -47,11 +67,25 @@
       "ry": 200
     },
     {
+      "id": "l2",
+      "prefab": "storage_lean_to",
+      "x": -7,
+      "z": 6,
+      "ry": 160
+    },
+    {
       "id": "k1",
       "prefab": "rust_barrel_v1",
       "x": -7,
       "z": -6,
       "ry": 0
+    },
+    {
+      "id": "b1",
+      "prefab": "barrel_cluster",
+      "x": 8,
+      "z": -7,
+      "ry": 30
     }
   ],
   "anchors": [
@@ -59,14 +93,14 @@
       "id": "cache",
       "type": "container",
       "x": 5,
-      "z": 8,
+      "z": 9,
       "tier": "survival"
     },
     {
       "id": "event",
       "type": "eventAnchor",
-      "x": -10,
-      "z": 10,
+      "x": -11,
+      "z": 11,
       "radius": 9
     }
   ]

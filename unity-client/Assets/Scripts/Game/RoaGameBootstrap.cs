@@ -749,6 +749,14 @@ namespace RealmOfAshes.Game
             if (width <= 0 || depth <= 0) return;
             bool inBand = RoaWorldExitBoundary.IsInExitBand(
                 _controller.transform.position, width, depth);
+            // Край места внутри зоны мира ведёт в эту зону, а не на глобальную карту.
+            ParentZoneInfo parentZone = Loader != null ? Loader.Current?.ParentZone : null;
+            if (parentZone != null && Interaction != null)
+            {
+                Interaction.UpdateZoneEdge(parentZone, inBand);
+                if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
+                return;
+            }
             if (!inBand) return;
             _edgeExitRetryAt = Time.unscaledTime + 0.75f;
             GlobalMap.RequestEnterFromLocation();
@@ -1695,17 +1703,23 @@ namespace RealmOfAshes.Game
 
             if (Loader.GetDefinition(ack.LocationId) == null)
             {
-                bool ok = false;
-                yield return StartCoroutine(Loader.FetchLocationCatalog((success, error) =>
+                // Зона мира не входит в общий каталог — сначала она одна, по id.
+                bool fetched = false;
+                yield return StartCoroutine(Loader.FetchDefinition(ack.LocationId, (success, error) => fetched = success));
+                if (!fetched)
                 {
-                    ok = success;
-                    if (!success) _status = "Каталог локаций не загружен: " + error;
-                }));
+                    bool ok = false;
+                    yield return StartCoroutine(Loader.FetchLocationCatalog((success, error) =>
+                    {
+                        ok = success;
+                        if (!success) _status = "Каталог локаций не загружен: " + error;
+                    }));
 
-                if (!ok)
-                {
-                    _stage = Stage.Failed;
-                    yield break;
+                    if (!ok)
+                    {
+                        _stage = Stage.Failed;
+                        yield break;
+                    }
                 }
             }
 

@@ -17,6 +17,28 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        8,
+        12
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "s1",
@@ -45,13 +67,6 @@
       "x": -6,
       "z": 8,
       "ry": 240
-    },
-    {
-      "id": "t1",
-      "prefab": "tire_stack",
-      "x": 0,
-      "z": 0,
-      "ry": 0
     },
     {
       "id": "c1",

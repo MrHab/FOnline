@@ -17,33 +17,89 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        6,
+        10
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "m1",
       "prefab": "relay_antenna",
       "x": 0,
       "z": 0,
+      "ry": 0,
+      "s": 2.2
+    },
+    {
+      "id": "w0",
+      "prefab": "concrete_wall",
+      "x": -8,
+      "z": -8,
       "ry": 0
     },
     {
       "id": "w1",
       "prefab": "concrete_wall",
-      "x": -7,
-      "z": -7,
+      "x": -6.2,
+      "z": -8,
       "ry": 0
     },
     {
       "id": "w2",
       "prefab": "concrete_wall",
-      "x": 7,
-      "z": -7,
+      "x": -4.4,
+      "z": -8,
       "ry": 0
     },
     {
       "id": "w3",
       "prefab": "concrete_wall",
-      "x": -9,
-      "z": 3,
+      "x": -2.5999999999999996,
+      "z": -8,
+      "ry": 0
+    },
+    {
+      "id": "v0",
+      "prefab": "concrete_wall",
+      "x": -9.5,
+      "z": -6,
+      "ry": 90
+    },
+    {
+      "id": "v1",
+      "prefab": "concrete_wall",
+      "x": -9.5,
+      "z": -4.2,
+      "ry": 90
+    },
+    {
+      "id": "v2",
+      "prefab": "concrete_wall",
+      "x": -9.5,
+      "z": -2.4,
+      "ry": 90
+    },
+    {
+      "id": "v3",
+      "prefab": "concrete_wall",
+      "x": -9.5,
+      "z": -0.5999999999999996,
       "ry": 90
     },
     {
@@ -63,7 +119,7 @@
     {
       "id": "b1",
       "prefab": "workshop_bench",
-      "x": 4,
+      "x": 5,
       "z": 8,
       "ry": 0
     }

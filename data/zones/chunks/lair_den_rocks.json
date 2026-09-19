@@ -20,41 +20,66 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        4,
+        7
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "r1",
       "prefab": "rubble_rock",
       "x": -9,
       "z": -8,
-      "ry": 0
+      "ry": 0,
+      "s": 1.8
     },
     {
       "id": "r2",
       "prefab": "rubble_rock",
       "x": 0,
       "z": -11,
-      "ry": 60
+      "ry": 60,
+      "s": 2
     },
     {
       "id": "r3",
       "prefab": "rubble_rock",
       "x": 9,
       "z": -7,
-      "ry": 120
+      "ry": 120,
+      "s": 1.7
     },
     {
       "id": "r4",
       "prefab": "rubble_rock",
       "x": 11,
       "z": 3,
-      "ry": 180
+      "ry": 180,
+      "s": 1.6
     },
     {
       "id": "r5",
       "prefab": "rubble_rock",
       "x": -11,
       "z": 2,
-      "ry": 240
+      "ry": 240,
+      "s": 1.9
     },
     {
       "id": "w1",

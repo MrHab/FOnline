@@ -17,20 +17,44 @@
     180,
     270
   ],
+  "scatter": [
+    {
+      "prefabs": [
+        "tire_stack",
+        "rust_barrel_v1",
+        "perimeter_debris"
+      ],
+      "count": [
+        6,
+        9
+      ]
+    },
+    {
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        8
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "t1",
       "prefab": "water_tank",
       "x": -5,
       "z": -3,
-      "ry": 0
+      "ry": 0,
+      "s": 2.2
     },
     {
       "id": "t2",
       "prefab": "water_tank",
       "x": 3,
       "z": -5,
-      "ry": 40
+      "ry": 40,
+      "s": 2
     },
     {
       "id": "b1",
@@ -59,6 +83,13 @@
       "x": 13,
       "z": 0,
       "ry": 90
+    },
+    {
+      "id": "s3",
+      "prefab": "scrap_wall_segment",
+      "x": -13,
+      "z": 0,
+      "ry": 90
     }
   ],
   "anchors": [
@@ -72,8 +103,8 @@
     {
       "id": "event",
       "type": "eventAnchor",
-      "x": -13,
-      "z": -13,
+      "x": -12,
+      "z": -12,
       "radius": 9
     }
   ]

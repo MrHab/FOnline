@@ -10,56 +10,51 @@
     "*"
   ],
   "weight": 5,
-  "maxPerZone": 8,
+  "maxPerZone": 14,
   "rotations": [
     0,
     90,
     180,
     270
   ],
-  "objects": [
+  "scatter": [
     {
-      "id": "r1",
-      "prefab": "rubble_rock",
-      "x": -11,
-      "z": -10,
-      "ry": 15
+      "prefabs": [
+        "rubble_rock"
+      ],
+      "count": [
+        8,
+        13
+      ],
+      "spacing": 3.2,
+      "scale": [
+        0.8,
+        2
+      ]
     },
     {
-      "id": "r2",
-      "prefab": "rubble_rock",
-      "x": 6,
-      "z": -13,
-      "ry": 140
+      "prefabs": [
+        "perimeter_debris"
+      ],
+      "count": [
+        5,
+        9
+      ],
+      "scale": [
+        0.9,
+        1.5
+      ]
     },
     {
-      "id": "r3",
-      "prefab": "rubble_rock",
-      "x": 12,
-      "z": 5,
-      "ry": 260
-    },
-    {
-      "id": "r4",
-      "prefab": "rubble_rock",
-      "x": -6,
-      "z": 10,
-      "ry": 80
-    },
-    {
-      "id": "d1",
-      "prefab": "perimeter_debris",
-      "x": 0,
-      "z": -2,
-      "ry": 30
-    },
-    {
-      "id": "d2",
-      "prefab": "perimeter_debris",
-      "x": -14,
-      "z": 14,
-      "ry": 120
+      "prefabs": [
+        "dry_bush"
+      ],
+      "count": [
+        5,
+        9
+      ]
     }
   ],
+  "objects": [],
   "anchors": []
 }

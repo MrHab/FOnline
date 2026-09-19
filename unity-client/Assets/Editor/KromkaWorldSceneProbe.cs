@@ -24,7 +24,25 @@ namespace Kromka.EditorTools
             JObject catalog = ReadProjectJson("data/kromka/locations.json");
             JObject seed = ReadProjectJson("data/kromka/world-layout.seed.json");
             JArray locations = (JArray)catalog["locations"];
-            Require(locations.Count == 45, "каталог должен содержать 45 локаций");
+            // Каталог растёт (Сердцевина, Рынок Ядра), и точное число устаревало с каждой
+            // новой локацией. Охранять нужно не его, а случайную потерю строки: таблица
+            // сцен клиента и каталог обязаны перечислять одни и те же локации (каждая
+            // строка каталога проверяется ниже, поэтому хватает равенства размеров),
+            // а сцена без строки каталога — осиротевшая локация. Нижняя граница — как
+            // в tools/check-unity-kromka-authoring.js.
+            Require(locations.Count >= 45,
+                "каталог должен содержать не меньше 45 локаций, найдено " + locations.Count);
+            Require(KromkaLocationSceneCatalog.Count == locations.Count,
+                "таблица сцен клиента и каталог расходятся: клиент=" + KromkaLocationSceneCatalog.Count
+                + ", каталог=" + locations.Count);
+            var catalogScenes = new HashSet<string>(locations.OfType<JObject>()
+                .Select(row => KromkaLocationSceneCatalog.ScenePath(row["id"]?.Value<string>() ?? string.Empty)
+                    ?? string.Empty), StringComparer.Ordinal);
+            string[] orphanScenes = AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes/Kromka/Locations" })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(scenePath => !catalogScenes.Contains(scenePath)).ToArray();
+            Require(orphanScenes.Length == 0,
+                "сцены локаций без строки каталога: " + string.Join(", ", orphanScenes));
 
             var buildPaths = new HashSet<string>(EditorBuildSettings.scenes
                 .Where(scene => scene.enabled).Select(scene => scene.path), StringComparer.Ordinal);
@@ -104,13 +122,21 @@ namespace Kromka.EditorTools
                 id + ": неверный визуальный профиль");
             Require(location.AmbientProfileId == row["ambientProfile"]?.Value<string>(),
                 id + ": неверный профиль окружения");
-            Require(Find(scene, "REGION_LANGUAGE_" + (row["macroRegion"]?.Value<string>() ?? string.Empty)
-                + "_EDITABLE") != null, id + ": нет визуального языка региона");
-            Require(Find(scene, "LOCATION_TYPE_" + type + "_EDITABLE") != null,
-                id + ": нет узнаваемой композиции типа локации");
-            GameObject dressing = Find(scene, "ATMOSPHERIC_DRESSING_EDITABLE");
-            Require(dressing != null && dressing.transform.childCount >= 19,
-                id + ": недостаточно отдельного редактируемого постапокалиптического декора");
+            // Учебный двор RoaTutorialYardAuthoring пересобирает в чистую площадку без
+            // общей грамматики Кромки (регион, тип, атмосферный декор, башня №12):
+            // так задумано с 33a20ffd. Вместо грамматики проверяется его собственный
+            // состав ниже, остальное — RoaPracticalTutorialProbe и check-kromka-onboarding.
+            bool practicalYard = path == RealmOfAshes.EditorTools.RoaTutorialYardAuthoring.ScenePath;
+            if (!practicalYard)
+            {
+                Require(Find(scene, "REGION_LANGUAGE_" + (row["macroRegion"]?.Value<string>() ?? string.Empty)
+                    + "_EDITABLE") != null, id + ": нет визуального языка региона");
+                Require(Find(scene, "LOCATION_TYPE_" + type + "_EDITABLE") != null,
+                    id + ": нет узнаваемой композиции типа локации");
+                GameObject dressing = Find(scene, "ATMOSPHERIC_DRESSING_EDITABLE");
+                Require(dressing != null && dressing.transform.childCount >= 19,
+                    id + ": недостаточно отдельного редактируемого постапокалиптического декора");
+            }
 
             RoaUnityLocationScene runtime = Components<RoaUnityLocationScene>(scene).SingleOrDefault();
             Require(runtime != null && runtime.LocationId == id, id + ": нет runtime-моста Unity-сцены");
@@ -151,7 +177,16 @@ namespace Kromka.EditorTools
             }
             if (type == "personal_base")
                 Require(CountNames(scene, "-build-socket-") == 12, id + ": нужно 12 строительных ячеек");
-            if (type == "tutorial")
+            if (practicalYard)
+            {
+                // Всё, что собирает RoaTutorialYardAuthoring.ComposeGameplay.
+                foreach (string required in new[]
+                         { "yard_cover_a", "yard_repair_bench", "yard_ore", "yard_wood", "yard_caravan_truck",
+                           "yard_gate_left", "yard_gate_right", "yard_casualty_cot" })
+                    Require(objects.Any(marker => marker.StableObjectId == required),
+                        id + ": в учебном дворе нет " + required);
+            }
+            else if (type == "tutorial")
             {
                 Require(CountNames(scene, "-tower-12") == 1, id + ": нет башни №12");
                 Require(CountNames(scene, "-training-range") == 1, id + ": нет учебного стрельбища");

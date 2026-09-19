@@ -1,9 +1,11 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.World;
 using UnityEditor;
@@ -47,18 +49,55 @@ namespace RealmOfAshes.EditorTools
                                                        point => false),
                         "unrelated roof entered cutaway state");
 
-                string path = Path.GetFullPath(Path.Combine(Application.dataPath,
-                                                            "../../data/locations/settlement.json"));
-                LocationDefinition settlement = JsonConvert.DeserializeObject<LocationDefinition>(
-                    File.ReadAllText(path));
-                int authoredCutawayRoofs = 0;
-                for (int i = 0; i < settlement.Objects.Count; i++)
+                // Разрезаемая крыша торгового зала ушла вместе со Старым Климом (33a20ffd),
+                // и в данных Кромки таких крыш пока нет. Поэтому вместо одного здания
+                // проверяются правило распознавания авторской крыши и условие, без которого
+                // разрез бессмыслен; число крыш в данных только сообщается.
+                MethodInfo isCutawayRoof = typeof(RoaRoofCutaway).GetMethod("IsCutawayRoof",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Require(isCutawayRoof != null, "authored roof recognition rule is missing");
+                bool Recognized(LocationObject entry) => (bool)isCutawayRoof.Invoke(null, new object[] { entry });
+                Require(Recognized(new LocationObject { Tags = new List<string> { "roof", "trader-cutaway" } })
+                        && Recognized(new LocationObject { Tags = new List<string> { "ROOF-CUTAWAY" } })
+                        && Recognized(new LocationObject { Occlusion = new JObject { ["cutaway"] = true } }),
+                        "authored cutaway roof is not recognized");
+                Require(!Recognized(new LocationObject { Tags = new List<string> { "roof" } })
+                        && !Recognized(new LocationObject { Occlusion = new JObject { ["role"] = "roof" } })
+                        && !Recognized(null),
+                        "roof without a cutaway flag entered the cutaway set");
+
+                // Под разрезаемую крышу заходят и сквозь неё смотрят на пол: твёрдая крыша
+                // не пустит игрока внутрь, а перекрывающая обзор оставит его под глухим
+                // колпаком (см. RoaAuthoredVision) и не даст видимому полу открыть крышу.
+                bool WalkUnder(LocationObject entry) =>
+                    string.Equals(entry.Collision, "none", StringComparison.OrdinalIgnoreCase)
+                    && RoaAuthoredVision.Resolve(entry) == RoaAuthoredVision.Kind.Clear;
+                LocationObject RoofShape(string collision, bool blocksSight) => new LocationObject
                 {
-                    LocationObject entry = settlement.Objects[i];
-                    if (entry != null && entry.HasTag("trader-cutaway")) authoredCutawayRoofs++;
+                    Tags = new List<string> { "roof", "trader-cutaway" },
+                    Collision = collision,
+                    Vision = new JObject { ["blocks"] = blocksSight }
+                };
+                Require(WalkUnder(RoofShape("none", false)),
+                        "the retired trade hall roof shape no longer counts as walk-under");
+                Require(!WalkUnder(RoofShape("solid", false)) && !WalkUnder(RoofShape("none", true)),
+                        "a solid or sight-blocking roof passed as walk-under");
+
+                string locations = Path.GetFullPath(Path.Combine(Application.dataPath, "../../data/locations"));
+                int authoredCutawayRoofs = 0;
+                foreach (string file in Directory.GetFiles(locations, "*.json"))
+                {
+                    LocationDefinition location = JsonConvert.DeserializeObject<LocationDefinition>(
+                        File.ReadAllText(file));
+                    if (location?.Objects == null) continue;
+                    foreach (LocationObject entry in location.Objects)
+                    {
+                        if (entry == null || !Recognized(entry)) continue;
+                        authoredCutawayRoofs++;
+                        Require(WalkUnder(entry), Path.GetFileNameWithoutExtension(file) + "/" + entry.Id
+                            + ": authored cutaway roof blocks movement or sight under it");
+                    }
                 }
-                Require(authoredCutawayRoofs == 1,
-                        "settlement must contain exactly one authored trader-cutaway roof");
 
                 VerifyMaterialTransition();
 

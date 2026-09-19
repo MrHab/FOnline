@@ -266,6 +266,55 @@ for (const id of tradeItemIds) {
   }
 }
 
+// «Барыга»: описание называет ровно то, что делает сервер, — как «Падальщик» в
+// check-loot-perks.js. Надбавка — разница настоящих цен скупки с чертой и без неё,
+// марки — разница настоящих наборов снабжения: новый персонаж получает вещи только
+// из buildTutorialSupplies (ящик Сборного двора или пропуск обучения), а
+// buildStartingLoadout сервер сам не зовёт.
+{
+  const { buildTutorialSupplies } = require('../src/server/starting-loadout');
+  const text = progressionCatalog.startTraits.items.find(row => row.id === 'traderStart').description;
+  const indifferent = { stock: [], buyInterests: [], refusedCategories };
+  const sells = (prices, id, traderTrait) => prices.serverTradeSellPrice(id, indifferent, { ...novice, traderTrait });
+  // Процент меряется на вещи такой цены, что округления до целой марки не видно.
+  const dear = serverTradePricing(serverSource,
+    { basePrices: { probe: 1e6 }, categories: { probe: 'misc' }, byId: { probe: {} } }, worldEconomy);
+  const sellPct = Math.round((sells(dear, 'probe', true) / sells(dear, 'probe', false) - 1) * 1000) / 10;
+  if (!(sellPct > 0) || !text.includes(`+${String(sellPct).replace('.', ',')}% к цене продажи`)) {
+    fail(`traderStart adds +${sellPct}% to the NPC sell price and must say so: ${text}`);
+  }
+  // На вещах каталога надбавка та же с точностью до марки: цена скупки целая.
+  for (const id of tradeItemIds) {
+    if (refusedCategories.includes(itemIndexes.categories[id])) continue;
+    const plain = sells(pricing, id, false);
+    const gain = sells(pricing, id, true) - plain;
+    if (Math.abs(gain - plain * sellPct / 100) > 1) {
+      fail(`traderStart promises +${sellPct}% to the sell price, but a novice sells ${id} for ${plain} without the trait and for ${plain + gain} with it`);
+    }
+  }
+  const supplies = traits => Object.fromEntries(buildTutorialSupplies({ traits }).map(row => [row.id, row.qty]));
+  const withTrait = supplies(['traderStart']);
+  const without = supplies([]);
+  const extra = id => Number(withTrait[id] || 0) - Number(without[id] || 0);
+  const marks = extra('silver');
+  if (!(marks > 0) || !new RegExp(`\\+${marks} мар(?:ка|ки|ок) на старте`).test(text)) {
+    fail(`traderStart starts with ${marks} extra marks and must say so: ${text}`);
+  }
+  const otherItems = Object.keys({ ...withTrait, ...without }).filter(id => id !== 'silver' && extra(id) !== 0);
+  if (otherItems.length) fail(`traderStart changes the starting supplies beyond marks (${otherItems.join(', ')}), so its description must name them: ${text}`);
+  // Обещанная вещь ищется по точному названию из каталога предметов.
+  for (const [id, item] of Object.entries(itemIndexes.byId)) {
+    if (!item.name || extra(id) > 0) continue;
+    const name = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(?<![\\p{L}\\p{N}])${name}(?![\\p{L}\\p{N}])`, 'iu').test(text)) {
+      fail(`traderStart promises «${item.name}», but the starting supplies have no extra ${id}: ${text}`);
+    }
+  }
+  const numbers = (text.match(/\d+(?:[.,]\d+)?/g) || []).map(number => Number(number.replace(',', '.')));
+  const stray = numbers.filter(number => number !== sellPct && number !== marks);
+  if (stray.length) fail(`traderStart names ${stray.join(', ')}, a number the server does not apply: ${text}`);
+}
+
 const lockLow = securityLockChance({ skill: 20, agi: 5, luck: 5, quickHands: 0, difficulty: 'hard' });
 const lockHigh = securityLockChance({ skill: 100, agi: 15, luck: 15, quickHands: 3, difficulty: 'hard' });
 if (lockLow !== 0.03 || lockHigh > 0.92) fail(`Lockpick chance out of balance: low=${lockLow}, high=${lockHigh}`);

@@ -73,11 +73,16 @@ namespace RealmOfAshes.EditorTools
                 Check(keyboardMovement.x > 0f && keyboardMovement.z > 0f
                       && Mathf.Abs(keyboardMovement.magnitude - 14f) < 0.001f,
                     "WASD не движет камеру относительно её текущих осей");
+                // Минимальная высота — пол, а не фиксированная высота: anchor выше
+                // пола сохраняет свою Y, ниже — поднимается до пола.
                 Vector3 clamped = RoaGlobalMap.ClampCameraPan(
                     new Vector3(80f, 3f, -90f), 100f, 120f);
+                Vector3 raised = RoaGlobalMap.ClampCameraPan(
+                    new Vector3(0f, RoaGlobalMap.StrategicMinimumCameraAnchorY - 5f, 0f), 100f, 120f);
                 Check(Mathf.Approximately(clamped.x, 50f)
                       && Mathf.Approximately(clamped.z, -60f)
-                      && Mathf.Approximately(clamped.y,
+                      && Mathf.Approximately(clamped.y, 3f)
+                      && Mathf.Approximately(raised.y,
                           RoaGlobalMap.StrategicMinimumCameraAnchorY),
                     "anchor карты вышел за границы или опустился ниже минимальной высоты");
 

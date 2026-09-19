@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка видимости на глобальной карте и клеток Сердцевины на
-// настоящем сервере:
+// Сетевая проверка клеток Сердцевины на глобальной карте, на настоящем сервере:
 //  - /api/global-map отдаёт клетки Сердцевины с постоянными номерами и
 //    играбельный контур;
-//  - игрок на карте видит группы A-Life и других игроков только в своём радиусе;
 //  - в сцене клетки Сердцевины игрок знает её имя с номером — то же, что на карте.
+// Радара наблюдений на карте больше нет: обзорная карта показывает только игрока.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -19,28 +18,13 @@ const root = path.resolve(__dirname, '..');
 const economy = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'economy.json'), 'utf8'));
 economy.dangerCells.encounterChance = { peaceful: 0, pve: 0, pvp: 0, pvpFullDrop: 0, pvpBlack: 0 };
 economy.dangerCells.edgeGraceKm = 0.5;
-economy.worldModel.dangerEcology = true;
+economy.worldModel.dangerEcology = false;
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-map-sightings-'));
 fs.writeFileSync(path.join(scratch, 'economy.json'), JSON.stringify(economy));
 process.env.KROMKA_ECONOMY_FILE = path.join(scratch, 'economy.json');
-const SIGHTINGS = { baseKm: 6, maxGroups: 40, maxPlayers: 30 };
-fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
-  tickSeconds: 1,
-  lairs: { density: { pvp: 0, pvpFullDrop: 0, pvpBlack: 0 } },
-  roam: { restMinutes: [60, 60], stepSeconds: [600, 600], huntStepSeconds: [600, 600], senseSeconds: 600, radius: 1 },
-  sightings: SIGHTINGS,
-  species: [
-    { id: 'test_gari', name: 'Стая гари', kind: 'monster', faction: 'gari',
-      members: [{ type: 'gari', name: 'Гарь', min: 3, max: 3 }],
-      habitat: { pvp: 1, pvpFullDrop: 1, pvpBlack: 1 }, perceptionCells: 0, aggression: 0 }
-  ]
-}));
-process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
-
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const SUB = economy.dangerCells.subCellKm; // 1 точка карты = 1 км
 const centerOf = (sx, sy) => ({ x: (sx + 0.5) * SUB, y: (sy + 0.5) * SUB });
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => {
@@ -85,62 +69,12 @@ const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, re
     const state = saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
     state.globalMap = { onWorldMap: true, playerX: point.x, playerY: point.y };
   };
-  const watcher = { x: 200, y: 60 };
-  onMap('untargeted', watcher);
-  onMap('harvest', { x: watcher.x + 1.5, y: watcher.y });
-  onMap('trade', { x: watcher.x, y: watcher.y + 4.9 });
   const walkerStart = centerOf(entry[0] - 3, entry[1]);
   onMap('target', walkerStart);
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
-  // Группы на разных расстояниях от наблюдателя.
-  const cell = { sx: Math.floor(watcher.x / SUB), sy: Math.floor(watcher.y / SUB) };
-  const offsets = [[1, 0], [0, 3], [5, 0], [0, -8], [13, 0]];
-  const member = id => ({ id, type: 'gari', hp: 39, maxHp: 39 });
-  const far = Date.now() + 3600000;
-  const groups = offsets.map(([dx, dy], index) => ({
-    id: `g${index}`, speciesId: 'test_gari', lairId: '', sx: cell.sx + dx, sy: cell.sy + dy,
-    members: [member('m1'), member('m2'), member('m3')], state: 'rest', target: null,
-    restUntil: far, nextStepAt: far, size0: 3, bornAt: 0
-  }));
-  fs.writeFileSync(path.join(h.DATA_DIR, 'danger-ecology.json'), JSON.stringify({ version: 1, mapRevision: 'sightings-check', nextId: 50, lairs: [], groups }));
-
   await h.startServer();
   try {
-    const seen = {};
-    for (const role of ['untargeted', 'harvest', 'trade']) {
-      await h.connectAndJoin(accounts[role]);
-      accounts[role].socket.on('globalMapSightings', payload => { seen[role] = payload; });
-    }
-    await delay(4500);
-    const view = seen.untargeted;
-    assert(view, 'the watcher on the map receives sightings');
-    const radius = Number(view.radiusKm);
-    assert.equal(radius, SIGHTINGS.baseKm, 'the sighting radius is the same for everyone');
-
-    // --- группы: только в радиусе -------------------------------------------------------------
-    for (const group of groups) {
-      const at = centerOf(group.sx, group.sy);
-      const visible = view.groups.some(row => row.id === group.id);
-      const inside = dist(at, watcher) <= radius;
-      assert.equal(visible, inside, `${group.id} at ${dist(at, watcher).toFixed(1)} km: visible ${visible}, inside ${inside} of ${radius} km`);
-      if (visible) {
-        const row = view.groups.find(item => item.id === group.id);
-        assert.equal(row.name, 'Стая гари');
-        assert.equal(row.size, 3);
-        assert.equal(row.creatureTypeId, 'gari');
-      }
-    }
-    const shown = view.groups.length;
-    assert(shown >= 1 && shown < groups.length, 'some groups are in sight, some are not');
-    console.log(`PASS groups are seen only within the sighting radius (${radius} km: ${shown} of ${groups.length})`);
-
-    // --- игроки: в том же радиусе ------------------------------------------------------------------
-    assert(view.players.some(row => row.id === accounts.harvest.socket.id), 'a player 1.5 km away is seen: ' + JSON.stringify(view.players));
-    assert(view.players.some(row => row.id === accounts.trade.socket.id), 'a player 4.9 km away, inside the radius, is seen');
-    assert(seen.harvest?.players?.some(row => row.id === accounts.untargeted.socket.id), 'sightings are mutual');
-    console.log('PASS players are seen within the same radius, both ways');
-
     // --- клетка Сердцевины: имя с номером ------------------------------------------------------------
     const walker = accounts.target;
     await h.connectAndJoin(walker);
@@ -171,7 +105,7 @@ const waitForTransfer = (account, timeoutMs = 20000) => new Promise((resolve, re
     h.cleanupSync();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  console.log('Map sightings network OK: numbered Core cells and the playable contour on the map, groups and players seen within the sighting radius, and Core scenes named with their number.');
+  console.log('Map Core cells network OK: numbered Core cells and the playable contour on the map, and Core scenes named with their number.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

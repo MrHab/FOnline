@@ -18,7 +18,8 @@
  */
 
 const ECOLOGY_VERSION = 1;
-const LIVING_MODES = Object.freeze(['pvp', 'pvpFullDrop', 'pvpBlack']);
+// Жизнь идёт во всех немирных зонах, синие (pve) — тоже: там слабые виды и потери без добычи.
+const LIVING_MODES = Object.freeze(['pve', 'pvp', 'pvpFullDrop', 'pvpBlack']);
 const GROUP_STATES = Object.freeze(['rest', 'roam', 'return', 'hunt', 'flee']);
 
 const STEPS = Object.freeze({
@@ -34,10 +35,9 @@ const DEFAULT_CONFIG = Object.freeze({
   pullRadiusCells: 3,
   woundHealPerMinute: 0.02,
   lairs: Object.freeze({
-    density: Object.freeze({ pvp: 0.01, pvpFullDrop: 0.03, pvpBlack: 0.18 }),
-    capacity: Object.freeze({ pvp: 1, pvpFullDrop: 2, pvpBlack: 2 }),
-    refillMinutes: Object.freeze({ pvp: 120, pvpFullDrop: 75, pvpBlack: 45 }),
-    placeClearKm: 4.5
+    density: Object.freeze({ pve: 0, pvp: 0.01, pvpFullDrop: 0.03, pvpBlack: 0.18 }),
+    capacity: Object.freeze({ pve: 1, pvp: 1, pvpFullDrop: 2, pvpBlack: 2 }),
+    refillMinutes: Object.freeze({ pve: 120, pvp: 120, pvpFullDrop: 75, pvpBlack: 45 })
   }),
   roam: Object.freeze({
     restMinutes: Object.freeze([4, 10]),
@@ -48,12 +48,6 @@ const DEFAULT_CONFIG = Object.freeze({
     // Сколько сломленная группа после бегства не идёт на шум.
     shakenMinutes: 10,
     radius: 2
-  }),
-  // Восприятие на глобальной карте: радиус видимости групп и игроков.
-  sightings: Object.freeze({
-    baseKm: 6,
-    maxGroups: 40,
-    maxPlayers: 30
   }),
   species: Object.freeze([])
 });
@@ -175,15 +169,9 @@ function normalizeEcologyConfig(input = {}) {
       density: modeTable(lairs.density, DEFAULT_CONFIG.lairs.density, 0, 1),
       capacity: Object.freeze(Object.fromEntries(LIVING_MODES.map(mode => [mode,
         Math.floor(finite(lairs.capacity?.[mode], DEFAULT_CONFIG.lairs.capacity[mode], 0, 8))]))),
-      refillMinutes: modeTable(lairs.refillMinutes, DEFAULT_CONFIG.lairs.refillMinutes, 1, 10080),
-      placeClearKm: finite(lairs.placeClearKm, DEFAULT_CONFIG.lairs.placeClearKm, 0, 50)
+      refillMinutes: modeTable(lairs.refillMinutes, DEFAULT_CONFIG.lairs.refillMinutes, 1, 10080)
     }),
     roam,
-    sightings: Object.freeze({
-      baseKm: finite(src.sightings?.baseKm, DEFAULT_CONFIG.sightings.baseKm, 0, 200),
-      maxGroups: Math.floor(finite(src.sightings?.maxGroups, DEFAULT_CONFIG.sightings.maxGroups, 0, 500)),
-      maxPlayers: Math.floor(finite(src.sightings?.maxPlayers, DEFAULT_CONFIG.sightings.maxPlayers, 0, 500))
-    }),
     species: Object.freeze(species),
     speciesById: Object.freeze(Object.fromEntries(species.map(row => [row.id, row])))
   });
@@ -244,6 +232,7 @@ function normalizeEcologyState(input = {}, config = normalizeEcologyConfig()) {
       sy: Math.floor(Number(row.sy) || 0),
       mode: LIVING_MODES.includes(row.mode) ? row.mode : 'pvp',
       region: safeId(row.region, 48),
+      slot: Math.max(0, Math.floor(Number(row.slot) || 0)),
       refillAt: Math.max(0, Number(row.refillAt) || 0)
     });
   }
@@ -319,21 +308,28 @@ function pickSpecies(config, mode, region, roll) {
 }
 
 /**
- * Логова по клеткам-кандидатам: {sx, sy, mode, region} — играбельные мелкие
- * клетки живых цветов вдали от мест карты. Расстановка детерминирована по
- * ревизии карты: тот же мир даёт те же логова.
+ * Логова по клеткам-кандидатам {sx, sy, mode, region}. Кандидат с `id` — готовое
+ * место логова (логово зоны мира, `slot` — его номер в зоне): оно ставится
+ * всегда; без `id` клетка становится логовом с вероятностью density цвета.
+ * Расстановка детерминирована по ревизии: тот же мир даёт те же логова.
  */
 function buildLairs(config, candidates = [], mapRevision = '') {
   const lairs = [];
   for (const cell of Array.isArray(candidates) ? candidates : []) {
     const mode = LIVING_MODES.includes(cell?.mode) ? cell.mode : '';
     if (!mode) continue;
-    const density = config.lairs.density[mode] || 0;
     const key = cellKey(cell.sx, cell.sy);
-    if (!(density > 0) || hash01(`${mapRevision}:lair:${key}`) >= density) continue;
-    const species = pickSpecies(config, mode, safeId(cell.region, 48), hash01(`${mapRevision}:species:${key}`));
+    const id = cell.id ? safeId(cell.id) : `lair_${key.replace(/-/g, 'm')}`;
+    if (!cell.id) {
+      const density = config.lairs.density[mode] || 0;
+      if (!(density > 0) || hash01(`${mapRevision}:lair:${key}`) >= density) continue;
+    }
+    const species = pickSpecies(config, mode, safeId(cell.region, 48), hash01(`${mapRevision}:species:${cell.id ? id : key}`));
     if (!species) continue;
-    lairs.push({ id: `lair_${key.replace(/-/g, 'm')}`, speciesId: species.id, sx: cell.sx, sy: cell.sy, mode, region: safeId(cell.region, 48), refillAt: 0 });
+    lairs.push({
+      id, speciesId: species.id, sx: cell.sx, sy: cell.sy, mode, region: safeId(cell.region, 48),
+      slot: Math.max(0, Math.floor(Number(cell.slot) || 0)), refillAt: 0
+    });
   }
   return lairs;
 }
@@ -408,9 +404,14 @@ function directionBetweenCells(from, to) {
   return dy > 0 ? 'south' : 'north';
 }
 
-function canEnter(species, ctx, sx, sy) {
+/**
+ * Можно ли виду войти в клетку. С клеткой, откуда идёт группа, ещё и можно ли
+ * пройти между ними: у зон мира это открытые ворота (ctx.canStep).
+ */
+function canEnter(species, ctx, sx, sy, from = null) {
   const mode = typeof ctx.modeAt === 'function' ? ctx.modeAt(sx, sy) : '';
-  return LIVING_MODES.includes(mode) && species.habitat[mode] > 0;
+  if (!LIVING_MODES.includes(mode) || !(species.habitat[mode] > 0)) return false;
+  return !from || typeof ctx.canStep !== 'function' || ctx.canStep(from.sx, from.sy, sx, sy) === true;
 }
 
 /** Шаг на одну клетку к цели: сначала по большей разнице, затем по другой оси. */
@@ -425,13 +426,13 @@ function stepToward(group, target, species, ctx, random) {
   for (const direction of options) {
     if (!direction) continue;
     const step = STEPS[direction];
-    if (canEnter(species, ctx, group.sx + step.dx, group.sy + step.dy)) return direction;
+    if (canEnter(species, ctx, group.sx + step.dx, group.sy + step.dy, group)) return direction;
   }
   // Обход препятствия: любой проходимый сосед.
   const around = Object.keys(STEPS).sort(() => random() - 0.5);
   for (const direction of around) {
     const step = STEPS[direction];
-    if (canEnter(species, ctx, group.sx + step.dx, group.sy + step.dy)) return direction;
+    if (canEnter(species, ctx, group.sx + step.dx, group.sy + step.dy, group)) return direction;
   }
   return '';
 }
@@ -471,8 +472,9 @@ function sensePrey(group, species, occupiedCells = []) {
 }
 
 /**
- * Один проход жизни мира. ctx: modeAt(sx, sy) — цвет мелкой клетки (или
- * пусто вне карты), occupied(sx, sy) — есть ли там сцена с игроками,
+ * Один проход жизни мира. ctx: modeAt(sx, sy) — цвет клетки (или пусто вне
+ * мира), canStep(fromSx, fromSy, sx, sy) — открыт ли проход между соседними
+ * клетками (необязательно), occupied(sx, sy) — есть ли там сцена с игроками,
  * occupiedCells — список таких клеток, createMember(type) → {maxHp, name}.
  * Возвращает события: spawn, move, arrive (группа вошла в занятую клетку).
  */

@@ -316,14 +316,6 @@ namespace RealmOfAshes.Game
         private static readonly int BaseMapStProperty = Shader.PropertyToID("_BaseMap_ST");
         private static readonly int MainTexStProperty = Shader.PropertyToID("_MainTex_ST");
 
-        // Наблюдения: группы A-Life и другие игроки в радиусе видимости.
-        private static readonly Color SightingHostileColor = new Color(0.93f, 0.33f, 0.22f, 1f);
-        private static readonly Color SightingFaunaColor = new Color(0.55f, 0.84f, 0.52f, 1f);
-        private static readonly Color SightingPlayerColor = new Color(0.44f, 0.72f, 1f, 1f);
-        private JObject _sightings;
-        private readonly HashSet<string> _sightingIds = new HashSet<string>();
-        private bool _sightingsRebuildPending;
-        private float _nextSightingsRebuildAt;
 
         // Сетка клеток Сердцевины: одна плитка с текстурой на весь чёрный край
         // и подсветка клетки игрока; номера рисует канвас карты.
@@ -983,7 +975,6 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelGroupReleased += HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision += HandleEncounterDecision;
             Socket.OnWorldActivityFeedChanged += HandleWorldActivityFeedChanged;
-            Socket.OnGlobalMapSightings += HandleSightings;
         }
 
         private void DetachSocket()
@@ -996,7 +987,6 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelGroupReleased -= HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision -= HandleEncounterDecision;
             Socket.OnWorldActivityFeedChanged -= HandleWorldActivityFeedChanged;
-            Socket.OnGlobalMapSightings -= HandleSightings;
         }
 
         private void HandleWorldActivityFeedChanged(JObject _)
@@ -1147,10 +1137,6 @@ namespace RealmOfAshes.Game
 
         public void Leave()
         {
-            // С карты ушли — метки наблюдений больше не действуют.
-            _sightings = null;
-            _sightingIds.Clear();
-            _sightingsRebuildPending = false;
             _pendingEntry = false;
             _locationEntryPending = false;
             _pendingArrival = null;
@@ -1550,7 +1536,6 @@ namespace RealmOfAshes.Game
                     _dynamicTargets.Add(target);
                 }
             }
-            AddSightingActors();
             RemoveMissingPartyActors();
 
             JArray zones = _wasteland["worldZones"] as JArray;
@@ -2282,170 +2267,6 @@ namespace RealmOfAshes.Game
                     highest = Mathf.Max(highest, ReliefHeightAt(x0 + cellPoints * ix / 4f, y0 + cellPoints * iy / 4f));
             }
             return 0.05f + Mathf.Max(0f, highest - center);
-        }
-
-        // --- наблюдения --------------------------------------------------------------------------
-
-        /// <summary>
-        /// Наблюдения приходят от сервера раз в пару секунд: кого видно в
-        /// радиусе. Известные метки двигаются сразу (новый снимок), новые и
-        /// пропавшие меняет пересборка слоя.
-        /// </summary>
-        private void HandleSightings(JObject payload)
-        {
-            _sightings = payload;
-            var ids = new HashSet<string>();
-            foreach (JObject row in SightingRows())
-            {
-                string id = row["id"]?.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(id)) continue;
-                ids.Add(id);
-                if (_partyActors.TryGetValue(id, out PartyActorState state) && state != null)
-                    state.Snapshot = row;
-            }
-            if (!ids.SetEquals(_sightingIds))
-            {
-                _sightingIds.Clear();
-                _sightingIds.UnionWith(ids);
-                _sightingsRebuildPending = true;
-            }
-        }
-
-        /// <summary>Наблюдения в виде строк отрядов: одна отрисовка для всех меток карты.</summary>
-        private IEnumerable<JObject> SightingRows()
-        {
-            if (_sightings == null) yield break;
-            if (_sightings["groups"] is JArray groups)
-            {
-                foreach (JToken token in groups)
-                {
-                    if (!(token is JObject row)) continue;
-                    string kind = row["kind"]?.ToString() ?? "monster";
-                    string name = row["name"]?.ToString() ?? "Группа";
-                    int size = row["size"]?.ToObject<int>() ?? 0;
-                    bool engaged = row["engaged"]?.ToObject<bool>() == true;
-                    yield return new JObject
-                    {
-                        ["id"] = "sight-group:" + row["id"],
-                        ["kind"] = kind == "raider" ? "raider" : "monster",
-                        ["faction"] = row["faction"]?.ToString() ?? string.Empty,
-                        ["species"] = row["creatureTypeId"]?.ToString() ?? string.Empty,
-                        ["name"] = name,
-                        ["x"] = row["x"],
-                        ["y"] = row["y"],
-                        ["state"] = "onsite",
-                        ["members"] = size,
-                        ["canEncounter"] = false,
-                        ["sighting"] = "group",
-                        ["hostile"] = row["hostile"]?.ToObject<bool>() != false,
-                        ["statusText"] = name + " · " + size + (engaged ? " · в бою" : string.Empty)
-                    };
-                }
-            }
-            if (_sightings["players"] is JArray players)
-            {
-                foreach (JToken token in players)
-                {
-                    if (!(token is JObject row)) continue;
-                    string name = row["name"]?.ToString() ?? "Игрок";
-                    yield return new JObject
-                    {
-                        ["id"] = "sight-player:" + row["id"],
-                        ["kind"] = "player",
-                        ["faction"] = "players",
-                        ["name"] = name,
-                        ["x"] = row["x"],
-                        ["y"] = row["y"],
-                        ["state"] = "onsite",
-                        ["members"] = 1,
-                        ["canEncounter"] = false,
-                        ["sighting"] = "player",
-                        ["hostile"] = false,
-                        ["statusText"] = "Игрок · " + name
-                    };
-                }
-            }
-        }
-
-        /// <summary>Метки наблюдений — теми же фигурками, что и отряды пустоши.</summary>
-        private void AddSightingActors()
-        {
-            foreach (JObject row in SightingRows())
-            {
-                string id = row["id"]?.ToString() ?? string.Empty;
-                GlobalMapPoint point = ReadPoint(row, "x", "y", null);
-                if (string.IsNullOrEmpty(id) || point == null) continue;
-                bool player = row["sighting"]?.ToString() == "player";
-                bool hostile = row["hostile"]?.ToObject<bool>() != false;
-                DynamicTarget target = TargetFrom(row, "party");
-                target.Point = point;
-                target.PartyId = id;
-                target.Faction = row["faction"]?.ToString() ?? string.Empty;
-                target.Radius = 1.2f;
-                target.CanEnter = false;
-                target.Forced = !player && hostile;
-                target.Details = row["statusText"]?.ToString() ?? string.Empty;
-                target.Semantic = player ? "Игрок" : (hostile ? "Угроза" : "Фауна");
-                target.Accent = player ? SightingPlayerColor : (hostile ? SightingHostileColor : SightingFaunaColor);
-                target.Priority = player ? 820 : 760;
-                _seenPartyActors.Add(id);
-
-                PartyActorState actor = EnsurePartyActor(id);
-                if (actor != null && actor.Root != null)
-                {
-                    if (!actor.HasRenderedPoint)
-                    {
-                        actor.Root.transform.localPosition = PointToWorld(point.X, point.Y, 0.45f);
-                        actor.HasRenderedPoint = true;
-                    }
-                    else
-                    {
-                        target.Point = WorldToPoint(actor.Root.transform.position);
-                    }
-                    actor.Root.transform.localScale = actor.BaseScale * (player ? 0.3f : 0.34f);
-                    ApplyPartyInteractionMarker(actor.Root, row);
-                    TintLivePrefab(actor.Root, target.Accent, "Tint");
-                    actor.Target = target;
-                    actor.Snapshot = row;
-                    actor.Presentation = RegisterDynamicVisual(actor.Root, DynamicVisualLayer.Party,
-                        target.Point, player, target.Priority);
-                    if (actor.Actor != null)
-                    {
-                        _ = actor.Actor.ConfigureParty(BaseUrl, row);
-                        actor.Actor.SetBanner(target.Accent);
-                    }
-                }
-                _dynamicTargets.Add(target);
-            }
-        }
-
-        /// <summary>Подписи ближайших наблюдений: кто это и сколько их.</summary>
-        private void AppendSightingLabels(List<OverlayLabel> output, MapDetailTier tier)
-        {
-            int limit = tier == MapDetailTier.Near ? 8 : (tier == MapDetailTier.Medium ? 5 : 0);
-            if (limit <= 0 || _partyActors == null || !_showParties) return;
-            int added = 0;
-            foreach (PartyActorState actor in _partyActors.Values)
-            {
-                if (added >= limit) break;
-                if (actor?.Snapshot == null || actor.Root == null || !actor.Root.activeInHierarchy) continue;
-                string sighting = actor.Snapshot["sighting"]?.ToString();
-                if (string.IsNullOrEmpty(sighting) || actor.Target?.Point == null) continue;
-                Color accent = actor.Target.Accent;
-                output.Add(new OverlayLabel
-                {
-                    Id = "sight:" + actor.Id,
-                    Text = EscapeOverlayText(actor.Snapshot["statusText"]?.ToString() ?? actor.Target.Name ?? string.Empty),
-                    World = _root.transform.TransformPoint(PointToWorld(actor.Target.Point.X, actor.Target.Point.Y, 1.05f)),
-                    Color = accent,
-                    Accent = accent,
-                    Activity = false,
-                    Selected = false,
-                    Cluster = false,
-                    Priority = sighting == "player" ? 720 : 700
-                });
-                added++;
-            }
         }
 
         // --- клетки Сердцевины -------------------------------------------------------------------------
@@ -3554,15 +3375,6 @@ namespace RealmOfAshes.Game
                 ResumePendingLocationEntry();
 
             UpdatePartyActors();
-            if (_sightingsRebuildPending && Time.unscaledTime >= _nextSightingsRebuildAt)
-            {
-                // Состав меток наблюдений сменился — пересобрать слой. Не чаще раза в
-                // три секунды: пересборка трогает весь живой слой, а опрос мира и так
-                // пересобирает его раз в пять секунд.
-                _sightingsRebuildPending = false;
-                _nextSightingsRebuildAt = Time.unscaledTime + 3f;
-                RebuildDynamicWorld();
-            }
             UpdateCoreGridCulling();
 
             bool touchActive = UpdateTouchMapInput();
@@ -4477,8 +4289,6 @@ namespace RealmOfAshes.Game
                 if (selected) selectedActivityLabelAdded = true;
                 activityLabels++;
             }
-
-            AppendSightingLabels(output, tier);
 
             if (_selectedDynamic != null && _selectedDynamic.Point != null
                 && !selectedActivityLabelAdded)

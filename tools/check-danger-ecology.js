@@ -239,6 +239,45 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
   console.log(`PASS the game data lists Kromka species only (${real.species.map(row => row.id).join(', ')})`);
 }
 
+// --- сетка зон мира: ворота, логова зон, синие зоны --------------------------------------------------
+{
+  const zoneConfig = eco.normalizeEcologyConfig({
+    lairs: { capacity: { pve: 1, pvp: 1 }, refillMinutes: { pve: 60, pvp: 60 } },
+    roam: { restMinutes: [0, 0], stepSeconds: [60, 60], huntStepSeconds: [30, 30], radius: 1 },
+    species: [{ id: 'hunters', name: 'Охотники', kind: 'monster', members: [{ type: 'beast', min: 2, max: 2 }],
+      habitat: { pve: 1, pvp: 1 }, perceptionCells: 1, aggression: 1 }]
+  });
+  // Три зоны в ряд: синяя (0,0) — жёлтая (1,0) — жёлтая (2,0); ворота между 1 и 2 закрыты.
+  const zoneMode = (sx, sy) => (sy === 0 && sx >= 0 && sx <= 2 ? (sx === 0 ? 'pve' : 'pvp') : '');
+  const closed = (a, b) => (a === 1 && b === 2) || (a === 2 && b === 1);
+  const canStep = (fx, fy, tx, ty) => fy === 0 && ty === 0 && Math.abs(fx - tx) === 1 && !closed(fx, tx);
+  const zoneLairs = eco.buildLairs(zoneConfig, [
+    { id: 'lair_z_00_00_0', slot: 0, sx: 0, sy: 0, mode: 'pve', region: 'test' },
+    { id: 'lair_z_02_00_0', slot: 0, sx: 2, sy: 0, mode: 'pvp', region: 'test' },
+    { id: 'lair_z_02_00_1', slot: 1, sx: 2, sy: 0, mode: 'pvp', region: 'test' }
+  ], 'zones');
+  assert.deepEqual(zoneLairs.map(lair => [lair.id, lair.slot]), [['lair_z_00_00_0', 0], ['lair_z_02_00_0', 0], ['lair_z_02_00_1', 1]],
+    'a zone lair is placed every time, with its slot in the zone');
+  assert(eco.LIVING_MODES.includes('pve'), 'blue zones are alive');
+  const zoneState = eco.emptyEcologyState('zones');
+  eco.resetLairs(zoneState, zoneLairs, 'zones');
+  const zoneRandom = seeded(3);
+  let t = 5_000_000;
+  const occupiedOne = { modeAt: zoneMode, canStep, occupied: (sx, sy) => sx === 1 && sy === 0, occupiedCells: [{ sx: 1, sy: 0 }], createMember: () => ({ maxHp: 50 }) };
+  eco.tickEcology(zoneState, zoneConfig, occupiedOne, t, zoneRandom);
+  const blue = [...zoneState.groups.values()].find(group => group.lairId === 'lair_z_00_00_0');
+  assert(blue, 'the blue zone raises a group');
+  const beyond = [...zoneState.groups.values()].filter(group => group.lairId.startsWith('lair_z_02_00'));
+  const arrivals = [];
+  for (let step = 0; step < 40; step += 1) {
+    t += 61_000;
+    arrivals.push(...eco.tickEcology(zoneState, zoneConfig, occupiedOne, t, zoneRandom).filter(event => event.type === 'arrive'));
+  }
+  assert(arrivals.some(event => event.groupId === blue.id && event.direction === 'east'), 'the blue group hunts through the open gate');
+  for (const group of beyond) assert.equal(zoneState.groups.get(group.id)?.sx, 2, 'a closed gate holds the group in its zone');
+  console.log('PASS on the zone grid groups walk only through open gates, zone lairs keep their slots and blue zones are alive');
+}
+
 // --- сервер подключает A-Life ------------------------------------------------------------------------
 {
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
@@ -247,9 +286,6 @@ console.log(`PASS lairs raise groups slowly and never in front of players (${sta
     ["maybeReportEncounterOutcome(room, 'faction_combat', foe, null);\n      serverEcologyNoteDeath(room, foe);", 'an NPC kill is permanent for the group'],
     ['if (updateEcologyActorLifecycle(room, enemy, dt)) continue;', 'arriving members walk in'],
     ["if (enemy.ecologyPhase === 'leaving' && updateEcologyActorLifecycle(room, enemy, dt)) continue;", 'a broken group leaves even mid-fight'],
-    ['if (serverEcologyActive()) serverSetupEcologyRoom(room);', 'cell scenes wait for groups instead of a pooled encounter'],
-    ['if (moved > 0 && serverEcologyActive()) serverEcologyMaterializeCell(room, entryKey);', 'groups of the cell stand in its scene'],
-    ["!dangerIsSceneMode(WORLD_ECONOMY.dangerCells, mode) && !serverEcologyEncounterGroup(cell, mode)) return false;", 'a road encounter needs a group nearby'],
     ['creatureTypeId: creatureTypeId || undefined,', 'encounters spawn the creature of the bestiary']
   ]) assert(server.includes(hook), `server.js wires ${label}`);
   assert(!server.includes('serverRespawnDangerThreats'), 'no respawn timer: threats come with groups');

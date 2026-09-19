@@ -1,28 +1,20 @@
 {
   "schema": "kromka.dangerEcology.v1",
-  "note": "A-Life опасных клеток (библия 18.1): постоянные группы монстров Кромки и налётчиков живут на сетке мелких клеток 1,6 км. Логова ставятся по цвету земли (жёлтая pvp, красная pvpFullDrop, чёрная pvpBlack), пополняются медленно и только без игроков в клетке. Время — реальное: минуты и секунды. type особи — creatureTypeId бестиария (data/mutants.json) или raider.",
+  "note": "A-Life (библия 18.1): постоянные группы монстров Кромки и налётчиков живут на сетке зон мира — клетка экологии = зона 20 км, шаг группы — переход в соседнюю зону через открытые ворота. Логова — места логов, которые конструктор ставит в зоне (по цвету: синяя pve 1, жёлтая pvp 1, красная pvpFullDrop 2, чёрная pvpBlack 3); пополняются медленно и только без игроков в зоне. Время — реальное: минуты и секунды. type особи — creatureTypeId бестиария (data/mutants.json) или raider.",
   "tickSeconds": 5,
   "maxGroups": 800,
   "pullRadiusCells": 3,
   "woundHealPerMinute": 0.02,
   "lairs": {
-    "density": { "pvp": 0.015, "pvpFullDrop": 0.02, "pvpBlack": 0.08 },
-    "capacity": { "pvp": 1, "pvpFullDrop": 2, "pvpBlack": 2 },
-    "refillMinutes": { "pvp": 120, "pvpFullDrop": 75, "pvpBlack": 45 },
-    "placeClearKm": 4.5
+    "capacity": { "pve": 1, "pvp": 2, "pvpFullDrop": 2, "pvpBlack": 3 },
+    "refillMinutes": { "pve": 120, "pvp": 90, "pvpFullDrop": 75, "pvpBlack": 45 }
   },
   "roam": {
-    "restMinutes": [4, 10],
-    "stepSeconds": [70, 160],
-    "huntStepSeconds": [35, 70],
+    "restMinutes": [10, 30],
+    "stepSeconds": [480, 1200],
+    "huntStepSeconds": [240, 480],
     "senseSeconds": 30,
-    "radius": 2
-  },
-  "sightings": {
-    "note": "Видимость на глобальной карте: радиус baseKm вокруг игрока.",
-    "baseKm": 6,
-    "maxGroups": 40,
-    "maxPlayers": 30
+    "radius": 1
   },
   "species": [
     {
@@ -36,8 +28,8 @@
         { "type": "raider", "name": "Налётчик с дробовиком", "min": 0, "max": 1, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
         { "type": "raider", "name": "Сборщик чужого", "min": 0, "max": 1, "equipment": { "weapon": "axe", "armor": "leather", "boots": "boots" } }
       ],
-      "habitat": { "pvp": 3, "pvpFullDrop": 2 },
-      "perceptionCells": 2,
+      "habitat": { "pve": 1, "pvp": 3, "pvpFullDrop": 2 },
+      "perceptionCells": 1,
       "aggression": 0.7,
       "fleeAt": 0.5
     },
@@ -47,11 +39,11 @@
       "kind": "monster",
       "faction": "gari",
       "members": [{ "type": "gari", "name": "Гарь", "min": 3, "max": 5 }],
-      "habitat": { "pvp": 2, "pvpFullDrop": 2, "pvpBlack": 1 },
-      "perceptionCells": 2,
+      "habitat": { "pve": 1, "pvp": 2, "pvpFullDrop": 2, "pvpBlack": 1 },
+      "perceptionCells": 1,
       "aggression": 0.8,
       "fleeAt": 0.6,
-      "stepSeconds": [45, 100]
+      "stepSeconds": [360, 800]
     },
     {
       "id": "dustling_brood",
@@ -59,8 +51,8 @@
       "kind": "monster",
       "faction": "pylniki",
       "members": [{ "type": "dustling", "name": "Пыльник", "min": 4, "max": 6 }],
-      "habitat": { "pvp": 2, "pvpFullDrop": 1 },
-      "perceptionCells": 1,
+      "habitat": { "pve": 2, "pvp": 2, "pvpFullDrop": 1 },
+      "perceptionCells": 0,
       "aggression": 0.5,
       "fleeAt": 0.7
     },
@@ -71,7 +63,7 @@
       "faction": "slukhachi",
       "members": [{ "type": "listener", "name": "Слухач", "min": 2, "max": 4 }],
       "habitat": { "pvp": 1, "pvpFullDrop": 2, "pvpBlack": 1 },
-      "perceptionCells": 3,
+      "perceptionCells": 1,
       "aggression": 0.9,
       "fleeAt": 0.5
     },
@@ -82,10 +74,10 @@
       "faction": "rykhlyaki",
       "members": [{ "type": "rykhlyak", "name": "Рыхляк", "min": 2, "max": 3 }],
       "habitat": { "pvpFullDrop": 3, "pvpBlack": 1 },
-      "perceptionCells": 1,
+      "perceptionCells": 0,
       "aggression": 0.5,
       "fleeAt": 0.67,
-      "stepSeconds": [100, 200]
+      "stepSeconds": [800, 1600]
     },
     {
       "id": "mourner_flock",
@@ -94,10 +86,10 @@
       "faction": "plakalshchiki",
       "members": [{ "type": "mourner", "name": "Плакальщик", "min": 3, "max": 5 }],
       "habitat": { "pvpFullDrop": 2, "pvpBlack": 2 },
-      "perceptionCells": 2,
+      "perceptionCells": 1,
       "aggression": 0.7,
       "fleeAt": 0.5,
-      "stepSeconds": [40, 90]
+      "stepSeconds": [320, 720]
     },
     {
       "id": "fold_cluster",
@@ -106,10 +98,10 @@
       "faction": "skladni",
       "members": [{ "type": "fold", "name": "Складень", "min": 2, "max": 3 }],
       "habitat": { "pvpFullDrop": 1, "pvpBlack": 3 },
-      "perceptionCells": 1,
+      "perceptionCells": 0,
       "aggression": 0.4,
       "fleeAt": 1,
-      "stepSeconds": [120, 240]
+      "stepSeconds": [960, 1920]
     },
     {
       "id": "burned_drifters",
@@ -118,7 +110,7 @@
       "faction": "burned_feral",
       "members": [{ "type": "burned", "name": "Выжженный", "min": 3, "max": 5 }],
       "habitat": { "pvpFullDrop": 1, "pvpBlack": 2 },
-      "perceptionCells": 1,
+      "perceptionCells": 0,
       "aggression": 0.3,
       "fleeAt": 0.6
     },
@@ -128,7 +120,7 @@
       "kind": "fauna",
       "faction": "fonarniki",
       "members": [{ "type": "lantern", "name": "Фонарник", "min": 2, "max": 4 }],
-      "habitat": { "pvp": 1, "pvpFullDrop": 1 },
+      "habitat": { "pve": 2, "pvp": 1, "pvpFullDrop": 1 },
       "perceptionCells": 0,
       "aggression": 0,
       "fleeAt": 0.3

@@ -15,11 +15,11 @@ using UnityEngine.UI;
 namespace RealmOfAshes.EditorTools
 {
     /// <summary>
-    /// Снимки клеток Сердцевины и видимости на карте так, как их строит
+    /// Снимки клеток Сердцевины так, как их строит
     /// игра: глобальная карта из сцены KromkaGlobalMap с ответами /api/global-map,
     /// /api/wasteland и именами из /api/locations (Library/AgentCaptures:
     /// global-map-public.json, wasteland-public.json, locations-names.json), точка
-    /// игрока в клетке Сердцевины, наблюдения (группы A-Life и игрок рядом),
+    /// игрока в клетке Сердцевины,
     /// канвас карты с номерами клеток — и окно «Карта мира» с флажком: в
     /// Сердцевине на десктопе и телефоне и в Ключах. Снимки — в
     /// Library/AgentCaptures/core-*.png и overview-*.png. Сцена не сохраняется.
@@ -84,32 +84,6 @@ namespace RealmOfAshes.EditorTools
             Debug.Log("[CORE SHOT] OK: клетка игрока " + title + "; снимки → " + captures);
         }
 
-        private static JObject Sightings(Vector2 player)
-        {
-            // Группы и игрок в паре клеток от игрока: так их увидел бы странник.
-            JObject Group(string id, string name, string kind, string faction, string creature, bool hostile,
-                          float dx, float dy, int count) => new JObject
-            {
-                ["id"] = id, ["name"] = name, ["kind"] = kind, ["faction"] = faction,
-                ["creatureTypeId"] = creature, ["hostile"] = hostile,
-                ["x"] = player.x + dx, ["y"] = player.y + dy, ["size"] = count, ["engaged"] = false
-            };
-            return new JObject
-            {
-                ["radiusKm"] = 5.3,
-                ["groups"] = new JArray
-                {
-                    Group("g-gari", "Стая гари", "monster", "gari", "gari", true, 3.2f, -1.6f, 4),
-                    Group("g-folds", "Складни", "monster", "skladni", "fold", true, -3.2f, 1.6f, 2),
-                    Group("g-lanterns", "Стадо фонарников", "fauna", "fonarniki", "lantern", false, 1.6f, 3.2f, 3)
-                },
-                ["players"] = new JArray
-                {
-                    new JObject { ["id"] = "p-other", ["name"] = "Сталкер Ветров", ["x"] = player.x - 1.6f, ["y"] = player.y - 3.2f }
-                }
-            };
-        }
-
         private static void CaptureMap(GlobalMapDefinition definition, JObject wasteland, Vector2 player, string captures)
         {
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -135,7 +109,6 @@ namespace RealmOfAshes.EditorTools
                 Set(map, "_playerPoint", new GlobalMapPoint { X = player.x, Y = player.y });
                 Set(map, "_selectedPoint", new GlobalMapPoint { X = player.x, Y = player.y });
                 authored.gameObject.SetActive(true);
-                typeof(RoaGlobalMap).GetMethod("HandleSightings", Private).Invoke(map, new object[] { Sightings(player) });
                 Call(map, "RebuildDynamicWorld");
                 typeof(RoaGlobalMap).GetMethod("ApplyDynamicPresentation", Private).Invoke(map, new object[] { true });
                 Call(map, "RefreshMarkers");

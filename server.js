@@ -1224,41 +1224,8 @@ const DEFAULT_GLOBAL_MAP_CONFIG = {
     { id: 'relayStation', x: 675, y: 315, kind: 'settlement', locationCount: 1, model: 'relayStation', modelScale: 1, rotationY: 0, note: 'Техническая станция с защищённым тайником.' }
   ],
   infrastructure: [],
-  objects: [],
-  encounters: [
-    { id: 'ghoul_pack', title: 'Сорванные Выжженные', text: 'Впереди спорят знакомыми голосами. Слова человеческие, движения уже нет.', kind: 'hostile' },
-    { id: 'radscorpion_nest', title: 'Лежка Рыхляков', text: 'Грунт вздымается под белыми костяными щитами. Проход занят.', kind: 'hostile' },
-    { id: 'mutant_ant_swarm', title: 'Колония Пыльников', text: 'Ржавая пыль движется против ветра и уже пробует крепёж на вкус.', kind: 'hostile' },
-    { id: 'super_mutant_lair', title: 'Тканевый выводок', text: 'В руинах медленно складывается и распрямляется что-то многослойное.', kind: 'hostile' },
-    { id: 'gecko_pack', title: 'Гнездо Слухачей', text: 'Впереди тихо. Настолько тихо, что лучше не проверять выстрелом.', kind: 'hostile' },
-    { id: 'fire_gecko_ambush', title: 'Чужие голоса', text: 'Кто-то из тумана зовёт вас по имени. Никто в караване этого имени не знает.', kind: 'hostile' },
-    { id: 'peaceful_caravan', title: 'Мирный караван', text: 'На старой трассе остановился торговец с охраной. Можно торговать, уйти или напасть.', kind: 'caravan' },
-    { id: 'caravan_patrol_vs_ghouls', title: 'Дозор против Выжженных', text: 'Люди Управы отбиваются от людей, которых Управа уже вычеркнула.', kind: 'battle' },
-    { id: 'ants_vs_geckos', title: 'Пыльники против Слухачей', text: 'Две разновидности плохой новости сцепились у сухого русла.', kind: 'battle' },
-    { id: 'radscorpions_vs_patrol', title: 'Дозор против Рыхляков', text: 'Дозор Управы держит круговую оборону от костяной стены.', kind: 'battle' }
-  ],
-  randomLocations: [
-    { id: 'randomAshGrove', weight: 4 },
-    { id: 'randomDryBasin', weight: 3 },
-    { id: 'randomRuinedRoad', weight: 3 }
-  ],
   cells: {}
 };
-
-function normalizeGlobalMapWeightRows(input = [], allowedIds = null) {
-  const rows = Array.isArray(input) ? input : [];
-  const out = [];
-  for (const row of rows.slice(0, 64)) {
-    const id = String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    if (!id || (allowedIds && !allowedIds.has(id))) continue;
-    const weight = clamp(Math.round(Number(row?.weight ?? row?.qty ?? 0)), 0, 999);
-    if (weight <= 0) continue;
-    const existing = out.find(x => x.id === id);
-    if (existing) existing.weight = Math.min(999, existing.weight + weight);
-    else out.push({ id, weight });
-  }
-  return out;
-}
 
 function normalizeGlobalMapConfig(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
@@ -1320,34 +1287,7 @@ function normalizeGlobalMapConfig(raw = {}) {
       worldRevision: String(node?.worldRevision || src.worldRevision || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32)
     };
   }).filter(node => node.id);
-  const objects = (Array.isArray(src.objects) ? src.objects : []).slice(0, 300).map((object, index) => {
-    const x = clamp(Math.round(Number(object?.x || 0)), 0, maxX);
-    const y = clamp(Math.round(Number(object?.y || 0)), 0, maxY);
-    return {
-      id: String(object?.id || `world_object_${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
-      kind: String(object?.kind || 'landmark').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
-      cx: clamp(Math.floor(Number(object?.cx ?? Math.floor(x / grid.cellPoints))), 0, grid.cols - 1),
-      cy: clamp(Math.floor(Number(object?.cy ?? Math.floor(y / grid.cellPoints))), 0, grid.rows - 1),
-      x,
-      y,
-      model: String(object?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-      modelScale: clamp(Number(object?.modelScale || 1), 0.2, 5),
-      rotationY: clamp(Number(object?.rotationY || 0), 0, 360),
-      note: String(object?.note || '').slice(0, 160)
-    };
-  }).filter(object => object.id && object.model);
   const infrastructure = normalizeGlobalInfrastructure(src.infrastructure || [], { grid, nodes });
-  const encounters = (Array.isArray(src.encounters) ? src.encounters : []).slice(0, 120).map(row => ({
-    id: String(row?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-    title: String(row?.title || row?.id || 'Событие мира').slice(0, 120),
-    text: String(row?.text || '').slice(0, 600),
-    kind: String(row?.kind || 'hostile').slice(0, 32),
-    locationId: row?.locationId ? safeLocationFileId(row.locationId) : ''
-  })).filter(row => row.id);
-  const encounterIds = new Set(encounters.map(row => row.id));
-  const randomLocations = normalizeGlobalMapWeightRows(
-    Array.isArray(src.randomLocations) ? src.randomLocations : []
-  ).map(row => ({ id: safeLocationFileId(row.id), weight: row.weight }));
   const cells = {};
   const rawCells = src.cells && typeof src.cells === 'object' ? src.cells : {};
   for (const [key, value] of Object.entries(rawCells)) {
@@ -1355,16 +1295,15 @@ function normalizeGlobalMapConfig(raw = {}) {
     if (!match || !value || typeof value !== 'object') continue;
     const cx = clamp(Math.floor(Number(match[1])), 0, grid.cols - 1);
     const cy = clamp(Math.floor(Number(match[2])), 0, grid.rows - 1);
+    // Шанс стычки и её состав задаёт цвет клетки (economy.json → dangerCells),
+    // поэтому авторских chance/encounters/randomLocations у клетки нет.
     const cell = {
       terrain: String(value.terrain || '').slice(0, 80),
       pvpMode: normalizeLocationPvpMode(value.pvpMode || value.zone || value.pvp || 'pvp', false),
-      chance: clamp(Math.round(Number(value.chance || 0)), 0, 100),
       difficulty: clamp(Math.round(Number(value.difficulty || 1)), 1, 5),
       texture: String(value.texture || value.textureId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       macroRegion: String(value.macroRegion || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
-      fill: String(value.fill || '').slice(0, 48),
-      encounters: normalizeGlobalMapWeightRows(value.encounters || [], encounterIds),
-      randomLocations: normalizeGlobalMapWeightRows(value.randomLocations || []).map(row => ({ id: safeLocationFileId(row.id), weight: row.weight }))
+      fill: String(value.fill || '').slice(0, 48)
     };
     cells[`${cx}:${cy}`] = cell;
   }
@@ -1379,9 +1318,6 @@ function normalizeGlobalMapConfig(raw = {}) {
     grid,
     nodes,
     infrastructure,
-    objects,
-    encounters,
-    randomLocations,
     cells
   };
 }
@@ -2283,9 +2219,14 @@ function publicGlobalMap(map = null) {
   // Экономика v3: клиенты видят цвет опасных клеток; файл карты не меняется.
   const modes = src === GLOBAL_MAP ? serverDangerCellModes() : null;
   if (!modes) return { ...src, nodes };
+  // Вместе с цветом уходит и настоящий шанс стычки: процент на мелкую клетку
+  // пути без поправки на навык. Сквозные клетки проходятся пешком, броска нет.
+  const config = WORLD_ECONOMY.dangerCells;
   const cells = {};
   for (const [key, cell] of Object.entries(src.cells || {})) {
-    cells[key] = modes[key] ? { ...cell, pvpMode: modes[key] } : cell;
+    const pvpMode = modes[key] || cell.pvpMode;
+    const chance = dangerIsSceneMode(config, pvpMode) ? 0 : Math.round(dangerEncounterChance(config, pvpMode, 0) * 1000) / 10;
+    cells[key] = { ...cell, pvpMode, chance };
   }
   return {
     ...src,
@@ -4895,9 +4836,6 @@ const FILE_GLOBAL_MAP_FALLBACK = {
   grid: GLOBAL_MAP_GRID_DEFAULT,
   nodes: [],
   infrastructure: [],
-  objects: [],
-  encounters: [],
-  randomLocations: [],
   cells: {}
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();

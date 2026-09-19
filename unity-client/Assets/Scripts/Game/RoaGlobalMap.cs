@@ -6889,7 +6889,9 @@ namespace RealmOfAshes.Game
             float chance = cell != null ? cell.Chance : 0f;
             string cellLine = "Клетка " + (cx + 1) + ":" + (cy + 1) + " · " + terrain;
             if (difficulty > 0) cellLine += " · опасность " + difficulty;
-            if (chance > 0.01f) cellLine += " · встреча " + chance.ToString("0.#") + "%";
+            // Сервер шлёт шанс стычки на одну мелкую клетку пути, а не на клетку карты.
+            float subCellKm = _map.DangerWalkCells != null ? _map.DangerWalkCells.SubCellKm : 1.6f;
+            if (chance > 0.01f) cellLine += " · стычка " + chance.ToString("0.#") + "% на " + subCellKm.ToString("0.#") + " км";
             if (cell != null && !string.IsNullOrEmpty(cell.PvpMode)) cellLine += " · " + PvpLabel(cell.PvpMode);
             lines.Add(cellLine);
 

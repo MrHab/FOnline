@@ -33,18 +33,18 @@ production-процесс редактор не публикуют; режимы
   `pipeline`), `model`, `walkable`, `travelFactor`, `width`,
   `allowCrossingsWith` и `points`; точка задаётся координатами или `nodeId`.
 - `cells` — правила отдельных клеток. Ключ имеет вид `x:y`, счёт идёт с нуля.
-  Поля клетки: `terrain`, `pvpMode`, `chance`, `difficulty`, `texture`,
-  `macroRegion`, `fill`, `encounters`, `randomLocations`.
+  Поля клетки: `terrain`, `pvpMode`, `difficulty`, `texture`, `macroRegion`,
+  `fill`.
 - `pvpMode` клетки принимает режим зоны (`peaceful`, `pve`, `pvp`, `pvpEvent`,
   `pvpFullDrop`, `pvpBlack`) и редакторские псевдонимы вроде `safe`; правила
   режимов — `src/server/zone-rules.js`. Мирная клетка остаётся мирной, а цвет
   остальных считают опасные клетки (`src/server/danger-cells.js`) по правилам
   из `data/kromka/economy.json` и подмешивают в `/api/global-map`, не меняя файл.
-- `encounters` внутри клетки задаёт веса случайных встреч; идентификаторы
-  должны быть в общем списке `encounters` карты. `randomLocations` задаёт веса
-  случайных локаций, которые могут открыться при входе в пустошь из этой клетки.
-- `objects` — декоративные модели на клетках: `cx`/`cy`, `x`/`y`, `model`,
-  `modelScale`, `rotationY`, `note`.
+- Шанса стычки, состава встреч и случайных локаций в файле карты нет: их задаёт
+  цвет клетки через `dangerCells` в `data/kromka/economy.json` (`encounterChance`,
+  `encounters`, `templates`). В `/api/global-map` сервер добавляет клетке
+  `chance` — настоящий шанс стычки в процентах на одну мелкую клетку пути без
+  поправки на навык странника; у сквозных клеток он равен нулю.
 
 Если у клетки нет настройки в `cells`, игра использует процедурный профиль
 пустоши для визуала, риска и встреч.

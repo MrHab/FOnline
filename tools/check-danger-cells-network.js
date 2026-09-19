@@ -83,6 +83,14 @@ const waitForTransfer = (account, timeoutMs = 15000) => new Promise((resolve, re
     assert.equal(publicMap.map.cells['1:15'].pvpMode, 'pvpFullDrop', 'the western edge is red');
     const coreNode = map.nodes.find(node => (node.locationId || node.id) === 'coreZone');
     assert.equal(publicMap.map.cells[`${Math.floor(coreNode.x / 10)}:${Math.floor(coreNode.y / 10)}`].pvpMode, 'pvpBlack', 'the core is black');
+    // Игрок видит шанс, по которому сервер и бросает: процент на мелкую клетку.
+    for (const cell of Object.values(publicMap.map.cells)) {
+      const expected = cell.pvpMode === 'pvpBlack' ? 0 : economy.dangerCells.encounterChance[cell.pvpMode] * 100;
+      assert.equal(cell.chance, expected, `a ${cell.pvpMode} cell shows the chance the server rolls`);
+    }
+    for (const key of ['objects', 'encounters', 'randomLocations']) {
+      assert(!(key in publicMap.map), `the map carries no unused "${key}" collection`);
+    }
     const wasteland = await getJson('/api/wasteland');
     assert.deepEqual(wasteland.sim.parties, [], 'NPC parties are not on the map');
     console.log('PASS danger colours on the map and hidden NPC parties');

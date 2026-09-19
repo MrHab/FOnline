@@ -84,6 +84,12 @@ namespace RealmOfAshes.EditorTools
                 Require(automatic.Ready("Странник") && automatic.BuildSpecial().Total == 40,
                         "отладочный авто-вход не создаёт валидного персонажа");
 
+                // server.js serverTradeSellPrice: +4% скупки за каждое очко Влияния выше 5 и +15% за «Барыгу».
+                var trader = new RoaCharacterCreator();
+                Require(trader.Derived().Sell == 0 && trader.ToggleTrait("traderStart") && trader.Derived().Sell == 15
+                        && trader.AdjustStat("cha", 1) && trader.Derived().Sell == 19,
+                        "строка «Продажа» не показывает серверные +15% «Барыги» и +4% за очко Влияния");
+
                 Debug.Log("[СОЗДАНИЕ ПЕРСОНАЖА] готово: SPECIAL=" + special.Total
                     + ", навыки=" + creator.SelectedSkillCount
                     + ", перки=" + creator.SelectedTraitCount

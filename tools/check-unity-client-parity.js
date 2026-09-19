@@ -290,6 +290,7 @@ const serverOnlyHandlers = [
   'changeRoom', // синоним changeLocation (тот же обработчик) для прежних клиентов и инструментов
   'disconnect', // жизненный цикл Socket.IO: событие поднимает сам транспорт, а не клиентский emit
   'input', // прежний канал осевого ввода; движение Unity идёт через state
+  'qaTravel', // перенос для сквозной проверки кампании: есть только при NODE_ENV=test и KROMKA_TEST_TRAVEL=1
   'worldTaskJoinParty', // заглушка совместимости: вступление в группу только через работу пустоши (worldTaskAction)
   'worldTaskLeaveParty' // заглушка совместимости: выход из группы только отменой работы пустоши (worldTaskAction)
 ];

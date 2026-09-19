@@ -110,6 +110,7 @@ assert.deepStrictEqual(
     'changeRoom',
     'disconnect',
     'input',
+    'qaTravel',
     'worldTaskJoinParty',
     'worldTaskLeaveParty'
   ],

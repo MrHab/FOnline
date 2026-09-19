@@ -598,21 +598,23 @@ namespace RealmOfAshes.Game
             int caravansArrived = (int)Number(wasteland["stats"]?["caravansArrived"]);
             int caravansLost = (int)Number(wasteland["stats"]?["caravansLost"]);
             int sites = (wasteland["sites"] as JArray)?.Count ?? 0;
+            // Имя канала берётся из той же таблицы, что вкладка и строка настройки:
+            // после переименования 33a20ffd живая сводка два канала из трёх
+            // продолжала называть по-старому, под заголовком с новым именем.
+            string channelTitle = RoaPipboy.RadioTitles[Channel];
             switch (Channel)
             {
                 case ChannelBeacon:
-                    StatusLine = "Поселенческий маяк · час мира " + worldHour;
+                    StatusLine = channelTitle + " · час мира " + worldHour;
                     SignalLine = "Караванов дошло " + caravansArrived + ", потеряно " + caravansLost
                         + ". " + LibraryLine();
                     break;
                 case ChannelAsh:
-                    StatusLine = "Шум Стеколья · несущая " + worldHour + "h";
+                    StatusLine = channelTitle + " · несущая " + worldHour + "h";
                     SignalLine = "В сети " + sites + " узлов. " + LibraryLine();
                     break;
                 case ChannelSafety:
-                    StatusLine = DangerCount > 0
-                        ? "Канал безопасности · тревога"
-                        : "Канал безопасности · чисто";
+                    StatusLine = channelTitle + (DangerCount > 0 ? " · тревога" : " · чисто");
                     SignalLine = (DangerCount > 0
                         ? "Враждебных групп на карте: " + DangerCount + ". "
                         : "Враждебных групп на карте не отмечено. ") + LibraryLine();

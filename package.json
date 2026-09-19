@@ -54,7 +54,7 @@
     "check:black-market": "node tools/check-black-market.js && node tools/check-black-market-network.js",
     "check:progression": "npm run check:kromka-character-terms && node tools/check-progression-sync.js && node tools/check-progression-balance.js && node tools/check-unity-progression.js",
     "check:kromka-world": "node --check tools/build-kromka-runtime-world.js && node --check tools/build-kromka-story-locations.js && node --check tools/build-kromka-clan-base-locations.js && node --check tools/upgrade-kromka-location-vision.js && node tools/check-kromka-world-revision.js && npm run check:kromka-unity-authoring && npm run check:authored-world-sites",
-    "check:kromka-unity-authoring": "node tools/check-unity-kromka-authoring.js && npm run check:unity-local-prefabs",
+    "check:kromka-unity-authoring": "node tools/check-unity-kromka-authoring.js && node tools/check-kromka-collision-parity.js && npm run check:unity-local-prefabs",
     "check:unity-local-prefabs": "node tools/check-unity-local-prefab-references.js",
     "check:kromka-factions": "node tools/check-kromka-factions.js && npm run check:territory-membership",
     "check:territory-membership": "node tools/check-territory-membership.js && npm run check:territory-contract && npm run check:territory-outposts",

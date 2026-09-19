@@ -469,7 +469,12 @@ namespace Kromka.EditorTools
                 string[] tags = row["tags"] is JArray tagRows
                     ? tagRows.Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).ToArray()
                     : Array.Empty<string>();
-                bool blocksMovement = !string.Equals(Text(row, "collision"), "none", StringComparison.OrdinalIgnoreCase);
+                // Сервер пропускает игрока сквозь строку с collision "none" (и "cover"),
+                // поэтому её куб-прокси не должен останавливать его и на клиенте.
+                bool blocksMovement = KromkaWorldSceneExporter.CollisionBlocksMovement(Text(row, "collision"));
+                if (!blocksMovement)
+                    foreach (Collider collider in instance.GetComponentsInChildren<Collider>(true))
+                        collider.enabled = false;
                 // Старые строки пишут vision.mode ("cover", "none"), а не vision.blocks.
                 // Если читать только blocks, укрытие молча становится стеной через
                 // запасной blocksMovement — так при переносе в Кромку (33a20ffd)

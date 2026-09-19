@@ -282,8 +282,12 @@ namespace Kromka.EditorTools
                 foreach (Collider collider in instance.GetComponentsInChildren<Collider>(true))
                     collider.enabled = false;
             }
+            // Префабы RecoveredEnvironment коллайдеров не несут, так что сарай или стена
+            // обзор перекрывают, а движение — нет. Флаг движения без коллайдера значил бы
+            // невидимую преграду на сервере, и экспортёр такой объект не принимает.
             KromkaPlacedObjectAuthoring marker = instance.AddComponent<KromkaPlacedObjectAuthoring>();
-            marker.Configure(stableId, prefabName, "scenery", tags, false, blocks, blocks);
+            marker.Configure(stableId, prefabName, "scenery", tags, false,
+                blocks && KromkaWorldSceneExporter.HasPhysicalCollider(instance), blocks);
             instance.AddComponent<RoaUnityLocationObject>().Configure(stableId);
             return marker;
         }

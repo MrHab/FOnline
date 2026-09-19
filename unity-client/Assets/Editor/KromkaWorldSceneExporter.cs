@@ -407,7 +407,8 @@ namespace Kromka.EditorTools
             row["position"] = Vector(transform.position);
             row["rotation"] = Vector(euler);
             row["scale"] = Vector(transform.lossyScale);
-            row["collision"] = marker.BlocksMovement ? "solid" : "none";
+            RequirePhysicalMovementFlag(marker);
+            row["collision"] = CollisionFor(marker.BlocksMovement, Text(previous, "collision"));
             row["role"] = marker.Role;
             row["tags"] = new JArray(marker.GameplayTags);
             if (marker.GameplayTags.Contains("resource") && row["maxHp"] == null)
@@ -428,6 +429,56 @@ namespace Kromka.EditorTools
             row["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
             row.Remove("placement");
             return row;
+        }
+
+        /// <summary>
+        /// Режим collision для строки data. Пока прежнее значение говорит о движении
+        /// то же, что и маркер, оно сохраняется: экспорт не должен молча превращать
+        /// "resource" в "solid" или "cover" в "none".
+        /// </summary>
+        internal static string CollisionFor(bool blocksMovement, string previous)
+        {
+            string current = (previous ?? string.Empty).Trim();
+            if (current.Length > 0 && CollisionBlocksMovement(current) == blocksMovement) return current;
+            return blocksMovement ? "solid" : "none";
+        }
+
+        /// <summary>Режимы, на которых сервер останавливает игрока: locationObjectBlocksMovement в server.js.</summary>
+        internal static bool CollisionBlocksMovement(string collision)
+        {
+            switch ((collision ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "solid":
+                case "block":
+                case "blocked":
+                case "wall":
+                case "resource":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Игрока на клиенте останавливает только включённый коллайдер сцены, сервер —
+        /// только collision из этого экспорта. Триггеры движению не мешают.
+        /// </summary>
+        internal static bool HasPhysicalCollider(GameObject root)
+        {
+            return root != null && root.GetComponentsInChildren<Collider>(false)
+                .Any(collider => collider.enabled && !collider.isTrigger);
+        }
+
+        // Флаг без коллайдера дал бы серверу невидимую преграду, коллайдер без флага —
+        // стену, сквозь которую сервер ведёт игрока и противников. 319 маркеров прежнего
+        // набора окружения несли такой флаг с переноса в Кромку (33a20ffd).
+        private static void RequirePhysicalMovementFlag(KromkaPlacedObjectAuthoring marker)
+        {
+            if (marker.BlocksMovement == HasPhysicalCollider(marker.gameObject)) return;
+            throw new InvalidOperationException("Объект " + marker.StableObjectId + (marker.BlocksMovement
+                ? " помечен как преграда, но включённого коллайдера в сцене у него нет"
+                : " несёт включённый коллайдер, но не помечен как преграда")
+                + ": сервер и клиент разошлись бы в движении.");
         }
 
         private static void ExportAnomalyLayout(KromkaLocationAuthoring authoring)

@@ -149,11 +149,29 @@ namespace Kromka.EditorTools
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .Distinct(StringComparer.Ordinal).Count() == objects.Length,
                 id + ": повторяются стабильные ID объектов");
+            // Движение: флаг маркера, коллайдеры сцены и collision в data обязаны говорить
+            // одно. Экспортёр выводит collision из флага, клиент останавливает игрока
+            // только коллайдером, сервер — только строкой data. 319 строк прежнего
+            // набора окружения расходились здесь с переноса в Кромку, и полный экспорт
+            // любой из 42 сцен молча превратил бы их в преграды на сервере.
+            var rows = (ReadProjectJson("data/locations/" + id + ".json")?["objects"] as JArray ?? new JArray())
+                .OfType<JObject>()
+                .GroupBy(entry => entry["id"]?.Value<string>() ?? string.Empty, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             foreach (KromkaPlacedObjectAuthoring marker in objects.Where(marker => marker.Role != "terrain"))
             {
                 RoaUnityLocationObject bridge = marker.GetComponent<RoaUnityLocationObject>();
                 Require(bridge != null && bridge.ObjectId == marker.StableObjectId,
                     id + ": объект " + marker.StableObjectId + " не связан с сервером");
+                Require(marker.BlocksMovement == KromkaWorldSceneExporter.HasPhysicalCollider(marker.gameObject),
+                    id + ": у объекта " + marker.StableObjectId + " флаг движения ("
+                    + marker.BlocksMovement + ") расходится с коллайдерами сцены");
+                Require(rows.TryGetValue(marker.StableObjectId, out JObject data),
+                    id + ": объект " + marker.StableObjectId + " не экспортирован в data");
+                string collision = data["collision"]?.Value<string>() ?? string.Empty;
+                Require(KromkaWorldSceneExporter.CollisionFor(marker.BlocksMovement, collision) == collision,
+                    id + ": экспорт сцены сменил бы collision объекта " + marker.StableObjectId
+                    + " с \"" + collision + "\"");
             }
 
             int expectedAnomalies = row["anomalyFields"] is JArray fields ? fields.Count : 0;

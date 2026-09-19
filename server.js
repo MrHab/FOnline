@@ -520,6 +520,7 @@ const {
   orientOnsitePartyOffset
 } = require('./src/server/onsite-party-formation');
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
+const { harvestBonusChance } = require('./src/server/harvest-bonus');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -11823,6 +11824,19 @@ function serverHarvestApCost() {
 
 function serverHarvestXp(qty = 1) {
   return 3 + Math.max(1, Math.floor(Number(qty || 1)));
+}
+
+// Шанс второй единицы ресурса. Характеристики — с перками «+1»: их читает serverStatValue.
+function serverHarvestBonusChance(p = {}) {
+  return harvestBonusChance({
+    int: serverStatValue(p, 'int'),
+    luck: serverStatValue(p, 'luck'),
+    traits: p.traits,
+    wandererNorm: serverSkillNorm(p, 'wanderer'),
+    repairNorm: serverSkillNorm(p, 'repair'),
+    engineer: serverTalentLevel(p, 'engineer'),
+    recycler: serverTalentLevel(p, 'recycler')
+  });
 }
 
 function serverTrySecondChance(p = {}, incomingDamage = 0, now = Date.now()) {
@@ -32997,22 +33011,8 @@ io.on('connection', (socket) => {
     const spend = serverPrepareFixedActionAp(p, data, serverHarvestApCost(p), now, 'добыча ресурса');
     if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(p) });
     const rng = room.rng || Math.random;
-    const intVal = serverStatValue(p, 'int');
-    const luckVal = serverStatValue(p, 'luck');
     const condition = activityFieldKit ? 100 : Number(serverPlayerItemCondition(p, expectedTool) ?? 100);
-    const bonusChance = clamp(
-      0.18 +
-      Math.max(0, intVal - 5) * 0.025 +
-      Math.max(0, luckVal - 5) * 0.01 +
-      (serverHasTrait(p, 'craftsmanStart') ? 0.18 : 0) +
-      serverSkillNorm(p, 'wanderer') * 0.12 +
-      serverSkillNorm(p, 'repair') * 0.08 +
-      serverTalentLevel(p, 'engineer') * 0.025 +
-      serverTalentLevel(p, 'recycler') * 0.02,
-      0.05,
-      0.78
-    );
-    let qty = 1 + (condition > 40 && rng() < bonusChance ? 1 : 0);
+    let qty = 1 + (condition > 40 && rng() < serverHarvestBonusChance(p) ? 1 : 0);
     // Экономика v3: опасная зона щедрее — жёлтая +25%, красная +60%, чёрная ×2.
     // Премиум добавляет выход, но опыт за него не растёт второй раз.
     const premiumGather = serverPremiumMultiplier(p, 'gatherMultiplier');

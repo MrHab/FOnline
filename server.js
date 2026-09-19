@@ -262,6 +262,7 @@ const {
   directionBetween: dangerDirectionBetween,
   boundaryPoint: dangerBoundaryPoint
 } = require('./src/server/danger-cells');
+const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
 const {
   normalizeEcologyConfig,
   normalizeEcologyState,
@@ -14524,85 +14525,18 @@ function invalidateEnemyPath(enemy) {
   enemy.nextPathAt = 0;
   enemy.pathStuckSince = 0;
 }
+// Сам поиск — в src/server/enemy-pathing.js: он получает сетку этой комнаты, поэтому
+// точки пути верны и в сцене 160×160, а не только в обычной 38×38.
 function findNearestWalkablePathTile(room, tx, tz, maxRadius = 8) {
-  tx = Math.round(Number(tx || 0));
-  tz = Math.round(Number(tz || 0));
-  if (isEnemyPathTileOpen(room, tx, tz)) return { tx, tz };
-  let best = null;
-  let bestD = Infinity;
-  for (let r = 1; r <= maxRadius; r++) {
-    for (let dz = -r; dz <= r; dz++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-        const nx = tx + dx;
-        const nz = tz + dz;
-        if (!isEnemyPathTileOpen(room, nx, nz)) continue;
-        const d = Math.hypot(dx, dz);
-        if (d < bestD) { bestD = d; best = { tx: nx, tz: nz }; }
-      }
-    }
-    if (best) return best;
-  }
-  return null;
-}
-function canEnemyUseDiagonalStep(room, tx, tz, nx, nz) {
-  const dx = nx - tx;
-  const dz = nz - tz;
-  if (Math.abs(dx) !== 1 || Math.abs(dz) !== 1) return true;
-  // Запрещаем срезать угол между водой/деревом/камнем. Иначе моб визуально
-  // пытается протиснуться через диагональную щель и снова выглядит застрявшим.
-  return isEnemyPathTileOpen(room, tx + dx, tz) && isEnemyPathTileOpen(room, tx, tz + dz);
+  return nearestOpenPathTile((x, z) => isEnemyPathTileOpen(room, x, z), tx, tz, maxRadius);
 }
 function findEnemyGridPath(room, startTx, startTz, goalTx, goalTz) {
-  const start = findNearestWalkablePathTile(room, startTx, startTz, 3);
-  const goal = findNearestWalkablePathTile(room, goalTx, goalTz, 8);
-  if (!start || !goal) return null;
-  if (start.tx === goal.tx && start.tz === goal.tz) return [];
-  const dirs = [
-    [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-    [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]
-  ];
-  const startKey = enemyPathKey(start.tx, start.tz);
-  const goalKey = enemyPathKey(goal.tx, goal.tz);
-  const open = [{ tx: start.tx, tz: start.tz, key: startKey, f: Math.hypot(goal.tx - start.tx, goal.tz - start.tz) }];
-  const cameFrom = new Map();
-  const gScore = new Map([[startKey, 0]]);
-  const closed = new Set();
-  let iterations = 0;
-  while (open.length && iterations++ < 900) {
-    let bestIndex = 0;
-    for (let i = 1; i < open.length; i++) if (open[i].f < open[bestIndex].f) bestIndex = i;
-    const current = open.splice(bestIndex, 1)[0];
-    if (!current || closed.has(current.key)) continue;
-    if (current.key === goalKey) {
-      const out = [];
-      let key = current.key;
-      while (key && key !== startKey) {
-        const [x, z] = key.split(',').map(Number);
-        out.push({ tx: x, tz: z, ...tileToWorld(x, z) });
-        key = cameFrom.get(key);
-      }
-      out.reverse();
-      return out;
-    }
-    closed.add(current.key);
-    const baseG = gScore.get(current.key) ?? Infinity;
-    for (const [dx, dz, cost] of dirs) {
-      const nx = current.tx + dx;
-      const nz = current.tz + dz;
-      if (!isEnemyPathTileOpen(room, nx, nz)) continue;
-      if (!canEnemyUseDiagonalStep(room, current.tx, current.tz, nx, nz)) continue;
-      const key = enemyPathKey(nx, nz);
-      if (closed.has(key)) continue;
-      const nextG = baseG + cost;
-      if (nextG >= (gScore.get(key) ?? Infinity)) continue;
-      cameFrom.set(key, current.key);
-      gScore.set(key, nextG);
-      const h = Math.hypot(goal.tx - nx, goal.tz - nz);
-      open.push({ tx: nx, tz: nz, key, f: nextG + h });
-    }
-  }
-  return null;
+  const dims = roomTileDims(room);
+  return findGridPath({
+    isOpen: (x, z) => isEnemyPathTileOpen(room, x, z),
+    toWorld: (x, z) => tileToWorld(x, z, dims),
+    startTx, startTz, goalTx, goalTz
+  });
 }
 const ROOM_ENEMY_SPATIAL_CELL_SIZE = 8;
 // Hard safety cap for a speed-20 actor during the longest empty-room tick.

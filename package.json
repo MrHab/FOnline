@@ -134,7 +134,7 @@
     "check:quests": "node tools/check-quests.js",
     "check:economy": "node tools/check-economy-generation.js && node tools/check-world-containers.js && node tools/check-loot-perks.js",
     "check:npc": "node tools/check-npc-routines.js && node tools/check-npc-smart-objects.js && node tools/check-npc-schedules.js && node tools/check-npc-inventory.js && node tools/check-quiet-traders-network.js",
-    "check:movement": "node tools/check-movement-collision.js && node tools/check-global-exit-direction.js && node tools/check-location-tile-dims.js",
+    "check:movement": "node tools/check-movement-collision.js && node tools/check-global-exit-direction.js && node tools/check-location-tile-dims.js && node tools/check-enemy-pathing.js",
     "check:crowded-room": "node tools/check-room-actor-spatial-index.js && node tools/check-crowded-room-performance.js",
     "check:storage": "node tools/check-faction-storage.js",
     "check:equipment": "npm run check:equipment-hands && npm run check:kromka-items",

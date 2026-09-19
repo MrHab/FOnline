@@ -6,6 +6,7 @@
 // стоила бы секунды на каждом старте и десятки мегабайт памяти). Закреплённая
 // зона берётся из data/zones/authored/<id>.json вместо генератора.
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { zoneById, zoneRecipe } = require('./zone-graph');
@@ -13,6 +14,30 @@ const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
 
 const METRES = TILES * 2;
+const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
+
+/**
+ * Что в закреплённой зоне разошлось с графом: ворота на каждой открытой стороне
+ * ведут к соседу этой стороны, у каждых есть точка входа, у каждого места —
+ * портал и выход. Пустой список — зона годится.
+ */
+function frozenZoneProblems(graph, definition) {
+  const zone = zoneById(graph, definition?.id);
+  if (!zone) return [`${definition?.id}: not a zone of the graph`];
+  const problems = [];
+  const gates = (definition.transitions || []).filter(row => row.type === 'zoneGate');
+  for (const [side, edge] of Object.entries(zone.edges || {})) {
+    const gate = gates.find(row => row.direction === side);
+    if (edge.open && (!gate || gate.to !== edge.to)) problems.push(`${zone.id}: the ${side} gate must lead to ${edge.to}`);
+    if (!edge.open && gate) problems.push(`${zone.id}: the ${side} side is closed in the graph but has a gate`);
+    if (edge.open && !definition[SIDE_ENTRY[side]]) problems.push(`${zone.id}: no ${SIDE_ENTRY[side]} for arrivals from the ${side}`);
+  }
+  for (const place of zone.places || []) {
+    if (!definition[`entryFromPlace_${place.locationId}`]) problems.push(`${zone.id}: no exit point from ${place.locationId}`);
+    if (!place.hidden && !(definition.transitions || []).some(row => row.to === place.locationId)) problems.push(`${zone.id}: no portal to ${place.locationId}`);
+  }
+  return problems;
+}
 
 function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, log = () => {} }) {
   if (!graph || !Array.isArray(graph.zones)) throw new Error('zone runtime needs the zone graph');
@@ -49,7 +74,12 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     if (fs.existsSync(authoredFile)) {
       const authored = JSON.parse(fs.readFileSync(authoredFile, 'utf8'));
       if (authored.id !== id) throw new Error(`zone ${id}: authored file carries id ${authored.id}`);
-      return { ...authored, generated: true, frozen: true };
+      const problems = frozenZoneProblems(graph, authored);
+      if (problems.length) throw new Error(`frozen zone ${id} no longer fits the graph: ${problems.join('; ')}`);
+      // Ревизия закреплённой зоны — от её содержимого: правка файла меняет её для клиентов.
+      const { revision, ...content } = authored;
+      const hash = crypto.createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 8);
+      return { ...content, generated: true, frozen: true, revision: `f-${hash}` };
     }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
     return buildZone(zoneRecipe(graph, id), catalog);
@@ -128,4 +158,4 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
   return { graph, registerStubs, isZone, ensure, view, worldMap, parentZoneOf, parentZoneView, builtCount: () => built.size };
 }
 
-module.exports = { createZoneRuntime };
+module.exports = { createZoneRuntime, frozenZoneProblems };

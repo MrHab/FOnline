@@ -263,6 +263,7 @@ const {
   boundaryPoint: dangerBoundaryPoint
 } = require('./src/server/danger-cells');
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
+const { createZoneRuntime } = require('./src/server/zone-runtime');
 const {
   normalizeEcologyConfig,
   normalizeEcologyState,
@@ -2154,7 +2155,9 @@ app.post('/api/dev/locations/:id', (req, res) => {
 app.get('/api/locations', (_, res) => {
   const locations = {};
   for (const loc of Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})) {
-    if (!loc || !loc.id) continue;
+    // Зоны мира не входят в общий список: их почти две сотни по ~65 КБ, клиент
+    // берёт нужную по одной через /api/locations/:id.
+    if (!loc || !loc.id || loc.generated) continue;
     locations[loc.id] = kromkaPublicLocationDefinition(loc);
   }
   res.json({
@@ -2163,6 +2166,23 @@ app.get('/api/locations', (_, res) => {
     locationRelease: publicLocationRelease(),
     locations
   });
+});
+
+// Одна локация, в том числе зона мира (её собирает конструктор при первом
+// обращении). Ответ сжат и кэшируется по ревизии зоны.
+const locationResponseCache = new Map();
+app.get('/api/locations/:id', (req, res) => {
+  const id = normalizeLocationId(req.params.id);
+  if (!LOCATIONS[id]) return res.status(404).json({ ok: false, error: 'Неизвестная локация.' });
+  const loc = ensureZoneLocation(id) || LOCATIONS[id];
+  const key = `${id}:${loc.revision || ''}`;
+  let cached = locationResponseCache.get(id);
+  if (!cached || cached.key !== key) {
+    const body = Buffer.from(JSON.stringify({ ok: true, location: kromkaPublicLocationDefinition(loc) }), 'utf8');
+    cached = { key, body, gzip: gzipJsonBuffer(body) };
+    locationResponseCache.set(id, cached);
+  }
+  sendJsonBuffer(res, cached.body, cached.gzip);
 });
 
 app.get('/api/quests', (_, res) => {
@@ -4839,7 +4859,16 @@ const FILE_GLOBAL_MAP_FALLBACK = {
   cells: {}
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();
-let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
+// Зоны мира (граф 20‑километровых зон): заглушки сейчас, полное определение —
+// конструктором при первом входе в зону (ensureZoneLocation).
+const ZONE_RUNTIME = createZoneRuntime({
+  graph: readJson(path.join(BUNDLED_DATA_DIR, 'kromka', 'zone-graph.json'), { zones: [] }),
+  zonesDir: path.join(BUNDLED_DATA_DIR, 'zones'),
+  normalize: definition => normalizeLocationDefinition(definition),
+  validate: validateZoneLocationDefinition
+});
+ZONE_RUNTIME.registerStubs(LOCATIONS);
+let GLOBAL_MAP =normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
   safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
 });
@@ -13244,6 +13273,21 @@ function rememberPlayerSettlement(p, locationId = '') {
   }
   p.lastVisitedSettlementId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || 'settlement');
   return p.lastVisitedSettlementId;
+}
+
+// Зона строится при первом обращении; для обычной локации ничего не делает.
+function ensureZoneLocation(locationId = '') {
+  return ZONE_RUNTIME.ensure(LOCATIONS, normalizeLocationId(locationId));
+}
+
+function validateZoneLocationDefinition(definition = {}) {
+  for (const row of definition.containers || []) {
+    const tier = String(row.tier || 'basic');
+    if (!SERVER_CONTAINER_LOOT_TABLES[tier]) throw new Error(`zone ${definition.id}: unknown container tier ${tier}`);
+    for (const item of row.loot || []) {
+      if (!SERVER_ITEM_IDS.has(serverBaseItemId(item.id))) throw new Error(`zone ${definition.id}: unknown loot item ${item.id}`);
+    }
+  }
 }
 
 function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
@@ -26474,6 +26518,7 @@ function canonicalLocationRealityId(roomId = '', locationId = '') {
 
 function getOrCreateRoom(roomId = 'settlement', locationId = '') {
   const loc = normalizeLocationId(locationId || String(roomId || '').split('#')[0] || 'settlement');
+  ensureZoneLocation(loc);
   const id = canonicalLocationRealityId(roomId, loc);
   const authoredWorldSiteId = String(LOCATIONS[loc]?.worldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   if (!rooms.has(id)) {
@@ -27501,7 +27546,9 @@ function publicAuthoritativePlayerState(p = {}) {
     currentWorldSiteId: globalMap.currentWorldSiteId,
     globalMap,
     // Сцена опасной клетки: какая это клетка карты и как её зовут («Меловая чаша №47»).
-    dangerCell: serverDangerCellView(p)
+    dangerCell: serverDangerCellView(p),
+    // Зона мира, в которой стоит игрок: номер, название, цвет и куда ведут ворота.
+    zone: ZONE_RUNTIME.view(p.locationId)
   };
 }
 
@@ -28798,6 +28845,7 @@ io.on('connection', (socket) => {
     const savedLocationId = normalizeLocationId(savedState.currentLocationId || 'settlement');
     let locationId = resumableSiege ? 'clanSiege' : (LOCATIONS[savedLocationId] ? savedLocationId : 'settlement');
     if (!resumableSiege && locationId === 'clanSiege') locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
+    ensureZoneLocation(locationId);
     let baseLoc = LOCATIONS[locationId] || {};
     if (locationId === 'personalBase' && serverPersonalBaseForAccount(auth.user.id, false)?.rights?.granted !== true) {
       locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
@@ -33557,6 +33605,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Неизвестная локация.' });
       return;
     }
+    ensureZoneLocation(locationId);
     const requestedRoomId = sanitizeEncounterRoomId(data.roomId || '', locationId);
     const baseLoc = LOCATIONS[locationId] || {};
     const sharedRealityLocation = locationUsesSharedReality(baseLoc);

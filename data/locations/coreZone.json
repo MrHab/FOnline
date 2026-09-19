@@ -380,7 +380,21 @@
       "z": 32,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 6
+        },
+        {
+          "id": "medicine",
+          "qty": 4
+        },
+        {
+          "id": "scrap",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "outpostRelay_cache",
@@ -393,7 +407,17 @@
       "z": 32,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 6
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "outpostDepot_cache",
@@ -406,7 +430,17 @@
       "z": -88,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "weaponParts",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 10
+        }
+      ]
     },
     {
       "id": "outskirts_cache_1",
@@ -417,7 +451,21 @@
       "x": 120.56106203139956,
       "y": 0.1,
       "z": 41.452745613271134,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 6
+        },
+        {
+          "id": "ammoParts",
+          "qty": 10
+        },
+        {
+          "id": "weaponParts",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "outskirts_cache_2",
@@ -428,7 +476,21 @@
       "x": -41.452745613271127,
       "y": 0.1,
       "z": 108.56106203139956,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 5
+        },
+        {
+          "id": "electronics",
+          "qty": 3
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "outskirts_cache_3",
@@ -439,7 +501,21 @@
       "x": -108.56106203139959,
       "y": 0.1,
       "z": -53.452745613271063,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 6
+        },
+        {
+          "id": "ammoParts",
+          "qty": 10
+        },
+        {
+          "id": "weaponParts",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "outskirts_cache_4",
@@ -450,7 +526,21 @@
       "x": 53.452745613271162,
       "y": 0.1,
       "z": -120.56106203139954,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 5
+        },
+        {
+          "id": "electronics",
+          "qty": 3
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "outskirts_cache_5",
@@ -461,7 +551,21 @@
       "x": 39.1566450190806,
       "y": 0.1,
       "z": 115.01778483633184,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 4
+        },
+        {
+          "id": "medicine",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "outskirts_cache_6",
@@ -472,7 +576,21 @@
       "x": -115.01778483633184,
       "y": 0.1,
       "z": 51.156645019080607,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 6
+        },
+        {
+          "id": "chemicals",
+          "qty": 3
+        },
+        {
+          "id": "medicine",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "outskirts_cache_7",
@@ -483,7 +601,21 @@
       "x": -51.156645019080564,
       "y": 0.1,
       "z": -103.01778483633184,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 4
+        },
+        {
+          "id": "medicine",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "outskirts_cache_8",
@@ -494,7 +626,21 @@
       "x": 103.01778483633184,
       "y": 0.1,
       "z": -39.156645019080571,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 6
+        },
+        {
+          "id": "chemicals",
+          "qty": 3
+        },
+        {
+          "id": "medicine",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "middle_cache_1",
@@ -507,7 +653,21 @@
       "z": 60,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 5
+        },
+        {
+          "id": "chemicals",
+          "qty": 5
+        },
+        {
+          "id": "scrap",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "middle_cache_2",
@@ -520,7 +680,17 @@
       "z": 60,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 6
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "middle_cache_3",
@@ -533,7 +703,21 @@
       "z": -84,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 8
+        },
+        {
+          "id": "scrap",
+          "qty": 6
+        },
+        {
+          "id": "weaponParts",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "middle_cache_4",
@@ -546,7 +730,17 @@
       "z": -84,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 6
+        },
+        {
+          "id": "electronics",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "center_cache_a",
@@ -563,7 +757,21 @@
       "terminalLocked": true,
       "terminalDifficulty": "hard",
       "terminalUnlocksLock": true,
-      "terminalName": "Терминал Объекта Ноль"
+      "terminalName": "Терминал Объекта Ноль",
+      "loot": [
+        {
+          "id": "stabilizerCatalyst",
+          "qty": 1
+        },
+        {
+          "id": "electronics",
+          "qty": 4
+        },
+        {
+          "id": "weaponParts",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "center_cache_b",
@@ -576,7 +784,21 @@
       "z": -14,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "hard"
+      "lockDifficulty": "hard",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 4
+        },
+        {
+          "id": "weaponParts",
+          "qty": 3
+        },
+        {
+          "id": "chemicals",
+          "qty": 4
+        }
+      ]
     }
   ],
   "objects": [

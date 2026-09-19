@@ -145,6 +145,12 @@
     "melee": { "scrap": 1 },
     "armor": { "scrap": 3 }
   },
+  "lootPerks": {
+    "remnantSharePerRank": 0.15,
+    "cacheMaterialsPerRank": 0.25,
+    "scavengerTrophyChance": 0.25,
+    "trophyItemId": "trophy"
+  },
   "strategicResource": {
     "itemId": "blue",
     "displayName": "Синь",

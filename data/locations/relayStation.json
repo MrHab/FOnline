@@ -167,7 +167,17 @@
       "z": 8,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 2
+        },
+        {
+          "id": "scrap",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "contour3_barrel_cache",
@@ -179,7 +189,13 @@
       "y": 0.1,
       "z": -8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "water",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

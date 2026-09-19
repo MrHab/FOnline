@@ -50,7 +50,17 @@
       "y": 0.1,
       "z": 0,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "food",
+          "qty": 2
+        },
+        {
+          "id": "water",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "chalk_filter_cabinet",
@@ -63,7 +73,17 @@
       "z": 10,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 2
+        },
+        {
+          "id": "medicine",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

@@ -6,6 +6,7 @@ const { normalizeCityAuctionConfig } = require('./city-auctions');
 const { normalizeCraftingPlotConfig } = require('./crafting-plots');
 const { normalizeDangerCellConfig } = require('./danger-cells');
 const { normalizeAccountSinConfig } = require('./account-sin');
+const { normalizeLootPerkConfig } = require('./loot-perks');
 
 /**
  * Экономика v3 (библия 14.5, 16.5, KRM-22): какие части прежней живой пустоши
@@ -172,6 +173,7 @@ function normalizeWorldEconomy(input = {}) {
       .filter(Boolean)),
     zones: normalizeZones(src.zones),
     npcRemnants: normalizeNpcRemnants(src.npcRemnants),
+    lootPerks: normalizeLootPerkConfig(src.lootPerks),
     blackMarket: normalizeBlackMarketConfig(src.blackMarket),
     auctions: normalizeCityAuctionConfig(src.auctions),
     plots: normalizeCraftingPlotConfig(src.plots),
@@ -229,16 +231,19 @@ function rollQuantity(amount = 0, random = Math.random) {
 /**
  * Останки снаряжения NPC. `gear` — строки { id, qty, kind }, где kind один из
  * firearm, melee, armor. Возвращает строки деталей и лома, слитые по id.
+ * `shareMultiplier` — «Редкая находка» убийцы; больше целого предмета с
+ * единицы снаряжения не достаётся никому.
  */
-function npcRemnantRows(economy = {}, gear = [], random = Math.random) {
+function npcRemnantRows(economy = {}, gear = [], random = Math.random, shareMultiplier = 1) {
   const remnants = economy?.npcRemnants || normalizeNpcRemnants({});
+  const share = Math.min(1, remnants.share * Math.max(1, Number(shareMultiplier) || 1));
   const totals = new Map();
   for (const row of Array.isArray(gear) ? gear : []) {
     const table = remnants[row?.kind];
     const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
     if (!table || qty <= 0) continue;
     for (const [id, perUnit] of Object.entries(table)) {
-      const amount = rollQuantity(perUnit * qty * remnants.share, random);
+      const amount = rollQuantity(perUnit * qty * share, random);
       if (amount > 0) totals.set(id, (totals.get(id) || 0) + amount);
     }
   }

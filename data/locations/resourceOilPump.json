@@ -59,7 +59,17 @@
       "y": 0.1,
       "z": -2,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "oil",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 5
+        }
+      ]
     },
     {
       "id": "oilramp_lean_to",
@@ -72,7 +82,21 @@
       "z": -10,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "oil",
+          "qty": 4
+        },
+        {
+          "id": "weaponParts",
+          "qty": 2
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

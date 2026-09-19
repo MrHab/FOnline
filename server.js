@@ -34,6 +34,7 @@ const {
   npcRemnantRows,
   conditionIsBroken
 } = require('./src/server/world-economy');
+const { remnantShareMultiplier, cacheSenseLoot, scavengerLoot } = require('./src/server/loot-perks');
 const {
   BLACK_MARKET_VERSION,
   normalizeBlackMarketState,
@@ -837,9 +838,10 @@ const GLOBAL_MAP_PLAYABLE_POINTS = (readJson(path.join(BUNDLED_DATA_DIR, 'kromka
   .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
   .map(point => [Number(point[0]), Number(point[1])]);
 
+// Прогрессия добычу не создаёт вовсе: перки поиска только усиливают останки,
+// трофеи и авторские тайники (src/server/loot-perks.js).
 const ECONOMY_RULES = Object.freeze({
   randomLootTables: false,
-  progressionLootBonus: false,
   dailyContainerRestock: false,
   naturalCreatureTrophies: true
 });
@@ -7033,20 +7035,40 @@ function serverItemDisplayName(itemId = '') {
   return KROMKA_ITEM_INDEXES.byId[String(itemId || '')]?.name || String(itemId || '');
 }
 
-// Что обещает карточка постоянной области: предметы из таблиц добычи её же
-// обитателей. Полка выбирается тем же путём, что и в бою — через тип существа,
-// потому что стая задаётся либо идентификатором, либо именем типа, а полка
-// добычи живёт на типе.
-function serverPveAreaLootTier(pack = {}) {
+// Что обещает карточка постоянной области: то, что сервер на самом деле кладёт
+// на труп её обитателя. Существо проходит через тот же бросок, что и при
+// появлении в мире (без случайных таблиц он детерминирован — одни трофеи), а
+// человек-NPC отдаёт марки из карманов и останки снаряжения: само снаряжение с
+// трупа не падает. Стая задаётся идентификатором существа либо именем типа.
+function serverPvePackYieldIds(pack = {}) {
   const creatureTypeId = String(pack?.creatureTypeId || '');
   const typeName = String(pack?.typeName || '');
-  const type = SERVER_ENEMY_TYPES.find(row => creatureTypeId && String(row.lootTier || '') === creatureTypeId)
+  const type = SERVER_ENEMY_TYPES.find(row => creatureTypeId && String(row.creatureTypeId || '') === creatureTypeId)
     || SERVER_ENEMY_TYPES.find(row => typeName && String(row.name || '') === typeName);
-  return normalizeEnemyLootTier(type || {});
+  if (!type) return [];
+  const opts = { creatureTypeId: String(type.creatureTypeId || '') };
+  if (serverNpcIsNaturalCreature(type, opts)) {
+    const ids = rollServerNaturalCreatureLoot(null, type, opts).map(row => row.id);
+    if (ECONOMY_RULES.randomLootTables) {
+      for (const row of SERVER_ENEMY_LOOT_TABLES[opts.creatureTypeId] || []) ids.push(...(row.oneOf || [row.id]));
+    }
+    return ids;
+  }
+  if (WORLD_ECONOMY.worldModel.npcGearDrops) return ['silver'];
+  const remnants = WORLD_ECONOMY.npcRemnants;
+  return ['silver', ...Object.keys(remnants.firearm), ...Object.keys(remnants.melee), ...Object.keys(remnants.armor)];
+}
+
+// Ресурсные узлы самого логова — такая же настоящая добыча области.
+function serverPveAreaNodeYieldIds(area = {}) {
+  const loc = LOCATIONS[normalizeLocationId(area?.locationId || '')];
+  return (Array.isArray(loc?.objects) ? loc.objects : [])
+    .map(row => serverResourceDef(locationObjectResourceType(row))?.itemId || '')
+    .filter(Boolean);
 }
 
 function serverPveAreaRewardIds(area = {}) {
-  return pveAreaRewardIds(area, SERVER_ENEMY_LOOT_TABLES, serverPveAreaLootTier);
+  return pveAreaRewardIds(area, { packYield: serverPvePackYieldIds, areaYield: serverPveAreaNodeYieldIds });
 }
 
 const SERVER_WEAPONS = {
@@ -11275,8 +11297,9 @@ function serverNpcGearKind(itemId = '') {
 /**
  * Труп NPC по правилам экономики v3, один раз на смерть: снаряжение не
  * падает, а превращается в детали и лом; марки умножаются на богатство зоны.
+ * `options.remnantShareMultiplier` — «Редкая находка» убившего игрока.
  */
-function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.random, enemy = null) {
+function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.random, enemy = null, options = {}) {
   const mode = room ? locationPvpMode(roomLocation(room)) : 'peaceful';
   const kept = [];
   const gear = [];
@@ -11319,7 +11342,7 @@ function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.rando
     if (existing) existing.qty = Number(existing.qty || 0) + Number(row.qty || 0);
     else merged.set(row.id, row);
   }
-  for (const remnant of npcRemnantRows(WORLD_ECONOMY, gear, random)) {
+  for (const remnant of npcRemnantRows(WORLD_ECONOMY, gear, random, options.remnantShareMultiplier)) {
     if (!SERVER_ITEM_IDS.has(remnant.id)) continue;
     const existing = merged.get(remnant.id);
     if (existing) existing.qty = Number(existing.qty || 0) + remnant.qty;
@@ -11328,7 +11351,7 @@ function serverApplyNpcCorpseEconomy(rows = [], room = null, random = Math.rando
   return [...merged.values()];
 }
 
-function serverPrepareNpcCorpseLoot(enemy = {}, room = null) {
+function serverPrepareNpcCorpseLoot(enemy = {}, room = null, options = {}) {
   if (!enemy) return [];
   if (serverNpcIsNaturalCreature(enemy, enemy)) {
     normalizeServerNaturalCreatureState(enemy);
@@ -11343,7 +11366,7 @@ function serverPrepareNpcCorpseLoot(enemy = {}, room = null) {
   if (enemy.dead && !enemy.corpseEconomyApplied) {
     enemy.corpseEconomyApplied = true;
     const corpse = sanitizeServerInventorySnapshot(
-      serverApplyNpcCorpseEconomy(enemy.loot, room, room?.rng || Math.random, enemy),
+      serverApplyNpcCorpseEconomy(enemy.loot, room, room?.rng || Math.random, enemy, options),
       { includeEquipped: true }
     );
     enemy.loot = corpse.map(row => ({ ...row }));
@@ -15631,45 +15654,40 @@ function rollWorldContainerLootServer(room, def = {}) {
   return rollContainerLootTable(rng, def.tier);
 }
 
-function serverLootSearchScore(p = {}) {
-  return serverTalentLevel(p, 'scrounger') +
-    (serverHasTrait(p, 'scavengerStart') ? 1 : 0) +
-    Math.floor(serverSkillNorm(p, 'wanderer') * 3) +
-    serverTalentLevel(p, 'cacheSense');
+function serverItemIsMaterial(id = '') {
+  return KROMKA_ITEM_INDEXES.byId[String(id || '')]?.category === 'materials';
 }
 
-function addServerProgressionLootBonus(loot, p = {}, rng = Math.random, kind = 'enemy') {
-  if (!ECONOMY_RULES.progressionLootBonus) return false;
-  const score = serverLootSearchScore(p);
-  if (score <= 0) return false;
-  let added = false;
-  const moneyBonus = Math.floor(rng() * (2 + score * 2));
-  if (moneyBonus > 0) { addLootStack(loot, 'silver', moneyBonus); added = true; }
-  const ammoChance = (kind === 'container' ? 0.14 : 0.10) * score;
-  if (rng() < ammoChance) { addLootStack(loot, rng() < 0.50 ? 'ammo9' : (rng() < 0.68 ? 'ammo556' : (rng() < 0.86 ? 'shotgunShell' : 'napalm')), 2 + Math.floor(rng() * (2 + score))); added = true; }
-  if (rng() < 0.06 * score) { addLootStack(loot, rng() < 0.55 ? 'stim' : 'medkit', 1); added = true; }
-  if (kind === 'container' && serverTalentLevel(p, 'cacheSense') > 0) {
-    const cacheRank = serverTalentLevel(p, 'cacheSense');
-    if (rng() < 0.18 * cacheRank) { addLootStack(loot, rng() < 0.5 ? 'repairKit' : 'antibiotics', 1); added = true; }
-    if (rng() < 0.08 * cacheRank) { addLootStack(loot, 'trophy', 1); added = true; }
-  }
-  return added;
-}
-
+// Перки поиска (src/server/loot-perks.js) усиливают то, что на трупе и так
+// есть: «Падальщик» — трофеи существа, «Редкая находка» — долю останков
+// снаряжения человека-NPC. Один раз на смерть, по тому, кто убил.
 function applyEnemyProgressionLoot(room, enemy, p = {}) {
   if (!enemy || enemy.progressionLootApplied) return false;
   enemy.progressionLootApplied = true;
   if (!Array.isArray(enemy.inventory)) enemy.inventory = sanitizeServerInventorySnapshot(enemy.loot || [], { includeEquipped: true });
-  const added = addServerProgressionLootBonus(enemy.inventory, p, room?.rng || Math.random, 'enemy');
-  serverPrepareNpcCorpseLoot(enemy, room);
-  return added;
+  let changed = false;
+  if (serverNpcIsNaturalCreature(enemy, enemy)) {
+    const carried = enemy.inventory.length ? enemy.inventory : (enemy.loot || []);
+    const scavenged = scavengerLoot(WORLD_ECONOMY.lootPerks, carried, serverHasTrait(p, 'scavengerStart'), room?.rng || Math.random);
+    enemy.inventory = scavenged.loot;
+    changed = scavenged.changed;
+  }
+  serverPrepareNpcCorpseLoot(enemy, room, {
+    remnantShareMultiplier: remnantShareMultiplier(WORLD_ECONOMY.lootPerks, serverTalentLevel(p, 'scrounger'))
+  });
+  return changed;
 }
 
+// «Нюх на тайники» срабатывает один раз на тайник — у первого открывшего с
+// перком. Награду босса и сундук события перк не трогает: они отмерены под победу.
 function applyContainerProgressionLoot(room, container, p = {}) {
-  if (!container || container.progressionLootApplied) return false;
+  if (!container || container.progressionLootApplied || container.bossLoot || container.publicEventId) return false;
+  const cacheSenseRank = serverTalentLevel(p, 'cacheSense');
+  if (cacheSenseRank <= 0) return false;
   container.progressionLootApplied = true;
-  if (!Array.isArray(container.loot)) container.loot = [];
-  return addServerProgressionLootBonus(container.loot, p, room?.rng || Math.random, 'container');
+  const sensed = cacheSenseLoot(WORLD_ECONOMY.lootPerks, container.loot, cacheSenseRank, serverItemIsMaterial, room?.rng || Math.random);
+  container.loot = sensed.loot;
+  return sensed.changed;
 }
 
 function serverActionProgressionPlayer(p = {}, data = {}) {

@@ -55,7 +55,21 @@
       "terminalUnlocksLock": true,
       "terminalName": "Архивный терминал «Баланса»",
       "lockDifficulty": "medium",
-      "terminalDifficulty": "medium"
+      "terminalDifficulty": "medium",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 5
+        },
+        {
+          "id": "weaponParts",
+          "qty": 3
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "balance_service_box",
@@ -67,7 +81,17 @@
       "y": 0.1,
       "z": -6,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 2
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

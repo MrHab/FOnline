@@ -287,7 +287,29 @@ const getJson = route => new Promise((resolve, reject) => {
   const lairFactions = new Set(lairEnemies.map(row => String(row.faction || '')));
   assert(lairFactions.size === 1,
     'The lair must not fight itself in front of the player: ' + JSON.stringify([...lairFactions]));
-  console.log('PASS one shared lair with its boss and escort, tracks and areas on the world map');
+  // Карточка обещает ровно то, что обитатели логова несут на самом деле. Раньше
+  // она читала таблицы добычи, которые в мире не разыгрываются, и сулила химикаты
+  // и электронику там, где с пыльника падает один трофей.
+  const promised = (hive.rewardPreview || []).map(row => row.id);
+  const carried = new Set(lairEnemies.flatMap(row => (row.inventory || []).map(item => item.id)));
+  assert(carried.size > 0, 'The inhabitants of the lair carry their drop: ' + JSON.stringify(lairEnemies.map(r => r.inventory)).slice(0, 200));
+  assert.deepEqual([...promised].sort(), [...carried].sort(),
+    'The hive card must promise what its inhabitants drop, no more and no less: ' + JSON.stringify({ promised, carried: [...carried] }));
+  assert.equal(hive.rewardPreview[0].name, 'Трофей', 'The reward reaches the card under its inventory name.');
+  // Депо держат люди: с них падают марки и останки снаряжения (само снаряжение
+  // с трупа не падает), а в логове стоят узлы деталей патронов, электроники и лома.
+  const depot = areaRows.find(row => row.locationId === 'oldDepot');
+  assert.deepEqual(depot.rewardPreview.map(row => row.id), ['silver', 'weaponParts', 'scrap', 'ammoParts'],
+    'The depot card names marks, gear remains and the lair nodes: ' + JSON.stringify(depot.rewardPreview));
+  const gearIds = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'items.json'))).items
+    .filter(row => ['weapons', 'armor', 'tools', 'artifacts'].includes(row.category)).map(row => row.id));
+  for (const area of areaRows) {
+    assert(area.rewardPreview.length > 0, `${area.id}: the card previews a reward`);
+    for (const reward of area.rewardPreview) {
+      assert(!gearIds.has(reward.id), `${area.id}: the card promises ${reward.id}, but gear comes from player crafting only`);
+    }
+  }
+  console.log('PASS one shared lair with its boss and escort, tracks and areas on the world map, cards promise the real drop');
 
   // --- аванпосты, публичные события, здоровье -------------------------------------------------
   const territory = await request(accounts.trade, 'requestTerritoryState', {});

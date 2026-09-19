@@ -394,7 +394,8 @@ MonoBehaviour:
   - ammo_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &97332511
 GameObject:
   m_ObjectHideFlags: 0
@@ -3931,7 +3932,8 @@ MonoBehaviour:
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &765898245
 GameObject:
   m_ObjectHideFlags: 0
@@ -5393,7 +5395,8 @@ MonoBehaviour:
   - tool_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1040441442
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5959,7 +5962,8 @@ MonoBehaviour:
   - weapon_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1243876999
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8674,7 +8678,8 @@ MonoBehaviour:
   - repair_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1994077500
 GameObject:
   m_ObjectHideFlags: 0
@@ -9114,7 +9119,8 @@ MonoBehaviour:
   - cover
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &2088035054
 PrefabInstance:
   m_ObjectHideFlags: 0

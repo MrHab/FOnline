@@ -3969,7 +3969,8 @@ MonoBehaviour:
   - water
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1006565596
 GameObject:
   m_ObjectHideFlags: 0
@@ -6603,7 +6604,8 @@ MonoBehaviour:
   - cover
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1617733679
 PrefabInstance:
   m_ObjectHideFlags: 0

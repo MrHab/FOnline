@@ -235,7 +235,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "ammo_bench"
@@ -319,7 +319,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "chem_station"
@@ -391,7 +391,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "energy_bench"
@@ -463,7 +463,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "repair_bench"
@@ -535,7 +535,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "tool_bench"
@@ -607,7 +607,7 @@
         }
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "weapon_bench"
@@ -670,7 +670,7 @@
         "z": 1.34
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "interactive": {
         "kind": "container",
@@ -2265,7 +2265,7 @@
         "z": 1.688
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,
@@ -2311,7 +2311,7 @@
         "z": 1.105
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,
@@ -2357,7 +2357,7 @@
         "z": 1.609
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,
@@ -2389,7 +2389,7 @@
         "z": 1.697
       },
       "vision": {
-        "blocks": false
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,
@@ -2435,7 +2435,7 @@
         "z": 2.1
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,

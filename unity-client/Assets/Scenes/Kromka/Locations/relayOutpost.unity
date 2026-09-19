@@ -905,7 +905,8 @@ MonoBehaviour:
   - energy_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &144190407
 GameObject:
   m_ObjectHideFlags: 0
@@ -1800,7 +1801,8 @@ MonoBehaviour:
   - chem_station
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &298745049
 GameObject:
   m_ObjectHideFlags: 0
@@ -7220,7 +7222,8 @@ MonoBehaviour:
   - repair_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1636558070
 GameObject:
   m_ObjectHideFlags: 0
@@ -9326,7 +9329,8 @@ MonoBehaviour:
   - relay
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1999016894
 PrefabInstance:
   m_ObjectHideFlags: 0

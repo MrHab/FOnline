@@ -4154,7 +4154,8 @@ MonoBehaviour:
   - water
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &907777809
 GameObject:
   m_ObjectHideFlags: 0
@@ -7018,7 +7019,7 @@ MonoBehaviour:
   - food
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
 --- !u!1 &1832826982
 GameObject:
   m_ObjectHideFlags: 0
@@ -7552,7 +7553,8 @@ MonoBehaviour:
   - cover
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1959775369
 GameObject:
   m_ObjectHideFlags: 0
@@ -8708,7 +8710,7 @@ MonoBehaviour:
   - medicine
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
 --- !u!1 &2128012816
 GameObject:
   m_ObjectHideFlags: 0

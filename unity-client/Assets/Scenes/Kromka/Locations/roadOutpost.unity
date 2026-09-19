@@ -227,7 +227,8 @@ MonoBehaviour:
   - ammo_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &69602938
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3078,7 +3079,8 @@ MonoBehaviour:
   - repair_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &676091647
 GameObject:
   m_ObjectHideFlags: 0
@@ -6503,7 +6505,8 @@ MonoBehaviour:
   - supplies
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1314222453
 GameObject:
   m_ObjectHideFlags: 0

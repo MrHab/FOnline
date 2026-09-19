@@ -1528,7 +1528,8 @@ MonoBehaviour:
   - electronics
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &457748124
 GameObject:
   m_ObjectHideFlags: 0
@@ -2866,7 +2867,8 @@ MonoBehaviour:
   - depot
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &818023217
 GameObject:
   m_ObjectHideFlags: 0
@@ -4082,7 +4084,8 @@ MonoBehaviour:
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1180031838
 GameObject:
   m_ObjectHideFlags: 0
@@ -5522,7 +5525,8 @@ MonoBehaviour:
   - weapon-parts
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1518325343
 GameObject:
   m_ObjectHideFlags: 0

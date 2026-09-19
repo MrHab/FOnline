@@ -145,7 +145,7 @@
         "z": 1.181
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "unityAuthored": true,
@@ -1827,7 +1827,7 @@
         "ammo_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "ammo_bench"
@@ -1885,7 +1885,7 @@
         "repair_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "repair_bench"

@@ -1496,7 +1496,7 @@
         "ammo_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "ammo_bench"
@@ -1552,7 +1552,7 @@
         "workshop"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1586,7 +1586,7 @@
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1623,7 +1623,7 @@
         "repair_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "repair_bench"
@@ -1681,7 +1681,7 @@
         "weapon_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "weapon_bench"

@@ -688,7 +688,8 @@ MonoBehaviour:
   - repair_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &149151886
 GameObject:
   m_ObjectHideFlags: 0
@@ -1461,7 +1462,8 @@ MonoBehaviour:
   - relay
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &294864561
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3558,7 +3560,8 @@ MonoBehaviour:
   - weapon_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &730772149
 GameObject:
   m_ObjectHideFlags: 0
@@ -4637,7 +4640,8 @@ MonoBehaviour:
   - ammo_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1123895764
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7681,7 +7685,8 @@ MonoBehaviour:
   - capital-storage
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1730295259
 GameObject:
   m_ObjectHideFlags: 0
@@ -8907,7 +8912,8 @@ MonoBehaviour:
   - tool_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1970730406
 GameObject:
   m_ObjectHideFlags: 0
@@ -9510,7 +9516,8 @@ MonoBehaviour:
   - chem_station
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1999269174
 GameObject:
   m_ObjectHideFlags: 0
@@ -9920,7 +9927,8 @@ MonoBehaviour:
   - energy_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2111252029
 GameObject:
   m_ObjectHideFlags: 0

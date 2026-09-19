@@ -92,7 +92,7 @@
       "hp": 3,
       "maxHp": 3,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -130,7 +130,7 @@
       "hp": 4,
       "maxHp": 4,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {

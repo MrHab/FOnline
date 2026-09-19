@@ -5993,7 +5993,8 @@ MonoBehaviour:
   - wood
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1785628290
 GameObject:
   m_ObjectHideFlags: 0
@@ -7329,7 +7330,8 @@ MonoBehaviour:
   - wood
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2012009655
 GameObject:
   m_ObjectHideFlags: 0

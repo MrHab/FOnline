@@ -2526,7 +2526,8 @@ MonoBehaviour:
   - oil
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &513536419
 GameObject:
   m_ObjectHideFlags: 0
@@ -4762,7 +4763,8 @@ MonoBehaviour:
   - wreck
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &812944681
 GameObject:
   m_ObjectHideFlags: 0
@@ -5474,7 +5476,8 @@ MonoBehaviour:
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1018788835
 GameObject:
   m_ObjectHideFlags: 0
@@ -10687,7 +10690,8 @@ MonoBehaviour:
   - fuel-barrels
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2052210953
 GameObject:
   m_ObjectHideFlags: 0

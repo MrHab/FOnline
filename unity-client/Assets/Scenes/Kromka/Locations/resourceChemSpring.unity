@@ -4010,7 +4010,8 @@ MonoBehaviour:
   - chemicals
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &686472601
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4117,7 +4118,8 @@ MonoBehaviour:
   - scrap
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &688978980
 GameObject:
   m_ObjectHideFlags: 0
@@ -9730,7 +9732,8 @@ MonoBehaviour:
   - chemicals
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1799904924
 GameObject:
   m_ObjectHideFlags: 0

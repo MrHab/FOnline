@@ -1746,7 +1746,7 @@
         "interactionLabel": "Снять измерительный блок"
       },
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1783,7 +1783,7 @@
         "chem_station"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "chem_station"
@@ -1841,7 +1841,7 @@
         "energy_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "energy_bench"
@@ -1899,7 +1899,7 @@
         "repair_bench"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "craftingStations": [
         "repair_bench"

@@ -1071,7 +1071,8 @@ MonoBehaviour:
   - ammo_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &219879990
 GameObject:
   m_ObjectHideFlags: 0
@@ -1292,7 +1293,8 @@ MonoBehaviour:
   - tool_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &254853496
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2371,7 +2373,8 @@ MonoBehaviour:
   - energy_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &462803284
 GameObject:
   m_ObjectHideFlags: 0
@@ -4417,7 +4420,8 @@ MonoBehaviour:
   - chem_station
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &847936986
 GameObject:
   m_ObjectHideFlags: 0
@@ -5312,7 +5316,8 @@ MonoBehaviour:
   _gameplayTags: []
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1017609622
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5634,6 +5639,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1078426807
 GameObject:
   m_ObjectHideFlags: 0
@@ -7394,7 +7400,8 @@ MonoBehaviour:
   - repair_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1513490586
 GameObject:
   m_ObjectHideFlags: 0
@@ -7723,7 +7730,8 @@ MonoBehaviour:
   _gameplayTags: []
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1630281969
 GameObject:
   m_ObjectHideFlags: 0
@@ -8234,7 +8242,8 @@ MonoBehaviour:
   - capital-storage
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1783555039
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8794,7 +8803,8 @@ MonoBehaviour:
   - weapon_bench
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1878383276
 GameObject:
   m_ObjectHideFlags: 0
@@ -9399,7 +9409,8 @@ MonoBehaviour:
   _gameplayTags: []
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &2100159579
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9504,7 +9515,8 @@ MonoBehaviour:
   _gameplayTags: []
   _serverAuthoritative: 1
   _blocksMovement: 1
-  _blocksVision: 1
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2101148986
 GameObject:
   m_ObjectHideFlags: 0

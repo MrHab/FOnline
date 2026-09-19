@@ -50,8 +50,15 @@ namespace RealmOfAshes.Game
 
         public RoaGameBootstrap Bootstrap;
 
+        /// <summary>
+        /// Раскладка под палец вместо определения по платформе: редакторская проба
+        /// строит телефонный экран на ПК.
+        /// </summary>
+        public bool? TouchLayoutOverride;
+
         private GameObject _root;
         private RectTransform _card;
+        private Canvas _canvas;
         private RectTransform _canvasRect;
         private Text _title;
         private Text _subtitle;
@@ -84,18 +91,17 @@ namespace RealmOfAshes.Game
 
             EnsureBuilt();
             if (!_root.activeSelf) _root.SetActive(true);
-            FitCardToViewport();
 
             string step = Bootstrap.AuthStep;
             int characters = Bootstrap.AuthCharacters.Count * 100000
                 + Bootstrap.AuthCatalogVersion * 100
                 + Bootstrap.ProgressionCatalogVersion;
-            if (step != _builtStep || characters != _builtCharacters)
+            if (step != _builtStep || characters != _builtCharacters || CreatorLayoutChanged(step))
             {
-                _builtStep = step;
                 _builtCharacters = characters;
                 RebuildBody(step);
             }
+            FitCardToViewport();
 
             if (step == "creator")
             {
@@ -134,9 +140,9 @@ namespace RealmOfAshes.Game
             var canvasGo = new GameObject("AuthCanvas", typeof(RectTransform), typeof(Canvas),
                                           typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 60; // z-index 300 в web — выше всех игровых окон
+            _canvas = canvasGo.GetComponent<Canvas>();
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = 60; // z-index 300 в web — выше всех игровых окон
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             RoaUiScale.Apply(scaler);
             _canvasRect = (RectTransform)canvasGo.transform;
@@ -166,26 +172,68 @@ namespace RealmOfAshes.Game
             cardOutline.effectDistance = new Vector2(1f, -1f);
 
             _title = Label("Title", _card, 26, TextAnchor.UpperLeft, Title, FontStyle.Bold);
-            Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(18f, -52f), new Vector2(-320f, -18f));
             _subtitle = Label("Subtitle", _card, 12, TextAnchor.UpperLeft, Subtitle);
-            Place(_subtitle.rectTransform, 0f, 1f, 0f, 1f, new Vector2(18f, -92f), new Vector2(600f, -54f));
             _subtitle.horizontalOverflow = HorizontalWrapMode.Wrap;
             _note = Label("OnlineNote", _card, 11, TextAnchor.UpperRight, StatusInk);
-            Place(_note.rectTransform, 1f, 1f, 1f, 1f, new Vector2(-320f, -40f), new Vector2(-18f, -20f));
-
             _body = Child("Body", _card);
-            Place(_body, 0f, 0f, 1f, 1f, new Vector2(18f, 18f), new Vector2(-18f, -104f));
+            ApplyFrame(false);
+        }
+
+        /// <summary>
+        /// Шапка карточки и поле шага. У входа и выбора персонажа они постоянные;
+        /// редактор персонажа ставит свои: на ПК шапка ниже и подзаголовок в одну
+        /// строку, на телефоне шапку заменяет ряд вкладок.
+        /// </summary>
+        private void ApplyFrame(bool creator)
+        {
+            bool compact = creator && _layout.Compact;
+            _title.gameObject.SetActive(true);
+            _subtitle.gameObject.SetActive(!compact);
+            _note.gameObject.SetActive(!compact);
+            _title.alignment = compact ? TextAnchor.MiddleLeft : TextAnchor.UpperLeft;
+            if (!creator)
+            {
+                _title.fontSize = 26;
+                _subtitle.fontSize = 12;
+                _note.fontSize = 11;
+                Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(18f, -52f), new Vector2(-320f, -18f));
+                Place(_subtitle.rectTransform, 0f, 1f, 0f, 1f, new Vector2(18f, -92f), new Vector2(600f, -54f));
+                Place(_note.rectTransform, 1f, 1f, 1f, 1f, new Vector2(-320f, -40f), new Vector2(-18f, -20f));
+                Place(_body, 0f, 0f, 1f, 1f, new Vector2(18f, 18f), new Vector2(-18f, -104f));
+                return;
+            }
+
+            _card.sizeDelta = _layout.Card;
+            float pad = CreatorPad;
+            Place(_body, 0f, 0f, 1f, 1f, new Vector2(pad, pad), new Vector2(-pad, -CreatorBodyTop));
+            if (compact)
+            {
+                _title.fontSize = Fs(15f);
+                return; // место заголовка зависит от вкладок: его ставит BuildCreatorTabs
+            }
+            _title.fontSize = Fs(26f);
+            _subtitle.fontSize = Fs(12f);
+            _note.fontSize = Fs(12f);
+            float titleBottom = 14f + U(36f);
+            Place(_title.rectTransform, 0f, 1f, 1f, 1f, new Vector2(pad, -titleBottom), new Vector2(-340f, -14f));
+            Place(_subtitle.rectTransform, 0f, 1f, 1f, 1f, new Vector2(pad, -titleBottom - U(22f)), new Vector2(-pad, -titleBottom));
+            Place(_note.rectTransform, 1f, 1f, 1f, 1f, new Vector2(-340f, -14f - U(22f)), new Vector2(-pad, -14f));
         }
 
         // ------------------------------------------------------------------
 
         private void RebuildBody(string step)
         {
-            foreach (GameObject go in _bodyObjects) Destroy(go);
+            foreach (GameObject go in _bodyObjects) Discard(go);
             _bodyObjects.Clear();
             _inputs.Clear();
             _status = null;
             CloseConfirm();
+            // Заново открытый редактор начинается с первой вкладки; пересборка под новый
+            // размер окна или каталог оставляет ту, что открыта.
+            if (step != _builtStep) _creatorTab = 0;
+            _builtStep = step;
+            if (step != "creator") ApplyFrame(false);
 
             switch (step)
             {
@@ -197,23 +245,38 @@ namespace RealmOfAshes.Game
                 case "connecting": BuildConnecting(); break;
                 default: BuildLogin(); break;
             }
-            if (_inputs.Count > 0) _inputs[0].ActivateInputField();
+            // На телефоне поле имени лежит на закрытой вкладке, а фокус поднял бы клавиатуру.
+            bool touchCreator = step == "creator" && _layout.Touch;
+            if (_inputs.Count > 0 && !touchCreator) _inputs[0].ActivateInputField();
         }
 
         /// <summary>
-        /// Ужимает карточку под экран. Редактор персонажа занимает 962 единицы при
-        /// референсе канвы 810 на ПК и 720 на телефоне, поэтому ряд «Создать и начать»
-        /// уезжал за нижний край и до кнопки нельзя было добраться.
+        /// Ужимает карточку под экран. Редактор персонажа сюда не попадает: сжатая
+        /// карточка мылит текст (глифы растрируются по масштабу канвы, а не карточки)
+        /// и роняет 10 pt до 6 пикселей на телефоне, поэтому он раскладывается под
+        /// экран сам (ComputeCreatorLayout) и остаётся в масштабе 1.
         /// </summary>
         private void FitCardToViewport()
         {
             if (_card == null || _canvasRect == null) return;
             Rect viewport = _canvasRect.rect;
             if (viewport.width <= 1f || viewport.height <= 1f) return;
+            if (_builtStep == "creator")
+            {
+                _card.localScale = Vector3.one * _layout.CardScale;
+                return;
+            }
             Vector2 size = _card.sizeDelta;
             if (size.x <= 1f || size.y <= 1f) return;
-            float fit = Mathf.Min(1f, (viewport.width - 24f) / size.x, (viewport.height - 24f) / size.y);
+            float fit = Mathf.Min(1f, (viewport.width - CardMargin) / size.x, (viewport.height - CardMargin) / size.y);
             _card.localScale = Vector3.one * Mathf.Max(0.35f, fit);
+        }
+
+        /// <summary>Экран строит и редакторская проба раскладки: в edit mode Destroy — ошибка в логе.</summary>
+        private static void Discard(Object target)
+        {
+            if (target == null) return;
+            if (Application.isPlaying) Destroy(target); else DestroyImmediate(target);
         }
 
         private RectTransform Panel(string name, float height)
@@ -261,6 +324,13 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = Child("Input", panel);
             Place(rect, 0f, 1f, 0f, 1f, new Vector2(12f, -top - 36f), new Vector2(472f, -top));
+            return InputBox(rect, 14, placeholder, value, password, onChanged);
+        }
+
+        /// <summary>Поле ввода в готовом прямоугольнике: место и кегль задаёт вызывающий.</summary>
+        private InputField InputBox(RectTransform rect, int fontSize, string placeholder, string value,
+                                    bool password, System.Action<string> onChanged)
+        {
             var back = rect.gameObject.AddComponent<Image>();
             back.color = InputBg;
             var outline = rect.gameObject.AddComponent<Outline>();
@@ -268,11 +338,11 @@ namespace RealmOfAshes.Game
             outline.effectDistance = new Vector2(1f, -1f);
 
             var field = rect.gameObject.AddComponent<InputField>();
-            Text text = Label("Text", rect, 14, TextAnchor.MiddleLeft, InputInk);
+            Text text = Label("Text", rect, fontSize, TextAnchor.MiddleLeft, InputInk);
             Stretch(text.rectTransform, 10f);
             text.supportRichText = false;
             field.textComponent = text;
-            Text hint = Label("Placeholder", rect, 14, TextAnchor.MiddleLeft, InputHint);
+            Text hint = Label("Placeholder", rect, fontSize, TextAnchor.MiddleLeft, InputHint);
             Stretch(hint.rectTransform, 10f);
             hint.text = placeholder;
             field.placeholder = hint;
@@ -518,6 +588,33 @@ namespace RealmOfAshes.Game
 
         // --- Создание персонажа (#character-creator-panel) ---------------------
 
+        /// <summary>
+        /// Нижний предел кегля на экране создания персонажа — в пикселях экрана, а не
+        /// в пунктах. Вложенный Noto Sans импортирован как Hinted Raster: глиф
+        /// растрируется в целых пикселях (кегль × масштаб канвы), и мельче 11 пикселей
+        /// буквы теряют форму, каким бы ни был кегль в единицах канвы.
+        /// </summary>
+        public const float MinTextPixels = 10.5f;
+
+        /// <summary>
+        /// Наименьшая сторона кнопки под палец, в единицах канвы телефонного референса
+        /// 1280×720: на экране 844×390 это 29 пикселей, на 1266×585 — 43.
+        /// </summary>
+        public const float MinTouchUnits = 48f;
+
+        private const int DesignFont = 12;          // самый мелкий кегль настольного макета
+        private const float TouchZoom = 1.5f;       // телефон: те же метрики в полтора раза крупнее
+        private const float CardMargin = 24f;
+        private const float MaxCardWidth = 1416f;   // 1440 − поля: на 16:9 карточка встаёт пиксель в пиксель
+        // Уже — четырём колонкам тесно: строке «ЦВЕТ ВОЛОС … Светло-коричневый» нужна колонка
+        // в 358 единиц, то есть карточка от 1306. 16:9 и 16:10 проходят, 4:3 получает вкладки.
+        private const float WideMinWidth = 1310f;
+        private const float CompactMinWidth = 960f; // уже — карточка всё-таки ужимается
+
+        private static readonly string[] PageIds = { "appearance", "params", "skills", "traits" };
+        private static readonly string[] PageTitles = { "ВНЕШНОСТЬ", "ПАРАМЕТРЫ", "НАВЫКИ", "ПЕРКИ" };
+        private static readonly float[] ColumnWeights = { 0.29f, 0.228f, 0.214f, 0.268f };
+
         private static readonly Color BlockBg = new Color(0.024f, 0.031f, 0.031f, 0.48f);
         private static readonly Color StepperBg = new Color(0.094f, 0.106f, 0.094f, 0.88f);
         private static readonly Color StatName = new Color(0.78f, 0.706f, 0.518f, 1f);    // #c7b484
@@ -529,18 +626,59 @@ namespace RealmOfAshes.Game
         private static readonly Color DerivedInk = new Color(0.725f, 0.678f, 0.525f, 1f); // #b9ad86
         private static readonly Color NoteGreen = new Color(0.498f, 0.698f, 0.294f, 0.58f);
         private static readonly Color SmallNote = new Color(0.47f, 0.518f, 0.431f, 1f);  // #78846e
+        private static readonly Color TabSelectedBg = new Color(0.231f, 0.188f, 0.102f, 0.98f);
+        private static readonly Color TabBorder = new Color(0.682f, 0.545f, 0.282f, 0.4f);
+        private static readonly Color TabSelectedBorder = new Color(0.851f, 0.722f, 0.427f, 0.95f);
 
+        /// <summary>
+        /// Раскладка редактора под текущий экран. Карточка остаётся в масштабе 1, а под
+        /// экран подстраиваются кегль и расстановка. MinFont — кегль, который на этом
+        /// экране даёт MinTextPixels; Zoom — множитель метрик относительно настольного
+        /// макета (кегль 12); Compact — вкладки вместо четырёх колонок: под палец и
+        /// когда колонкам тесно. CardScale меньше 1 только у окна уже CompactMinWidth,
+        /// и кегль это возмещает.
+        /// </summary>
+        private struct CreatorLayout
+        {
+            public bool Compact;
+            public bool Touch;
+            public float CardScale;
+            public float Zoom;
+            public int MinFont;
+            public Vector2 Card;
+
+            public bool Same(CreatorLayout other)
+            {
+                return Compact == other.Compact && Touch == other.Touch && MinFont == other.MinFont
+                    && Mathf.Abs(CardScale - other.CardScale) < 0.001f && Mathf.Abs(Zoom - other.Zoom) < 0.001f
+                    && Mathf.Abs(Card.x - other.Card.x) < 0.5f && Mathf.Abs(Card.y - other.Card.y) < 0.5f;
+            }
+        }
+
+        private sealed class CreatorTab
+        {
+            public Image Back;
+            public Outline Border;
+            public Text Label;
+        }
+
+        private CreatorLayout _layout;
+        private int _creatorTab;
+        private readonly List<RectTransform> _pages = new List<RectTransform>();
+        private readonly List<CreatorTab> _tabs = new List<CreatorTab>();
         private string _creatorSignature = string.Empty;
         private RawImage _previewImage;
         private Text _previewSummary;
         private Text _previewStatus;
         private RectTransform _statsBox;
+        private float _statPitch;
+        private float _statRow;
         private RectTransform _skillsList;
         private RectTransform _traitsList;
         private Text _pointsLeft;
         private Text _skillCount;
         private Text _traitCount;
-        private Text _derived;
+        private readonly List<Text> _derivedTexts = new List<Text>();
         private Text _readiness;
         private Button _createButton;
         private readonly Dictionary<string, Text> _stepperValues = new Dictionary<string, Text>();
@@ -557,21 +695,273 @@ namespace RealmOfAshes.Game
             return sb.ToString();
         }
 
+        private bool TouchLayout()
+        {
+            if (TouchLayoutOverride.HasValue) return TouchLayoutOverride.Value;
+            return Application.isMobilePlatform
+                || (Bootstrap != null && Bootstrap.MobileControls != null && Bootstrap.MobileControls.ControlsEnabled);
+        }
+
+        private CreatorLayout ComputeCreatorLayout()
+        {
+            Rect viewport = _canvasRect.rect;
+            if (viewport.width <= 1f || viewport.height <= 1f) viewport = new Rect(Vector2.zero, RoaUiScale.Reference);
+            float canvasScale = _canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f;
+            var layout = new CreatorLayout { Touch = TouchLayout() };
+            layout.CardScale = Mathf.Clamp((viewport.width - CardMargin) / CompactMinWidth, 0.35f, 1f);
+            layout.MinFont = Mathf.CeilToInt(MinTextPixels / (canvasScale * layout.CardScale) - 0.001f);
+            layout.Zoom = Mathf.Max(layout.Touch ? TouchZoom : 1f, layout.MinFont / (float)DesignFont);
+            float roomX = (viewport.width - CardMargin) / layout.CardScale;
+            float roomY = (viewport.height - CardMargin) / layout.CardScale;
+            layout.Compact = layout.Touch || roomX < WideMinWidth * layout.Zoom;
+            // Настольный макет: шапка 80, колонки 620, ряд действий 56 и поля — 786 единиц
+            // при Zoom 1, ровно 810 − поля. Вкладки занимают экран целиком.
+            float height = layout.Compact ? roomY : Mathf.Min(roomY, 52f + 734f * layout.Zoom);
+            layout.Card = new Vector2(Mathf.Floor(Mathf.Min(roomX, MaxCardWidth)), Mathf.Floor(height));
+            return layout;
+        }
+
+        private bool CreatorLayoutChanged(string step)
+        {
+            if (step != "creator" || _builtStep != "creator") return false;
+            // Экранная клавиатура телефона меняет размер окна, а пересборка отняла бы фокус у
+            // поля имени и закрыла её. На ПК поле имени в фокусе с самого открытия экрана,
+            // поэтому там окно перекладывается сразу, а фокус возвращает RebuildBody.
+            if (_layout.Touch)
+                foreach (InputField field in _inputs)
+                    if (field != null && field.isFocused) return false;
+            return !_layout.Same(ComputeCreatorLayout());
+        }
+
+        /// <summary>
+        /// Высота переносимого текста при данной ширине рамки. Рамка подписи привязана к
+        /// пикселям экрана и в зависимости от места теряет до пикселя ширины, поэтому
+        /// строка «впритык» после расстановки переносилась иначе, чем при замере.
+        /// Меряем на два пикселя уже: лишняя строка в запасе безвредна, нехватка — нет.
+        /// </summary>
+        private float WrappedHeight(Text text, float width)
+        {
+            float slack = 2f / (_canvas != null ? Mathf.Max(0.01f, _canvas.scaleFactor) : 1f);
+            TextGenerationSettings settings = text.GetGenerationSettings(new Vector2(Mathf.Max(1f, width - slack), 0f));
+            float pixels = text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text, settings);
+            return Mathf.Ceil(pixels / text.pixelsPerUnit) + 1f;
+        }
+
+        /// <summary>Метрика настольного макета в единицах канвы текущей раскладки.</summary>
+        private float U(float design) { return design * _layout.Zoom; }
+
+        /// <summary>Кегль настольного макета, не мельче MinTextPixels на этом экране.</summary>
+        private int Fs(float design) { return Mathf.Max(Mathf.RoundToInt(design * _layout.Zoom), _layout.MinFont); }
+
+        private float CreatorPad { get { return _layout.Compact ? 12f : 18f; } }
+        private float CreatorBodyTop { get { return _layout.Compact ? 12f + U(36f) + 8f : 22f + U(58f); } }
+        private float StepperArrowWidth { get { return U(_layout.Compact ? 56f : 40f); } }
+        private string CreatorTitle { get { return _layout.Compact ? "НОВЫЙ ПЕРСОНАЖ" : "КРОМКА · НОВЫЙ ПЕРСОНАЖ"; } }
+
+        /// <summary>
+        /// Четыре блока — внешность, имя с характеристиками и производными, навыки,
+        /// перки. На ПК это четыре колонки во всю высоту карточки, на телефоне — четыре
+        /// вкладки; ряд «Назад / Создать и начать» в обоих случаях прибит к низу
+        /// карточки, а всё, что не влезло в блок, прокручивается внутри него.
+        /// </summary>
         private void BuildCreator()
         {
             _stepperValues.Clear();
             _dynamicObjects.Clear();
+            _derivedTexts.Clear();
+            _pages.Clear();
+            _tabs.Clear();
+            _hairSwatch = null;
+            _layout = ComputeCreatorLayout();
+            ApplyFrame(true);
 
-            // Размеры: редактор внешности 320, сетка блоков 440, действия 56.
-            RectTransform panel = Panel("CreatorPanel", 320f + 12f + 440f + 12f + 56f);
-            panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
-            // Экран строит и редакторская проба раскладки: в edit mode Destroy — ошибка в логе.
-            Outline panelOutline = panel.GetComponent<Outline>();
-            if (Application.isPlaying) Destroy(panelOutline); else DestroyImmediate(panelOutline);
+            bool compact = _layout.Compact;
+            float gap = compact ? 8f : 12f;
+            float width = _layout.Card.x - 2f * CreatorPad;
+            float height = _layout.Card.y - CreatorBodyTop - CreatorPad;
+            RectTransform panel = Child("CreatorPanel", _body);
+            Stretch(panel, 0f);
+            _bodyObjects.Add(panel.gameObject);
 
-            // --- .character-appearance-editor: превью (0.9fr) + управление (1.1fr) ---
-            RectTransform shell = Child("PreviewShell", panel);
-            Place(shell, 0f, 1f, 0.45f, 1f, new Vector2(0f, -320f), new Vector2(-6f, 0f));
+            float actionsHeight = U(compact ? 36f : 56f);
+            BuildCreatorActions(panel, width, height - actionsHeight, actionsHeight);
+            float pagesHeight = height - actionsHeight - gap;
+
+            float free = width - gap * (PageIds.Length - 1);
+            float left = 0f;
+            for (int i = 0; i < PageIds.Length; i++)
+            {
+                float pageWidth = compact ? width
+                    : i == PageIds.Length - 1 ? width - left : Mathf.Round(free * ColumnWeights[i]);
+                RectTransform page = Child("Page-" + PageIds[i], panel);
+                PlaceTop(page, compact ? 0f : left, 0f, pageWidth, pagesHeight);
+                _pages.Add(page);
+                switch (i)
+                {
+                    case 0: BuildAppearancePage(page, pageWidth, pagesHeight); break;
+                    case 1: BuildParamsPage(page, pageWidth, pagesHeight); break;
+                    case 2:
+                        _skillsList = BuildChoicePage(page, pageWidth, pagesHeight, "SkillBlock", "Профильные навыки",
+                            "Выберите 1–2 навыка. Каждый выбранный навык получает +5% к базовому значению.", out _skillCount);
+                        break;
+                    default:
+                        _traitsList = BuildChoicePage(page, pageWidth, pagesHeight, "TraitBlock", "Стартовые перки",
+                            "Выберите 1–2 стартовых перка. Без перка персонажа создать нельзя.", out _traitCount);
+                        break;
+                }
+                left += pageWidth + gap;
+            }
+            if (compact) BuildCreatorTabs();
+
+            _creatorSignature = string.Empty; // динамика построится в Update
+        }
+
+        /// <summary>Вкладки занимают место шапки; в узком окне заголовок уступает им строку целиком.</summary>
+        private void BuildCreatorTabs()
+        {
+            float pad = CreatorPad;
+            float gap = 8f;
+            float height = U(36f);
+            float labelWidth = 0f;
+            for (int i = 0; i < PageIds.Length; i++)
+            {
+                int index = i;
+                var go = new GameObject("Tab-" + PageIds[i], typeof(RectTransform));
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(_card, false);
+                var tab = new CreatorTab { Back = go.AddComponent<Image>(), Border = go.AddComponent<Outline>() };
+                tab.Border.effectDistance = new Vector2(1f, -1f);
+                var button = go.AddComponent<Button>();
+                button.targetGraphic = tab.Back;
+                button.onClick.AddListener(() => SelectCreatorTab(index));
+                tab.Label = Label("Label", rect, Fs(13f), TextAnchor.MiddleCenter, ButtonInk, FontStyle.Bold);
+                Stretch(tab.Label.rectTransform, 2f);
+                // Самая длинная подпись вкладки — со счётчиком выбранного.
+                tab.Label.text = PageTitles[i] + (i >= 2 ? " 2/2" : string.Empty);
+                labelWidth = Mathf.Max(labelWidth, tab.Label.preferredWidth);
+                _tabs.Add(tab);
+                _bodyObjects.Add(go);
+            }
+
+            _title.text = CreatorTitle;
+            float titleWidth = Mathf.Ceil(_title.preferredWidth) + 20f;
+            float room = _layout.Card.x - 2f * pad;
+            bool showTitle = (room - titleWidth - gap * (PageIds.Length - 1)) / PageIds.Length >= labelWidth + 16f;
+            _title.gameObject.SetActive(showTitle);
+            if (showTitle) PlaceTop(_title.rectTransform, pad, 12f, titleWidth, height);
+            float left = pad + (showTitle ? titleWidth : 0f);
+            float tabWidth = (_layout.Card.x - pad - left - gap * (PageIds.Length - 1)) / PageIds.Length;
+            for (int i = 0; i < _tabs.Count; i++)
+                PlaceTop((RectTransform)_tabs[i].Back.transform, left + i * (tabWidth + gap), 12f, tabWidth, height);
+            ApplyCreatorTab();
+        }
+
+        private void SelectCreatorTab(int index)
+        {
+            _creatorTab = Mathf.Clamp(index, 0, PageIds.Length - 1);
+            ApplyCreatorTab();
+        }
+
+        private void ApplyCreatorTab()
+        {
+            if (!_layout.Compact) return; // на ПК все четыре блока видны сразу
+            for (int i = 0; i < _pages.Count; i++)
+                if (_pages[i] != null) _pages[i].gameObject.SetActive(i == _creatorTab);
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                bool selected = i == _creatorTab;
+                _tabs[i].Back.color = selected ? TabSelectedBg : ButtonBg;
+                _tabs[i].Border.effectColor = selected ? TabSelectedBorder : TabBorder;
+                _tabs[i].Label.color = selected ? Title : ButtonInk;
+            }
+        }
+
+        // --- .char-actions: подсказка готовности и две кнопки, всегда на виду ---
+        private void BuildCreatorActions(RectTransform panel, float width, float top, float height)
+        {
+            float buttonHeight = U(_layout.Compact ? 36f : 38f);
+            float buttonTop = top + (height - buttonHeight) * 0.5f;
+            float createWidth = U(190f);
+            float backWidth = U(110f);
+            float gap = 10f;
+            _createButton = ActionButton(panel, "СОЗДАТЬ И НАЧАТЬ", 0f, buttonTop, createWidth, false, () => Bootstrap.CreatorSubmit());
+            _createButton.name = "CreateCharacter";
+            SizeButton(_createButton, createWidth, buttonHeight);
+            Button back = ActionButton(panel, "НАЗАД", createWidth + gap, buttonTop, backWidth, true, () => Bootstrap.CreatorCancel());
+            back.name = "CreatorBack";
+            SizeButton(back, backWidth, buttonHeight);
+
+            _readiness = Label("Readiness", panel, Fs(12f), TextAnchor.MiddleLeft, SmallNote);
+            _readiness.horizontalOverflow = HorizontalWrapMode.Wrap;
+            PlaceTop(_readiness.rectTransform, 0f, top, width - createWidth - backWidth - gap * 3f, height);
+        }
+
+        private void SizeButton(Button button, float width, float height)
+        {
+            ((RectTransform)button.transform).sizeDelta = new Vector2(width, height);
+            button.GetComponentInChildren<Text>().fontSize = Fs(13f);
+        }
+
+        // --- .character-appearance-editor: превью, пять степперов и примечание ---
+        private void BuildAppearancePage(RectTransform page, float width, float height)
+        {
+            bool compact = _layout.Compact;
+            string[] titles = { "Пол", "Телосложение", "Лицо", "Причёска", "Цвет волос" };
+            string[] keys = { "sex", "body", "face", "hair", "hairColor" };
+            float rowHeight = U(compact ? 40f : 36f);
+            float rowGap = U(6f);
+            float steppersHeight = keys.Length * (rowHeight + rowGap) - rowGap;
+
+            // На телефоне превью стоит слева во всю высоту вкладки, а справа
+            // прокручиваются степперы. На ПК превью — верх той же колонки.
+            RectTransform shell;
+            RectTransform controls;
+            float controlsWidth;
+            float controlsRoom;
+            if (compact)
+            {
+                float previewWidth = Mathf.Round(width * 0.36f);
+                shell = Child("PreviewShell", page);
+                PlaceTop(shell, 0f, 0f, previewWidth, height);
+                controlsWidth = width - previewWidth - 12f;
+                controlsRoom = height;
+                controls = ScrollColumn(page, previewWidth + 12f, 0f, controlsWidth, controlsRoom);
+            }
+            else
+            {
+                DecorateBlock(page);
+                BlockTitle(page, "Внешность", null);
+                float top = U(32f);
+                controlsWidth = width - 24f;
+                controlsRoom = height - top - 10f;
+                controls = ScrollColumn(page, 12f, top, controlsWidth, controlsRoom);
+                shell = Child("PreviewShell", controls);
+            }
+            controls.name = "Controls";
+
+            Text note = Label("Note", controls, Fs(12f), TextAnchor.UpperLeft, MetaInk);
+            note.horizontalOverflow = HorizontalWrapMode.Wrap;
+            note.text = "Новый персонаж начинает игру в нижнем белье и без надетых предметов. Одежда, броня, обувь, головные уборы, рюкзаки и оружие отображаются только после экипировки.";
+            float noteHeight = WrappedHeight(note, controlsWidth - 10f);
+
+            float steppersTop = 0f;
+            if (!compact)
+            {
+                // Превью забирает всё, что осталось от степперов и примечания.
+                float previewHeight = Mathf.Max(U(150f), controlsRoom - steppersHeight - noteHeight - 16f);
+                PlaceTop(shell, 0f, 0f, controlsWidth, previewHeight);
+                steppersTop = previewHeight + 8f;
+            }
+            float noteTop = steppersTop + steppersHeight + 8f;
+            PlaceTop(note.rectTransform, 10f, noteTop, controlsWidth - 10f, noteHeight);
+            RectTransform noteBar = Child("NoteBar", controls);
+            PlaceTop(noteBar, 0f, noteTop, 2f, noteHeight);
+            noteBar.gameObject.AddComponent<Image>().color = NoteGreen;
+            controls.sizeDelta = new Vector2(0f, noteTop + noteHeight);
+
+            for (int i = 0; i < keys.Length; i++)
+                BuildStepper(controls, keys[i], titles[i], steppersTop + i * (rowHeight + rowGap), controlsWidth, rowHeight);
+
             shell.gameObject.AddComponent<Image>().color = new Color(0.051f, 0.063f, 0.055f, 0.98f);
             Outline shellOutline = shell.gameObject.AddComponent<Outline>();
             shellOutline.effectColor = new Color(0.682f, 0.545f, 0.282f, 0.48f);
@@ -586,171 +976,58 @@ namespace RealmOfAshes.Game
             pointer.Owner = this;
 
             RectTransform caption = Child("Caption", shell);
-            Place(caption, 0f, 0f, 1f, 0f, new Vector2(12f, 11f), new Vector2(-12f, 43f));
+            Place(caption, 0f, 0f, 1f, 0f, new Vector2(8f, 8f), new Vector2(-8f, 8f + U(28f)));
             caption.gameObject.AddComponent<Image>().color = new Color(0.024f, 0.031f, 0.031f, 0.82f);
             Outline captionOutline = caption.gameObject.AddComponent<Outline>();
             captionOutline.effectColor = new Color(0.682f, 0.545f, 0.282f, 0.36f);
             captionOutline.effectDistance = new Vector2(1f, -1f);
-            Text captionLabel = Label("Label", caption, 10, TextAnchor.MiddleLeft, StatusInk);
+            Text captionLabel = Label("Label", caption, Fs(12f), TextAnchor.MiddleLeft, StatusInk);
             captionLabel.text = "БАЗОВАЯ МОДЕЛЬ";
-            Stretch(captionLabel.rectTransform, 10f);
-            _previewSummary = Label("Summary", caption, 11, TextAnchor.MiddleRight, Title, FontStyle.Bold);
-            Stretch(_previewSummary.rectTransform, 10f);
-            _previewStatus = Label("Status", shell, 10, TextAnchor.UpperLeft, MetaInk);
-            Place(_previewStatus.rectTransform, 0f, 1f, 1f, 1f, new Vector2(10f, -30f), new Vector2(-10f, -10f));
-
-            RectTransform controls = Block("Controls", panel, 0.45f, 1f, 1f, 1f, new Vector2(6f, -320f), new Vector2(0f, 0f));
-            string[] titles = { "Пол", "Телосложение", "Лицо", "Причёска", "Цвет волос" };
-            string[] keys = { "sex", "body", "face", "hair", "hairColor" };
-            for (int i = 0; i < titles.Length; i++)
-            {
-                float top = 10f + i * 54f;
-                Text h3 = Label("H3", controls, 11, TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
-                h3.text = titles[i].ToUpperInvariant();
-                Place(h3.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -top - 14f), new Vector2(-12f, -top));
-                BuildStepper(controls, keys[i], top + 16f);
-            }
-            RectTransform noteBar = Child("NoteBar", controls);
-            Place(noteBar, 0f, 0f, 0f, 0f, new Vector2(12f, 6f), new Vector2(14f, 36f));
-            noteBar.gameObject.AddComponent<Image>().color = NoteGreen;
-            Text note = Label("Note", controls, 10, TextAnchor.MiddleLeft, MetaInk);
-            note.horizontalOverflow = HorizontalWrapMode.Wrap;
-            note.text = "Новый персонаж начинает игру в нижнем белье и без надетых предметов. Одежда, броня, обувь, головные уборы, рюкзаки и оружие отображаются только после экипировки.";
-            Place(note.rectTransform, 0f, 0f, 1f, 0f, new Vector2(20f, 6f), new Vector2(-12f, 36f));
-
-            // --- .char-layout: 4 блока ---
-            float gridTop = -332f;
-            float gridBottom = -332f - 440f;
-            float[] edges = { 0f, 0.275f, 0.5125f, 0.75f, 1f };
-            RectTransform nameBlock = Block("NameBlock", panel, edges[0], 1f, edges[1], 1f, new Vector2(0f, gridBottom), new Vector2(-6f, gridTop));
-            RectTransform skillBlock = Block("SkillBlock", panel, edges[1], 1f, edges[2], 1f, new Vector2(6f, gridBottom), new Vector2(-6f, gridTop));
-            RectTransform traitBlock = Block("TraitBlock", panel, edges[2], 1f, edges[3], 1f, new Vector2(6f, gridBottom), new Vector2(-6f, gridTop));
-            RectTransform derivedBlock = Block("DerivedBlock", panel, edges[3], 1f, edges[4], 1f, new Vector2(6f, gridBottom), new Vector2(0f, gridTop));
-
-            BlockTitle(nameBlock, "Имя и характеристики", null);
-            InputField nameField = TextInput(nameBlock, 34f, "Имя персонажа", Bootstrap.NewCharacterName, false, v => Bootstrap.NewCharacterName = v);
-            nameField.characterLimit = 18;
-            var nameRect = (RectTransform)nameField.transform;
-            nameRect.anchorMax = new Vector2(1f, 1f);
-            nameRect.offsetMax = new Vector2(-12f, -34f);
-            _statsBox = Child("Stats", nameBlock);
-            Place(_statsBox, 0f, 1f, 1f, 1f, new Vector2(12f, -80f - 7 * 30f), new Vector2(-12f, -80f));
-            _pointsLeft = Label("Points", nameBlock, 12, TextAnchor.MiddleLeft, StatusOk);
-            Place(_pointsLeft.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -80f - 7 * 30f - 26f), new Vector2(-12f, -80f - 7 * 30f - 4f));
-
-            _skillCount = BlockTitle(skillBlock, "Профильные навыки", "0/2");
-            Text skillNote = Label("Note", skillBlock, 10, TextAnchor.UpperLeft, SmallNote);
-            skillNote.horizontalOverflow = HorizontalWrapMode.Wrap;
-            skillNote.text = "Выберите 1–2 навыка. Каждый выбранный навык получает +5% к базовому значению.";
-            Place(skillNote.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -60f), new Vector2(-12f, -32f));
-            _skillsList = ScrollList(skillBlock, 66f, 6f);
-
-            _traitCount = BlockTitle(traitBlock, "Стартовые перки", "0/2");
-            Text traitNote = Label("Note", traitBlock, 10, TextAnchor.UpperLeft, SmallNote);
-            traitNote.horizontalOverflow = HorizontalWrapMode.Wrap;
-            traitNote.text = "Выберите 1–2 стартовых перка. Без перка персонажа создать нельзя.";
-            Place(traitNote.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -60f), new Vector2(-12f, -32f));
-            _traitsList = ScrollList(traitBlock, 66f, 7f);
-
-            BlockTitle(derivedBlock, "Производные параметры", null);
-            _derived = Label("Derived", derivedBlock, 12, TextAnchor.UpperLeft, DerivedInk);
-            _derived.lineSpacing = 1.45f;
-            _derived.supportRichText = true;
-            Place(_derived.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -420f), new Vector2(-12f, -36f));
-
-            // --- .char-actions ---
-            float actionsTop = 320f + 12f + 440f + 12f;
-            _readiness = Label("Readiness", panel, 10, TextAnchor.UpperLeft, SmallNote);
-            _readiness.horizontalOverflow = HorizontalWrapMode.Wrap;
-            Place(_readiness.rectTransform, 0f, 1f, 0.6f, 1f, new Vector2(0f, -actionsTop - 52f), new Vector2(0f, -actionsTop - 6f));
-            _createButton = ActionButton(panel, "СОЗДАТЬ И НАЧАТЬ", 0f, actionsTop + 8f, 190f, false, () => Bootstrap.CreatorSubmit());
-            _createButton.name = "CreateCharacter";
-            ((RectTransform)_createButton.transform).sizeDelta = new Vector2(190f, 38f);
-            Button back = ActionButton(panel, "НАЗАД", 200f, actionsTop + 8f, 110f, true, () => Bootstrap.CreatorCancel());
-            back.name = "CreatorBack";
-            ((RectTransform)back.transform).sizeDelta = new Vector2(110f, 38f);
-
-            _creatorSignature = string.Empty; // динамика построится в Update
+            Place(captionLabel.rectTransform, 0f, 0f, 0.5f, 1f, new Vector2(10f, 0f), Vector2.zero);
+            _previewSummary = Label("Summary", caption, Fs(12f), TextAnchor.MiddleRight, Title, FontStyle.Bold);
+            Place(_previewSummary.rectTransform, 0.4f, 0f, 1f, 1f, Vector2.zero, new Vector2(-10f, 0f));
+            _previewStatus = Label("Status", shell, Fs(12f), TextAnchor.UpperLeft, MetaInk);
+            Place(_previewStatus.rectTransform, 0f, 1f, 1f, 1f, new Vector2(10f, -10f - U(20f)), new Vector2(-10f, -10f));
         }
 
-        private RectTransform Block(string name, RectTransform parent, float minX, float minY, float maxX, float maxY,
-                                    Vector2 offsetMin, Vector2 offsetMax)
-        {
-            RectTransform block = Child(name, parent);
-            Place(block, minX, minY, maxX, maxY, offsetMin, offsetMax);
-            block.gameObject.AddComponent<Image>().color = BlockBg;
-            Outline outline = block.gameObject.AddComponent<Outline>();
-            outline.effectColor = PanelBorder;
-            outline.effectDistance = new Vector2(1f, -1f);
-            return block;
-        }
-
-        private Text BlockTitle(RectTransform block, string caption, string small)
-        {
-            Text h3 = Label("H3", block, 12, TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
-            h3.text = caption.ToUpperInvariant();
-            Place(h3.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -28f), new Vector2(-12f, -10f));
-            if (small == null) return null;
-            Text smallText = Label("Small", block, 10, TextAnchor.MiddleRight, MetaInk);
-            smallText.text = small;
-            Place(smallText.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -28f), new Vector2(-12f, -10f));
-            return smallText;
-        }
-
-        private RectTransform ScrollList(RectTransform block, float top, float spacing)
-        {
-            RectTransform scrollArea = Child("Scroll", block);
-            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(12f, 10f), new Vector2(-8f, -top));
-            var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
-            scroll.horizontal = false;
-            RoaUiScroll.Configure(scroll);
-            scroll.scrollSensitivity = 24f;
-            scrollArea.gameObject.AddComponent<RectMask2D>();
-            RectTransform list = Child("List", scrollArea);
-            list.anchorMin = new Vector2(0f, 1f);
-            list.anchorMax = new Vector2(1f, 1f);
-            list.pivot = new Vector2(0f, 1f);
-            list.sizeDelta = Vector2.zero;
-            var layout = list.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = spacing;
-            layout.padding = new RectOffset(0, 4, 0, 0);
-            layout.childForceExpandHeight = false;
-            layout.childControlHeight = true;
-            list.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            scroll.content = list;
-            return list;
-        }
-
-        /// <summary>.character-appearance-stepper: [<] значение [>].</summary>
-        private void BuildStepper(RectTransform parent, string key, float top)
+        /// <summary>.character-appearance-stepper: [<] ПОДПИСЬ … значение [>] в одну строку.</summary>
+        private void BuildStepper(RectTransform parent, string key, string title, float top, float width, float height)
         {
             RectTransform row = Child("Stepper-" + key, parent);
-            Place(row, 0f, 1f, 1f, 1f, new Vector2(12f, -top - 34f), new Vector2(-12f, -top));
+            PlaceTop(row, 0f, top, width, height);
             row.gameObject.AddComponent<Image>().color = StepperBg;
             Outline outline = row.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(0.537f, 0.439f, 0.263f, 0.55f);
             outline.effectDistance = new Vector2(1f, -1f);
 
-            StepperArrow(row, "<", 0f, () => CycleAppearance(key, -1)).name = "Prev-" + key;
-            StepperArrow(row, ">", 1f, () => CycleAppearance(key, 1)).name = "Next-" + key;
+            float arrow = StepperArrowWidth;
+            StepperArrow(row, "<", 0f, arrow, () => CycleAppearance(key, -1)).name = "Prev-" + key;
+            StepperArrow(row, ">", 1f, arrow, () => CycleAppearance(key, 1)).name = "Next-" + key;
 
-            Text value = Label("Value", row, 12, TextAnchor.MiddleCenter, Title, FontStyle.Bold);
-            Place(value.rectTransform, 0f, 0f, 1f, 1f, new Vector2(44f, 0f), new Vector2(-44f, 0f));
+            // Подпись занимает свою ширину, значение — всё остальное: проба сверяет
+            // самое длинное значение с этим остатком, так что они не наезжают.
+            Text caption = Label("Caption", row, Fs(12f), TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
+            caption.text = title.ToUpperInvariant();
+            float captionWidth = Mathf.Ceil(caption.preferredWidth) + 2f;
+            Place(caption.rectTransform, 0f, 0f, 0f, 1f, new Vector2(arrow + 10f, 0f), new Vector2(arrow + 10f + captionWidth, 0f));
+
+            float swatch = key == "hairColor" ? U(20f) : 0f;
+            Text value = Label("Value", row, Fs(12f), TextAnchor.MiddleRight, Title, FontStyle.Bold);
+            Place(value.rectTransform, 0f, 0f, 1f, 1f,
+                new Vector2(arrow + 10f + captionWidth + 10f + (swatch > 0f ? swatch + U(6f) : 0f), 0f), new Vector2(-arrow - 10f, 0f));
             _stepperValues[key] = value;
-            if (key == "hairColor")
-            {
-                RectTransform swatch = Child("Swatch", row);
-                swatch.anchorMin = swatch.anchorMax = new Vector2(0f, 0.5f);
-                swatch.pivot = new Vector2(0f, 0.5f);
-                swatch.anchoredPosition = new Vector2(52f, 0f);
-                swatch.sizeDelta = new Vector2(20f, 20f);
-                _hairSwatch = swatch.gameObject.AddComponent<Image>();
-                _hairSwatch.sprite = RadialSprite();
-                _hairSwatch.raycastTarget = false;
-            }
+            if (swatch <= 0f) return;
+
+            RectTransform swatchRect = Child("Swatch", row);
+            swatchRect.anchorMin = swatchRect.anchorMax = new Vector2(1f, 0.5f);
+            swatchRect.pivot = new Vector2(1f, 0.5f);
+            swatchRect.sizeDelta = new Vector2(swatch, swatch);
+            _hairSwatch = swatchRect.gameObject.AddComponent<Image>();
+            _hairSwatch.sprite = RadialSprite();
+            _hairSwatch.raycastTarget = false;
         }
 
-        private Button StepperArrow(RectTransform row, string glyph, float side, System.Action onClick)
+        private Button StepperArrow(RectTransform row, string glyph, float side, float width, System.Action onClick)
         {
             var go = new GameObject("Arrow", typeof(RectTransform));
             var rect = (RectTransform)go.transform;
@@ -759,12 +1036,12 @@ namespace RealmOfAshes.Game
             rect.anchorMax = new Vector2(side, 1f);
             rect.pivot = new Vector2(side, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(42f, 0f);
+            rect.sizeDelta = new Vector2(width, 0f);
             var image = go.AddComponent<Image>();
             image.color = ButtonBg;
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;
-            Text label = Label("Label", rect, 19, TextAnchor.MiddleCenter, ButtonInk, FontStyle.Bold);
+            Text label = Label("Label", rect, Fs(19f), TextAnchor.MiddleCenter, ButtonInk, FontStyle.Bold);
             Stretch(label.rectTransform, 0f);
             label.text = glyph;
             button.onClick.AddListener(() => onClick());
@@ -785,72 +1062,286 @@ namespace RealmOfAshes.Game
             RefreshCreatorTexts();
         }
 
+        // --- Имя, характеристики и производные параметры ---
+        private void BuildParamsPage(RectTransform page, float width, float height)
+        {
+            bool compact = _layout.Compact;
+            RectTransform content = ScrollColumn(page, 0f, 0f, width, height);
+            RectTransform nameBlock = Child("NameBlock", content);
+            RectTransform derivedBlock = Child("DerivedBlock", content);
+            DecorateBlock(nameBlock);
+            DecorateBlock(derivedBlock);
+
+            float inputHeight = U(36f);
+            float pointsHeight = U(22f);
+            _statPitch = U(compact ? 41f : 30f);
+            _statRow = U(compact ? 37f : 24f);
+            float statsHeight = RoaCharacterCreator.Stats.Length * _statPitch - (_statPitch - _statRow);
+
+            if (compact)
+            {
+                // Слева семь характеристик, справа имя, свободные очки и производные в два столбца.
+                float half = Mathf.Floor((width - 12f) * 0.5f);
+                float rightWidth = width - half - 12f;
+                _statsBox = Child("Stats", nameBlock);
+                PlaceTop(_statsBox, 12f, 10f, half - 24f, statsHeight);
+
+                NameInput(derivedBlock, 12f, 10f, rightWidth - 24f, inputHeight);
+                float top = 10f + inputHeight + U(6f);
+                _pointsLeft = Label("Points", derivedBlock, Fs(12f), TextAnchor.MiddleLeft, StatusOk);
+                PlaceTop(_pointsLeft.rectTransform, 12f, top, rightWidth - 24f, pointsHeight);
+                top += pointsHeight + U(4f);
+                float derivedHeight = DerivedColumns(derivedBlock, 12f, top, rightWidth - 24f, 2, 1.2f);
+
+                float needed = Mathf.Max(10f + statsHeight + 10f, top + derivedHeight + 10f);
+                float blockHeight = Mathf.Max(height, needed);
+                PlaceTop(nameBlock, 0f, 0f, half, blockHeight);
+                PlaceTop(derivedBlock, half + 12f, 0f, rightWidth, blockHeight);
+                content.sizeDelta = new Vector2(0f, blockHeight);
+                return;
+            }
+
+            BlockTitle(nameBlock, "Имя и характеристики", null);
+            float y = U(32f);
+            NameInput(nameBlock, 12f, y, width - 24f, inputHeight);
+            y += inputHeight + U(10f);
+            _statsBox = Child("Stats", nameBlock);
+            PlaceTop(_statsBox, 12f, y, width - 24f, statsHeight);
+            y += statsHeight + U(4f);
+            _pointsLeft = Label("Points", nameBlock, Fs(12f), TextAnchor.MiddleLeft, StatusOk);
+            PlaceTop(_pointsLeft.rectTransform, 12f, y, width - 24f, pointsHeight);
+            float nameHeight = y + pointsHeight + 8f;
+            PlaceTop(nameBlock, 0f, 0f, width, nameHeight);
+
+            BlockTitle(derivedBlock, "Производные параметры", null);
+            float derivedNeeded = U(32f) + DerivedColumns(derivedBlock, 12f, U(32f), width - 24f, 1, 1.3f) + 8f;
+            float derivedTop = nameHeight + 12f;
+            PlaceTop(derivedBlock, 0f, derivedTop, width, Mathf.Max(height - derivedTop, derivedNeeded));
+            content.sizeDelta = new Vector2(0f, derivedTop + Mathf.Max(height - derivedTop, derivedNeeded));
+        }
+
+        private void NameInput(RectTransform parent, float left, float top, float width, float height)
+        {
+            RectTransform rect = Child("Input", parent);
+            PlaceTop(rect, left, top, width, height);
+            InputField field = InputBox(rect, Fs(14f), "Имя персонажа", Bootstrap.NewCharacterName, false, v => Bootstrap.NewCharacterName = v);
+            field.characterLimit = 18;
+        }
+
+        /// <summary>
+        /// Подписи производных параметров: один столбец на ПК, два на телефоне. Высоту
+        /// даёт сам Text по строкам-заглушкам — настоящие строки приходят позже, в
+        /// RebuildCreatorDynamic, а блок нужно разметить уже сейчас.
+        /// </summary>
+        private float DerivedColumns(RectTransform block, float left, float top, float width, int columns, float lineSpacing)
+        {
+            string[] widest = DerivedRows(WidestDerived);
+            float height = 0f;
+            for (int i = 0; i < columns; i++)
+            {
+                Text text = Label("Derived", block, Fs(12f), TextAnchor.UpperLeft, DerivedInk);
+                text.lineSpacing = lineSpacing;
+                text.supportRichText = true;
+                _derivedTexts.Add(text);
+                if (i > 0) continue;
+                // Второй столбец — только если в половину ширины влезает самая длинная строка.
+                text.text = string.Join("\n", widest);
+                if (columns > 1 && text.preferredWidth + 2f > (width - 12f) / columns) columns = 1;
+            }
+            int perColumn = Mathf.CeilToInt(widest.Length / (float)columns);
+            float columnWidth = (width - 12f * (columns - 1)) / columns;
+            for (int i = 0; i < columns; i++)
+            {
+                _derivedTexts[i].text = string.Join("\n", widest, i * perColumn, Mathf.Min(perColumn, widest.Length - i * perColumn));
+                height = Mathf.Max(height, Mathf.Ceil(_derivedTexts[i].preferredHeight) + 2f);
+            }
+            for (int i = 0; i < columns; i++)
+                PlaceTop(_derivedTexts[i].rectTransform, left + i * (columnWidth + 12f), top, columnWidth, height);
+            return height;
+        }
+
+        /// <summary>Самые длинные значения производных: по ним размечается блок, пока настоящих ещё нет.</summary>
+        private static readonly RoaCharacterCreator.DerivedStats WidestDerived = new RoaCharacterCreator.DerivedStats
+        {
+            MaxHp = 999, MaxAp = 99, Speed = 9.9f, Carry = 999, Hit = -99, CriticalChance = 10, VisionRadius = 16,
+            ResistAll = 99, Sell = -99, Craft = -99, LuckChecks = 99
+        };
+
+        // --- Навыки и перки: пояснение и прокручиваемый список карточек ---
+        private RectTransform BuildChoicePage(RectTransform page, float width, float height, string blockName,
+                                              string caption, string hint, out Text count)
+        {
+            bool compact = _layout.Compact;
+            RectTransform block = Child(blockName, page);
+            Stretch(block, 0f);
+            float inset = compact ? 0f : 12f;
+            float top = 0f;
+            count = null; // на телефоне счётчик выбранного живёт в подписи вкладки
+            if (!compact)
+            {
+                DecorateBlock(block);
+                count = BlockTitle(block, caption, "0/2");
+                top = U(32f);
+            }
+            Text note = Label("Note", block, Fs(12f), TextAnchor.UpperLeft, SmallNote);
+            note.horizontalOverflow = HorizontalWrapMode.Wrap;
+            note.text = hint;
+            float noteHeight = WrappedHeight(note, width - inset * 2f);
+            PlaceTop(note.rectTransform, inset, top, width - inset * 2f, noteHeight);
+            top += noteHeight + 6f;
+            return ScrollColumn(block, inset, top, width - inset - (compact ? 0f : 8f), height - top - (compact ? 0f : 10f));
+        }
+
+        private static void DecorateBlock(RectTransform block)
+        {
+            block.gameObject.AddComponent<Image>().color = BlockBg;
+            Outline outline = block.gameObject.AddComponent<Outline>();
+            outline.effectColor = PanelBorder;
+            outline.effectDistance = new Vector2(1f, -1f);
+        }
+
+        private Text BlockTitle(RectTransform block, string caption, string small)
+        {
+            Text h3 = Label("H3", block, Fs(12f), TextAnchor.MiddleLeft, PanelTitle, FontStyle.Bold);
+            h3.text = caption.ToUpperInvariant();
+            Place(h3.rectTransform, 0f, 1f, 1f, 1f, new Vector2(12f, -8f - U(20f)), new Vector2(-12f, -8f));
+            if (small == null) return null;
+            Text smallText = Label("Small", block, Fs(12f), TextAnchor.MiddleRight, MetaInk);
+            smallText.text = small;
+            Place(smallText.rectTransform, 1f, 1f, 1f, 1f, new Vector2(-12f - U(40f), -8f - U(20f)), new Vector2(-12f, -8f));
+            h3.rectTransform.offsetMax = new Vector2(-12f - U(40f), -8f);
+            return smallText;
+        }
+
+        /// <summary>
+        /// Область с вертикальной прокруткой без LayoutGroup: детей расставляет
+        /// вызывающий, он же задаёт высоту содержимого. Пока содержимое ниже области,
+        /// прокрутки нет — так блок переживает и низкое окно, и крупный кегль.
+        /// </summary>
+        private RectTransform ScrollColumn(RectTransform parent, float left, float top, float width, float height)
+        {
+            RectTransform area = Child("Scroll", parent);
+            PlaceTop(area, left, top, width, height);
+            var scroll = area.gameObject.AddComponent<ScrollRect>();
+            RoaUiScroll.Configure(scroll);
+            scroll.scrollSensitivity = U(24f);
+            // Рамка Outline рисуется на единицу шире своего прямоугольника: маска её не режет.
+            area.gameObject.AddComponent<RectMask2D>().padding = new Vector4(-2f, -2f, -2f, -2f);
+            RectTransform content = Child("List", area);
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+            scroll.content = content;
+            return content;
+        }
+
         /// <summary>Статы, навыки и перки пересоздаются при изменении выбора (как renderCharacterCreator).</summary>
         private void RebuildCreatorDynamic()
         {
-            foreach (GameObject go in _dynamicObjects) Destroy(go);
+            foreach (GameObject go in _dynamicObjects) Discard(go);
             _dynamicObjects.Clear();
+            // Высоту подписи меряет сам Text, а ему нужен активный путь до канвы.
+            foreach (RectTransform page in _pages) page.gameObject.SetActive(true);
             RoaCharacterCreator c = Bootstrap.Creator;
             int points = c.PointsLeft;
+            bool compact = _layout.Compact;
 
             // .char-stat-row: код | имя | значение | − | +
+            float buttonWidth = U(compact ? 42f : 24f);
+            float buttonHeight = compact ? _statRow : U(24f);
+            float valueWidth = U(28f);
+            float buttonsWidth = buttonWidth * 2f + 4f;
             int index = 0;
             foreach (RoaCharacterCreator.StatDef stat in RoaCharacterCreator.Stats)
             {
                 RectTransform row = Child("Stat-" + stat.Id, _statsBox);
-                float top = index * 30f;
-                Place(row, 0f, 1f, 1f, 1f, new Vector2(0f, -top - 24f), new Vector2(0f, -top));
+                float top = index * _statPitch;
+                Place(row, 0f, 1f, 1f, 1f, new Vector2(0f, -top - _statRow), new Vector2(0f, -top));
                 _dynamicObjects.Add(row.gameObject);
-                Text code = Label("Code", row, 12, TextAnchor.MiddleLeft, Title, FontStyle.Bold);
+                Text code = Label("Code", row, Fs(12f), TextAnchor.MiddleLeft, Title, FontStyle.Bold);
                 code.text = stat.Code;
-                Place(code.rectTransform, 0f, 0f, 0f, 1f, new Vector2(0f, 0f), new Vector2(34f, 0f));
-                Text name = Label("Name", row, 12, TextAnchor.MiddleLeft, StatName);
+                Place(code.rectTransform, 0f, 0f, 0f, 1f, Vector2.zero, new Vector2(U(34f), 0f));
+                Text name = Label("Name", row, Fs(12f), TextAnchor.MiddleLeft, StatName);
                 name.text = stat.Name;
-                Place(name.rectTransform, 0f, 0f, 1f, 1f, new Vector2(40f, 0f), new Vector2(-96f, 0f));
-                Text value = Label("Value", row, 12, TextAnchor.MiddleCenter, StatVal, FontStyle.Bold);
+                Place(name.rectTransform, 0f, 0f, 1f, 1f, new Vector2(U(40f), 0f), new Vector2(-buttonsWidth - 8f - valueWidth - 4f, 0f));
+                Text value = Label("Value", row, Fs(12f), TextAnchor.MiddleCenter, StatVal, FontStyle.Bold);
                 value.text = c.Stat(stat.Id).ToString();
-                Place(value.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-92f, 0f), new Vector2(-64f, 0f));
+                Place(value.rectTransform, 1f, 0f, 1f, 1f, new Vector2(-buttonsWidth - 8f - valueWidth, 0f), new Vector2(-buttonsWidth - 8f, 0f));
                 string id = stat.Id;
-                StatButton(row, "-", 56f, c.Stat(id) > RoaCharacterCreator.SpecialMin, () => c.AdjustStat(id, -1)).name = "Stat-" + id + "-minus";
-                StatButton(row, "+", 28f, c.Stat(id) < RoaCharacterCreator.SpecialMax && points > 0, () => c.AdjustStat(id, 1)).name = "Stat-" + id + "-plus";
+                StatButton(row, "-", buttonWidth + 4f, buttonWidth, buttonHeight, c.Stat(id) > RoaCharacterCreator.SpecialMin, () => c.AdjustStat(id, -1)).name = "Stat-" + id + "-minus";
+                StatButton(row, "+", 0f, buttonWidth, buttonHeight, c.Stat(id) < RoaCharacterCreator.SpecialMax && points > 0, () => c.AdjustStat(id, 1)).name = "Stat-" + id + "-plus";
                 index++;
             }
             _pointsLeft.text = "Свободные очки: " + points;
 
+            var cards = new List<RectTransform>();
+            int skillColumns = compact ? 3 : 1;
+            float skillWidth = CardWidth(_skillsList, skillColumns, U(6f));
             foreach (RoaProgressionData.SkillDef skill in RoaProgressionData.Skills)
             {
                 bool selected = c.HasSkill(skill.Id);
                 string id = skill.Id;
                 string desc = skill.Group + " · база " + c.SkillBasePercent(id, false) + "% -> " + c.SkillBasePercent(id, true) + "%";
-                AddTraitCard(_skillsList, "Skill-" + id, skill.Name, desc, selected, 44f, () => c.ToggleSkill(id));
+                cards.Add(AddTraitCard(_skillsList, "Skill-" + id, skill.Name, desc, selected, skillWidth, () => c.ToggleSkill(id)));
             }
-            _skillCount.text = c.SelectedSkillCount + "/" + RoaCharacterCreator.MaxTaggedSkills;
+            FlowCards(_skillsList, cards, skillColumns, skillWidth, U(6f));
+            string skills = c.SelectedSkillCount + "/" + RoaCharacterCreator.MaxTaggedSkills;
+            if (_skillCount != null) _skillCount.text = skills;
 
+            cards.Clear();
+            int traitColumns = compact ? (_traitsList.rect.width >= U(720f) ? 3 : 2) : 1;
+            float traitWidth = CardWidth(_traitsList, traitColumns, U(7f));
             foreach (RoaCharacterCreator.TraitDef trait in RoaCharacterCreator.Traits)
             {
                 bool selected = c.HasTrait(trait.Id);
                 string id = trait.Id;
-                AddTraitCard(_traitsList, "Trait-" + id, trait.Name, trait.Description, selected, 62f, () => c.ToggleTrait(id));
+                cards.Add(AddTraitCard(_traitsList, "Trait-" + id, trait.Name, trait.Description, selected, traitWidth, () => c.ToggleTrait(id)));
             }
-            _traitCount.text = c.SelectedTraitCount + "/" + RoaCharacterCreator.MaxTraits;
+            FlowCards(_traitsList, cards, traitColumns, traitWidth, U(7f));
+            string traits = c.SelectedTraitCount + "/" + RoaCharacterCreator.MaxTraits;
+            if (_traitCount != null) _traitCount.text = traits;
+            if (_tabs.Count == PageIds.Length)
+            {
+                _tabs[2].Label.text = PageTitles[2] + " " + skills;
+                _tabs[3].Label.text = PageTitles[3] + " " + traits;
+            }
 
-            RoaCharacterCreator.DerivedStats d = c.Derived();
-            string nl = "\n";
-            _derived.text = "ОЗ: <b>" + d.MaxHp + "</b>" + nl + "ОД: <b>" + d.MaxAp + "</b>" + nl
-                + "Скорость: <b>" + d.Speed.ToString("0.0") + "</b>" + nl
-                + "Переносимый вес: <b>" + d.Carry + "</b>" + nl + "Меткость: <b>" + Signed(d.Hit) + "%</b>" + nl
-                + "Критический выстрел: <b>" + d.CriticalChance + "% (x2)</b>" + nl + "Обзор: <b>" + d.VisionRadius + " кл.</b>" + nl
-                + "Сопротивление: <b>" + d.ResistAll + "%</b>" + nl + "Продажа: <b>" + Signed(d.Sell) + "%</b>" + nl
-                + "Крафт/сбор: <b>" + Signed(d.Craft) + "%</b>" + nl + "Проверки удачи: <b>+" + d.LuckChecks + " п.п.</b>";
+            string[] derived = DerivedRows(c.Derived());
+            int perColumn = Mathf.CeilToInt(derived.Length / (float)Mathf.Max(1, _derivedTexts.Count));
+            for (int i = 0; i < _derivedTexts.Count; i++)
+            {
+                int start = i * perColumn;
+                _derivedTexts[i].text = string.Join("\n", derived, start, Mathf.Clamp(derived.Length - start, 0, perColumn));
+            }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_skillsList);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_traitsList);
+            ApplyCreatorTab();
             RefreshCreatorTexts();
+        }
+
+        private static string[] DerivedRows(RoaCharacterCreator.DerivedStats d)
+        {
+            return new[]
+            {
+                "ОЗ: <b>" + d.MaxHp + "</b>",
+                "ОД: <b>" + d.MaxAp + "</b>",
+                "Скорость: <b>" + d.Speed.ToString("0.0") + "</b>",
+                "Переносимый вес: <b>" + d.Carry + "</b>",
+                "Меткость: <b>" + Signed(d.Hit) + "%</b>",
+                "Критический выстрел: <b>" + d.CriticalChance + "% (x2)</b>",
+                "Обзор: <b>" + d.VisionRadius + " кл.</b>",
+                "Сопротивление: <b>" + d.ResistAll + "%</b>",
+                "Продажа: <b>" + Signed(d.Sell) + "%</b>",
+                "Крафт/сбор: <b>" + Signed(d.Craft) + "%</b>",
+                "Проверки удачи: <b>+" + d.LuckChecks + " п.п.</b>"
+            };
         }
 
         private static string Signed(int value) { return (value >= 0 ? "+" : "") + value; }
 
-        private Button StatButton(RectTransform row, string glyph, float right, bool enabled, System.Action onClick)
+        private Button StatButton(RectTransform row, string glyph, float right, float width, float height,
+                                  bool enabled, System.Action onClick)
         {
             var go = new GameObject("StatBtn", typeof(RectTransform));
             var rect = (RectTransform)go.transform;
@@ -858,8 +1349,8 @@ namespace RealmOfAshes.Game
             rect.anchorMin = new Vector2(1f, 0.5f);
             rect.anchorMax = new Vector2(1f, 0.5f);
             rect.pivot = new Vector2(1f, 0.5f);
-            rect.anchoredPosition = new Vector2(-right + 24f, 0f);
-            rect.sizeDelta = new Vector2(24f, 24f);
+            rect.anchoredPosition = new Vector2(-right, 0f);
+            rect.sizeDelta = new Vector2(width, height);
             var image = go.AddComponent<Image>();
             image.color = enabled ? ButtonBg : new Color(ButtonBg.r, ButtonBg.g, ButtonBg.b, 0.4f);
             Outline outline = go.AddComponent<Outline>();
@@ -869,19 +1360,50 @@ namespace RealmOfAshes.Game
             button.targetGraphic = image;
             button.interactable = enabled;
             Color ink = enabled ? ButtonInk : new Color(ButtonInk.r, ButtonInk.g, ButtonInk.b, 0.4f);
-            Text label = Label("Label", rect, 14, TextAnchor.MiddleCenter, ink, FontStyle.Bold);
+            Text label = Label("Label", rect, Fs(14f), TextAnchor.MiddleCenter, ink, FontStyle.Bold);
             Stretch(label.rectTransform, 0f);
             label.text = glyph;
             button.onClick.AddListener(() => onClick());
             return button;
         }
 
-        /// <summary>.trait-card: заголовок + описание, выбранная — зелёная рамка.</summary>
-        private void AddTraitCard(RectTransform list, string name, string title, string desc, bool selected, float height, System.Action onClick)
+        private static float CardWidth(RectTransform list, int columns, float gap)
+        {
+            return Mathf.Floor((list.rect.width - gap * (columns - 1)) / columns);
+        }
+
+        /// <summary>
+        /// Расставляет карточки по колонкам без LayoutGroup: высоту каждой уже дал её
+        /// текст, ряд выравнивается по самой высокой, список получает высоту рядов.
+        /// </summary>
+        private static void FlowCards(RectTransform list, List<RectTransform> cards, int columns, float width, float gap)
+        {
+            float top = 0f;
+            for (int start = 0; start < cards.Count; start += columns)
+            {
+                int end = Mathf.Min(start + columns, cards.Count);
+                float rowHeight = 0f;
+                for (int i = start; i < end; i++) rowHeight = Mathf.Max(rowHeight, cards[i].sizeDelta.y);
+                for (int i = start; i < end; i++)
+                    PlaceTop(cards[i], (i - start) * (width + gap), top, width, rowHeight);
+                top += rowHeight + gap;
+            }
+            list.sizeDelta = new Vector2(0f, Mathf.Max(0f, top - gap));
+        }
+
+        /// <summary>
+        /// .trait-card: заголовок + описание, выбранная — зелёная рамка. Высоту карточке
+        /// даёт её текст: описание перка пишут в каталоге сервера, далеко от этого кода,
+        /// а у подписи VerticalWrapMode.Overflow — лишняя строка не обрезалась, а
+        /// вылезала на соседнюю карточку.
+        /// </summary>
+        private RectTransform AddTraitCard(RectTransform list, string name, string title, string desc, bool selected,
+                                           float width, System.Action onClick)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(list, false);
-            go.AddComponent<LayoutElement>().preferredHeight = height;
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(list, false);
+            PlaceTop(rect, 0f, 0f, width, 10f);
             var image = go.AddComponent<Image>();
             image.color = CardBgDim;
             Outline outline = go.AddComponent<Outline>();
@@ -890,15 +1412,22 @@ namespace RealmOfAshes.Game
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(() => onClick());
-            var rect = (RectTransform)go.transform;
-            Text titleText = Label("Title", rect, 12, TextAnchor.UpperLeft, CardTitle, FontStyle.Bold);
+
+            float padX = U(8f);
+            float padTop = U(5f);
+            Text titleText = Label("Title", rect, Fs(13f), TextAnchor.UpperLeft, CardTitle, FontStyle.Bold);
             titleText.text = title;
-            Place(titleText.rectTransform, 0f, 1f, 1f, 1f, new Vector2(8f, -22f), new Vector2(-8f, -6f));
-            Text descText = Label("Desc", rect, 10, TextAnchor.UpperLeft, CardDesc);
+            PlaceTop(titleText.rectTransform, padX, padTop, width - padX * 2f, 10f);
+            float titleHeight = Mathf.Ceil(titleText.preferredHeight);
+            PlaceTop(titleText.rectTransform, padX, padTop, width - padX * 2f, titleHeight);
+            Text descText = Label("Desc", rect, Fs(12f), TextAnchor.UpperLeft, CardDesc);
             descText.horizontalOverflow = HorizontalWrapMode.Wrap;
             descText.text = desc;
-            Place(descText.rectTransform, 0f, 0f, 1f, 1f, new Vector2(8f, 4f), new Vector2(-8f, -24f));
+            float descHeight = WrappedHeight(descText, width - padX * 2f);
+            PlaceTop(descText.rectTransform, padX, padTop + titleHeight, width - padX * 2f, descHeight);
+            rect.sizeDelta = new Vector2(width, Mathf.Max(U(44f), padTop + titleHeight + descHeight + U(6f)));
             _dynamicObjects.Add(go);
+            return rect;
         }
 
         private void RefreshCreatorTexts()
@@ -910,17 +1439,25 @@ namespace RealmOfAshes.Game
             _stepperValues["face"].text = c.FaceLabelText;
             _stepperValues["hair"].text = c.HairLabelText;
             _stepperValues["hairColor"].text = c.HairColorLabelText;
-            if (_hairSwatch != null) _hairSwatch.color = RoaCharacterCreator.HairColorSwatch(c.Appearance.HairColorId);
+            if (_hairSwatch != null)
+            {
+                // Образец цвета стоит вплотную слева от названия, какой бы длины оно ни было.
+                _hairSwatch.color = RoaCharacterCreator.HairColorSwatch(c.Appearance.HairColorId);
+                float valueWidth = _stepperValues["hairColor"].preferredWidth;
+                _hairSwatch.rectTransform.anchoredPosition = new Vector2(-StepperArrowWidth - 10f - valueWidth - U(6f), 0f);
+            }
             _previewSummary.text = c.SexLabelText + " · " + c.BodyLabelText;
 
             string hint = c.ReadinessHint(Bootstrap.NewCharacterName);
             bool ready = c.Ready(Bootstrap.NewCharacterName) && !Bootstrap.CreatorBusy;
             string notice = c.Notice;
+            // На телефоне строке готовности достаётся одна-две строки рядом с кнопками.
+            string idle = _layout.Compact
+                ? "Персонаж готов. Прогресс, карта и инвентарь хранятся на сервере."
+                : "Распределите характеристики и обязательно выберите профильный навык и стартовый перк. Прогресс, карта, инвентарь и хранилище привязаны к серверному персонажу.";
             _readiness.text = !string.IsNullOrEmpty(notice) ? notice
                 : Bootstrap.CreatorBusy ? Bootstrap.StatusText
-                : string.IsNullOrEmpty(hint)
-                    ? "Распределите характеристики и обязательно выберите профильный навык и стартовый перк. Прогресс, карта, инвентарь и хранилище привязаны к серверному персонажу."
-                    : hint;
+                : string.IsNullOrEmpty(hint) ? idle : hint;
             _readiness.color = !string.IsNullOrEmpty(notice) ? StatusErr : SmallNote;
             _createButton.interactable = ready;
             _createButton.GetComponent<Image>().color = ready ? ButtonBg : new Color(ButtonBg.r, ButtonBg.g, ButtonBg.b, 0.4f);
@@ -1013,7 +1550,7 @@ namespace RealmOfAshes.Game
         private void CloseConfirm()
         {
             _deleteCandidate = null;
-            if (_confirm != null) Destroy(_confirm);
+            Discard(_confirm);
             _confirm = null;
         }
 
@@ -1023,8 +1560,8 @@ namespace RealmOfAshes.Game
         {
             bool select = step == "select";
             bool creator = step == "creator";
-            _title.text = "КРОМКА · " + (creator ? "НОВЫЙ ПЕРСОНАЖ"
-                : select ? "ВЫБОР ПЕРСОНАЖА" : (step == "connecting" ? "ПОДКЛЮЧЕНИЕ" : "ВХОД В ИГРУ"));
+            _title.text = creator ? CreatorTitle : "КРОМКА · "
+                + (select ? "ВЫБОР ПЕРСОНАЖА" : (step == "connecting" ? "ПОДКЛЮЧЕНИЕ" : "ВХОД В ИГРУ"));
             _subtitle.text = creator
                 ? "Соберите внешность, распределите характеристики и выберите профильный навык и стартовый перк. Персонаж хранится на сервере."
                 : select

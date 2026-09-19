@@ -92,9 +92,11 @@ function normalizeRecipe(recipe = {}) {
       along: clamp(Number(gate.along ?? 0.5), 0.1, 0.9), road: gate.road === true
     };
   }).sort((a, b) => a.dir.localeCompare(b.dir));
+  // Скрытое место (база фракции) — только выход в зону: точка входа есть, портала внутрь нет.
   const places = (Array.isArray(recipe.places) ? recipe.places : []).map(place => ({
     locationId: safeId(place?.locationId), name: String(place?.name || place?.locationId || '').slice(0, 80),
-    u: clamp(Number(place?.u ?? 0.5), 0, 1), v: clamp(Number(place?.v ?? 0.5), 0, 1)
+    u: clamp(Number(place?.u ?? 0.5), 0, 1), v: clamp(Number(place?.v ?? 0.5), 0, 1),
+    ...(place?.hidden === true ? { hidden: true } : {})
   })).filter(place => place.locationId).sort((a, b) => a.locationId.localeCompare(b.locationId));
   return {
     zoneId, mode, gates, places,
@@ -421,7 +423,7 @@ function buildZone(recipeInput, catalog) {
         entryKey: gate.targetEntryKey, tx: gate.trigger.tx, tz: gate.trigger.tz, radius: 5, halfWidthTiles: 3,
         ...(gate.toMode ? { targetMode: gate.toMode } : {}), ...(gate.road ? { road: true } : {})
       })),
-      ...places.map(place => ({
+      ...places.filter(place => !place.hidden).map(place => ({
         id: `place_${place.locationId}`.slice(0, 48), type: 'location', label: place.name || place.locationId, to: place.locationId,
         entryKey: 'entryFromWorld', tx: place.portal.tx, tz: place.portal.tz, radius: 3.2
       }))

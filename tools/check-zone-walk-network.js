@@ -75,6 +75,8 @@ function placeInZone(role, locationId, point) {
   const gatePoint = world(northGate);
   placeInZone('untargeted', home.id, { x: gatePoint.x, z: gatePoint.z + 2 });
   placeInZone('harvest', north, world(northDef.entryFromWorld));
+  const portal = homeDef.transitions.find(row => row.to === 'settlement');
+  placeInZone('target', home.id, world(portal));
 
   await h.startServer();
   try {
@@ -143,12 +145,35 @@ function placeInZone(role, locationId, point) {
     assert.equal(walker.join.self.zone.id, home.id);
     assert(Math.hypot(walker.join.x - before.x, walker.join.z - before.z) < 1.5, 'a server restart keeps the position');
     console.log('PASS reconnect and server restart return the character to the same zone and spot');
+
+    // --- места: портал из зоны в поселение, край поселения — обратно в его зону --------------
+    const settler = accounts.target;
+    await h.connectAndJoin(settler);
+    assert.equal(settler.join.locationId, home.id);
+    const into = await h.socketAck(settler.socket, 'changeLocation', { locationId: 'settlement' });
+    assert(into.ok && into.locationId === 'settlement', 'the portal leads from the zone into Keys: ' + JSON.stringify(into).slice(0, 300));
+    assert.equal(into.self.zone, null, 'inside a place there is no zone view');
+    const keys = (await getJson('/api/locations/settlement')).json.location;
+    assert.equal(keys.parentZone?.id, home.id, 'the place names the zone its edge leads to');
+    assert.equal(keys.parentZone.entryKey, 'entryFromPlace_settlement');
+    assert(keys.parentZone.targetZoneRules?.mode, 'the place carries the rules of the zone behind its edge');
+    const inKeys = { x: into.x, z: into.z };
+    const early = await h.socketAck(settler.socket, 'changeLocation', { locationId: home.id });
+    assert.equal(early.ok, false, 'the zone opens only from the edge of the place');
+    assert(await driveTo(settler, inKeys, 1, -31), 'walked to the edge of Keys: ' + JSON.stringify(inKeys));
+    const out = await h.socketAck(settler.socket, 'changeLocation', { locationId: home.id });
+    assert(out.ok && out.locationId === home.id, 'the edge of Keys leads into its zone: ' + JSON.stringify(out).slice(0, 300));
+    const fromKeys = world(homeDef.entryFromPlace_settlement);
+    assert(Math.hypot(out.x - fromKeys.x, out.z - fromKeys.z) < 3, 'leaving Keys lands at its entry point in the zone');
+    const wrongZone = await h.socketAck(settler.socket, 'changeLocation', { locationId: 'z_03_03' });
+    assert.equal(wrongZone.ok, false);
+    console.log(`PASS the portal leads into Keys and the edge of Keys leads back into ${home.title}`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
     h.cleanupSync();
   }
-  console.log('Zone walk network OK: zones are shared rooms, gates cross only to neighbours and land opposite, zone identity survives reconnect and restart.');
+  console.log('Zone walk network OK: zones are shared rooms, gates cross only to neighbours and land opposite, zone identity survives reconnect and restart, places open from their zone and their edge leads back into it.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

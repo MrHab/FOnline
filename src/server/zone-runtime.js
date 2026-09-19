@@ -84,7 +84,23 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     };
   }
 
-  return { graph, registerStubs, isZone, ensure, view, builtCount: () => built.size };
+  const parentByPlace = new Map();
+  for (const zone of graph.zones) for (const place of zone.places) parentByPlace.set(place.locationId, zone.id);
+
+  /** Зона, в которую выводит край места (поселения, логова, базы); не место зон — ''. */
+  function parentZoneOf(locationId) { return parentByPlace.get(String(locationId || '')) || ''; }
+
+  /** Что клиент знает о выходе из места: куда ведёт край и с какой точки входа он окажется в зоне. */
+  function parentZoneView(locationId) {
+    const zone = zoneById(graph, parentZoneOf(locationId));
+    if (!zone) return null;
+    return {
+      id: zone.id, n: zone.n, title: zone.title, mode: zone.mode,
+      entryKey: `entryFromPlace_${locationId}`.slice(0, 32)
+    };
+  }
+
+  return { graph, registerStubs, isZone, ensure, view, parentZoneOf, parentZoneView, builtCount: () => built.size };
 }
 
 module.exports = { createZoneRuntime };

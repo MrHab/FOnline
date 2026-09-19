@@ -3793,7 +3793,17 @@
    "roads": [
     "zero_service_line"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "coreBaseArtels",
+     "kind": "settlement",
+     "name": "Артельный узел",
+     "u": 0.9,
+     "v": 0.5,
+     "road": true,
+     "hidden": true
+    }
+   ],
    "authored": false
   },
   {
@@ -3924,7 +3934,17 @@
    "roads": [
     "cascade_canal"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "coreBaseLeague",
+     "kind": "settlement",
+     "name": "Узел Лиги",
+     "u": 0.3,
+     "v": 0.08,
+     "road": true,
+     "hidden": true
+    }
+   ],
    "authored": false
   },
   {
@@ -3966,7 +3986,17 @@
    "roads": [
     "cascade_canal"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "coreBaseContour",
+     "kind": "settlement",
+     "name": "Узел Контура",
+     "u": 0.1,
+     "v": 0.5,
+     "road": false,
+     "hidden": true
+    }
+   ],
    "authored": false
   },
   {
@@ -5276,7 +5306,17 @@
     "tesma_service_road",
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "coreBaseUprava",
+     "kind": "settlement",
+     "name": "Узел Управы",
+     "u": 0.5,
+     "v": 0.1,
+     "road": true,
+     "hidden": true
+    }
+   ],
    "authored": false
   },
   {

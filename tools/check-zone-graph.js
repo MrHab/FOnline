@@ -29,9 +29,9 @@ for (const zone of graph.zones) {
   assert(Object.values(zone.edges).some(edge => edge.open), `${zone.id} has a way out`);
 }
 
-// --- места: каждое видимое место карты — ровно в одной зоне, столицы мирные --------------
+// --- места: каждое место карты — ровно в одной зоне, столицы мирные ---------------------
 const visible = map.nodes.filter(node => node.hidden !== true);
-for (const node of visible) {
+for (const node of map.nodes) {
   const id = node.locationId || node.id;
   const holders = graph.zones.filter(zone => zone.places.some(place => place.locationId === id));
   assert.equal(holders.length, 1, `${id} belongs to exactly one zone`);
@@ -39,9 +39,8 @@ for (const node of visible) {
   const place = holders[0].places.find(row => row.locationId === id);
   assert(place.name && place.name !== id, `${id} has a player-facing name`);
   assert(place.u > 0 && place.u < 1 && place.v > 0 && place.v < 1);
-}
-for (const node of map.nodes.filter(row => row.hidden === true)) {
-  assert.equal(zoneOfPlace(graph, node.locationId || node.id), null, 'hidden faction bases are entered from the Core hub, not from a zone');
+  // Скрытые базы фракций — только выход в зону: внутрь попадают метро из узла Сердцевины.
+  assert.equal(place.hidden === true, node.hidden === true, `${id}: hidden on the map means exit-only in its zone`);
 }
 assert.equal(graph.capitals.length, 6);
 for (const capital of graph.capitals) assert.equal(zoneOfPlace(graph, capital).mode, 'peaceful', `${capital} stands in a peaceful zone`);
@@ -109,7 +108,8 @@ for (const zone of graph.zones) {
     assert.equal(gate.label, zoneById(graph, edge.to).title, 'a gate is labelled with the neighbour it leads to');
   }
   for (const place of zone.places) {
-    assert(def.transitions.some(row => row.type === 'location' && row.to === place.locationId), `${zone.id}: a portal leads to ${place.locationId}`);
+    const portal = def.transitions.some(row => row.type === 'location' && row.to === place.locationId);
+    assert.equal(portal, !place.hidden, `${zone.id}: ${place.hidden ? 'no portal leads into the hidden' : 'a portal leads to'} ${place.locationId}`);
     assert(def[`entryFromPlace_${place.locationId}`.slice(0, 32)], `${zone.id}: leaving ${place.locationId} lands in the zone`);
   }
 }

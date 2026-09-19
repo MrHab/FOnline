@@ -87,8 +87,10 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
   }));
   const capitalDistance = (col, row) => Math.min(Infinity, ...capitalCells.map(cell => Math.max(Math.abs(cell.col - col), Math.abs(cell.row - row))));
 
+  // Скрытые узлы (базы фракций Сердцевины) — места «только на выход»: входят в
+  // них метро из узла Сердцевины, а их внешний выход ведёт в зону, где стоит узел.
   const placesByZone = new Map();
-  for (const node of globalMap.nodes.filter(row => row.hidden !== true)) {
+  for (const node of globalMap.nodes) {
     const col = clamp(Math.floor(node.x / zonePoints), 0, cols - 1);
     const row = clamp(Math.floor(node.y / zonePoints), 0, rows - 1);
     const locationId = node.locationId || node.id;
@@ -97,7 +99,8 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
       locationId, kind: String(node.kind || ''), name: String(locationNames[locationId] || locationId),
       u: round3(clamp((node.x - col * zonePoints) / zonePoints, 0.08, 0.92)),
       v: round3(clamp((node.y - row * zonePoints) / zonePoints, 0.08, 0.92)),
-      road: node.roadAccess === true
+      road: node.roadAccess === true,
+      ...(node.hidden === true ? { hidden: true } : {})
     });
     placesByZone.set(zoneId(col, row), list);
   }
@@ -108,8 +111,11 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
       const id = zoneId(col, row);
       const centre = { x: (col + 0.5) * zonePoints, y: (row + 0.5) * zonePoints };
       const places = (placesByZone.get(id) || []).sort((a, b) => a.locationId.localeCompare(b.locationId));
-      // Зона входит в мир, если её центр внутри играбельного контура или в ней стоит место.
-      if (!insidePolygon(polygon, centre.x, centre.y) && !places.length) continue;
+      // Зона входит в мир, если её центр внутри играбельного контура или в ней стоит видимое место.
+      if (!insidePolygon(polygon, centre.x, centre.y) && !places.some(place => !place.hidden)) {
+        if (places.length) throw new Error(`zone graph: hidden place ${places[0].locationId} stands outside the world`);
+        continue;
+      }
       const cells = [];
       for (let dy = 0; dy < cellsPerZone; dy++) {
         for (let dx = 0; dx < cellsPerZone; dx++) {
@@ -263,7 +269,9 @@ function zoneRecipe(graph, id, overrides = {}) {
       const other = zoneById(graph, edge.to);
       return { dir, to: edge.to, toTitle: other.title, toMode: other.mode, along: edge.along, road: !!edge.road };
     }),
-    places: zone.places.map(place => ({ locationId: place.locationId, name: place.name, u: place.u, v: place.v })),
+    places: zone.places.map(place => ({
+      locationId: place.locationId, name: place.name, u: place.u, v: place.v, ...(place.hidden ? { hidden: true } : {})
+    })),
     ...(overrides.pins?.[zone.id] ? { pins: overrides.pins[zone.id] } : {})
   };
 }

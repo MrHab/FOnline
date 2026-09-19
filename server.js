@@ -5119,6 +5119,12 @@ function kromkaPublicLocationDefinition(location = {}) {
     const rules = serverTransitionZoneRules(next.exit);
     if (rules) next.exit = { ...next.exit, targetPvpMode: rules.mode, targetZoneRules: rules };
   }
+  // Куда выводит край места: зона мира, её название и правила.
+  const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
+  if (parentZone) {
+    const rules = serverTransitionZoneRules({ to: parentZone.id });
+    next.parentZone = rules ? { ...parentZone, targetZoneRules: rules } : parentZone;
+  }
   const lore = kromkaLocationLore(next.id);
   const node = kromkaGlobalNode(next.id);
   if (lore?.displayName) next.name = lore.displayName;
@@ -13301,11 +13307,18 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
-  return candidates.find(row => {
+  const authored = candidates.find(row => {
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
+  if (authored) return authored;
+  // Край места (и его выход «на карту») ведёт в зону мира, где это место стоит.
+  const parent = ZONE_RUNTIME.parentZoneView(current.id);
+  if (parent && parent.id === target && serverPlayerAtGlobalMapExit(p)) {
+    return { id: 'zone_edge', type: 'zoneEdge', to: parent.id, entryKey: parent.entryKey };
+  }
+  return null;
 }
 
 function serverPlayerNearTransitionTo(p = {}, targetLocationId = '') {

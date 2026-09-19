@@ -76,7 +76,25 @@
       "terminalLocked": true,
       "terminalDifficulty": "hard",
       "terminalUnlocksLock": true,
-      "terminalName": "Ржавый терминал тайника"
+      "terminalName": "Ржавый терминал тайника",
+      "loot": [
+        {
+          "id": "weaponParts",
+          "qty": 4
+        },
+        {
+          "id": "electronics",
+          "qty": 4
+        },
+        {
+          "id": "medicine",
+          "qty": 3
+        },
+        {
+          "id": "silver",
+          "qty": 25
+        }
+      ]
     }
   ],
   "objects": [

@@ -61,7 +61,21 @@
       "z": -2,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 3
+        },
+        {
+          "id": "weaponParts",
+          "qty": 1
+        },
+        {
+          "id": "scrap",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "workshop_cargo_box",
@@ -73,7 +87,21 @@
       "y": 0.1,
       "z": 10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "wood",
+          "qty": 4
+        },
+        {
+          "id": "ore",
+          "qty": 1
+        }
+      ]
     }
   ],
   "objects": [

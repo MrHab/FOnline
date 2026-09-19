@@ -61,7 +61,21 @@
       "z": -14,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "ammo9",
+          "qty": 12
+        },
+        {
+          "id": "ammo556",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     },
     {
       "id": "perimeter_med_box",
@@ -73,7 +87,17 @@
       "y": 0.1,
       "z": 10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 2
+        },
+        {
+          "id": "stim",
+          "qty": 1
+        }
+      ]
     }
   ],
   "objects": [

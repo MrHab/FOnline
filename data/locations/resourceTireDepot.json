@@ -60,7 +60,17 @@
       "y": 0.1,
       "z": -10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 5
+        },
+        {
+          "id": "oil",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "tiredepot_bench_box",
@@ -72,7 +82,21 @@
       "y": 0.1,
       "z": -14,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 3
+        },
+        {
+          "id": "weaponParts",
+          "qty": 1
+        },
+        {
+          "id": "wood",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

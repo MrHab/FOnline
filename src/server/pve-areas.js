@@ -200,24 +200,23 @@ function normalizePveAreaCatalog(raw = {}) {
 }
 
 /**
- * Что область реально отдаёт: предметы из таблиц добычи её же обитателей.
- * Карточка на карте обещает только это, поэтому обещание нельзя разойтись с
- * дропом — список считается из тех же таблиц, по которым падает лут.
+ * Что область реально отдаёт. Случайных таблиц добычи в мире нет (экономика
+ * v3), поэтому карточка их не читает: `sources.packYield(pack)` называет то,
+ * что сервер действительно кладёт на труп обитателя, `sources.areaYield(area)` —
+ * что даёт сбор в самом логове. Сначала обитатели, потом узлы: ради первых идут.
  */
-function pveAreaRewardIds(area = {}, lootTables = {}, tierFor = null, limit = 4) {
+function pveAreaRewardIds(area = {}, sources = {}, limit = 4) {
   const ids = [];
-  for (const pack of Array.isArray(area?.packs) ? area.packs : []) {
-    const creature = cleanId(pack?.creatureTypeId, 32);
-    // Полка добычи стаи резолвится так же, как в бою: по существу целиком, а
-    // не по одному идентификатору — стая может быть задана и именем типа.
-    const key = typeof tierFor === 'function' ? cleanId(tierFor(pack), 48) : creature;
-    for (const row of Array.isArray(lootTables?.[key]) ? lootTables[key] : []) {
-      for (const candidate of Array.isArray(row?.oneOf) ? row.oneOf : [row?.id]) {
-        const id = cleanId(candidate, 48);
-        if (id && !ids.includes(id)) ids.push(id);
-      }
+  const add = rows => {
+    for (const candidate of Array.isArray(rows) ? rows : []) {
+      const id = cleanId(candidate, 48);
+      if (id && !ids.includes(id)) ids.push(id);
     }
+  };
+  if (typeof sources?.packYield === 'function') {
+    for (const pack of Array.isArray(area?.packs) ? area.packs : []) add(sources.packYield(pack));
   }
+  if (typeof sources?.areaYield === 'function') add(sources.areaYield(area));
   return ids.slice(0, Math.max(1, Math.floor(Number(limit || 4))));
 }
 

@@ -60,7 +60,17 @@
       "y": 0.1,
       "z": -18,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 5
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     }
   ],
   "objects": [

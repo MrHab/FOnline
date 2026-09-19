@@ -117,7 +117,21 @@
       "x": -18,
       "y": 0.1,
       "z": 4,
-      "rotationY": 0
+      "rotationY": 0,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 5
+        },
+        {
+          "id": "electronics",
+          "qty": 3
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "service_locker_b",
@@ -130,7 +144,21 @@
       "z": 4,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "weaponParts",
+          "qty": 3
+        },
+        {
+          "id": "electronics",
+          "qty": 3
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     }
   ],
   "objects": [

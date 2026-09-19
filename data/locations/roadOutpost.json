@@ -76,7 +76,21 @@
       "z": 8,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 6
+        },
+        {
+          "id": "water",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "post17_ammo_box",
@@ -88,7 +102,17 @@
       "y": 0.1,
       "z": 10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "ammo9",
+          "qty": 8
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     }
   ],
   "objects": [

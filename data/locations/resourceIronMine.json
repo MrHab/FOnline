@@ -59,7 +59,21 @@
       "y": 0.1,
       "z": -18,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 8
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "water",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "mine_conveyor_box",
@@ -72,7 +86,21 @@
       "z": -12,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 10
+        },
+        {
+          "id": "weaponParts",
+          "qty": 2
+        },
+        {
+          "id": "silver",
+          "qty": 12
+        }
+      ]
     }
   ],
   "objects": [

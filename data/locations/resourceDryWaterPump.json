@@ -59,7 +59,17 @@
       "y": 0.1,
       "z": -18,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "water",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

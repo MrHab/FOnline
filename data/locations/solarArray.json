@@ -60,7 +60,17 @@
       "y": 0.1,
       "z": -18,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 2
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "solar_panel_locker",
@@ -77,7 +87,21 @@
       "terminalUnlocksLock": true,
       "terminalName": "Пульт инверторной №4",
       "lockDifficulty": "medium",
-      "terminalDifficulty": "medium"
+      "terminalDifficulty": "medium",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 8
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

@@ -9,12 +9,15 @@
 // Внимание: перезапись существующего определения теряет поля, которые Unity
 // дописала при экспорте. Новую локацию генерируйте адресно:
 //   node tools/build-kromka-territory-locations.js --only=coreMarket
+// Посмотреть вывод, не трогая данные (так его сверяет check-world-containers):
+//   node tools/build-kromka-territory-locations.js --out=<каталог>
 const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const territory = JSON.parse(fs.readFileSync(path.join(root, 'data/kromka/territory.json'), 'utf8'));
-const outDir = path.join(root, 'data/locations');
+const outArg = process.argv.find(arg => arg.startsWith('--out='));
+const outDir = outArg ? path.resolve(outArg.slice('--out='.length)) : path.join(root, 'data/locations');
 const TILE = 2;
 const ANOMALY_TYPES = ['pull', 'seam', 'carousel', 'glass', 'dew', 'sink', 'chime', 'mute'];
 const ANOMALY_DISCHARGE = { seam: 3000, pull: 4000, glass: 4000, sink: 4000, carousel: 5000, dew: 5000, mute: 5000, chime: 6000 };
@@ -123,8 +126,41 @@ function mutant(id, kind, x, z, rotationY = 0, extra = {}) {
   };
 }
 
+// Авторская добыча тайников Сердцевины. Случайных таблиц в мире нет (экономика
+// v3), поэтому тайник без списка пуст. Снаряжения здесь нет — его делают только
+// игроки; семейные компоненты остаются в сейфах лабораторий и у Хранителя.
+// Чёрная зона — верх лестницы: открытый тайник окраин дороже открытого ящика
+// красной зоны, запертый дороже открытого, замок с терминалом — дороже всех.
+const CORE_CACHE_LOOT = {
+  outpostPump_cache: { chemicals: 6, medicine: 4, scrap: 2 },
+  outpostRelay_cache: { electronics: 6, scrap: 4 },
+  outpostDepot_cache: { weaponParts: 4, ammoParts: 10 },
+  // Окраины: у лагерей налётчиков — лом и детали, у стай — химия и медикаменты.
+  outskirts_cache_1: { scrap: 6, ammoParts: 10, weaponParts: 1 },
+  outskirts_cache_2: { scrap: 5, electronics: 3, ammoParts: 4 },
+  outskirts_cache_3: { scrap: 6, ammoParts: 10, weaponParts: 1 },
+  outskirts_cache_4: { scrap: 5, electronics: 3, ammoParts: 4 },
+  outskirts_cache_5: { chemicals: 4, medicine: 3, scrap: 3 },
+  outskirts_cache_6: { ore: 6, chemicals: 3, medicine: 2 },
+  outskirts_cache_7: { chemicals: 4, medicine: 3, scrap: 3 },
+  outskirts_cache_8: { ore: 6, chemicals: 3, medicine: 2 },
+  // У входов в лаборатории — материалы их направления, но не сам компонент.
+  middle_cache_1: { medicine: 5, chemicals: 5, scrap: 2 },
+  middle_cache_2: { electronics: 6, scrap: 4 },
+  middle_cache_3: { ore: 8, scrap: 6, weaponParts: 2 },
+  middle_cache_4: { chemicals: 6, electronics: 4 },
+  center_cache_a: { stabilizerCatalyst: 1, electronics: 4, weaponParts: 3 },
+  center_cache_b: { electronics: 4, weaponParts: 3, chemicals: 4 },
+  service_locker_a: { scrap: 5, electronics: 3, chemicals: 2 },
+  service_locker_b: { weaponParts: 3, electronics: 3, ammoParts: 4 },
+  research_vault_w: { stabilizerCatalyst: 1, medicine: 4, chemicals: 3 },
+  research_vault_e: { stabilizerCatalyst: 1, electronics: 4, ammoParts: 4 }
+};
+
 function container(id, name, x, z, width, depth, tier = 'basic', extra = {}) {
-  return { id, name, tier, ...point(x, z, width, depth), ...extra };
+  const cache = extra.loot ? null : CORE_CACHE_LOOT[id];
+  const loot = cache ? { loot: Object.entries(cache).map(([itemId, qty]) => ({ id: itemId, qty })) } : {};
+  return { id, name, tier, ...point(x, z, width, depth), ...extra, ...loot };
 }
 
 function anomalyField(id, type, x, z, radius, belt, tierRange) {

@@ -61,7 +61,21 @@
       "z": 8,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "ammoParts",
+          "qty": 12
+        },
+        {
+          "id": "chemicals",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "ammoyard_staff_safe",
@@ -78,7 +92,25 @@
       "terminalUnlocksLock": true,
       "terminalName": "Терминал учёта «Створ-2»",
       "lockDifficulty": "hard",
-      "terminalDifficulty": "medium"
+      "terminalDifficulty": "medium",
+      "loot": [
+        {
+          "id": "silver",
+          "qty": 30
+        },
+        {
+          "id": "weaponParts",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 10
+        },
+        {
+          "id": "electronics",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "ammoyard_reject_box",
@@ -90,7 +122,17 @@
       "y": 0.1,
       "z": 4,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "ammoParts",
+          "qty": 8
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     }
   ],
   "objects": [

@@ -163,7 +163,21 @@
       "z": 24,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "hard"
+      "lockDifficulty": "hard",
+      "loot": [
+        {
+          "id": "stabilizerCatalyst",
+          "qty": 1
+        },
+        {
+          "id": "medicine",
+          "qty": 4
+        },
+        {
+          "id": "chemicals",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "research_vault_e",
@@ -178,7 +192,21 @@
       "terminalLocked": true,
       "terminalDifficulty": "hard",
       "terminalUnlocksLock": true,
-      "terminalName": "Архивный терминал"
+      "terminalName": "Архивный терминал",
+      "loot": [
+        {
+          "id": "stabilizerCatalyst",
+          "qty": 1
+        },
+        {
+          "id": "electronics",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        }
+      ]
     }
   ],
   "objects": [

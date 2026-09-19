@@ -60,7 +60,13 @@
       "y": 0.1,
       "z": 8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "water",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "farm_irrigation_box",
@@ -72,7 +78,17 @@
       "y": 0.1,
       "z": 10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "food",
+          "qty": 2
+        },
+        {
+          "id": "wood",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

@@ -60,7 +60,17 @@
       "y": 0.1,
       "z": 4,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "oil",
+          "qty": 2
+        },
+        {
+          "id": "scrap",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "foundry_bench_box",
@@ -73,7 +83,21 @@
       "z": -12,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "ore",
+          "qty": 6
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "weaponParts",
+          "qty": 1
+        }
+      ]
     }
   ],
   "objects": [

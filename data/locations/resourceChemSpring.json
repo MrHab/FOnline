@@ -61,7 +61,17 @@
       "z": -8,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 6
+        },
+        {
+          "id": "medicine",
+          "qty": 3
+        }
+      ]
     },
     {
       "id": "chemspring_drain_box",
@@ -73,7 +83,17 @@
       "y": 0.1,
       "z": 4,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "chemicals",
+          "qty": 3
+        },
+        {
+          "id": "scrap",
+          "qty": 3
+        }
+      ]
     }
   ],
   "objects": [

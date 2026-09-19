@@ -59,7 +59,17 @@
       "y": 0.1,
       "z": -18,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 3
+        },
+        {
+          "id": "ore",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "scrapfields_heap_stash",
@@ -71,7 +81,17 @@
       "y": 0.1,
       "z": 8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 2
+        },
+        {
+          "id": "ammoParts",
+          "qty": 3
+        }
+      ]
     }
   ],
   "objects": [

@@ -88,7 +88,17 @@
       "y": 0.1,
       "z": 8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 2
+        },
+        {
+          "id": "wood",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "crossroads_cargo_box",
@@ -100,7 +110,17 @@
       "y": 0.1,
       "z": 0,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "water",
+          "qty": 1
+        },
+        {
+          "id": "food",
+          "qty": 1
+        }
+      ]
     }
   ],
   "pvp": false,

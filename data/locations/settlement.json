@@ -53,7 +53,17 @@
       "y": 0.1,
       "z": 8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "wood",
+          "qty": 2
+        },
+        {
+          "id": "scrap",
+          "qty": 2
+        }
+      ]
     },
     {
       "id": "keys_clinic_cabinet",
@@ -66,7 +76,17 @@
       "z": -10,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "medicine",
+          "qty": 3
+        },
+        {
+          "id": "water",
+          "qty": 1
+        }
+      ]
     }
   ],
   "pvp": false,

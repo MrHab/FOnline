@@ -60,7 +60,21 @@
       "y": 0.1,
       "z": 8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "ammoParts",
+          "qty": 4
+        },
+        {
+          "id": "food",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "guard_artel_barrels",
@@ -73,7 +87,25 @@
       "z": -14,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "easy"
+      "lockDifficulty": "easy",
+      "loot": [
+        {
+          "id": "silver",
+          "qty": 12
+        },
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "oil",
+          "qty": 1
+        },
+        {
+          "id": "ammoParts",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

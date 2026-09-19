@@ -1176,6 +1176,27 @@ for (const [id, row] of locations) {
 
 if (!locations.size) errors.push('No location files found in data/locations');
 
+// Таблица, которую некому назвать, — мёртвые данные: полку контейнера называет
+// сам контейнер, полку противника — его тип (человек-налётчик и виды бестиария),
+// `basic` остаётся резервной. Так в файле жили семь таблиц гулей и гекконов.
+{
+  const usedContainerTiers = new Set(['basic']);
+  for (const [, row] of locations) {
+    for (const container of Array.isArray(row.loc.containers) ? row.loc.containers : []) {
+      usedContainerTiers.add(safeId(container?.tier || 'basic'));
+    }
+  }
+  for (const tier of containerLootTiers) {
+    if (!usedContainerTiers.has(tier)) errors.push(`data/loot-tables.json: container tier "${tier}" is used by no container`);
+  }
+  const bestiary = readJson(path.join(dataDir, 'mutants.json'));
+  const usedEnemyTiers = new Set(['basic', 'raider',
+    ...(Array.isArray(bestiary?.types) ? bestiary.types : []).map(row => safeId(row?.id))]);
+  for (const tier of enemyLootTiers) {
+    if (!usedEnemyTiers.has(tier)) errors.push(`data/loot-tables.json: enemy table "${tier}" belongs to no enemy type`);
+  }
+}
+
 // Покрытие мира контейнерами. Из 37 авторских контейнеров 35 лежали внутри
 // комплекса Ядра, поэтому навык взлома и вся поисковая петля не имели
 // поверхности за его пределами: 48 локаций из 58 не содержали ни одного.
@@ -1190,10 +1211,11 @@ if (!locations.size) errors.push('No location files found in data/locations');
   if (outsideCount < 30) {
     errors.push(`world loot coverage: only ${outsideCount} containers outside the Core complex`);
   }
-  // Личная комната перекатывает свой лут на каждом мировом тике
-  // (restockRoomWorldContainersIfNeeded), поэтому контейнер в ней — ферма:
-  // зашёл, вышел, забрал снова. Исключение одно — обучающий двор: он
-  // проходится однажды и в мировом цикле не участвует.
+  // Личная комната удаляется по простою и строится заново при следующем входе
+  // (pruneExpiredEphemeralRooms), а вместе с ней заново наполняется авторский
+  // контейнер — это ферма: зашёл, вышел, забрал снова. Общая комната именной
+  // локации живёт весь срок сервера, её тайник отдаётся один раз. Исключение
+  // одно — обучающий двор: он проходится однажды.
   const FARMABLE_EXEMPT = new Set(['tutorialCaravanYard']);
   for (const [id, row] of locations) {
     if (row.loc.privateInstance !== true || FARMABLE_EXEMPT.has(id)) continue;

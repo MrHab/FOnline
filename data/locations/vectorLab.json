@@ -55,7 +55,25 @@
       "terminalUnlocksLock": true,
       "terminalName": "Терминал архива «Вектор»",
       "lockDifficulty": "hard",
-      "terminalDifficulty": "medium"
+      "terminalDifficulty": "medium",
+      "loot": [
+        {
+          "id": "electronics",
+          "qty": 6
+        },
+        {
+          "id": "chemicals",
+          "qty": 6
+        },
+        {
+          "id": "medicine",
+          "qty": 4
+        },
+        {
+          "id": "silver",
+          "qty": 10
+        }
+      ]
     },
     {
       "id": "vector_cargo_crate",
@@ -67,7 +85,17 @@
       "y": 0.1,
       "z": -10,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 4
+        },
+        {
+          "id": "chemicals",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

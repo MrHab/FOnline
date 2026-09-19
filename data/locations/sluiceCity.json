@@ -50,7 +50,17 @@
       "y": 0.1,
       "z": -8,
       "rotationY": 0,
-      "locked": false
+      "locked": false,
+      "loot": [
+        {
+          "id": "food",
+          "qty": 2
+        },
+        {
+          "id": "water",
+          "qty": 1
+        }
+      ]
     },
     {
       "id": "stvor_yard_locker",
@@ -63,7 +73,21 @@
       "z": 6,
       "rotationY": 0,
       "locked": true,
-      "lockDifficulty": "medium"
+      "lockDifficulty": "medium",
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 3
+        },
+        {
+          "id": "wood",
+          "qty": 3
+        },
+        {
+          "id": "medicine",
+          "qty": 2
+        }
+      ]
     }
   ],
   "objects": [

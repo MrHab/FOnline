@@ -66,42 +66,6 @@
       { "id": "assaultRifle", "min": 1, "max": 1, "chance": 0.045 },
       { "oneOf": ["leather", "helmet"], "min": 1, "max": 1, "chance": 0.07 }
     ],
-    "ghoul": [
-      { "id": "trophy", "min": 1, "max": 1, "chance": 0.42 },
-      { "oneOf": ["antibiotics", "stim"], "min": 1, "max": 1, "chance": 0.18 },
-      { "oneOf": ["water", "silver"], "min": 1, "max": 3, "chance": 0.22 }
-    ],
-    "superMutant": [
-      { "id": "trophy", "min": 1, "max": 1, "chance": 0.7 },
-      { "oneOf": ["ammo556", "shotgunShell", "rocketAmmo", "napalm"], "min": 2, "max": 8, "chance": 0.48 },
-      { "oneOf": ["medkit", "repairKit"], "min": 1, "max": 1, "chance": 0.26 },
-      { "oneOf": ["combatArmor", "metalArmor", "assaultRifle"], "min": 1, "max": 1, "chance": 0.1 }
-    ],
-    "ashWolf": [
-      { "id": "trophy", "min": 1, "max": 2, "chance": 0.72 },
-      { "oneOf": ["wood", "water"], "min": 1, "max": 2, "chance": 0.24 },
-      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.08 }
-    ],
-    "radScorpion": [
-      { "id": "trophy", "min": 1, "max": 2, "chance": 0.78 },
-      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.16 },
-      { "oneOf": ["ore", "silver"], "min": 1, "max": 3, "chance": 0.22 }
-    ],
-    "mutantAnt": [
-      { "id": "trophy", "min": 1, "max": 2, "chance": 0.62 },
-      { "oneOf": ["wood", "ore"], "min": 1, "max": 2, "chance": 0.28 },
-      { "oneOf": ["water", "stim"], "min": 1, "max": 1, "chance": 0.12 }
-    ],
-    "gecko": [
-      { "id": "trophy", "min": 1, "max": 2, "chance": 0.66 },
-      { "oneOf": ["water", "wood"], "min": 1, "max": 2, "chance": 0.2 },
-      { "id": "stim", "min": 1, "max": 1, "chance": 0.08 }
-    ],
-    "fireGecko": [
-      { "id": "trophy", "min": 1, "max": 2, "chance": 0.76 },
-      { "oneOf": ["energyCell", "silver"], "min": 2, "max": 5, "chance": 0.2 },
-      { "oneOf": ["stim", "antibiotics"], "min": 1, "max": 1, "chance": 0.12 }
-    ],
     "burned": [
       { "id": "trophy", "min": 1, "max": 1 },
       { "oneOf": ["water", "food"], "min": 1, "max": 2 },

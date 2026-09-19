@@ -228,28 +228,39 @@ const pointFor = locationId => {
   const node = mapNodes.find(row => row.locationId === locationId || row.id === locationId);
   return node ? { x: node.x, y: node.y } : null;
 };
-const enemyLootTables = JSON.parse(read('data/loot-tables.json')).enemies;
 const itemNames = new Map(JSON.parse(read('data/kromka/items.json')).items.map(row => [row.id, row.name]));
-const packLootTier = pack => {
-  const creature = String(pack?.creatureTypeId || '');
-  if (enemyLootTables[creature]) return creature;
-  // Стая, заданная именем типа, берёт полку типа: «Налётчик» роняет raider.
-  const byName = { 'Налётчик': 'raider' }[String(pack?.typeName || '')];
-  return byName && enemyLootTables[byName] ? byName : 'basic';
-};
-const areaRewardIds = (area, limit = 4) =>
-  pve.pveAreaRewardIds(area, enemyLootTables, packLootTier, limit);
-// Множество возможного дропа считается здесь заново, не через модуль: иначе
-// проверка сравнивала бы превью само с собой и пропустила бы регресс.
-const areaDropIds = area => {
-  const ids = new Set();
-  for (const pack of area?.packs || []) {
-    for (const row of enemyLootTables[packLootTier(pack)] || []) {
-      for (const id of Array.isArray(row.oneOf) ? row.oneOf : [row.id]) if (id) ids.add(id);
-    }
+// Превью собирается из того, что назвали источники, а не из таблиц добычи:
+// случайные таблицы в мире выключены, и карточка, читавшая их, обещала химикаты
+// и электронику там, где с существа падает один трофей. Что именно сервер
+// называет источником, сверяет сетевая проверка зон — по инвентарю живых
+// обитателей логова; здесь проверяется договор самого модуля.
+{
+  const area = {
+    packs: [{ creatureTypeId: 'dustling' }, { creatureTypeId: 'rykhlyak' }, { typeName: 'Налётчик' }]
+  };
+  const sources = {
+    packYield: pack => (pack.typeName ? ['silver', 'scrap', 'weaponParts', 'scrap'] : ['trophy']),
+    areaYield: () => ['ore', 'scrap', 'bad id!', '']
+  };
+  assert.deepEqual(pve.pveAreaRewardIds(area, sources, 8), ['trophy', 'silver', 'scrap', 'weaponParts', 'ore', 'badid'],
+    'Inhabitants come first, the lair nodes after them, every id once.');
+  assert.deepEqual(pve.pveAreaRewardIds(area, sources), ['trophy', 'silver', 'scrap', 'weaponParts'], 'The card holds four rewards.');
+  assert.deepEqual(pve.pveAreaRewardIds(area, {}), [], 'Without a source the card promises nothing.');
+  assert.deepEqual(pve.pveAreaRewardIds(area, { packYield: () => null, areaYield: () => undefined }), [],
+    'A source that names nothing leaves the card empty instead of throwing.');
+  assert.deepEqual(pve.pveAreaRewardIds(area, JSON.parse(read('data/loot-tables.json')).enemies), [],
+    'Loot tables are not a source: they never roll, so the card must not read them.');
+}
+// Источники этой проверки — авторские данные: трофей существа из бестиария,
+// марки и останки снаряжения у человека.
+const creatureById = new Map(mutants.types.map(row => [row.id, row]));
+const areaRewardIds = area => pve.pveAreaRewardIds(area, {
+  packYield: pack => {
+    const creature = creatureById.get(pack.creatureTypeId);
+    if (creature && creature.classification !== 'human') return Number(creature.loot?.trophyQty) > 0 ? ['trophy'] : [];
+    return ['silver', 'weaponParts', 'scrap'];
   }
-  return ids;
-};
+});
 const publicAreas = pve.publicPveAreaCatalog(catalog, pointFor, {
   rewardIdsFor: areaRewardIds,
   itemName: id => itemNames.get(id) || id
@@ -270,16 +281,16 @@ for (const row of publicAreas) {
   assert(row.activity.length > 0, `${row.id}: the area names when it is active`);
   assert(row.dangerLabel.length > 0 && !/\d/.test(row.dangerLabel),
     `${row.id}: the difficulty reaches the card as a word, not a number`);
-  assert(row.rewardPreview.length > 0, `${row.id}: the area previews what it can drop`);
-  // Обещание карточки обязано совпадать с дропом: каждый предмет превью лежит
-  // в таблице добычи одного из обитателей области.
-  const dropped = areaDropIds(catalog.byLocation[row.locationId]);
+  assert(row.rewardPreview.length > 0 && row.rewardPreview.length <= 4, `${row.id}: the area previews what it can drop`);
   for (const reward of row.rewardPreview) {
-    assert(dropped.has(reward.id), `${row.id}: the card promises ${reward.id}, which its inhabitants never drop`);
     assert(itemNames.has(reward.id), `${row.id}: the reward ${reward.id} is not in the item catalog`);
-    assert(reward.name.length > 0, `${row.id}: the reward ${reward.id} reaches the card without a name`);
+    assert(reward.name === itemNames.get(reward.id), `${row.id}: the reward ${reward.id} reaches the card under the inventory name`);
   }
 }
+// Угодья зверей отдают трофеи, депо людей — марки и останки: карточки обязаны
+// различаться так же, как различается добыча.
+assert.deepEqual(publicAreas.find(row => row.id === 'antHive').rewardPreview.map(row => row.id), ['trophy']);
+assert.deepEqual(publicAreas.find(row => row.id === 'oldDepot').rewardPreview.map(row => row.id), ['silver', 'weaponParts', 'scrap']);
 // Две области не должны выглядеть близнецами: силуэт и поворот различают их.
 const silhouettes = new Set(publicAreas.map(row => `${row.shape}:${row.shapeRotation}`));
 assert.equal(silhouettes.size, publicAreas.length, 'Every area gets its own silhouette on the map.');

@@ -131,7 +131,7 @@ function assertProductionIntegration() {
     assert(serverSource.includes(snippet), `production server is missing room lifecycle integration: ${snippet}`);
   }
   const pruneStart = serverSource.indexOf('function pruneExpiredEphemeralRooms(');
-  const pruneEnd = serverSource.indexOf('\nfunction invalidateRoomsForLocation(', pruneStart);
+  const pruneEnd = serverSource.indexOf('\nfunction chooseRoomForLocation(', pruneStart);
   const pruneSource = serverSource.slice(pruneStart, pruneEnd);
   assert(pruneSource.includes('!locationUsesSharedReality(loc)'),
     'production room pruning can delete a shared location reality');

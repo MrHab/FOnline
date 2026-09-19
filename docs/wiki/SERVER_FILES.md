@@ -222,9 +222,8 @@ session-touch обновления `users.json` объединяются в ок
   `/api/kromka/artifacts` — публичные каталоги; Unity читает первые два;
 - `/socket.io/`.
 
-Маршруты `/api/dev/*` по умолчанию закрыты. Среди них: чтение и запись
-локаций и глобальной карты для dev-редакторов, снимок, сброс и точки живой
-пустоши, сводка A-Life (`GET /api/dev/danger-ecology`,
+Маршруты `/api/dev/*` по умолчанию закрыты. Это сброс живой пустоши
+(`POST /api/dev/wasteland/reset`), сводка A-Life (`GET /api/dev/danger-ecology`,
 `POST /api/dev/danger-ecology/kill`) и `POST /api/dev/accounts/sin` — выдача
 сини на счёт по `login` или `userId`, пока нет платёжного магазина. Режимы
 доступа:
@@ -238,12 +237,8 @@ session-touch обновления `users.json` объединяются в ок
 - `POST`, `PUT`, `PATCH` и `DELETE` dev API принимают только
   `Content-Type: application/json`.
 
-HTML-редакторы `public/dev-location-editor.html` и
-`public/dev-global-map-editor.html` сервер отдаёт только при включённом dev API
-вне production.
-
-Production Nginx отдельно возвращает `404` для dev API и HTML-редакторов до
-общего `/api/` и static routing, включая варианты регистра и URL-кодирования.
+Production Nginx отдельно возвращает `404` для dev API до общего `/api/` и
+static routing, включая варианты регистра.
 Для административного token-доступа нужен непубличный прямой канал, например
 SSH-туннель; штатный public Nginx его не пропускает.
 

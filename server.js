@@ -476,8 +476,7 @@ const {
 } = require('./src/server/global-arrival-transition');
 const {
   createDevAccessMiddleware,
-  createDevAccessPolicy,
-  devEditorIsAvailable
+  createDevAccessPolicy
 } = require('./src/server/dev-access');
 const { createCoalescedWriter } = require('./src/server/coalesced-writer');
 const { createKromkaStateStore } = require('./src/server/kromka-state-store');
@@ -929,32 +928,6 @@ function safeLocationFileId(id) {
   return normalizeLocationId(String(id || 'settlement')).replace(/[^a-zA-Z0-9_-]/g, '') || 'settlement';
 }
 
-function locationFilePath(id) {
-  return path.join(LOCATIONS_DIR, `${safeLocationFileId(id)}.json`);
-}
-
-function findLocationFilePath(id) {
-  const safeId = safeLocationFileId(id);
-  const exact = `${safeId}.json`;
-  const exactPath = path.join(LOCATIONS_DIR, exact);
-  if (fs.existsSync(exactPath)) return exactPath;
-  const lower = exact.toLowerCase();
-  const match = listLocationFiles().find(name => String(name || '').toLowerCase() === lower);
-  return match ? path.join(LOCATIONS_DIR, match) : exactPath;
-}
-
-function retireLocationFileCaseVariants(id) {
-  const safeId = safeLocationFileId(id);
-  const exact = `${safeId}.json`;
-  const lower = exact.toLowerCase();
-  for (const file of listLocationFiles()) {
-    if (file === exact || String(file || '').toLowerCase() !== lower) continue;
-    const source = path.join(LOCATIONS_DIR, file);
-    const backup = path.join(LOCATIONS_DIR, `${file}.casefix-${Date.now()}.bak`);
-    try { fs.renameSync(source, backup); } catch (_) {}
-  }
-}
-
 function listLocationFilesIn(dir) {
   try {
     return fs.readdirSync(dir)
@@ -963,10 +936,6 @@ function listLocationFilesIn(dir) {
   } catch (_) {
     return [];
   }
-}
-
-function listLocationFiles() {
-  return listLocationFilesIn(LOCATIONS_DIR);
 }
 
 function locationWorldToTilePoint(point = {}, dims = null) {
@@ -1136,7 +1105,7 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
 const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
 function normalizeLocationPvpMode(input, safeFallback = true) {
-  // Булевы значения и редакторские псевдонимы («safezone», «nopvp», «safe»)
+  // Булевы значения и авторские псевдонимы («safezone», «nopvp», «safe»)
   // означают мирный режим; false никогда не превращается в PvP.
   if (typeof input === 'boolean') return input ? 'pvp' : 'peaceful';
   const raw = String(input ?? '').trim().toLowerCase();
@@ -1544,28 +1513,6 @@ function loadAuthoredLocationDefinitions() {
   const locations = loadLocationDefinitions(bundled, LOCATIONS_DIR);
   if (Object.keys(locations).length) return locations;
   return applyLocationTraderProfiles(loadLocationDefinitions(DEFAULT_LOCATIONS));
-}
-
-function publicLocationFileSummary(loc, file = '') {
-  const settlement = locationCanRespawnPlayers(loc);
-  return {
-    id: loc.id,
-    name: loc.name,
-    file,
-    kind: settlement ? 'settlement' : (loc.kind || 'location'),
-    city: settlement,
-    settlement,
-    respawnAllowed: settlement,
-    safe: !!loc.safe,
-    pvpMode: loc.pvpMode || locationPvpMode(loc),
-    pvpLabel: LOCATION_PVP_LABELS[loc.pvpMode || locationPvpMode(loc)] || LOCATION_PVP_LABELS.peaceful,
-    randomTemplate: !!loc.randomTemplate,
-    encounterOnly: !!loc.encounterOnly,
-    ground: loc.ground || null,
-    objects: Array.isArray(loc.objects) ? loc.objects.length : 0,
-    transitions: Array.isArray(loc.transitions) ? loc.transitions.length : (loc.exit ? 1 : 0),
-    worldZones: Array.isArray(loc.worldZones) ? loc.worldZones.length : 0
-  };
 }
 
 const KROMKA_STATE_STORE = createKromkaStateStore({
@@ -2015,22 +1962,8 @@ function authRateIdentity(req = {}) {
 }
 
 const requireDevAccess = createDevAccessMiddleware(DEV_ACCESS_POLICY);
-const DEV_EDITOR_PATHS = new Set(['/dev-location-editor.html', '/dev-global-map-editor.html']);
 
 app.use('/api/dev', requireDevAccess);
-app.use((req, res, next) => {
-  let requestedPath = String(req.path || '');
-  try {
-    requestedPath = decodeURIComponent(requestedPath);
-  } catch (_) {
-    // Malformed paths are left to the regular HTTP error handling.
-  }
-  requestedPath = requestedPath.toLowerCase();
-  if (!DEV_EDITOR_PATHS.has(requestedPath)) return next();
-  if (devEditorIsAvailable(DEV_ACCESS_POLICY)) return next();
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(404).type('text/plain').send('Not Found');
-});
 
 function authRateLimit(req, res, next) {
   const result = authRateLimiter.consume(requestAddress(req), authRateIdentity(req));
@@ -2130,7 +2063,7 @@ function serverUnityBuildEncodingHead(filePath = '', stat = null) {
   return head;
 }
 
-// Статика: сборка Unity в public/unity/, модели, радио и dev-редакторы.
+// Статика: сборка Unity в public/unity/, модели и радио.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   lastModified: true,
@@ -2164,56 +2097,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
-
-app.get('/api/dev/locations', (_, res) => {
-  const diskLocations = listLocationFiles()
-    .map(file => {
-      const raw = readJson(path.join(LOCATIONS_DIR, file), null);
-      if (!raw || typeof raw !== 'object') return null;
-      return publicLocationFileSummary(normalizeLocationDefinition({ ...raw, id: raw.id || path.basename(file, '.json') }), file);
-    })
-    .filter(Boolean);
-  const known = Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})
-    .map(loc => publicLocationFileSummary(loc, `${loc.id}.json`));
-  const byId = new Map(known.map(loc => [loc.id, loc]));
-  for (const loc of diskLocations) byId.set(loc.id, loc);
-  res.json({
-    ok: true,
-    dir: path.relative(__dirname, LOCATIONS_DIR).replace(/\\/g, '/'),
-    locations: Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-  });
-});
-
-app.get('/api/dev/locations/:id', (req, res) => {
-  const id = safeLocationFileId(req.params.id);
-  const file = findLocationFilePath(id);
-  const raw = readJson(file, null);
-  const fallback = typeof LOCATIONS === 'object' ? LOCATIONS[id] : null;
-  const location = raw && typeof raw === 'object'
-    ? normalizeLocationDefinition({ ...raw, id: raw.id || id }, null)
-    : fallback;
-  if (!location) return res.status(404).json({ ok: false, error: 'Локация не найдена.' });
-  res.json({ ok: true, file: path.relative(__dirname, file).replace(/\\/g, '/'), location });
-});
-
-app.post('/api/dev/locations/:id', (req, res) => {
-  const incoming = req.body && typeof req.body === 'object' && req.body.location ? req.body.location : req.body;
-  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON локации.' });
-  const id = safeLocationFileId(incoming.id || req.params.id);
-  const location = normalizeLocationDefinition({ ...incoming, id }, null);
-  retireLocationFileCaseVariants(location.id);
-  const file = locationFilePath(location.id);
-  writeJsonAtomic(file, location, { pretty: true });
-  if (typeof LOCATIONS === 'object') LOCATIONS[location.id] = location;
-  syncWorldSiteLocationDefinitions(true);
-  const invalidatedRooms = invalidateRoomsForLocation(location.id, 'dev-location-save');
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, file).replace(/\\/g, '/'),
-    invalidatedRooms,
-    location: publicLocationFileSummary(location, path.basename(file))
-  });
-});
 
 app.get('/api/locations', (_, res) => {
   const locations = {};
@@ -2259,10 +2142,6 @@ app.get('/api/kromka/artifacts', (_, res) => {
 });
 
 let globalMapResponseCache = null;
-
-function invalidateGlobalMapResponseCache() {
-  globalMapResponseCache = null;
-}
 
 /**
  * Карта для клиента: скрытые узлы не уходят игрокам. Базы фракций Сердцевины
@@ -3301,14 +3180,6 @@ app.post('/api/wasteland/tasks/:id/deliver', requireAuth, (req, res) => {
   res.status(410).json({ ok: false, error: 'Доставка проводится только активным персонажем через сервер мира.' });
 });
 
-app.get('/api/dev/wasteland', (_, res) => {
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim: WASTELAND_SIM.publicState()
-  });
-});
-
 // A-Life опасных клеток для разработчика: сводка и группы вокруг мелкой клетки (?sx=&sy=&radius=).
 app.get('/api/dev/danger-ecology', (req, res) => {
   if (!serverEcologyActive()) return res.json({ ok: true, active: false });
@@ -3370,33 +3241,6 @@ app.post('/api/dev/danger-ecology/kill', (req, res) => {
   res.json({ ok: true, killed, members: alive ? alive.members.length : 0, state: alive ? alive.state : 'destroyed' });
 });
 
-app.get('/api/dev/global-map', (_, res) => {
-  const locationRows = Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})
-    .map(loc => publicLocationFileSummary(loc, `${loc.id}.json`))
-    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, GLOBAL_MAP_FILE).replace(/\\/g, '/'),
-    map: GLOBAL_MAP,
-    locations: locationRows
-  });
-});
-
-app.post('/api/dev/global-map', (req, res) => {
-  const incoming = req.body && typeof req.body === 'object' && req.body.map ? req.body.map : req.body;
-  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON глобальной карты.' });
-  GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
-  invalidateGlobalMapResponseCache();
-  WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
-  syncWorldSiteLocationDefinitions();
-  writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, GLOBAL_MAP_FILE).replace(/\\/g, '/'),
-    map: GLOBAL_MAP
-  });
-});
-
 // Выдача сини на счёт аккаунта: платёжного магазина пока нет.
 app.post('/api/dev/accounts/sin', (req, res) => {
   if (!serverAccountSinActive()) return res.status(409).json({ ok: false, error: 'Счёт сини выключен.' });
@@ -3413,30 +3257,6 @@ app.post('/api/dev/accounts/sin', (req, res) => {
     if (String(player?.userId || '') === String(user.id)) emitAuthoritativePlayerState(player, { reason: 'accountSin' });
   }
   res.json({ ok: true, userId: user.id, credited, sin: account.sin });
-});
-
-app.post('/api/dev/wasteland/site', (req, res) => {
-  if (GLOBAL_MAP.sitePlacement === 'unity-authored')
-    return res.status(409).json({ ok: false, error: 'Размещение локаций задаётся в Unity. Экспортируйте авторскую глобальную сцену.' });
-  const site = req.body && typeof req.body === 'object' ? req.body.site || req.body : null;
-  if (!site || typeof site !== 'object') return res.status(400).json({ ok: false, error: 'Нужны данные точки живой пустоши.' });
-  const sim = WASTELAND_SIM.upsertSite(site);
-  syncWorldSiteLocationDefinitions();
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim
-  });
-});
-
-app.delete('/api/dev/wasteland/site/:id', (req, res) => {
-  const sim = WASTELAND_SIM.deleteSite(req.params.id);
-  syncWorldSiteLocationDefinitions();
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim
-  });
 });
 
 app.post('/api/dev/wasteland/reset', (_, res) => {
@@ -3916,59 +3736,6 @@ app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
 
 app.get('/favicon.ico', (_, res) => {
   res.status(204).end();
-});
-
-function resolveThreeBundlePath() {
-  const candidates = [];
-  // Manual fallback first: you can put a browser build near this server.
-  candidates.push(path.join(__dirname, 'three.min.js'));
-  candidates.push(path.join(__dirname, 'vendor', 'three.min.js'));
-  candidates.push(path.join(__dirname, 'node_modules', 'three', 'build', 'three.min.js'));
-  candidates.push(path.join(__dirname, 'node_modules', 'three', 'build', 'three.js'));
-
-  // npm dependency fallback. package.json pins three 0.125.2 because it still has
-  // build/three.min.js with the global window.THREE object the dev editors need.
-  try {
-    const threePackage = require.resolve('three/package.json');
-    const threeDir = path.dirname(threePackage);
-    candidates.push(path.join(threeDir, 'build', 'three.min.js'));
-    candidates.push(path.join(threeDir, 'build', 'three.js'));
-  } catch (_) {}
-
-  return candidates.find(file => file && fs.existsSync(file)) || '';
-}
-
-function resolveThreeExamplePath(relativePath) {
-  const parts = String(relativePath || '').split('/').filter(Boolean);
-  const candidates = [
-    path.join(__dirname, 'node_modules', 'three', 'examples', 'js', ...parts)
-  ];
-  try {
-    const threePackage = require.resolve('three/package.json');
-    const threeDir = path.dirname(threePackage);
-    candidates.push(path.join(threeDir, 'examples', 'js', ...parts));
-  } catch (_) {}
-  return candidates.find(file => file && fs.existsSync(file)) || '';
-}
-
-app.get('/vendor/three.min.js', (req, res) => {
-  const file = resolveThreeBundlePath();
-  if (file) {
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.type('application/javascript').sendFile(file);
-  }
-  console.error('Three.js browser build was not found. Run: npm install, then node server.js.');
-  res.status(500).type('application/javascript').send(`console.error(${JSON.stringify('Three.js не найден на сервере. В папке проекта выполните: npm install, затем node server.js')});`);
-});
-
-app.get('/vendor/GLTFLoader.js', (req, res) => {
-  const file = resolveThreeExamplePath('loaders/GLTFLoader.js');
-  if (file) {
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.type('application/javascript').sendFile(file);
-  }
-  console.error('GLTFLoader was not found. Run: npm install, then node server.js.');
-  res.status(500).type('application/javascript').send(`console.error(${JSON.stringify('GLTFLoader not found. Run npm install, then node server.js.')});`);
 });
 
 function findClientHtml() {
@@ -4901,7 +4668,7 @@ const FILE_GLOBAL_MAP_FALLBACK = {
   cells: {}
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();
-let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
+const GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
   safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
 });
@@ -5259,8 +5026,7 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
   return snapshot;
 }
 // Файл в DATA_DIR переписывается и когда подмешалось новое содержимое, иначе
-// оператор увидит на карте то, чего нет в его файле, и следующая правка через
-// редактор снова это потеряет.
+// оператор увидит на карте то, чего нет в его файле.
 try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) {
   console.error('Failed to persist global map file:', err);
 }
@@ -26696,37 +26462,6 @@ function pruneExpiredEphemeralRooms(now = Date.now()) {
     },
     hasActiveOwner: roomHasActiveWorldOwner
   });
-}
-
-function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
-  const loc = normalizeLocationId(locationId || 'settlement');
-  let count = 0;
-  for (const room of rooms.values()) {
-    if (!room || normalizeLocationId(room.locationId) !== loc) continue;
-    clearRoomEnemies(room);
-    if (room.resources instanceof Map) room.resources.clear();
-    if (room.containers instanceof Map) room.containers.clear();
-    room.map = [];
-    room.worldReady = false;
-    room.worldState = null;
-    room.environmentVersion = 0;
-    room.containersRestockDay = null;
-    room.lastEnemySnapshotAt = 0;
-    ensureRoomWorld(room);
-    refreshRoomWorldState(room);
-    count++;
-    if (room.sockets && room.sockets.size > 0) {
-      io.to(room.id).emit('worldState', {
-        reason: 'locationFull',
-        source: String(reason || 'location-updated').slice(0, 48),
-        state: currentRoomWorldState(room)
-      });
-      emitEnemySnapshot(room, true);
-      emitGroundItemsSnapshot(room, true);
-      emitWorldContainersSnapshot(room, true);
-    }
-  }
-  return count;
 }
 
 function chooseRoomForLocation(locationId) {

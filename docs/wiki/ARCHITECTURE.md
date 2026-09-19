@@ -21,7 +21,6 @@ REST API, Socket.IO и статику, включая Unity WebGL-сборку. 
 | Общие модели | `public/assets/models/` | GLB, которые отдаёт сервер и без конвертации грузит Unity |
 | Runtime-данные | `DATA_DIR/*.json` | аккаунты, персонажи и общее состояние мира, симуляция, A-Life |
 | Инструменты | `tools/*.js`, `unity-client/Tools/` | генераторы, проверки, сборка клиента |
-| Dev-редакторы | `public/dev-location-editor.html`, `public/dev-global-map-editor.html` | локальные редакторы локаций и глобальной карты на Three.js (`public/vendor/`); сервер отдаёт их только при `DEV_API_MODE=local` или `token` вне production |
 
 Единственный серверный entry point — `server.js`. Модули `src/server/*.js`
 активны только когда импортированы из него или друг из друга; отдельной копии
@@ -67,8 +66,8 @@ REST используется для:
 - получения локаций, квестов, глобальной карты, публичного состояния пустоши и
   каталогов прогрессии и предметов (`/api/kromka/character-progression`,
   `/api/kromka/items`);
-- локальных dev-редакторов мира, по умолчанию закрытых и доступных только через
-  явно выбранный `DEV_API_MODE=local|token`;
+- dev API (сводка A-Life, выдача сини, сброс живой пустоши), по умолчанию
+  закрытого и доступного только через явно выбранный `DEV_API_MODE=local|token`;
 - `/health`.
 
 Bearer token привязан к `deviceId` (Unity хранит его в `PlayerPrefs`). Для

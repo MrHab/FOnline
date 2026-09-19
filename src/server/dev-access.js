@@ -151,10 +151,6 @@ function createDevAccessMiddleware(policy = {}) {
   };
 }
 
-function devEditorIsAvailable(policy = {}) {
-  return policy.mode !== 'disabled' && policy.nodeEnv !== 'production';
-}
-
 module.exports = {
   DEV_LOCAL_HEADER,
   DEV_LOCAL_HEADER_VALUE,
@@ -164,7 +160,6 @@ module.exports = {
   authorizeDevRequest,
   createDevAccessMiddleware,
   createDevAccessPolicy,
-  devEditorIsAvailable,
   isLoopbackHostname,
   isLoopbackAddress,
   normalizeDevApiMode,

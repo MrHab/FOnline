@@ -1,12 +1,9 @@
 # Формат глобальной карты
 
-Файл карты хранится в `data/global-map.json` и редактируется через `/dev-global-map-editor.html`.
-
-Редактор использует закрытый dev API. Для локальной работы запустите сервер с
-`DEV_API_MODE=local` и открывайте
-<http://127.0.0.1:3000/dev-global-map-editor.html>. Production Nginx и
-production-процесс редактор не публикуют; режимы и token-доступ описаны в
-[формате локальной локации](location-editor-format.md).
+Файл карты хранится в `data/global-map.json`. География, узлы и маршруты
+правятся в Unity-сцене и экспортируются оттуда, отдельные поля можно править
+в файле вручную. Порядок экспорта описан в
+[`KROMKA_UNITY_AUTHORING.md`](KROMKA_UNITY_AUTHORING.md).
 
 Схема — `realm.globalMap.v1`. Сервер нормализует файл при старте
 (`normalizeGlobalMapConfig`) и переписывает его обратно, поэтому неизвестные
@@ -36,7 +33,7 @@ production-процесс редактор не публикуют; режимы
   Поля клетки: `terrain`, `pvpMode`, `chance`, `difficulty`, `texture`,
   `macroRegion`, `fill`, `encounters`, `randomLocations`.
 - `pvpMode` клетки принимает режим зоны (`peaceful`, `pve`, `pvp`, `pvpEvent`,
-  `pvpFullDrop`, `pvpBlack`) и редакторские псевдонимы вроде `safe`; правила
+  `pvpFullDrop`, `pvpBlack`) и авторские псевдонимы вроде `safe`; правила
   режимов — `src/server/zone-rules.js`. Мирная клетка остаётся мирной, а цвет
   остальных считают опасные клетки (`src/server/danger-cells.js`) по правилам
   из `data/kromka/economy.json` и подмешивают в `/api/global-map`, не меняя файл.
@@ -48,9 +45,3 @@ production-процесс редактор не публикуют; режимы
 
 Если у клетки нет настройки в `cells`, игра использует процедурный профиль
 пустоши для визуала, риска и встреч.
-
-Редактор рассчитан на прежнюю сетку 30 × 30 клеток по 30 точек и не берёт
-размеры из `grid`, поэтому для карты `kromka-1` он остаётся инструментом
-просмотра и точечной правки клеток. География, узлы и маршруты правятся в
-Unity и экспортируются оттуда — порядок описан в
-[`KROMKA_UNITY_AUTHORING.md`](KROMKA_UNITY_AUTHORING.md).

@@ -13,10 +13,10 @@
 - `src/server/` contains extracted server-side systems.
 - `unity-client/` is the game client (Unity 6000.5.8f1, URP). Players get the
   Unity WebGL build served from the site root; all client work happens here.
-- `public/` holds the static files the server serves: GLB models and textures
-  (`public/assets/`), the generated Unity WebGL build (`public/unity/`, not in
-  git) with its fallback page `unity-unavailable.html`, and the local dev
-  editors. There is no browser client besides the Unity build.
+- `public/` holds the static files the server serves: GLB models
+  (`public/assets/`) and the generated Unity WebGL build (`public/unity/`, not
+  in git) with its fallback page `unity-unavailable.html`. There is no browser
+  client besides the Unity build.
 - `data/` contains authored world data. Runtime account, save and simulation files are ignored.
 - `tools/` contains generators and verification scripts.
 - `docs/wiki/` documents the current game architecture; the design canon is

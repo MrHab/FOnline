@@ -84,8 +84,6 @@ assert.deepStrictEqual(collisionLeaks, [],
 
 const runtimeFiles = [
   'server.js',
-  'public/dev-location-editor.html',
-  'public/dev-global-map-editor.html',
   'unity-client/Assets/Scripts/World/RoaLocationLoader.cs',
   'unity-client/Assets/Scripts/Game/RoaInteraction.cs'
 ];
@@ -95,7 +93,7 @@ for (const relative of runtimeFiles) {
   for (const model of environmentGlbUrls(source)) runtimeLeaks.push(`${relative}: ${model}`);
 }
 assert.deepStrictEqual(runtimeLeaks, [],
-  'Runtime or browser tooling still requests retired environment GLBs');
+  'Runtime code still requests retired environment GLBs');
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 const unityLoaderSource = fs.readFileSync(path.join(
   ROOT, 'unity-client/Assets/Scripts/World/RoaLocationLoader.cs'), 'utf8');

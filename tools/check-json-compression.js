@@ -37,8 +37,6 @@ for (const [route, label] of [
 // Сжатая копия считается на срок жизни кэша, а не на каждый запрос.
 assert(server.includes('gzip: gzipJsonBuffer(body)'), 'сжатая копия симуляции больше не кэшируется');
 assert(server.includes('globalMapResponseCache'), 'ответ глобальной карты больше не кэшируется');
-assert(server.includes('invalidateGlobalMapResponseCache()'),
-  'правка карты через редактор не сбрасывает кэш ответа — клиенты получат устаревшую карту');
 
 // --- Выигрыш действительно есть ---
 const compressed = zlib.gzipSync(Buffer.from(globalMapConfig, 'utf8'), { level: zlib.constants.Z_BEST_SPEED });

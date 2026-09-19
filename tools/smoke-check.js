@@ -545,13 +545,6 @@ async function assertStaticAssets() {
   if (rootHtml.body !== fs.readFileSync(rootFile, 'utf8')) {
     fail(`root page did not serve ${path.relative(PROJECT_ROOT, rootFile)}`, rootHtml.body.slice(0, 500));
   }
-
-  // Three.js нужен dev-редакторам локаций и глобальной карты.
-  const three = await request('/vendor/three.min.js');
-  assertStatus(three, 200, 'GET /vendor/three.min.js');
-  if (!three.body.includes('THREE')) {
-    fail('Three.js vendor route did not serve the browser bundle', three.body.slice(0, 500));
-  }
 }
 
 async function assertRestCorsPreflight() {
@@ -601,29 +594,10 @@ async function assertRestCorsPreflight() {
   }
 }
 
-async function assertEditorAndWorldDataApis() {
-  const localDevHeaders = { 'X-Dev-Local': '1' };
-  const locationEditor = await request('/dev-location-editor.html');
-  assertStatus(locationEditor, 200, 'GET /dev-location-editor.html');
-  if (!locationEditor.body.includes('/api/dev/locations') || !locationEditor.body.includes('dev-location-editor.html')) {
-    fail('location editor page is missing its server-backed editor hooks', locationEditor.body.slice(0, 500));
-  }
-  if (!locationEditor.body.includes("window.location.protocol !== 'file:'")) {
-    fail('location editor page is missing the file:// redirect guard', locationEditor.body.slice(0, 500));
-  }
-
-  const globalMapEditor = await request('/dev-global-map-editor.html');
-  assertStatus(globalMapEditor, 200, 'GET /dev-global-map-editor.html');
-  if (!globalMapEditor.body.includes('/api/dev/global-map') || !globalMapEditor.body.includes('dev-global-map-editor.html')) {
-    fail('global map editor page is missing its server-backed editor hooks', globalMapEditor.body.slice(0, 500));
-  }
-  if (!globalMapEditor.body.includes("window.location.protocol !== 'file:'")) {
-    fail('global map editor page is missing the file:// redirect guard', globalMapEditor.body.slice(0, 500));
-  }
-
-  const proxiedLocalDevRequest = await request('/api/dev/locations', {
+async function assertWorldDataApis() {
+  const proxiedLocalDevRequest = await request('/api/dev/danger-ecology', {
     headers: {
-      ...localDevHeaders,
+      'X-Dev-Local': '1',
       'X-Real-IP': '203.0.113.40',
       'X-Forwarded-For': '203.0.113.40',
       'X-Forwarded-Proto': 'https'
@@ -631,33 +605,18 @@ async function assertEditorAndWorldDataApis() {
   });
   assertStatus(proxiedLocalDevRequest, 403, 'proxied local dev API request');
 
-  const locations = await request('/api/dev/locations', { headers: localDevHeaders });
-  assertStatus(locations, 200, 'GET /api/dev/locations');
-  const locationsData = parseJsonResponse(locations, 'GET /api/dev/locations');
-  if (!locationsData.ok
-    || !Array.isArray(locationsData.locations)
-    || locationsData.locations.length < 20
-    || !locationsData.locations.some(loc => loc.id === 'settlement')) {
-    fail('fresh DATA_DIR did not inherit the bundled location definitions', locations.body);
-  }
-
-  const settlement = await request('/api/dev/locations/settlement', { headers: localDevHeaders });
-  assertStatus(settlement, 200, 'GET /api/dev/locations/settlement');
-  const settlementData = parseJsonResponse(settlement, 'GET /api/dev/locations/settlement');
-  if (!settlementData.ok || settlementData.location?.id !== 'settlement') {
-    fail('dev settlement API response is incomplete', settlement.body);
-  }
-
-  const globalMap = await request('/api/dev/global-map', { headers: localDevHeaders });
-  assertStatus(globalMap, 200, 'GET /api/dev/global-map');
-  const globalMapData = parseJsonResponse(globalMap, 'GET /api/dev/global-map');
+  const globalMap = await request('/api/global-map');
+  assertStatus(globalMap, 200, 'GET /api/global-map');
+  const globalMapData = parseJsonResponse(globalMap, 'GET /api/global-map');
+  // Публичная карта не отдаёт скрытые узлы, поэтому узлы релиза сверяются с
+  // авторским файлом, который наследует свежий DATA_DIR.
+  const authoredGlobalNodes = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'global-map.json'), 'utf8')).nodes || [];
   if (!globalMapData.ok
     || !globalMapData.map?.grid
     || !Array.isArray(globalMapData.map?.nodes)
-    || globalMapData.map.nodes.length < 3
-    || Object.keys(globalMapData.map?.cells || {}).length < 100
-    || !Array.isArray(globalMapData.locations)) {
-    fail('fresh DATA_DIR did not inherit the bundled global map', globalMap.body);
+    || globalMapData.map.nodes.length !== authoredGlobalNodes.filter(node => node?.hidden !== true).length
+    || Object.keys(globalMapData.map?.cells || {}).length < 100) {
+    fail('fresh DATA_DIR did not inherit the bundled global map', globalMap.body.slice(0, 500));
   }
 
   const publicLocations = await request('/api/locations');
@@ -730,7 +689,7 @@ async function assertEditorAndWorldDataApis() {
     ? wastelandData.sim.locationRelease.locationIds.map(value => String(value || '')).filter(Boolean)
     : [];
   const releasedLocationIdSet = new Set(releasedLocationIds);
-  const globalNodeLocationIds = globalMapData.map.nodes
+  const globalNodeLocationIds = authoredGlobalNodes
     .map(node => String(node?.locationId || node?.id || ''))
     .filter(Boolean);
   if (releasedLocationIdSet.size !== releasedLocationIds.length
@@ -755,7 +714,7 @@ async function assertEditorAndWorldDataApis() {
     fail('Kromka must expose authored Unity sites without procedural district instances');
   }
   for (const site of worldSites) {
-    const node = globalMapData.map.nodes.find(row => row.id === site.id || row.locationId === site.locationId);
+    const node = authoredGlobalNodes.find(row => row.id === site.id || row.locationId === site.locationId);
     if (!node || Number(site.x) !== Number(node.x) || Number(site.y) !== Number(node.y)) {
       fail(`world site moved away from its authored Unity marker: ${site.id}`, JSON.stringify({ site, node }));
     }
@@ -1859,7 +1818,7 @@ async function main() {
     }
     await assertStaticAssets();
     await assertRestCorsPreflight();
-    await assertEditorAndWorldDataApis();
+    await assertWorldDataApis();
     await assertGuestAuthLifecycle();
     await assertAuthRateLimitLifecycle();
     const resetAccounts = await assertAuthApiLifecycle();

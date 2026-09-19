@@ -159,35 +159,16 @@ async function assertProductionDisabledMode() {
     await waitForHealth(server);
     const publicLocations = await request(server.port, '/api/locations');
     invariant(publicLocations.statusCode === 200, 'disabled mode broke public locations API', publicLocations.body);
-    for (const pathname of [
-      '/api/dev',
-      '/api/dev/locations',
-      '/dev-location-editor.html',
-      '/dev-global-map-editor.html',
-      '/DEV-LOCATION-EDITOR.HTML',
-      '/dev-global-map-editor%2ehtml',
-      '/%44ev-location-editor.html',
-      '/%44EV-LOCATION-EDITOR.HTML'
-    ]) {
+    for (const pathname of ['/api/dev', '/api/dev/danger-ecology']) {
       const response = await request(server.port, pathname);
       invariant(response.statusCode === 404, `production disabled mode exposed ${pathname}`, response.body);
     }
 
-    const trackedFiles = [
-      'global-map.json',
-      'wasteland-sim.json',
-      path.join('locations', 'settlement.json')
-    ];
+    const trackedFiles = ['wasteland-sim.json', 'saves.json', 'danger-ecology.json'];
     const before = snapshotFiles(server.dataDir, trackedFiles);
     const attempts = [
-      request(server.port, '/api/dev/global-map', {
-        method: 'POST',
-        json: { map: { grid: { cols: 1, rows: 1, cellPoints: 1 }, nodes: [], objects: [], cells: {} } }
-      }),
-      request(server.port, '/api/dev/locations/settlement', {
-        method: 'POST',
-        json: { location: { id: 'settlement', name: 'FORBIDDEN WRITE' } }
-      }),
+      request(server.port, '/api/dev/accounts/sin', { method: 'POST', json: { login: 'forbidden', amount: 1000 } }),
+      request(server.port, '/api/dev/danger-ecology/kill', { method: 'POST', json: { groupId: 'forbidden', count: 1 } }),
       request(server.port, '/api/dev/wasteland/reset', { method: 'POST', json: {} })
     ];
     const responses = await Promise.all(attempts);
@@ -208,15 +189,13 @@ async function assertLocalMode() {
   });
   try {
     await waitForHealth(server);
-    const missingProof = await request(server.port, '/api/dev/locations');
+    const missingProof = await request(server.port, '/api/dev/danger-ecology');
     invariant(missingProof.statusCode === 403, 'local mode accepted a request without the non-simple proof header', missingProof.body);
-    const direct = await request(server.port, '/api/dev/locations', {
+    const direct = await request(server.port, '/api/dev/danger-ecology', {
       headers: LOCAL_DEV_HEADERS
     });
     invariant(direct.statusCode === 200, 'direct loopback request was rejected in local mode', direct.body);
-    const editor = await request(server.port, '/dev-location-editor.html');
-    invariant(editor.statusCode === 200, 'local editor page was unavailable in local mode', editor.body);
-    const proxied = await request(server.port, '/api/dev/locations', {
+    const proxied = await request(server.port, '/api/dev/danger-ecology', {
       headers: {
         ...LOCAL_DEV_HEADERS,
         'X-Real-IP': '203.0.113.41',
@@ -225,12 +204,12 @@ async function assertLocalMode() {
       }
     });
     invariant(proxied.statusCode === 403, 'proxy headers bypassed local-only dev mode', proxied.body);
-    const uncommonForwarded = await request(server.port, '/api/dev/locations', {
+    const uncommonForwarded = await request(server.port, '/api/dev/danger-ecology', {
       headers: { ...LOCAL_DEV_HEADERS, 'X-Forwarded-Port': '443' }
     });
     invariant(uncommonForwarded.statusCode === 403, 'uncommon X-Forwarded-* header bypassed local-only dev mode', uncommonForwarded.body);
 
-    const reboundHost = await request(server.port, '/api/dev/locations', {
+    const reboundHost = await request(server.port, '/api/dev/danger-ecology', {
       headers: { ...LOCAL_DEV_HEADERS, Host: `attacker.invalid:${server.port}` }
     });
     invariant(reboundHost.statusCode === 403, 'non-loopback Host bypassed local-only dev mode', reboundHost.body);
@@ -284,13 +263,13 @@ async function assertTokenMode() {
   });
   try {
     await waitForHealth(server);
-    const missing = await request(server.port, '/api/dev/locations');
+    const missing = await request(server.port, '/api/dev/danger-ecology');
     invariant(missing.statusCode === 403, 'token mode accepted a missing token', missing.body);
-    const wrong = await request(server.port, '/api/dev/locations', {
+    const wrong = await request(server.port, '/api/dev/danger-ecology', {
       headers: { 'X-Dev-Token': `${secret}-wrong` }
     });
     invariant(wrong.statusCode === 403, 'token mode accepted an invalid token', wrong.body);
-    const accepted = await request(server.port, '/api/dev/locations', {
+    const accepted = await request(server.port, '/api/dev/danger-ecology', {
       headers: {
         'X-Dev-Token': secret,
         'X-Forwarded-For': '203.0.113.42',
@@ -298,8 +277,6 @@ async function assertTokenMode() {
       }
     });
     invariant(accepted.statusCode === 200, 'token mode rejected a valid proxied token', accepted.body);
-    const editor = await request(server.port, '/dev-global-map-editor.html');
-    invariant(editor.statusCode === 200, 'non-production token mode did not serve the editor shell', editor.body);
     invariant(!server.logs.join('').includes(secret), 'DEV_ADMIN_TOKEN leaked into server logs');
   } finally {
     await stopServer(server);
@@ -315,18 +292,10 @@ async function assertProductionTokenMode() {
   });
   try {
     await waitForHealth(server);
-    const accepted = await request(server.port, '/api/dev/locations', {
+    const accepted = await request(server.port, '/api/dev/danger-ecology', {
       headers: { 'X-Dev-Token': secret }
     });
     invariant(accepted.statusCode === 200, 'production token mode rejected an authenticated API request', accepted.body);
-    for (const pathname of [
-      '/dev-location-editor.html',
-      '/%44ev-location-editor.html',
-      '/dev-global-map-editor%2ehtml'
-    ]) {
-      const editor = await request(server.port, pathname);
-      invariant(editor.statusCode === 404, `production token mode exposed editor shell ${pathname}`, editor.body);
-    }
   } finally {
     await stopServer(server);
   }
@@ -351,21 +320,6 @@ function assertNginxPolicy() {
     'Nginx case-insensitive dev API deny is missing or placed after the public API proxy');
   invariant(!source.includes('location ^~ /api/ {'),
     'Nginx public API ^~ prefix would bypass the mixed-case dev deny regex');
-  invariant(source.includes('location ~* ^/dev-(?:location|global-map)-editor\\.html$ {'),
-    'Nginx does not deny public editor HTML case-insensitively');
-}
-
-function assertEditorTokenFlow() {
-  for (const relativeFile of ['public/dev-location-editor.html', 'public/dev-global-map-editor.html']) {
-    const source = fs.readFileSync(path.join(PROJECT_ROOT, relativeFile), 'utf8');
-    invariant(source.includes("headers['X-Dev-Token'] = token")
-      && source.includes("headers['X-Dev-Local'] = '1'")
-      && source.includes('window.sessionStorage')
-      && source.includes('devApiFetch')
-      && source.includes('requestDevToken')
-      && source.includes('type="password"'),
-    `${relativeFile} does not use the in-page token dialog for explicit dev API requests`);
-  }
 }
 
 function assertPolicyHelpers() {
@@ -379,7 +333,6 @@ function assertPolicyHelpers() {
 
 async function main() {
   assertNginxPolicy();
-  assertEditorTokenFlow();
   assertPolicyHelpers();
   await assertStartupRejected(
     'production-local-rejected',

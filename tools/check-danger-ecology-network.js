@@ -61,11 +61,12 @@ fs.writeFileSync(path.join(scratch, 'danger-ecology.json'), JSON.stringify({
 process.env.KROMKA_DANGER_ECOLOGY_FILE = path.join(scratch, 'danger-ecology.json');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const home = zoneOfPlace(graph, 'settlement');
+// Город — не зона пустоши: за домашнюю берём соседнюю с Ключами зону.
+const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement').edges.north.to);
 const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
 // Сосед с открытыми воротами, откуда придёт охотник: он идёт на юг и входит с севера.
 const north = zoneById(graph, home.edges.north.to);
-assert(home.edges.north.open !== false && north && north.mode !== 'peaceful', 'Keys has an open gate to a live zone in the north');
+assert(home.edges.north.open !== false && north && north.mode !== 'peaceful', 'the home zone has an open gate to a live zone in the north');
 // Синяя зона без игроков в соседях: живая, в ней своя группа.
 const blue = graph.zones.find(zone => zone.mode === 'pve' && Math.abs(zone.col - home.col) + Math.abs(zone.row - home.row) > 3);
 assert(blue, 'the world has a blue zone away from Keys');
@@ -148,7 +149,7 @@ const actorsIn = (row, roomId) => (row?.actors || []).filter(actor => actor.room
     });
     assert.equal(resident.online, home.id, 'the group is online in its zone');
     // Логова — места логов, которые конструктор ставит в каждой немирной зоне.
-    const expectedLairs = graph.zones.filter(zone => zone.mode !== 'peaceful')
+    const expectedLairs = graph.zones.filter(zone => !zone.city && zone.mode !== 'peaceful')
       .reduce((sum, zone) => sum + normalizeRecipe(zoneRecipe(graph, zone.id)).budget.lairs, 0);
     const summary = (await devGet(`/api/dev/danger-ecology?sx=${home.col}&sy=${home.row}&radius=0`)).summary;
     assert.equal(summary.lairs, expectedLairs, 'every live zone has its lairs');

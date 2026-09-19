@@ -18,7 +18,8 @@ const { buildZone } = require('../src/server/zone-builder');
 const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const catalog = loadZoneCatalog(path.join(root, 'data', 'zones'));
-const home = zoneOfPlace(graph, 'settlement');
+// Ключи занимают свой сектор целиком, конструктор их не собирает: берём соседнюю зону.
+const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement').edges.north.to);
 
 // Временный каталог зон с тем же набором и кусками и одной закреплённой зоной.
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'kromka-zone-freeze-'));
@@ -48,8 +49,9 @@ try {
   broken.transitions = broken.transitions.filter(row => row.direction !== 'north');
   const problems = frozenZoneProblems(graph, broken);
   assert(problems.some(text => /north gate/.test(text)), 'a missing gate is caught: ' + problems.join('; '));
-  delete broken.entryFromPlace_settlement;
-  assert(frozenZoneProblems(graph, broken).some(text => /exit point from settlement/.test(text)), 'a missing place exit is caught');
+  const place = home.places[0].locationId;
+  delete broken[`entryFromPlace_${place}`.slice(0, 32)];
+  assert(frozenZoneProblems(graph, broken).some(text => new RegExp('exit point from ' + place).test(text)), 'a missing place exit is caught');
   fs.writeFileSync(path.join(scratch, 'authored', `${home.id}.json`), JSON.stringify(broken));
   const strict = createZoneRuntime({ graph, zonesDir: scratch, normalize: row => row });
   const fresh = {};

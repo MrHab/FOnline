@@ -84,6 +84,21 @@ namespace RealmOfAshes.World
                 || tx >= mapWidth - 1 - innerOffset || tz >= mapDepth - 1 - innerOffset;
         }
 
+        /// <summary>Ближайшая сторона карты: «north» — малые tz, «west» — малые tx (как у сервера).</summary>
+        public static string EdgeSide(Vector3 worldPosition, int mapWidth, int mapDepth)
+        {
+            if (mapWidth <= 0 || mapDepth <= 0) return string.Empty;
+            RoaCoords.WorldToTile(worldPosition, mapWidth, mapDepth, out int tx, out int tz);
+            int north = tz;
+            int south = mapDepth - 1 - tz;
+            int west = tx;
+            int east = mapWidth - 1 - tx;
+            int nearest = Mathf.Min(Mathf.Min(north, south), Mathf.Min(west, east));
+            if (nearest == north) return "north";
+            if (nearest == south) return "south";
+            return nearest == west ? "west" : "east";
+        }
+
         public static float DistanceToMapEdge(Vector3 worldPosition, int mapWidth, int mapDepth)
         {
             if (mapWidth <= 0 || mapDepth <= 0) return float.MaxValue;
@@ -383,7 +398,8 @@ namespace RealmOfAshes.World
                     "Выход закрыт до завершения задания", detail);
                 return;
             }
-            ParentZoneInfo zone = RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
+            ParentZoneInfo zone = RoaGameBootstrap.Active?.EdgeExitTarget
+                ?? RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
             string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
             GUI.Label(new Rect(panel.x + 12f, panel.y + 6f, panel.width - 24f, 24f),
                 "ВЫХОД: " + zoneName.ToUpperInvariant(), title);

@@ -64,14 +64,17 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   console.log('PASS a PvP exchange closes the gates for both sides for 6 s and drops the shooter\'s arrival shield');
 }
 
-const home = zoneOfPlace(graph, 'settlement');
+// Ключи занимают свой сектор целиком: за домашнюю берём соседнюю с ними зону.
+const home = graph.zones.find(zone => zone.id === zoneOfPlace(graph, 'settlement').edges.north.to);
 const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
 const northGate = homeDef.transitions.find(row => row.id === 'gate_north');
 // Зона для сна: сосед Ключей с открытым тайником.
 const quiet = ['east', 'west', 'south'].map(dir => home.edges[dir]?.to).filter(Boolean)
+  // Город конструктор не собирает: его сектор — авторская сцена.
+  .filter(id => !graph.zones.find(zone => zone.id === id)?.city)
   .map(id => buildZone(zoneRecipe(graph, id), catalog))
   .find(def => def.containers.some(row => !row.locked));
-assert(quiet, 'a neighbour of Keys has an unlocked cache');
+assert(quiet, 'a neighbour of the home zone has an unlocked cache');
 const cache = quiet.containers.find(row => !row.locked);
 
 const health = () => new Promise((resolve, reject) => {

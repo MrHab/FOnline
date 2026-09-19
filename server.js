@@ -250,7 +250,7 @@ const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/se
 const { createZoneRuntime } = require('./src/server/zone-runtime');
 const { fastTravelDestinations, fastTravelRefusal, normalizeFastTravelRules } = require('./src/server/fast-travel');
 const { migrateSaveStateToZones } = require('./src/server/zone-migration');
-const { zoneAtPoint, zoneById, zoneRecipe } = require('./src/server/zone-graph');
+const { zoneAtPoint, zoneById, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe } = require('./src/server/zone-graph');
 const { portalSignature, zonePortals } = require('./src/server/zone-portals');
 const { normalizeRecipe: normalizeZoneRecipe } = require('./src/server/zone-builder');
 const {
@@ -2265,9 +2265,10 @@ function serverEcologyZoneAt(sx, sy) {
   return serverEcologyZones().byCell.get(ecologyCellKey(sx, sy)) || null;
 }
 
-/** Цвет клетки экологии — цвет зоны; мирные зоны и места вне мира пусты. */
+/** Цвет клетки экологии — цвет зоны; мирные зоны, города и места вне мира пусты. */
 function serverEcologyModeAt(sx, sy) {
-  return serverEcologyZoneAt(sx, sy)?.mode || '';
+  const zone = serverEcologyZoneAt(sx, sy);
+  return zone && !zone.city ? zone.mode : '';
 }
 
 /** Между соседними зонами группа проходит только открытыми воротами. */
@@ -2276,12 +2277,14 @@ function serverEcologyCanStep(fromSx, fromSy, sx, sy) {
   const to = serverEcologyZoneAt(sx, sy);
   const direction = ecologyDirectionBetweenCells({ sx: fromSx, sy: fromSy }, { sx, sy });
   const edge = from && to && direction ? from.edges?.[direction] : null;
-  return !!edge && edge.open !== false && edge.to === to.id;
+  // В город группа не заходит: сектор города — жилое место, а не пустошь.
+  return !!edge && edge.open !== false && edge.to === to.id && !to.city;
 }
 
 /** Клетка комнаты: зона, чей это канал; прочие комнаты вне экологии. */
 function serverEcologyRoomCell(room) {
-  const zone = room ? serverEcologyZones().byId.get(room.locationId) : null;
+  // Город стоит в секторе целиком, но A-Life в него не заходит: группа ждёт у ворот.
+  const zone = room && !ZONE_RUNTIME.cityOf(room.locationId) ? serverEcologyZones().byId.get(room.locationId) : null;
   return zone ? { sx: zone.col, sy: zone.row, key: ecologyCellKey(zone.col, zone.row), zoneId: zone.id } : null;
 }
 
@@ -2289,7 +2292,8 @@ function serverEcologyRoomCell(room) {
 function serverEcologyCandidates() {
   const rows = [];
   for (const zone of ZONE_RUNTIME.graph.zones) {
-    if (!ECOLOGY_LIVING_MODES.includes(zone.mode)) continue;
+    // В городе логов нет: его сектор — авторская локация, а не сборка конструктора.
+    if (zone.city || !ECOLOGY_LIVING_MODES.includes(zone.mode)) continue;
     const count = normalizeZoneRecipe(zoneRecipe(ZONE_RUNTIME.graph, zone.id)).budget.lairs;
     for (let slot = 0; slot < count; slot += 1) {
       rows.push({ id: `lair_${zone.id}_${slot}`, slot, sx: zone.col, sy: zone.row, mode: zone.mode, region: zone.region || '' });
@@ -4429,6 +4433,16 @@ const ZONE_RUNTIME = createZoneRuntime({
   validate: validateZoneLocationDefinition
 });
 ZONE_RUNTIME.registerStubs(LOCATIONS);
+// Город занимает сектор целиком: его авторская локация получает блок сектора и
+// четыре точки входа у своих сторон, чтобы соседние секторы вводили прямо в город.
+for (const city of ZONE_RUNTIME.cities()) {
+  const location = LOCATIONS[city.locationId];
+  if (!location) throw new Error(`zone graph: the city ${city.locationId} has no authored location`);
+  LOCATIONS[city.locationId] = normalizeLocationDefinition({
+    ...location,
+    ...ZONE_RUNTIME.cityLocationPatch(city.locationId, normalizedLocationPlayableBounds(location))
+  });
+}
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
   safeDestinations: [{ legacyArea: 'unknown', targetLocationId: 'settlement', spawnId: 'keys-arrival' }]
@@ -4684,8 +4698,37 @@ function serverLegacyWorldExit(loc = {}, row = {}) {
   return !(loc.territoryId && target.territoryId && loc.territoryId === target.territoryId);
 }
 
+/** Старая дорога города «в мир»: в пустошь или в локацию, которой в мире уже нет. */
+function serverLegacyCityExit(loc = {}, row = {}) {
+  const to = normalizeLocationId(row?.to || '');
+  return !!to && (to === 'wasteland' || !LOCATIONS[to]);
+}
+
 function kromkaPublicLocationDefinition(location = {}) {
   const next = transformKromkaPublicValue(location);
+  // Город занимает сектор целиком: у каждой его стороны — ворота в соседний сектор,
+  // а старые дороги «в мир» становятся воротами той стороны, у которой они стоят.
+  const cityGates = ZONE_RUNTIME.cityGates(next.id);
+  if (cityGates.length) {
+    const withRules = gate => {
+      const rules = serverTransitionZoneRules({ to: gate.to });
+      return { ...gate, ...(rules ? { targetPvpMode: rules.mode, targetZoneRules: rules } : {}) };
+    };
+    next.sectorGates = cityGates.map(withRules);
+    const asCityGate = row => {
+      const side = serverCitySideOfTile(location, row);
+      const gate = withRules(cityGates.find(item => item.side === side) || cityGates[0]);
+      return {
+        ...row, type: 'zoneGate', direction: gate.side, to: gate.to, entryKey: gate.entryKey,
+        label: `Выход: ${gate.title}`,
+        ...(gate.targetZoneRules ? { targetPvpMode: gate.targetPvpMode, targetZoneRules: gate.targetZoneRules } : {})
+      };
+    };
+    if (Array.isArray(next.transitions)) {
+      next.transitions = next.transitions.map(row => (serverLegacyCityExit(location, row) ? asCityGate(row) : row));
+    }
+    if (next.exit && serverLegacyCityExit(location, next.exit)) next.exit = asCityGate(next.exit);
+  }
   // Куда выводит край места: зона мира, её название и правила.
   const parentZone = ZONE_RUNTIME.parentZoneView(next.id);
   const parentRules = parentZone ? serverTransitionZoneRules({ to: parentZone.id }) : null;
@@ -12904,12 +12947,20 @@ function serverNearbyTransitionTo(p = {}, targetLocationId = '') {
     }
   }
   if (current.exit && normalizeLocationId(current.exit.to || '') === target) candidates.push(current.exit);
-  const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)).find(row => {
+  // Старые дороги «в мир» переходами не считаются: у места они ведут в его зону,
+  // у города — в соседний сектор той стороны, где стоят.
+  const authored = candidates.filter(row => !serverLegacyWorldExit(current, row)
+    && !(current.cityZone && serverLegacyCityExit(current, row))).find(row => {
     const point = tileToWorld(Number(row.tx || 0), Number(row.tz || 0), locationTileDims(current));
     const radius = Math.max(1.5, Number(row.radius || 2.4)) + 1.0;
     return Math.hypot(Number(p.x || 0) - point.x, Number(p.z || 0) - point.z) <= radius;
   }) || null;
   if (authored) return authored;
+  // Город занимает сектор целиком: его край ведёт прямо в соседний сектор той стороны.
+  const cityGate = ZONE_RUNTIME.cityGates(current.id).find(row => normalizeLocationId(row.to) === target);
+  if (cityGate && serverPlayerAtCityEdge(p, cityGate.side)) {
+    return { id: `gate_${cityGate.side}`, type: 'zoneGate', direction: cityGate.side, to: cityGate.to, entryKey: cityGate.entryKey };
+  }
   // Край места ведёт в зону мира, где это место стоит; край комнаты точки
   // мира — в зону точки, к её порталу.
   const parent = serverWorldPointRoomExit(rooms.get(String(p.roomId || ''))) || ZONE_RUNTIME.parentZoneView(current.id);
@@ -26497,7 +26548,8 @@ function serverFastTravelCapitals() {
   return (ZONE_RUNTIME.graph.capitals || []).map(locationId => ({
     locationId,
     name: serverLocationPublicName(locationId),
-    zone: ZONE_RUNTIME.graph.zones.find(zone => zone.places.some(place => place.locationId === locationId)) || null
+    // Столица занимает свой сектор целиком: её зона — она сама.
+    zone: zoneOfPlace(ZONE_RUNTIME.graph, locationId) || null
   })).filter(row => row.zone);
 }
 
@@ -27737,6 +27789,34 @@ function serverPointInsideClosedLocationBounds(x, z, bounds = null) {
   if (!bounds) return true;
   return Number(x) >= bounds.minX && Number(x) <= bounds.maxX
     && Number(z) >= bounds.minZ && Number(z) <= bounds.maxZ;
+}
+
+/**
+ * Игрок стоит у края города со стороны `side`. Полоса та же, что у мест (включая
+ * запас у старых дорог), а сторона — ближайшая к нему, как и у клиента.
+ */
+function serverPlayerAtCityEdge(p = {}, side = '') {
+  const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
+  if (!loc.cityZone || !serverPlayerAtPlaceEdge(p)) return false;
+  const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
+  const bounds = normalizedLocationPlayableBounds(loc);
+  const distances = [
+    ['north', tile.tz - bounds.minZ], ['south', bounds.maxZ - tile.tz],
+    ['west', tile.tx - bounds.minX], ['east', bounds.maxX - tile.tx]
+  ];
+  return distances.sort((a, b) => a[1] - b[1])[0][0] === side;
+}
+
+/** Сторона города, к которой ближе всего тайл: старые дороги «в мир» становятся её воротами. */
+function serverCitySideOfTile(loc = {}, row = {}) {
+  const bounds = normalizedLocationPlayableBounds(loc);
+  const tx = Number(row.tx || 0);
+  const tz = Number(row.tz || 0);
+  const distances = [
+    ['north', tz - bounds.minZ], ['south', bounds.maxZ - tz],
+    ['west', tx - bounds.minX], ['east', bounds.maxX - tx]
+  ];
+  return distances.sort((a, b) => a[1] - b[1])[0][0];
 }
 
 function serverPlayerAtPlaceEdge(p = {}) {
@@ -32450,7 +32530,7 @@ io.on('connection', (socket) => {
         return;
       }
       // В Сердцевину из пустоши не входят: только метро своей базы.
-      if (baseLoc.noGlobalMapEntry === true && !territoryGateEntry && !ZONE_RUNTIME.isZone(locationId) && ZONE_RUNTIME.isZone(p.locationId)) {
+      if (baseLoc.noGlobalMapEntry === true && !territoryGateEntry && !ZONE_RUNTIME.isSector(locationId) && ZONE_RUNTIME.isZone(p.locationId)) {
         if (typeof ack === 'function') ack({ ok: false, error: 'В Сердцевину входят только через платформу метро на базе своей фракции.' });
         return;
       }

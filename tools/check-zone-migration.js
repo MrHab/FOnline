@@ -17,9 +17,11 @@ const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const size = graph.grid.zoneKm;
 const centre = zone => ({ x: (zone.col + 0.5) * size, y: (zone.row + 0.5) * size });
-const yellow = graph.zones.find(zone => zone.mode === 'pvp');
-const red = graph.zones.find(zone => zone.mode === 'pvpFullDrop');
-const black = graph.zones.find(zone => zone.mode === 'pvpBlack');
+// Города занимают свои секторы целиком: для проверок пустоши берём обычные зоны.
+const yellow = graph.zones.find(zone => zone.mode === 'pvp' && !zone.city);
+const red = graph.zones.find(zone => zone.mode === 'pvpFullDrop' && !zone.city);
+const black = graph.zones.find(zone => zone.mode === 'pvpBlack' && !zone.city);
+const cityZone = graph.zones.find(zone => zone.city);
 
 // На карте в жёлтой зоне — в эту же зону.
 {
@@ -34,11 +36,18 @@ const black = graph.zones.find(zone => zone.mode === 'pvpBlack');
 for (const harsh of [red, black]) {
   const state = { globalMap: { onWorldMap: true, playerX: centre(harsh).x, playerY: centre(harsh).y } };
   const out = migrateSaveStateToZones(state, graph);
-  const landed = graph.zones.find(zone => zone.id === out.zoneId);
+  const landed = graph.zones.find(zone => (zone.city || zone.id) === out.zoneId);
   assert(['pve', 'peaceful'].includes(landed.mode), `${harsh.mode} moves to a safe colour, got ${landed.mode}`);
   const nearest = Math.min(...graph.zones.filter(zone => ['pve', 'peaceful'].includes(zone.mode))
     .map(zone => Math.hypot(zone.col - harsh.col, zone.row - harsh.row)));
   assert.equal(Math.hypot(landed.col - harsh.col, landed.row - harsh.row), nearest, 'the nearest safe zone');
+}
+// На карте в секторе города — в сам город, а не в пустую зону.
+{
+  const state = { globalMap: { onWorldMap: true, playerX: centre(cityZone).x, playerY: centre(cityZone).y } };
+  const out = migrateSaveStateToZones(state, graph);
+  assert.deepEqual([out.changed, out.zoneId], [true, cityZone.city], `a character on the map inside ${cityZone.city} wakes up in the city`);
+  assert.equal(state.currentLocationId, cityZone.city);
 }
 // В сцене мелкой клетки — в зону её точки.
 {

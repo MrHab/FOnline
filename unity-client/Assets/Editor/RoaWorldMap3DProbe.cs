@@ -123,6 +123,8 @@ namespace RealmOfAshes.EditorTools
             List<JObject> path = RoaWorldMapRoute.Find(byId, keysZone, scrapZone);
             Require(path.Count > 1, "no route from Keys to Scrap Town through open gates");
             report.AppendLine($"route {keysZone} → {scrapZone}: {path.Count - 1} zones; {RoaWorldMapRoute.Hint(path, "Лом")}");
+            string fromKeys = RoaWorldMapRoute.Hint(path, "Лом", "Ключи");
+            Require(fromKeys.Contains("выйдите из «Ключи», затем "), "the hint from inside a place does not say to leave it first: " + fromKeys);
             map.ShowRoute(path, zoneKm);
             Vector2 keys = PlacePoint(byId[keysZone], "settlement", zoneKm);
             map.SetPlayer(keys);

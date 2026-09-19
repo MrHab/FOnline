@@ -111,16 +111,21 @@ namespace RealmOfAshes.Game
             return count + " зон";
         }
 
-        /// <summary>Подсказка пути из первой зоны: в какие ворота идти и сколько зон ещё.</summary>
-        public static string Hint(IReadOnlyList<JObject> path, string targetName)
+        /// <summary>
+        /// Подсказка пути из первой зоны: в какие ворота идти и сколько зон ещё. Из места
+        /// (placeName) сначала выходят в его зону — подсказка говорит и об этом.
+        /// </summary>
+        public static string Hint(IReadOnlyList<JObject> path, string targetName, string placeName = "")
         {
             if (path == null || path.Count == 0) return string.Empty;
             string target = string.IsNullOrEmpty(targetName) ? "цели" : "«" + targetName + "»";
-            if (path.Count == 1) return "Путь к " + target + ": вы уже в этой зоне.";
+            string leave = string.IsNullOrEmpty(placeName) ? string.Empty : "выйдите из «" + placeName + "»";
+            if (path.Count == 1)
+                return "Путь к " + target + ": " + (leave.Length > 0 ? leave + " — цель в этой зоне." : "вы уже в этой зоне.");
             char side = SideTo(path[0], path[1]);
             string next = path[1]?["title"]?.ToString() ?? Id(path[1]);
-            return "Путь к " + target + ": " + GateName(side) + " ворота → " + next
-                + " · ещё " + ZonesWord(path.Count - 1);
+            return "Путь к " + target + ": " + (leave.Length > 0 ? leave + ", затем " : string.Empty)
+                + GateName(side) + " ворота → " + next + " · ещё " + ZonesWord(path.Count - 1);
         }
 
         private static int Key(int col, int row) { return col * 1000 + row; }

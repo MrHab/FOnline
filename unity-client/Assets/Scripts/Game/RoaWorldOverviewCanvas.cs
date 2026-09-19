@@ -381,7 +381,16 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(_routeTargetZone)) { _map3D?.ShowRoute(null, _zoneKm); return; }
             List<JObject> path = RoaWorldMapRoute.Find(_zonesById, CurrentZoneId(), _routeTargetZone);
             _map3D?.ShowRoute(path, _zoneKm);
-            if (_routeHint != null) _routeHint.text = RoaWorldMapRoute.Hint(path, _routeTargetName);
+            if (_routeHint != null) _routeHint.text = RoaWorldMapRoute.Hint(path, _routeTargetName, CurrentPlaceName());
+        }
+
+        /// <summary>Место, из которого игрок ещё должен выйти в свою зону; пусто, если он уже в зоне.</summary>
+        private string CurrentPlaceName()
+        {
+            if (!string.IsNullOrEmpty(SelfZoneId(Socket?.Session?.Self))) return string.Empty;
+            LocationDefinition current = Loader != null ? Loader.Current : null;
+            if (current == null || current.ExitZone == null) return string.Empty;
+            return string.IsNullOrEmpty(current.Name) ? "места" : current.Name;
         }
 
         /// <summary>Строка пути под миникартой следует за игроком: новая зона — новая подсказка.</summary>
@@ -399,10 +408,12 @@ namespace RealmOfAshes.Game
             }
             if (Time.unscaledTime < _nextRouteCheck) return;
             _nextRouteCheck = Time.unscaledTime + 0.5f;
-            string here = CurrentZoneId();
+            // Выход из места в его зону тоже меняет подсказку: «выйдите из…» больше не нужно.
+            string zone = CurrentZoneId();
+            string here = zone + "|" + CurrentPlaceName();
             if (here == _routeFromZone) return;
             _routeFromZone = here;
-            if (here == _routeTargetZone)
+            if (zone == _routeTargetZone)
             {
                 _routeHint.text = "Вы на месте: «" + _routeTargetName + "».";
                 _arrivedUntil = Time.unscaledTime + 8f;

@@ -27744,7 +27744,9 @@ function serverPlayerAtPlaceEdge(p = {}) {
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const tile = worldToTile(Number(p.x || 0), Number(p.z || 0), locationTileDims(loc));
   const bounds = normalizedLocationPlayableBounds(loc);
-  const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
+  // Клиент просит выход, едва сам вошёл в полосу, а сервер видит его на шаг
+  // позади: один тайл отставания прощается, иначе первый шаг в полосу отказывал.
+  const innerOffset = WORLD_MAP_EXIT_BAND_TILES;
   if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {

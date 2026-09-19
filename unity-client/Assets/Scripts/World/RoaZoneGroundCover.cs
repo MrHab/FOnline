@@ -326,6 +326,17 @@ namespace RealmOfAshes.World
                 Vector3 hub = RoaCoords.TileToWorld(zone.Spawn.Tx, zone.Spawn.Tz, w, d);
                 Add(new Vector2(hub.x, hub.z), 4.5f);
             }
+            // Якоря событий: здесь встают порталы к точкам мира — куст не должен
+            // закрывать их кольцо.
+            if (zone.Zone?["eventAnchors"] is JArray anchors)
+            {
+                foreach (JToken anchor in anchors)
+                {
+                    if (anchor?["tx"] == null || anchor["tz"] == null) continue;
+                    Vector3 world = RoaCoords.TileToWorld(anchor["tx"].ToObject<int>(), anchor["tz"].ToObject<int>(), w, d);
+                    Add(new Vector2(world.x, world.z), 4.5f);
+                }
+            }
             return cells;
         }
 

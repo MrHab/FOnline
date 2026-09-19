@@ -268,8 +268,8 @@ for (const file of files.sort()) {
     }
   }
 
-  // Полоса выхода: серверный предикат serverPlayerAtPlaceEdge
-  // (server.js:18668) — два крайних тайла внутри игровой зоны.
+  // Полоса выхода, которую видит игрок: два крайних тайла внутри игровой зоны
+  // (серверный serverPlayerAtPlaceEdge принимает на тайл шире — отставание позиции).
   const inner = EXIT_BAND_TILES - 1;
   const sides = { north: false, south: false, west: false, east: false };
   let bandReached = 0;

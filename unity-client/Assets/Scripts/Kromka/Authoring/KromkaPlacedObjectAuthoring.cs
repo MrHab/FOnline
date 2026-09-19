@@ -16,6 +16,9 @@ namespace Kromka.Authoring
         [SerializeField] private bool _serverAuthoritative;
         [SerializeField] private bool _blocksMovement = true;
         [SerializeField] private bool _blocksVision = true;
+        // Low cover keeps sight open but hides a crouched target right behind it.
+        // A boolean BlocksVision cannot say that, so it is a separate flag.
+        [SerializeField] private bool _lowCover;
 
         public string StableObjectId => _stableObjectId;
         public string ServerArchetypeId => _serverArchetypeId;
@@ -24,10 +27,11 @@ namespace Kromka.Authoring
         public bool ServerAuthoritative => _serverAuthoritative;
         public bool BlocksMovement => _blocksMovement;
         public bool BlocksVision => _blocksVision;
+        public bool ProvidesLowCover => _lowCover && !_blocksVision;
 
         public void Configure(string stableObjectId, string serverArchetypeId, string role,
                               string[] gameplayTags, bool serverAuthoritative,
-                              bool blocksMovement, bool blocksVision)
+                              bool blocksMovement, bool blocksVision, bool lowCover = false)
         {
             _stableObjectId = stableObjectId ?? string.Empty;
             _serverArchetypeId = serverArchetypeId ?? string.Empty;
@@ -36,6 +40,7 @@ namespace Kromka.Authoring
             _serverAuthoritative = serverAuthoritative;
             _blocksMovement = blocksMovement;
             _blocksVision = blocksVision;
+            _lowCover = lowCover && !blocksVision;
         }
     }
 }

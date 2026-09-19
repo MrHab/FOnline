@@ -420,7 +420,10 @@ namespace Kromka.EditorTools
                 ["x"] = Round(Mathf.Max(0.2f, bounds.size.x)),
                 ["z"] = Round(Mathf.Max(0.2f, bounds.size.z))
             };
-            row["vision"] = new JObject { ["blocks"] = marker.BlocksVision };
+            // Булев blocks не выражает низкое укрытие, поэтому оно пишется режимом.
+            row["vision"] = marker.ProvidesLowCover
+                ? new JObject { ["mode"] = "cover" }
+                : new JObject { ["blocks"] = marker.BlocksVision };
             row["unityAuthored"] = true;
             row["worldRevision"] = KromkaLocationAuthoring.CurrentWorldRevision;
             row.Remove("placement");

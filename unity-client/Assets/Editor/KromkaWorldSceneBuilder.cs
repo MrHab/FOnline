@@ -470,12 +470,20 @@ namespace Kromka.EditorTools
                     ? tagRows.Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).ToArray()
                     : Array.Empty<string>();
                 bool blocksMovement = !string.Equals(Text(row, "collision"), "none", StringComparison.OrdinalIgnoreCase);
-                bool blocksVision = row["vision"]?["blocks"]?.Value<bool>() ?? blocksMovement;
+                // Старые строки пишут vision.mode ("cover", "none"), а не vision.blocks.
+                // Если читать только blocks, укрытие молча становится стеной через
+                // запасной blocksMovement — так при переносе в Кромку (33a20ffd)
+                // бочки, верстаки, лом и грядки стали перекрывать обзор.
+                RoaAuthoredVision.Kind vision = RoaAuthoredVision.FromConfig(row["vision"] as JObject);
+                bool blocksVision = vision == RoaAuthoredVision.Kind.Unknown
+                    ? blocksMovement
+                    : vision == RoaAuthoredVision.Kind.Block;
+                bool lowCover = vision == RoaAuthoredVision.Kind.Cover;
                 string role = Text(row, "role");
                 if (string.IsNullOrWhiteSpace(role) && row["entity"]?["kind"] != null)
                     role = row["entity"]["kind"].Value<string>();
                 instance.AddComponent<KromkaPlacedObjectAuthoring>().Configure(
-                    id, Text(row, "model"), role, tags, true, blocksMovement, blocksVision);
+                    id, Text(row, "model"), role, tags, true, blocksMovement, blocksVision, lowCover);
                 Bridge(instance, id);
                 existingIds.Add(id);
             }

@@ -102,7 +102,7 @@ const getJson = route => new Promise((resolve, reject) => {
     const keysDefinition = (await getJson('/api/locations/settlement')).json.location;
     assert.equal(keysDefinition.generated, true, 'a city is built by the constructor like a zone');
     assert(keysDefinition.cityPlan?.bank?.rect, 'the city plan names the bank');
-    const landing = world(keysDefinition.entryFromNorth);
+    const landing = zoneWalk.cityWorld('settlement', keysDefinition.entryFromNorth);
     assert(Math.hypot(crossed.x - landing.x, crossed.z - landing.z) < 6,
       `arrives at the north side of the city: ${crossed.x},${crossed.z} vs ${landing.x},${landing.z}`);
     const wall = keysDefinition.cityPlan.wall;
@@ -118,7 +118,8 @@ const getJson = route => new Promise((resolve, reject) => {
     // --- обратно пешком: к северному краю города и назад в зону ---------------------------------
     // Улица от северных ворот к площади свободна по построению: идём по ней наружу.
     const state = { x: crossed.x, z: crossed.z };
-    assert(await driveTo(walker, state, 1, -157, 420), 'walked to the north edge of the city: ' + JSON.stringify(state));
+    const cityEdge = zoneWalk.cityEdge('settlement', 'north');
+    assert(await driveTo(walker, state, cityEdge.x, cityEdge.z, 420), 'walked to the north edge of the city: ' + JSON.stringify(state));
     const back = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
     assert(back.ok && back.locationId === home.id, 'the north edge of the city leads back into the zone: ' + JSON.stringify(back).slice(0, 300));
     const homeLanding = world(homeDef.entryFromSouth);

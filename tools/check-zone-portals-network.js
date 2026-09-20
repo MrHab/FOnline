@@ -97,7 +97,7 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
   zoneWalk.placeInZone(h, accounts, 'trade', groundsZone.id, nearPortal(groundsPortal));
   // Ключи собирает конструктор городов: ставим писаря на площадь, у доски работ.
   const keysCityDef = zoneWalk.cityDefinition('settlement');
-  zoneWalk.placeInZone(h, accounts, 'progression', 'settlement', world(keysCityDef.cityPlan.board));
+  zoneWalk.placeInZone(h, accounts, 'progression', 'settlement', zoneWalk.cityWorld('settlement', keysCityDef.cityPlan.board));
 
   await h.startServer();
   try {
@@ -178,7 +178,8 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     assert.equal(shownKeys.sectorGates.find(gate => gate.side === 'north')?.to, keysNorth.id);
     const clerkState = { x: Number(clerk.join.self?.x ?? clerk.join.x ?? 0), z: Number(clerk.join.self?.z ?? clerk.join.z ?? 0) };
     // Улица от площади к северным воротам свободна по построению: по ней и выходим.
-    assert(await zoneWalk.driveTo(h, clerk, clerkState, 1, -157, 700), 'the player walks to the north edge of Keys: ' + JSON.stringify(clerkState));
+    const keysEdge = zoneWalk.cityEdge('settlement', 'north');
+    assert(await zoneWalk.driveTo(h, clerk, clerkState, keysEdge.x, keysEdge.z, 700), 'the player walks to the north edge of Keys: ' + JSON.stringify(clerkState));
     const faraway = await changeLocation(clerk, { locationId: 'wasteland' });
     assert.equal(faraway.ok, false, 'the edge of a city does not carry the player across the world');
     const outOfKeys = await changeLocation(clerk, { locationId: keysNorth.id });

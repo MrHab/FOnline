@@ -23,16 +23,18 @@
 
 const crypto = require('node:crypto');
 
-const CITY_BUILDER_VERSION = 1;
+const CITY_BUILDER_VERSION = 2;
 const TILE = 2;
-const TILES = 160;
+// Город компактный, как в Albion: 160 × 160 м, от ворот до ворот ≈30 с бега. Зона
+// пустоши вдвое больше (320 м) — сектор с городом просто меньше остальных.
+const TILES = 80;
 const CENTRE = TILES / 2;
-// Стена стоит внутри сектора: снаружи остаётся поле, а край сектора — выход к соседям.
-const WALL_HALF = 46;
-const GATE_HALF = 4;
+// Стена стоит внутри локации: снаружи остаётся поле, а край — выход к соседям.
+const WALL_HALF = 34;
+const GATE_HALF = 3;
 const STREET_HALF = 3;
-const PLAZA_HALF = 9;
-const RING_RADIUS = 28;
+const PLAZA_HALF = 7;
+const RING_RADIUS = 18;
 const WALL_STEP = 3.6; // длина секции стены из лома в тайлах (7,2 м)
 const DIRECTIONS = Object.freeze({
   north: { entry: 'entryFromNorth', dx: 0, dz: -1 },
@@ -42,10 +44,10 @@ const DIRECTIONS = Object.freeze({
 });
 const DISTRICTS = Object.freeze({
   // Прямоугольники кварталов в тайлах от центра: [dx0, dz0, dx1, dz1].
-  bank: [12, -34, 34, -16],
-  market: [-34, -34, -12, -16],
-  workshop: [12, 16, 34, 34],
-  homes: [-34, 16, -12, 34]
+  bank: [6, -28, 26, -8],
+  market: [-26, -28, -6, -8],
+  workshop: [6, 8, 26, 28],
+  homes: [-26, 8, -6, 28]
 });
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
@@ -263,17 +265,18 @@ function buildCity(recipe, kit) {
   anchors.dispatcher = { tx: CENTRE + 6, tz: CENTRE - 2 };
   anchors.medic = { tx: CENTRE - 6, tz: CENTRE - 2 };
 
-  // Дороги: полоса плит вдоль каждой улицы и кольцо у площади.
+  // Дороги: сплошная полоса плит вдоль каждой улицы и кольцо у площади.
+  // Плита — 4,3 м в длину, поэтому шаг в два тайла кладёт её встык, без разрывов.
   let slab = 0;
   for (const gate of plan.gates) {
     const dir = DIRECTIONS[gate.dir];
-    for (let step = PLAZA_HALF; step <= WALL_HALF; step += 3) {
+    for (let step = PLAZA_HALF; step <= WALL_HALF; step += 2) {
       const tx = CENTRE + dir.dx * step;
       const tz = CENTRE + dir.dz * step;
       put(`street_${slab++}`, 'asphalt_slab', tx, tz, dir.dx ? 0 : 90, ['city-street', gate.dir]);
     }
   }
-  for (let angle = 0; angle < 360; angle += 15) {
+  for (let angle = 0; angle < 360; angle += 10) {
     const tx = Math.round(CENTRE + Math.cos(angle * Math.PI / 180) * RING_RADIUS);
     const tz = Math.round(CENTRE + Math.sin(angle * Math.PI / 180) * RING_RADIUS);
     put(`ring_${slab++}`, 'asphalt_slab', tx, tz, angle % 90 < 45 ? 0 : 90, ['city-street', 'ring']);
@@ -281,7 +284,7 @@ function buildCity(recipe, kit) {
 
   // --- за стеной: поле, редкие кусты и сухие деревья -----------------------------------------
   let wildIndex = 0;
-  for (let i = 0; i < 260; i += 1) {
+  for (let i = 0; i < 120; i += 1) {
     const tx = rng.int(6, TILES - 7);
     const tz = rng.int(6, TILES - 7);
     const outside = tx < wall.min - 2 || tx > wall.max + 2 || tz < wall.min - 2 || tz > wall.max + 2;
@@ -389,7 +392,13 @@ function buildCity(recipe, kit) {
     worldZones: [],
     objects: [...objects, ...carried],
     containers, anomalyFields,
-    zone: { col: plan.col, row: plan.row, n: plan.n, region: plan.region, mode: plan.mode, city: plan.cityId },
+    // `cityWall` в метрах: за стеной клиент сыплет мелкий покров пустоши, внутри —
+    // нет, там улицы и дворы, а не бурьян.
+    zone: {
+      col: plan.col, row: plan.row, n: plan.n, region: plan.region, mode: plan.mode, city: plan.cityId,
+      cityWall: { minX: round2(tileCentre(wall.min)), minZ: round2(tileCentre(wall.min)),
+                  maxX: round2(tileCentre(wall.max)), maxZ: round2(tileCentre(wall.max)) }
+    },
     cityPlan: {
       faction: plan.faction,
       wall: { min: wall.min, max: wall.max },

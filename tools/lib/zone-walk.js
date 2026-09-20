@@ -40,6 +40,21 @@ function world(tile) {
   return { x: (tile.tx - TILES / 2 + 0.5) * 2, z: (tile.tz - TILES / 2 + 0.5) * 2 };
 }
 
+/** То же для города: он компактнее зоны, и половина карты у него своя. */
+function cityWorld(locationId, tile) {
+  const half = cityDefinition(locationId).map.width / 4;
+  return { x: (tile.tx - half + 0.5) * 2, z: (tile.tz - half + 0.5) * 2 };
+}
+
+/** Край города со стороны `side` в метрах: за ним начинается соседний сектор. */
+function cityEdge(locationId, side = 'north') {
+  const half = cityDefinition(locationId).map.width / 2;
+  const inset = half - 3;
+  if (side === 'north') return { x: 1, z: -inset };
+  if (side === 'south') return { x: 1, z: inset };
+  return side === 'west' ? { x: -inset, z: 1 } : { x: inset, z: 1 };
+}
+
 /** Записать в сохранение, что персонаж стоит в зоне (до запуска сервера). */
 function placeInZone(h, accounts, role, locationId, point) {
   const users = JSON.parse(fs.readFileSync(path.join(h.DATA_DIR, 'users.json')));
@@ -73,4 +88,4 @@ async function driveTo(h, account, state, x, z, maxFrames = 160) {
   return false;
 }
 
-module.exports = { cityDefinition, delay, driveTo, placeInZone, world };
+module.exports = { cityDefinition, cityEdge, cityWorld, delay, driveTo, placeInZone, world };

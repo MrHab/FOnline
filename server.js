@@ -1161,7 +1161,7 @@ function locationCapitalStorageObject(loc = {}) {
   // В городе-секторе хранилище стоит в банке: конструктор городов даёт его место.
   const bank = loc.cityPlan && typeof loc.cityPlan === 'object' ? loc.cityPlan.bank : null;
   const point = bank?.storage
-    ? { x: (Number(bank.storage.tx) - 80 + 0.5) * 2, z: (Number(bank.storage.tz) - 80 + 0.5) * 2 }
+    ? tileToWorld(Number(bank.storage.tx), Number(bank.storage.tz), locationTileDims(loc))
     : { x: def.x, z: def.z };
   return {
     id: `capital_storage_${faction}`,

@@ -21,7 +21,7 @@ const auctioneer = (sluice.objects || []).find(object => (object.entity || {}).s
 assert(auctioneer, 'в Створе нет аукционера');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Хранилище Управы стоит в банке Створа: место даёт конструктор городов.
-const storagePoint = require('./lib/zone-walk').world(sluice.cityPlan.bank.storage);
+const storagePoint = require('./lib/zone-walk').cityWorld('sluiceCity', sluice.cityPlan.bank.storage);
 
 (async () => {
   await h.bootstrapCharacters(accounts);

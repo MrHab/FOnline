@@ -51,7 +51,7 @@ const accounts = {};
 // Рядом с диспетчером: он стоит на площади столицы, в паре тайлов от её центра.
 function nearDispatcher(locationId) {
   const plan = zoneWalk.cityDefinition(locationId).cityPlan;
-  return zoneWalk.world({ tx: plan.dispatcher.tx + 3, tz: plan.dispatcher.tz + 2 });
+  return zoneWalk.cityWorld(locationId, { tx: plan.dispatcher.tx + 3, tz: plan.dispatcher.tz + 2 });
 }
 
 /** Точка диспетчера, как её видит сам сервер: NPC мог встать рядом, а не в тайл. */

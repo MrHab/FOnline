@@ -19,7 +19,8 @@ const rules = travel.normalizeFastTravelRules(economy.fastTravel);
 const capitals = economy.dangerCells.capitals.map(id => ({ locationId: id, name: id, zone: zoneOfPlace(graph, id) }));
 
 assert.equal(capitals.length, 6, 'six faction capitals');
-for (const row of capitals) assert(row.zone && row.zone.mode === 'peaceful', `${row.locationId} stands in a peaceful zone`);
+// Столица занимает свой сектор целиком: ворота соседей ведут прямо в неё.
+for (const row of capitals) assert(row.zone && row.zone.city === row.locationId, `${row.locationId} holds a sector of its own`);
 assert(economy.fastTravel && rules.baseFee > 0 && rules.feePerKm > 0, 'the fees come from economy.json');
 
 const from = capitals[0];

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -63,8 +64,29 @@ namespace RealmOfAshes.World
         /// </summary>
         [JsonIgnore] public ParentZoneInfo RoomParentZone;
 
-        /// <summary>Куда выводит край: зона комнаты точки мира, иначе зона места.</summary>
-        [JsonIgnore] public ParentZoneInfo ExitZone { get { return RoomParentZone ?? ParentZone; } }
+        /// <summary>Город занимает сектор: у каждой его стороны свои ворота в соседний сектор.</summary>
+        [JsonProperty("sectorGates")] public List<SectorGateInfo> SectorGates;
+
+        /// <summary>Куда выводит край: зона комнаты точки мира, иначе зона места. У города — сторона.</summary>
+        [JsonIgnore]
+        public ParentZoneInfo ExitZone
+        {
+            get
+            {
+                if (RoomParentZone != null) return RoomParentZone;
+                if (ParentZone != null) return ParentZone;
+                return SectorGates != null && SectorGates.Count > 0 ? SectorGates[0].AsZone() : null;
+            }
+        }
+
+        /// <summary>Ворота города со стороны `side` («north», «east», «south», «west»).</summary>
+        public ParentZoneInfo SectorGate(string side)
+        {
+            if (SectorGates == null) return null;
+            for (int i = 0; i < SectorGates.Count; i++)
+                if (string.Equals(SectorGates[i].Side, side, StringComparison.Ordinal)) return SectorGates[i].AsZone();
+            return null;
+        }
 
         [JsonIgnore]
         public bool CanExitAtEdge { get { return AllowEdgeExit != false; } }
@@ -186,6 +208,23 @@ namespace RealmOfAshes.World
         [JsonProperty("mode")] public string Mode;
         [JsonProperty("entryKey")] public string EntryKey;
         [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
+    }
+
+    /// <summary>Ворота города: сектор занят городом целиком, и у каждой его стороны свой сосед.</summary>
+    public sealed class SectorGateInfo
+    {
+        [JsonProperty("side")] public string Side;
+        [JsonProperty("id")] public string Id;
+        [JsonProperty("n")] public int N;
+        [JsonProperty("title")] public string Title;
+        [JsonProperty("mode")] public string Mode;
+        [JsonProperty("entryKey")] public string EntryKey;
+        [JsonProperty("targetZoneRules")] public JObject TargetZoneRules;
+
+        public ParentZoneInfo AsZone()
+        {
+            return new ParentZoneInfo { Id = Id, N = N, Title = Title, Mode = Mode, EntryKey = EntryKey, TargetZoneRules = TargetZoneRules };
+        }
     }
 
     public sealed class LocationTransition

@@ -103,13 +103,30 @@ namespace RealmOfAshes.EditorTools
                 var gates = new StringBuilder();
                 foreach (var side in new[] { ("north", 'n'), ("east", 'e'), ("south", 's'), ("west", 'w') })
                     if (zone["edges"]?[side.Item1]?["open"]?.ToObject<bool>() == true) gates.Append(side.Item2);
+                // Город занимает сектор целиком: его локация и есть сектор.
+                string city = zone["city"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(city))
+                {
+                    if (!nodeByLocation.TryGetValue(city, out string cityNode) || !authored.TryGetNode(cityNode, out RoaGlobalMapNodeAnchor cityAnchor))
+                    {
+                        misplaced.Add(city + ": no anchor in the scene");
+                    }
+                    else
+                    {
+                        Vector2 cityPoint = map.LocalToPoint(authored.transform.InverseTransformPoint(cityAnchor.transform.position));
+                        checkedPlaces += 1;
+                        if (Mathf.FloorToInt(cityPoint.x / zoneKm) != col || Mathf.FloorToInt(cityPoint.y / zoneKm) != row)
+                            misplaced.Add($"{city}: scene point {cityPoint.x:0.0},{cityPoint.y:0.0} lies outside its own sector {zone["id"]}");
+                    }
+                }
                 var row0 = new JObject
                 {
-                    ["id"] = zone["id"], ["n"] = zone["n"], ["col"] = col, ["row"] = row, ["title"] = zone["title"],
-                    ["mode"] = zone["mode"], ["gates"] = gates.ToString(), ["places"] = places
+                    ["id"] = string.IsNullOrEmpty(city) ? zone["id"] : city, ["n"] = zone["n"], ["col"] = col, ["row"] = row,
+                    ["title"] = zone["title"], ["mode"] = zone["mode"], ["gates"] = gates.ToString(), ["places"] = places
                 };
+                if (!string.IsNullOrEmpty(city)) row0["city"] = city;
                 zones.Add(row0);
-                byId[zone["id"].ToString()] = row0;
+                byId[row0["id"].ToString()] = row0;
             }
             report.AppendLine($"places checked {checkedPlaces}, worst offset {worst:0.00} km");
             foreach (string row in misplaced) report.AppendLine("  " + row);
@@ -161,8 +178,12 @@ namespace RealmOfAshes.EditorTools
         private static string ZoneOfPlace(List<JObject> zones, string locationId)
         {
             foreach (JObject zone in zones)
+            {
+                // Город занимает сектор целиком: его сектор — он сам.
+                if ((zone["city"]?.ToString() ?? string.Empty) == locationId) return zone["id"].ToString();
                 foreach (JToken place in zone["places"] as JArray ?? new JArray())
                     if (place["id"]?.ToString() == locationId) return zone["id"].ToString();
+            }
             return string.Empty;
         }
 

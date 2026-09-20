@@ -8,7 +8,7 @@
 // Та же функция работает при входе (восстановленные бэкапы) и в инструменте
 // tools/migrate-saves-to-zones.js. Модуль чистый.
 
-const { zoneAtPoint } = require('./zone-graph');
+const { zoneAtPoint, zoneLocationId } = require('./zone-graph');
 
 const SAFE_MODES = Object.freeze(['peaceful', 'pve']);
 const HARSH_MODES = Object.freeze(['pvpFullDrop', 'pvpBlack']);
@@ -47,11 +47,12 @@ function migrateSaveStateToZones(state, graph) {
   if (point) {
     const zone = zoneForMigration(graph, point);
     if (zone) {
-      state.currentLocationId = zone.id;
-      // Центр зоны: сервер при входе найдёт свободное место рядом.
+      // Сектор города — сам город: персонаж просыпается в нём, а не в пустой зоне.
+      state.currentLocationId = zoneLocationId(zone);
+      // Центр сектора: сервер при входе найдёт свободное место рядом.
       state.player = { ...(state.player || {}), x: 0, z: 0 };
       delete state.serverLocationContext;
-      Object.assign(result, { changed: true, zoneId: zone.id, reason: onMap ? 'globalMap' : 'dangerCell' });
+      Object.assign(result, { changed: true, zoneId: zoneLocationId(zone), reason: onMap ? 'globalMap' : 'dangerCell' });
     }
   }
   // Следы путешествия по карте больше ничего не значат.

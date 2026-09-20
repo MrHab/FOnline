@@ -67,7 +67,7 @@ function roadCrossing(points, vertical, line, from, to) {
   return null;
 }
 
-function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, overrides = {} }) {
+function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, locationNames = {}, locationModes = {}, overrides = {} }) {
   const mapGrid = globalMap.grid;
   const cellKm = Number(mapGrid.cellKm || 10);
   const pointKm = cellKm / Number(mapGrid.cellPoints || 10);
@@ -139,8 +139,31 @@ function buildZoneGraph({ globalMap, contour, dangerConfig, regionNames = {}, lo
     }
   }
 
+  // Город занимает сектор целиком: его локация и есть зона, ворота соседей ведут
+  // прямо в неё, портала внутри сектора нет, а правила сектора — правила города.
+  const cityIds = new Set((overrides.cities || []).filter(Boolean));
+  const cityNames = new Map();
+  for (const zone of zones.values()) {
+    const city = zone.places.find(place => cityIds.has(place.locationId));
+    if (!city) continue;
+    const rest = zone.places.filter(place => place.locationId !== city.locationId);
+    if (rest.length) {
+      throw new Error(`zone graph: the city ${city.locationId} shares zone ${zone.id} with ${rest.map(place => place.locationId).join(', ')}`);
+    }
+    zone.city = city.locationId;
+    zone.places = [];
+    zone.mode = String(locationModes[city.locationId] || zone.mode);
+    cityNames.set(zone.id, city.name);
+  }
+
   [...zones.values()].sort((a, b) => a.row - b.row || a.col - b.col).forEach((zone, index) => {
     zone.n = index + 1;
+    if (zone.city) {
+      // У города своё имя и без номера: в воротах соседа игрок читает «Ключи».
+      zone.name = String(cityNames.get(zone.id) || locationNames[zone.city] || zone.city);
+      zone.title = zone.name;
+      return;
+    }
     zone.name = String(overrides.names?.[zone.id] || regionNames[zone.region] || zone.region);
     zone.title = `${zone.name} №${zone.n}`;
   });
@@ -204,8 +227,18 @@ function neighbour(graph, id, side) {
   return edge && edge.open ? zoneById(graph, edge.to) : null;
 }
 
+/** Локация сектора: у города — он сам, у обычной зоны — её сгенерированная локация. */
+function zoneLocationId(zone) { return String(zone?.city || zone?.id || ''); }
+
+/** Сектор по id его локации: принимает и `z_CC_RR`, и город («settlement»). */
+function zoneOfLocation(graph, locationId) {
+  const id = String(locationId || '');
+  return zoneById(graph, id) || graph.zones.find(zone => zone.city === id) || null;
+}
+
 function zoneOfPlace(graph, locationId) {
-  return graph.zones.find(zone => zone.places.some(place => place.locationId === locationId)) || null;
+  return graph.zones.find(zone => zone.city === locationId
+    || zone.places.some(place => place.locationId === locationId)) || null;
 }
 
 /** Зона точки карты (координаты в километрах карты); вне мира — ближайшая зона. */
@@ -262,12 +295,14 @@ function unreachableZones(graph) {
 function zoneRecipe(graph, id, overrides = {}) {
   const zone = zoneById(graph, id);
   if (!zone) throw new Error(`zone graph: unknown zone ${id}`);
+  if (zone.city) throw new Error(`zone graph: ${id} is the city ${zone.city}, it is not generated`);
   return {
     zoneId: zone.id, name: zone.title, seed: zone.seed, biome: zone.region, groundPreset: zone.ground,
     mode: zone.mode, difficulty: zone.difficulty, col: zone.col, row: zone.row, n: zone.n,
     gates: Object.entries(zone.edges).filter(([, edge]) => edge.open).map(([dir, edge]) => {
       const other = zoneById(graph, edge.to);
-      return { dir, to: edge.to, toTitle: other.title, toMode: other.mode, along: edge.along, road: !!edge.road };
+      // Сосед‑город принимает прямо в свою локацию: ворота ведут в неё, а не в зону.
+      return { dir, to: zoneLocationId(other), toTitle: other.title, toMode: other.mode, along: edge.along, road: !!edge.road };
     }),
     places: zone.places.map(place => ({
       locationId: place.locationId, name: place.name, u: place.u, v: place.v, ...(place.hidden ? { hidden: true } : {})
@@ -278,5 +313,6 @@ function zoneRecipe(graph, id, overrides = {}) {
 
 module.exports = {
   GRAPH_VERSION, SCHEMA, SIDES, ZONE_KM,
-  buildZoneGraph, neighbour, route, unreachableZones, zoneAtPoint, zoneById, zoneId, zoneOfPlace, zoneRecipe
+  buildZoneGraph, neighbour, route, unreachableZones,
+  zoneAtPoint, zoneById, zoneId, zoneLocationId, zoneOfLocation, zoneOfPlace, zoneRecipe
 };

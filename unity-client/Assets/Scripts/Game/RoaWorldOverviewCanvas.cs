@@ -326,6 +326,8 @@ namespace RealmOfAshes.Game
                 : (zone["title"]?.ToString() ?? RoaWorldMapRoute.Id(zone));
             var body = new System.Text.StringBuilder();
             if (_selectedPlace != null) body.Append("В зоне: ").Append(zone["title"]).Append('\n');
+            bool isCity = !string.IsNullOrEmpty(zone["city"]?.ToString());
+            if (isCity) body.Append("Город занимает сектор целиком: ворота соседей ведут прямо в него.\n");
             body.Append("Зона ").Append(DangerRulesText(zone["mode"]?.ToString())).Append('\n');
             string gates = zone["gates"]?.ToString() ?? string.Empty;
             var open = new List<string>();
@@ -338,7 +340,7 @@ namespace RealmOfAshes.Game
             List<JObject> path = RoaWorldMapRoute.Find(_zonesById, from, RoaWorldMapRoute.Id(zone));
             if (string.IsNullOrEmpty(from)) body.Append("Путь проложить нельзя: вы не в зоне мира.");
             else if (path.Count == 0) body.Append("Пути туда через открытые ворота нет.");
-            else if (path.Count == 1) body.Append("Вы в этой зоне.");
+            else if (path.Count == 1) body.Append("Вы уже здесь.");
             else body.Append("Путь: ").Append(RoaWorldMapRoute.ZonesWord(path.Count - 1)).Append(" через ворота.");
             _cardBody.text = body.ToString();
             bool routed = _routeTargetZone == RoaWorldMapRoute.Id(zone);
@@ -438,6 +440,17 @@ namespace RealmOfAshes.Game
                     number.color = new Color(1f, 1f, 1f, 0.72f);
                     number.text = "№" + zone["n"];
                     PlaceViewLabel(number, centre + new Vector2(0f, 12f));
+                }
+                // Город занял сектор целиком: его имя стоит в центре сектора и видно всегда.
+                string city = zone["city"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(city) && _map3D.PointToScreen(ZoneCentre(zone), 0.35f, out Vector2 cityAt))
+                {
+                    bool capital = _capitals.Contains(city);
+                    Text name = TakeViewLabel(ref used);
+                    name.fontSize = capital ? 14 : 12;
+                    name.color = capital ? Accent : Ink;
+                    name.text = (capital ? "◆ " : "■ ") + (zone["title"]?.ToString() ?? city);
+                    PlaceViewLabel(name, cityAt + new Vector2(0f, -6f));
                 }
                 foreach (JToken token in zone["places"] as JArray ?? new JArray())
                 {
@@ -618,6 +631,25 @@ namespace RealmOfAshes.Game
                 number.alignment = TextAnchor.UpperLeft;
                 number.text = zone["n"]?.ToString() ?? string.Empty;
                 SetLabelRect(number, cell + new Vector2(2f, -2f), new Vector2(scale, scale * 0.4f), new Vector2(0f, 1f));
+                // Город занимает сектор: его знак и имя стоят в центре клетки.
+                string cityId = zone["city"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(cityId))
+                {
+                    bool cityCapital = _capitals.Contains(cityId);
+                    Vector2 middle = cell + new Vector2(scale * 0.5f, -scale * 0.5f);
+                    Text mark = TakeLabel(ref used);
+                    mark.fontSize = cityCapital ? 16 : 13;
+                    mark.color = cityCapital ? Accent : Ink;
+                    mark.alignment = TextAnchor.MiddleCenter;
+                    mark.text = cityCapital ? "◆" : "■";
+                    SetLabelRect(mark, middle, new Vector2(18f, 18f), new Vector2(0.5f, 0.5f));
+                    Text cityName = TakeLabel(ref used);
+                    cityName.fontSize = cityCapital ? 12 : 10;
+                    cityName.color = cityCapital ? Accent : Ink;
+                    cityName.alignment = TextAnchor.UpperCenter;
+                    cityName.text = zone["title"]?.ToString() ?? cityId;
+                    SetLabelRect(cityName, middle + new Vector2(0f, -8f), new Vector2(scale * 2.4f, 16f), new Vector2(0.5f, 1f));
+                }
                 foreach (JToken token in zone["places"] as JArray ?? new JArray())
                 {
                     if (!(token is JObject place)) continue;

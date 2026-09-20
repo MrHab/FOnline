@@ -19,13 +19,19 @@ const overridesFile = path.join(root, 'data', 'kromka', 'zone-graph.overrides.js
 function buildFromData() {
   const seed = readJson('data', 'kromka', 'world-layout.seed.json');
   const locations = readJson('data', 'kromka', 'locations.json');
+  const overrides = fs.existsSync(overridesFile) ? JSON.parse(fs.readFileSync(overridesFile, 'utf8')) : {};
+  // Город занимает сектор целиком, и правила сектора — правила самой городской локации.
+  const locationModes = Object.fromEntries((overrides.cities || [])
+    .map(id => [id, readJson('data', 'locations', `${id}.json`).pvpMode])
+    .filter(([, mode]) => mode));
   return buildZoneGraph({
     globalMap: readJson('data', 'global-map.json'),
     contour: readJson('data', 'kromka', 'global-map-playable.json'),
     dangerConfig: loadWorldEconomy(path.join(root, 'data', 'kromka', 'economy.json')).dangerCells,
     regionNames: Object.fromEntries(seed.regions.map(region => [region.id, region.displayName || region.id])),
     locationNames: Object.fromEntries(locations.locations.map(row => [row.id, row.displayName || row.id])),
-    overrides: fs.existsSync(overridesFile) ? JSON.parse(fs.readFileSync(overridesFile, 'utf8')) : {}
+    locationModes,
+    overrides
   });
 }
 

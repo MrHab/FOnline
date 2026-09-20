@@ -385,7 +385,7 @@
      "name": "Гнездовье Рыхляков",
      "u": 0.3,
      "v": 0.7,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -738,8 +738,8 @@
    "col": 12,
    "row": 2,
    "n": 21,
-   "name": "Балансовый спуск",
-   "title": "Балансовый спуск №21",
+   "name": "Бункер «Баланс»",
+   "title": "Бункер «Баланс»",
    "region": "zero_basin",
    "mode": "peaceful",
    "difficulty": 5,
@@ -772,17 +772,9 @@
    "roads": [
     "zero_admin_access"
    ],
-   "places": [
-    {
-     "locationId": "balanceBunker",
-     "kind": "complex",
-     "name": "Бункер «Баланс»",
-     "u": 0.35,
-     "v": 0.45,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "balanceBunker"
   },
   {
    "id": "z_13_02",
@@ -2102,7 +2094,7 @@
      "name": "Овраг Слухачей",
      "u": 0.6,
      "v": 0.15,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -2656,8 +2648,8 @@
    "col": 14,
    "row": 5,
    "n": 69,
-   "name": "Меловая долина",
-   "title": "Меловая долина №69",
+   "name": "Меловой двор",
+   "title": "Меловой двор",
    "region": "chalk_lowland",
    "mode": "peaceful",
    "difficulty": 3,
@@ -2690,17 +2682,9 @@
    "roads": [
     "tract_main"
    ],
-   "places": [
-    {
-     "locationId": "secondHaven",
-     "kind": "settlement",
-     "name": "Меловой двор",
-     "u": 0.85,
-     "v": 0.5,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "secondHaven"
   },
   {
    "id": "z_15_05",
@@ -3706,8 +3690,8 @@
    "col": 6,
    "row": 7,
    "n": 95,
-   "name": "Перекрёстная равнина",
-   "title": "Перекрёстная равнина №95",
+   "name": "Перекрёсток",
+   "title": "Перекрёсток",
    "region": "tract_isthmus",
    "mode": "peaceful",
    "difficulty": 1,
@@ -3742,17 +3726,9 @@
     "tract_main",
     "zero_service_line"
    ],
-   "places": [
-    {
-     "locationId": "caravanCamp",
-     "kind": "settlement",
-     "name": "Перекрёсток",
-     "u": 0.25,
-     "v": 0.75,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "caravanCamp"
   },
   {
    "id": "z_07_07",
@@ -4332,7 +4308,7 @@
      "name": "Колония Пыльников",
      "u": 0.1,
      "v": 0.7,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -5124,7 +5100,7 @@
      "name": "Сортировочные поля",
      "u": 0.9,
      "v": 0.8,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -5200,8 +5176,8 @@
     "east": {
      "to": "z_08_09",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     }
    },
    "roads": [
@@ -5239,8 +5215,8 @@
     "west": {
      "to": "z_07_09",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     },
     "east": {
      "to": "z_09_09",
@@ -5502,8 +5478,8 @@
    "col": 14,
    "row": 9,
    "n": 137,
-   "name": "Контурная долина",
-   "title": "Контурная долина №137",
+   "name": "Контур-3",
+   "title": "Контур-3",
    "region": "glasslands",
    "mode": "peaceful",
    "difficulty": 4,
@@ -5532,17 +5508,9 @@
     }
    },
    "roads": [],
-   "places": [
-    {
-     "locationId": "relayStation",
-     "kind": "settlement",
-     "name": "Контур-3",
-     "u": 0.2,
-     "v": 0.08,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "relayStation"
   },
   {
    "id": "z_15_09",
@@ -5704,8 +5672,8 @@
    "col": 3,
    "row": 10,
    "n": 142,
-   "name": "Раздольная долина",
-   "title": "Раздольная долина №142",
+   "name": "Раздолье",
+   "title": "Раздолье",
    "region": "ore_arc",
    "mode": "peaceful",
    "difficulty": 2,
@@ -5738,17 +5706,9 @@
    "roads": [
     "ore_freight_rail"
    ],
-   "places": [
-    {
-     "locationId": "scrapTown",
-     "kind": "settlement",
-     "name": "Раздолье",
-     "u": 0.8,
-     "v": 0.5,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "scrapTown"
   },
   {
    "id": "z_04_10",
@@ -5976,10 +5936,10 @@
    "col": 9,
    "row": 10,
    "n": 148,
-   "name": "Ключевская долина",
-   "title": "Ключевская долина №148",
+   "name": "Ключи",
+   "title": "Ключи",
    "region": "middle_vein",
-   "mode": "pvp",
+   "mode": "peaceful",
    "difficulty": 1,
    "ground": "river_loam",
    "seed": 276984956,
@@ -6005,33 +5965,18 @@
     "east": {
      "to": "z_10_10",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     }
    },
    "roads": [
     "ore_freight_rail",
-    "tesma_service_road"
+    "tesma_service_road",
+    "tract_main"
    ],
-   "places": [
-    {
-     "locationId": "roadOutpost",
-     "kind": "outpost",
-     "name": "Застава 17",
-     "u": 0.4,
-     "v": 0.85,
-     "road": true
-    },
-    {
-     "locationId": "settlement",
-     "kind": "settlement",
-     "name": "Ключи",
-     "u": 0.75,
-     "v": 0.25,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "settlement"
   },
   {
    "id": "z_10_10",
@@ -6061,8 +6006,8 @@
     "west": {
      "to": "z_09_10",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     },
     "east": {
      "to": "z_11_10",
@@ -6076,7 +6021,16 @@
     "ore_freight_rail",
     "tract_main"
    ],
-   "places": [],
+   "places": [
+    {
+     "locationId": "roadOutpost",
+     "kind": "outpost",
+     "name": "Застава 17",
+     "u": 0.25,
+     "v": 0.9,
+     "road": true
+    }
+   ],
    "authored": false
   },
   {
@@ -6688,7 +6642,7 @@
      "name": "Водозабор «Сухой»",
      "u": 0.55,
      "v": 0.55,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -6952,7 +6906,7 @@
      "name": "Шахта «Три смены»",
      "u": 0.9,
      "v": 0.6,
-     "road": false
+     "road": true
     }
    ],
    "authored": false
@@ -7649,8 +7603,8 @@
    "col": 9,
    "row": 13,
    "n": 190,
-   "name": "Створная долина",
-   "title": "Створная долина №190",
+   "name": "Створ",
+   "title": "Створ",
    "region": "northern_sluices",
    "mode": "peaceful",
    "difficulty": 2,
@@ -7683,17 +7637,9 @@
    "roads": [
     "tesma_service_road"
    ],
-   "places": [
-    {
-     "locationId": "sluiceCity",
-     "kind": "settlement",
-     "name": "Створ",
-     "u": 0.3,
-     "v": 0.1,
-     "road": true
-    }
-   ],
-   "authored": false
+   "places": [],
+   "authored": false,
+   "city": "sluiceCity"
   },
   {
    "id": "z_10_13",

@@ -9,12 +9,27 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { zoneById, zoneRecipe } = require('./zone-graph');
+const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require('./zone-graph');
 const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
 
 const METRES = TILES * 2;
 const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
+// Город — сектор целиком: приходящий из соседнего сектора встаёт у своей стороны
+// города, но за выходной полосой (2 тайла), иначе его тут же вынесет обратно.
+const CITY_ENTRY_INSET = 5;
+
+/** Точки входа города по сторонам: север — малые tz, запад — малые tx. */
+function cityEntryPoints(bounds = {}) {
+  const midX = Math.round((Number(bounds.minX || 0) + Number(bounds.maxX || 0)) / 2);
+  const midZ = Math.round((Number(bounds.minZ || 0) + Number(bounds.maxZ || 0)) / 2);
+  return {
+    entryFromNorth: { tx: midX, tz: Math.min(midZ, Number(bounds.minZ || 0) + CITY_ENTRY_INSET) },
+    entryFromSouth: { tx: midX, tz: Math.max(midZ, Number(bounds.maxZ || 0) - CITY_ENTRY_INSET) },
+    entryFromWest: { tx: Math.min(midX, Number(bounds.minX || 0) + CITY_ENTRY_INSET), tz: midZ },
+    entryFromEast: { tx: Math.max(midX, Number(bounds.maxX || 0) - CITY_ENTRY_INSET), tz: midZ }
+  };
+}
 
 /**
  * Что в закреплённой зоне разошлось с графом: ворота на каждой открытой стороне
@@ -28,7 +43,8 @@ function frozenZoneProblems(graph, definition) {
   const gates = (definition.transitions || []).filter(row => row.type === 'zoneGate');
   for (const [side, edge] of Object.entries(zone.edges || {})) {
     const gate = gates.find(row => row.direction === side);
-    if (edge.open && (!gate || gate.to !== edge.to)) problems.push(`${zone.id}: the ${side} gate must lead to ${edge.to}`);
+    const target = zoneLocationId(zoneById(graph, edge.to));
+    if (edge.open && (!gate || gate.to !== target)) problems.push(`${zone.id}: the ${side} gate must lead to ${target}`);
     if (!edge.open && gate) problems.push(`${zone.id}: the ${side} side is closed in the graph but has a gate`);
     if (edge.open && !definition[SIDE_ENTRY[side]]) problems.push(`${zone.id}: no ${SIDE_ENTRY[side]} for arrivals from the ${side}`);
   }
@@ -44,7 +60,9 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
   let catalog = null;
   const authoredDir = path.join(zonesDir, 'authored');
   const built = new Set();
-  const ids = new Set(graph.zones.map(zone => zone.id));
+  // Города — тоже секторы, но их локации авторские: конструктор их не собирает.
+  const ids = new Set(graph.zones.filter(zone => !zone.city).map(zone => zone.id));
+  const cityZones = graph.zones.filter(zone => zone.city);
 
   function stub(zone) {
     return normalize({
@@ -61,13 +79,56 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
 
   function registerStubs(locations) {
     for (const zone of graph.zones) {
+      if (zone.city) continue;
       if (locations[zone.id] && !locations[zone.id].zoneStub) continue;
       locations[zone.id] = stub(zone);
     }
-    return graph.zones.length;
+    return ids.size;
   }
 
   function isZone(id) { return ids.has(String(id || '')); }
+
+  /** Сектор мира: сгенерированная зона или город, занявший сектор целиком. */
+  function isSector(id) { return isZone(id) || !!cityOf(id); }
+
+  function cityOf(id) { return cityZones.find(zone => zone.city === String(id || '')) || null; }
+
+  /** Города-секторы: `[{ locationId, zone }]`. */
+  function cities() { return cityZones.map(zone => ({ locationId: zone.city, zone })); }
+
+  /**
+   * Что добавить авторской локации города, чтобы сектор работал: блок зоны и
+   * четыре точки входа у своих сторон. Границы игрового поля даёт сервер.
+   */
+  function cityLocationPatch(locationId, bounds) {
+    const zone = cityOf(locationId);
+    if (!zone) return null;
+    return {
+      kind: 'zone', cityZone: true, allowGlobalMapExit: true,
+      ...cityEntryPoints(bounds),
+      zone: {
+        col: zone.col, row: zone.row, n: zone.n, region: zone.region,
+        mode: zone.mode, difficulty: zone.difficulty, city: locationId
+      }
+    };
+  }
+
+  /** Ворота города: сторона, сосед (его локация) и точка входа в нём. */
+  function cityGates(locationId) {
+    const zone = cityOf(locationId);
+    if (!zone) return [];
+    return Object.entries(zone.edges)
+      .filter(([, edge]) => edge.open)
+      .map(([side, edge]) => {
+        const other = zoneById(graph, edge.to);
+        const to = zoneLocationId(other);
+        // `id` и `n` — чтобы клиент читал ворота города той же моделью, что и выход места.
+        return {
+          side, id: to, to, n: other.n, title: other.title, mode: other.mode,
+          entryKey: SIDE_ENTRY[SIDES[side].opposite], road: !!edge.road
+        };
+      });
+  }
 
   function definitionFor(id) {
     const authoredFile = path.join(authoredDir, `${id}.json`);
@@ -99,16 +160,17 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     return definition;
   }
 
-  /** Что знает о зоне клиент: номер, название, цвет и куда ведут ворота. */
+  /** Что знает о секторе клиент: номер, название, цвет и куда ведут ворота. Город — тоже сектор. */
   function view(locationId) {
-    const zone = zoneById(graph, locationId);
+    const zone = zoneOfLocation(graph, locationId);
     if (!zone) return null;
     return {
-      id: zone.id, n: zone.n, title: zone.title, name: zone.name, mode: zone.mode, difficulty: zone.difficulty,
+      id: zoneLocationId(zone), n: zone.n, title: zone.title, name: zone.name, mode: zone.mode, difficulty: zone.difficulty,
       col: zone.col, row: zone.row, cols: graph.grid.cols, rows: graph.grid.rows,
+      ...(zone.city ? { city: zone.city } : {}),
       gates: Object.entries(zone.edges).filter(([, edge]) => edge.open).map(([dir, edge]) => {
         const other = zoneById(graph, edge.to);
-        return { dir, to: edge.to, n: other.n, title: other.title, mode: other.mode, road: !!edge.road };
+        return { dir, to: zoneLocationId(other), n: other.n, title: other.title, mode: other.mode, road: !!edge.road };
       }),
       places: zone.places.filter(place => !place.hidden).map(place => ({ locationId: place.locationId, name: place.name }))
     };
@@ -128,7 +190,8 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       zoneKm: graph.grid.zoneKm,
       capitals: [...(graph.capitals || [])],
       zones: graph.zones.map(zone => ({
-        id: zone.id, n: zone.n, col: zone.col, row: zone.row, title: zone.title, region: zone.region, mode: zone.mode,
+        id: zoneLocationId(zone), n: zone.n, col: zone.col, row: zone.row, title: zone.title, region: zone.region, mode: zone.mode,
+        ...(zone.city ? { city: zone.city } : {}),
         // Открытые стороны: n, e, s, w.
         gates: ['north', 'east', 'south', 'west'].filter(side => zone.edges[side]?.open).map(side => side[0]).join(''),
         places: zone.places.filter(place => !place.hidden).map(place => ({
@@ -155,7 +218,11 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     };
   }
 
-  return { graph, registerStubs, isZone, ensure, view, worldMap, parentZoneOf, parentZoneView, builtCount: () => built.size };
+  return {
+    graph, registerStubs, isZone, isSector, ensure, view, worldMap,
+    cities, cityOf, cityGates, cityLocationPatch,
+    parentZoneOf, parentZoneView, builtCount: () => built.size
+  };
 }
 
-module.exports = { createZoneRuntime, frozenZoneProblems };
+module.exports = { CITY_ENTRY_INSET, SIDE_ENTRY, cityEntryPoints, createZoneRuntime, frozenZoneProblems };

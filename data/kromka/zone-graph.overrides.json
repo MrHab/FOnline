@@ -1,4 +1,13 @@
 {
+  "cities": [
+    "balanceBunker",
+    "caravanCamp",
+    "relayStation",
+    "scrapTown",
+    "secondHaven",
+    "settlement",
+    "sluiceCity"
+  ],
   "names": {
     "z_01_05": "Край насыпи",
     "z_01_06": "Старая бетонка",

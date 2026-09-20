@@ -19,7 +19,9 @@ const questCatalog = require('../data/kromka/quests.json');
 const npcCatalog = require('../data/kromka/npcs.json');
 const kromkaLocationCatalog = require('../data/kromka/locations.json');
 const zoneGraph = require('../data/kromka/zone-graph.json');
-const zoneOfPlace = locationId => (zoneGraph.zones || []).find(zone => (zone.places || []).some(place => place.locationId === locationId));
+// Город занимает свой сектор целиком, остальные места стоят внутри зоны.
+const zoneOfPlace = locationId => (zoneGraph.zones || []).find(zone => zone.city === locationId
+  || (zone.places || []).some(place => place.locationId === locationId));
 const locationCatalog = Object.fromEntries((world.nodes || [])
   .map(node => String(node.locationId || node.id || ''))
   .filter(Boolean)
@@ -389,32 +391,35 @@ async function connect() {
   assert(questRow(self, 'campaign_prologue_twelfth')?.status === 'completed', 'Campaign prologue was not recorded.');
   console.log('FIRST MISSION complete; Keys reached and prologue recorded');
 
-  // Первый выход в мир зон: край Ключей выводит в их зону, портал зоны возвращает в Ключи.
-  const keysExit = locations.json.locations?.[onboarding.arrivalLocationId]?.parentZone;
-  assert.equal(keysExit?.id, keysZone.id, 'The Keys edge does not lead into the Keys zone of the graph.');
+  // Первый выход в мир зон: Ключи занимают сектор целиком, их северный край ведёт
+  // прямо в соседний сектор, а его южные ворота возвращают в город.
+  assert.equal(keysZone.city, onboarding.arrivalLocationId, 'Keys must hold a sector of its own.');
+  const keysGates = locations.json.locations?.[onboarding.arrivalLocationId]?.sectorGates || [];
+  const northGate = keysGates.find(gate => gate.side === 'north');
+  assert(northGate?.to, 'Keys carry no gate on their north side.');
   const keysEdge = locationCatalog[onboarding.arrivalLocationId]?.exit;
-  assert(keysEdge?.x != null, 'Keys have no authored edge exit.');
-  await moveNear(Number(keysEdge.x), Number(keysEdge.z), 1.4, 'Keys edge exit');
+  assert(keysEdge?.x != null, 'Keys have no authored road out.');
+  await moveNear(Number(keysEdge.x), Number(keysEdge.z), 1.4, 'Keys north edge');
   enemies = [];
-  update(assertOk(await ack(socket, 'changeLocation', { locationId: keysExit.id, entryKey: keysExit.entryKey || '' }),
-    'walk out of Keys into the world zone'));
+  update(assertOk(await ack(socket, 'changeLocation', { locationId: northGate.to, entryKey: northGate.entryKey || '' }),
+    'walk out of Keys into the neighbouring sector'));
   await delay(250);
-  assert.equal(currentLocationId, keysZone.id, 'Leaving Keys did not enter the Keys zone.');
+  assert.equal(currentLocationId, northGate.to, 'Leaving Keys did not enter the sector north of it.');
   await refresh();
-  assert.equal(self.zone?.id, keysZone.id, 'The player state does not name the zone the player stands in.');
-  assert.equal(self.zone?.title, keysZone.title, 'The zone title in the player state differs from the zone graph.');
-  const zoneDefinition = await request(`/api/locations/${encodeURIComponent(keysZone.id)}`, { headers });
-  assert.equal(zoneDefinition.status, 200, 'The Keys zone definition is not served by id.');
-  const keysPortal = (zoneDefinition.json.location?.transitions || [])
-    .find(row => row.type === 'location' && row.to === onboarding.arrivalLocationId);
-  assert(keysPortal, 'The Keys zone has no portal back into Keys.');
-  const portalPoint = tileToWorld(Number(keysPortal.tx), Number(keysPortal.tz));
-  await moveNear(portalPoint.x, portalPoint.z, 1.6, 'Keys portal in the zone');
+  assert.equal(self.zone?.id, northGate.to, 'The player state does not name the sector the player stands in.');
+  assert.equal(self.zone?.title, northGate.title, 'The sector title in the player state differs from the gate label.');
+  const zoneDefinition = await request(`/api/locations/${encodeURIComponent(northGate.to)}`, { headers });
+  assert.equal(zoneDefinition.status, 200, 'The neighbouring sector is not served by id.');
+  const backGate = (zoneDefinition.json.location?.transitions || [])
+    .find(row => row.type === 'zoneGate' && row.to === onboarding.arrivalLocationId);
+  assert(backGate, 'The neighbouring sector has no gate back into Keys.');
+  const gatePoint = tileToWorld(Number(backGate.tx), Number(backGate.tz));
+  await moveNear(gatePoint.x, gatePoint.z, 1.6, 'gate back into Keys');
   enemies = [];
-  update(assertOk(await ack(socket, 'changeLocation', { locationId: onboarding.arrivalLocationId }), 'enter Keys from its zone'));
+  update(assertOk(await ack(socket, 'changeLocation', { locationId: onboarding.arrivalLocationId }), 'enter Keys from the neighbouring sector'));
   await delay(250);
-  assert.equal(currentLocationId, onboarding.arrivalLocationId, 'The zone portal did not lead back into Keys.');
-  console.log(`WORLD ZONES: walked out of Keys into «${keysZone.title}» and back through its portal`);
+  assert.equal(currentLocationId, onboarding.arrivalLocationId, 'The gate did not lead back into Keys.');
+  console.log(`WORLD ZONES: walked out of Keys into «${northGate.title}» and back through its gate`);
 
   if (journeyScope === 'onboarding') {
     console.log('ONBOARDING JOURNEY PASSED: departure, private ambush and arrival at Keys');

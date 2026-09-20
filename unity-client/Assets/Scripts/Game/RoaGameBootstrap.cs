@@ -713,9 +713,12 @@ namespace RealmOfAshes.Game
             if (Time.unscaledTime < _edgeExitRetryAt) return;
             int width = Minimap.MapWidth, depth = Minimap.MapDepth;
             if (width <= 0 || depth <= 0) return;
-            bool inBand = RoaWorldExitBoundary.IsInExitBand(
-                _controller.transform.position, width, depth);
-            Interaction.UpdateZoneEdge(parentZone, inBand);
+            Vector3 position = _controller.transform.position;
+            bool inBand = RoaWorldExitBoundary.IsInExitBand(position, width, depth);
+            // Город занимает сектор: каждая его сторона ведёт к своему соседу.
+            ParentZoneInfo target = Loader?.Current?.SectorGate(RoaWorldExitBoundary.EdgeSide(position, width, depth)) ?? parentZone;
+            EdgeExitTarget = target;
+            Interaction.UpdateZoneEdge(target, inBand);
             if (inBand) _edgeExitRetryAt = Time.unscaledTime + 0.75f;
         }
 
@@ -764,6 +767,9 @@ namespace RealmOfAshes.Game
 
         public bool CinematicActive { get { return _cinematicActive; } }
         /// <summary>Край текущего места выводит в его зону: место стоит в зоне и сюжет его не держит.</summary>
+        /// <summary>Куда выводит край там, где стоит игрок: зона места или сторона города.</summary>
+        public ParentZoneInfo EdgeExitTarget { get; private set; }
+
         public bool CurrentLocationHasEdgeExit
         {
             get { return AllowsEdgeExit(Loader?.Current, Onboarding?.Phase); }

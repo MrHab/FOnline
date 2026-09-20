@@ -322,14 +322,17 @@ function buildCity(recipe, kit) {
   put('plaza_board', 'job_board', anchors.board.tx, anchors.board.tz - 1, 0, ['city-plaza', 'board']);
   put('plaza_well', 'water_tank', CENTRE + 5, CENTRE + 3, 0, ['city-plaza']);
   put('plaza_medic_post', 'cot_bed', anchors.medic.tx, anchors.medic.tz - 2, 0, ['city-plaza', 'medic']);
-  put('plaza_dispatch_post', 'watch_post', anchors.dispatcher.tx, anchors.dispatcher.tz - 2, 0, ['city-plaza', 'dispatcher']);
+  // Над диспетчером — навес, а не сторожевая рама: на площади она читалась пустым ящиком.
+  put('plaza_dispatch_post', 'trader_awning', anchors.dispatcher.tx, anchors.dispatcher.tz - 2, 0, ['city-plaza', 'dispatcher']);
 
   // Дороги: ровная мостовая из дорожного покрытия (плоский меш с камнем), а не
   // насыпь щебня. Плита 4 × 4 м, шаг два тайла — полотно ложится встык, в два
   // ряда шириной 8 м, и с земли читается дорогой.
   // Плита набора — 4 × 4 м; берём её вдвое крупнее и кладём через четыре тайла,
   // тогда полотно из 8-метровых плит ложится встык, а объектов втрое меньше.
-  const ROAD = { scale: [2, 1, 2] };
+  // Полотно префаба повёрнуто в дочернем объекте, поэтому вдоль Z его растягивает
+  // масштаб по Y: чтобы плита осталась квадратной 8 × 8 м, множим все три оси.
+  const ROAD = { scale: [2, 2, 2] };
   let slab = 0;
   for (const gate of plan.gates) {
     const dir = DIRECTIONS[gate.dir];

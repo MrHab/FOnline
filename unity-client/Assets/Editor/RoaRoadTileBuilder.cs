@@ -14,21 +14,28 @@ namespace RealmOfAshes.EditorTools
     public static class RoaRoadTileBuilder
     {
         private const string Dir = "Assets/Prefabs/Kromka/RecoveredEnvironment";
-        private const string Source = Dir + "/asphalt_slab.prefab";
+        private const string MaterialDir = "Assets/Art/Kromka/Materials";
+        private const string MaterialPath = MaterialDir + "/Kromka_Road.mat";
         private const string Target = Dir + "/road_tile.prefab";
 
         public static void Build()
         {
-            var source = AssetDatabase.LoadAssetAtPath<GameObject>(Source);
-            if (source == null) { Debug.LogError("[road] нет " + Source); return; }
-            Material material = null;
-            foreach (MeshRenderer renderer in source.GetComponentsInChildren<MeshRenderer>(true))
+            // Материал — свой, а не из магазинного набора: все его текстуры песочные,
+            // и дорога сливалась с грунтом. Ровный тёмно-серый на песке читается сразу.
+            var material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
+            if (material == null)
             {
-                if (renderer == null || renderer.sharedMaterial == null) continue;
-                material = renderer.sharedMaterial;
-                break;
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                material = new Material(shader) { name = "Kromka_Road" };
+                Directory.CreateDirectory(MaterialDir);
+                AssetDatabase.CreateAsset(material, MaterialPath);
             }
-            if (material == null) { Debug.LogError("[road] у плиты асфальта нет материала"); return; }
+            var road = new Color(0.34f, 0.33f, 0.31f, 1f);
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", road);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", road);
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.08f);
+            if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", 0.08f);
+            EditorUtility.SetDirty(material);
 
             var root = new GameObject("road_tile");
             var surface = GameObject.CreatePrimitive(PrimitiveType.Quad);

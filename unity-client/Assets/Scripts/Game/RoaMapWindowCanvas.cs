@@ -150,12 +150,21 @@ namespace RealmOfAshes.Game
             mapBack.color = new Color(0.027f, 0.047f, 0.051f, 1f); // #070c0d — фон холста web
             mapBack.raycastTarget = false;
 
-            _mapImage = Child("Tiles", map).gameObject.AddComponent<RawImage>();
+            map.gameObject.AddComponent<RectMask2D>();
+            // Карта развёрнута под камеру — так же, как миникарта: квадратная локация
+            // видна ромбом, и что на экране вверху, то вверху и на карте.
+            RectTransform rotor = Child("Rotor", map);
+            Stretch(rotor, 0f);
+            rotor.localRotation = Quaternion.Euler(0f, 0f, RoaMinimap.CameraAlignDeg);
+            rotor.localScale = Vector3.one * RoaMinimap.CameraAlignScale;
+
+            _mapImage = Child("Tiles", rotor).gameObject.AddComponent<RawImage>();
             Stretch(_mapImage.rectTransform, 0f);
             _mapImage.raycastTarget = false;
 
-            _markerLayer = Child("Markers", map);
+            _markerLayer = Child("Markers", rotor);
             Stretch(_markerLayer, 0f);
+            BuildCompass(map);
 
             _playerArrow = Child("Player", _markerLayer);
             _playerArrow.anchorMin = _playerArrow.anchorMax = Vector2.zero;
@@ -269,6 +278,29 @@ namespace RealmOfAshes.Game
                     image.color = new Color(0.78f, 0.62f, 0.30f); size = 8f; break;
             }
             image.rectTransform.sizeDelta = new Vector2(size, size);
+        }
+
+        /// <summary>Стороны света по углам окна: карта повёрнута, буквы стоят прямо.</summary>
+        private static void BuildCompass(RectTransform frame)
+        {
+            var sides = new (string Name, Vector2 Anchor, Vector2 Offset)[]
+            {
+                ("N", new Vector2(0f, 1f), new Vector2(14f, -14f)),
+                ("E", new Vector2(1f, 1f), new Vector2(-14f, -14f)),
+                ("S", new Vector2(1f, 0f), new Vector2(-14f, 14f)),
+                ("W", new Vector2(0f, 0f), new Vector2(14f, 14f))
+            };
+            foreach ((string name, Vector2 anchor, Vector2 offset) in sides)
+            {
+                Text label = Label("Compass" + name, frame, 14, TextAnchor.MiddleCenter,
+                                   new Color(0.902f, 0.839f, 0.561f, 0.9f), FontStyle.Bold);
+                RectTransform rect = label.rectTransform;
+                rect.anchorMin = rect.anchorMax = anchor;
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = offset;
+                rect.sizeDelta = new Vector2(22f, 20f);
+                label.text = name;
+            }
         }
 
         private static RectTransform Child(string name, RectTransform parent)

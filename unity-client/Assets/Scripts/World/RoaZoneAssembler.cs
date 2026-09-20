@@ -46,6 +46,15 @@ namespace RealmOfAshes.World
                 instance.name = string.IsNullOrEmpty(entry.Id) ? entry.Prefab : entry.Id;
                 RoaLocationLoader.ApplyTransform(instance.transform, entry);
                 ConfigureCollision(instance, entry);
+                // Объект с подсказкой помечаем: по метке её находит наведение курсора.
+                var tag = instance.GetComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+                if (entry.Hover != null)
+                {
+                    if (tag == null) tag = instance.AddComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+                    tag.ObjectId = entry.Id;
+                    ConfigureHoverProbe(instance, entry);
+                }
+                else if (tag != null) tag.ObjectId = string.Empty;
                 instance.SetActive(true);
                 if (!string.IsNullOrEmpty(entry.Id))
                 {
@@ -101,6 +110,30 @@ namespace RealmOfAshes.World
             instance.transform.SetParent(parent, false);
             _active.Add(new KeyValuePair<string, GameObject>(key, instance));
             return instance;
+        }
+
+        /// <summary>
+        /// Проходимой вещи с подсказкой нужен триггер: без коллайдера луч курсора её не
+        /// находит, а сплошной короб перегородил бы дорогу. Триггер ходьбе не мешает.
+        /// </summary>
+        private static void ConfigureHoverProbe(GameObject instance, LocationObject entry)
+        {
+            if (instance.GetComponent<BoxCollider>() is BoxCollider solid && solid.enabled && !solid.isTrigger) return;
+            BoxCollider probe = null;
+            foreach (BoxCollider box in instance.GetComponents<BoxCollider>())
+            {
+                if (box.isTrigger) { probe = box; break; }
+            }
+            if (probe == null)
+            {
+                probe = instance.AddComponent<BoxCollider>();
+                probe.isTrigger = true;
+            }
+            float width = Mathf.Max(0.6f, entry.Footprint != null ? entry.Footprint.X : 1f);
+            float depth = Mathf.Max(0.6f, entry.Footprint != null ? entry.Footprint.Z : 1f);
+            probe.size = new Vector3(width, 1.8f, depth);
+            probe.center = new Vector3(0f, 0.9f, 0f);
+            probe.enabled = true;
         }
 
         private static void ConfigureCollision(GameObject instance, LocationObject entry)

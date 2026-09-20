@@ -282,6 +282,9 @@ namespace RealmOfAshes.World
         [JsonProperty("playerCollision")] public JToken PlayerCollision;
         [JsonProperty("movementCollision")] public JToken MovementCollision;
 
+        /// <summary>Подсказка при наведении: что это и зачем оно в городе (конструктор городов).</summary>
+        [JsonProperty("hover")] public JObject Hover;
+
         [JsonProperty("tags")] public List<string> Tags = new List<string>();
         [JsonProperty("footprint")] public Vec2Xz Footprint;
         [JsonProperty("placement")] public JObject Placement;

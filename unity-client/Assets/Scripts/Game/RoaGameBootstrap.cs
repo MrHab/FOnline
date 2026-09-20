@@ -227,6 +227,11 @@ namespace RealmOfAshes.Game
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
 
+            // Подсказка при наведении на постройки города.
+            var tooltip = GetComponent<RoaWorldTooltip>();
+            if (tooltip == null) tooltip = gameObject.AddComponent<RoaWorldTooltip>();
+            tooltip.Loader = Loader;
+
             if (RoofCutaway == null) RoofCutaway = GetComponent<RoaRoofCutaway>();
             if (RoofCutaway == null) RoofCutaway = gameObject.AddComponent<RoaRoofCutaway>();
             RoofCutaway.Configure(Fog, CameraRig);

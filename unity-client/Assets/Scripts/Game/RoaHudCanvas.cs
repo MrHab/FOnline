@@ -516,14 +516,17 @@ namespace RealmOfAshes.Game
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
             _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
-            RectTransform map = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                     new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
+            RectTransform frame = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                       new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
+            frame.gameObject.AddComponent<RectMask2D>();
+            RectTransform map = MinimapRotor(frame);
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
             _markerLayer = Rect("Markers", map, Vector2.zero, Vector2.one,
                                 new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             BuildGrid(map);
+            BuildCompass(frame);
             _markerLayer.SetAsLastSibling();
             for (int i = 0; i < _markers.Length; i++)
             {
@@ -1522,6 +1525,44 @@ namespace RealmOfAshes.Game
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.offsetMin = inset;
             rect.offsetMax = -inset;
+        }
+
+        /// <summary>
+        /// Слой карты, развёрнутый под камеру. Камера смотрит на мир под 45°, поэтому
+        /// квадратная локация видна ромбом; карта, повёрнутая туда же, читается как то,
+        /// что на экране: шаг вперёд на экране — шаг вверх по карте. Масштаб 1/√2 —
+        /// чтобы повёрнутый квадрат целиком вписался в окно карты.
+        /// </summary>
+        private static RectTransform MinimapRotor(RectTransform frame)
+        {
+            RectTransform rotor = Rect("Rotor", frame, Vector2.zero, Vector2.one,
+                                       new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            rotor.localRotation = Quaternion.Euler(0f, 0f, RoaMinimap.CameraAlignDeg);
+            rotor.localScale = Vector3.one * RoaMinimap.CameraAlignScale;
+            return rotor;
+        }
+
+        /// <summary>Стороны света по углам окна: карта повёрнута, а буквы стоят прямо.</summary>
+        private static void BuildCompass(RectTransform frame)
+        {
+            var sides = new (string Name, Vector2 Anchor, Vector2 Offset)[]
+            {
+                ("N", new Vector2(0f, 1f), new Vector2(9f, -9f)),
+                ("E", new Vector2(1f, 1f), new Vector2(-9f, -9f)),
+                ("S", new Vector2(1f, 0f), new Vector2(-9f, 9f)),
+                ("W", new Vector2(0f, 0f), new Vector2(9f, 9f))
+            };
+            foreach ((string name, Vector2 anchor, Vector2 offset) in sides)
+            {
+                Text label = Label("Compass" + name, frame, offset, new Vector2(16f, 14f), 10,
+                                   TextAnchor.MiddleCenter, new Color(0.94f, 0.88f, 0.62f, 0.85f), FontStyle.Bold);
+                RectTransform rect = label.rectTransform;
+                rect.anchorMin = rect.anchorMax = anchor;
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = offset;
+                label.text = name;
+                label.raycastTarget = false;
+            }
         }
 
         private static void BuildGrid(RectTransform map)

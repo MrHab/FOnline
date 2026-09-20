@@ -42,6 +42,9 @@ const DIRECTIONS = Object.freeze({
   west: { entry: 'entryFromWest', dx: -1, dz: 0 },
   east: { entry: 'entryFromEast', dx: 1, dz: 0 }
 });
+const DISTRICT_NAMES = Object.freeze({
+  bank: 'Банковский квартал', market: 'Рынок', workshop: 'Мастерские', homes: 'Жилой квартал'
+});
 const DISTRICTS = Object.freeze({
   // Прямоугольники кварталов в тайлах от центра: [dx0, dz0, dx1, dz1].
   bank: [6, -28, 26, -8],
@@ -124,7 +127,8 @@ function buildCity(recipe, kit) {
       footprint: { x: width, z: depth },
       vision: { blocks: !!entry.vision },
       role: entry.solid ? 'cover' : 'scenery',
-      tags: [...new Set([...tags, 'city-kit'])]
+      tags: [...new Set([...tags, 'city-kit'])],
+      ...(shape?.hover ? { hover: shape.hover } : {})
     });
     return objects[objects.length - 1];
   };
@@ -240,7 +244,9 @@ function buildCity(recipe, kit) {
     if (!built) {
       put(`${id}_sign`, 'highway_sign',
         centre.tx + toCentre.dx * (PLOT_HALF - 2), centre.tz + toCentre.dz * (PLOT_HALF - 2),
-        toCentre.dx ? 90 : 0, [...tags, 'sign']);
+        toCentre.dx ? 90 : 0, [...tags, 'sign'],
+        { hover: { title: 'Участок под застройку', subtitle: DISTRICT_NAMES[district] || '',
+                   lines: ['Свободен', 'Размер: 16 × 16 м'] } });
     }
     plots.push(plot);
     return plot;
@@ -265,7 +271,9 @@ function buildCity(recipe, kit) {
   put('bank_crates', 'cargo_stack', bank.centre.tx, bank.centre.tz - 3, 0, ['bank']);
   put('bank_counter', 'trade_machine', anchors.bank.auction.tx + 2, anchors.bank.auction.tz, 90, ['bank', 'counter']);
   // Вывеска стоит сбоку от проёма: в самом проёме ей не место, через него ходят.
-  put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz - 3, 90, ['city-building', 'bank', 'sign']);
+  put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz - 3, 90, ['city-building', 'bank', 'sign'],
+    { hover: { title: 'Банк', subtitle: DISTRICT_NAMES.bank,
+               lines: ['Хранилище игрока — в дальнем углу', 'Аукционер принимает у входа'] } });
   for (const spare of [bankPlots[0], bankPlots[1], bankPlots[3]]) markPlot(spare, 'bank', false);
 
   // Рынок: навесы торговцев на двух участках, два других ждут застройки.
@@ -275,7 +283,9 @@ function buildCity(recipe, kit) {
   for (const centre of [marketPlots[1], marketPlots[3]]) {
     const plot = markPlot(centre, 'market', true);
     for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) {
-      put(`market_awning_${stall}`, 'trader_awning', plot.tx + dx, plot.tz + dz, stall % 2 ? 90 : 0, ['city-market', 'stall']);
+      put(`market_awning_${stall}`, 'trader_awning', plot.tx + dx, plot.tz + dz, stall % 2 ? 90 : 0, ['city-market', 'stall'],
+        { hover: { title: 'Торговый ряд', subtitle: DISTRICT_NAMES.market,
+                   lines: ['Здесь стоят торговцы города'] } });
       anchors.market.traders.push({ tx: plot.tx + dx, tz: plot.tz + dz + 1 });
       stall += 1;
     }
@@ -283,21 +293,34 @@ function buildCity(recipe, kit) {
   }
   for (const centre of [marketPlots[0], marketPlots[2]]) markPlot(centre, 'market', false);
 
-  // Мастерские: верстаки и станки на участках, ремонтник у первого.
+  // Мастерские: на каждом участке — ремесленное здание, станок стоит внутри него.
+  // Так квартал читается рядом мастерских, а не полем верстаков под открытым небом.
   const workshopPlots = plotsOf(rectOf('workshop'));
-  anchors.workshop = { rect: rectOf('workshop'), repair: { tx: 0, tz: 0 }, benches: [] };
+  anchors.workshop = { rect: rectOf('workshop'), repair: { tx: 0, tz: 0 }, benches: [], houses: [] };
   let bench = 0;
-  for (const centre of [workshopPlots[0], workshopPlots[1]]) {
+  for (const centre of workshopPlots) {
     const plot = markPlot(centre, 'workshop', true);
-    for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2]]) {
-      put(`workshop_bench_${bench}`, 'workshop_bench', plot.tx + dx, plot.tz + dz, bench % 2 ? 90 : 0, ['city-workshop', 'bench']);
-      anchors.workshop.benches.push({ tx: plot.tx + dx, tz: plot.tz + dz + 1 });
+    // Дверь смотрит на площадь: с этой стороны к мастерской и подходят.
+    const doorSide = Math.abs(plot.tx - CENTRE) > Math.abs(plot.tz - CENTRE)
+      ? (plot.tx > CENTRE ? 'west' : 'east')
+      : (plot.tz > CENTRE ? 'north' : 'south');
+    const rect = [plot.tx - 3, plot.tz - 3, plot.tx + 3, plot.tz + 3];
+    const house = building(`workshop_house_${bench}`, rect, doorSide, ['city-building', 'city-workshop', 'craft-house']);
+    anchors.workshop.houses.push({ tx: house.centre.tx, tz: house.centre.tz, door: house.door, rect });
+    put(`workshop_sign_${bench}`, 'highway_sign',
+      house.door.tx + (doorSide === 'west' ? -1 : doorSide === 'east' ? 1 : 0),
+      house.door.tz + (doorSide === 'north' ? -1 : doorSide === 'south' ? 1 : 0),
+      doorSide === 'west' || doorSide === 'east' ? 90 : 0,
+      ['city-workshop', 'craft-house', 'sign'],
+      { hover: { title: 'Мастерская', subtitle: DISTRICT_NAMES.workshop,
+                 lines: ['Внутри стоят станки квартала', 'Заказ у чужого станка — со сбором'] } });
+    // Два места под станки внутри: авторские станки переносятся именно сюда.
+    for (const [dx, dz] of [[-1, -1], [1, 1]]) {
+      anchors.workshop.benches.push({ tx: house.centre.tx + dx, tz: house.centre.tz + dz });
       bench += 1;
     }
-    put(`workshop_rack_${plot.id}`, 'armory_rack', plot.tx + 2, plot.tz + 2, 0, ['city-workshop']);
   }
   anchors.workshop.repair = { ...anchors.workshop.benches[0] };
-  for (const centre of [workshopPlots[2], workshopPlots[3]]) markPlot(centre, 'workshop', false);
 
   // Жильё: лачуга с грядкой на трёх участках, четвёртый свободен.
   const homePlots = plotsOf(rectOf('homes'));
@@ -321,7 +344,9 @@ function buildCity(recipe, kit) {
   anchors.dispatcher = { tx: CENTRE + 6, tz: CENTRE - 2 };
   anchors.medic = { tx: CENTRE - 6, tz: CENTRE - 2 };
   // Доска работ — настоящая доска: у неё игрок берёт вылазки.
-  put('plaza_board', 'job_board', anchors.board.tx, anchors.board.tz - 1, 0, ['city-plaza', 'board']);
+  put('plaza_board', 'job_board', anchors.board.tx, anchors.board.tz - 1, 0, ['city-plaza', 'board'],
+    { hover: { title: 'Доска работ', subtitle: 'Площадь',
+               lines: ['Вылазки и подряды города', 'Быстрый подбор — у самой доски'] } });
   put('plaza_well', 'water_tank', CENTRE + 5, CENTRE + 3, 0, ['city-plaza']);
   put('plaza_medic_post', 'cot_bed', anchors.medic.tx, anchors.medic.tz - 2, 0, ['city-plaza', 'medic']);
   // Над диспетчером — навес, а не сторожевая рама: на площади она читалась пустым ящиком.
@@ -397,7 +422,7 @@ function buildCity(recipe, kit) {
     return null;
   };
   const slots = {
-    workshop: anchors.workshop.benches.map(bench => ({ tx: bench.tx + 2, tz: bench.tz })),
+    workshop: anchors.workshop.benches.map(bench => ({ tx: bench.tx, tz: bench.tz })),
     bank: [
       { tx: anchors.bank.auction.tx, tz: anchors.bank.auction.tz },
       { tx: anchors.bank.storage.tx, tz: anchors.bank.storage.tz },
@@ -418,6 +443,24 @@ function buildCity(recipe, kit) {
     return kit[direct] ? direct : (KIT_BY_MODEL[direct] || DISTRICT_KIT[district] || 'cargo_stack');
   };
 
+  /** Подсказка при наведении: что это за вещь и что с ней делают в городе. */
+  const carriedHover = (object, district) => {
+    const kind = String(object?.interactive?.kind || '');
+    const role = String(object?.interactive?.role || '');
+    const title = String(object?.name || '').trim() || 'Городская вещь';
+    if (kind === 'craftingStation') {
+      // Ключ станка нужен клиенту: по нему он находит участок и показывает арендатора.
+      const stations = Array.isArray(object?.interactive?.craftingStations) ? object.interactive.craftingStations : [];
+      return { title, subtitle: DISTRICT_NAMES.workshop, station: String(stations[0] || ''),
+               lines: ['Станок мастерских', 'Участок сдаётся в аренду: у своего — без сбора'] };
+    }
+    if (role === 'storage' || kind === 'container') {
+      return { title, subtitle: DISTRICT_NAMES.bank, lines: ['Хранилище игрока', 'Вещи лежат и после выхода из игры'] };
+    }
+    if (kind === 'questObject') return { title, subtitle: 'Задание', lines: ['Точка задания'] };
+    return { title, subtitle: DISTRICT_NAMES[district] || '', lines: [] };
+  };
+
   const used = { workshop: 0, bank: 0, plaza: 0, market: 0 };
   const carried = plan.carry.objects.map(object => {
     const district = districtOf(object);
@@ -432,7 +475,7 @@ function buildCity(recipe, kit) {
     const live = String(object?.entity?.kind || '') === 'npc';
     return {
       ...object,
-      ...(live ? {} : { prefab: kitKeyFor(object, district) }),
+      ...(live ? {} : { prefab: kitKeyFor(object, district), hover: carriedHover(object, district) }),
       position: { x: round2(tileCentre(tile.tx)), y: Number(object?.position?.y) || 0, z: round2(tileCentre(tile.tz)) },
       tags: [...new Set([...(object.tags || []), 'city-authored', `city-${district}`])]
     };

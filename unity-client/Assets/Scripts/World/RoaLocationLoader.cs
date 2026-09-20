@@ -44,6 +44,13 @@ namespace RealmOfAshes.World
         private RoaZoneAssembler _zoneAssembler;
 
         public LocationDefinition Current { get; private set; }
+
+        /// <summary>Объект локации по его id: по нему подсказка узнаёт, на что смотрит курсор.</summary>
+        public LocationObject ObjectEntry(string id)
+        {
+            LocationObject entry;
+            return !string.IsNullOrEmpty(id) && _objectEntries.TryGetValue(id, out entry) ? entry : null;
+        }
         public Renderer CurrentGroundRenderer { get; private set; }
         public bool IsLoading { get; private set; }
         /// <summary>Доля собранных объектов 0..1 и текущий шаг — для экрана загрузки (setLocationLoadingProgress web).</summary>

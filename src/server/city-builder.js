@@ -189,7 +189,7 @@ function buildCity(recipe, kit) {
 
   // --- кварталы -----------------------------------------------------------------------------
   const anchors = {};
-  const building = (id, rect, doorSide, tags) => {
+  const building = (id, rect, doorSide, tags, hover = null) => {
     const [x0, z0, x1, z1] = rect;
     const door = { tx: doorSide === 'west' || doorSide === 'east' ? (doorSide === 'west' ? x0 : x1) : Math.round((x0 + x1) / 2),
                    tz: doorSide === 'north' || doorSide === 'south' ? (doorSide === 'north' ? z0 : z1) : Math.round((z0 + z1) / 2) };
@@ -199,7 +199,7 @@ function buildCity(recipe, kit) {
         const tile = Math.round(tx);
         const side = tz === z0 ? 'north' : 'south';
         if (side === doorSide && Math.abs(tile - door.tx) <= 2) continue;
-        put(`${id}_w${index++}`, 'scrap_wall_segment', tile, tz, 0, tags);
+        put(`${id}_w${index++}`, 'scrap_wall_segment', tile, tz, 0, tags, hover ? { hover } : null);
       }
     }
     // Боковые стены ставим со смещением в полсекции: углы уже закрыты длинными
@@ -210,7 +210,7 @@ function buildCity(recipe, kit) {
         const side = tx === x0 ? 'west' : 'east';
         // Проём двери — один пролёт: иначе на короткой стене не осталось бы стены.
         if (side === doorSide && Math.abs(tile - door.tz) <= 1) continue;
-        put(`${id}_w${index++}`, 'scrap_wall_segment', tx, tile, 90, tags);
+        put(`${id}_w${index++}`, 'scrap_wall_segment', tx, tile, 90, tags, hover ? { hover } : null);
       }
     }
     return { rect, door, centre: { tx: Math.round((x0 + x1) / 2), tz: Math.round((z0 + z1) / 2) } };
@@ -236,9 +236,12 @@ function buildCity(recipe, kit) {
   const markPlot = (centre, district, built) => {
     const id = `plot_${plots.length}`;
     const tags = ['city-plot', `city-${district}`, built ? 'plot-built' : 'plot-free'];
+    const hover = built
+      ? { title: 'Застроенный участок', subtitle: DISTRICT_NAMES[district] || '', lines: ['Размер: 16 × 16 м'] }
+      : { title: 'Участок под застройку', subtitle: DISTRICT_NAMES[district] || '', lines: ['Свободен', 'Размер: 16 × 16 м'] };
     for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       put(`${id}_post${dx > 0 ? 'e' : 'w'}${dz > 0 ? 's' : 'n'}`, 'utility_pole',
-        centre.tx + dx * PLOT_HALF, centre.tz + dz * PLOT_HALF, 0, tags);
+        centre.tx + dx * PLOT_HALF, centre.tz + dz * PLOT_HALF, 0, tags, { hover });
     }
     // Забор ставим со стороны, обращённой к площади, и оставляем в нём проход.
     const toCentre = Math.abs(centre.tx - CENTRE) > Math.abs(centre.tz - CENTRE)
@@ -247,15 +250,13 @@ function buildCity(recipe, kit) {
     for (const along of [-3, 3]) {
       const tx = toCentre.dx ? centre.tx + toCentre.dx * PLOT_HALF : centre.tx + along;
       const tz = toCentre.dx ? centre.tz + along : centre.tz + toCentre.dz * PLOT_HALF;
-      put(`${id}_fence${along > 0 ? 'b' : 'a'}`, 'fence_segment', tx, tz, toCentre.dx ? 90 : 0, tags);
+      put(`${id}_fence${along > 0 ? 'b' : 'a'}`, 'fence_segment', tx, tz, toCentre.dx ? 90 : 0, tags, { hover });
     }
     const plot = { id, tx: centre.tx, tz: centre.tz, half: PLOT_HALF, district, built };
     if (!built) {
       put(`${id}_sign`, 'highway_sign',
         centre.tx + toCentre.dx * (PLOT_HALF - 2), centre.tz + toCentre.dz * (PLOT_HALF - 2),
-        toCentre.dx ? 90 : 0, [...tags, 'sign'],
-        { hover: { title: 'Участок под застройку', subtitle: DISTRICT_NAMES[district] || '',
-                   lines: ['Свободен', 'Размер: 16 × 16 м'] } });
+        toCentre.dx ? 90 : 0, [...tags, 'sign'], { hover });
     }
     plots.push(plot);
     return plot;
@@ -266,7 +267,9 @@ function buildCity(recipe, kit) {
   const bankPlots = plotsOf(rectOf('bank'));
   const bankPlot = markPlot(bankPlots[2], 'bank', true); // ближний к площади угол квартала
   const bankRect = plotRect(bankPlot);
-  const bank = building('bank', bankRect, 'west', ['city-building', 'bank']);
+  const BANK_HOVER = { title: 'Банк', subtitle: DISTRICT_NAMES.bank,
+                       lines: ['Хранилище игрока — в дальнем углу', 'Аукционер принимает у входа'] };
+  const bank = building('bank', bankRect, 'west', ['city-building', 'bank'], BANK_HOVER);
   // Аукционер садится у входа, хранилище стоит в дальнем углу: иначе их подсказки
   // взаимодействия перекрывают друг друга — до обеих меньше пяти метров.
   anchors.bank = {
@@ -314,7 +317,9 @@ function buildCity(recipe, kit) {
       ? (plot.tx > CENTRE ? 'west' : 'east')
       : (plot.tz > CENTRE ? 'north' : 'south');
     const rect = [plot.tx - 3, plot.tz - 3, plot.tx + 3, plot.tz + 3];
-    const house = building(`workshop_house_${bench}`, rect, doorSide, ['city-building', 'city-workshop', 'craft-house']);
+    const house = building(`workshop_house_${bench}`, rect, doorSide, ['city-building', 'city-workshop', 'craft-house'],
+      { title: 'Мастерская', subtitle: DISTRICT_NAMES.workshop,
+        lines: ['Внутри стоят станки квартала', 'Заказ у чужого станка — со сбором'] });
     anchors.workshop.houses.push({ tx: house.centre.tx, tz: house.centre.tz, door: house.door, rect });
     put(`workshop_sign_${bench}`, 'highway_sign',
       house.door.tx + (doorSide === 'west' ? -1 : doorSide === 'east' ? 1 : 0),

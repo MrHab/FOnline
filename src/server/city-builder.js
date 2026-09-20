@@ -252,15 +252,17 @@ function buildCity(recipe, kit) {
   const bankPlot = markPlot(bankPlots[2], 'bank', true); // ближний к площади угол квартала
   const bankRect = plotRect(bankPlot);
   const bank = building('bank', bankRect, 'west', ['city-building', 'bank']);
+  // Аукционер садится у входа, хранилище стоит в дальнем углу: иначе их подсказки
+  // взаимодействия перекрывают друг друга — до обеих меньше пяти метров.
   anchors.bank = {
     door: bank.door,
-    storage: { tx: bank.centre.tx + 2, tz: bank.centre.tz - 2 },
-    auction: { tx: bank.centre.tx - 2, tz: bank.centre.tz + 1 },
+    storage: { tx: bank.centre.tx + 3, tz: bank.centre.tz + 2 },
+    auction: { tx: bank.centre.tx - 2, tz: bank.centre.tz - 1 },
     rect: bankRect
   };
-  // Сундук-декорация стоит рядом с местом хранилища, а не на нём: на анкер встаёт
-  // настоящее хранилище фракции.
-  put('bank_vault', 'storage_chest', anchors.bank.storage.tx - 2, anchors.bank.storage.tz + 2, 0, ['bank', 'vault']);
+  // Второго сундука в банке нет: он выглядел как хранилище, но ни на что не
+  // отзывался. У стены — ящики груза, их ни с чем не спутать.
+  put('bank_crates', 'cargo_stack', bank.centre.tx, bank.centre.tz - 3, 0, ['bank']);
   put('bank_counter', 'trade_machine', anchors.bank.auction.tx + 2, anchors.bank.auction.tz, 90, ['bank', 'counter']);
   // Вывеска стоит сбоку от проёма: в самом проёме ей не место, через него ходят.
   put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz - 3, 90, ['city-building', 'bank', 'sign']);
@@ -445,8 +447,12 @@ function buildCity(recipe, kit) {
   for (const object of carried) {
     const kind = String(object?.interactive?.kind || '');
     if (kind !== 'questObject' && kind !== 'craftingStation' && String(object?.interactive?.role || '') !== 'storage') continue;
+    // Указатель ставим со стороны площади: с этой стороны к вещи и подходят, а у
+    // стены он мешал бы и самой вещи, и стене.
     const tile = { tx: metresToTile(object.position.x), tz: metresToTile(object.position.z) };
-    put(`interaction_mark_${markIndex++}`, 'highway_sign', tile.tx + 1, tile.tz + 1, 45,
+    const towards = (value) => (value < CENTRE ? 1 : -1);
+    put(`interaction_mark_${markIndex++}`, 'highway_sign',
+      tile.tx + towards(tile.tx), tile.tz + towards(tile.tz), 45,
       ['city-interaction', kind === 'questObject' ? 'quest' : 'service']);
   }
 

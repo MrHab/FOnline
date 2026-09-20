@@ -1088,7 +1088,10 @@ const SERVER_FACTION_CAPITAL_LOCATIONS = {
   coreBaseLeague: 'tract_league'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
-const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
+// Город без своей фракции (Ключи) тоже держит хранилище в банке: это городская
+// кладовая, общая для всех и отдельная от фракционных.
+const SERVER_CITY_STORAGE_FACTION = 'city';
+const SERVER_FACTION_STORAGE_IDS = new Set([...Object.values(SERVER_FACTION_CAPITAL_LOCATIONS), SERVER_CITY_STORAGE_FACTION]);
 const SERVER_FACTION_CAPITAL_STORAGE = {
   sluiceCity: {
     x: -5,
@@ -1149,17 +1152,24 @@ function locationCapitalFaction(loc = {}) {
   const id = capitalLocationId(loc);
   return SERVER_FACTION_CAPITAL_LOCATIONS[id] || '';
 }
+/** Чьё хранилище стоит в этой локации: фракции столицы или города, если он не столица. */
+function locationStorageFaction(loc = {}) {
+  const faction = locationCapitalFaction(loc);
+  if (faction) return faction;
+  const definition = typeof loc === 'string' ? (LOCATIONS[capitalLocationId(loc)] || {}) : (loc || {});
+  return definition?.cityPlan?.bank?.storage ? SERVER_CITY_STORAGE_FACTION : '';
+}
 function locationIsFactionCapital(loc = {}) {
   const id = capitalLocationId(loc);
   return SERVER_FACTION_CAPITAL_LOCATION_IDS.has(id);
 }
 function locationCapitalStorageObject(loc = {}) {
   const id = capitalLocationId(loc);
-  const faction = SERVER_FACTION_CAPITAL_LOCATIONS[id] || '';
-  const def = SERVER_FACTION_CAPITAL_STORAGE[id];
-  if (!faction || !def) return null;
   // В городе-секторе хранилище стоит в банке: конструктор городов даёт его место.
   const bank = loc.cityPlan && typeof loc.cityPlan === 'object' ? loc.cityPlan.bank : null;
+  const faction = SERVER_FACTION_CAPITAL_LOCATIONS[id] || (bank?.storage ? SERVER_CITY_STORAGE_FACTION : '');
+  const def = SERVER_FACTION_CAPITAL_STORAGE[id] || (bank?.storage ? { x: 0, z: 0, name: 'Городское хранилище' } : null);
+  if (!faction || !def) return null;
   const point = bank?.storage
     ? tileToWorld(Number(bank.storage.tx), Number(bank.storage.tz), locationTileDims(loc))
     : { x: def.x, z: def.z };
@@ -1378,14 +1388,16 @@ function normalizeLocationDefinition(raw, fallback = null) {
       loc.storage = {
         ...locationDefinitionPointFromObject(authoredStorage, loc.spawn, locDims),
         id: String(authoredStorage.id || 'authored_storage').slice(0, 64),
-        storageFaction: locationCapitalFaction(loc),
+        storageFaction: locationStorageFaction(loc),
         name: String(authoredStorage.name || 'Хранилище').slice(0, 80)
       };
     } else if (!hasOwnStorage || ownStorageLooksDerived) {
       delete loc.storage;
     }
   }
-  if (!locationIsFactionCapital(loc)) delete loc.storage;
+  // Хранилище остаётся у столиц фракций и у городов с банком: в городе без своей
+  // фракции это городская кладовая.
+  if (!locationIsFactionCapital(loc) && !locationStorageFaction(loc)) delete loc.storage;
   ['entryFromWorld', 'entryFromNorth', 'entryFromSouth', 'entryFromEast', 'entryFromWest', 'entryFromWasteland', 'entryFromSettlement', 'trader', 'storage'].forEach(key => {
     if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn, locDims);
   });
@@ -7870,7 +7882,7 @@ function serverStorageFactionKey(value = '') {
 
 function serverPlayerStorageFaction(player = {}) {
   if (!player || player.onGlobalMap) return '';
-  return serverStorageFactionKey(locationCapitalFaction(player.locationId || player.currentLocationId || ''));
+  return serverStorageFactionKey(locationStorageFaction(player.locationId || player.currentLocationId || ''));
 }
 
 function ensureServerFactionStorages(player = {}) {

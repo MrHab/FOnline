@@ -701,6 +701,12 @@ async function assertEditorAndWorldDataApis() {
     assertStatus(one, 200, `GET /api/locations/${id}`);
     capitalDefinitions[id] = parseJsonResponse(one, `GET /api/locations/${id}`).location;
   }
+  // Город без своей фракции тоже держит хранилище в банке — городскую кладовую.
+  const keys = capitalDefinitions.settlement;
+  const keysStorage = (keys?.objects || []).find(row => String(row?.interactive?.role || '') === 'storage');
+  if (!keys?.storage || keys.storage.storageFaction !== 'city' || !keysStorage) {
+    fail('a city without a faction has no city storage in its bank', JSON.stringify(keys?.storage || null));
+  }
   for (const [locationId, factionId] of Object.entries(capitalStorageFactions)) {
     const loc = publicLocationsData.locations[locationId] || capitalDefinitions[locationId];
     const storageRows = (Array.isArray(loc?.objects) ? loc.objects : []).filter(row => (

@@ -59,8 +59,9 @@ namespace RealmOfAshes.EditorTools
 
                 Vector3 center = RoaCoords.TileToWorld(19, 19, 38, 38);
                 Vector2 normalized = minimap.WorldToMapNormalized(center);
+                // Север вверху: ось v перевёрнута относительно тайла tz.
                 Require(Mathf.Abs(normalized.x - 19.5f / 38f) < 0.0001f
-                        && Mathf.Abs(normalized.y - 19.5f / 38f) < 0.0001f,
+                        && Mathf.Abs(normalized.y - (1f - 19.5f / 38f)) < 0.0001f,
                         "преобразование координат мини-карты потеряло ось Z");
 
                 Require(RoaEnemies.ClassifyMinimapActor(JObject.Parse("{\"hostileToPlayer\":true}"))

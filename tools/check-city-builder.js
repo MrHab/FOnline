@@ -79,10 +79,10 @@ for (const city of cities) {
   // --- участки под застройку ----------------------------------------------------------------
   // Город читается участками: у каждого квартала свои, и часть стоит свободной.
   const plots = built.objects.filter(object => object.tags.includes('city-plot'));
-  const plotIds = new Set(plots.map(object => object.id.replace(/_(post|fence|sign)\w*$/, '')));
-  assert.equal(plotIds.size, 16, `${city.locationId}: the city has ${plotIds.size} building plots`);
-  const free = new Set(plots.filter(object => object.tags.includes('plot-free')).map(object => object.id.replace(/_(post|fence|sign)\w*$/, '')));
-  assert(free.size >= 6, `${city.locationId}: only ${free.size} plots are left free for building`);
+  const plotIds = new Set(plots.map(object => object.id.replace(/_(ground|edge|post|fence|sign)[\w-]*$/, '')));
+  assert.equal(plotIds.size, 32, `${city.locationId}: the city has ${plotIds.size} building plots`);
+  const free = new Set(plots.filter(object => object.tags.includes('plot-free')).map(object => object.id.replace(/_(ground|edge|post|fence|sign)[\w-]*$/, '')));
+  assert(free.size >= 16, `${city.locationId}: only ${free.size} plots are left free for building`);
   for (const district of ['bank', 'market', 'workshop', 'homes']) {
     assert(plots.some(object => object.tags.includes(`city-${district}`)),
       `${city.locationId}: the ${district} quarter has no plots`);

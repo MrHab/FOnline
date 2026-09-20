@@ -120,6 +120,8 @@ const servicePosition = (locationId, service) => {
     const actor = (accounts[role].join.worldState?.enemies || []).find(row => String(row?.service || '') === service);
     assert(actor, `${role}: рядом нет NPC сервиса ${service}`);
     const state = { x: Number(accounts[role].join.x), z: Number(accounts[role].join.z) };
+    // Через площадь: напрямик путь упирается в дома и заборы участков.
+    await zoneWalk.driveTo(h, accounts[role], state, 1, 1, 300);
     assert(await zoneWalk.driveTo(h, accounts[role], state, Number(actor.x) + 1.4, Number(actor.z) + 1.4, 460),
       `${role} дошёл до сервиса ${service}: ` + JSON.stringify(state));
     return state;

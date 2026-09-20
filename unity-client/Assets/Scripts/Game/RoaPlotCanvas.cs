@@ -247,6 +247,9 @@ namespace RealmOfAshes.Game
             button.onClick.AddListener(action);
             Text label = Label("Text", rect, 12, BtnInk);
             label.alignment = TextAnchor.MiddleCenter;
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            label.verticalOverflow = VerticalWrapMode.Overflow;
+            label.text = caption;
             Stretch(label.rectTransform, 2f);
             return button;
         }

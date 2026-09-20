@@ -741,7 +741,7 @@
    "name": "Бункер «Баланс»",
    "title": "Бункер «Баланс»",
    "region": "zero_basin",
-   "mode": "pvp",
+   "mode": "peaceful",
    "difficulty": 5,
    "ground": "zero_soil",
    "seed": 1019121387,

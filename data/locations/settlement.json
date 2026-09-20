@@ -2616,6 +2616,117 @@
         "questObjective": "defend_filter"
       },
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер Ключей",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик Ключей",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник Ключей",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair"
+      },
+      "worldRevision": "kromka-1"
     }
   ],
   "updatedAt": "2026-07-12T01:43:36.116Z",

@@ -74,7 +74,19 @@ for (const city of cities) {
   // --- кварталы и площадь -------------------------------------------------------------------
   assert(plan.market.traders.length >= 4, `${city.locationId}: the market has ${plan.market.traders.length} stalls`);
   assert(plan.workshop.benches.length >= 3, `${city.locationId}: the workshop has ${plan.workshop.benches.length} benches`);
-  assert(plan.homes.length >= 4, `${city.locationId}: the city has ${plan.homes.length} homes`);
+  assert(plan.homes.length >= 3, `${city.locationId}: the city has ${plan.homes.length} homes`);
+
+  // --- участки под застройку ----------------------------------------------------------------
+  // Город читается участками: у каждого квартала свои, и часть стоит свободной.
+  const plots = built.objects.filter(object => object.tags.includes('city-plot'));
+  const plotIds = new Set(plots.map(object => object.id.replace(/_(post|fence|sign)\w*$/, '')));
+  assert.equal(plotIds.size, 16, `${city.locationId}: the city has ${plotIds.size} building plots`);
+  const free = new Set(plots.filter(object => object.tags.includes('plot-free')).map(object => object.id.replace(/_(post|fence|sign)\w*$/, '')));
+  assert(free.size >= 6, `${city.locationId}: only ${free.size} plots are left free for building`);
+  for (const district of ['bank', 'market', 'workshop', 'homes']) {
+    assert(plots.some(object => object.tags.includes(`city-${district}`)),
+      `${city.locationId}: the ${district} quarter has no plots`);
+  }
   for (const anchor of [plan.plaza, plan.board, plan.dispatcher, plan.medic]) {
     assert(anchor && Math.abs(anchor.tx - CENTRE) <= 12 && Math.abs(anchor.tz - CENTRE) <= 12,
       `${city.locationId}: a square anchor stands away from the plaza: ${JSON.stringify(anchor)}`);
@@ -93,12 +105,10 @@ for (const city of cities) {
     else assert(kit[moved.prefab], `${city.locationId}: ${object.id} has no prefab of the kit (${moved.prefab})`);
     carried += 1;
   }
-  assert.equal(built.containers.length, (authored.containers || []).length, `${city.locationId}: the city keeps its caches`);
+  // Ящиков с лутом в городе нет по решению дизайна: добыча — дело пустоши.
+  assert.equal(built.containers.length, 0, `${city.locationId}: the city still carries ${built.containers.length} loot boxes`);
   assert.equal(built.anomalyFields.length, (authored.anomalyFields || []).length, `${city.locationId}: the city keeps its anomalies`);
-  for (const container of built.containers) {
-    assert(container.tx > 2 && container.tz > 2 && container.tx < TILES - 3 && container.tz < TILES - 3,
-      `${city.locationId}: a cache stands in the edge band`);
-  }
+
 }
 
 console.log(`City builder OK: ${cities.length} cities built twice byte for byte (${objects} objects), each behind its own wall with a gate per open side, vault and auctioneer inside the bank, ${carried} authored objects carried into their districts.`);

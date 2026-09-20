@@ -1167,7 +1167,7 @@ function locationCapitalStorageObject(loc = {}) {
     id: `capital_storage_${faction}`,
     model: 'storageChest',
     // Город клиент собирает из набора префабов: без ключа сундук был бы невидим.
-    ...(bank?.storage ? { prefab: 'cargo_stack' } : {}),
+    ...(bank?.storage ? { prefab: 'storage_chest' } : {}),
     name: def.name,
     position: { x: point.x, y: 0, z: point.z },
     rotation: { x: 0, y: -0.08, z: 0 },

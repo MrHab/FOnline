@@ -31,6 +31,18 @@ MonoBehaviour:
     prefab: {fileID: 7629125791155781697, guid: a49f4cbfb5dc5214a9b980b4345de3e0, type: 3}
   - key: cot_bed
     prefab: {fileID: 4437429164138132726, guid: 2b90ee1092acbb841a277e46d9937fc9, type: 3}
+  - key: craft_station_ammo
+    prefab: {fileID: 8752414143713454946, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
+  - key: craft_station_chem
+    prefab: {fileID: 2414787991913208817, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
+  - key: craft_station_energy
+    prefab: {fileID: 5508565233876511746, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
+  - key: craft_station_repair
+    prefab: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
+  - key: craft_station_tools
+    prefab: {fileID: 8191908154881972069, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
+  - key: craft_station_weapon
+    prefab: {fileID: 630928064927868020, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
   - key: dead_tree_a
     prefab: {fileID: 5297443725183497773, guid: 2cb4be01a74613e4fa2898dce8ba01be, type: 3}
   - key: dead_tree_b
@@ -47,6 +59,8 @@ MonoBehaviour:
     prefab: {fileID: 5887329733065994493, guid: 60a5dde5e37fd514586b6e9f075deda0, type: 3}
   - key: highway_sign
     prefab: {fileID: 7646853272370256106, guid: 5f5e048a5c876d44281fa316b583191d, type: 3}
+  - key: job_board
+    prefab: {fileID: 1695765190992595359, guid: d17dbd5960a71b043a14b783c5f55f60, type: 3}
   - key: oil_pump_jack
     prefab: {fileID: 385656190640750072, guid: ef73a045916b4034bbe8ffd8d203fcc0, type: 3}
   - key: ore_outcrop
@@ -69,10 +83,16 @@ MonoBehaviour:
     prefab: {fileID: 1156191630513837058, guid: b93c268b48a2227448c08733ec7b9ce0, type: 3}
   - key: scrap_watch_tower
     prefab: {fileID: 5514363444047898110, guid: a87733e2dfab3a64e966262c1dbd05a2, type: 3}
+  - key: storage_chest
+    prefab: {fileID: 7680849592470875158, guid: fc473ae58cf0f73458a4b0f41528c7fe, type: 3}
   - key: storage_lean_to
     prefab: {fileID: 5937759859274016784, guid: 4754e4874b80bb54e96ee93c6a40e8f8, type: 3}
   - key: tire_stack
     prefab: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  - key: trade_machine
+    prefab: {fileID: 5270568272225734891, guid: de39622ae6cee8a4dafa5eda60aeda68, type: 3}
+  - key: trader_awning
+    prefab: {fileID: 1886665136772598839, guid: 9ad7285b3d443ed46b3601f0fe47196e, type: 3}
   - key: utility_pole
     prefab: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
   - key: wasteland_shack

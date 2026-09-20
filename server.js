@@ -209,6 +209,7 @@ const {
   searchTracks: pveSearchTracks
 } = require('./src/server/pve-areas');
 const {
+  bestPrice: marketBestPrice,
   cancelOrder: marketCancelOrder,
   commitShelfClaim: marketCommitShelfClaim,
   creditShelfItems: marketCreditShelfItems,
@@ -244,7 +245,9 @@ const {
   plotCraftFee,
   plotReturnRate,
   rollPlotReturns,
-  publicPlot
+  publicPlot,
+  stationBuildCost,
+  stationRefundValue
 } = require('./src/server/crafting-plots');
 const { entryKeyForDirection: dangerEntryKeyForDirection } = require('./src/server/danger-cells');
 const { findGridPath, nearestOpenTile: nearestOpenPathTile } = require('./src/server/enemy-pathing');
@@ -20808,9 +20811,21 @@ function serverDeliverPlotPayout(characterId = '') {
 
 function serverPlotStateFor(player = null, loc = {}, now = Date.now()) {
   const payout = serverApplyPlotPayout(player);
+  const locationId = String(loc?.id || '');
+  // Цена постройки станка — по нынешней книге этого города: игрок видит, во что
+  // ему обойдётся стройка и сколько город вернёт прежнему строителю.
+  const stationCosts = {};
+  for (const [station, cost] of Object.entries(WORLD_ECONOMY.plots.stationCosts || {})) {
+    stationCosts[station] = {
+      cost,
+      worth: Object.entries(cost).reduce((sum, [itemId, qty]) => sum + serverPlotMaterialPrice(locationId, itemId) * qty, 0)
+    };
+  }
   return {
-    locationId: String(loc?.id || ''),
+    locationId,
     plots: serverLocationPlots(loc).map(plot => publicPlot(plot, WORLD_ECONOMY.plots, player?.characterId || '', now)),
+    stationCosts,
+    stationRefundPct: WORLD_ECONOMY.plots.stationRefundPct,
     payout
   };
 }
@@ -20830,9 +20845,32 @@ function serverSpendCraftFocus(player = null, cost = 0) {
   return !!account && spendSinFocus(account, WORLD_ECONOMY.accountSin, cost, Date.now());
 }
 
+/**
+ * Нынешняя цена материала в городе: сперва спрос книги аукционера (по нему
+ * материал и правда можно продать), затем предложение, и только потом базовая
+ * цена — по ней город считает возврат за станок там, где книга пуста.
+ */
+function serverPlotMaterialPrice(locationId = '', itemId = '') {
+  const id = serverBaseItemId(itemId);
+  const base = Math.max(0, Math.floor(Number(SERVER_ITEM_BASE_PRICES[id] || 0)));
+  const hubId = WORLD_ECONOMY.worldModel.cityAuctions ? normalizeLocationId(locationId) : 'wasteland';
+  const book = serverAuctionStore(hubId);
+  const bid = book ? marketBestPrice(book, id, 'buy') : 0;
+  const ask = book ? marketBestPrice(book, id, 'sell') : 0;
+  return Math.max(0, Math.floor(Number(bid || ask || base) || 0));
+}
+
+function serverPlotPriceOf(locationId = '') {
+  return itemId => serverPlotMaterialPrice(locationId, itemId);
+}
+
 function serverTickCraftingPlots(now = Date.now()) {
   if (!serverPlotsActive()) return 0;
-  const changes = settleCraftingPlots(serverCraftingPlotStore(), WORLD_ECONOMY.plots, now);
+  const store = serverCraftingPlotStore();
+  // Возврат за станок считают по книге того города, где стоит участок.
+  const changes = settleCraftingPlots(store, WORLD_ECONOMY.plots, now, {
+    priceOf: (itemId, plot) => serverPlotMaterialPrice(plot?.locationId || '', itemId)
+  });
   if (changes.length) scheduleServerPublicEventPersist();
   return changes.length;
 }
@@ -30760,12 +30798,12 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, ...payload, ...state, self: publicAuthoritativePlayerState(p) });
     };
     if (action === 'state') return reply({ action });
-    if (!['bid', 'setFee', 'build'].includes(action)) return fail('Неизвестное действие участка.');
+    if (!['bid', 'setFee', 'build', 'demolish'].includes(action)) return fail('Неизвестное действие участка.');
     if (!serverLocationHasPlots(loc)) return fail('Здесь нет участков.');
     const plotId = String(data.plotId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 170);
     const plot = serverLocationPlots(loc).find(row => row.id === plotId);
     if (!plot) return fail('Такого участка в этой локации нет.');
-    const transaction = beginCriticalAction(p, 'craftingPlotAction', data, ['action', 'plotId', 'amount', 'feePct']);
+    const transaction = beginCriticalAction(p, 'craftingPlotAction', data, ['action', 'plotId', 'amount', 'feePct', 'station']);
     if (!transaction.ok) return fail(transaction.error);
     if (transaction.replay) return reply({ ...transaction.result, replay: true });
     const store = serverCraftingPlotStore();
@@ -30780,15 +30818,39 @@ io.on('connection', (socket) => {
       payload = { ok: true, action, plotId: plot.id, amount };
     } else if (action === 'build') {
       // Станок ставит только арендатор участка и только один раз: участок — место,
-      // а станок на нём — то, ради чего за место и торговались.
+      // а станок на нём — то, ради чего за место и торговались. Материалы платит
+      // он сам, и город запоминает их: при переходе участка строителю вернётся
+      // половина их нынешней цены.
       const station = String(data.station || '').replace(/[^a-z_]/g, '').slice(0, 32);
       if (!SERVER_CRAFT_STATION_MODELS[station]) return fail('Такой станок не строят.');
       if (!leaseActive(plot, now)) return fail('Участок ещё не ваш: выиграйте торги.');
       if (String(plot.lessee?.characterId || '') !== String(p.characterId || '')) return fail('Участок держит другой игрок.');
       if (plot.station) return fail('На участке уже стоит станок.');
+      const cost = stationBuildCost(WORLD_ECONOMY.plots, station);
+      if (!cost) return fail('Для этого станка не назначена стоимость постройки.');
+      const missing = Object.entries(cost)
+        .filter(([itemId, qty]) => serverInventoryQty(p.inventory || [], itemId) < qty)
+        .map(([itemId, qty]) => `${serverItemDisplayName(itemId)} — ${qty}`);
+      if (missing.length) return fail(`Не хватает материалов: ${missing.join(', ')}.`);
+      for (const [itemId, qty] of Object.entries(cost)) serverInventoryRemove(p, itemId, qty);
       plot.station = station;
+      plot.stationOwner = { characterId: String(p.characterId || ''), name: String(p.name || '') };
+      plot.stationCost = cost;
       serverRebuildCity(loc.id);
-      payload = { ok: true, action, plotId: plot.id, station };
+      payload = { ok: true, action, plotId: plot.id, station, cost };
+    } else if (action === 'demolish') {
+      // Снос ничего не возвращает: материалы забрал тот, кто станок строил, а
+      // новый владелец начинает с пустого места.
+      if (!leaseActive(plot, now)) return fail('Участок ещё не ваш: выиграйте торги.');
+      if (String(plot.lessee?.characterId || '') !== String(p.characterId || '')) return fail('Участок держит другой игрок.');
+      if (!plot.station) return fail('На участке нечего сносить.');
+      const removed = plot.station;
+      plot.station = '';
+      plot.stationOwner = null;
+      plot.stationCost = null;
+      plot.earned = 0;
+      serverRebuildCity(loc.id);
+      payload = { ok: true, action, plotId: plot.id, station: '', demolished: removed };
     } else {
       const changed = setPlotFee(store, WORLD_ECONOMY.plots, plot.id, p.characterId, Number(data.feePct), now);
       if (!changed.ok) return fail(changed.error);

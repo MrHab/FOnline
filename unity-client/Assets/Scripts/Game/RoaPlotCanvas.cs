@@ -9,8 +9,10 @@ namespace RealmOfAshes.Game
     /// Окно таблички участка: торги за место в городе и постройка станка.
     ///
     /// Город станков не ставит — участок выигрывают на торгах, и только его
-    /// владелец ставит на нём один станок. Дальше владелец назначает плату за
-    /// работу у своего станка, а сам работает бесплатно.
+    /// владелец ставит на нём один станок за материалы. Дальше владелец
+    /// назначает плату за работу у своего станка, а сам работает бесплатно.
+    /// Уйдёт участок другому — станок останется на месте, а строителю город
+    /// вернёт половину нынешней цены его материалов. Снос не возвращает ничего.
     /// </summary>
     public sealed class RoaPlotCanvas : MonoBehaviour
     {
@@ -32,8 +34,9 @@ namespace RealmOfAshes.Game
         private GameObject _root;
         private Text _title, _state, _auction, _bidValue, _hint;
         private RectTransform _buildRow;
-        private Button _bidButton;
+        private Button _bidButton, _razeButton;
         private readonly Button[] _buildButtons = new Button[6];
+        private readonly Text[] _buildLabels = new Text[6];
         private int _bid;
         private int _minBid = 100;
 
@@ -92,12 +95,36 @@ namespace RealmOfAshes.Game
             bool canBuild = mine && string.IsNullOrEmpty(station);
             SetBuildVisible(canBuild);
             for (int i = 0; i < _buildButtons.Length; i++)
-                if (_buildButtons[i] != null) _buildButtons[i].interactable = canBuild && !Interaction.PlotBoardBusy;
+            {
+                if (_buildButtons[i] == null) continue;
+                _buildButtons[i].interactable = canBuild && !Interaction.PlotBoardBusy;
+                if (_buildLabels[i] != null) _buildLabels[i].text = StationNames[i] + BuildPriceSuffix(Stations[i]);
+            }
 
+            bool canRaze = mine && !string.IsNullOrEmpty(station);
+            if (_razeButton != null)
+            {
+                if (_razeButton.gameObject.activeSelf != canRaze) _razeButton.gameObject.SetActive(canRaze);
+                _razeButton.interactable = canRaze && !Interaction.PlotBoardBusy;
+            }
+
+            bool stationMine = plot["stationMine"]?.ToObject<bool>() == true;
             _hint.text = canBuild
-                ? "Участок ваш: выберите станок — он встанет на этом месте."
-                : mine ? "Плата за работу у вашего станка назначается в окне самого станка."
-                : "Ставка сгорает как плата за место; перебитую ставку город вернёт.";
+                ? "Участок ваш: выберите станок — его построят за ваши материалы."
+                : canRaze
+                    ? (stationMine
+                        ? "Уйдёт участок другому — город вернёт вам половину нынешней цены материалов. Снос не вернёт ничего."
+                        : "Станок достался вам от прежнего владельца: снести можно, но материалов за него не вернут.")
+                    : "Ставка сгорает как плата за место; перебитую ставку город вернёт.";
+        }
+
+        /// <summary>«, 120 марок» — во что обойдётся станок по нынешним ценам города.</summary>
+        private static string BuildPriceSuffix(string station)
+        {
+            JObject costs = RoaCraftingPlots.StationCosts;
+            JToken row = costs?[station];
+            int worth = row?["worth"]?.ToObject<int>() ?? 0;
+            return worth > 0 ? "\n" + worth + " марок" : string.Empty;
         }
 
         private static string StationName(string station)
@@ -144,7 +171,7 @@ namespace RealmOfAshes.Game
             float y = -14f;
             _title = Label("Title", panel, 15, TitleInk, FontStyle.Bold);
             Place(_title.rectTransform, 14f, y - 20f, -44f, y);
-            UiButton(panel, "×", -38f, y - 22f, -14f, y, () => Interaction.PlotBoardClose());
+            UiButton(panel, "X", -38f, y - 22f, -14f, y, () => Interaction.PlotBoardClose());
             y -= 28f;
             _state = Label("State", panel, 12, BodyInk);
             _state.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -177,7 +204,10 @@ namespace RealmOfAshes.Game
                 float top = (i / 3) * -36f;
                 _buildButtons[i] = UiButton(_buildRow, StationNames[i], left, top - 32f, left + 126f, top,
                     () => Interaction.PlotBoardBuild(Stations[index]));
+                _buildLabels[i] = _buildButtons[i].GetComponentInChildren<Text>();
             }
+            _razeButton = UiButton(panel, "Снести станок", 14f, y - 30f, 150f, y, () => Interaction.PlotBoardDemolish());
+            _razeButton.gameObject.SetActive(false);
             y -= 78f;
 
             _hint = Label("Hint", panel, 11, SubInk);

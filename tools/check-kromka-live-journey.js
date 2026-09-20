@@ -13,7 +13,6 @@ const clientInstanceId = String(process.env.KROMKA_QA_CLIENT || 'kromka_live_jou
 const characterId = String(process.env.KROMKA_QA_CHARACTER || 'qa_campaign_journey');
 const journeyScope = String(process.env.KROMKA_QA_SCOPE || 'all');
 const characterName = String(process.env.KROMKA_QA_NAME || 'Путник Испытатель');
-const world = require('../data/generated/kromka/world.json');
 const onboarding = require('../data/kromka/onboarding.json');
 const questCatalog = require('../data/kromka/quests.json');
 const npcCatalog = require('../data/kromka/npcs.json');
@@ -22,10 +21,6 @@ const zoneGraph = require('../data/kromka/zone-graph.json');
 // Город занимает свой сектор целиком, остальные места стоят внутри зоны.
 const zoneOfPlace = locationId => (zoneGraph.zones || []).find(zone => zone.city === locationId
   || (zone.places || []).some(place => place.locationId === locationId));
-const locationCatalog = Object.fromEntries((world.nodes || [])
-  .map(node => String(node.locationId || node.id || ''))
-  .filter(Boolean)
-  .map(id => [id, require(`../data/locations/${id}.json`)]));
 
 assert(login && password, 'Set KROMKA_QA_LOGIN and KROMKA_QA_PASSWORD.');
 
@@ -117,6 +112,18 @@ async function connect() {
   assert.equal(locations.status, 200, 'Could not load the Unity location catalog.');
   assert.equal(locations.json.locations?.[onboarding.tutorialLocationId]?.allowGlobalMapExit, false,
     'Unity location catalog exposed a world exit in the tutorial yard.');
+  // Зоны и города сервер собирает на лету и отдаёт по одному: их содержимое берём
+  // тем же путём, что и клиент, а не из авторского файла.
+  const definitions = new Map();
+  const definitionOf = async locationId => {
+    const id = String(locationId);
+    if (!definitions.has(id)) {
+      const served = await request(`/api/locations/${encodeURIComponent(id)}`, { headers });
+      assert.equal(served.status, 200, `The server does not serve the definition of ${id}.`);
+      definitions.set(id, served.json.location || {});
+    }
+    return definitions.get(id);
+  };
   const keysZone = zoneOfPlace(onboarding.arrivalLocationId);
   assert(keysZone, `The arrival place ${onboarding.arrivalLocationId} stands in no world zone.`);
   const list = await request('/api/characters', { headers });
@@ -394,12 +401,12 @@ async function connect() {
   // Первый выход в мир зон: Ключи занимают сектор целиком, их северный край ведёт
   // прямо в соседний сектор, а его южные ворота возвращают в город.
   assert.equal(keysZone.city, onboarding.arrivalLocationId, 'Keys must hold a sector of its own.');
-  const keysGates = locations.json.locations?.[onboarding.arrivalLocationId]?.sectorGates || [];
-  const northGate = keysGates.find(gate => gate.side === 'north');
+  const keysDefinition = await definitionOf(onboarding.arrivalLocationId);
+  const northGate = (keysDefinition.sectorGates || []).find(gate => gate.side === 'north');
   assert(northGate?.to, 'Keys carry no gate on their north side.');
-  const keysEdge = locationCatalog[onboarding.arrivalLocationId]?.exit;
-  assert(keysEdge?.x != null, 'Keys have no authored road out.');
-  await moveNear(Number(keysEdge.x), Number(keysEdge.z), 1.4, 'Keys north edge');
+  // Город — сектор целиком: от площади идём улицей к северным воротам и за край.
+  const keysHalf = Number(keysDefinition.map?.depth || 320) / 2;
+  await moveNear(1, -(keysHalf - 3), 2.5, 'Keys north edge');
   enemies = [];
   update(assertOk(await ack(socket, 'changeLocation', { locationId: northGate.to, entryKey: northGate.entryKey || '' }),
     'walk out of Keys into the neighbouring sector'));
@@ -518,8 +525,8 @@ async function connect() {
   };
   const useQuestObject = async (locationId, objectId, expectedObjective, expectedPartial = false) => {
     assert.equal(currentLocationId, locationId, `${objectId}: wrong location.`);
-    const row = (locationCatalog[locationId].objects || []).find(object => object.id === objectId);
-    assert(row?.position, `${objectId}: authored position missing.`);
+    const row = ((await definitionOf(locationId)).objects || []).find(object => object.id === objectId);
+    assert(row?.position, `${objectId}: the location does not carry the quest object.`);
     await moveNear(Number(row.position.x), Number(row.position.z), 2.5, `quest object ${objectId}`);
     const result = assertOk(await ack(socket, 'kromkaQuestObjectInteract', { objectId }), `use ${objectId}`);
     update(result);

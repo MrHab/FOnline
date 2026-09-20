@@ -25,7 +25,8 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const stateFor = role => saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
-  const location = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'locations', `${LOCATION}.json`)));
+  // Раздолье — город-сектор: станок стоит там, куда его поставил конструктор городов.
+  const location = require('./lib/zone-walk').cityDefinition(LOCATION);
   const bench = location.objects.find(row => row.id === BENCH);
   assert(bench, 'в Раздолье нет оружейного станка');
   const knifePrice = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'items.json'))).items

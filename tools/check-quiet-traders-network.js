@@ -12,7 +12,8 @@ const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
 const accounts = {};
 
-const scrapTown = require('../data/locations/scrapTown.json');
+// Раздолье — город-сектор: торговец стоит там, куда его поставил конструктор.
+const scrapTown = require('./lib/zone-walk').cityDefinition('scrapTown');
 const merchantRow = (scrapTown.objects || []).find(row => String(row.entity?.role || row.role || '').toLowerCase() === 'merchant');
 assert(merchantRow, 'в Раздолье нет торговца');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));

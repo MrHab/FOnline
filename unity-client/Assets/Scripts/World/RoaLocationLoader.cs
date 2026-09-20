@@ -230,7 +230,9 @@ namespace RealmOfAshes.World
             }
 
             RoaUnityLocationScene unityScene = null;
-            string unitySceneName = UnitySceneName(definition.Id);
+            // Города собирает конструктор, как и зоны: их старые сцены остались в
+            // проекте, но грузить их нельзя — иначе поверх сборки ляжет второй город.
+            string unitySceneName = definition.Generated ? string.Empty : UnitySceneName(definition.Id);
             if (!string.IsNullOrEmpty(unitySceneName))
             {
                 AsyncOperation load = SceneManager.LoadSceneAsync(unitySceneName, LoadSceneMode.Additive);

@@ -13,17 +13,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
+const zoneWalk = require('./lib/zone-walk');
 const accounts = {};
 
 const qty = (self, id) => (self.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
 
-// Сервисы расставлены tools/build-capital-services.js; координаты берутся из
-// авторских данных, чтобы проверка падала, если NPC переедет.
-const locations = JSON.parse(JSON.stringify({
-  sluiceCity: require('../data/locations/sluiceCity.json'),
-  scrapTown: require('../data/locations/scrapTown.json'),
-  coreBaseUprava: require('../data/locations/coreBaseUprava.json')
-}));
+// Сервисы расставлены tools/build-capital-services.js. Столицы — города-секторы:
+// их собирает конструктор, поэтому координаты сервисов берутся у него, а базы
+// Сердцевины остаются авторскими сценами.
+const cityDefinition = require('./lib/zone-walk').cityDefinition;
+const locations = {
+  sluiceCity: cityDefinition('sluiceCity'),
+  scrapTown: cityDefinition('scrapTown'),
+  coreBaseUprava: JSON.parse(JSON.stringify(require('../data/locations/coreBaseUprava.json')))
+};
 const servicePosition = (locationId, service) => {
   const row = (locations[locationId].objects || []).find(object => (object.entity || {}).service === service);
   assert(row, `в ${locationId} нет сервиса ${service}`);
@@ -42,7 +45,6 @@ const servicePosition = (locationId, service) => {
   // Продавец стоит в «Створе» между аукционером и ремонтником и НЕ состоит ни
   // в одной фракции Сердцевины: рынок обязан его принять.
   const sluiceAuction = servicePosition('sluiceCity', 'auction');
-  const sluiceRepair = servicePosition('sluiceCity', 'repair');
   const sellerState = stateFor('trade');
   sellerState.currentLocationId = 'sluiceCity';
   sellerState.serverLocationContext = { locationId: 'sluiceCity' };
@@ -55,8 +57,8 @@ const servicePosition = (locationId, service) => {
     // Состояния предметов сервер читает из state.player.itemConditions — они
     // приоритетнее одноимённого поля уровнем выше.
     itemConditions: { ...(sellerState.player?.itemConditions || {}), leather: 40 },
-    x: (sluiceAuction.x + sluiceRepair.x) / 2,
-    z: (sluiceAuction.z + sluiceRepair.z) / 2
+    x: sluiceAuction.x + 1.5,
+    z: sluiceAuction.z + 1.5
   };
 
   // Покупатель в той же столице.
@@ -112,6 +114,17 @@ const servicePosition = (locationId, service) => {
     return response;
   };
   const market = (role, data, ok = true) => send(role, 'auctionAction', data, ok);
+  // Сервисный NPC встаёт на свободный тайл рядом со своей точкой, а в городе это
+  // может быть и несколько шагов в сторону: подходим к тому, кого видим.
+  const walkToService = async (role, service) => {
+    const actor = (accounts[role].join.worldState?.enemies || []).find(row => String(row?.service || '') === service);
+    assert(actor, `${role}: рядом нет NPC сервиса ${service}`);
+    const state = { x: Number(accounts[role].join.x), z: Number(accounts[role].join.z) };
+    assert(await zoneWalk.driveTo(h, accounts[role], state, Number(actor.x) + 1.4, Number(actor.z) + 1.4, 460),
+      `${role} дошёл до сервиса ${service}: ` + JSON.stringify(state));
+    return state;
+  };
+  for (const role of ['trade', 'harvest', 'target', 'untargeted']) await walkToService(role, 'auction');
 
   // --- рынок столицы открыт без членства во фракции ---------------------
   const opened = await market('trade', { action: 'state' });
@@ -175,6 +188,8 @@ const servicePosition = (locationId, service) => {
   assert(/не торгует/.test(refused.error), 'сервер отказывает в торговле с аукционером: ' + refused.error);
 
   // --- ремонтник столицы --------------------------------------------------
+  // Ремонтник живёт в мастерских, а не рядом с аукционером: идём к нему через город.
+  await walkToService('trade', 'repair');
   const repairState = await send('trade', 'baseServiceAction', { service: 'repair', action: 'state' });
   const damaged = repairState.targets.find(row => row.itemId === 'leather');
   assert(damaged, 'ремонтник обязан видеть изношенную куртку: ' + JSON.stringify(repairState).slice(0, 400));

@@ -1,13 +1,39 @@
 'use strict';
 
 // Общие помощники сетевых проверок зон мира: точка тайла зоны в метрах,
-// персонаж, сохранённый в зоне, и ходьба настоящими пакетами движения.
+// собранный конструктором город, персонаж, сохранённый в зоне, и ходьба
+// настоящими пакетами движения.
 
 const fs = require('node:fs');
 const path = require('node:path');
 const { TILES } = require('../../src/server/zone-builder');
+const { createZoneRuntime } = require('../../src/server/zone-runtime');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const root = path.resolve(__dirname, '..', '..');
+const readJson = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
+const cities = new Map();
+let runtime = null;
+
+/**
+ * Город, собранный конструктором, — тот же, что отдаёт сервер. Позиции станков,
+ * сервисов и квестовых вещей проверки берут отсюда: в авторском файле они лежат
+ * там, где их поставил человек, а в игре город строится заново.
+ */
+function cityDefinition(locationId) {
+  const id = String(locationId);
+  if (!cities.has(id)) {
+    if (!runtime) {
+      runtime = createZoneRuntime({
+        graph: readJson(path.join('data', 'kromka', 'zone-graph.json')),
+        zonesDir: path.join(root, 'data', 'zones'),
+        normalize: row => row
+      });
+    }
+    cities.set(id, runtime.cityDefinition(id, readJson(path.join('data', 'locations', `${id}.json`))));
+  }
+  return cities.get(id);
+}
 
 /** Центр тайла зоны {tx, tz} в метрах сервера. */
 function world(tile) {
@@ -47,4 +73,4 @@ async function driveTo(h, account, state, x, z, maxFrames = 160) {
   return false;
 }
 
-module.exports = { delay, driveTo, placeInZone, world };
+module.exports = { cityDefinition, delay, driveTo, placeInZone, world };

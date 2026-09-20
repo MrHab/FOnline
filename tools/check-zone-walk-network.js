@@ -72,7 +72,8 @@ const getJson = route => new Promise((resolve, reject) => {
     assert(one.json.location.transitions.some(row => row.id === 'gate_south' && row.targetPvpMode), 'gates carry the rules of the sector behind them');
     const all = await getJson('/api/locations');
     assert(!Object.keys(all.json.locations).some(id => /^z_\d\d_\d\d$/.test(id)), 'the full catalogue does not carry zones');
-    assert(all.json.locations.settlement, 'authored places are still listed');
+    assert(!all.json.locations.settlement, 'a city sector is as heavy as a zone and is served by id too');
+    assert(all.json.locations.roadOutpost, 'authored places are still listed');
     console.log('PASS the zone definition is served by id and kept out of the full catalogue');
     const overview = (await getJson('/api/world-map')).json.map;
     assert.equal(overview.zones.length, graph.zones.length, 'the world map lists every zone');
@@ -99,10 +100,15 @@ const getJson = route => new Promise((resolve, reject) => {
     assert.equal(crossed.self.zone.id, 'settlement');
     assert.equal(crossed.self.zone.title, city.title, 'self.zone names the city');
     const keysDefinition = (await getJson('/api/locations/settlement')).json.location;
-    const landing = { x: (keysDefinition.entryFromNorth.tx - 19 + 0.5) * 2, z: (keysDefinition.entryFromNorth.tz - 19 + 0.5) * 2 };
+    assert.equal(keysDefinition.generated, true, 'a city is built by the constructor like a zone');
+    assert(keysDefinition.cityPlan?.bank?.rect, 'the city plan names the bank');
+    const landing = world(keysDefinition.entryFromNorth);
     assert(Math.hypot(crossed.x - landing.x, crossed.z - landing.z) < 6,
       `arrives at the north side of the city: ${crossed.x},${crossed.z} vs ${landing.x},${landing.z}`);
-    console.log(`PASS the south gate leads straight into ${crossed.self.zone.title}`);
+    const wall = keysDefinition.cityPlan.wall;
+    assert(keysDefinition.entryFromNorth.tz > wall.min && keysDefinition.entryFromNorth.tz < wall.max,
+      'the arrival stands inside the city wall: ' + JSON.stringify(keysDefinition.entryFromNorth));
+    console.log(`PASS the south gate leads straight into ${crossed.self.zone.title}, inside its wall`);
 
     // Город общий, как и зона: второй персонаж в нём стоит в той же комнате.
     await h.connectAndJoin(accounts.harvest);
@@ -110,8 +116,9 @@ const getJson = route => new Promise((resolve, reject) => {
     h.closeSocket(accounts.harvest);
 
     // --- обратно пешком: к северному краю города и назад в зону ---------------------------------
+    // Улица от северных ворот к площади свободна по построению: идём по ней наружу.
     const state = { x: crossed.x, z: crossed.z };
-    assert(await driveTo(walker, state, 1, -31), 'walked to the north edge of the city: ' + JSON.stringify(state));
+    assert(await driveTo(walker, state, 1, -157, 420), 'walked to the north edge of the city: ' + JSON.stringify(state));
     const back = await h.socketAck(walker.socket, 'changeLocation', { locationId: home.id });
     assert(back.ok && back.locationId === home.id, 'the north edge of the city leads back into the zone: ' + JSON.stringify(back).slice(0, 300));
     const homeLanding = world(homeDef.entryFromSouth);

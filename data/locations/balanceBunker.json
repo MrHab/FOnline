@@ -1715,6 +1715,117 @@
         "questObjective": "escape_balance"
       },
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер «Равновесия»",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "continuity",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик «Равновесия»",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "continuity",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник «Равновесия»",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "continuity",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair"
+      },
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [

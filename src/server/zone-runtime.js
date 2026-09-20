@@ -12,6 +12,7 @@ const path = require('node:path');
 const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require('./zone-graph');
 const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
+const { buildCity } = require('./city-builder');
 
 const METRES = TILES * 2;
 const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
@@ -97,20 +98,54 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
   function cities() { return cityZones.map(zone => ({ locationId: zone.city, zone })); }
 
   /**
-   * Что добавить авторской локации города, чтобы сектор работал: блок зоны и
-   * четыре точки входа у своих сторон. Границы игрового поля даёт сервер.
+   * Рецепт города: ворота открытых сторон и авторское содержимое, которое город
+   * обязан сохранить — станки, хранилище, квестовые объекты, тайники и аномалии.
    */
-  function cityLocationPatch(locationId, bounds) {
+  function cityRecipe(locationId, authored = {}) {
     const zone = cityOf(locationId);
     if (!zone) return null;
+    const objects = (Array.isArray(authored.objects) ? authored.objects : [])
+      // Переносим всё, за что цепляется игра: станки, хранилище, квестовые вещи и
+      // авторских NPC-служб (аукционер, медик, ремонтник, торговцы).
+      .filter(object => object && (object.interactive || object.entity?.kind === 'npc' || (object.tags || []).includes('quest')));
     return {
-      kind: 'zone', cityZone: true, allowGlobalMapExit: true,
-      ...cityEntryPoints(bounds),
-      zone: {
-        col: zone.col, row: zone.row, n: zone.n, region: zone.region,
-        mode: zone.mode, difficulty: zone.difficulty, city: locationId
+      cityId: locationId,
+      name: String(authored.name || zone.name || locationId),
+      seed: zone.seed,
+      region: zone.region,
+      groundPreset: String(authored.ground?.preset || zone.ground || zone.region),
+      mode: zone.mode,
+      faction: String(authored.factionId || authored.capitalFaction || ''),
+      n: zone.n, col: zone.col, row: zone.row,
+      gates: Object.entries(zone.edges).filter(([, edge]) => edge.open).map(([dir, edge]) => {
+        const other = zoneById(graph, edge.to);
+        return { dir, to: zoneLocationId(other), toTitle: other.title, toMode: other.mode, road: !!edge.road };
+      }),
+      carry: {
+        objects,
+        containers: Array.isArray(authored.containers) ? authored.containers : [],
+        anomalyFields: Array.isArray(authored.anomalyFields) ? authored.anomalyFields : []
       }
     };
+  }
+
+  /**
+   * Город целиком: конструктор ставит стену с воротами, улицы, площадь и кварталы,
+   * а авторские поля локации (имя, правила, профиль, фракция) остаются прежними.
+   * Ссылку на старую сцену Unity город не наследует: его собирают на лету.
+   */
+  function cityDefinition(locationId, authored = {}) {
+    const zone = cityOf(locationId);
+    if (!zone) return null;
+    if (!catalog) catalog = loadZoneCatalog(zonesDir);
+    const built = buildCity(cityRecipe(locationId, authored), catalog.kit);
+    const keep = {};
+    for (const key of ['safe', 'settlement', 'respawnAllowed', 'respawn', 'visualProfile', 'kromkaVisualProfile',
+      'ambientProfile', 'anomalyDensity', 'territoryId', 'territoryRole', 'factionId', 'migrationArrival',
+      'migrationSpawnId', 'worldRevision']) {
+      if (authored[key] !== undefined) keep[key] = authored[key];
+    }
+    return { ...built, ...keep, id: locationId, name: built.name, pvpMode: built.pvpMode, cityZone: true };
   }
 
   /** Ворота города: сторона, сосед (его локация) и точка входа в нём. */
@@ -220,7 +255,7 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
 
   return {
     graph, registerStubs, isZone, isSector, ensure, view, worldMap,
-    cities, cityOf, cityGates, cityLocationPatch,
+    cities, cityOf, cityGates, cityRecipe, cityDefinition,
     parentZoneOf, parentZoneView, builtCount: () => built.size
   };
 }

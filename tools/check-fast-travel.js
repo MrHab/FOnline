@@ -48,12 +48,17 @@ const h = require('./check-combat-runtime');
 const zoneWalk = require('./lib/zone-walk');
 const accounts = {};
 
-// Рядом с диспетчером: он стоит в трёх и двух тайлах от входа в столицу.
+// Рядом с диспетчером: он стоит на площади столицы, в паре тайлов от её центра.
 function nearDispatcher(locationId) {
-  const loc = JSON.parse(fs.readFileSync(fsPath.join(__dirname, '..', 'data', 'locations', `${locationId}.json`), 'utf8'));
-  const tiles = { w: loc.map.width / 2, d: loc.map.depth / 2 };
-  const anchor = loc.entryFromWorld || loc.spawn;
-  return { x: (anchor.tx + 2 - tiles.w / 2 + 0.5) * 2, z: (anchor.tz + 2 - tiles.d / 2 + 0.5) * 2 };
+  const plan = zoneWalk.cityDefinition(locationId).cityPlan;
+  return zoneWalk.world({ tx: plan.dispatcher.tx + 3, tz: plan.dispatcher.tz + 2 });
+}
+
+/** Точка диспетчера, как её видит сам сервер: NPC мог встать рядом, а не в тайл. */
+function dispatcherSeen(account) {
+  const actor = (account.join.worldState?.enemies || []).find(row => String(row?.name || '') === 'Диспетчер переноса');
+  assert(actor, 'the capital has a dispatcher: ' + (account.join.worldState?.enemies || []).map(row => row.name).join(', '));
+  return { x: Number(actor.x), z: Number(actor.z) };
 }
 
 function seed(role, locationId, inventory, point = nearDispatcher(locationId)) {
@@ -77,6 +82,10 @@ const marks = self => (self?.inventory || []).filter(row => row.id === 'silver')
   try {
     await h.connectAndJoin(accounts.trade);
     assert.equal(accounts.trade.join.locationId, from.locationId);
+    // Диспетчер стоит на площади столицы: подходим к нему настоящими шагами.
+    const seen = dispatcherSeen(accounts.trade);
+    const tradeState = { x: Number(accounts.trade.join.x), z: Number(accounts.trade.join.z) };
+    assert(await zoneWalk.driveTo(h, accounts.trade, tradeState, seen.x - 2, seen.z, 60), 'the player walks up to the dispatcher: ' + JSON.stringify(tradeState));
     const list = await h.socketAck(accounts.trade.socket, 'fastTravel', { action: 'list' });
     assert(list.ok && list.destinations.length === 5, 'the dispatcher lists five capitals: ' + JSON.stringify(list).slice(0, 300));
     const pick = list.destinations[0];
@@ -93,6 +102,9 @@ const marks = self => (self?.inventory || []).filter(row => row.id === 'silver')
     console.log(`PASS the dispatcher sends a player from ${from.locationId} to ${pick.locationId} for ${pick.fee} marks`);
 
     await h.connectAndJoin(accounts.progression);
+    const seenAgain = dispatcherSeen(accounts.progression);
+    const carrierState = { x: Number(accounts.progression.join.x), z: Number(accounts.progression.join.z) };
+    assert(await zoneWalk.driveTo(h, accounts.progression, carrierState, seenAgain.x - 2, seenAgain.z, 60), 'the carrier walks up to the dispatcher');
     const refused = await h.socketAck(accounts.progression.socket, 'fastTravel', { action: 'go', to: pick.locationId });
     assert.equal(refused.ok, false);
     assert.match(refused.error, /не перевозят/, 'an artifact in the pack stays on the road');

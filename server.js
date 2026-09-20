@@ -1158,11 +1158,18 @@ function locationCapitalStorageObject(loc = {}) {
   const faction = SERVER_FACTION_CAPITAL_LOCATIONS[id] || '';
   const def = SERVER_FACTION_CAPITAL_STORAGE[id];
   if (!faction || !def) return null;
+  // В городе-секторе хранилище стоит в банке: конструктор городов даёт его место.
+  const bank = loc.cityPlan && typeof loc.cityPlan === 'object' ? loc.cityPlan.bank : null;
+  const point = bank?.storage
+    ? { x: (Number(bank.storage.tx) - 80 + 0.5) * 2, z: (Number(bank.storage.tz) - 80 + 0.5) * 2 }
+    : { x: def.x, z: def.z };
   return {
     id: `capital_storage_${faction}`,
     model: 'storageChest',
+    // Город клиент собирает из набора префабов: без ключа сундук был бы невидим.
+    ...(bank?.storage ? { prefab: 'cargo_stack' } : {}),
     name: def.name,
-    position: { x: def.x, y: 0, z: def.z },
+    position: { x: point.x, y: 0, z: point.z },
     rotation: { x: 0, y: -0.08, z: 0 },
     scale: { x: 1, y: 1, z: 1 },
     collision: 'none',
@@ -4433,15 +4440,13 @@ const ZONE_RUNTIME = createZoneRuntime({
   validate: validateZoneLocationDefinition
 });
 ZONE_RUNTIME.registerStubs(LOCATIONS);
-// Город занимает сектор целиком: его авторская локация получает блок сектора и
-// четыре точки входа у своих сторон, чтобы соседние секторы вводили прямо в город.
+// Город занимает сектор целиком, и его строит конструктор городов: стена с воротами,
+// улицы, площадь и кварталы. Авторское содержимое — станки, хранилище, квестовые
+// объекты, тайники — конструктор переносит в новый план по id.
 for (const city of ZONE_RUNTIME.cities()) {
   const location = LOCATIONS[city.locationId];
   if (!location) throw new Error(`zone graph: the city ${city.locationId} has no authored location`);
-  LOCATIONS[city.locationId] = normalizeLocationDefinition({
-    ...location,
-    ...ZONE_RUNTIME.cityLocationPatch(city.locationId, normalizedLocationPlayableBounds(location))
-  });
+  LOCATIONS[city.locationId] = normalizeLocationDefinition(ZONE_RUNTIME.cityDefinition(city.locationId, location));
 }
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
@@ -17394,7 +17399,9 @@ function spawnAuthoredLocationActors(room, loc) {
 function serverSpawnFastTravelDispatcher(room, loc) {
   if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
   const dims = locationTileDims(loc);
-  const anchor = loc.entryFromWorld || loc.spawn || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  // В городе-секторе диспетчер стоит у площади, а не у точки входа.
+  const anchor = loc.cityPlan?.dispatcher || loc.entryFromWorld || loc.spawn
+    || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
   const actor = spawnServerEnemy(room, {
     force: true,
     allowSafeLocation: true,

@@ -71,8 +71,8 @@ namespace RealmOfAshes.EditorTools
             Ground();
             var posts = new List<Post>
             {
-                new Post { Name = "tz0 (юг карты, +Z Unity)", Tx = Tiles / 2, Tz = 3, Colour = new Color(0.95f, 0.15f, 0.15f) },
-                new Post { Name = "tzMax (север карты, −Z Unity)", Tx = Tiles / 2, Tz = Tiles - 4, Colour = new Color(0.15f, 0.45f, 0.95f) },
+                new Post { Name = "север (tz 3, +Z Unity)", Tx = Tiles / 2, Tz = 3, Colour = new Color(0.95f, 0.15f, 0.15f) },
+                new Post { Name = "юг (tz max, −Z Unity)", Tx = Tiles / 2, Tz = Tiles - 4, Colour = new Color(0.15f, 0.45f, 0.95f) },
                 new Post { Name = "tx0 (запад, −X Unity)", Tx = 3, Tz = Tiles / 2, Colour = new Color(0.95f, 0.85f, 0.15f) },
                 new Post { Name = "txMax (восток, +X Unity)", Tx = Tiles - 4, Tz = Tiles / 2, Colour = new Color(0.15f, 0.85f, 0.35f) }
             };

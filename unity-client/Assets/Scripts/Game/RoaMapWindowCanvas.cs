@@ -26,8 +26,11 @@ namespace RealmOfAshes.Game
         public bool InputEnabled = true;
 
         /// <summary>Размер холста web (#minimap 680×520).</summary>
-        private const float MapWidth = 680f;
+        // Карта локации квадратная: снимок нельзя растягивать, иначе он разойдётся
+        // с миром. Окно остаётся прежней ширины, холст стоит по центру.
+        private const float MapWidth = 520f;
         private const float MapHeight = 520f;
+        private const float PanelWidth = 680f;
 
         private Canvas _canvas;
         private GameObject _root;
@@ -101,7 +104,7 @@ namespace RealmOfAshes.Game
             RectTransform panel = Child("Panel", rootRect);
             panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
             panel.pivot = new Vector2(0.5f, 0.5f);
-            panel.sizeDelta = new Vector2(MapWidth + 32f, MapHeight + 92f);
+            panel.sizeDelta = new Vector2(PanelWidth + 32f, MapHeight + 92f);
             var back = panel.gameObject.AddComponent<Image>();
             back.color = PanelBg;
             var outline = panel.gameObject.AddComponent<Outline>();
@@ -157,18 +160,16 @@ namespace RealmOfAshes.Game
             _playerArrow = Child("Player", _markerLayer);
             _playerArrow.anchorMin = _playerArrow.anchorMax = Vector2.zero;
             _playerArrow.pivot = new Vector2(0.5f, 0.5f);
-            _playerArrow.sizeDelta = new Vector2(24f, 24f);
-            Text arrow = _playerArrow.gameObject.AddComponent<Text>();
-            arrow.font = RoaUiFont.Default;
-            arrow.fontSize = 18;
-            // Без overflow глиф выше области не рисуется вовсе.
-            arrow.horizontalOverflow = HorizontalWrapMode.Overflow;
-            arrow.verticalOverflow = VerticalWrapMode.Overflow;
-            arrow.alignment = TextAnchor.MiddleCenter;
+            _playerArrow.sizeDelta = new Vector2(26f, 26f);
+            // Тот же значок, что и на миникарте: «navigation» из Material Design Icons.
+            var arrow = _playerArrow.gameObject.AddComponent<Image>();
+            arrow.sprite = RoaMinimapPlayerIcon.Sprite;
+            arrow.preserveAspect = true;
             arrow.color = new Color(0.902f, 0.839f, 0.561f, 1f); // #e6d68f
-            arrow.fontStyle = FontStyle.Bold;
-            arrow.text = "▲";
             arrow.raycastTarget = false;
+            var arrowOutline = _playerArrow.gameObject.AddComponent<Outline>();
+            arrowOutline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            arrowOutline.effectDistance = new Vector2(1.6f, -1.6f);
 
             _hint = Label("Hint", panel, 12, TextAnchor.MiddleCenter, new Color(Ink.r, Ink.g, Ink.b, 0.55f));
             _hint.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -196,7 +197,8 @@ namespace RealmOfAshes.Game
             }
 
             _mapImage.enabled = true;
-            _mapImage.texture = Minimap.StaticTexture;
+            // Снимок локации сверху; пока он не снят — схема из данных локации.
+            _mapImage.texture = Minimap.MapTexture;
 
             int count = Minimap.Markers.Count;
             SetMarkerCount(count);
@@ -220,7 +222,7 @@ namespace RealmOfAshes.Game
             if (playerVisible)
             {
                 _playerArrow.anchoredPosition = new Vector2(player.x * MapWidth, player.y * MapHeight);
-                _playerArrow.localEulerAngles = new Vector3(0f, 0f, -Minimap.PlayerHeading);
+                _playerArrow.localEulerAngles = new Vector3(0f, 0f, RoaMinimap.PlayerIconRotation(Minimap.PlayerHeading));
             }
         }
 

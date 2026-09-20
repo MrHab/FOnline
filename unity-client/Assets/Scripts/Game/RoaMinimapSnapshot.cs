@@ -10,12 +10,9 @@ namespace RealmOfAshes.Game
     /// Снимок локации сверху для миникарты: ортографическая камера смотрит вниз и
     /// рисует собранный мир в RenderTexture один раз на локацию.
     ///
-    /// Ориентация. Миникарта кладёт маркер в точку ((tx+0,5)/W, (tz+0,5)/D) от левого
-    /// нижнего угла: вправо — +X Unity, вверх — −Z Unity (тайл tz растёт к −Z).
-    /// Камера, смотрящая вниз, такую пару осей дать не может — она всегда переворачивает
-    /// одну из них. Поэтому камера стоит «вправо +X, вверх +Z» (поворот 90, 0, 0), а
-    /// снимок переворачивается по вертикали при копировании в итоговую текстуру: так
-    /// картинка сразу лежит в системе миникарты. Это сверяет RoaMinimapSnapshotProbe.
+    /// Ориентация — север вверху, как у подложки-схемы и у маркеров: вправо — +X Unity
+    /// (восток), вверх — +Z Unity (север, малые тайлы tz). Камера смотрит вниз с
+    /// поворотом (90, 0, 0) — ровно эти оси и даёт. Сверяет RoaMinimapSnapshotProbe.
     ///
     /// Живые актёры в снимок не попадают: их скиновые меши на время кадра гасятся,
     /// иначе игрок и враги застыли бы на статичной картинке.
@@ -53,17 +50,13 @@ namespace RealmOfAshes.Game
 
             List<Renderer> hidden = HideLiveActors();
             RenderTexture previous = RenderTexture.active;
-            RenderTexture raw = RenderTexture.GetTemporary(Texture.width, Texture.height, 16, RenderTextureFormat.ARGB32);
             try
             {
-                RenderOnce(raw);
-                // Переворот по вертикали: у камеры верх кадра — +Z, у миникарты — −Z.
-                Graphics.Blit(raw, Texture, new Vector2(1f, -1f), new Vector2(0f, 1f));
+                RenderOnce(Texture);
             }
             finally
             {
                 _camera.targetTexture = null;
-                RenderTexture.ReleaseTemporary(raw);
                 RenderTexture.active = previous;
                 for (int i = 0; i < hidden.Count; i++) if (hidden[i] != null) hidden[i].enabled = true;
             }

@@ -81,7 +81,7 @@ namespace RealmOfAshes.Game
                 if (!IsReady || !HasPlayer || MapWidth <= 0 || MapDepth <= 0) return string.Empty;
                 Vector2 p = PlayerMapNormalized;
                 int tx = Mathf.Clamp(Mathf.FloorToInt(p.x * MapWidth), 0, MapWidth - 1);
-                int tz = Mathf.Clamp(Mathf.FloorToInt(p.y * MapDepth), 0, MapDepth - 1);
+                int tz = Mathf.Clamp(Mathf.FloorToInt((1f - p.y) * MapDepth), 0, MapDepth - 1);
                 return "\u043a\u043b\u0435\u0442\u043a\u0430 " + tx + ":" + tz;
             }
         }
@@ -162,21 +162,23 @@ namespace RealmOfAshes.Game
         /// <summary>
         /// Поворот значка игрока на миникарте (градусы, ось Z канвы).
         ///
-        /// Миникарта смотрит на мир сверху: вправо — +X Unity, вверх — −Z Unity (тайл
-        /// tz растёт к −Z). Игрок с yaw θ смотрит в (sin θ, cos θ), то есть на карте —
-        /// в (sin θ, −cos θ). Значок нарисован остриём вверх, поворот φ уводит остриё
-        /// в (−sin φ, cos φ), поэтому φ = θ + 180°. Сверяет RoaMinimapSnapshotProbe.
+        /// Миникарта смотрит на мир сверху, север вверху: вправо — +X Unity (восток),
+        /// вверх — +Z Unity (север, малые tz). Игрок с yaw θ смотрит в (sin θ, cos θ) —
+        /// на карте это тот же вектор. Значок нарисован остриём вверх, поворот φ уводит
+        /// остриё в (−sin φ, cos φ), поэтому φ = −θ. Сверяет RoaMinimapSnapshotProbe.
         /// </summary>
         public static float PlayerIconRotation(float headingDeg)
         {
-            return 180f + headingDeg;
+            return -headingDeg;
         }
 
         public Vector2 WorldToMapNormalized(Vector3 world)
         {
             if (MapWidth <= 0 || MapDepth <= 0) return Vector2.zero;
             RoaCoords.WorldToTile(world, MapWidth, MapDepth, out int tx, out int tz);
-            return new Vector2((tx + 0.5f) / MapWidth, (tz + 0.5f) / MapDepth);
+            // Север вверху: тайл tz растёт на юг, поэтому ось v переворачивается —
+            // так маркеры ложатся на подложку, которая тоже рисуется севером вверх.
+            return new Vector2((tx + 0.5f) / MapWidth, 1f - (tz + 0.5f) / MapDepth);
         }
 
         private void OnDestroy()

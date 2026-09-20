@@ -1496,6 +1496,14 @@ namespace RealmOfAshes.Game
             PlotAction("build", plot, new Dictionary<string, object> { ["station"] = station });
         }
 
+        /// <summary>Снести станок участка: город ничего не возвращает.</summary>
+        public void PlotBoardDemolish()
+        {
+            JObject plot = PlotBoardPlot;
+            if (plot == null) return;
+            PlotAction("demolish", plot, new Dictionary<string, object>());
+        }
+
         public void PlotBoardSetFee(int percent)
         {
             JObject plot = PlotBoardPlot;
@@ -1527,7 +1535,8 @@ namespace RealmOfAshes.Game
                 }
                 ApplyPlotAck(ack);
                 Show(action == "bid" ? "Ставка принята."
-                    : action == "build" ? "Станок построен." : "Плата за станок изменена.", 4f);
+                    : action == "build" ? "Станок построен."
+                    : action == "demolish" ? "Станок снесён." : "Плата за станок изменена.", 4f);
             });
         }
 

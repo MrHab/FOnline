@@ -27,12 +27,23 @@ namespace RealmOfAshes.Game
         /// <summary>Марки, которые сервер только что зачислил (возвраты ставок и плата за станок).</summary>
         public static int LastPayout { get; private set; }
 
+        /// <summary>
+        /// Во что обходится постройка станка в этом городе: материалы и их
+        /// нынешняя цена по книге аукционера. Ключ — вид станка.
+        /// </summary>
+        public static JObject StationCosts { get; private set; }
+
+        /// <summary>Доля цены материалов, которую город вернёт строителю при смене владельца.</summary>
+        public static float StationRefundPct { get; private set; } = 0.5f;
+
         public static void Apply(JObject state)
         {
             Clear();
             if (state == null) return;
             LocationId = state["locationId"]?.ToString() ?? string.Empty;
             LastPayout = state["payout"]?.Type == JTokenType.Integer ? state["payout"].Value<int>() : 0;
+            StationCosts = state["stationCosts"] as JObject;
+            if (state["stationRefundPct"] != null) StationRefundPct = state["stationRefundPct"].Value<float>();
             if (!(state["plots"] is JArray rows)) return;
             foreach (JToken token in rows)
             {
@@ -49,6 +60,7 @@ namespace RealmOfAshes.Game
             All.Clear();
             LocationId = string.Empty;
             LastPayout = 0;
+            StationCosts = null;
         }
 
         public static JObject ForStation(string station)

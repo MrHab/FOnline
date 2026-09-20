@@ -8,8 +8,11 @@
  * срока торгов; победитель получает участок на leaseDays, ставка сгорает, а
  * перебитые ставки возвращаются владельцам. Арендатор назначает плату за
  * пользование станком — долю стоимости результата, она уходит ему; сам он
- * работает бесплатно. Свободный участок берёт высокую плату поселения, и она
- * сгорает. Станок участка возвращает часть материалов:
+ * работает бесплатно. Станок строит сам арендатор за материалы; при переходе
+ * участка к другому игроку станок остаётся на месте, а строителю город
+ * возвращает половину нынешней рыночной цены затраченных материалов — один
+ * раз, тому, кто за него платил. Свободный участок берёт высокую плату
+ * поселения, и она сгорает. Станок участка возвращает часть материалов:
  * 1 − 1/(1 + бонус/100), бонус участка 18, профильный регион +15.
  *
  * Модуль не знает о сервере: время, цены и случайность передаются снаружи.
@@ -32,6 +35,10 @@ const DEFAULT_CONFIG = Object.freeze({
   plotBonus: 18,
   regionBonus: 15,
   premiumFocusBonus: 59,
+  // Доля нынешней рыночной цены материалов, которую город возвращает строителю,
+  // когда участок со станком уходит к другому игроку.
+  stationRefundPct: 0.5,
+  stationCosts: Object.freeze({}),
   regions: Object.freeze({}),
   excludedLocations: Object.freeze(['tutorialCaravanYard', 'personalBase'])
 });
@@ -54,6 +61,17 @@ function normalizeCraftingPlotConfig(input = {}) {
     const list = (Array.isArray(stations) ? stations : []).map(value => safeId(value, 32)).filter(Boolean);
     if (id && list.length) regions[id] = Object.freeze(list);
   }
+  const stationCosts = {};
+  for (const [station, cost] of Object.entries(src.stationCosts && typeof src.stationCosts === 'object' ? src.stationCosts : {})) {
+    const id = safeId(station, 32);
+    const rows = {};
+    for (const [itemId, qty] of Object.entries(cost && typeof cost === 'object' ? cost : {})) {
+      const item = safeId(itemId, 64);
+      const amount = Math.floor(finite(qty, 0, 0, 1e6));
+      if (item && amount > 0) rows[item] = amount;
+    }
+    if (id && Object.keys(rows).length) stationCosts[id] = Object.freeze(rows);
+  }
   const excluded = Array.isArray(src.excludedLocations) ? src.excludedLocations : DEFAULT_CONFIG.excludedLocations;
   const maxFeePct = finite(src.maxFeePct, DEFAULT_CONFIG.maxFeePct, 0, 5);
   return Object.freeze({
@@ -68,6 +86,8 @@ function normalizeCraftingPlotConfig(input = {}) {
     plotBonus: finite(src.plotBonus, DEFAULT_CONFIG.plotBonus, 0, 1000),
     regionBonus: finite(src.regionBonus, DEFAULT_CONFIG.regionBonus, 0, 1000),
     premiumFocusBonus: finite(src.premiumFocusBonus, DEFAULT_CONFIG.premiumFocusBonus, 0, 1000),
+    stationRefundPct: finite(src.stationRefundPct, DEFAULT_CONFIG.stationRefundPct, 0, 1),
+    stationCosts: Object.freeze(stationCosts),
     regions: Object.freeze(regions),
     excludedLocations: Object.freeze(excluded.map(value => safeId(value)).filter(Boolean))
   });
@@ -89,6 +109,16 @@ function cleanTime(value) {
   return Math.max(0, Math.floor(Number(value) || 0));
 }
 
+function cleanCost(input = null) {
+  const rows = {};
+  for (const [itemId, qty] of Object.entries(input && typeof input === 'object' ? input : {})) {
+    const item = safeId(itemId, 64);
+    const amount = Math.max(0, Math.floor(Number(qty) || 0));
+    if (item && amount > 0) rows[item] = amount;
+  }
+  return Object.keys(rows).length ? rows : null;
+}
+
 function sanitizePlot(input = {}, id = '', config = DEFAULT_CONFIG) {
   const src = input && typeof input === 'object' ? input : {};
   const lessee = cleanPerson(src.lessee);
@@ -99,6 +129,10 @@ function sanitizePlot(input = {}, id = '', config = DEFAULT_CONFIG) {
     locationId: safeId(src.locationId),
     objectId: safeId(src.objectId, 96),
     station: safeId(src.station, 32),
+    // Строитель станка и материалы, которые он на него потратил: по ним город
+    // считает возврат, когда участок переходит к другому игроку.
+    stationOwner: src.station ? cleanPerson(src.stationOwner) : null,
+    stationCost: src.station ? cleanCost(src.stationCost) : null,
     lessee,
     leaseStartsAt: lessee ? cleanTime(src.leaseStartsAt) : 0,
     leaseEndsAt: lessee ? cleanTime(src.leaseEndsAt) : 0,
@@ -217,12 +251,32 @@ function setPlotFee(state, config, plotId = '', characterId = '', feePct = 0, no
   return { ok: true, plot };
 }
 
+/** Материалы станка по настройкам: сколько и чего стоит его постройка. */
+function stationBuildCost(config, station = '') {
+  const cost = config.stationCosts?.[safeId(station, 32)];
+  return cost ? { ...cost } : null;
+}
+
+/**
+ * Возврат строителю: половина (stationRefundPct) нынешней рыночной цены
+ * материалов, которые он потратил. priceOf(itemId, plot) — цена одной штуки
+ * там, где стоит участок.
+ */
+function stationRefundValue(plot, config, priceOf = null) {
+  if (!plot?.station || !plot.stationOwner || !plot.stationCost || typeof priceOf !== 'function') return 0;
+  let worth = 0;
+  for (const [itemId, qty] of Object.entries(plot.stationCost)) {
+    worth += Math.max(0, Number(priceOf(itemId, plot)) || 0) * qty;
+  }
+  return Math.floor(worth * config.stationRefundPct);
+}
+
 /**
  * Итоги торгов и конец аренды. Победитель получает участок: если он уже
  * арендатор — продлевает, иначе аренда начинается сейчас (или с конца
  * текущей). Возвращает список изменений.
  */
-function settleCraftingPlots(state, config, now = Date.now()) {
+function settleCraftingPlots(state, config, now = Date.now(), options = {}) {
   const changes = [];
   const leaseMs = config.leaseDays * 24 * HOUR_MS;
   for (const plot of Object.values(state.plots)) {
@@ -234,6 +288,17 @@ function settleCraftingPlots(state, config, now = Date.now()) {
       if (renewing) {
         plot.leaseEndsAt = Math.floor(Math.max(Number(plot.leaseEndsAt), Number(now)) + leaseMs);
       } else {
+        // Станок остаётся на участке, но платил за него прежний строитель:
+        // город возвращает ему половину нынешней цены материалов — один раз.
+        if (plot.station && plot.stationOwner && plot.stationOwner.characterId !== winner.characterId) {
+          const refund = stationRefundValue(plot, config, options.priceOf);
+          if (refund > 0) creditPayout(state, plot.stationOwner.characterId, refund);
+          changes.push({
+            plotId: plot.id, kind: 'stationRefunded', characterId: plot.stationOwner.characterId, refund
+          });
+          plot.stationOwner = null;
+          plot.stationCost = null;
+        }
         plot.lessee = { characterId: winner.characterId, name: winner.name };
         plot.leaseStartsAt = Math.floor(start);
         plot.leaseEndsAt = Math.floor(start + leaseMs);
@@ -305,6 +370,9 @@ function publicPlot(plot, config, viewerCharacterId = '', now = Date.now()) {
     plotId: plot.id,
     objectId: plot.objectId,
     station: plot.station,
+    // Станок не принадлежит участку: у него есть строитель, и только ему город
+    // вернёт половину, когда участок уйдёт другому.
+    stationMine: !!plot.station && plot.stationOwner?.characterId === viewer,
     leased: active,
     lesseeName: active ? plot.lessee.name : '',
     mine: active && plot.lessee.characterId === viewer,
@@ -342,6 +410,8 @@ module.exports = {
   setPlotFee,
   settleCraftingPlots,
   plotCraftFee,
+  stationBuildCost,
+  stationRefundValue,
   plotReturnRate,
   rollPlotReturns,
   publicPlot

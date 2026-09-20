@@ -20,20 +20,51 @@
   },
   "npcTradeHubs": {
     "note": "Кроме столиц фракций и баз Сердцевины торговцы-люди торгуют ещё здесь.",
-    "locations": ["settlement"]
+    "locations": [
+      "settlement"
+    ]
   },
   "zones": {
     "brokenBelowCondition": 10,
-    "deathWear": { "pve": 5, "pvp": 5, "pvpFullDrop": 20 },
-    "blackDrop": { "trashChance": 0.33, "trashItemId": "scrap", "trashValueShare": 0.25, "droppedWearMin": 20, "droppedWearMax": 40 },
-    "lootMultiplier": { "peaceful": 1, "pve": 1.25, "pvp": 1.33, "pvpFullDrop": 2.25, "pvpBlack": 2.6, "pvpEvent": 1 },
-    "gatherYield": { "peaceful": 1, "pve": 1, "pvp": 1.25, "pvpFullDrop": 1.6, "pvpBlack": 2, "pvpEvent": 1 }
+    "deathWear": {
+      "pve": 5,
+      "pvp": 5,
+      "pvpFullDrop": 20
+    },
+    "blackDrop": {
+      "trashChance": 0.33,
+      "trashItemId": "scrap",
+      "trashValueShare": 0.25,
+      "droppedWearMin": 20,
+      "droppedWearMax": 40
+    },
+    "lootMultiplier": {
+      "peaceful": 1,
+      "pve": 1.25,
+      "pvp": 1.33,
+      "pvpFullDrop": 2.25,
+      "pvpBlack": 2.6,
+      "pvpEvent": 1
+    },
+    "gatherYield": {
+      "peaceful": 1,
+      "pve": 1,
+      "pvp": 1.25,
+      "pvpFullDrop": 1.6,
+      "pvpBlack": 2,
+      "pvpEvent": 1
+    }
   },
   "auctions": {
     "taxPct": 0.08,
     "premiumTaxPct": 0.04,
     "setupFeePct": 0.025,
-    "durationChoicesHours": [24, 72, 168, 720],
+    "durationChoicesHours": [
+      24,
+      72,
+      168,
+      720
+    ],
     "listingLifetimeHours": 168,
     "maxOrdersPerTrader": 30,
     "maxOrders": 1500,
@@ -51,13 +82,56 @@
     "plotBonus": 18,
     "regionBonus": 15,
     "premiumFocusBonus": 59,
-    "regions": {
-      "settlement": ["weapon_bench", "repair_bench"],
-      "scrapTown": ["tool_bench", "weapon_bench"],
-      "relayStation": ["energy_bench", "chem_station"],
-      "caravanCamp": ["ammo_bench", "chem_station"]
+    "stationRefundPct": 0.5,
+    "stationCosts": {
+      "weapon_bench": {
+        "scrap": 20,
+        "weaponParts": 6
+      },
+      "ammo_bench": {
+        "scrap": 16,
+        "chemicals": 6
+      },
+      "tool_bench": {
+        "scrap": 18,
+        "wood": 10
+      },
+      "repair_bench": {
+        "scrap": 18,
+        "electronics": 3
+      },
+      "energy_bench": {
+        "scrap": 15,
+        "electronics": 8
+      },
+      "chem_station": {
+        "scrap": 12,
+        "chemicals": 10,
+        "medicine": 4
+      }
     },
-    "excludedLocations": ["tutorialCaravanYard", "personalBase"]
+    "regions": {
+      "settlement": [
+        "weapon_bench",
+        "repair_bench"
+      ],
+      "scrapTown": [
+        "tool_bench",
+        "weapon_bench"
+      ],
+      "relayStation": [
+        "energy_bench",
+        "chem_station"
+      ],
+      "caravanCamp": [
+        "ammo_bench",
+        "chem_station"
+      ]
+    },
+    "excludedLocations": [
+      "tutorialCaravanYard",
+      "personalBase"
+    ]
   },
   "accountSin": {
     "itemId": "blue",
@@ -70,10 +144,20 @@
       "baseJobSpeedMultiplier": 1.5,
       "auctionTaxPct": 0.04
     },
-    "focus": { "perDay": 10000, "cap": 30000, "costPerValue": 10, "minCost": 50 },
+    "focus": {
+      "perDay": 10000,
+      "cap": 30000,
+      "costPerValue": 10,
+      "minCost": 50
+    },
     "exchange": {
       "orderFee": 10,
-      "durationChoicesHours": [24, 72, 168, 720],
+      "durationChoicesHours": [
+        24,
+        72,
+        168,
+        720
+      ],
       "maxQtyPerOrder": 100000,
       "maxPrice": 100000,
       "maxOrdersPerTrader": 10
@@ -84,32 +168,70 @@
     "baseFee": 40,
     "feePerKm": 0.5,
     "combatLockMs": 15000,
-    "blockedCategories": ["artifacts"]
+    "blockedCategories": [
+      "artifacts"
+    ]
   },
   "dangerCells": {
-    "capitals": ["sluiceCity", "scrapTown", "relayStation", "caravanCamp", "secondHaven", "balanceBunker"],
+    "capitals": [
+      "sluiceCity",
+      "scrapTown",
+      "relayStation",
+      "caravanCamp",
+      "secondHaven",
+      "balanceBunker"
+    ],
     "safeRadiusKm": 12,
     "blueRadiusKm": 38,
-    "blueExtraCenters": ["settlement"],
-    "blackCenters": [{ "locationId": "coreZone", "radiusKm": 22 }],
-    "regionModes": { "silent_ring": "pvpFullDrop", "glasslands": "pvpFullDrop", "zero_basin": "pvpFullDrop" },
+    "blueExtraCenters": [
+      "settlement"
+    ],
+    "blackCenters": [
+      {
+        "locationId": "coreZone",
+        "radiusKm": 22
+      }
+    ],
+    "regionModes": {
+      "silent_ring": "pvpFullDrop",
+      "glasslands": "pvpFullDrop",
+      "zero_basin": "pvpFullDrop"
+    },
     "defaultMode": "pvp"
   },
   "blackMarket": {
     "service": "blackMarket",
     "hubLocationId": "coreMarket",
-    "categories": ["weapons", "armor"],
+    "categories": [
+      "weapons",
+      "armor"
+    ],
     "treasuryShare": 0.2,
     "startingTreasury": 3000,
     "priceShare": 0.45,
     "npcResaleCapShare": 0.55,
     "minCondition": 10,
     "bands": [
-      { "id": "cheap", "maxValue": 20 },
-      { "id": "common", "maxValue": 60 },
-      { "id": "good", "maxValue": 150 },
-      { "id": "rare", "maxValue": 400 },
-      { "id": "elite", "maxValue": 1000000 }
+      {
+        "id": "cheap",
+        "maxValue": 20
+      },
+      {
+        "id": "common",
+        "maxValue": 60
+      },
+      {
+        "id": "good",
+        "maxValue": 150
+      },
+      {
+        "id": "rare",
+        "maxValue": 400
+      },
+      {
+        "id": "elite",
+        "maxValue": 1000000
+      }
     ],
     "demandStep": 0.04,
     "supplyStep": 0.01,
@@ -121,14 +243,28 @@
     "budgetPerXp": 2,
     "minBudget": 15,
     "corruptSharePerDay": 0.1,
-    "corruptBands": ["cheap"],
-    "fatigue": { "windowMinutes": 20, "freeKills": 30, "perKill": 0.02, "minFactor": 0.4 }
+    "corruptBands": [
+      "cheap"
+    ],
+    "fatigue": {
+      "windowMinutes": 20,
+      "freeKills": 30,
+      "perKill": 0.02,
+      "minFactor": 0.4
+    }
   },
   "npcRemnants": {
     "share": 0.5,
-    "firearm": { "weaponParts": 1, "scrap": 2 },
-    "melee": { "scrap": 1 },
-    "armor": { "scrap": 3 }
+    "firearm": {
+      "weaponParts": 1,
+      "scrap": 2
+    },
+    "melee": {
+      "scrap": 1
+    },
+    "armor": {
+      "scrap": 3
+    }
   },
   "lootPerks": {
     "remnantSharePerRank": 0.15,

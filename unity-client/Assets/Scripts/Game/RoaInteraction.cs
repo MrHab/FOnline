@@ -73,7 +73,7 @@ namespace RealmOfAshes.Game
         [Tooltip("Радиус выбора контейнеров. Сервер разрешает открытие не дальше 3.2 м.")]
         public float ContainerRange = 3.1f;
 
-        private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition }
+        private enum TargetKind { None, LabNode, Actor, Container, Storage, Resource, CraftingStation, JobBoard, QuestObject, Transition, PlotBoard }
         private enum PanelKind { None, Npc, Trade, Storage, Corpse, Container, Crafting, JobBoard }
         private enum QuantityKind { None, TradeBuy, TradeSell, StorageDeposit, StorageWithdraw, Loot }
 
@@ -245,6 +245,7 @@ namespace RealmOfAshes.Game
                 if (_candidateKind == TargetKind.Resource) action = "добыть";
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
                 else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
+                else if (_candidateKind == TargetKind.PlotBoard) action = "торги за участок";
                 else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
@@ -1240,6 +1241,11 @@ namespace RealmOfAshes.Game
                 string questObjective = kind == TargetKind.QuestObject
                     ? (entry.Interactive?["questObjective"]?.ToString() ?? string.Empty)
                     : string.Empty;
+                // Табличка участка знает, за какой участок торгуются: без этого
+                // окно торгов не открыть.
+                string plotId = kind == TargetKind.PlotBoard
+                    ? (entry.Interactive?["plotId"]?.ToString() ?? string.Empty)
+                    : string.Empty;
 
                 _staticTargets.Add(new StaticTarget
                 {
@@ -1255,6 +1261,7 @@ namespace RealmOfAshes.Game
                         ["station"] = station,
                         ["boardSiteId"] = boardSiteId,
                         ["questObjective"] = questObjective,
+                        ["plotId"] = plotId,
                         ["locationId"] = _locationId
                     }
                 });
@@ -1452,6 +1459,50 @@ namespace RealmOfAshes.Game
                 Show("Участки: зачислено " + RoaCraftingPlots.LastPayout + " марок.", 4f);
         }
 
+        // --- табличка участка: торги и постройка станка --------------------------------------
+        private string _plotBoardId = string.Empty;
+
+        /// <summary>Открыта ли табличка участка: по ней рисуется окно торгов.</summary>
+        public bool PlotBoardOpen { get { return !string.IsNullOrEmpty(_plotBoardId); } }
+
+        /// <summary>Участок таблички со стороны сервера (или null, пока снимок не пришёл).</summary>
+        public JObject PlotBoardPlot { get { return PlotBoardOpen ? RoaCraftingPlots.ForObject(_plotBoardId) : null; } }
+
+        /// <summary>Идёт ли запрос к серверу: пока идёт, кнопки окна заблокированы.</summary>
+        public bool PlotBoardBusy { get { return _plotPending; } }
+
+        private void OpenPlotBoard(JObject entry)
+        {
+            string plotId = entry?["interactive"]?["plotId"]?.ToString();
+            if (string.IsNullOrEmpty(plotId)) plotId = entry?["plotId"]?.ToString();
+            if (string.IsNullOrEmpty(plotId)) { Show("Табличка ничего не говорит об участке.", 4f); return; }
+            _plotBoardId = plotId;
+            RequestPlotState();
+        }
+
+        public void PlotBoardClose() { _plotBoardId = string.Empty; }
+
+        public void PlotBoardBid(int amount)
+        {
+            JObject plot = PlotBoardPlot;
+            if (plot == null) return;
+            PlotAction("bid", plot, new Dictionary<string, object> { ["amount"] = Mathf.Max(0, amount) });
+        }
+
+        public void PlotBoardBuild(string station)
+        {
+            JObject plot = PlotBoardPlot;
+            if (plot == null || string.IsNullOrEmpty(station)) return;
+            PlotAction("build", plot, new Dictionary<string, object> { ["station"] = station });
+        }
+
+        public void PlotBoardSetFee(int percent)
+        {
+            JObject plot = PlotBoardPlot;
+            if (plot == null) return;
+            PlotAction("setFee", plot, new Dictionary<string, object> { ["feePct"] = Mathf.Clamp(percent, 0, 100) / 100d });
+        }
+
         private void PlotAction(string action, JObject plot, Dictionary<string, object> extra)
         {
             string plotId = plot?["plotId"]?.ToString();
@@ -1475,7 +1526,8 @@ namespace RealmOfAshes.Game
                     return;
                 }
                 ApplyPlotAck(ack);
-                Show(action == "bid" ? "Ставка принята." : "Плата за станок изменена.", 4f);
+                Show(action == "bid" ? "Ставка принята."
+                    : action == "build" ? "Станок построен." : "Плата за станок изменена.", 4f);
             });
         }
 
@@ -2055,6 +2107,11 @@ namespace RealmOfAshes.Game
             if (_candidateKind == TargetKind.JobBoard)
             {
                 OpenJobBoard(_candidate);
+                return;
+            }
+            if (_candidateKind == TargetKind.PlotBoard)
+            {
+                OpenPlotBoard(_candidate);
                 return;
             }
             if (_candidateKind == TargetKind.QuestObject)
@@ -2966,6 +3023,7 @@ namespace RealmOfAshes.Game
             if (_candidateKind == TargetKind.Resource) action = "добыть";
             else if (_candidateKind == TargetKind.CraftingStation) action = "создать предмет";
             else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
+            else if (_candidateKind == TargetKind.PlotBoard) action = "торги за участок";
             else if (_candidateKind == TargetKind.QuestObject) action = "исследовать";
             else if (_candidateKind == TargetKind.Transition) action = "перейти";
             else if (_candidateKind == TargetKind.Container || _candidateKind == TargetKind.Storage) action = "открыть";
@@ -3833,6 +3891,9 @@ namespace RealmOfAshes.Game
             string role = (entry.Interactive?["role"]?.ToString() ?? string.Empty).ToLowerInvariant();
             string containerType = (entry.Interactive?["containerType"]?.ToString() ?? string.Empty).ToLowerInvariant();
 
+            // Табличка участка — раньше доски работ: у обеих один префаб.
+            if (kind == "plotboard" || HasTag(entry, "plot-board")) return TargetKind.PlotBoard;
+
             if (kind == "jobboard" || role == "worldtaskboard"
                 || HasTag(entry, "jobBoard") || HasTag(entry, "questBoard"))
                 return TargetKind.JobBoard;
@@ -3901,6 +3962,7 @@ namespace RealmOfAshes.Game
             if (kind == TargetKind.Storage) return "Хранилище";
             if (kind == TargetKind.CraftingStation) return RoaCraftingData.StationLabel(station);
             if (kind == TargetKind.JobBoard) return "Доска контрактов";
+            if (kind == TargetKind.PlotBoard) return "Участок под застройку";
             if (kind == TargetKind.QuestObject) return "Объект задания";
             return "Торговый автомат";
         }

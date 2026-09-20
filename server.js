@@ -235,6 +235,7 @@ const {
 const {
   normalizeCraftingPlotState,
   ensurePlot,
+  leaseActive,
   creditPayout: creditPlotPayout,
   takePayout: takePlotPayout,
   placePlotBid,
@@ -430,13 +431,6 @@ const {
   skipKromkaTutorial
 } = require('./src/server/kromka-onboarding');
 const { beginCaravanCinematic, caravanCinematicHeld, finishCaravanCinematic } = require('./src/server/kromka-caravan-cinematic');
-const {
-  buildActivitySlotCatalog,
-  buildActivitySlotIndexes,
-  pruneActivityReservations,
-  releaseActivityReservation,
-  reserveActivitySlot
-} = require('./src/server/npc-smart-objects');
 const {
   actorHostilityKeys,
   actorIsExplicitlyHostileToPlayer,
@@ -1088,7 +1082,10 @@ const SERVER_FACTION_CAPITAL_LOCATIONS = {
   coreBaseLeague: 'tract_league'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
-const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
+// Город без своей фракции (Ключи) тоже держит хранилище в банке: это городская
+// кладовая, общая для всех и отдельная от фракционных.
+const SERVER_CITY_STORAGE_FACTION = 'city';
+const SERVER_FACTION_STORAGE_IDS = new Set([...Object.values(SERVER_FACTION_CAPITAL_LOCATIONS), SERVER_CITY_STORAGE_FACTION]);
 const SERVER_FACTION_CAPITAL_STORAGE = {
   sluiceCity: {
     x: -5,
@@ -1149,20 +1146,34 @@ function locationCapitalFaction(loc = {}) {
   const id = capitalLocationId(loc);
   return SERVER_FACTION_CAPITAL_LOCATIONS[id] || '';
 }
+/** Чьё хранилище стоит в этой локации: фракции столицы или города, если он не столица. */
+function locationStorageFaction(loc = {}) {
+  const faction = locationCapitalFaction(loc);
+  if (faction) return faction;
+  const definition = typeof loc === 'string' ? (LOCATIONS[capitalLocationId(loc)] || {}) : (loc || {});
+  return definition?.cityPlan?.bank?.storage ? SERVER_CITY_STORAGE_FACTION : '';
+}
 function locationIsFactionCapital(loc = {}) {
   const id = capitalLocationId(loc);
   return SERVER_FACTION_CAPITAL_LOCATION_IDS.has(id);
 }
 function locationCapitalStorageObject(loc = {}) {
   const id = capitalLocationId(loc);
-  const faction = SERVER_FACTION_CAPITAL_LOCATIONS[id] || '';
-  const def = SERVER_FACTION_CAPITAL_STORAGE[id];
+  // В городе-секторе хранилище стоит в банке: конструктор городов даёт его место.
+  const bank = loc.cityPlan && typeof loc.cityPlan === 'object' ? loc.cityPlan.bank : null;
+  const faction = SERVER_FACTION_CAPITAL_LOCATIONS[id] || (bank?.storage ? SERVER_CITY_STORAGE_FACTION : '');
+  const def = SERVER_FACTION_CAPITAL_STORAGE[id] || (bank?.storage ? { x: 0, z: 0, name: 'Городское хранилище' } : null);
   if (!faction || !def) return null;
+  const point = bank?.storage
+    ? tileToWorld(Number(bank.storage.tx), Number(bank.storage.tz), locationTileDims(loc))
+    : { x: def.x, z: def.z };
   return {
     id: `capital_storage_${faction}`,
     model: 'storageChest',
+    // Город клиент собирает из набора префабов: без ключа сундук был бы невидим.
+    ...(bank?.storage ? { prefab: 'storage_chest' } : {}),
     name: def.name,
-    position: { x: def.x, y: 0, z: def.z },
+    position: { x: point.x, y: 0, z: point.z },
     rotation: { x: 0, y: -0.08, z: 0 },
     scale: { x: 1, y: 1, z: 1 },
     collision: 'none',
@@ -1371,14 +1382,16 @@ function normalizeLocationDefinition(raw, fallback = null) {
       loc.storage = {
         ...locationDefinitionPointFromObject(authoredStorage, loc.spawn, locDims),
         id: String(authoredStorage.id || 'authored_storage').slice(0, 64),
-        storageFaction: locationCapitalFaction(loc),
+        storageFaction: locationStorageFaction(loc),
         name: String(authoredStorage.name || 'Хранилище').slice(0, 80)
       };
     } else if (!hasOwnStorage || ownStorageLooksDerived) {
       delete loc.storage;
     }
   }
-  if (!locationIsFactionCapital(loc)) delete loc.storage;
+  // Хранилище остаётся у столиц фракций и у городов с банком: в городе без своей
+  // фракции это городская кладовая.
+  if (!locationIsFactionCapital(loc) && !locationStorageFaction(loc)) delete loc.storage;
   ['entryFromWorld', 'entryFromNorth', 'entryFromSouth', 'entryFromEast', 'entryFromWest', 'entryFromWasteland', 'entryFromSettlement', 'trader', 'storage'].forEach(key => {
     if (loc[key]) loc[key] = normalizeLocationPoint(loc[key], base[key] || loc.spawn, locDims);
   });
@@ -4433,15 +4446,15 @@ const ZONE_RUNTIME = createZoneRuntime({
   validate: validateZoneLocationDefinition
 });
 ZONE_RUNTIME.registerStubs(LOCATIONS);
-// Город занимает сектор целиком: его авторская локация получает блок сектора и
-// четыре точки входа у своих сторон, чтобы соседние секторы вводили прямо в город.
+// Город занимает сектор целиком, и его строит конструктор городов: стена с воротами,
+// улицы, площадь и кварталы. Авторское содержимое — станки, хранилище, квестовые
+// объекты, тайники — конструктор переносит в новый план по id.
+const CITY_AUTHORED_LOCATIONS = new Map();
 for (const city of ZONE_RUNTIME.cities()) {
   const location = LOCATIONS[city.locationId];
   if (!location) throw new Error(`zone graph: the city ${city.locationId} has no authored location`);
-  LOCATIONS[city.locationId] = normalizeLocationDefinition({
-    ...location,
-    ...ZONE_RUNTIME.cityLocationPatch(city.locationId, normalizedLocationPlayableBounds(location))
-  });
+  CITY_AUTHORED_LOCATIONS.set(city.locationId, location);
+  LOCATIONS[city.locationId] = normalizeLocationDefinition(ZONE_RUNTIME.cityDefinition(city.locationId, location));
 }
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 const KROMKA_SAVE_MIGRATION = readJson(KROMKA_SAVE_MIGRATION_FILE, {
@@ -7865,7 +7878,7 @@ function serverStorageFactionKey(value = '') {
 
 function serverPlayerStorageFaction(player = {}) {
   if (!player || player.onGlobalMap) return '';
-  return serverStorageFactionKey(locationCapitalFaction(player.locationId || player.currentLocationId || ''));
+  return serverStorageFactionKey(locationStorageFaction(player.locationId || player.currentLocationId || ''));
 }
 
 function ensureServerFactionStorages(player = {}) {
@@ -15740,8 +15753,11 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   // Участок станка: плату назначает арендатор, свободный участок берёт плату
   // поселения. Клиент показывает ту же сумму и присылает её в fee.
   const plotNow = Date.now();
+  // Станок стоит на участке: у городского станка участок назван в нём самом, у
+  // старых авторских станков участком был сам станок.
+  const plotObjectId = String(stationObject?.interactive?.plotId || '') || stationObjectId;
   const plot = serverLocationHasPlots(loc)
-    ? ensurePlot(serverCraftingPlotStore(), WORLD_ECONOMY.plots, { locationId, objectId: stationObjectId, station: requiredStation })
+    ? ensurePlot(serverCraftingPlotStore(), WORLD_ECONOMY.plots, { locationId, objectId: plotObjectId, station: requiredStation })
     : null;
   const plotOutput = SERVER_CRAFT_RECIPE_OUTPUTS[recipeId] || {};
   const plotCharge = plot
@@ -17394,7 +17410,9 @@ function spawnAuthoredLocationActors(room, loc) {
 function serverSpawnFastTravelDispatcher(room, loc) {
   if (!room || !loc || !(ZONE_RUNTIME.graph.capitals || []).includes(loc.id)) return 0;
   const dims = locationTileDims(loc);
-  const anchor = loc.entryFromWorld || loc.spawn || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
+  // В городе-секторе диспетчер стоит у площади, а не у точки входа.
+  const anchor = loc.cityPlan?.dispatcher || loc.entryFromWorld || loc.spawn
+    || { tx: Math.floor(dims.w / 2), tz: Math.floor(dims.h / 2) };
   const actor = spawnServerEnemy(room, {
     force: true,
     allowSafeLocation: true,
@@ -17731,46 +17749,6 @@ function wastelandLocationRows(loc = {}) {
   return Array.isArray(loc?.objects) ? loc.objects : [];
 }
 
-function bumpRoomNpcActivityReservationRevision(room) {
-  if (!room) return 0;
-  room.npcActivityReservationRevision = Math.max(0, Math.floor(Number(room.npcActivityReservationRevision || 0))) + 1;
-  return room.npcActivityReservationRevision;
-}
-
-function ensureRoomNpcActivitySlots(room, loc = {}) {
-  if (!room) return [];
-  const locationId = String(loc?.id || room.locationId || '');
-  const objectSource = Array.isArray(loc?.objects) ? loc.objects : null;
-  if (room.npcActivitySlotLocationId !== locationId || room.npcActivitySlotObjectSource !== objectSource) {
-    room.npcActivitySlotLocationId = locationId;
-    room.npcActivitySlotObjectSource = objectSource;
-    room.npcActivitySlots = buildActivitySlotCatalog(loc);
-    const indexes = buildActivitySlotIndexes(room.npcActivitySlots);
-    room.npcActivitySlotById = indexes.byId;
-    room.npcActivitySlotsByType = indexes.byType;
-    room.npcActivityReservations = new Map();
-    room.npcActivitySlotCatalogRevision = Math.max(0, Math.floor(Number(room.npcActivitySlotCatalogRevision || 0))) + 1;
-    bumpRoomNpcActivityReservationRevision(room);
-    room.npcActivityReservationsPrunedAtStructureRevision = Number(room.enemyStructureRevision || 0);
-  }
-  if (!(room.npcActivityReservations instanceof Map)) room.npcActivityReservations = new Map();
-  if (!(room.npcActivitySlotById instanceof Map) || !(room.npcActivitySlotsByType instanceof Map)) {
-    const indexes = buildActivitySlotIndexes(room.npcActivitySlots);
-    room.npcActivitySlotById = indexes.byId;
-    room.npcActivitySlotsByType = indexes.byType;
-  }
-  const structureRevision = Number(room.enemyStructureRevision || 0);
-  if (Number(room.npcActivityReservationsPrunedAtStructureRevision) !== structureRevision) {
-    const removed = pruneActivityReservations(room.npcActivityReservations, actorId => {
-      const actor = room.enemies instanceof Map ? room.enemies.get(actorId) : null;
-      return !!(actor && !actor.dead);
-    });
-    if (removed > 0) bumpRoomNpcActivityReservationRevision(room);
-    room.npcActivityReservationsPrunedAtStructureRevision = structureRevision;
-  }
-  return Array.isArray(room.npcActivitySlots) ? room.npcActivitySlots : [];
-}
-
 function npcRoutineSlotType(value = '') {
   const type = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
   if (type === 'rest' || type === 'campfire' || type === 'socialize') return 'social';
@@ -17780,66 +17758,6 @@ function npcRoutineSlotType(value = '') {
   return type;
 }
 
-function npcRoutineSlotTarget(routinePackage = {}) {
-  const raw = routinePackage?.target;
-  if (raw && typeof raw === 'object') {
-    const slotId = String(raw.slotId || raw.activitySlotId || raw.id || '').slice(0, 96);
-    const slotType = npcRoutineSlotType(raw.slotType || raw.type || '');
-    return { ...(slotId ? { slotId } : {}), ...(slotType ? { slotType } : {}) };
-  }
-  const text = String(raw || '').trim();
-  if (text) return { slotType: npcRoutineSlotType(text) };
-  const packageType = npcRoutineSlotType(routinePackage?.type || routinePackage?.state || '');
-  return packageType ? { slotType: packageType } : {};
-}
-
-function releaseNpcActivitySlot(room, enemy, clearState = false) {
-  if (!room || !enemy) return false;
-  const released = releaseActivityReservation(room.npcActivityReservations, enemy.id) > 0;
-  if (released) bumpRoomNpcActivityReservationRevision(room);
-  enemy.npcActivityReservationMiss = null;
-  if (clearState) {
-    enemy.npcActivitySlotId = '';
-    enemy.npcActivityFacing = null;
-  }
-  return released;
-}
-
-function reserveNpcActivitySlot(room, loc = {}, enemy = {}, routinePackage = {}) {
-  const slots = ensureRoomNpcActivitySlots(room, loc);
-  const target = npcRoutineSlotTarget(routinePackage);
-  if (!target.slotId && !target.slotType) return null;
-  const missKey = `${String(routinePackage.id || '')}|${String(target.slotId || '')}|${String(target.slotType || '')}`;
-  const catalogRevision = Number(room.npcActivitySlotCatalogRevision || 0);
-  const reservationRevision = Number(room.npcActivityReservationRevision || 0);
-  const previousMiss = enemy.npcActivityReservationMiss;
-  if (previousMiss
-    && previousMiss.key === missKey
-    && Number(previousMiss.catalogRevision) === catalogRevision
-    && Number(previousMiss.reservationRevision) === reservationRevision) return null;
-  const currentSlotId = String(enemy.npcActivitySlotId || '');
-  const heldBefore = !!(currentSlotId
-    && room.npcActivityReservations.get(currentSlotId) instanceof Set
-    && room.npcActivityReservations.get(currentSlotId).has(enemy.id));
-  const slot = reserveActivitySlot({
-    slots,
-    slotById: room.npcActivitySlotById,
-    slotsByType: room.npcActivitySlotsByType,
-    reservations: room.npcActivityReservations,
-    npc: enemy,
-    target,
-    currentSlotId,
-    locationId: loc.id || room.locationId
-  });
-  if (!slot) {
-    enemy.npcActivityReservationMiss = { key: missKey, catalogRevision, reservationRevision };
-    return null;
-  }
-  enemy.npcActivityReservationMiss = null;
-  if (!heldBefore || currentSlotId !== slot.id) bumpRoomNpcActivityReservationRevision(room);
-  return slot;
-}
-
 function setNpcActivityState(enemy, next = {}) {
   if (!enemy) return false;
   const values = {
@@ -17847,7 +17765,6 @@ function setNpcActivityState(enemy, next = {}) {
     npcActivityType: String(next.type ?? enemy.npcActivityType ?? '').slice(0, 32),
     npcActivityPhase: String(next.phase ?? enemy.npcActivityPhase ?? '').slice(0, 24),
     npcActivityVisualAction: String(next.visualAction ?? enemy.npcActivityVisualAction ?? '').slice(0, 32),
-    npcActivitySlotId: String(next.slotId ?? enemy.npcActivitySlotId ?? '').slice(0, 96),
     npcActivityFacing: next.facing === null
       ? null
       : (Number.isFinite(Number(next.facing ?? enemy.npcActivityFacing)) ? Number(next.facing ?? enemy.npcActivityFacing) : null),
@@ -18022,7 +17939,6 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
       type: kind === 'craft' ? 'craft' : 'work',
       phase: 'travel',
       visualAction: 'walk',
-      slotId: '',
       facing: null,
       serviceAvailable: false,
       interruptReason: ''
@@ -18047,7 +17963,6 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
       type: kind === 'craft' ? 'craft' : 'work',
       phase: 'use',
       visualAction: 'work',
-      slotId: '',
       facing: null,
       serviceAvailable: false,
       interruptReason: ''
@@ -18071,7 +17986,6 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
       type: kind === 'craft' ? 'craft' : 'work',
       phase: 'use',
       visualAction: 'work',
-      slotId: '',
       facing: null,
       serviceAvailable: false,
       interruptReason: ''
@@ -18397,22 +18311,16 @@ function npcScheduledServiceClosed(room, enemy = {}, now = Date.now()) {
   return npcRoutineHasScheduledService(enemy) && !npcRoutineUnderlyingServiceAvailable(enemy, now);
 }
 
+/**
+ * Занятие авторского NPC в момент появления. Рабочих мест у NPC нет, поэтому
+ * с места его никто не двигает: аукционер, медик и ремонтник стоят там, где их
+ * поставил автор — иначе служба уезжает от своей стойки и до неё не дотянуться.
+ */
 function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.now()) {
   if (!room || !enemy || enemy.dead || !enemy.authoredLocationId && !enemy.npcRoutineId) return false;
   const routinePackage = npcRoutinePackageForActor(room, enemy, now, { force: true, context: { now } });
   if (!routinePackage || routinePackage.source === 'interrupt') return false;
-  const slot = reserveNpcActivitySlot(room, loc, enemy, routinePackage);
-  if (!slot) return false;
-  const target = { x: Number(slot.position.x || 0), z: Number(slot.position.z || 0) };
-  if (isEnemyStepOpen(room, enemy, target.x, target.z, 0.3)) {
-    enemy.x = target.x;
-    enemy.z = target.z;
-  } else {
-    const tile = worldToTile(target.x, target.z, roomTileDims(room));
-    const safe = wastelandSafePointNearTile(room, tile.tx, tile.tz, 4);
-    enemy.x = safe.x;
-    enemy.z = safe.z;
-  }
+  const activityType = npcRoutineSlotType(routinePackage.type || routinePackage.state);
   enemy.vx = 0;
   enemy.vz = 0;
   enemy.aiState = String(routinePackage.state || 'idle');
@@ -18420,15 +18328,13 @@ function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.no
   enemy.npcScheduleLabel = npcScheduleLabel(routinePackage.type || routinePackage.state);
   setNpcActivityState(enemy, {
     packageId: routinePackage.id,
-    type: npcRoutineSlotType(routinePackage.type || routinePackage.state),
+    type: activityType,
     phase: 'use',
-    visualAction: slot.visualAction,
-    slotId: slot.id,
-    facing: slot.facing,
+    visualAction: activityType,
+    facing: null,
     serviceAvailable: routinePackage.serviceAvailable,
     interruptReason: ''
   });
-  setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
   return true;
 }
 
@@ -18446,7 +18352,6 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   const routinePackage = npcRoutinePackageForActor(room, enemy, now);
   if (!routinePackage) return false;
   const packageChanged = String(enemy.npcRoutinePackageId || '') !== String(routinePackage.id || '');
-  if (packageChanged) releaseNpcActivitySlot(room, enemy, true);
   const state = String(routinePackage.state || 'work');
   const activityType = npcRoutineSlotType(routinePackage.type || state);
   enemy.npcScheduleState = state;
@@ -18454,7 +18359,6 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   enemy.npcScheduleUpdatedAt = now;
 
   if (routinePackage.source === 'interrupt') {
-    releaseNpcActivitySlot(room, enemy, true);
     enemy.npcSpeechText = '';
     enemy.npcSpeechUntil = 0;
     setNpcActivityState(enemy, {
@@ -18462,7 +18366,6 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
       type: activityType,
       phase: 'use',
       visualAction: '',
-      slotId: '',
       facing: null,
       serviceAvailable: false,
       interruptReason: routinePackage.type
@@ -18475,13 +18378,11 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   }
   const laborManaged = !!enemy.wastelandSiteWorkerLocationId && ['work', 'craft'].includes(activityType);
   if (laborManaged) {
-    releaseNpcActivitySlot(room, enemy, true);
     setNpcActivityState(enemy, {
       packageId: routinePackage.id,
       type: activityType,
       phase: 'use',
       visualAction: activityType === 'craft' ? 'work' : activityType,
-      slotId: '',
       facing: null,
       serviceAvailable: routinePackage.serviceAvailable,
       interruptReason: ''
@@ -18489,17 +18390,13 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
     return false;
   }
 
-  const slot = reserveNpcActivitySlot(room, loc, enemy, routinePackage);
-  const target = slot
-    ? { x: Number(slot.position.x || 0), z: Number(slot.position.z || 0), facing: Number(slot.facing || 0) }
-    : npcRoutineFallbackTarget(room, loc, enemy, routinePackage);
+  const target = npcRoutineFallbackTarget(room, loc, enemy, routinePackage);
   if (!target) {
     setNpcActivityState(enemy, {
       packageId: routinePackage.id,
       type: activityType,
       phase: 'use',
       visualAction: activityType === 'socialize' ? 'social' : activityType,
-      slotId: '',
       facing: null,
       serviceAvailable: routinePackage.serviceAvailable,
       interruptReason: ''
@@ -18517,8 +18414,7 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
       type: activityType,
       phase: 'travel',
       visualAction: 'walk',
-      slotId: slot?.id || '',
-      facing: slot ? slot.facing : null,
+      facing: null,
       serviceAvailable: routinePackage.serviceAvailable,
       interruptReason: ''
     });
@@ -18536,9 +18432,8 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
     packageId: routinePackage.id,
     type: activityType,
     phase: 'use',
-    visualAction: String(slot?.visualAction || (activityType === 'socialize' ? 'social' : activityType)).slice(0, 32),
-    slotId: slot?.id || '',
-    facing: slot ? slot.facing : null,
+    visualAction: String(activityType === 'socialize' ? 'social' : activityType).slice(0, 32),
+    facing: null,
     serviceAvailable: routinePackage.serviceAvailable,
     interruptReason: ''
   });
@@ -18548,8 +18443,6 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
       setEnemyLookAt(enemy, friend);
       updateNpcSocialSpeech(enemy, friend, now, room, loc);
     }
-  } else if (slot && Number.isFinite(Number(slot.facing))) {
-    setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
   } else {
     setEnemyLookAt(enemy, target);
   }
@@ -19119,7 +19012,6 @@ function roomEnemySet(room, id, enemy) {
 function roomEnemyDelete(room, id) {
   if (!(room?.enemies instanceof Map)) return false;
   const enemy = room.enemies.get(id);
-  if (enemy) releaseNpcActivitySlot(room, enemy, true);
   const removed = room.enemies.delete(id);
   if (removed) {
     if (room.enemyActivityBroadcastRevisions instanceof Map) {
@@ -19132,8 +19024,6 @@ function roomEnemyDelete(room, id) {
 
 function clearRoomEnemies(room) {
   if (!(room?.enemies instanceof Map) || room.enemies.size === 0) return false;
-  if (room.npcActivityReservations instanceof Map) room.npcActivityReservations.clear();
-  bumpRoomNpcActivityReservationRevision(room);
   room.enemies.clear();
   markRoomEnemyStructureDirty(room);
   return true;
@@ -19267,7 +19157,6 @@ function publicEnemy(e, viewer = null) {
     goalActivity: naturalCreature ? '' : String(e.npcActivityType || '').slice(0, 32),
     activityPhase: naturalCreature ? '' : String(e.npcActivityPhase || '').slice(0, 24),
     visualAction: naturalCreature ? '' : String(e.npcActivityVisualAction || '').slice(0, 32),
-    activitySlotId: naturalCreature ? '' : String(e.npcActivitySlotId || '').slice(0, 96),
     activityFacing: naturalCreature || e.npcActivityFacing == null || !Number.isFinite(Number(e.npcActivityFacing))
       ? null
       : Number(Number(e.npcActivityFacing).toFixed(4)),
@@ -19413,7 +19302,6 @@ function publicEnemyActivityDelta(e = {}) {
       String(e.npcActivityType || '').slice(0, 32),
       String(e.npcActivityPhase || '').slice(0, 24),
       String(e.npcActivityVisualAction || '').slice(0, 32),
-      String(e.npcActivitySlotId || '').slice(0, 96),
       e.npcActivityFacing == null || !Number.isFinite(Number(e.npcActivityFacing))
         ? null
         : Number(Number(e.npcActivityFacing).toFixed(4)),
@@ -20844,6 +20732,16 @@ function serverLocationPlots(loc = {}) {
   if (!serverLocationHasPlots(loc)) return [];
   const store = serverCraftingPlotStore();
   const out = [];
+  // Участки города размечает конструктор: торгуются за место, а не за готовый
+  // станок — его победитель торгов ставит сам.
+  for (const row of Array.isArray(loc.cityPlan?.plots) ? loc.cityPlan.plots : []) {
+    if (!row?.open) continue;
+    const plot = ensurePlot(store, WORLD_ECONOMY.plots, { locationId: loc.id, objectId: row.id });
+    if (plot) out.push(plot);
+  }
+  if (out.length) return out;
+  // Локации вне города участков не размечают, но старые сохранения могут помнить
+  // участок у авторского станка — такие тоже показываем.
   for (const row of Array.isArray(loc.objects) ? loc.objects : []) {
     const station = serverStationKeyForObject(row);
     if (!station) continue;
@@ -20851,6 +20749,34 @@ function serverLocationPlots(loc = {}) {
     if (plot) out.push(plot);
   }
   return out;
+}
+
+/** Станки, построенные игроками в этом городе: `[{ plotId, station }]`. */
+function serverCityBuiltStations(locationId = '') {
+  const id = normalizeLocationId(locationId);
+  const store = serverCraftingPlotStore();
+  const out = [];
+  for (const plot of Object.values(store.plots || {})) {
+    if (!plot || normalizeLocationId(plot.locationId || '') !== id || !plot.station) continue;
+    out.push({ plotId: String(plot.objectId || ''), station: String(plot.station || '') });
+  }
+  return out;
+}
+
+/** Пересобрать город со всем, что на нём построили: станок должен появиться в мире. */
+function serverRebuildCity(locationId = '') {
+  const id = normalizeLocationId(locationId);
+  const authored = CITY_AUTHORED_LOCATIONS.get(id);
+  if (!authored) return false;
+  const next = ZONE_RUNTIME.cityDefinition(id, authored, serverCityBuiltStations(id));
+  if (!next) return false;
+  LOCATIONS[id] = normalizeLocationDefinition(next);
+  for (const room of rooms.values()) {
+    if (normalizeLocationId(room?.locationId || '') !== id) continue;
+    room.staticCollision = null;
+    room.worldVersion = (Number(room.worldVersion) || 0) + 1;
+  }
+  return true;
 }
 
 /** Невыплаченные марки участков (возвраты ставок, плата арендатору) — в рюкзак. */
@@ -24291,7 +24217,6 @@ function spawnServerEnemy(room, opts = {}) {
     npcActivityType: String(initialRoutinePackage?.type || '').slice(0, 32),
     npcActivityPhase: initialRoutinePackage ? 'travel' : '',
     npcActivityVisualAction: '',
-    npcActivitySlotId: '',
     npcActivityFacing: null,
     npcServiceAvailable: !!initialRoutinePackage?.serviceAvailable,
     npcActivityInterruptReason: '',
@@ -25653,7 +25578,6 @@ function updateServerEnemies(room, dt, opts = {}) {
   const now = Date.now();
   for (const enemy of [...room.enemies.values()]) {
     if (enemy.dead) {
-      releaseNpcActivitySlot(room, enemy, true);
       if (serverShouldRemoveCorpse(enemy, now)) {
         if (roomEnemyDelete(room, enemy.id)) enemyStructureChanged = true;
       }
@@ -25676,7 +25600,6 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (factionCombatActors.has(enemy.id)) {
       enemy.dialogueFocusUntil = 0;
       enemy.dialoguePlayerId = '';
-      releaseNpcActivitySlot(room, enemy, true);
       enemy.npcScheduleState = 'combat';
       enemy.npcScheduleLabel = npcScheduleLabel('combat');
       setNpcActivityState(enemy, {
@@ -25684,7 +25607,6 @@ function updateServerEnemies(room, dt, opts = {}) {
         type: 'combat',
         phase: 'use',
         visualAction: '',
-        slotId: '',
         facing: null,
         serviceAvailable: false,
         interruptReason: 'combat'
@@ -25700,7 +25622,6 @@ function updateServerEnemies(room, dt, opts = {}) {
       enemy.dialoguePlayerId = '';
       enemy.lookX = null;
       enemy.lookZ = null;
-      releaseNpcActivitySlot(room, enemy, true);
       enemy.npcScheduleState = dialogueInterruptType;
       enemy.npcScheduleLabel = npcScheduleLabel(dialogueInterruptType);
       setNpcActivityState(enemy, {
@@ -25708,7 +25629,6 @@ function updateServerEnemies(room, dt, opts = {}) {
         type: dialogueInterruptType,
         phase: 'active',
         visualAction: dialogueInterruptType,
-        slotId: '',
         facing: null,
         serviceAvailable: false,
         interruptReason: dialogueInterruptType
@@ -25722,7 +25642,6 @@ function updateServerEnemies(room, dt, opts = {}) {
         && Math.hypot(Number(focusPlayer.x || 0) - Number(enemy.x || 0), Number(focusPlayer.z || 0) - Number(enemy.z || 0)) <= 6.2
         && now < Number(enemy.dialogueFocusUntil || 0);
       if (focusOk) {
-        releaseNpcActivitySlot(room, enemy, true);
         enemy.aiState = 'dialogue';
         enemy.npcScheduleState = 'dialogue';
         enemy.npcScheduleLabel = npcScheduleLabel('dialogue');
@@ -25731,7 +25650,6 @@ function updateServerEnemies(room, dt, opts = {}) {
           type: 'dialogue',
           phase: 'use',
           visualAction: 'dialogue',
-          slotId: '',
           facing: null,
           serviceAvailable: !npcRoutineServiceInterrupted(room, enemy, now)
             && npcRoutineUnderlyingServiceAvailable(enemy, now),
@@ -30165,7 +30083,6 @@ io.on('connection', (socket) => {
     if (enemy.dialoguePlayerId && enemy.dialoguePlayerId !== socket.id && Number(enemy.dialogueFocusUntil || 0) > Date.now()) {
       return fail('Этот НПС уже разговаривает с другим игроком.');
     }
-    releaseNpcActivitySlot(room, enemy, true);
     enemy.dialogueFocusUntil = Date.now() + 16000;
     enemy.dialoguePlayerId = socket.id;
     enemy.aiState = 'dialogue';
@@ -30176,7 +30093,6 @@ io.on('connection', (socket) => {
       type: 'dialogue',
       phase: 'use',
       visualAction: 'dialogue',
-      slotId: '',
       facing: null,
       serviceAvailable: !npcRoutineServiceInterrupted(room, enemy, Date.now())
         && npcRoutineUnderlyingServiceAvailable(enemy, Date.now()),
@@ -30844,7 +30760,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, ...payload, ...state, self: publicAuthoritativePlayerState(p) });
     };
     if (action === 'state') return reply({ action });
-    if (!['bid', 'setFee'].includes(action)) return fail('Неизвестное действие участка.');
+    if (!['bid', 'setFee', 'build'].includes(action)) return fail('Неизвестное действие участка.');
     if (!serverLocationHasPlots(loc)) return fail('Здесь нет участков.');
     const plotId = String(data.plotId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 170);
     const plot = serverLocationPlots(loc).find(row => row.id === plotId);
@@ -30862,6 +30778,17 @@ io.on('connection', (socket) => {
       serverInventoryRemove(p, 'silver', amount);
       if (placed.refunded) serverDeliverPlotPayout(placed.refunded.characterId);
       payload = { ok: true, action, plotId: plot.id, amount };
+    } else if (action === 'build') {
+      // Станок ставит только арендатор участка и только один раз: участок — место,
+      // а станок на нём — то, ради чего за место и торговались.
+      const station = String(data.station || '').replace(/[^a-z_]/g, '').slice(0, 32);
+      if (!SERVER_CRAFT_STATION_MODELS[station]) return fail('Такой станок не строят.');
+      if (!leaseActive(plot, now)) return fail('Участок ещё не ваш: выиграйте торги.');
+      if (String(plot.lessee?.characterId || '') !== String(p.characterId || '')) return fail('Участок держит другой игрок.');
+      if (plot.station) return fail('На участке уже стоит станок.');
+      plot.station = station;
+      serverRebuildCity(loc.id);
+      payload = { ok: true, action, plotId: plot.id, station };
     } else {
       const changed = setPlotFee(store, WORLD_ECONOMY.plots, plot.id, p.characterId, Number(data.feePct), now);
       if (!changed.ok) return fail(changed.error);

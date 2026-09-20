@@ -15,15 +15,13 @@ const h = require('./check-combat-runtime');
 const accounts = {};
 
 const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
-const sluice = require('../data/locations/sluiceCity.json');
+// Створ — город-сектор: аукционер стоит в банке, где его поставил конструктор.
+const sluice = require('./lib/zone-walk').cityDefinition('sluiceCity');
 const auctioneer = (sluice.objects || []).find(object => (object.entity || {}).service === 'auction');
 assert(auctioneer, 'в Створе нет аукционера');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-// Хранилище Управы в Створе — точка из SERVER_FACTION_CAPITAL_STORAGE сервера.
-const storageMatch = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8')
-  .match(/const SERVER_FACTION_CAPITAL_STORAGE = \{\s*sluiceCity: \{\s*x: (-?[\d.]+),\s*z: (-?[\d.]+)/);
-assert(storageMatch, 'в сервере нет точки хранилища Створа');
-const storagePoint = { x: Number(storageMatch[1]), z: Number(storageMatch[2]) };
+// Хранилище Управы стоит в банке Створа: место даёт конструктор городов.
+const storagePoint = require('./lib/zone-walk').cityWorld('sluiceCity', sluice.cityPlan.bank.storage);
 
 (async () => {
   await h.bootstrapCharacters(accounts);

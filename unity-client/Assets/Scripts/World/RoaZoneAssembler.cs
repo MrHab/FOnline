@@ -46,6 +46,21 @@ namespace RealmOfAshes.World
                 instance.name = string.IsNullOrEmpty(entry.Id) ? entry.Prefab : entry.Id;
                 RoaLocationLoader.ApplyTransform(instance.transform, entry);
                 ConfigureCollision(instance, entry);
+                // Объект с подсказкой помечаем: по метке её находит наведение курсора.
+                var tag = instance.GetComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+                if (entry.Hover != null)
+                {
+                    if (tag == null) tag = instance.AddComponent<RealmOfAshes.Game.RoaWorldObjectTag>();
+                    tag.ObjectId = entry.Id;
+                    ConfigureHoverProbe(instance, entry);
+                }
+                else
+                {
+                    if (tag != null) tag.ObjectId = string.Empty;
+                    // Экземпляр из пула мог носить зону наведения от прошлой вещи.
+                    foreach (BoxCollider box in instance.GetComponents<BoxCollider>())
+                        if (box.isTrigger) box.enabled = false;
+                }
                 instance.SetActive(true);
                 if (!string.IsNullOrEmpty(entry.Id))
                 {
@@ -103,9 +118,41 @@ namespace RealmOfAshes.World
             return instance;
         }
 
+        /// <summary>
+        /// Зона наведения вещи с подсказкой: отдельный триггер поверх её коллизии.
+        /// Настоящая коробка бывает тонкой, как вывеска в палец толщиной, — в такую
+        /// курсором не попасть; триггер шире, а ходьбе он не мешает.
+        /// </summary>
+        private static void ConfigureHoverProbe(GameObject instance, LocationObject entry)
+        {
+            BoxCollider probe = null;
+            foreach (BoxCollider box in instance.GetComponents<BoxCollider>())
+            {
+                if (box.isTrigger) { probe = box; break; }
+            }
+            if (probe == null)
+            {
+                probe = instance.AddComponent<BoxCollider>();
+                probe.isTrigger = true;
+            }
+            float width = Mathf.Max(1.6f, entry.Footprint != null ? entry.Footprint.X : 1f);
+            float depth = Mathf.Max(1.6f, entry.Footprint != null ? entry.Footprint.Z : 1f);
+            probe.size = new Vector3(width, 2.2f, depth);
+            probe.center = new Vector3(0f, 1.1f, 0f);
+            probe.enabled = true;
+        }
+
         private static void ConfigureCollision(GameObject instance, LocationObject entry)
         {
-            BoxCollider box = instance.GetComponent<BoxCollider>();
+            // Берём именно сплошной короб: у вещи с подсказкой рядом живёт триггер
+            // наведения, и перепутать их — значит снять с объекта коллизию.
+            BoxCollider box = null;
+            foreach (BoxCollider candidate in instance.GetComponents<BoxCollider>())
+            {
+                if (candidate.isTrigger) continue;
+                box = candidate;
+                break;
+            }
             JObject part = entry.CollisionParts != null && entry.CollisionParts.Count > 0 ? entry.CollisionParts[0] as JObject : null;
             bool solid = string.Equals(entry.Collision, "solid", StringComparison.OrdinalIgnoreCase) && part != null;
             if (!solid)

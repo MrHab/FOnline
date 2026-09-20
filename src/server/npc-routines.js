@@ -166,7 +166,6 @@ function packageConditions(row = {}) {
 function authoredTarget(row = {}) {
   if (hasOwn(row, 'target')) return row.target;
   if (hasOwn(row, 'targetId')) return row.targetId;
-  if (hasOwn(row, 'activitySlotId')) return row.activitySlotId;
   if (hasOwn(row, 'anchorId')) return row.anchorId;
   return null;
 }

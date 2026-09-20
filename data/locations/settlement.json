@@ -225,354 +225,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "capital_station_old_klim_ammo_bench",
-      "model": "craftStationAmmo",
-      "name": "Патронный станок",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": -7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "ammo_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "ammo_bench"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "ammo_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.542,
-        "z": 1.509
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "capital_station_old_klim_chem_station",
-      "model": "craftStationChem",
-      "name": "Химический стол",
-      "position": {
-        "x": -8,
-        "y": 0,
-        "z": -3
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "chem_station"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "chem_station"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "chem_station"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.753,
-        "z": 1.574
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "capital_station_old_klim_energy_bench",
-      "model": "craftStationEnergy",
-      "name": "Энергетический стенд",
-      "position": {
-        "x": -12,
-        "y": 0,
-        "z": -3
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "energy_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "energy_bench"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.703,
-        "z": 1.542
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "capital_station_old_klim_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "position": {
-        "x": -16,
-        "y": 0,
-        "z": -3
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.902,
-        "z": 1.673
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "capital_station_old_klim_tool_bench",
-      "model": "craftStationTools",
-      "name": "Инструментальный верстак",
-      "position": {
-        "x": -8,
-        "y": 0,
-        "z": -7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "tool_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "tool_bench"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "tool_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.629,
-        "z": 1.476
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "capital_station_old_klim_weapon_bench",
-      "model": "craftStationWeapon",
-      "name": "Оружейный верстак",
-      "position": {
-        "x": -12,
-        "y": 0,
-        "z": -7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "weapon_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "weapon_bench"
-      ],
-      "stationSiteId": "settlement",
-      "worksiteId": "settlement",
-      "stationOwner": "old_klim",
-      "stationKind": "capital",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "weapon_bench"
-        ],
-        "stationSiteId": "settlement"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 3.162,
-        "z": 1.542
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "capital_storage_old_klim",
       "model": "storageChest",
       "name": "Хранилище Ключей",
@@ -2614,6 +2266,117 @@
       "interactive": {
         "kind": "questObject",
         "questObjective": "defend_filter"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер Ключей",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик Ключей",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic"
+      },
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник Ключей",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair"
       },
       "worldRevision": "kromka-1"
     }

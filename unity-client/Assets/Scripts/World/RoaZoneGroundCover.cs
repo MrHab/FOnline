@@ -113,6 +113,7 @@ namespace RealmOfAshes.World
             var nodes = new List<Vector2>();
             var trails = new List<KeyValuePair<Vector2, Vector2>>();
             CollectTrails(zone, nodes, trails);
+            Rect? walled = CityWall(zone);
 
             uint state = unchecked((uint)(zone.Seed ^ (zone.Seed >> 32)) ^ 0x9E3779B9u);
             if (state == 0) state = 0x6C8E9CF5u;
@@ -142,6 +143,7 @@ namespace RealmOfAshes.World
                         }
                         if (kind < 0 || Mathf.Abs(x) > _halfWidth - 2f || Mathf.Abs(z) > _halfDepth - 2f) continue;
                         var point = new Vector2(x, z);
+                        if (walled.HasValue && walled.Value.Contains(point)) continue;
                         if (Blocked(blockers, point) || NearTrail(point, nodes, trails)) continue;
                         float radius = Mathf.Lerp(Kinds[kind].MinRadius, Kinds[kind].MaxRadius, size * size);
                         float scale = radius / kindRadius[kind];
@@ -353,6 +355,21 @@ namespace RealmOfAshes.World
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Город за стеной: внутри неё покрова нет. Там улицы, площадь и дворы —
+        /// бурьян между домами читался бы как заброшенность, а город живой.
+        /// </summary>
+        private static Rect? CityWall(LocationDefinition zone)
+        {
+            if (!(zone.Zone?["cityWall"] is JObject wall)) return null;
+            float minX = (float?)wall["minX"] ?? 0f;
+            float minZ = (float?)wall["minZ"] ?? 0f;
+            float maxX = (float?)wall["maxX"] ?? 0f;
+            float maxZ = (float?)wall["maxZ"] ?? 0f;
+            if (maxX <= minX || maxZ <= minZ) return null;
+            return new Rect(minX, minZ, maxX - minX, maxZ - minZ);
         }
 
         // Тропы зоны — рёбра графа nav: покров их не закрывает, тропа читается на земле.

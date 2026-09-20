@@ -18,7 +18,8 @@ const accounts = {};
 
 const DAY = 24 * 3600000;
 const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
-const sluice = require('../data/locations/sluiceCity.json');
+// Створ — город-сектор: аукционер стоит в банке, где его поставил конструктор.
+const sluice = require('./lib/zone-walk').cityDefinition('sluiceCity');
 const auctioneer = (sluice.objects || []).find(object => (object.entity || {}).service === 'auction');
 assert(auctioneer, 'в Створе нет аукционера');
 

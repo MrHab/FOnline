@@ -157,9 +157,13 @@ const getJson = route => new Promise((resolve, reject) => {
   assert(String(metro.targetZoneRules.lossLabel || '').length > 0, 'The rules explain what is lost on death.');
   const labDoor = (definitions.json.locations.coreZone.transitions || []).find(row => row.id === 'enter_coreLabSprout');
   assert.equal(labDoor.targetZoneRules.mode, 'pvpBlack', 'A laboratory inherits the rules of the territory.');
-  const settlementExit = (definitions.json.locations.settlement.transitions || [])
+  // Ключи — город-сектор: его определение сервер отдаёт по одному, как зону.
+  const keys = (await getJson('/api/locations/settlement')).json.location;
+  const keysGate = (keys.sectorGates || []).find(row => row.targetZoneRules);
+  assert(keysGate, 'The gates of a city carry the rules of the sector behind them.');
+  const peacefulExit = [...(keys.sectorGates || []), ...(keys.transitions || [])]
     .find(row => row.targetZoneRules && row.targetZoneRules.mode === 'peaceful');
-  if (settlementExit) assert.equal(settlementExit.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
+  if (peacefulExit) assert.equal(peacefulExit.targetZoneRules.confirmBeforeEntry, false, 'A peaceful transition does not ask.');
   console.log('PASS territory membership on reconnect and transitions');
 
   // --- контракт наёмника у ворот Сердцевины -----------------------------------------

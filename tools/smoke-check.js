@@ -663,8 +663,9 @@ async function assertEditorAndWorldDataApis() {
   const publicLocations = await request('/api/locations');
   assertStatus(publicLocations, 200, 'GET /api/locations');
   const publicLocationsData = parseJsonResponse(publicLocations, 'GET /api/locations');
+  // Зоны и города сервер отдаёт по одному: в общем каталоге только авторские места.
   if (!publicLocationsData.ok
-    || !publicLocationsData.locations?.settlement
+    || !publicLocationsData.locations?.roadOutpost
     || Object.keys(publicLocationsData.locations || {}).length < 20) {
     fail('public locations API did not expose the bundled locations', publicLocations.body);
   }
@@ -682,15 +683,32 @@ async function assertEditorAndWorldDataApis() {
     coreBaseContour: 'contour',
     coreBaseLeague: 'tract_league'
   };
+  // Столицы — города-секторы: их собирает конструктор, и сервер отдаёт такую
+  // локацию по одной, как зону. В общем каталоге остаются только базы Сердцевины.
+  const cityCapitals = ['sluiceCity', 'scrapTown', 'relayStation', 'caravanCamp', 'secondHaven', 'balanceBunker'];
+  const coreBases = Object.keys(capitalStorageFactions).filter(id => !cityCapitals.includes(id)).sort();
   const locationsWithStorage = Object.values(publicLocationsData.locations || {})
     .filter(loc => !!loc?.storage)
     .map(loc => loc.id)
     .sort();
-  if (locationsWithStorage.join(',') !== Object.keys(capitalStorageFactions).sort().join(',')) {
-    fail('personal storage exists outside the six Kromka faction capitals and four core faction bases', JSON.stringify(locationsWithStorage));
+  if (locationsWithStorage.join(',') !== coreBases.join(',')) {
+    fail('personal storage exists outside the four core faction bases in the shared catalogue', JSON.stringify(locationsWithStorage));
+  }
+  // Города-секторы: шесть столиц и Ключи. Все они приходят по одному.
+  const capitalDefinitions = {};
+  for (const id of [...cityCapitals, 'settlement']) {
+    const one = await request(`/api/locations/${id}`);
+    assertStatus(one, 200, `GET /api/locations/${id}`);
+    capitalDefinitions[id] = parseJsonResponse(one, `GET /api/locations/${id}`).location;
+  }
+  // Город без своей фракции тоже держит хранилище в банке — городскую кладовую.
+  const keys = capitalDefinitions.settlement;
+  const keysStorage = (keys?.objects || []).find(row => String(row?.interactive?.role || '') === 'storage');
+  if (!keys?.storage || keys.storage.storageFaction !== 'city' || !keysStorage) {
+    fail('a city without a faction has no city storage in its bank', JSON.stringify(keys?.storage || null));
   }
   for (const [locationId, factionId] of Object.entries(capitalStorageFactions)) {
-    const loc = publicLocationsData.locations[locationId];
+    const loc = publicLocationsData.locations[locationId] || capitalDefinitions[locationId];
     const storageRows = (Array.isArray(loc?.objects) ? loc.objects : []).filter(row => (
       String(row?.interactive?.role || '').toLowerCase() === 'storage'
       || (Array.isArray(row?.tags) && row.tags.includes('capital-storage'))
@@ -775,11 +793,15 @@ async function assertEditorAndWorldDataApis() {
   const instanceSeeds = [];
   const instanceBounds = [];
   for (const site of worldSites) {
-    const loc = publicLocationsData.locations?.[site.locationId];
+    // Город занимает сектор целиком и приходит по одному: имя у него от локации,
+    // описание живёт на карте мира, и сверять его с каталогом нечего.
+    const loc = publicLocationsData.locations?.[site.locationId] || capitalDefinitions[site.locationId];
     if (!site.locationId || !loc) {
       fail(`global site has no real local location: ${site.id || 'unknown'}`, JSON.stringify(site));
     }
-    if (String(loc.name || '') !== String(site.name || '') || String(loc.description || '') !== String(site.description || site.note || '')) {
+    const city = !!loc.cityZone;
+    if (String(loc.name || '') !== String(site.name || '')
+      || (!city && String(loc.description || '') !== String(site.description || site.note || ''))) {
       fail(`global and local location identity is inconsistent: ${site.id}`, JSON.stringify({ site, location: loc }));
     }
     if (site.templateLocationId

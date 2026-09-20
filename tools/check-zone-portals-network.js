@@ -43,7 +43,7 @@ let groundsZone = null;
 const built = {};
 for (const zone of graph.zones) {
   if (eventZone && groundsZone) break;
-  // Города конструктор не собирает: их секторы — авторские сцены.
+  // Города собирает свой конструктор — здесь нужны обычные зоны пустоши.
   if (zone.city) continue;
   const definition = buildZone(zoneRecipe(graph, zone.id), catalog);
   if (!(definition.zone.eventAnchors || []).length) continue;
@@ -95,11 +95,9 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
   zoneWalk.placeInZone(h, accounts, 'untargeted', eventZone.id, nearPortal(eventPortal));
   zoneWalk.placeInZone(h, accounts, 'harvest', eventZone.id, world(built[eventZone.id].entryFromWorld));
   zoneWalk.placeInZone(h, accounts, 'trade', groundsZone.id, nearPortal(groundsPortal));
-  const keys = readJson('data/locations/settlement.json');
-  const keysTiles = { w: keys.map.width / 2, d: keys.map.depth / 2 };
-  zoneWalk.placeInZone(h, accounts, 'progression', 'settlement', {
-    x: (keys.spawn.tx - keysTiles.w / 2 + 0.5) * 2, z: (keys.spawn.tz - keysTiles.d / 2 + 0.5) * 2
-  });
+  // Ключи собирает конструктор городов: ставим писаря на площадь, у доски работ.
+  const keysCityDef = zoneWalk.cityDefinition('settlement');
+  zoneWalk.placeInZone(h, accounts, 'progression', 'settlement', zoneWalk.cityWorld('settlement', keysCityDef.cityPlan.board));
 
   await h.startServer();
   try {
@@ -163,8 +161,7 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
     assert(atBoard.ok || !/у доски работ/.test(atBoard.error || ''), 'the board of Keys picks an activity: ' + JSON.stringify(atBoard).slice(0, 200));
     console.log(`PASS the quick activity join works at the board of Keys (${atBoard.ok ? atBoard.taskId : atBoard.error}) and not at another settlement's`);
 
-    // --- старая дорога Ключей «в пустошь» ведёт в соседний сектор, а не через полмира --------------
-    // Ключи занимают свой сектор целиком: дорога стоит у северного края и стала его воротами.
+    // --- город — сектор целиком: из него выходят через край, а не по старой дороге --------------
     const keysCity = graph.zones.find(zone => zone.city === 'settlement');
     const keysNorth = zoneById(graph, keysCity.edges.north.to);
     const shownKeys = await new Promise((resolve, reject) => {
@@ -174,18 +171,20 @@ async function leaveByEdge(account, state, zoneId, tileWidth, tileDepth) {
         res.on('end', () => { try { resolve(JSON.parse(body).location); } catch (error) { reject(error); } });
       }).on('error', reject);
     });
-    assert.equal(shownKeys.exit?.type, 'zoneGate', 'the client sees the old road of Keys as the gate of its north side');
-    assert.equal(shownKeys.exit?.to, keysNorth.id);
-    assert.equal((shownKeys.sectorGates || []).length, Object.values(keysCity.edges).filter(edge => edge.open).length,
-      'the city carries a gate for every open side: ' + JSON.stringify(shownKeys.sectorGates));
-    const exitPoint = { x: (keys.exit.tx - keysTiles.w / 2 + 0.5) * 2, z: (keys.exit.tz - keysTiles.d / 2 + 0.5) * 2 };
+    assert(!shownKeys.exit, 'a city built by the constructor has no old road out of the world');
+    const openSides = Object.entries(keysCity.edges).filter(([, edge]) => edge.open).map(([dir]) => dir).sort();
+    assert.deepEqual((shownKeys.sectorGates || []).map(gate => gate.side).sort(), openSides,
+      'the city carries a gate for every open side: ' + JSON.stringify(shownKeys.sectorGates).slice(0, 300));
+    assert.equal(shownKeys.sectorGates.find(gate => gate.side === 'north')?.to, keysNorth.id);
     const clerkState = { x: Number(clerk.join.self?.x ?? clerk.join.x ?? 0), z: Number(clerk.join.self?.z ?? clerk.join.z ?? 0) };
-    assert(await zoneWalk.driveTo(h, clerk, clerkState, exitPoint.x, exitPoint.z, 160), 'the player walks to the road out of Keys');
-    const faraway = await changeLocation(clerk, { locationId: keys.exit.to });
-    assert.equal(faraway.ok, false, `the old road does not carry the player to ${keys.exit.to} across the world`);
+    // Улица от площади к северным воротам свободна по построению: по ней и выходим.
+    const keysEdge = zoneWalk.cityEdge('settlement', 'north');
+    assert(await zoneWalk.driveTo(h, clerk, clerkState, keysEdge.x, keysEdge.z, 700), 'the player walks to the north edge of Keys: ' + JSON.stringify(clerkState));
+    const faraway = await changeLocation(clerk, { locationId: 'wasteland' });
+    assert.equal(faraway.ok, false, 'the edge of a city does not carry the player across the world');
     const outOfKeys = await changeLocation(clerk, { locationId: keysNorth.id });
-    assert(outOfKeys.ok && outOfKeys.locationId === keysNorth.id, 'the road out of Keys leads into the sector north of it: ' + JSON.stringify(outOfKeys).slice(0, 200));
-    console.log(`PASS the road out of Keys leads into ${keysNorth.title}, not to ${keys.exit.to}`);
+    assert(outOfKeys.ok && outOfKeys.locationId === keysNorth.id, 'the north edge of Keys leads into the sector north of it: ' + JSON.stringify(outOfKeys).slice(0, 200));
+    console.log(`PASS the north edge of Keys leads into ${keysNorth.title}`);
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();

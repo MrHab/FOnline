@@ -599,8 +599,10 @@ function seedCombatFixtures(accounts) {
   }, usersDb, savesDb);
   seedCharacterState(accounts.trade, {
     locationId: 'scrapTown',
-    spawnX: -2,
-    spawnZ: 1,
+    // Раздолье — город-сектор: торговец стоит в рыночном квартале, где его
+    // поставил конструктор городов, туда же садим и покупателя.
+    spawnX: scrapMerchantSpot().x,
+    spawnZ: scrapMerchantSpot().z,
     special: { str: 5, per: 5, end: 5, cha: 7, int: 5, agi: 7, luck: 5 },
     weapon: 'laserPistol',
     weaponRuntimeId: 'ui_laserPistol_trade_1',
@@ -2106,6 +2108,15 @@ async function assertKnownInstanceKeepsItsMagazine(accounts) {
 // Экономика v3: оружие и броню у игроков скупает только Чёрный рынок (его
 // проверка — check-black-market-network: там же разряжается проданный пистолет).
 // Торговец Раздолья отказывает, и заряженный пистолет остаётся в сумке как был.
+/** Место у прилавка торговца Раздолья: город собирает конструктор, точка — оттуда. */
+function scrapMerchantSpot() {
+  const city = require('./lib/zone-walk').cityDefinition('scrapTown');
+  const merchant = (city.objects || [])
+    .find(row => String(row.entity?.role || row.role || '').toLowerCase() === 'merchant');
+  if (!merchant) throw new Error('в Раздолье нет торговца');
+  return { x: Number(merchant.position.x) + 1.5, z: Number(merchant.position.z) + 1.5 };
+}
+
 async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
   const account = accounts.trade;
   const keptRuntimeId = account.weaponRuntimeIds[1];
@@ -2120,10 +2131,25 @@ async function assertTraderLeavesWeaponsToBlackMarket(accounts) {
       && enemy?.role === 'merchant'
       && enemy?.traderProfile === 'scrap');
   invariant(trader?.id, 'Scrap Town trader is missing from authoritative world state', account.join.worldState);
-  invariant(Math.hypot(
-    Number(account.join.x || 0) - Number(trader.x || 0),
-    Number(account.join.z || 0) - Number(trader.z || 0)
-  ) <= 5.2, 'Trade fixture spawned too far from the trader', { player: account.join, trader });
+  // NPC встаёт на ближайший свободный тайл: если он ушёл от своей точки, доходим шагами.
+  const spot = { x: Number(account.join.x || 0), z: Number(account.join.z || 0) };
+  for (let frame = 0; frame < 200; frame += 1) {
+    if (Math.hypot(spot.x - Number(trader.x || 0), spot.z - Number(trader.z || 0)) <= 3.4) break;
+    const dx = Number(trader.x || 0) - spot.x;
+    const dz = Number(trader.z || 0) - spot.z;
+    const length = Math.max(0.001, Math.hypot(dx, dz));
+    const moved = await socketAck(account.socket, 'state', {
+      seq: 10000 + frame, x: Number(trader.x || 0), z: Number(trader.z || 0),
+      angle: Math.atan2(dx, dz), moving: true, turning: false, crouching: false,
+      vx: 5.5 * dx / length, vz: 5.5 * dz / length
+    });
+    const self = moved?.self || moved || {};
+    if (Number.isFinite(Number(self.x))) spot.x = Number(self.x);
+    if (Number.isFinite(Number(self.z))) spot.z = Number(self.z);
+    await delay(58);
+  }
+  invariant(Math.hypot(spot.x - Number(trader.x || 0), spot.z - Number(trader.z || 0)) <= 5.2,
+    'Trade fixture could not reach the trader', { player: spot, trader });
 
   const view = await socketAck(account.socket, 'syncNpcTradeState', { enemyId: trader.id });
   invariant(view.ok && Array.isArray(view.market?.refusedCategories)

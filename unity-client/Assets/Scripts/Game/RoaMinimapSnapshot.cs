@@ -116,7 +116,14 @@ namespace RealmOfAshes.Game
             _camera.useOcclusionCulling = false;
         }
 
-        /// <summary>Погасить живых актёров на один кадр: снимок — про землю и постройки.</summary>
+        /// <summary>
+        /// Погасить на один кадр всё, что живёт вокруг игрока: снимок — про землю и
+        /// постройки, а не про то, где игрок стоял в момент съёмки.
+        ///
+        /// Кроме самих фигур это туман войны (его затенение оставляло на снимке
+        /// тёмное кольцо вокруг персонажа) и мелкий покров земли, который существует
+        /// только в блоке слотов у камеры.
+        /// </summary>
         private static List<Renderer> HideLiveActors()
         {
             var hidden = new List<Renderer>(32);
@@ -126,7 +133,23 @@ namespace RealmOfAshes.Game
                 renderer.enabled = false;
                 hidden.Add(renderer);
             }
+            HideUnder(FindObjectsByType<RoaFogOfWar>(FindObjectsSortMode.None), hidden);
+            HideUnder(FindObjectsByType<RoaZoneGroundCover>(FindObjectsSortMode.None), hidden);
             return hidden;
+        }
+
+        private static void HideUnder<T>(T[] owners, List<Renderer> hidden) where T : Component
+        {
+            for (int i = 0; i < owners.Length; i++)
+            {
+                if (owners[i] == null) continue;
+                foreach (MeshRenderer renderer in owners[i].GetComponentsInChildren<MeshRenderer>(false))
+                {
+                    if (renderer == null || !renderer.enabled) continue;
+                    renderer.enabled = false;
+                    hidden.Add(renderer);
+                }
+            }
         }
 
         private void ReleaseTexture()

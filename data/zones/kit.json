@@ -175,6 +175,120 @@
       "solid": false,
       "vision": false
     },
+    "craft_station_ammo": {
+      "name": "Патронный станок",
+      "size": [
+        2.542,
+        1.509
+      ],
+      "height": 1.732,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "craft_station_chem": {
+      "name": "Химическая станция",
+      "size": [
+        2.753,
+        1.574
+      ],
+      "height": 1.858,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "craft_station_energy": {
+      "name": "Энергетический верстак",
+      "size": [
+        2.703,
+        1.542
+      ],
+      "height": 1.525,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "craft_station_repair": {
+      "name": "Ремонтный верстак",
+      "size": [
+        2.902,
+        1.673
+      ],
+      "height": 2.212,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "craft_station_tools": {
+      "name": "Инструментальный верстак",
+      "size": [
+        2.629,
+        1.476
+      ],
+      "height": 1.958,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "craft_station_weapon": {
+      "name": "Оружейный верстак",
+      "size": [
+        3.162,
+        1.542
+      ],
+      "height": 1.196,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
     "dead_tree_a": {
       "name": "Сухое дерево",
       "size": [
@@ -334,6 +448,25 @@
       "solid": true,
       "vision": false
     },
+    "job_board": {
+      "name": "Доска работ",
+      "size": [
+        1.9,
+        0.237
+      ],
+      "height": 1.332,
+      "center": [
+        0,
+        0.05
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
     "oil_pump_jack": {
       "name": "Качалка",
       "size": [
@@ -412,6 +545,25 @@
         1.8
       ],
       "solid": true,
+      "vision": false
+    },
+    "road_tile": {
+      "name": "Дорожное покрытие",
+      "size": [
+        4,
+        4
+      ],
+      "height": 0.03,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": false,
       "vision": false
     },
     "roadblock_barricade": {
@@ -550,6 +702,25 @@
       "solid": true,
       "vision": true
     },
+    "storage_chest": {
+      "name": "Сундук хранилища",
+      "size": [
+        1.611,
+        0.947
+      ],
+      "height": 0.836,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
     "storage_lean_to": {
       "name": "Навес‑склад",
       "size": [
@@ -586,6 +757,44 @@
         1
       ],
       "solid": true,
+      "vision": false
+    },
+    "trade_machine": {
+      "name": "Торговый автомат",
+      "size": [
+        1.703,
+        1.135
+      ],
+      "height": 1.362,
+      "center": [
+        -0.035,
+        -0.194
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": true,
+      "vision": false
+    },
+    "trader_awning": {
+      "name": "Торговый навес",
+      "size": [
+        1.8,
+        1.8
+      ],
+      "height": 0.9,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": false,
       "vision": false
     },
     "utility_pole": {

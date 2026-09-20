@@ -1,22 +1,21 @@
 #!/usr/bin/env node
 'use strict';
 
-// Сетевая проверка участков станков (экономика v3, библия 14.5) на настоящем
-// сервере: свободный участок берёт плату поселения, ставки на аренду
-// списывают марки и перебитые возвращаются владельцу, итоги торгов делают
-// победителя арендатором, арендатор назначает плату и работает бесплатно, а
-// гость платит арендатору; устаревшая плата отклоняется, аренда переживает
-// перезапуск. Премиум тратит фокус на заказ у станка.
+// Сетевая проверка участков города (экономика v3, библия 14.5) на настоящем
+// сервере. Город станков не ставит: у свободного участка стоит табличка торгов,
+// станок появляется только у того, кто выиграл участок и построил его сам.
+// Дальше — прежние правила участка: арендатор назначает плату и работает
+// бесплатно, гость платит арендатору, устаревшая плата отклоняется, аренда и
+// постройка переживают перезапуск. Премиум тратит фокус на заказ у станка.
 
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const h = require('./check-combat-runtime');
+const zoneWalk = require('./lib/zone-walk');
 const accounts = {};
 
 const LOCATION = 'scrapTown';
-const BENCH = 'capital_station_scrap_union_weapon_bench';
-const PLOT_ID = `${LOCATION}__${BENCH}`;
 const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
 
 (async () => {
@@ -25,9 +24,13 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   const savesPath = path.join(h.DATA_DIR, 'saves.json');
   const saves = JSON.parse(fs.readFileSync(savesPath));
   const stateFor = role => saves.characters[users.users[accounts[role].login].id][accounts[role].characterId].state;
-  const location = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'locations', `${LOCATION}.json`)));
-  const bench = location.objects.find(row => row.id === BENCH);
-  assert(bench, 'в Раздолье нет оружейного станка');
+  // Раздолье — город-сектор: участки размечает конструктор городов.
+  const city = zoneWalk.cityDefinition(LOCATION);
+  const plot = (city.cityPlan.plots || []).find(row => row.open && row.district === 'workshop');
+  assert(plot, 'в квартале мастерских нет свободного участка');
+  const PLOT_ID = `${LOCATION}__${plot.id}`;
+  const STATION_OBJECT = `station_${plot.id}`;
+  const spot = zoneWalk.cityWorld(LOCATION, plot);
   const knifePrice = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'kromka', 'items.json'))).items
     .find(row => row.id === 'knife').basePrice;
 
@@ -38,9 +41,9 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     state.inventory.silver = 1000;
     state.inventory.ore = 20;
     state.inventory.wood = 10;
-    state.player = { ...(state.player || {}), x: Number(bench.position.x) + dx, z: Number(bench.position.z) - 1.5 };
+    state.player = { ...(state.player || {}), x: spot.x + dx, z: spot.z - 1.5 };
   };
-  // Будущий арендатор и гость стоят у станка.
+  // Будущий владелец участка и гость стоят на самом участке.
   place('trade', -1);
   place('harvest', 1);
   // Третий участник торгов.
@@ -56,7 +59,7 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   fs.writeFileSync(savesPath, JSON.stringify(saves));
 
   const craft = (role, fee, requestId, extra = {}) => h.socketAck(accounts[role].socket, 'craftingStationUsed', {
-    requestId, recipeId: 'knifecraft', station: 'weapon_bench', fee, locationId: LOCATION, stationObjectId: BENCH, ...extra
+    requestId, recipeId: 'knifecraft', station: 'weapon_bench', fee, locationId: LOCATION, stationObjectId: STATION_OBJECT, ...extra
   });
   const plotAction = (role, data) => h.socketAck(accounts[role].socket, 'craftingPlotAction', data);
   const plotOf = state => (state.plots || []).find(row => row.plotId === PLOT_ID);
@@ -65,36 +68,19 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
   try {
     for (const role of ['trade', 'harvest', 'target']) await h.connectAndJoin(accounts[role]);
 
-    // --- свободный участок ---------------------------------------------------------
+    // --- пустой участок: станка нет, и заказывать негде ------------------------------
     const first = await plotAction('trade', { action: 'state' });
     assert(first.ok, JSON.stringify(first));
+    assert(first.plots.length >= 16, 'город размечен участками: ' + first.plots.length);
     const free = plotOf(first);
-    assert(free, 'оружейный станок — участок: ' + JSON.stringify(first.plots).slice(0, 300));
+    assert(free, 'участок квартала мастерских есть в снимке: ' + JSON.stringify(first.plots).slice(0, 300));
     assert.equal(free.leased, false);
-    assert.equal(free.feePct, 0.15);
+    assert.equal(free.station, '', 'на свободном участке станка нет');
     assert.equal(free.auction.open, true);
-    assert(free.returnRate > 0.2, 'профильный регион Раздолья даёт больший возврат: ' + free.returnRate);
     assert(!JSON.stringify(first.plots).includes(accounts.trade.characterId), 'снимок участков не раскрывает id персонажей');
-    const settlementFee = feeFor(knifePrice, 0.15);
-    const tooCheap = await craft('harvest', 1, 'craft-cheap');
-    assert(!tooCheap.ok && tooCheap.requiredFee === settlementFee, 'старая комиссия не проходит: ' + JSON.stringify(tooCheap).slice(0, 200));
-    // Без переключателя фокус не тратится.
-    const plainCraft = await craft('harvest', settlementFee, 'craft-plain');
-    assert(plainCraft.ok, JSON.stringify(plainCraft).slice(0, 300));
-    assert.equal(plainCraft.focusSpent, 0);
-    assert.equal(plainCraft.self.account.focus, focusCap.cap, 'focus is spent only when the player turns it on');
-    const guestCraft = await craft('harvest', settlementFee, 'craft-free', { useFocus: true });
-    assert(guestCraft.ok, JSON.stringify(guestCraft).slice(0, 300));
-    assert.equal(guestCraft.fee, settlementFee, 'свободный участок берёт плату поселения');
-    assert.equal(qty(guestCraft.self, 'silver'), 1000 - 2 * settlementFee);
-    assert.equal(qty(guestCraft.self, 'knife'), qty(accounts.harvest.join.self, 'knife') + 2);
-    assert.equal(guestCraft.self.account.premium, true);
-    const focusCost = Math.max(focusCap.minCost, Math.ceil(knifePrice * focusCap.costPerValue));
-    assert.equal(guestCraft.focusSpent, focusCost);
-    assert.equal(guestCraft.self.account.focus, focusCap.cap - focusCost,
-      'премиум тратит фокус на заказ: ' + JSON.stringify(guestCraft.self.account));
-    assert.equal(guestCraft.self.account.focusCostPerValue, focusCap.costPerValue, 'клиент получает цену фокуса');
-    console.log('PASS free plot charges the settlement fee (' + settlementFee + ') and premium spends focus');
+    const nothingToUse = await craft('harvest', 1, 'craft-empty');
+    assert(!nothingToUse.ok, 'на пустом участке заказывать нечего: ' + JSON.stringify(nothingToUse).slice(0, 200));
+    console.log('PASS an empty plot has no station and no orders');
 
     // --- торги --------------------------------------------------------------------
     const low = await plotAction('trade', { action: 'bid', plotId: PLOT_ID, amount: 50, requestId: 'bid-low' });
@@ -134,13 +120,24 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     const refund = await plotAction('target', { action: 'state' });
     assert.equal(qty(refund.self, 'silver'), 1000, 'вернувшийся участник получил возврат ставки');
 
-    // --- аренда -------------------------------------------------------------------
+    // --- участок выигран: теперь на нём строят станок ------------------------------
     const leased = await plotAction('trade', { action: 'state' });
     const mine = plotOf(leased);
-    assert.equal(mine.leased, true, 'победитель торгов стал арендатором');
+    assert.equal(mine.leased, true, 'победитель торгов стал владельцем участка');
     assert.equal(mine.mine, true);
     assert.equal(mine.feePct, 0.05);
     assert(mine.leaseEndsAt > Date.now() + 6 * 86400000);
+    const strangerBuild = await plotAction('harvest', { action: 'build', plotId: PLOT_ID, station: 'weapon_bench', requestId: 'build-guest' });
+    assert(!strangerBuild.ok && /другой игрок/.test(strangerBuild.error), 'чужой участок не застроить: ' + JSON.stringify(strangerBuild).slice(0, 200));
+    const nonsense = await plotAction('trade', { action: 'build', plotId: PLOT_ID, station: 'pottery', requestId: 'build-bad' });
+    assert(!nonsense.ok, 'строят только станки из списка');
+    const built = await plotAction('trade', { action: 'build', plotId: PLOT_ID, station: 'weapon_bench', requestId: 'build-1' });
+    assert(built.ok && plotOf(built).station === 'weapon_bench', 'станок построен: ' + JSON.stringify(built).slice(0, 300));
+    const twice = await plotAction('trade', { action: 'build', plotId: PLOT_ID, station: 'tool_bench', requestId: 'build-2' });
+    assert(!twice.ok && /уже стоит/.test(twice.error), 'второй станок на участок не ставят');
+    console.log('PASS the plot owner builds a station, nobody else does');
+
+    // --- плата за работу у чужого станка ------------------------------------------
     const guestView = plotOf(await plotAction('harvest', { action: 'state' }));
     assert.equal(guestView.mine, false);
     assert.equal(guestView.lesseeName.length > 0, true);
@@ -152,16 +149,18 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
     assert(!tooHigh.ok);
 
     const own = await craft('trade', 0, 'craft-own');
-    assert(own.ok && own.fee === 0, 'арендатор работает бесплатно: ' + JSON.stringify(own).slice(0, 200));
+    assert(own.ok && own.fee === 0, 'владелец работает бесплатно: ' + JSON.stringify(own).slice(0, 200));
     const ownerSilver = qty(own.self, 'silver');
     const lesseeFee = feeFor(knifePrice, 0.2);
     const stale = await craft('harvest', feeFor(knifePrice, 0.05), 'craft-stale');
     assert(!stale.ok && stale.requiredFee === lesseeFee, 'устаревшая плата отклоняется: ' + JSON.stringify(stale).slice(0, 200));
-    const guest = await craft('harvest', lesseeFee, 'craft-guest');
+    const guest = await craft('harvest', lesseeFee, 'craft-guest', { useFocus: true });
     assert(guest.ok && guest.fee === lesseeFee, JSON.stringify(guest).slice(0, 300));
+    const focusCost = Math.max(focusCap.minCost, Math.ceil(knifePrice * focusCap.costPerValue));
+    assert.equal(guest.focusSpent, focusCost, 'премиум тратит фокус на заказ: ' + JSON.stringify(guest.self.account));
     const ownerAfter = await plotAction('trade', { action: 'state' });
-    assert.equal(qty(ownerAfter.self, 'silver'), ownerSilver + lesseeFee, 'плата гостя дошла до арендатора');
-    console.log('PASS lessee fee paid to the lessee (' + lesseeFee + ')');
+    assert.equal(qty(ownerAfter.self, 'silver'), ownerSilver + lesseeFee, 'плата гостя дошла до владельца участка');
+    console.log('PASS lessee fee paid to the plot owner (' + lesseeFee + ')');
   } finally {
     for (const account of Object.values(accounts)) h.closeSocket(account);
     await h.stopServer();
@@ -169,10 +168,11 @@ const qty = (self, id) => (self?.inventory || []).filter(row => row.id === id).r
 
   const saved = JSON.parse(fs.readFileSync(savesPath)).craftingPlots.plots[PLOT_ID];
   assert.equal(saved.lessee.characterId, accounts.trade.characterId, 'аренда сохранена');
+  assert.equal(saved.station, 'weapon_bench', 'построенный станок сохранён');
   assert.equal(saved.feePct, 0.2);
   assert.equal(saved.earned, feeFor(knifePrice, 0.2));
   h.cleanupSync();
-  console.log('Crafting plots network OK: settlement fee on a free plot, premium focus spent on an order, lease bids with refunds (also to offline bidders), auction settlement, lessee fee setting, free work for the lessee, fees paid to the lessee, stale fees refused and the lease saved.');
+  console.log('Crafting plots network OK: an empty city plot has no station, auction bids refund (also to offline bidders), the winner builds a station and only he does, the owner works free, a guest pays his fee, a stale fee is refused, and both lease and station survive a restart.');
 })().catch(error => {
   console.error(error);
   console.error(h.serverLogs?.().slice(-3000));

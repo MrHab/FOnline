@@ -207,7 +207,8 @@ function buildCity(recipe, kit) {
     auction: { tx: bank.centre.tx - 3, tz: bank.centre.tz + 2 },
     rect: bankRect
   };
-  put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz, 90, ['city-building', 'bank', 'sign']);
+  // Вывеска стоит сбоку от проёма: в самом проёме ей не место, через него ходят.
+  put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz - 4, 90, ['city-building', 'bank', 'sign']);
   put('bank_counter', 'workshop_bench', anchors.bank.auction.tx + 2, anchors.bank.auction.tz, 0, ['bank', 'counter']);
   put('bank_crates', 'cargo_stack', anchors.bank.storage.tx - 2, anchors.bank.storage.tz + 1, 0, ['bank']);
 

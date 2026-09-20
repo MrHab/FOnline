@@ -123,7 +123,16 @@ function buildCity(recipe, kit) {
       rotation: { x: 0, y: round2(turn * Math.PI / 180), z: 0 },
       scale: { x: round2(scale[0]), y: round2(scale[1]), z: round2(scale[2]) },
       collision: entry.solid ? 'solid' : 'none',
-      collisionSize: { x: width, z: depth },
+      // Коробка коллизии — та же, что у зон: по ней клиент ставит коллайдер, а
+      // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
+      ...(entry.solid ? {
+        collisionParts: [{
+          center: { x: round2((entry.center?.[0] || 0) * scale[0]), z: round2((entry.center?.[1] || 0) * scale[2]) },
+          size: { x: width, z: depth },
+          height: round2(Math.max(0.4, (Number(entry.height) || 1) * scale[1]))
+        }]
+      } : {}),
+      collisionSize: { width, depth },
       footprint: { x: width, z: depth },
       vision: { blocks: !!entry.vision },
       role: entry.solid ? 'cover' : 'scenery',

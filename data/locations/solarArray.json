@@ -2018,64 +2018,6 @@
       "worldRevision": "kromka-1"
     },
     {
-      "id": "solar_energy_bench",
-      "model": "craftStationEnergy",
-      "name": "Энергетический стенд",
-      "position": {
-        "x": -1.7,
-        "y": 0.0,
-        "z": 7.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "energy_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "energy_bench"
-      ],
-      "stationSiteId": "solarArray",
-      "worksiteId": "solarArray",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "energy_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.703,
-        "z": 1.542
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
       "id": "solar_pole_01",
       "model": "utilityPole",
       "name": "Опора станции",
@@ -2139,64 +2081,6 @@
       "footprint": {
         "x": 2.077,
         "z": 1.356
-      },
-      "unityAuthored": true,
-      "worldRevision": "kromka-1"
-    },
-    {
-      "id": "solar_repair_bench",
-      "model": "craftStationRepair",
-      "name": "Ремонтный верстак",
-      "position": {
-        "x": 1.7,
-        "y": 0.0,
-        "z": 7.0
-      },
-      "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "collision": "none",
-      "tags": [
-        "cover",
-        "workshop",
-        "crafting-station",
-        "repair_bench"
-      ],
-      "vision": {
-        "blocks": true
-      },
-      "craftingStations": [
-        "repair_bench"
-      ],
-      "stationSiteId": "solarArray",
-      "worksiteId": "solarArray",
-      "stationOwner": "relay_order",
-      "stationKind": "production",
-      "interactive": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "entity": {
-        "kind": "craftingStation",
-        "craftingStations": [
-          "repair_bench"
-        ],
-        "stationSiteId": "solarArray"
-      },
-      "role": "craftingStation",
-      "footprint": {
-        "x": 2.902,
-        "z": 1.673
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"

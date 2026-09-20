@@ -73,16 +73,28 @@ for (const city of cities) {
 
   // --- кварталы и площадь -------------------------------------------------------------------
   assert(plan.market.traders.length >= 4, `${city.locationId}: the market has ${plan.market.traders.length} stalls`);
-  assert(plan.workshop.benches.length >= 3, `${city.locationId}: the workshop has ${plan.workshop.benches.length} benches`);
+  // Станков город не ставит: они появляются, только когда игрок выиграл участок
+  // на торгах и построил станок сам.
+  assert(!built.objects.some(object => String(object?.interactive?.kind || '') === 'craftingStation'),
+    `${city.locationId}: the city still carries crafting stations of its own`);
   assert(plan.homes.length >= 3, `${city.locationId}: the city has ${plan.homes.length} homes`);
 
   // --- участки под застройку ----------------------------------------------------------------
   // Город читается участками: у каждого квартала свои, и часть стоит свободной.
   const plots = built.objects.filter(object => object.tags.includes('city-plot'));
-  const plotIds = new Set(plots.map(object => object.id.replace(/_(ground|edge|post|fence|sign)[\w-]*$/, '')));
+  const plotIds = new Set(plots.map(object => object.id.replace(/_(ground|edge|post|fence|sign|board)[\w-]*$/, '')));
   assert.equal(plotIds.size, 32, `${city.locationId}: the city has ${plotIds.size} building plots`);
-  const free = new Set(plots.filter(object => object.tags.includes('plot-free')).map(object => object.id.replace(/_(ground|edge|post|fence|sign)[\w-]*$/, '')));
+  const free = new Set(plots.filter(object => object.tags.includes('plot-free')).map(object => object.id.replace(/_(ground|edge|post|fence|sign|board)[\w-]*$/, '')));
   assert(free.size >= 16, `${city.locationId}: only ${free.size} plots are left free for building`);
+  // У свободного участка есть табличка торгов: с неё игрок и выкупает участок.
+  const boards = built.objects.filter(object => String(object?.interactive?.kind || '') === 'plotBoard');
+  assert.equal(boards.length, free.size, `${city.locationId}: ${boards.length} boards for ${free.size} free plots`);
+  const planOpen = (plan.plots || []).filter(row => row.open).length;
+  assert.equal(planOpen, free.size, `${city.locationId}: the plan lists ${planOpen} open plots, the city shows ${free.size}`);
+  for (const board of boards) {
+    assert((plan.plots || []).some(row => row.id === board.interactive.plotId),
+      `${city.locationId}: board ${board.id} names a plot the plan does not know`);
+  }
   for (const district of ['bank', 'market', 'workshop', 'homes']) {
     assert(plots.some(object => object.tags.includes(`city-${district}`)),
       `${city.locationId}: the ${district} quarter has no plots`);

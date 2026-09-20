@@ -10,9 +10,6 @@
           "id": "caravan_sayla_shop",
           "type": "shop",
           "priority": 100,
-          "target": {
-            "slotId": "caravan_sayla_shop"
-          },
           "interruptPolicy": "interruptible",
           "resumePolicy": "reevaluate",
           "serviceAvailable": true

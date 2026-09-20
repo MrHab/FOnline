@@ -137,18 +137,18 @@ const mergeAuthoredObjectMetadata = vm.runInNewContext(
 
 const caravanCamp = JSON.parse(fs.readFileSync(path.join(root, 'data', 'locations', 'caravanCamp.json'), 'utf8'));
 const saylaSource = caravanCamp.objects.find(row => row.id === 'caravan_sayla');
-const shopParentSource = caravanCamp.objects.find(row => (row.activitySlots || []).some(slot => slot.id === 'caravan_sayla_shop'));
+const storageSource = caravanCamp.objects.find(row => row.id === 'capital_storage_caravans');
 const saylaRoundTrip = mergeAuthoredObjectMetadata({
   id: saylaSource.id,
   model: saylaSource.model,
   position: { x: -6, y: 0, z: 4 },
   entity: { kind: 'npc', role: 'merchant', faction: 'old_klim', stationary: true }
 }, saylaSource);
-const shopParentRoundTrip = mergeAuthoredObjectMetadata({
-  id: shopParentSource.id,
-  model: shopParentSource.model,
-  position: shopParentSource.position
-}, shopParentSource);
+const storageRoundTrip = mergeAuthoredObjectMetadata({
+  id: storageSource.id,
+  model: storageSource.model,
+  position: storageSource.position
+}, storageSource);
 if (saylaRoundTrip.entity?.npcId !== 'caravan_sayla' || saylaRoundTrip.entity?.routineId !== 'caravan_sayla') {
   fail('location editor round-trip drops authored npcId/routineId');
 }
@@ -158,8 +158,8 @@ if (saylaRoundTrip.entity?.faction !== 'caravans' || saylaRoundTrip.entity?.stat
 if (saylaRoundTrip.position?.x !== -6 || saylaRoundTrip.position?.z !== 4) {
   fail('location editor round-trip lets stale authored coordinates overwrite edited coordinates');
 }
-if (!(shopParentRoundTrip.activitySlots || []).some(slot => slot.id === 'caravan_sayla_shop')) {
-  fail('location editor round-trip drops authored activitySlots');
+if (storageRoundTrip.interactive?.kind !== storageSource.interactive?.kind || storageRoundTrip.role !== storageSource.role) {
+  fail('location editor round-trip drops authored interaction metadata');
 }
 if (!editor.includes('createPlacedObject(def, { ...object, authoredSource: object })')
   || !editor.includes('mergeAuthoredObjectMetadata(generated, object.authoredSource)')) {

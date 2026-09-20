@@ -424,6 +424,11 @@ namespace RealmOfAshes.Game
             quantity.Interaction = Interaction;
             if (Interaction != null) Interaction.QuantityCanvasDriven = true;
 
+            // Окно таблички участка: торги за место в городе и постройка станка.
+            var plotCanvas = GetComponent<RoaPlotCanvas>();
+            if (plotCanvas == null) plotCanvas = gameObject.AddComponent<RoaPlotCanvas>();
+            plotCanvas.Interaction = Interaction;
+
             // Хранилище в web-виде (#storage-window): колонки, вкладки категорий, карточки.
             var storage = GetComponent<RoaStorageCanvas>();
             if (storage == null) storage = gameObject.AddComponent<RoaStorageCanvas>();

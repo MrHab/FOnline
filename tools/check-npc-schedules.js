@@ -1,7 +1,6 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const vm = require('vm');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 const { isPlacedWorldSite } = require('../src/server/authored-world-sites');
 const {
@@ -10,7 +9,6 @@ const {
   routineInterruptBlocksService,
   selectRoutinePackage,
 } = require('../src/server/npc-routines');
-const { buildActivitySlotCatalog } = require('../src/server/npc-smart-objects');
 
 const ROOT = path.resolve(__dirname, '..');
 // Exercise the actual authored population AND a separate legacy fixture. The
@@ -128,8 +126,6 @@ const updateScheduleBody = functionBody(server, 'updateNpcDailySchedule');
 const publicEnemyBody = functionBody(server, 'publicEnemy');
 const updateEnemiesBody = functionBody(server, 'updateServerEnemies');
 const dialogueInterruptBody = functionBody(server, 'npcRoutineDialogueInterruptType');
-const ensureSlotsBody = functionBody(server, 'ensureRoomNpcActivitySlots');
-const reserveSlotBody = functionBody(server, 'reserveNpcActivitySlot');
 
 requireText('createNpcSchedule integration', scheduleBody, 'createLegacyRoutine');
 
@@ -170,7 +166,6 @@ try {
 [
   'npcRoutinePackageForActor',
   "routinePackage.source === 'interrupt'",
-  'reserveNpcActivitySlot',
   "phase: 'travel'",
   "phase: 'use'",
   'updateNpcSocialSpeech'
@@ -197,25 +192,6 @@ const roomNoiseBody = functionBody(server, 'addRoomNoise');
   'if (!weaponNoise) continue;',
   'if (!alreadyAssigned && activeInvestigatorsHere >= 1) continue;'
 ].forEach(needle => requireText('addRoomNoise friendly gate', roomNoiseBody, needle));
-
-// У станции ретранслятора авторские посты охраны: по одному на каждого из
-// трёх сим-охранников, с разными позициями.
-try {
-  const relayStationDef = JSON.parse(require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'data', 'locations', 'relayStation.json'), 'utf8'));
-  const relayGuardSlots = (relayStationDef.objects || [])
-    .flatMap(row => (Array.isArray(row.activitySlots) ? row.activitySlots : []))
-    .filter(slot => slot && slot.type === 'guard');
-  if (relayGuardSlots.length < 3) errors.push(`relayStation must author at least 3 guard posts, found ${relayGuardSlots.length}`);
-  const relayGuardPoints = new Set(relayGuardSlots.map(slot => `${slot.position?.x}:${slot.position?.z}`));
-  if (relayGuardPoints.size !== relayGuardSlots.length) errors.push('relayStation guard posts must not share a position');
-  for (const slot of relayGuardSlots) {
-    if (Number(slot.capacity) !== 1) errors.push(`relayStation guard post ${slot.id} must have capacity 1`);
-    if (slot.visualAction !== 'guard') errors.push(`relayStation guard post ${slot.id} must use the guard visual action`);
-  }
-} catch (error) {
-  errors.push(`relayStation guard post checks failed: ${error?.message || String(error)}`);
-}
 
 const combatBranch = updateEnemiesBody.indexOf('if (factionCombatActors.has(enemy.id))');
 const dialogueBranch = updateEnemiesBody.indexOf('if (Number(enemy.dialogueFocusUntil || 0) > 0)');
@@ -294,17 +270,6 @@ if ((server.match(/npcScheduledServiceClosed\(room, actor, Date\.now\(\)\)/g) ||
 if ((server.match(/serviceAvailable:\s*!npcRoutineServiceInterrupted\(room, enemy,/g) || []).length < 2) {
   errors.push('NPC activity snapshots can still advertise services during combat, alarm or investigation');
 }
-
-[
-  'room.npcActivitySlotObjectSource !== objectSource',
-  'npcActivityReservationsPrunedAtStructureRevision',
-  'buildActivitySlotIndexes(room.npcActivitySlots)'
-].forEach(needle => requireText('indexed activity-slot catalog', ensureSlotsBody, needle));
-[
-  'slotById: room.npcActivitySlotById',
-  'slotsByType: room.npcActivitySlotsByType',
-  'npcActivityReservationMiss'
-].forEach(needle => requireText('indexed activity-slot reservation', reserveSlotBody, needle));
 
 try {
   const authoredNpcStationary = new Function('entity', 'role', functionBody(server, 'authoredNpcStationary'));
@@ -429,40 +394,14 @@ try {
   }
 
   const caravanCamp = readJson('data/locations/caravanCamp.json', {});
-  const slots = buildActivitySlotCatalog(caravanCamp);
-  const slotIds = new Set(slots.map(slot => slot.id));
-  if (slots.length < 11) errors.push(`caravanCamp exposes only ${slots.length} activity slots; expected at least 11`);
-  // Сна у NPC нет: ни коек, ни слотов сна.
-  if (slots.some(slot => ['bed', 'sleep'].includes(slot.type))) errors.push('caravanCamp still has bed or sleep activity slots');
+  // Рабочих мест у NPC больше нет: ни в локациях, ни в распорядке. Цель роли —
+  // запасной пост от npcRoutineFallbackTarget, а не точка в файле локации.
   for (const routinePackage of saylaRoutine.packages) {
-    const slotId = String(routinePackage?.target?.slotId || '');
-    if (slotId && !slotIds.has(slotId)) errors.push(`Sayla routine target ${slotId} is absent from caravanCamp activity slots`);
-    const slotType = String(routinePackage?.target?.slotType || '');
-    if (slotType && !slots.some(slot => slot.type === slotType)) {
-      errors.push(`Sayla routine target type ${slotType} is absent from caravanCamp activity slots`);
+    const target = routinePackage?.target;
+    if (target && typeof target === 'object' && (target.slotId || target.slotType)) {
+      errors.push('authored routines still target NPC work places');
     }
   }
-  const caravanObjects = Array.isArray(caravanCamp.objects) ? caravanCamp.objects : [];
-  const shopSlotParent = caravanObjects.find(row => (Array.isArray(row?.activitySlots) ? row.activitySlots : [])
-    .some(slot => String(slot?.id || '') === 'caravan_sayla_shop'));
-  const storageHelpersStart = server.indexOf('function locationDefinitionObjectTags');
-  const storageHelpersEnd = server.indexOf('function locationDefinitionObjectIsNpc', storageHelpersStart);
-  if (storageHelpersStart < 0 || storageHelpersEnd <= storageHelpersStart) {
-    errors.push('cannot extract runtime location storage normalization helpers');
-  }
-  const runtimeObjectIsWarehouse = storageHelpersStart >= 0 && storageHelpersEnd > storageHelpersStart
-    ? vm.runInNewContext(`${server.slice(storageHelpersStart, storageHelpersEnd)}\nlocationDefinitionObjectIsWarehouse`, {})
-    : () => false;
-  if (!shopSlotParent) errors.push('Sayla shop slot has no authored parent object');
-  else if (runtimeObjectIsWarehouse(shopSlotParent)) {
-    errors.push('Sayla shop slot is attached to storage that normalizeLocationDefinition replaces at runtime');
-  }
-  const rawSlots = caravanObjects.flatMap(row => Array.isArray(row?.activitySlots) ? row.activitySlots : []);
-  if (new Set(rawSlots.map(slot => String(slot?.id || ''))).size !== rawSlots.length) {
-    errors.push('caravanCamp contains duplicate authored activity slot IDs');
-  }
-  if (slots.some(slot => slot.capacity !== 1)) errors.push('caravanCamp vertical-slice slots must all use capacity 1');
-  if (slots.some(slot => slot.ownerNpcId)) errors.push('caravanCamp activity slots are shared: no NPC owns a slot');
   const saylaRow = (Array.isArray(caravanCamp.objects) ? caravanCamp.objects : [])
     .find(row => String(row?.id || '') === 'caravan_sayla');
   if (saylaRow?.entity?.npcId !== 'caravan_sayla' || saylaRow?.entity?.routineId !== 'caravan_sayla') {
@@ -472,7 +411,7 @@ try {
     errors.push('Sayla, like every capital trader, must be stationary:true: traders just stand and trade');
   }
 } catch (error) {
-  errors.push(`authored routine/activity slot checks failed: ${error?.message || String(error)}`);
+  errors.push(`authored routine checks failed: ${error?.message || String(error)}`);
 }
 
 cleanupScheduleFixture();

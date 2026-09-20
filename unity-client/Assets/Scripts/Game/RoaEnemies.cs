@@ -1049,7 +1049,7 @@ namespace RealmOfAshes.Game
                 JObject row = token as JObject;
                 string id = row?["id"]?.ToString();
                 JArray activity = row?["a"] as JArray;
-                if (string.IsNullOrEmpty(id) || activity == null || activity.Count < 7
+                if (string.IsNullOrEmpty(id) || activity == null || activity.Count < 6
                     || !_enemies.TryGetValue(id, out Enemy enemy)) continue;
 
                 int revision = activity[0]?.ToObject<int>() ?? 0;
@@ -1063,12 +1063,11 @@ namespace RealmOfAshes.Game
                 enemy.Snapshot["goalActivity"] = type;
                 enemy.Snapshot["activityPhase"] = activity[2]?.ToString() ?? string.Empty;
                 enemy.Snapshot["visualAction"] = activity[3]?.ToString() ?? string.Empty;
-                enemy.Snapshot["activitySlotId"] = activity[4]?.ToString() ?? string.Empty;
-                JToken facing = activity[5];
+                JToken facing = activity[4];
                 enemy.Snapshot["activityFacing"] = facing == null || facing.Type == JTokenType.Null
                     ? JValue.CreateNull()
                     : facing.DeepClone();
-                enemy.Snapshot["serviceAvailable"] = (activity[6]?.ToObject<int>() ?? 0) != 0;
+                enemy.Snapshot["serviceAvailable"] = (activity[5]?.ToObject<int>() ?? 0) != 0;
 
                 string label = ScheduleLabel(type);
                 if (!string.IsNullOrEmpty(label)) enemy.Snapshot["scheduleLabel"] = label;

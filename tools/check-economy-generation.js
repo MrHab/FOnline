@@ -272,22 +272,6 @@ function locationWarehouseRows(loc = {}) {
   });
 }
 
-function locationHasCraftingStation(loc = {}) {
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  return objects.some(row => !!(row.craftingStation
-    || row.stationType
-    || row.workstation
-    || row.craftingStations
-    || row.stationTypes
-    || row.workstationTypes
-    || row.entity?.craftingStation
-    || row.entity?.craftingStations
-    || row.entity?.stationTypes
-    || row.interactive?.craftingStation
-    || row.interactive?.craftingStations
-    || row.interactive?.stationTypes));
-}
-
 function locationModelText(row = {}) {
   return `${row.id || ''} ${row.model || ''} ${row.url || ''} ${row.name || ''}`.toLowerCase();
 }
@@ -350,9 +334,9 @@ for (const site of defaultSitesList) {
   // Доски заданий убраны из всех локаций по решению дизайна: контракты
   // берутся через Пип-бой и с глобальной карты, а не у объекта в мире.
   // Поэтому наличие доски на экономической площадке больше не требуется.
-  if ((site.type === 'production' || site.type === 'outpost' || site.production) && !locationHasCraftingStation(loc)) {
-    errors.push(`world economy site ${site.id}: missing authored crafting station in ${relPath}`);
-  }
+  // Станков в авторских локациях больше нет: станок появляется только там, где
+  // игрок выиграл городской участок на торгах и построил его сам. Производственной
+  // площадке станок больше не положен — она даёт сырьё, а не верстак.
   // Торговые автоматы убраны из всех локаций по решению дизайна. Автомат был
   // лишь игровой лавкой над складом площадки (tradeMachineMarketState), а не
   // участником симуляции экономики, поэтому производственная площадка
@@ -446,10 +430,9 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
     } else if (String(warehouseRows[0].interactive?.storageFaction || '') !== capitalStorageFaction) {
       errors.push(`capital ${loc.id}: storage faction mismatch (${relPath})`);
     }
-    const capitalStationIds = new Set(stationRows.flatMap(row => Array.isArray(row.craftingStations) ? row.craftingStations : []));
-    const missingStations = Object.keys(craftingStationModels).filter(id => !capitalStationIds.has(id));
-    if (stationRows.length !== Object.keys(craftingStationModels).length || missingStations.length) {
-      errors.push(`capital ${loc.id}: expected all dedicated crafting stations; missing ${missingStations.join(', ') || 'none'} (${relPath})`);
+    // Станков у столицы своих нет: их строят игроки на выигранных участках.
+    if (stationRows.length) {
+      errors.push(`capital ${loc.id}: carries ${stationRows.length} authored crafting stations; they are built by players now (${relPath})`);
     }
   }
   // Сна у NPC нет: личных коек и спальных корпусов в локациях не бывает.

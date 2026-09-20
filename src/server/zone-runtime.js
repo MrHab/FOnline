@@ -107,7 +107,8 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     const objects = (Array.isArray(authored.objects) ? authored.objects : [])
       // Переносим всё, за что цепляется игра: станки, хранилище, квестовые вещи и
       // авторских NPC-служб (аукционер, медик, ремонтник, торговцы).
-      .filter(object => object && (object.interactive || object.entity?.kind === 'npc' || (object.tags || []).includes('quest')));
+      .filter(object => object && (object.interactive || object.entity?.kind === 'npc'
+        || (object.tags || []).includes('quest')));
     return {
       cityId: locationId,
       name: String(authored.name || zone.name || locationId),
@@ -134,11 +135,13 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
    * а авторские поля локации (имя, правила, профиль, фракция) остаются прежними.
    * Ссылку на старую сцену Unity город не наследует: его собирают на лету.
    */
-  function cityDefinition(locationId, authored = {}) {
+  function cityDefinition(locationId, authored = {}, builtStations = []) {
     const zone = cityOf(locationId);
     if (!zone) return null;
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
-    const built = buildCity(cityRecipe(locationId, authored), catalog.kit);
+    // Построенное игроками приходит извне: город чистый, а станки на участках —
+    // состояние торгов, которое живёт в сохранениях.
+    const built = buildCity({ ...cityRecipe(locationId, authored), built: builtStations }, catalog.kit);
     const keep = {};
     for (const key of ['safe', 'settlement', 'respawnAllowed', 'respawn', 'visualProfile', 'kromkaVisualProfile',
       'ambientProfile', 'anomalyDensity', 'territoryId', 'territoryRole', 'factionId', 'migrationArrival',

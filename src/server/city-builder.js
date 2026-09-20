@@ -189,11 +189,14 @@ function buildCity(recipe, kit) {
         put(`${id}_w${index++}`, 'scrap_wall_segment', tile, tz, 0, tags);
       }
     }
-    for (let tz = z0 + WALL_STEP; tz <= z1 - WALL_STEP; tz += WALL_STEP) {
+    // Боковые стены ставим со смещением в полсекции: углы уже закрыты длинными
+    // стенами, а без смещения на короткой стене умещалась бы одна секция из трёх.
+    for (let tz = z0 + WALL_STEP / 2; tz <= z1 - WALL_STEP / 4; tz += WALL_STEP) {
       for (const tx of [x0, x1]) {
         const tile = Math.round(tz);
         const side = tx === x0 ? 'west' : 'east';
-        if (side === doorSide && Math.abs(tile - door.tz) <= 2) continue;
+        // Проём двери — один пролёт: иначе на короткой стене не осталось бы стены.
+        if (side === doorSide && Math.abs(tile - door.tz) <= 1) continue;
         put(`${id}_w${index++}`, 'scrap_wall_segment', tx, tile, 90, tags);
       }
     }
@@ -255,7 +258,9 @@ function buildCity(recipe, kit) {
     auction: { tx: bank.centre.tx - 2, tz: bank.centre.tz + 1 },
     rect: bankRect
   };
-  put('bank_vault', 'storage_chest', anchors.bank.storage.tx, anchors.bank.storage.tz, 0, ['bank', 'vault']);
+  // Сундук-декорация стоит рядом с местом хранилища, а не на нём: на анкер встаёт
+  // настоящее хранилище фракции.
+  put('bank_vault', 'storage_chest', anchors.bank.storage.tx - 2, anchors.bank.storage.tz + 2, 0, ['bank', 'vault']);
   put('bank_counter', 'trade_machine', anchors.bank.auction.tx + 2, anchors.bank.auction.tz, 90, ['bank', 'counter']);
   // Вывеска стоит сбоку от проёма: в самом проёме ей не место, через него ходят.
   put('bank_sign', 'highway_sign', bank.door.tx - 2, bank.door.tz - 3, 90, ['city-building', 'bank', 'sign']);
@@ -319,25 +324,29 @@ function buildCity(recipe, kit) {
   put('plaza_medic_post', 'cot_bed', anchors.medic.tx, anchors.medic.tz - 2, 0, ['city-plaza', 'medic']);
   put('plaza_dispatch_post', 'watch_post', anchors.dispatcher.tx, anchors.dispatcher.tz - 2, 0, ['city-plaza', 'dispatcher']);
 
-  // Дороги: плита ложится плоско и чуть утопленной — это мостовая, а не насыпь
-  // щебня. Полоса из двух рядов шириной 8 м, шаг три тайла: плита длиной 4,3 м
-  // закрывает промежуток, а не громоздится на соседку.
-  const ROAD = { scale: [1, 0.22, 1], y: -0.12 };
+  // Дороги: ровная мостовая из дорожного покрытия (плоский меш с камнем), а не
+  // насыпь щебня. Плита 4 × 4 м, шаг два тайла — полотно ложится встык, в два
+  // ряда шириной 8 м, и с земли читается дорогой.
+  // Плита набора — 4 × 4 м; берём её вдвое крупнее и кладём через четыре тайла,
+  // тогда полотно из 8-метровых плит ложится встык, а объектов втрое меньше.
+  const ROAD = { scale: [2, 1, 2] };
   let slab = 0;
   for (const gate of plan.gates) {
     const dir = DIRECTIONS[gate.dir];
-    for (let step = PLAZA_HALF; step <= WALL_HALF; step += 3) {
+    for (let step = 0; step <= WALL_HALF; step += 4) {
       for (const side of [-2, 2]) {
         const tx = CENTRE + dir.dx * step + (dir.dx ? 0 : side);
         const tz = CENTRE + dir.dz * step + (dir.dz ? 0 : side);
-        put(`street_${slab++}`, 'asphalt_slab', tx, tz, dir.dx ? 0 : 90, ['city-street', gate.dir], ROAD);
+        put(`street_${slab++}`, 'road_tile', tx, tz, 0, ['city-street', gate.dir], ROAD);
       }
     }
   }
-  for (let angle = 0; angle < 360; angle += 12) {
-    const tx = Math.round(CENTRE + Math.cos(angle * Math.PI / 180) * RING_RADIUS);
-    const tz = Math.round(CENTRE + Math.sin(angle * Math.PI / 180) * RING_RADIUS);
-    put(`ring_${slab++}`, 'asphalt_slab', tx, tz, angle % 90 < 45 ? 0 : 90, ['city-street', 'ring'], ROAD);
+  // Кольцо у площади: квадрат из того же покрытия — по нему обходят центр.
+  for (let along = -RING_RADIUS; along <= RING_RADIUS; along += 4) {
+    for (const fixed of [-RING_RADIUS, RING_RADIUS]) {
+      put(`ring_${slab++}`, 'road_tile', CENTRE + along, CENTRE + fixed, 0, ['city-street', 'ring'], ROAD);
+      put(`ring_${slab++}`, 'road_tile', CENTRE + fixed, CENTRE + along, 0, ['city-street', 'ring'], ROAD);
+    }
   }
 
   // --- за стеной: поле, редкие кусты и сухие деревья -----------------------------------------
@@ -373,7 +382,15 @@ function buildCity(recipe, kit) {
     if (service === 'medic' || service === 'doctor') return 'plaza';
     return 'market';
   };
-  // В банке первое место — стойка аукциониста, второе — хранилище, дальше вдоль стены.
+  // В банке место даёт роль: аукционер садится к стойке, хранилище встаёт на
+  // своё место у стены. Иначе их развело бы по порядку строк в авторском файле.
+  const bankSeat = object => {
+    if (String(object?.entity?.service || '') === 'auction') return anchors.bank.auction;
+    if (String(object?.interactive?.role || '') === 'storage' || String(object?.interactive?.kind || '') === 'container') {
+      return anchors.bank.storage;
+    }
+    return null;
+  };
   const slots = {
     workshop: anchors.workshop.benches.map(bench => ({ tx: bench.tx + 2, tz: bench.tz })),
     bank: [
@@ -399,10 +416,11 @@ function buildCity(recipe, kit) {
   const used = { workshop: 0, bank: 0, plaza: 0, market: 0 };
   const carried = plan.carry.objects.map(object => {
     const district = districtOf(object);
-    const list = slots[district].length ? slots[district] : plazaRing;
-    const index = used[district]++;
+    const seat = district === 'bank' ? bankSeat(object) : null;
+    const list = seat ? [seat] : (slots[district].length ? slots[district] : plazaRing);
+    const index = seat ? 0 : used[district]++;
     const spot = list[index % list.length];
-    const shift = Math.floor(index / list.length) * 3;
+    const shift = seat ? 0 : Math.floor(index / list.length) * 3;
     const tile = { tx: clamp(spot.tx + shift, 4, TILES - 5), tz: clamp(spot.tz, 4, TILES - 5) };
     // Живые сущности (NPC) присылает сервер: префаб им не нужен и вреден — клиент
     // поставил бы рядом с торговцем его двойника из набора.

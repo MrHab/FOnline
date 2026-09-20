@@ -69,6 +69,8 @@ MonoBehaviour:
     prefab: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
   - key: relay_antenna
     prefab: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+  - key: road_tile
+    prefab: {fileID: 390246950115920429, guid: dd29a8efa3bad2a46b0a5a532e8ed970, type: 3}
   - key: roadblock_barricade
     prefab: {fileID: 6264479473349796813, guid: a373d4b2c4266924091c9383b194110d, type: 3}
   - key: rubble_rock

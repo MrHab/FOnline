@@ -547,6 +547,25 @@
       "solid": true,
       "vision": false
     },
+    "road_tile": {
+      "name": "Дорожное покрытие",
+      "size": [
+        4,
+        4
+      ],
+      "height": 0.03,
+      "center": [
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "solid": false,
+      "vision": false
+    },
     "roadblock_barricade": {
       "name": "Баррикада",
       "size": [

@@ -64,6 +64,13 @@ for (const city of cities) {
   const vault = built.objects.find(object => /capital_storage/.test(String(object.id || '')));
   if (vault) assert(inside(plan.bank.rect, tileOf(vault)), `${city.locationId}: the faction vault is not in the bank`);
 
+  // Границу стены в метрах читает клиент: внутри неё он не сыплет покров земли.
+  const wallBox = built.zone.cityWall;
+  assert(wallBox && wallBox.minX < wallBox.maxX && wallBox.minZ < wallBox.maxZ,
+    `${city.locationId}: the zone block carries no city wall in metres`);
+  assert(Math.abs(wallBox.minX - (plan.wall.min - TILES / 2 + 0.5) * 2) < 0.01,
+    `${city.locationId}: the wall in metres disagrees with the wall in tiles`);
+
   // --- кварталы и площадь -------------------------------------------------------------------
   assert(plan.market.traders.length >= 4, `${city.locationId}: the market has ${plan.market.traders.length} stalls`);
   assert(plan.workshop.benches.length >= 3, `${city.locationId}: the workshop has ${plan.workshop.benches.length} benches`);

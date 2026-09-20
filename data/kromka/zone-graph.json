@@ -5176,8 +5176,8 @@
     "east": {
      "to": "z_08_09",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     }
    },
    "roads": [
@@ -5215,8 +5215,8 @@
     "west": {
      "to": "z_07_09",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     },
     "east": {
      "to": "z_09_09",
@@ -5965,13 +5965,14 @@
     "east": {
      "to": "z_10_10",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     }
    },
    "roads": [
     "ore_freight_rail",
-    "tesma_service_road"
+    "tesma_service_road",
+    "tract_main"
    ],
    "places": [],
    "authored": false,
@@ -6005,8 +6006,8 @@
     "west": {
      "to": "z_09_10",
      "open": true,
-     "along": 0.85,
-     "road": "ore_freight_rail"
+     "along": 0.15,
+     "road": "tract_main"
     },
     "east": {
      "to": "z_11_10",

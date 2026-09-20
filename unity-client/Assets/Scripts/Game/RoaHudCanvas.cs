@@ -277,7 +277,7 @@ namespace RealmOfAshes.Game
         private Text _mapTitle;
         private Text _cellText;
         private RectTransform _markerLayer;
-        private Text _playerArrow;
+        private Image _playerArrow;
         private readonly Image[] _markers = new Image[96];
         private readonly Button[] _slotButtons = new Button[RoaQuickbar.SlotCount];
         private readonly Text[] _slotTexts = new Text[RoaQuickbar.SlotCount];
@@ -533,12 +533,19 @@ namespace RealmOfAshes.Game
                 _markers[i].raycastTarget = false;
                 _markers[i].gameObject.SetActive(false);
             }
-            _playerArrow = Label("Player", _markerLayer, Vector2.zero, new Vector2(18f, 18f), 17,
-                                 TextAnchor.MiddleCenter, new Color(0.94f, 0.82f, 0.28f), FontStyle.Bold);
-            _playerArrow.text = "\u25b2";
-            _playerArrow.rectTransform.anchorMin = Vector2.zero;
-            _playerArrow.rectTransform.anchorMax = Vector2.zero;
-            _playerArrow.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            // \u041c\u0430\u0440\u043a\u0435\u0440 \u0438\u0433\u0440\u043e\u043a\u0430 \u2014 \u0437\u043d\u0430\u0447\u043e\u043a \u00abnavigation\u00bb \u0438\u0437 Material Design Icons (Apache 2.0,
+            // \u0441\u043c. Resources/RealmUi/minimap-player.license.txt); \u043e\u0441\u0442\u0440\u0438\u0451 \u0441\u043c\u043e\u0442\u0440\u0438\u0442 \u0432\u0432\u0435\u0440\u0445.
+            RectTransform arrow = Rect("Player", _markerLayer, Vector2.zero, Vector2.zero,
+                                       new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(18f, 18f));
+            _playerArrow = arrow.gameObject.AddComponent<Image>();
+            _playerArrow.raycastTarget = false;
+            _playerArrow.color = new Color(0.94f, 0.82f, 0.28f);
+            _playerArrow.sprite = RoaMinimapPlayerIcon.Sprite;
+            _playerArrow.preserveAspect = true;
+            // Снимок локации пёстрый: без тёмной обводки значок на песке теряется.
+            var arrowOutline = arrow.gameObject.AddComponent<Outline>();
+            arrowOutline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            arrowOutline.effectDistance = new Vector2(1.4f, -1.4f);
             _cellText = Label("Cell", panel, new Vector2(13f, -190f), new Vector2(164f, 10f), 10,
                               TextAnchor.MiddleLeft, MutedInk);
             _cellText.gameObject.SetActive(false);
@@ -1336,7 +1343,8 @@ namespace RealmOfAshes.Game
                 return;
             }
             _mapImage.enabled = true;
-            _mapImage.texture = _minimap.StaticTexture;
+            // Снимок локации сверху, пока он не снят — схема из данных локации.
+            _mapImage.texture = _minimap.MapTexture;
             // В клетке опасных земель — её имя с номером («Меловая чаша №47»).
             // Вне клетки сервер шлёт dangerCell: null — это JValue, а не C#-null: «?.» его
             // пропускает, и индексатор по нему бросал исключение каждый кадр.
@@ -1364,7 +1372,8 @@ namespace RealmOfAshes.Game
             if (playerVisible)
             {
                 _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * MinimapPixels, player.y * MinimapPixels);
-                _playerArrow.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_minimap.PlayerHeading);
+                _playerArrow.rectTransform.localEulerAngles =
+                    new Vector3(0f, 0f, RoaMinimap.PlayerIconRotation(_minimap.PlayerHeading));
             }
         }
 

@@ -46,6 +46,8 @@ namespace RealmOfAshes.Game
 
         [Range(140f, 280f)] public float Size = 190f;
         [Min(0.05f)] public float RefreshSeconds = 0.12f;
+        /// <summary>Сколько ждать после загрузки, прежде чем снимать локацию сверху.</summary>
+        public const float SnapshotDelaySeconds = 1.2f;
 
         public int MapWidth { get; private set; }
         public int MapDepth { get; private set; }
@@ -53,6 +55,19 @@ namespace RealmOfAshes.Game
         public int MarkerCount { get { return _markers.Count; } }
         public string LocationName { get; private set; } = string.Empty;
         public Texture2D StaticTexture { get { return _staticTexture; } }
+
+        /// <summary>Снимок локации сверху; пока он не снят — миникарта рисует схему.</summary>
+        public Texture MapTexture
+        {
+            get
+            {
+                RenderTexture snapshot = _snapshot != null && _snapshot.CapturedLocationId == (_location?.Id ?? string.Empty)
+                    ? _snapshot.Texture : null;
+                return snapshot != null ? (Texture)snapshot : _staticTexture;
+            }
+        }
+
+        public bool HasSnapshot { get { return MapTexture is RenderTexture; } }
         public bool CanvasDriven { get; set; }
         public IReadOnlyList<Marker> Markers { get { return _markers; } }
         public bool IsReady { get { return _location != null && _staticTexture != null; } }
@@ -78,6 +93,8 @@ namespace RealmOfAshes.Game
         private Texture2D _arrowTexture;
         private bool _edgeExitAllowed = true;
         private float _nextRefresh;
+        private RoaMinimapSnapshot _snapshot;
+        private float _snapshotAt;
 
         public void Configure(RoaEnemies enemies, RoaRemotePlayers remotePlayers,
                               RoaGroundItems groundItems, RoaInteraction interaction)
@@ -111,6 +128,16 @@ namespace RealmOfAshes.Game
             _staticTexture = null;
             if (location != null && MapWidth > 0 && MapDepth > 0) BuildStaticTexture(location);
             _nextRefresh = 0f;
+            // Снимок снимаем не сразу: сначала загрузчик должен доставить модели и собрать мир.
+            _snapshot?.Forget();
+            _snapshotAt = location != null ? Time.unscaledTime + SnapshotDelaySeconds : 0f;
+        }
+
+        /// <summary>Пересобрать снимок локации (например, после правки мира).</summary>
+        public void RequestSnapshot()
+        {
+            _snapshot?.Forget();
+            _snapshotAt = Time.unscaledTime;
         }
 
         public void SetWorldMap(JArray worldMap)
@@ -132,6 +159,19 @@ namespace RealmOfAshes.Game
             BuildStaticTexture(_location);
         }
 
+        /// <summary>
+        /// Поворот значка игрока на миникарте (градусы, ось Z канвы).
+        ///
+        /// Миникарта смотрит на мир сверху: вправо — +X Unity, вверх — −Z Unity (тайл
+        /// tz растёт к −Z). Игрок с yaw θ смотрит в (sin θ, cos θ), то есть на карте —
+        /// в (sin θ, −cos θ). Значок нарисован остриём вверх, поворот φ уводит остриё
+        /// в (−sin φ, cos φ), поэтому φ = θ + 180°. Сверяет RoaMinimapSnapshotProbe.
+        /// </summary>
+        public static float PlayerIconRotation(float headingDeg)
+        {
+            return 180f + headingDeg;
+        }
+
         public Vector2 WorldToMapNormalized(Vector3 world)
         {
             if (MapWidth <= 0 || MapDepth <= 0) return Vector2.zero;
@@ -148,9 +188,25 @@ namespace RealmOfAshes.Game
         private void Update()
         {
             if (_location == null || Player == null) return;
+            TakeSnapshotWhenWorldIsReady();
             if (Time.unscaledTime < _nextRefresh) return;
             _nextRefresh = Time.unscaledTime + Mathf.Max(0.05f, RefreshSeconds);
             RefreshMarkers();
+        }
+
+        /// <summary>
+        /// Снимок снимается один раз на локацию — когда загрузчик закончил и мир стоит
+        /// на месте. До этого миникарта показывает схему из данных локации.
+        /// </summary>
+        private void TakeSnapshotWhenWorldIsReady()
+        {
+            if (_snapshotAt <= 0f || Time.unscaledTime < _snapshotAt) return;
+            RoaLocationLoader loader = RoaGameBootstrap.Active != null ? RoaGameBootstrap.Active.Loader : null;
+            if (loader != null && (loader.IsLoading || loader.Current != _location)) return;
+            if (_snapshot == null) _snapshot = gameObject.AddComponent<RoaMinimapSnapshot>();
+            Color ground = GroundColor(_location.Ground?.Preset);
+            ground.a = 1f;
+            _snapshotAt = _snapshot.Capture(_location, ground) ? 0f : Time.unscaledTime + SnapshotDelaySeconds;
         }
 
         private void RefreshMarkers()

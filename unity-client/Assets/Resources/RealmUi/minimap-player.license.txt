@@ -1,0 +1,8 @@
+minimap-player.png — маркер игрока на миникарте.
+
+Источник: Google Material Design Icons, значок «navigation» (maps/navigation,
+materialicons, 48dp @2x), https://github.com/google/material-design-icons
+Лицензия: Apache License 2.0 — https://www.apache.org/licenses/LICENSE-2.0
+
+Изменение: пиксели перекрашены в белый с сохранением исходной альфы, чтобы HUD
+красил значок своим цветом (Image.color). Больше ничего не менялось.

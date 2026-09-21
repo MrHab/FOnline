@@ -32,13 +32,6 @@ namespace RealmOfAshes.EditorTools
 
         public int callbackOrder => -1000;
 
-        [InitializeOnLoadMethod]
-        private static void ScheduleEditorCheck()
-        {
-            EditorApplication.delayCall -= CheckAfterEditorLoad;
-            EditorApplication.delayCall += CheckAfterEditorLoad;
-        }
-
         private static void CheckAfterEditorLoad()
         {
             EditorApplication.delayCall -= CheckAfterEditorLoad;
@@ -62,12 +55,6 @@ namespace RealmOfAshes.EditorTools
             {
                 throw new BuildFailedException("ROA runtime shaders are not configured: " + error.Message);
             }
-        }
-
-        [MenuItem("Realm of Ashes/Проверить runtime-shader")]
-        private static void CheckFromMenu()
-        {
-            EnsureIncluded(true);
         }
 
         private static void EnsureIncluded(bool logWhenUnchanged)

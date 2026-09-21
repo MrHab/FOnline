@@ -19,29 +19,5 @@ namespace RealmOfAshes.EditorTools
     /// </summary>
     public sealed class RoaCredentialGuard : UnityEditor.AssetModificationProcessor
     {
-        private static string[] OnWillSaveAssets(string[] paths)
-        {
-            foreach (RoaGameBootstrap boot in Object.FindObjectsByType<RoaGameBootstrap>(
-                         FindObjectsInactive.Include))
-            {
-                if (boot == null) continue;
-
-                bool dirty = boot.AutoLoginOnStart
-                    || !string.IsNullOrEmpty(boot.AutoLoginName)
-                    || !string.IsNullOrEmpty(boot.AutoLoginPassword);
-
-                if (!dirty) continue;
-
-                boot.AutoLoginOnStart = false;
-                boot.AutoLoginName = string.Empty;
-                boot.AutoLoginPassword = string.Empty;
-
-                EditorUtility.SetDirty(boot);
-
-                Debug.Log("[ROA] Учётные данные авто-входа очищены перед сохранением сцены.");
-            }
-
-            return paths;
-        }
     }
 }

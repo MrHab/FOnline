@@ -709,7 +709,7 @@ namespace RealmOfAshes.Game
             int xp = Mathf.Max(0, reward?["xp"]?.ToObject<int>() ?? 0);
             int silver = Mathf.Max(0, reward?["silver"]?.ToObject<int>() ?? 0);
             if (xp > 0) parts.Add(xp + " XP");
-            if (silver > 0) parts.Add(silver + " марок");
+            if (silver > 0) parts.Add(RoaPlural.Marks(silver));
             foreach (JToken token in reward?["items"] as JArray ?? new JArray())
             {
                 JObject row = token as JObject;
@@ -1091,7 +1091,7 @@ namespace RealmOfAshes.Game
             int caps = reward?["caps"]?.ToObject<int>() ?? 0;
             int reputation = reward?["reputation"]?.ToObject<int>() ?? 0;
             if (xp > 0) parts.Add(xp + " XP");
-            if (caps > 0) parts.Add(caps + " марок");
+            if (caps > 0) parts.Add(RoaPlural.Marks(caps));
             string reputationFactionId = WorldTaskReputationFactionId(task);
             if (reputation > 0 && !string.IsNullOrEmpty(reputationFactionId))
                 parts.Add("репутация " + FactionLabel(reputationFactionId) + " +" + reputation);
@@ -1487,7 +1487,7 @@ namespace RealmOfAshes.Game
             ApplyActionAck(ack);
             RoaCraftingPlots.Apply(ack);
             if (RoaCraftingPlots.LastPayout > 0)
-                Show("Участки: зачислено " + RoaCraftingPlots.LastPayout + " марок.", 4f);
+                Show("Участки: зачислено " + RoaPlural.Marks(RoaCraftingPlots.LastPayout) + ".", 4f);
         }
 
         // --- табличка участка: торги и постройка станка --------------------------------------
@@ -2669,11 +2669,11 @@ namespace RealmOfAshes.Game
                 }
 
                 int net = ack?["net"]?.ToObject<int>() ?? 0;
-                string balance = net > 0 ? "доплата " + net
-                    : net < 0 ? "получено " + Mathf.Abs(net)
+                string balance = net > 0 ? "доплата " + RoaPlural.Marks(net)
+                    : net < 0 ? "получено " + RoaPlural.Marks(Mathf.Abs(net))
                     : "без доплаты";
                 ClearTradeQueue();
-                Show("Обмен подтверждён сервером: " + balance + " марок.", 5f);
+                Show("Обмен подтверждён сервером: " + balance + ".", 5f);
             });
         }
 
@@ -2782,7 +2782,7 @@ namespace RealmOfAshes.Game
                 {
                     JObject reward = ack["reward"] as JObject;
                     Show("Награда: " + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP, "
-                        + (reward?["caps"]?.ToObject<int>() ?? 0) + " марок.");
+                        + RoaPlural.Marks((reward?["caps"]?.ToObject<int>() ?? 0)) + ".");
                 }
                 else Show("Контракт обновлён.");
                 completed?.Invoke(ack);

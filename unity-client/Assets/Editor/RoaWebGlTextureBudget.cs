@@ -58,12 +58,6 @@ namespace RealmOfAshes.EditorTools
             return true;
         }
 
-        private void OnPreprocessTexture()
-        {
-            if (!InBudgetScope(assetPath)) return;
-            ApplyBudget(assetImporter as TextureImporter);
-        }
-
         /// <summary>Сколько ассетов ещё не в бюджете — без переимпорта, для отчёта сборки.</summary>
         public static int OverBudgetCount(List<string> examples = null)
         {

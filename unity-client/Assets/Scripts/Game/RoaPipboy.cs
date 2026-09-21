@@ -802,7 +802,7 @@ namespace RealmOfAshes.Game
                 {
                     JObject reward = ack["reward"] as JObject;
                     _status = "Награда получена: " + Int(reward?["xp"]) + " XP, "
-                        + Int(reward?["caps"]) + " марок.";
+                        + RoaPlural.Marks(Int(reward?["caps"])) + ".";
                 }
                 else if (action == "cancel") _status = "Контракт отменён.";
                 else _status = "Контракт обновлён.";

@@ -110,12 +110,6 @@ namespace RealmOfAshes.EditorTools
                 "MoveZone", "Joystick", "AimZone", "Fire", "Interact", "Reload", "Mode", "Menu", "LeftRail", "RightRail")
         };
 
-        [InitializeOnLoadMethod]
-        private static void ScheduleInitialBuild()
-        {
-            EditorApplication.delayCall += BuildIfMissing;
-        }
-
         private static void BuildIfMissing()
         {
             if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode)

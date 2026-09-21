@@ -86,8 +86,8 @@ namespace RealmOfAshes.Game
 
             _auction.text = auctionOpen
                 ? (highest > 0
-                    ? "Торги идут: ставка " + highest + " марок, следующая от " + _minBid
-                    : "Торги открыты: первая ставка от " + _minBid + " марок, торги длятся сутки")
+                    ? "Торги идут: ставка " + RoaPlural.Marks(highest) + ", следующая от " + _minBid
+                    : "Торги открыты: первая ставка от " + RoaPlural.Marks(_minBid) + ", торги длятся сутки")
                 : "Торги закроются до конца срока участка";
             _bidValue.text = _bid.ToString();
             _bidButton.interactable = auctionOpen && !Interaction.PlotBoardBusy;
@@ -124,7 +124,7 @@ namespace RealmOfAshes.Game
             JObject costs = RoaCraftingPlots.StationCosts;
             JToken row = costs?[station];
             int worth = row?["worth"]?.ToObject<int>() ?? 0;
-            return worth > 0 ? "\n" + worth + " марок" : string.Empty;
+            return worth > 0 ? "\n" + RoaPlural.Marks(worth) : string.Empty;
         }
 
         private static string StationName(string station)

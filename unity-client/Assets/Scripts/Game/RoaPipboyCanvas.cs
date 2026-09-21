@@ -1946,7 +1946,7 @@ namespace RealmOfAshes.Game
             if (cost == null) return "—";
             var parts = new List<string>();
             int silver = cost["silver"]?.Value<int>() ?? 0;
-            if (silver > 0) parts.Add(silver + " марок");
+            if (silver > 0) parts.Add(RoaPlural.Marks(silver));
             foreach (JToken token in cost["items"] as JArray ?? new JArray())
             {
                 string id = token["id"]?.ToString() ?? string.Empty;

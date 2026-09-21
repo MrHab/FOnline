@@ -384,7 +384,7 @@ namespace RealmOfAshes.Game
                 int km = row["distanceKm"]?.Value<int>() ?? 0;
                 var actions = new List<(string, System.Action)>
                 {
-                    ("Отправиться за " + fee + " марок", () => RoaTerritoryNet.UseFastTravel(Interaction.Socket, to, AfterServiceAction))
+                    ("Отправиться за " + RoaPlural.Marks(fee), () => RoaTerritoryNet.UseFastTravel(Interaction.Socket, to, AfterServiceAction))
                 };
                 AddCard(row["name"]?.ToString() ?? to, km + " км по прямой", actions);
             }
@@ -399,8 +399,8 @@ namespace RealmOfAshes.Game
             int healCost = _serviceState["healCost"]?.Value<int>() ?? 0;
             int cureCost = _serviceState["cureCost"]?.Value<int>() ?? 0;
             var actions = new List<(string, System.Action)>();
-            if (missing > 0) actions.Add(("Вылечить за " + healCost + " марок", () => RoaTerritoryNet.UseMedic(Interaction.Socket, "heal", AfterServiceAction)));
-            if (injuries > 0) actions.Add(("Снять травмы за " + cureCost + " марок", () => RoaTerritoryNet.UseMedic(Interaction.Socket, "cure", AfterServiceAction)));
+            if (missing > 0) actions.Add(("Вылечить за " + RoaPlural.Marks(healCost), () => RoaTerritoryNet.UseMedic(Interaction.Socket, "heal", AfterServiceAction)));
+            if (injuries > 0) actions.Add(("Снять травмы за " + RoaPlural.Marks(cureCost), () => RoaTerritoryNet.UseMedic(Interaction.Socket, "cure", AfterServiceAction)));
             string body = missing > 0 ? "Не хватает здоровья: " + missing : "Здоровье полное.";
             body += injuries > 0 ? "\nТравм: " + injuries : "\nТравм нет.";
             AddCard("Лечение за марки", body, actions);
@@ -434,7 +434,7 @@ namespace RealmOfAshes.Game
                     RoaTerritoryNet.UseRepairman(Interaction.Socket, string.Empty, string.Empty, AfterServiceAction)));
             }
             AddCard("Изношено предметов: " + targets.Count,
-                "У вас " + silver + " марок." + (totalCost > silver ? "\nНа всё сразу не хватит — чините по одному." : string.Empty),
+                "У вас " + RoaPlural.Marks(silver) + "." + (totalCost > silver ? "\nНа всё сразу не хватит — чините по одному." : string.Empty),
                 allActions);
 
             int shown = 0;

@@ -460,7 +460,7 @@ namespace RealmOfAshes.Game
             if (InputSuppressed) return;
             if (IconButton(inventory, _inventory != null && _inventory.IsOpen ? "Закрыть" : "Сумка",
                            _inventoryIcon)) TriggerInventory();
-            if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "Пип-бой",
+            if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "ПУТНИК",
                            _pipboyIcon)) TriggerPipboy();
             if (IconButton(map, "Карта", _mapIcon)) TriggerMap();
 
@@ -482,7 +482,7 @@ namespace RealmOfAshes.Game
             if (IconButton(crouch, _crouching ? "Встать" : "Присесть", _crouchIcon))
                 TriggerCrouch();
             if (IconButton(reload, "Перезарядить", _reloadIcon)) TriggerReload();
-            if (IconButton(mode, _combat != null ? _combat.FireMode : "Режим", _modeIcon))
+            if (IconButton(mode, RoaMobileControlsCanvas.FireModeLabel(CurrentFireMode), _modeIcon))
                 TriggerFireMode();
             if (IconButton(player, "Игрок", _playerIcon)) TriggerPlayerPanel();
 

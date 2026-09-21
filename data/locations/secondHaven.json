@@ -44,9 +44,9 @@
       "id": "chalk_ration_box",
       "name": "Пайковый короб",
       "tier": "survival",
-      "tx": 20,
+      "tx": 21,
       "tz": 18,
-      "x": 4,
+      "x": 6,
       "y": 0.1,
       "z": 0,
       "rotationY": 0,
@@ -1126,14 +1126,56 @@
         "shelter"
       ],
       "footprint": {
-        "x": 16.5,
-        "z": 5.5
+        "x": 10.3,
+        "z": 7.3
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-landmark",
@@ -1160,14 +1202,36 @@
         "quarry-houses"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-1",
@@ -1195,14 +1259,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "secondHaven-module-10",
@@ -1230,14 +1303,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-2",
@@ -1265,14 +1350,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-3",
@@ -1300,14 +1397,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-4",
@@ -1335,14 +1444,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-5",
@@ -1370,14 +1491,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "secondHaven-module-6",
@@ -1405,14 +1535,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-7",
@@ -1440,14 +1582,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-8",
@@ -1475,14 +1629,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-module-9",
@@ -1510,14 +1676,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "secondHaven-quarry-homes",
@@ -1546,14 +1721,66 @@
         "crowded"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 17.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 12.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 5.0
+          }
+        }
+      ]
     },
     {
       "id": "secondHaven-region-chalk-cliff-0",
@@ -1581,14 +1808,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 10.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 4.936
+        }
+      ]
     },
     {
       "id": "secondHaven-region-chalk-cliff-1",
@@ -1616,14 +1852,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 10.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 4.936
+        }
+      ]
     },
     {
       "id": "secondHaven-region-chalk-cliff-2",
@@ -1651,14 +1896,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 10.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 4.936
+        }
+      ]
     },
     {
       "id": "secondHaven-region-chalk-cliff-3",
@@ -1686,14 +1940,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 10.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 4.936
+        }
+      ]
     },
     {
       "id": "secondHaven-region-chalk-cliff-4",
@@ -1721,14 +1984,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 10.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 4.936
+        }
+      ]
     },
     {
       "id": "secondHaven-region-karst-window",
@@ -1792,14 +2064,36 @@
         "warm-light"
       ],
       "footprint": {
-        "x": 4.5,
-        "z": 19.8
+        "x": 11.0,
+        "z": 8.25
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 11.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 2.4,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "service",
@@ -1985,7 +2279,7 @@
       "position": {
         "x": 6,
         "y": 0,
-        "z": -12
+        "z": -10
       },
       "rotation": {
         "x": 0,
@@ -2098,11 +2392,11 @@
     "rotationY": 0
   },
   "migrationArrival": {
-    "tx": 16,
-    "tz": 8,
-    "x": -4,
+    "tx": 17,
+    "tz": 7,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "unitySpawns": [
@@ -2112,9 +2406,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },

@@ -277,8 +277,7 @@ global tick логируется, если занимает больше пол�
 - `/unity/` и `index.html` — `no-cache`.
 
 `/assets/models-lite/*` отдаёт облегчённые GLB с фолбэком на
-`/assets/models/*`. `/vendor/three.min.js` и `/vendor/GLTFLoader.js` нужны
-только dev-редакторам.
+`/assets/models/*`.
 
 ## Cache policy Node.js
 
@@ -299,7 +298,7 @@ Shell-файлы остаются revalidation points, а versioned сборки
 Рекомендуемая схема:
 
 - `/health`, `/api/` и `/socket.io/` проксируются на `127.0.0.1:3000`;
-- `/api/dev/*` и HTML-редакторы закрыты ответом `404`;
+- `/api/dev/*` закрыт ответом `404`;
 - `public/` раздаётся Nginx напрямую;
 - `/` и `/unity/index.html` получают `no-cache`;
 - `/unity/Build/*` получает годовой `immutable`, остальная статика по

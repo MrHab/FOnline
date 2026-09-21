@@ -111,9 +111,14 @@ const { normalizeGlobalInfrastructure } = require('./src/server/global-infrastru
 const {
   loadModelColliderCatalog,
   modelColliderRadius,
-  transformedBounds,
   transformedModelBlockers
 } = require('./src/server/model-colliders');
+const {
+  circleBlockerPenalty: circleRotatedBlockerPenalty,
+  createLocationCollision,
+  locationObjectPosition,
+  locationObjectTags
+} = require('./src/server/location-collision');
 const {
   NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
@@ -466,8 +471,7 @@ const {
 const { sanitizePendingLocationTransition } = require('./src/server/global-arrival-transition');
 const {
   createDevAccessMiddleware,
-  createDevAccessPolicy,
-  devEditorIsAvailable
+  createDevAccessPolicy
 } = require('./src/server/dev-access');
 const { createCoalescedWriter } = require('./src/server/coalesced-writer');
 const { createKromkaStateStore } = require('./src/server/kromka-state-store');
@@ -510,6 +514,7 @@ const {
   orientOnsitePartyOffset
 } = require('./src/server/onsite-party-formation');
 const { buildTutorialStartingLoadout, buildTutorialSupplies } = require('./src/server/starting-loadout');
+const { harvestBonusChance } = require('./src/server/harvest-bonus');
 const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
@@ -918,32 +923,6 @@ function safeLocationFileId(id) {
   return normalizeLocationId(String(id || 'settlement')).replace(/[^a-zA-Z0-9_-]/g, '') || 'settlement';
 }
 
-function locationFilePath(id) {
-  return path.join(LOCATIONS_DIR, `${safeLocationFileId(id)}.json`);
-}
-
-function findLocationFilePath(id) {
-  const safeId = safeLocationFileId(id);
-  const exact = `${safeId}.json`;
-  const exactPath = path.join(LOCATIONS_DIR, exact);
-  if (fs.existsSync(exactPath)) return exactPath;
-  const lower = exact.toLowerCase();
-  const match = listLocationFiles().find(name => String(name || '').toLowerCase() === lower);
-  return match ? path.join(LOCATIONS_DIR, match) : exactPath;
-}
-
-function retireLocationFileCaseVariants(id) {
-  const safeId = safeLocationFileId(id);
-  const exact = `${safeId}.json`;
-  const lower = exact.toLowerCase();
-  for (const file of listLocationFiles()) {
-    if (file === exact || String(file || '').toLowerCase() !== lower) continue;
-    const source = path.join(LOCATIONS_DIR, file);
-    const backup = path.join(LOCATIONS_DIR, `${file}.casefix-${Date.now()}.bak`);
-    try { fs.renameSync(source, backup); } catch (_) {}
-  }
-}
-
 function listLocationFilesIn(dir) {
   try {
     return fs.readdirSync(dir)
@@ -952,10 +931,6 @@ function listLocationFilesIn(dir) {
   } catch (_) {
     return [];
   }
-}
-
-function listLocationFiles() {
-  return listLocationFilesIn(LOCATIONS_DIR);
 }
 
 function locationWorldToTilePoint(point = {}, dims = null) {
@@ -1128,7 +1103,7 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
 const LOCATION_PVP_LABELS = ZONE_MODE_LABELS;
 
 function normalizeLocationPvpMode(input, safeFallback = true) {
-  // Булевы значения и редакторские псевдонимы («safezone», «nopvp», «safe»)
+  // Булевы значения и авторские псевдонимы («safezone», «nopvp», «safe»)
   // означают мирный режим; false никогда не превращается в PvP.
   if (typeof input === 'boolean') return input ? 'pvp' : 'peaceful';
   const raw = String(input ?? '').trim().toLowerCase();
@@ -1487,28 +1462,6 @@ function loadAuthoredLocationDefinitions() {
   const locations = loadLocationDefinitions(bundled, LOCATIONS_DIR);
   if (Object.keys(locations).length) return locations;
   return applyLocationTraderProfiles(loadLocationDefinitions(DEFAULT_LOCATIONS));
-}
-
-function publicLocationFileSummary(loc, file = '') {
-  const settlement = locationCanRespawnPlayers(loc);
-  return {
-    id: loc.id,
-    name: loc.name,
-    file,
-    kind: settlement ? 'settlement' : (loc.kind || 'location'),
-    city: settlement,
-    settlement,
-    respawnAllowed: settlement,
-    safe: !!loc.safe,
-    pvpMode: loc.pvpMode || locationPvpMode(loc),
-    pvpLabel: LOCATION_PVP_LABELS[loc.pvpMode || locationPvpMode(loc)] || LOCATION_PVP_LABELS.peaceful,
-    randomTemplate: !!loc.randomTemplate,
-    encounterOnly: !!loc.encounterOnly,
-    ground: loc.ground || null,
-    objects: Array.isArray(loc.objects) ? loc.objects.length : 0,
-    transitions: Array.isArray(loc.transitions) ? loc.transitions.length : (loc.exit ? 1 : 0),
-    worldZones: Array.isArray(loc.worldZones) ? loc.worldZones.length : 0
-  };
 }
 
 const KROMKA_STATE_STORE = createKromkaStateStore({
@@ -1958,22 +1911,8 @@ function authRateIdentity(req = {}) {
 }
 
 const requireDevAccess = createDevAccessMiddleware(DEV_ACCESS_POLICY);
-const DEV_EDITOR_PATHS = new Set(['/dev-location-editor.html', '/dev-global-map-editor.html']);
 
 app.use('/api/dev', requireDevAccess);
-app.use((req, res, next) => {
-  let requestedPath = String(req.path || '');
-  try {
-    requestedPath = decodeURIComponent(requestedPath);
-  } catch (_) {
-    // Malformed paths are left to the regular HTTP error handling.
-  }
-  requestedPath = requestedPath.toLowerCase();
-  if (!DEV_EDITOR_PATHS.has(requestedPath)) return next();
-  if (devEditorIsAvailable(DEV_ACCESS_POLICY)) return next();
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(404).type('text/plain').send('Not Found');
-});
 
 function authRateLimit(req, res, next) {
   const result = authRateLimiter.consume(requestAddress(req), authRateIdentity(req));
@@ -2073,7 +2012,7 @@ function serverUnityBuildEncodingHead(filePath = '', stat = null) {
   return head;
 }
 
-// Статика: сборка Unity в public/unity/, модели, радио и dev-редакторы.
+// Статика: сборка Unity в public/unity/, модели и радио.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   lastModified: true,
@@ -2107,56 +2046,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
-
-app.get('/api/dev/locations', (_, res) => {
-  const diskLocations = listLocationFiles()
-    .map(file => {
-      const raw = readJson(path.join(LOCATIONS_DIR, file), null);
-      if (!raw || typeof raw !== 'object') return null;
-      return publicLocationFileSummary(normalizeLocationDefinition({ ...raw, id: raw.id || path.basename(file, '.json') }), file);
-    })
-    .filter(Boolean);
-  const known = Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})
-    .map(loc => publicLocationFileSummary(loc, `${loc.id}.json`));
-  const byId = new Map(known.map(loc => [loc.id, loc]));
-  for (const loc of diskLocations) byId.set(loc.id, loc);
-  res.json({
-    ok: true,
-    dir: path.relative(__dirname, LOCATIONS_DIR).replace(/\\/g, '/'),
-    locations: Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-  });
-});
-
-app.get('/api/dev/locations/:id', (req, res) => {
-  const id = safeLocationFileId(req.params.id);
-  const file = findLocationFilePath(id);
-  const raw = readJson(file, null);
-  const fallback = typeof LOCATIONS === 'object' ? LOCATIONS[id] : null;
-  const location = raw && typeof raw === 'object'
-    ? normalizeLocationDefinition({ ...raw, id: raw.id || id }, null)
-    : fallback;
-  if (!location) return res.status(404).json({ ok: false, error: 'Локация не найдена.' });
-  res.json({ ok: true, file: path.relative(__dirname, file).replace(/\\/g, '/'), location });
-});
-
-app.post('/api/dev/locations/:id', (req, res) => {
-  const incoming = req.body && typeof req.body === 'object' && req.body.location ? req.body.location : req.body;
-  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON локации.' });
-  const id = safeLocationFileId(incoming.id || req.params.id);
-  const location = normalizeLocationDefinition({ ...incoming, id }, null);
-  retireLocationFileCaseVariants(location.id);
-  const file = locationFilePath(location.id);
-  writeJsonAtomic(file, location, { pretty: true });
-  if (typeof LOCATIONS === 'object') LOCATIONS[location.id] = location;
-  syncWorldSiteLocationDefinitions(true);
-  const invalidatedRooms = invalidateRoomsForLocation(location.id, 'dev-location-save');
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, file).replace(/\\/g, '/'),
-    invalidatedRooms,
-    location: publicLocationFileSummary(location, path.basename(file))
-  });
-});
 
 app.get('/api/locations', (_, res) => {
   const locations = {};
@@ -2846,14 +2735,6 @@ app.post('/api/wasteland/tasks/:id/deliver', requireAuth, (req, res) => {
   res.status(410).json({ ok: false, error: 'Доставка проводится только активным персонажем через сервер мира.' });
 });
 
-app.get('/api/dev/wasteland', (_, res) => {
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim: WASTELAND_SIM.publicState()
-  });
-});
-
 // A-Life опасных клеток для разработчика: сводка и группы вокруг мелкой клетки (?sx=&sy=&radius=).
 app.get('/api/dev/danger-ecology', (req, res) => {
   if (!serverEcologyActive()) return res.json({ ok: true, active: false });
@@ -2914,32 +2795,6 @@ app.post('/api/dev/danger-ecology/kill', (req, res) => {
   res.json({ ok: true, killed, members: alive ? alive.members.length : 0, state: alive ? alive.state : 'destroyed' });
 });
 
-app.get('/api/dev/global-map', (_, res) => {
-  const locationRows = Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})
-    .map(loc => publicLocationFileSummary(loc, `${loc.id}.json`))
-    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, GLOBAL_MAP_FILE).replace(/\\/g, '/'),
-    map: GLOBAL_MAP,
-    locations: locationRows
-  });
-});
-
-app.post('/api/dev/global-map', (req, res) => {
-  const incoming = req.body && typeof req.body === 'object' && req.body.map ? req.body.map : req.body;
-  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON глобальной карты.' });
-  GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
-  WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
-  syncWorldSiteLocationDefinitions();
-  writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, GLOBAL_MAP_FILE).replace(/\\/g, '/'),
-    map: GLOBAL_MAP
-  });
-});
-
 // Выдача сини на счёт аккаунта: платёжного магазина пока нет.
 app.post('/api/dev/accounts/sin', (req, res) => {
   if (!serverAccountSinActive()) return res.status(409).json({ ok: false, error: 'Счёт сини выключен.' });
@@ -2956,30 +2811,6 @@ app.post('/api/dev/accounts/sin', (req, res) => {
     if (String(player?.userId || '') === String(user.id)) emitAuthoritativePlayerState(player, { reason: 'accountSin' });
   }
   res.json({ ok: true, userId: user.id, credited, sin: account.sin });
-});
-
-app.post('/api/dev/wasteland/site', (req, res) => {
-  if (GLOBAL_MAP.sitePlacement === 'unity-authored')
-    return res.status(409).json({ ok: false, error: 'Размещение локаций задаётся в Unity. Экспортируйте авторскую глобальную сцену.' });
-  const site = req.body && typeof req.body === 'object' ? req.body.site || req.body : null;
-  if (!site || typeof site !== 'object') return res.status(400).json({ ok: false, error: 'Нужны данные точки живой пустоши.' });
-  const sim = WASTELAND_SIM.upsertSite(site);
-  syncWorldSiteLocationDefinitions();
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim
-  });
-});
-
-app.delete('/api/dev/wasteland/site/:id', (req, res) => {
-  const sim = WASTELAND_SIM.deleteSite(req.params.id);
-  syncWorldSiteLocationDefinitions();
-  res.json({
-    ok: true,
-    file: path.relative(__dirname, WASTELAND_SIM_FILE).replace(/\\/g, '/'),
-    sim
-  });
 });
 
 app.post('/api/dev/wasteland/reset', (_, res) => {
@@ -3459,59 +3290,6 @@ app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
 
 app.get('/favicon.ico', (_, res) => {
   res.status(204).end();
-});
-
-function resolveThreeBundlePath() {
-  const candidates = [];
-  // Manual fallback first: you can put a browser build near this server.
-  candidates.push(path.join(__dirname, 'three.min.js'));
-  candidates.push(path.join(__dirname, 'vendor', 'three.min.js'));
-  candidates.push(path.join(__dirname, 'node_modules', 'three', 'build', 'three.min.js'));
-  candidates.push(path.join(__dirname, 'node_modules', 'three', 'build', 'three.js'));
-
-  // npm dependency fallback. package.json pins three 0.125.2 because it still has
-  // build/three.min.js with the global window.THREE object the dev editors need.
-  try {
-    const threePackage = require.resolve('three/package.json');
-    const threeDir = path.dirname(threePackage);
-    candidates.push(path.join(threeDir, 'build', 'three.min.js'));
-    candidates.push(path.join(threeDir, 'build', 'three.js'));
-  } catch (_) {}
-
-  return candidates.find(file => file && fs.existsSync(file)) || '';
-}
-
-function resolveThreeExamplePath(relativePath) {
-  const parts = String(relativePath || '').split('/').filter(Boolean);
-  const candidates = [
-    path.join(__dirname, 'node_modules', 'three', 'examples', 'js', ...parts)
-  ];
-  try {
-    const threePackage = require.resolve('three/package.json');
-    const threeDir = path.dirname(threePackage);
-    candidates.push(path.join(threeDir, 'examples', 'js', ...parts));
-  } catch (_) {}
-  return candidates.find(file => file && fs.existsSync(file)) || '';
-}
-
-app.get('/vendor/three.min.js', (req, res) => {
-  const file = resolveThreeBundlePath();
-  if (file) {
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.type('application/javascript').sendFile(file);
-  }
-  console.error('Three.js browser build was not found. Run: npm install, then node server.js.');
-  res.status(500).type('application/javascript').send(`console.error(${JSON.stringify('Three.js не найден на сервере. В папке проекта выполните: npm install, затем node server.js')});`);
-});
-
-app.get('/vendor/GLTFLoader.js', (req, res) => {
-  const file = resolveThreeExamplePath('loaders/GLTFLoader.js');
-  if (file) {
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.type('application/javascript').sendFile(file);
-  }
-  console.error('GLTFLoader was not found. Run: npm install, then node server.js.');
-  res.status(500).type('application/javascript').send(`console.error(${JSON.stringify('GLTFLoader not found. Run npm install, then node server.js.')});`);
 });
 
 function findClientHtml() {
@@ -4387,28 +4165,28 @@ const DEFAULT_LOCATIONS = {
     id: 'randomEncounter', name: 'Событие мира', seed: 20260901, safe: false, pvpMode: 'pvp',
     encounterOnly: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomAshGrove: {
     id: 'randomAshGrove', name: 'Пепельная роща', seed: 20260911, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomDryBasin: {
     id: 'randomDryBasin', name: 'Сухая низина', seed: 20260921, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   },
   randomRuinedRoad: {
     id: 'randomRuinedRoad', name: 'Старая дорога', seed: 20260931, safe: false, pvpMode: 'pvp',
     randomTemplate: true, noRespawn: true, enemyCap: 0, spawnCount: 0,
     spawn: { tx: 19, tz: 19 }, entryFromWorld: { tx: 19, tz: 19 },
-    entryFromNorth: { tx: 19, tz: 4 }, entryFromSouth: { tx: 19, tz: 34 },
+    entryFromNorth: { tx: 19, tz: 34 }, entryFromSouth: { tx: 19, tz: 4 },
     entryFromWest: { tx: 4, tz: 19 }, entryFromEast: { tx: 34, tz: 19 }
   }
 };
@@ -4876,8 +4654,7 @@ function kromkaPublicWastelandSnapshot(raw = {}) {
   return snapshot;
 }
 // Файл в DATA_DIR переписывается и когда подмешалось новое содержимое, иначе
-// оператор увидит на карте то, чего нет в его файле, и следующая правка через
-// редактор снова это потеряет.
+// оператор увидит на карте то, чего нет в его файле.
 try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) {
   console.error('Failed to persist global map file:', err);
 }
@@ -6028,8 +5805,9 @@ function syncWorldSiteLocationDefinitions(force = false) {
     const centerZ = Math.floor((bounds.minZ + bounds.maxZ) / 2);
     source.spawn = { tx: centerX, tz: centerZ };
     source.entryFromWorld = { tx: centerX, tz: centerZ };
-    source.entryFromNorth = { tx: centerX, tz: Math.min(bounds.maxZ - 2, bounds.minZ + 3) };
-    source.entryFromSouth = { tx: centerX, tz: Math.max(bounds.minZ + 2, bounds.maxZ - 3) };
+    // Север — старший ряд тайлов (+Z), как в сцене Unity.
+    source.entryFromNorth = { tx: centerX, tz: Math.max(bounds.minZ + 2, bounds.maxZ - 3) };
+    source.entryFromSouth = { tx: centerX, tz: Math.min(bounds.maxZ - 2, bounds.minZ + 3) };
     source.entryFromWest = { tx: Math.min(bounds.maxX - 2, bounds.minX + 3), tz: centerZ };
     source.entryFromEast = { tx: Math.max(bounds.minX + 2, bounds.maxX - 3), tz: centerZ };
     source.worldZones = [{
@@ -6037,7 +5815,7 @@ function syncWorldSiteLocationDefinitions(force = false) {
       label: 'Выход в зону',
       type: 'globalMap',
       tx: centerX,
-      tz: bounds.minZ + 1,
+      tz: bounds.maxZ - 1,
       radius: 2.4
     }];
     source.map = {
@@ -11452,6 +11230,19 @@ function serverHarvestXp(qty = 1) {
   return 3 + Math.max(1, Math.floor(Number(qty || 1)));
 }
 
+// Шанс второй единицы ресурса. Характеристики — с перками «+1»: их читает serverStatValue.
+function serverHarvestBonusChance(p = {}) {
+  return harvestBonusChance({
+    int: serverStatValue(p, 'int'),
+    luck: serverStatValue(p, 'luck'),
+    traits: p.traits,
+    wandererNorm: serverSkillNorm(p, 'wanderer'),
+    repairNorm: serverSkillNorm(p, 'repair'),
+    engineer: serverTalentLevel(p, 'engineer'),
+    recycler: serverTalentLevel(p, 'recycler')
+  });
+}
+
 function serverTrySecondChance(p = {}, incomingDamage = 0, now = Date.now()) {
   const rank = serverTalentLevel(p, 'secondChance');
   if (rank <= 0 || Number(p.hp || 0) - Number(incomingDamage || 0) > 0) return false;
@@ -13491,8 +13282,12 @@ function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
   }
   return false;
 }
-function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
-  if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, { startPadding: 0.3, endPadding: 0.42 })) return false;
+function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ, opts = {}) {
+  if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, {
+    startPadding: 0.3,
+    endPadding: 0.42,
+    ignoreObjectId: opts.ignoreObjectId
+  })) return false;
   const start = worldToTile(fromX, fromZ, roomTileDims(room));
   const end = worldToTile(toX, toZ, roomTileDims(room));
   if (!inBounds(start.tx, start.tz, roomTileDims(room)) || !inBounds(end.tx, end.tz, roomTileDims(room))) return false;
@@ -13503,14 +13298,14 @@ function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
   }
   return true;
 }
-function serverInteractionHasLineOfSight(room, actor = {}, target = {}) {
+function serverInteractionHasLineOfSight(room, actor = {}, target = {}, opts = {}) {
   const fromX = Number(actor.x);
   const fromZ = Number(actor.z);
   const toX = Number(target.x);
   const toZ = Number(target.z);
   if (![fromX, fromZ, toX, toZ].every(Number.isFinite)) return false;
   if (Math.hypot(toX - fromX, toZ - fromZ) <= 0.08) return true;
-  return roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ);
+  return roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ, opts);
 }
 function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
   if (!room || !enemy || !p || p.dead || Number(p.hp || 0) <= 0) return false;
@@ -16409,47 +16204,16 @@ function restockRoomWorldContainersIfNeeded(room, force = false) {
   return true;
 }
 
-function locationObjectPosition(row = {}) {
-  const pos = row.position && typeof row.position === 'object' ? row.position : row;
-  return {
-    x: Number(pos.x || 0),
-    y: Number(pos.y || 0),
-    z: Number(pos.z || 0)
-  };
-}
-
-const SERVER_MODULE_MODEL_KEYS = new Set([
-  'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
-  'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
-  'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
-]);
-
-function locationObjectScale(row = {}) {
-  if (SERVER_MODULE_MODEL_KEYS.has(String(row.model || ''))) return { x: 1, y: 1, z: 1 };
-  const scale = row.scale && typeof row.scale === 'object' ? row.scale : {};
-  const uniform = Number(row.scale || 1);
-  const fallback = Number.isFinite(uniform) ? uniform : 1;
-  return {
-    x: Number.isFinite(Number(scale.x)) ? Number(scale.x) : fallback,
-    y: Number.isFinite(Number(scale.y)) ? Number(scale.y) : fallback,
-    z: Number.isFinite(Number(scale.z)) ? Number(scale.z) : fallback
-  };
-}
-
-function locationObjectRotationY(row = {}) {
-  const rotation = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
-  const value = Number(rotation.y ?? row.rotationY ?? (typeof row.rotation === 'number' ? row.rotation : 0));
-  return Number.isFinite(value) ? value : 0;
-}
+// Преграды авторских объектов (движение, линия огня, обзор взаимодействия) собирает
+// src/server/location-collision.js: тем же кодом их проверяют tools/check-*.
+const {
+  locationObjectBlocksMovement,
+  locationObjectFootprintCells,
+  locationObjectBlockers: roomStaticCollisionBlockersFromObject
+} = createLocationCollision({ tile: TILE, isNpc: locationDefinitionObjectIsNpc });
 
 function locationObjectModelRef(row = {}) {
   return String(row.url || row.file || serverModelFileForRef(row.model || '') || '').trim();
-}
-
-function locationObjectTags(row = {}) {
-  return (Array.isArray(row.tags) ? row.tags : [])
-    .map(tag => String(tag || '').trim().toLowerCase())
-    .filter(Boolean);
 }
 
 const SERVER_RESOURCE_DEFS = {
@@ -16565,123 +16329,6 @@ function locationObjectResourceType(row = {}) {
   if (tags.includes('wood') || model.includes('deadwood')) return 'wood';
   if (collision === 'resource' && tags.includes('tree')) return 'wood';
   return '';
-}
-
-function locationObjectOcclusionRole(row = {}) {
-  return String(row.occlusion?.role || '').trim().toLowerCase();
-}
-
-function locationObjectAllowsPlayerOverlap(row = {}) {
-  const explicit = String(row.playerCollision ?? row.movementCollision ?? '').trim().toLowerCase();
-  if (row.playerCollision === false || ['none', 'off', 'disabled', 'pass', 'pass-through', 'passthrough'].includes(explicit)) return true;
-  const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-  const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-  const kinds = [interactive.kind, entity.kind, row.kind]
-    .map(value => String(value || '').replace(/[^a-z0-9]/gi, '').toLowerCase())
-    .filter(Boolean);
-  const tags = [
-    ...locationObjectTags(row),
-    ...locationObjectTags(entity),
-    ...locationObjectTags(interactive)
-  ];
-  return kinds.some(kind => ['craftingstation', 'jobboard', 'trademachine', 'vendingmachine', 'container', 'storage'].includes(kind))
-    || tags.some(tag => [
-      'interactive', 'crafting-station', 'jobboard', 'questboard', 'trademachine',
-      'vendingmachine', 'container', 'storage', 'personal-storage', 'ground-item',
-      'loot-item', 'pickup', 'pass-through', 'no-player-collision'
-    ].includes(tag));
-}
-
-function locationObjectBlocksMovement(row = {}) {
-  if (locationDefinitionObjectIsNpc(row)) return false;
-  const tags = locationObjectTags(row);
-  const role = locationObjectOcclusionRole(row);
-  if (role === 'roof' || role === 'floor' || tags.includes('roof') || tags.includes('floor')) return false;
-  if (locationObjectAllowsPlayerOverlap(row)) return false;
-  const collision = String(row.collision || '').toLowerCase();
-  return ['solid', 'block', 'blocked', 'wall', 'resource'].includes(collision);
-}
-
-function locationObjectFootprintCells(row = {}) {
-  const placement = row.placement && typeof row.placement === 'object' ? row.placement : {};
-  const cells = placement.cells && typeof placement.cells === 'object' ? placement.cells : {};
-  const footprint = row.footprint && typeof row.footprint === 'object' ? row.footprint : {};
-  const scale = row.scale && typeof row.scale === 'object' ? row.scale : {};
-  const moduleModels = new Set([
-    'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
-    'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
-    'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
-  ]);
-  const lockedModule = moduleModels.has(String(row.model || ''));
-  const sx = Math.max(1, Math.round(Number(cells.x || footprint.x / TILE || (lockedModule ? 1 : scale.x) || 1)));
-  const sz = Math.max(1, Math.round(Number(cells.z || footprint.z / TILE || (lockedModule ? 1 : scale.z) || 1)));
-  return { sx: clamp(sx, 1, 12), sz: clamp(sz, 1, 12) };
-}
-
-function locationObjectCollisionSize(row = {}) {
-  const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
-  const width = Number(exact.width || exact.x || 0);
-  const depth = Number(exact.depth || exact.z || 0);
-  if (Number.isFinite(width) && width > 0 && Number.isFinite(depth) && depth > 0) {
-    return {
-      width: clamp(width, 0.4, TILE * 12),
-      depth: clamp(depth, 0.4, TILE * 12),
-      exact: true
-    };
-  }
-  const fp = locationObjectFootprintCells(row);
-  return { width: fp.sx * TILE, depth: fp.sz * TILE, exact: false };
-}
-
-function locationObjectCollisionParts(row = {}) {
-  const parts = Array.isArray(row.collisionParts) ? row.collisionParts : [];
-  if (!parts.length) return [];
-  const pos = locationObjectPosition(row);
-  const scale = locationObjectScale(row);
-  const rotationY = locationObjectRotationY(row);
-  return parts.map(part => {
-    const center = part?.center && typeof part.center === 'object' ? part.center : {};
-    const size = part?.size && typeof part.size === 'object' ? part.size : {};
-    const width = Number(size.x ?? size.width ?? part?.width);
-    const depth = Number(size.z ?? size.depth ?? part?.depth);
-    const centerX = Number(center.x ?? part?.x ?? 0);
-    const centerZ = Number(center.z ?? part?.z ?? 0);
-    if (![width, depth, centerX, centerZ].every(Number.isFinite) || width <= 0 || depth <= 0) return null;
-    return transformedBounds({
-      center: { x: centerX, z: centerZ },
-      size: { x: width, z: depth }
-    }, {
-      x: pos.x,
-      z: pos.z,
-      rotationY,
-      scaleX: scale.x,
-      scaleZ: scale.z
-    });
-  }).filter(Boolean);
-}
-
-function roomStaticCollisionBlockersFromObject(row = {}) {
-  if (!row || typeof row !== 'object') return [];
-  if (!locationObjectBlocksMovement(row)) return [];
-  const pos = locationObjectPosition(row);
-  if (!Number.isFinite(pos.x) || !Number.isFinite(pos.z)) return [];
-  const authoredParts = locationObjectCollisionParts(row);
-  if (authoredParts.length) return authoredParts.map((part, partIndex) => ({
-    id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
-    ...part,
-    modelRef: String(row.model || 'authored-object')
-  }));
-  const rotationY = locationObjectRotationY(row);
-  const size = locationObjectCollisionSize(row);
-  return [{
-    id: String(row.id || row.model || '').slice(0, 64),
-    x: pos.x,
-    z: pos.z,
-    halfX: Math.max(0.2, size.width * 0.5),
-    halfZ: Math.max(0.2, size.depth * 0.5),
-    rotationY: -rotationY,
-    modelRef: String(row.model || 'authored-object')
-  }];
 }
 
 function roomStaticCollisionBlockersFromTrader(loc = {}) {
@@ -16814,30 +16461,15 @@ function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius =
     Math.max(Number(fromX || 0), Number(toX || 0)) + padding,
     Math.max(Number(fromZ || 0), Number(toZ || 0)) + padding
   );
+  // Объект, с которым взаимодействуют, не заслоняет сам себя: иначе нефтяная качалка
+  // с настоящими преградами закрывала бы игроку обзор на собственный центр.
+  const ownId = String(opts.ignoreObjectId || '');
   for (const blocker of blockers) {
     if (opts.ignoreLowCover && serverBlockerIsLowBallisticCover(blocker)) continue;
+    if (ownId && blocker.objectId === ownId) continue;
     if (segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius, opts)) return true;
   }
   return false;
-}
-
-function circleRotatedBlockerPenalty(x, z, radius, blocker) {
-  if (!blocker) return 0;
-  const dx = Number(x || 0) - Number(blocker.x || 0);
-  const dz = Number(z || 0) - Number(blocker.z || 0);
-  const rot = Number(blocker.rotationY || 0);
-  const cos = Math.cos(-rot);
-  const sin = Math.sin(-rot);
-  const localX = dx * cos - dz * sin;
-  const localZ = dx * sin + dz * cos;
-  const halfX = Math.max(0.01, Number(blocker.halfX || 0));
-  const halfZ = Math.max(0.01, Number(blocker.halfZ || 0));
-  const nearestX = clamp(localX, -halfX, halfX);
-  const nearestZ = clamp(localZ, -halfZ, halfZ);
-  const collisionRadius = Math.max(0.01, Number(radius || 0));
-  const outsideDistance = Math.hypot(localX - nearestX, localZ - nearestZ);
-  if (outsideDistance > 0) return Math.max(0, collisionRadius - outsideDistance);
-  return collisionRadius + Math.min(halfX - Math.abs(localX), halfZ - Math.abs(localZ));
 }
 
 function roomStaticCollisionPenaltyAt(room, x, z, radius = 0.35) {
@@ -20208,7 +19840,7 @@ function serverKromkaQuestObject(player = {}, objectId = '') {
   if (!point || Math.hypot(Number(player.x || 0) - point.x, Number(player.z || 0) - point.z) > 4.6) {
     return { ok: false, error: 'Подойдите ближе к объекту задания.' };
   }
-  if (!serverInteractionHasLineOfSight(room, player, point)) {
+  if (!serverInteractionHasLineOfSight(room, player, point, { ignoreObjectId: id })) {
     return { ok: false, error: 'Объект задания находится за препятствием.' };
   }
   const activeQuestId = Object.keys(player.kromkaQuestState?.active || {}).find(questId => {
@@ -31699,7 +31331,9 @@ io.on('connection', (socket) => {
     const pos = tileToWorld(resource.tx, resource.tz, roomTileDims(room));
     const dist = Math.hypot(Number(p.x || 0) - pos.x, Number(p.z || 0) - pos.z);
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
-    if (!serverInteractionHasLineOfSight(room, p, pos)) return fail('Ресурс находится за препятствием.');
+    if (!serverInteractionHasLineOfSight(room, p, pos, { ignoreObjectId: resource.authoredObjectId || resource.id })) {
+      return fail('Ресурс находится за препятствием.');
+    }
 
     const expectedTool = resourceDef.toolId;
     const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
@@ -31724,21 +31358,8 @@ io.on('connection', (socket) => {
     const spend = serverPrepareFixedActionAp(p, data, serverHarvestApCost(p), now, 'добыча ресурса');
     if (!spend.ok) return fail(spend.error, { apCost: spend.apCost, ...serverMedicalApAck(p) });
     const rng = room.rng || Math.random;
-    const intVal = serverStatValue(p, 'int');
-    const luckVal = serverStatValue(p, 'luck');
     const condition = activityFieldKit ? 100 : Number(serverPlayerItemCondition(p, expectedTool) ?? 100);
-    const bonusChance = clamp(
-      0.18 +
-      Math.max(0, intVal - 5) * 0.025 +
-      Math.max(0, luckVal - 5) * 0.01 +
-      (serverHasTrait(p, 'craftsmanStart') ? 0.18 : 0) +
-      serverSkillNorm(p, 'repair') * 0.08 +
-      serverTalentLevel(p, 'engineer') * 0.025 +
-      serverTalentLevel(p, 'recycler') * 0.02,
-      0.05,
-      0.78
-    );
-    let qty = 1 + (condition > 40 && rng() < bonusChance ? 1 : 0);
+    let qty = 1 + (condition > 40 && rng() < serverHarvestBonusChance(p) ? 1 : 0);
     // Экономика v3: опасная зона щедрее — жёлтая +25%, красная +60%, чёрная ×2.
     // Премиум добавляет выход, но опыт за него не растёт второй раз.
     const premiumGather = serverPremiumMultiplier(p, 'gatherMultiplier');

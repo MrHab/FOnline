@@ -5,6 +5,7 @@ const path = require('path');
 const {
   isRetiredEnvironmentModel
 } = require('../src/server/retired-environment-models');
+const { locationScenePath, readPlacedObjectMarkers } = require('./kromka-scene-markers');
 
 const root = path.resolve(__dirname, '..');
 const locationsDir = path.join(root, 'data', 'locations');
@@ -38,7 +39,7 @@ function directPropertyIndex(lines, indent, property) {
   return lines.findIndex(line => line.startsWith(prefix));
 }
 
-function stripObjectBlock(block) {
+function stripObjectBlock(block, markers) {
   const json = block.join('\n').trim().replace(/},$/, '}');
   const object = JSON.parse(json);
   if (!isRetiredEnvironmentModel(object.model)) return { block, collisions: 0, parts: 0 };
@@ -49,8 +50,12 @@ function stripObjectBlock(block) {
   let collisions = 0;
   let parts = 0;
 
+  // Geometry built in the Unity scene under a retired key (the oil site's pump
+  // jack) keeps the collision its scene marker exports; only GLB leftovers go.
+  const unityAuthoredBlocker = markers.get(String(object.id || ''))?.blocksMovement === true;
   const collisionIndex = directPropertyIndex(block, indent, 'collision');
-  if (collisionIndex >= 0 && String(object.collision || '').toLowerCase() !== 'none') {
+  if (collisionIndex >= 0 && !unityAuthoredBlocker
+    && String(object.collision || '').toLowerCase() !== 'none') {
     block[collisionIndex] = block[collisionIndex]
       .replace(/("collision"\s*:\s*)"[^"]*"/, '$1"none"');
     collisions += 1;
@@ -89,6 +94,8 @@ function stripFile(file) {
   const finalEol = source.endsWith('\r\n') || source.endsWith('\n');
   const lines = source.split(/\r?\n/);
   if (finalEol) lines.pop();
+  const scenePath = locationScenePath(JSON.parse(source), root);
+  const markers = scenePath && fs.existsSync(scenePath) ? readPlacedObjectMarkers(scenePath) : new Map();
   const output = [];
   let depth = 0;
   let block = null;
@@ -102,7 +109,7 @@ function stripFile(file) {
     if (block != null) {
       block.push(line);
       if (depth === 1) {
-        const stripped = stripObjectBlock(block);
+        const stripped = stripObjectBlock(block, markers);
         output.push(...stripped.block);
         collisions += stripped.collisions;
         parts += stripped.parts;

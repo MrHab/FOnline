@@ -10,6 +10,8 @@ using RealmOfAshes.Net;
 using RealmOfAshes.World;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -47,13 +49,14 @@ namespace RealmOfAshes.EditorTools
 
                 VerifyIndependentTouchZones(1920, 1080);
                 VerifyIndependentTouchZones(896, 414);
-                VerifyCanvasLayoutAndInput();
+                string labels = VerifyCanvasLayoutAndInput();
                 VerifyRemotePlayerTargets();
 
                 Debug.Log("[МОБИЛЬНОЕ УПРАВЛЕНИЕ] готово: stick="
                     + diagonal.x.ToString("0.00") + ":" + diagonal.y.ToString("0.00")
                     + ", fire=" + fire.width.ToString("0") + "px, compact="
-                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent, canvas=safe/held/states, pvp-targets=filtered");
+                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent, canvas=safe/held/states, labels="
+                    + labels + ", pvp-targets=filtered");
             }
             catch (Exception error)
             {
@@ -193,7 +196,7 @@ namespace RealmOfAshes.EditorTools
             return remote;
         }
 
-        private static void VerifyCanvasLayoutAndInput()
+        private static string VerifyCanvasLayoutAndInput()
         {
             const int width = 896;
             const int height = 414;
@@ -231,6 +234,8 @@ namespace RealmOfAshes.EditorTools
                 controls.PingAvailable = true;
                 RoaMobileControlsCanvas canvas = root.AddComponent<RoaMobileControlsCanvas>();
                 canvas.Configure(controls);
+                // Кнопки видны только на телефоне, а редактор дал бы канве десктопный референс.
+                RoaUiScale.Apply(root.GetComponentInChildren<CanvasScaler>(true), true);
                 var state = new RoaMobileControlsCanvas.Presentation
                 {
                     Visible = true,
@@ -238,7 +243,7 @@ namespace RealmOfAshes.EditorTools
                     Crouching = true,
                     PingAvailable = true,
                     BoltAiming = true,
-                    FireMode = "Одиночный",
+                    FireMode = "single",
                     JoystickActive = true,
                     JoystickBase = new Vector2(220f, 108f),
                     JoystickPoint = new Vector2(258f, 132f),
@@ -249,12 +254,19 @@ namespace RealmOfAshes.EditorTools
                         && canvas.ButtonCount == 12 && canvas.ActiveButtonCount == 12
                         && canvas.GameplayButtonsVisible && canvas.JoystickVisible,
                         "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
-                Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ ✓"
+                foreach (string id in new[] { "Inventory", "Map", "Pipboy", "Menu", "Fire", "Interact",
+                                              "Target", "Crouch", "Reload", "Mode", "Player", "Bolt" })
+                    Require(canvas.ButtonHasIcon(id),
+                            "mobile Canvas button " + id + " has no icon sprite in Resources/RealmUi/mobile");
+                Require(canvas.ButtonLabel("Pipboy") == "ПУТНИК",
+                        "mobile Canvas field-terminal button is not labelled ПУТНИК");
+                Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ •"
                         && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
-                        && canvas.ButtonLabel("Mode") == "ОДИНОЧНЫЙ"
+                        && canvas.ButtonLabel("Mode") == "ОДИН."
                         && canvas.ButtonLabel("Player") == "МЕТКА"
                         && canvas.ButtonLabel("Bolt") == "ОТМЕНА",
                         "mobile Canvas does not reflect live target, stance, ping or fire mode");
+                VerifyFireModeLabels();
                 Require(canvas.TryGetButtonScreenRect("Fire", out Rect fireRect)
                         && RectNear(fireRect, layout.Fire),
                         "mobile Canvas fire visual differs from its touch layout");
@@ -268,6 +280,11 @@ namespace RealmOfAshes.EditorTools
                         "mobile Canvas menu button is not connected to gameplay control");
                 Require(canvas.SimulateClickForProbe("Player") && pingRequests == 1,
                         "mobile contextual player button does not open activity pings");
+                string labels = VerifyLabelsFit(canvas, root, state);
+                canvas.PresentNow(state, width, height, safe);
+                foreach (Text label in root.GetComponentsInChildren<Text>(true))
+                    Require(label.fontSize == BaseLabelSize(label),
+                            "«" + label.text + "» stays shrunk on a roomier layout");
 
                 state.InputSuppressed = true;
                 state.JoystickActive = true;
@@ -287,10 +304,145 @@ namespace RealmOfAshes.EditorTools
                 canvas.PresentNow(state, width, height, safe);
                 Require(!canvas.Visible && !controls.FireHeldForCanvas,
                         "hidden mobile Canvas leaves held fire latched");
+                return labels;
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>
+        /// Кнопка режима получает id режима RoaCombat и раньше показывала его как
+        /// есть: SINGLE, AIMED, AUTO. У каждого режима своя русская подпись, которую
+        /// может нарисовать вложенный шрифт.
+        /// </summary>
+        private static void VerifyFireModeLabels()
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string mode in new[] { "single", "aimed", "auto", "dual", "melee" })
+            {
+                string label = RoaMobileControlsCanvas.FireModeLabel(mode);
+                Require(label != "РЕЖИМ" && seen.Add(label), "fire mode " + mode + " has no label of its own");
+                foreach (char c in label)
+                    Require((c < 'A' || c > 'Z') && (c < 'a' || c > 'z'),
+                            "fire mode " + mode + " is shown in Latin: " + label);
+            }
+            RequireDrawable(seen);
+            Require(RoaMobileControlsCanvas.FireModeLabel(null) == "РЕЖИМ"
+                    && RoaMobileControlsCanvas.FireModeLabel("burst") == "РЕЖИМ",
+                    "an unknown fire mode leaks its id onto the button");
+        }
+
+        /// <summary>
+        /// Кнопки ограничены в пикселях экрана (рейка 46–58, действия 54–76), а
+        /// шрифт подписи растёт вместе с канвой: на телефоне «ДЕЙСТВИЕ» и
+        /// «ПРИСЕСТЬ» залезали в соседний столбец, на планшете вылезали все подписи.
+        /// Телефон — iPhone 844×390 pt при DPR 1,5 (выше шаблон WebGL не пускает)
+        /// с вырезом, планшет — iPad Pro 12,9″, где кнопки мельче всего.
+        /// </summary>
+        private static string VerifyLabelsFit(RoaMobileControlsCanvas canvas, GameObject root,
+                                              RoaMobileControlsCanvas.Presentation busy)
+        {
+            Rect phoneSafe = new Rect(70f, 31f, 1126f, 554f);
+            Rect tabletSafe = new Rect(0f, 0f, 2048f, 1536f);
+            var closing = new RoaMobileControlsCanvas.Presentation { Visible = true, InputSuppressed = true };
+            var idle = new RoaMobileControlsCanvas.Presentation { Visible = true, FireMode = "melee" };
+            var shown = new HashSet<string>(StringComparer.Ordinal);
+            int phone = int.MaxValue;
+            int tablet = int.MaxValue;
+            foreach (RoaMobileControlsCanvas.Presentation state in new[] { busy, closing, idle })
+            {
+                tablet = Mathf.Min(tablet, LabelsFit(canvas, root, state, 2048, 1536, tabletSafe, "tablet", shown));
+                phone = Mathf.Min(phone, LabelsFit(canvas, root, state, 1266, 585, phoneSafe, "phone", shown));
+            }
+            Require(Label(root, "Interact").fontSize < 14 && Label(root, "Crouch").fontSize < 14,
+                    "phone layout no longer shrinks «ДЕЙСТВИЕ» and «ПРИСЕСТЬ»");
+            Require(Label(root, "Menu").fontSize == 14 && Label(root, "Target").fontSize == 14
+                    && Label(root, "Fire").fontSize == 17,
+                    "labels that fit their phone button lost their size");
+            RequireDrawable(shown);
+            return "phone>=" + phone + "pt/tablet>=" + tablet + "pt";
+        }
+
+        /// <summary>
+        /// Каждая видимая подпись влезает в свою кнопку или стоит на пределе
+        /// читаемости (MinLabelPixels на экране, мельче буквы теряют форму), и
+        /// уменьшена не больше, чем нужно: на пункт крупнее она бы уже не влезла.
+        /// </summary>
+        private static int LabelsFit(RoaMobileControlsCanvas canvas, GameObject root,
+                                     RoaMobileControlsCanvas.Presentation state,
+                                     int width, int height, Rect safe, string device,
+                                     HashSet<string> shown)
+        {
+            canvas.PresentNow(state, width, height, safe);
+            CanvasScaler scaler = root.GetComponentInChildren<CanvasScaler>(true);
+            Vector2 reference = scaler.referenceResolution;
+            float scale = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(width / reference.x, 2f),
+                Mathf.Log(height / reference.y, 2f), scaler.matchWidthOrHeight));
+            int floor = Mathf.CeilToInt(RoaMobileControlsCanvas.MinLabelPixels / scale);
+            int smallest = int.MaxValue;
+            foreach (Text label in root.GetComponentsInChildren<Text>(true))
+            {
+                GameObject button = label.transform.parent.gameObject;
+                if (!button.activeSelf) continue;
+                Require(canvas.TryGetButtonScreenRect(button.name, out Rect rect),
+                        device + ": label outside a known button");
+                RectTransform box = label.rectTransform;
+                float available = rect.width * (box.anchorMax.x - box.anchorMin.x) / scale;
+                int size = label.fontSize;
+                int baseSize = BaseLabelSize(label);
+                string name = device + " «" + label.text + "» " + size + "pt ";
+                shown.Add(label.text);
+                Require(size <= baseSize && (size == baseSize || size >= floor),
+                        name + "is above its base size or shrank below the readable " + floor + "pt");
+                Require(size <= floor || label.preferredWidth <= available + 0.01f,
+                        name + label.preferredWidth.ToString("0.0") + " > "
+                        + available.ToString("0.0") + " units overflows its button");
+                if (size < baseSize)
+                {
+                    label.fontSize = size + 1;
+                    bool largerFits = label.preferredWidth <= available;
+                    label.fontSize = size;
+                    Require(!largerFits, name + "is smaller than its button needs");
+                }
+                smallest = Mathf.Min(smallest, size);
+            }
+            return smallest;
+        }
+
+        private static int BaseLabelSize(Text label)
+        {
+            return label.transform.parent.name == "Fire" ? 17 : 14;
+        }
+
+        private static Text Label(GameObject root, string id)
+        {
+            foreach (Text label in root.GetComponentsInChildren<Text>(true))
+                if (label.transform.parent.name == id) return label;
+            throw new InvalidOperationException("mobile button has no label: " + id);
+        }
+
+        /// <summary>
+        /// В WebGL нет системных шрифтов: символ, которого нет во вложенном
+        /// Noto Sans (так было с «✓»), просто не рисуется. Font.HasCharacter в
+        /// редакторе находит его в шрифтах Windows, поэтому глиф ищется в таблице
+        /// самого файла шрифта.
+        /// </summary>
+        private static void RequireDrawable(IEnumerable<string> labels)
+        {
+            Require(FontEngine.LoadFontFace(RoaUiFont.Default) == FontEngineError.Success,
+                    "the bundled UI font does not load");
+            try
+            {
+                foreach (string label in labels)
+                    foreach (char c in label)
+                        Require(FontEngine.TryGetGlyphIndex(c, out uint glyph) && glyph != 0,
+                                "the bundled font has no glyph for «" + c + "» in «" + label + "»");
+            }
+            finally
+            {
+                FontEngine.UnloadFontFace();
             }
         }
 

@@ -5957,8 +5957,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &949958354
 GameObject:
   m_ObjectHideFlags: 0

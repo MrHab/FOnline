@@ -187,6 +187,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &67313119
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.91357833
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.91357833
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.91357833
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -24.271812
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 9.572251
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.39068002
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.92052656
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-13
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 67313123}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 67313122}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &67313120 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 67313119}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &67313121 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 67313119}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &67313122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 67313121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-13
+--- !u!114 &67313123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 67313121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-13
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &99755041
 GameObject:
   m_ObjectHideFlags: 0
@@ -436,6 +557,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!65 &181868079
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -704,6 +826,246 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 192635961}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &196486619
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-02
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90946794
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90946794
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90946794
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 23.126303
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -22.380886
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.6409578
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7675762
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 196486623}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 196486622}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &196486620 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 196486619}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &196486621 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 196486619}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &196486622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 196486621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-02
+--- !u!114 &196486623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 196486621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-02
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &197568238
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-14
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9135894
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9135894
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9135894
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.078951
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -27.94979
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.99729156
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.0735497
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 197568242}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 197568241}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &197568239 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 197568238}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &197568240 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 197568238}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &197568241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 197568240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-14
+--- !u!114 &197568242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 197568240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-14
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &217802470
 GameObject:
   m_ObjectHideFlags: 0
@@ -816,6 +1178,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 217802470}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &241904581
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.91360044
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.91360044
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.91360044
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -10.131423
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -27.27665
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.9973192
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.073173545
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-15
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 241904585}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 241904584}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &241904582 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 241904581}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &241904583 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 241904581}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &241904584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 241904583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-15
+--- !u!114 &241904585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 241904583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-15
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &244731609
 GameObject:
   m_ObjectHideFlags: 0
@@ -885,6 +1367,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &257807803
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1005,6 +1488,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &346883292
 GameObject:
   m_ObjectHideFlags: 0
@@ -1075,6 +1559,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &346883296
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1293,7 +1778,7 @@ Transform:
   m_GameObject: {fileID: 373691309}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
-  m_LocalPosition: {x: 0, y: 0, z: 6}
+  m_LocalPosition: {x: 1.25, y: 0, z: 6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1435,6 +1920,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &387118111
 GameObject:
   m_ObjectHideFlags: 0
@@ -1573,7 +2059,7 @@ Transform:
   m_GameObject: {fileID: 470395452}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8, y: 0, z: 14}
+  m_LocalPosition: {x: 9, y: 0, z: 13.75}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1595,6 +2081,126 @@ MonoBehaviour:
   _kind: 4
   _targetLocationId: 
   _radius: 0.8
+--- !u!1001 &489771517
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9135563
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9135563
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9135563
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -22.748882
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 10.470077
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.5761635
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8173345
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-11
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 489771521}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 489771520}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &489771518 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 489771517}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &489771519 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 489771517}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &489771520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489771519}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-11
+--- !u!114 &489771521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489771519}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-11
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &508208494
 GameObject:
   m_ObjectHideFlags: 0
@@ -2124,6 +2730,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 568524054}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &595486051
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9135452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9135452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9135452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.3120513
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 23.708769
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.27320454
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.961956
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 595486055}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 595486054}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &595486052 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 595486051}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &595486053 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 595486051}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &595486054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 595486053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-10
+--- !u!114 &595486055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 595486053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-10
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &619857519
 GameObject:
   m_ObjectHideFlags: 0
@@ -2192,6 +2918,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &634695801
 GameObject:
   m_ObjectHideFlags: 0
@@ -2372,6 +3099,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!114 &644462641
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2503,6 +3231,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 650496784}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &693245423
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-06
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9094237
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9094237
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9094237
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.461206
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18.51697
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.6090987
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7930945
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 693245427}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 693245426}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &693245424 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 693245423}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &693245425 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 693245423}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &693245426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 693245425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-06
+--- !u!114 &693245427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 693245425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-06
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &763037494
 GameObject:
   m_ObjectHideFlags: 0
@@ -2778,6 +3626,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &842513095
 GameObject:
   m_ObjectHideFlags: 0
@@ -2849,6 +3698,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &846373655
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9094569
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9094569
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9094569
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 15.915613
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 25.843649
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.50584507
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.86262435
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-03
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 846373659}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 846373658}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &846373656 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 846373655}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &846373657 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 846373655}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &846373658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 846373657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-03
+--- !u!114 &846373659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 846373657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-03
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &856017870
 GameObject:
   m_ObjectHideFlags: 0
@@ -3041,6 +4011,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &929979930
 GameObject:
   m_ObjectHideFlags: 0
@@ -3273,6 +4244,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1000726465
 GameObject:
   m_ObjectHideFlags: 0
@@ -3391,6 +4363,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1011482784
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3471,6 +4444,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1011482780}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1066363190
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9095232
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9095232
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9095232
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 11.829547
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 23.074753
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.57837814
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8157688
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-09
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1066363194}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1066363193}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1066363191 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1066363190}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1066363192 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1066363190}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1066363193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066363192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-09
+--- !u!114 &1066363194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066363192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-09
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1080087111
 GameObject:
   m_ObjectHideFlags: 0
@@ -3653,6 +4746,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1086154679
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3799,6 +4893,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!114 &1132676235
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3928,6 +5023,122 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1138377897}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1168478951
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1263361952}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -28
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_east_shaft
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1168478955}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1168478954}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1168478952 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1168478951}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1168478953 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1168478951}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1168478954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1168478953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: east_shaft
+--- !u!114 &1168478955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1168478953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: east_shaft
+  _serverArchetypeId: cargoStack
+  _role: scenery
+  _gameplayTags:
+  - central-lab
+  - lab-door
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1199207324
 GameObject:
   m_ObjectHideFlags: 0
@@ -4011,6 +5222,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1204749075
 GameObject:
   m_ObjectHideFlags: 0
@@ -4158,6 +5370,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1235192460}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1246985841
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-12
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9135673
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9135673
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9135673
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -16.534725
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 17.310617
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.99999654
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.0026248982
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246985845}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246985844}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1246985842 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1246985841}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1246985843 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1246985841}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1246985844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246985843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-12
+--- !u!114 &1246985845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246985843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-12
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1263361951
 GameObject:
   m_ObjectHideFlags: 0
@@ -4195,8 +5527,129 @@ Transform:
   - {fileID: 257807804}
   - {fileID: 941294360}
   - {fileID: 2054665772}
+  - {fileID: 1168478952}
   m_Father: {fileID: 2125690769}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1303406035
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-16
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9136115
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9136115
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9136115
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -18.671625
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 15.452374
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.30879503
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9511286
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1303406039}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1303406038}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1303406036 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1303406035}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1303406037 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1303406035}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1303406038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1303406037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-16
+--- !u!114 &1303406039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1303406037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-16
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1341284889
 GameObject:
   m_ObjectHideFlags: 0
@@ -4424,6 +5877,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &1351267394
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9134568
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9134568
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9134568
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -23.368217
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 22.044127
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.47990248
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.87732184
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1351267398}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1351267397}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &1351267395 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1351267394}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1351267396 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1351267394}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1351267397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351267396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-18
+--- !u!114 &1351267398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351267396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-18
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1361513274
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4544,6 +6118,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1365660935
 GameObject:
   m_ObjectHideFlags: 0
@@ -4947,6 +6522,126 @@ Transform:
   - {fileID: 619857520}
   m_Father: {fileID: 2125690769}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1520641919
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9134678
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9134678
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9134678
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 8.304485
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 19.409605
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.38721502
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.92198944
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-19
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1520641923}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1520641922}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1520641920 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1520641919}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1520641921 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1520641919}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1520641922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1520641921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-19
+--- !u!114 &1520641923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1520641921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-19
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1560037955
 GameObject:
   m_ObjectHideFlags: 0
@@ -5542,6 +7237,126 @@ Transform:
   - {fileID: 1447940322}
   m_Father: {fileID: 508208497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1727156936
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9094348
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9094348
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9094348
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 13.285595
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 15.179335
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.88138026
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.4724075
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1727156940}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1727156939}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1727156937 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1727156936}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1727156938 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1727156936}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1727156939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1727156938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-01
+--- !u!114 &1727156940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1727156938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-01
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1729497728
 GameObject:
   m_ObjectHideFlags: 0
@@ -5966,6 +7781,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1768091050
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6268,6 +8084,246 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1805041131}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1842356010
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90939057
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90939057
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90939057
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 23.08707
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -19.996246
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.33861262
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9409259
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-05
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1842356014}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1842356013}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1842356011 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1842356010}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1842356012 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1842356010}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1842356013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842356012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-05
+--- !u!114 &1842356014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842356012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-05
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &1853765696
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-08
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9095342
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9095342
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9095342
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 11.438974
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 17.188019
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.81906
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5737079
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1853765700}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1853765699}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1853765697 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1853765696}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1853765698 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1853765696}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1853765699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1853765698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-08
+--- !u!114 &1853765700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1853765698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-08
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1859960441
 GameObject:
   m_ObjectHideFlags: 0
@@ -6338,6 +8394,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1859960445
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6558,9 +8615,268 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1727156937}
+  - {fileID: 196486620}
+  - {fileID: 846373656}
+  - {fileID: 1928562409}
+  - {fileID: 1842356011}
+  - {fileID: 693245424}
+  - {fileID: 2044146380}
+  - {fileID: 1853765697}
+  - {fileID: 1066363191}
+  - {fileID: 595486052}
+  - {fileID: 489771518}
+  - {fileID: 1246985842}
+  - {fileID: 67313120}
+  - {fileID: 197568239}
+  - {fileID: 241904582}
+  - {fileID: 1303406036}
+  - {fileID: 1913628842}
+  - {fileID: 1351267395}
+  - {fileID: 1520641920}
   m_Father: {fileID: 2125690769}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1913628841
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.91362256
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.91362256
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.91362256
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 11.408081
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -28.785755
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.31174314
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.95016646
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-17
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1913628845}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1913628844}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1913628842 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1913628841}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1913628843 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1913628841}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1913628844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913628843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-17
+--- !u!114 &1913628845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913628843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-17
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &1928562408
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-04
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90940166
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90940166
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90940166
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4.207304
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -30.204178
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.5820269
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.81316954
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1928562412}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1928562411}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1928562409 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1928562408}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1928562410 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1928562408}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1928562411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928562410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-04
+--- !u!114 &1928562412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928562410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-04
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1969111638
 GameObject:
   m_ObjectHideFlags: 0
@@ -6923,7 +9239,7 @@ Transform:
   m_GameObject: {fileID: 2009776448}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 14}
+  m_LocalPosition: {x: -1.25, y: 0, z: 15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7060,6 +9376,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &2011985792
 GameObject:
   m_ObjectHideFlags: 0
@@ -7172,6 +9489,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2011985792}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &2044146379
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1894343161}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9094127
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9094127
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9094127
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.8949203
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.917097
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.55257416
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8334637
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabCenterReactor-dressing-region-07
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2044146383}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2044146382}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &2044146380 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 2044146379}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2044146381 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 2044146379}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2044146382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2044146381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabCenterReactor-dressing-region-07
+--- !u!114 &2044146383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2044146381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabCenterReactor-dressing-region-07
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &2054665771
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7292,6 +9729,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &2110431427
 GameObject:
   m_ObjectHideFlags: 0

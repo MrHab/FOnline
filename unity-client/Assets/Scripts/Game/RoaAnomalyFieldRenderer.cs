@@ -139,8 +139,8 @@ namespace RealmOfAshes.Game
                     if (existing && (v.Type != type || Mathf.Abs(v.Radius - radius) > 0.001f))
                     { DestroyField(id); existing = false; }
                     if (!existing) { v = BuildField(id, type, radius); _fields[id] = v; }
-                    // Server coordinates are glTF right-handed: the shared adapter
-                    // mirrors Z once, exactly like collision and player movement.
+                    // Server coordinates are the scene's own: the shared adapter passes
+                    // them through, exactly like collision and player movement.
                     v.Root.position = RoaCoords.ToUnity(Value(row, "x"), Value(row, "y", 0f) + 0.075f, Value(row, "z"));
                     long until = row["dischargedUntil"]?.Value<long?>() ?? 0;
                     bool permanent = row["permanentlyDischarged"]?.Value<bool?>() == true;

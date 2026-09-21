@@ -579,8 +579,9 @@ MonoBehaviour:
   - resource
   - ore
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &253644397
 GameObject:
   m_ObjectHideFlags: 0

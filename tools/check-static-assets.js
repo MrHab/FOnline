@@ -46,9 +46,7 @@ const runtimeAssetExtensions = new Set([
   '.woff2'
 ]);
 const knownDynamicRoutes = new Set([
-  '/socket.io/socket.io.js',
-  '/vendor/three.min.js',
-  '/vendor/GLTFLoader.js'
+  '/socket.io/socket.io.js'
 ]);
 
 function walkFiles(dir, out = [], extensionFilter = checkedExtensions) {

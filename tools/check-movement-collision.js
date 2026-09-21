@@ -11,6 +11,8 @@ const {
   transformedBounds,
   transformedModelBlockers
 } = require('../src/server/model-colliders');
+const { circleBlockerPenalty, createLocationCollision } = require('../src/server/location-collision');
+const { segmentIntersectsRotatedBlocker } = require('../src/server/enemy-ai');
 
 const ROOT = path.resolve(__dirname, '..');
 const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
@@ -136,8 +138,7 @@ assert.strictEqual(settlementLocation.worldRevision, 'kromka-1',
   'active settlement collision must come from the Kromka revision');
 assert.strictEqual(settlementLocation.runtimeMode, 'unity-authored',
   'active settlement collision must be exported from Unity');
-for (const id of ['settlement-keys-water-tower', 'settlement-keys-rail-bridge',
-  'settlement-keys-workshops', 'settlement-keys-clinic']) {
+for (const id of ['settlement-keys-water-tower', 'settlement-keys-workshops', 'settlement-keys-clinic']) {
   const entry = settlementLocation.objects.find(row => row?.id === id);
   assert(entry && entry.collision === 'solid'
     && Number(entry.footprint?.x) > 0 && Number(entry.footprint?.z) > 0
@@ -146,28 +147,61 @@ for (const id of ['settlement-keys-water-tower', 'settlement-keys-rail-bridge',
 }
 assert(!settlementLocation.objects.some(row => /^oldKlim/.test(String(row?.model || ''))),
   'retired Old Klim collision geometry leaked into active Kromka data');
-assert(!functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('transformedModelBlockers'),
-  'server authored location objects still derive collision from retired GLB bounds');
-assert(functionBody(server, 'locationObjectCollisionSize').includes('row.collisionSize'),
-  'server authored objects do not support explicit collision fallbacks');
-assert(functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('rotationY: -rotationY'),
-  'server authored fallback collider does not convert THREE visual yaw');
-const serverMovementPolicy = functionBody(server, 'locationObjectBlocksMovement');
-assert(serverMovementPolicy.includes('locationObjectAllowsPlayerOverlap') && !serverMovementPolicy.includes("'cover'"),
-  'server still turns pass-through items or low cover into movement blockers');
-assert(functionBody(server, 'locationObjectAllowsPlayerOverlap').includes('craftingstation'),
-  'server pass-through policy does not cover interactive stations');
-assert(!functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('!locationObjectResourceType'),
-  'server still forces every resource-tagged prop into collision regardless of movement policy');
+// The blockers of authored objects are built by src/server/location-collision.js, the
+// module the server itself calls, so these are tests of its behaviour.
+const collision = createLocationCollision({ tile: 2 });
+const serverPolicyRuntime = collision.locationObjectBlocksMovement;
+const near = (actual, expected, label) => assert(Math.abs(actual - expected) < 1e-6, `${label}: ${actual} instead of ${expected}`);
+{
+  // A retired GLB key must not bring its old model bounds back: the footprint decides.
+  const [byFootprint] = collision.locationObjectBlockers({
+    id: 'wall', model: 'concreteWall', url: '/assets/models/wasteland/concrete_wall.glb', collision: 'solid',
+    position: { x: 4, z: -6 }, rotation: { y: 0.5 }, footprint: { x: 6, z: 1 }
+  });
+  near(byFootprint.halfX, 3, 'footprint width rounds to whole tiles');
+  near(byFootprint.halfZ, 1, 'footprint depth has a one-tile floor');
+  near(byFootprint.rotationY, -0.5, 'authored yaw turns into the server\'s 2D convention');
+  const [exact] = collision.locationObjectBlockers({
+    id: 'fence', collision: 'wall', position: { x: 0, z: 0 }, collisionSize: { width: 5.5, depth: 0.3 }, footprint: { x: 1, z: 1 }
+  });
+  near(exact.halfX, 2.75, 'an explicit collisionSize wins over the footprint');
+  near(exact.halfZ, 0.2, 'an explicit collisionSize keeps its 0.4 m floor');
 
-const serverPolicyRuntime = new Function([
-  'function locationDefinitionObjectIsNpc() { return false; }',
-  functionSource(server, 'locationObjectTags'),
-  functionSource(server, 'locationObjectOcclusionRole'),
-  functionSource(server, 'locationObjectAllowsPlayerOverlap'),
-  functionSource(server, 'locationObjectBlocksMovement'),
-  'return locationObjectBlocksMovement;'
-].join('\n'))();
+  // collisionParts: a yard is walls around open ground, not one box over its footprint.
+  const yard = {
+    id: 'yard', collision: 'solid', position: { x: 10, z: 20 }, rotation: { y: Math.PI / 2 }, scale: { x: 1, y: 1, z: 1 },
+    footprint: { x: 20, z: 20 },
+    collisionParts: [
+      { center: { x: 0, z: 10 }, size: { x: 20, z: 0.8 } },
+      { center: { x: -10, z: 0 }, size: { x: 0.8, z: 20 } },
+      { center: { x: 5, z: -10 }, size: { x: 4, z: 0.8 }, rotationY: 0.3 },
+      { center: { x: 4, z: 3 }, radius: 1.5 }
+    ]
+  };
+  const parts = collision.locationObjectBlockers(yard);
+  assert.strictEqual(parts.length, 4, 'every authored part is a blocker of its own');
+  assert(parts.every(part => part.objectId === 'yard'), 'a blocker does not name the object it belongs to');
+  // Unity yaw of a quarter turn sends local +Z to world +X.
+  near(parts[0].x, 20, 'a part offset is turned by the row yaw'); near(parts[0].z, 20, 'a part offset is turned by the row yaw');
+  near(parts[2].rotationY, -(Math.PI / 2 + 0.3), 'a part\'s own yaw adds to the row yaw');
+  assert(parts[3].round === true, 'a part with a radius is a disc');
+  const free = (x, z) => parts.every(part => circleBlockerPenalty(x, z, 0.48, part) <= 0.001);
+  assert(free(10, 20), 'the open ground inside a yard is blocked');
+  assert(!free(20, 20), 'a yard wall does not block');
+  // The disc sits at world (13, 16): its diagonal is free where a square would not be.
+  assert(!free(13 + 1.9, 16), 'a disc does not block along its axis');
+  assert(free(13 + 1.45, 16 + 1.45), 'a disc blocks its bounding square\'s corner');
+  assert(segmentIntersectsRotatedBlocker(13 - 5, 16, 13 + 5, 16, parts[3], 0.05, {}), 'a shot through a disc passes');
+  // This line cuts the corner of the disc's bounding square and misses the disc itself.
+  const square = { x: 13, z: 16, halfX: 1.5, halfZ: 1.5, rotationY: 0 };
+  assert(segmentIntersectsRotatedBlocker(13.2, 18.5, 15.7, 16, square, 0.05, {}), 'the corner shot misses even a square');
+  assert(!segmentIntersectsRotatedBlocker(13.2, 18.5, 15.7, 16, parts[3], 0.05, {}), 'a shot past a disc is stopped by its corner');
+  // Physics scales a sphere by its largest axis.
+  const [mound] = collision.locationObjectBlockers({
+    id: 'mound', collision: 'solid', position: { x: 0, z: 0 }, scale: { x: 8, y: 3, z: 6 }, collisionParts: [{ center: { x: 0, z: 0 }, radius: 0.5 }]
+  });
+  near(mound.halfX, 4, 'a disc grows with the largest scale axis');
+}
 const policyCases = [
   [{ collision: 'cover', model: 'cargoStack' }, false, 'low cover'],
   [{ collision: 'solid', model: 'craftStationRepair', interactive: { kind: 'craftingStation' }, tags: ['crafting-station'] }, false, 'crafting station'],

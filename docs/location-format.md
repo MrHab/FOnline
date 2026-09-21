@@ -1,32 +1,10 @@
 # Формат локации `realm.location.v1`
 
-Редактор `public/dev-location-editor.html` сохраняет локацию в JSON в папку `data/locations/`.
-Сервер читает эти файлы при старте и перекрывает ими встроенные резервные описания локаций.
-
-Dev API по умолчанию закрыт. Для локального редактора запустите сервер из
-PowerShell так:
-
-```powershell
-$env:DEV_API_MODE='local'
-npm start
-```
-
-Открывайте <http://127.0.0.1:3000/dev-location-editor.html>. Local-режим не
-принимает LAN-, proxy-, DNS-rebinding и cross-site form-запросы, запрещён при
-`NODE_ENV=production` и принимает изменения только как JSON. Редактор
-автоматически добавляет защищающий от CSRF заголовок `X-Dev-Local: 1`.
-
-Для непубличного token-режима задайте `DEV_API_MODE=token` и случайный
-`DEV_ADMIN_TOKEN` длиной не менее 32 UTF-8 байт. Например, в PowerShell:
-
-```powershell
-$env:DEV_ADMIN_TOKEN = node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-$env:DEV_API_MODE = 'token'
-npm start
-```
-
-Редактор запросит токен и сохранит его только в `sessionStorage` текущей
-вкладки. Штатный production Nginx token-режим наружу не публикует.
+Файлы локаций лежат в `data/locations/`. Сервер читает их при старте и
+перекрывает ими встроенные резервные описания локаций. Локации Кромки
+экспортируются из Unity-сцен (поле `unityScene`), точечные правки делаются
+прямо в JSON. Порядок экспорта описан в
+[`KROMKA_UNITY_AUTHORING.md`](KROMKA_UNITY_AUTHORING.md).
 
 Минимальная структура:
 
@@ -64,9 +42,7 @@ npm start
   часть выпавшего становится ломом.
 
 Сервер понимает и авторские псевдонимы (`safe`, `nopvp`, `red`, `black`,
-`event` и другие — таблица `ZONE_MODE_ALIASES`). Список самого редактора
-короче: он предлагает `peaceful`, `pvp` и `pvpFullDrop`, остальные режимы
-ставятся правкой файла или генератором.
+`event` и другие — таблица `ZONE_MODE_ALIASES`).
 
 Поле `safe` сохраняется для совместимости со старыми локациями: `peaceful`
 экспортируется как `safe: true`, остальные режимы как `safe: false`.
@@ -130,41 +106,22 @@ npm start
 в старых файлах сервер считает частью края. Строки `worldZones` типа
 `globalMap` в старых файлах для выхода игрока не читаются.
 
+docs/location-editor-format.md
 Для интеграции достаточно пройти по `objects`, загрузить `url` или модель по ключу `model`, применить `position`, `rotation.y`, `scale` и создать игровую коллизию по полю `collision`. Переходы читать из `transitions`, а визуальный стиль земли из `ground.preset` и `ground.texture`.
 
-## Текстуры земли
+## Роли перекрытия
 
-Редактор использует PBR-пресеты из `public/assets/textures/`:
-
-- `traderYard` - утоптанная земля стоянки: base, normal, roughness.
-- `reliefWasteland` - рельефная пустошь: base, normal, roughness, AO, height.
-- `destroyedConcrete` - разрушенный бетон: base, normal, roughness, AO, height.
-
-Если PBR-набор не указан, редактор использует процедурную запасную текстуру, но стандартные пресеты локаций должны ссылаться на реальные PBR-карты.
-
-## Правила модульных блоков зданий
-
-Модульные блоки предназначены для ручной сборки зданий по сетке. Для них действует отдельное правило:
-
-- `traderWallBlock` занимает одну ячейку `2 x 2` метра и имеет высоту `1` метр.
-- `traderWindowBlock` занимает одну ячейку `2 x 2` метра и имеет высоту `1` метр.
-- `traderFloorSlab` занимает одну ячейку `2 x 2` метра, низ модели находится на земле.
-- `traderRoofBlock` занимает одну ячейку `2 x 2` метра, толщина крыши `0.20` метра; текущая процедурная крыша торговца использует центр около `y = 5.32`.
-
-Дополнительные универсальные блоки используют те же размеры и правила сетки:
-
-- Стены: `wallWoodBlock`, `wallBrickBlock`, `wallMetalBlock`.
-- Крыши: `roofWoodBlock`, `roofMetalBlock`.
-- Полы: `floorWoodBlock`, `floorTileBlock`.
-
-Редактор размещает эти блоки только по двухметровой сетке, новый блок ставится с нижней точкой на `y = 0`, а масштаб блоков фиксируется `1 x 1 x 1`. При экспорте редактор добавляет к таким объектам поля `footprint`, `building` и, для стен/окон/крыши, `occlusion` с `role` (`wall`, `window`, `roof`, `floor`) и `mode: "traderCutaway"`. `occlusion.role` участвует в расчёте обзора: стена перекрывает линию взгляда, окно, крыша и пол — нет. Прозрачность крыши над персонажем клиент включает по тегу `trader-cutaway`/`roof-cutaway` или по `occlusion.cutaway: true`.
+Поле `occlusion.role` (`wall`, `window`, `roof`, `floor`) участвует в расчёте
+обзора: стена перекрывает линию взгляда, окно, крыша и пол — нет. Прозрачность
+крыши над персонажем клиент включает по тегу `trader-cutaway`/`roof-cutaway`
+или по `occlusion.cutaway: true`.
 
 ## Интерактивные объекты и NPC
 
-Редактор добавляет готовые модели хранилища, торговцев, дружественных NPC и враждебных существ. При экспорте такие объекты получают обязательные теги и дополнительное описание:
+Хранилища, торговцы, дружественные NPC и существа несут обязательные теги и дополнительное описание:
 
-- `interactive` используется для контейнеров, например `storageChest` сохраняется как `{ "kind": "container", "role": "storage", "containerType": "storage" }`.
-- `entity` используется для NPC и существ. Внутри сохраняются `kind`, `role`, `faction`, `hostileToPlayer`, а для существ — `creatureTypeId`.
+- `interactive` используется для контейнеров, например у `storageChest` это `{ "kind": "container", "role": "storage", "containerType": "storage" }`.
+- `entity` используется для NPC и существ. Внутри лежат `kind`, `role`, `faction`, `hostileToPlayer`, а у существ — `creatureTypeId`.
 - Дружественные NPC имеют `hostileToPlayer: false`; враги имеют `hostileToPlayer: true`.
 - Торговцы получают `role: "merchant"` и `traderProfile`, чтобы игровая логика могла привязать профиль товаров.
 
@@ -228,6 +185,7 @@ npm start
 - `routineId` — ключ распорядка из `data/npc-routines.json`.
 - NPC, который должен ходить между точками распорядка, не должен быть принудительно стационарным.
 
+docs/location-editor-format.md
 У NPC нет рабочих мест: точки занятий в локациях не задаются. Куда встать,
 NPC решает сам по роли — сервер разводит охрану и рабочих детерминированным
 запасным постом рядом с их объектом. Редактор при пересохранении сохраняет

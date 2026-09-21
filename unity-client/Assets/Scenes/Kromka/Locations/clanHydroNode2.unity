@@ -1017,7 +1017,7 @@ MonoBehaviour:
   - clan-base
   - command-core
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &120839645
 GameObject:
@@ -2376,7 +2376,7 @@ MonoBehaviour:
   - landmark
   - turbine
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &332975500
 GameObject:
@@ -3671,7 +3671,7 @@ MonoBehaviour:
   - clan_base
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &500545367
 GameObject:
@@ -6308,7 +6308,7 @@ MonoBehaviour:
   - clan-base
   - perimeter
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &865627204
 PrefabInstance:
@@ -6424,7 +6424,7 @@ MonoBehaviour:
   - siege-relay
   - relay-a
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &893714798
 PrefabInstance:
@@ -7259,7 +7259,7 @@ MonoBehaviour:
   - clan-base
   - perimeter
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &990119568
 GameObject:
@@ -7717,7 +7717,7 @@ MonoBehaviour:
   - module-socket
   - tower_b
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1021288708
 PrefabInstance:
@@ -7833,7 +7833,7 @@ MonoBehaviour:
   - module-socket
   - tower_a
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1024763814
 GameObject:
@@ -8345,7 +8345,7 @@ MonoBehaviour:
   - clan-base
   - module-yard
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1090160613
 PrefabInstance:
@@ -8461,7 +8461,7 @@ MonoBehaviour:
   - siege-relay
   - relay-c
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1102869532
 GameObject:
@@ -10345,7 +10345,7 @@ MonoBehaviour:
   - siege-relay
   - relay-b
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1369869480
 PrefabInstance:
@@ -11320,7 +11320,7 @@ MonoBehaviour:
   - clan-base
   - clan-storage
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1548820639
 GameObject:
@@ -11954,7 +11954,7 @@ MonoBehaviour:
   - clan-base
   - perimeter
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1609130832
 GameObject:
@@ -12299,7 +12299,7 @@ MonoBehaviour:
   - clan_base
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1690858483
 GameObject:
@@ -14788,7 +14788,7 @@ MonoBehaviour:
   - clan-base
   - perimeter
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1926213656
 GameObject:
@@ -15145,7 +15145,7 @@ Transform:
   m_GameObject: {fileID: 2011493207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4, y: 0.1, z: -19}
+  m_LocalPosition: {x: -2, y: 0.1, z: -21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15624,7 +15624,7 @@ MonoBehaviour:
   - clan_base
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &2068289782
 GameObject:

@@ -27,18 +27,18 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "worldZones": [
     {
@@ -106,26 +106,26 @@
       "model": "barrelCluster",
       "name": "Топливные бочки",
       "position": {
-        "x": 11.0,
-        "y": 0.0,
-        "z": 8.0
+        "x": 11,
+        "y": 0,
+        "z": 8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -140,19 +140,19 @@
       "model": "scrapHeap",
       "name": "Куча металлолома",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -6.0
+        "x": 8,
+        "y": 0,
+        "z": -6
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -163,7 +163,7 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -178,19 +178,19 @@
       "model": "campfireRest",
       "name": "Место отдыха",
       "position": {
-        "x": 17.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": 17,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -222,13 +222,13 @@
       "name": "scrapFoundry-dressing-functional-01",
       "position": {
         "x": 12.364,
-        "y": 0.0,
+        "y": 0,
         "z": 4.017
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.257,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -257,13 +257,13 @@
       "name": "scrapFoundry-dressing-functional-02",
       "position": {
         "x": 5.692,
-        "y": 0.0,
+        "y": 0,
         "z": 15.167
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.359,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -292,13 +292,13 @@
       "name": "scrapFoundry-dressing-functional-03",
       "position": {
         "x": -9.95,
-        "y": 0.0,
+        "y": 0,
         "z": 16.654
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.745,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -327,13 +327,13 @@
       "name": "scrapFoundry-dressing-functional-04",
       "position": {
         "x": -12.882,
-        "y": 0.0,
+        "y": 0,
         "z": 1.745
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.847,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -362,13 +362,13 @@
       "name": "scrapFoundry-dressing-functional-05",
       "position": {
         "x": -11.709,
-        "y": 0.0,
+        "y": 0,
         "z": -11.195
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.949,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -397,13 +397,13 @@
       "name": "scrapFoundry-dressing-functional-06",
       "position": {
         "x": 1.739,
-        "y": 0.0,
+        "y": 0,
         "z": -19.322
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.052,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -432,13 +432,13 @@
       "name": "scrapFoundry-dressing-region-01",
       "position": {
         "x": -21.315,
-        "y": 0.0,
+        "y": 0,
         "z": -17.808
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.711,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -467,13 +467,13 @@
       "name": "scrapFoundry-dressing-region-02",
       "position": {
         "x": -21.204,
-        "y": 0.0,
+        "y": 0,
         "z": -17.731
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.655,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -502,13 +502,13 @@
       "name": "scrapFoundry-dressing-region-03",
       "position": {
         "x": -21.206,
-        "y": 0.0,
+        "y": 0,
         "z": -17.727
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.656,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -537,13 +537,13 @@
       "name": "scrapFoundry-dressing-region-04",
       "position": {
         "x": -22.091,
-        "y": 0.0,
+        "y": 0,
         "z": -16.609
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.599,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -572,13 +572,13 @@
       "name": "scrapFoundry-dressing-region-05",
       "position": {
         "x": -21.948,
-        "y": 0.0,
+        "y": 0,
         "z": -16.486
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.598,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -607,13 +607,13 @@
       "name": "scrapFoundry-dressing-region-06",
       "position": {
         "x": -21.954,
-        "y": 0.0,
+        "y": 0,
         "z": -16.475
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.543,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -642,13 +642,13 @@
       "name": "scrapFoundry-dressing-region-07",
       "position": {
         "x": -21.963,
-        "y": 0.0,
+        "y": 0,
         "z": -16.466
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.543,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -677,13 +677,13 @@
       "name": "scrapFoundry-dressing-region-08",
       "position": {
         "x": -22.995,
-        "y": 0.0,
+        "y": 0,
         "z": -14.728
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.468,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -712,13 +712,13 @@
       "name": "scrapFoundry-dressing-region-09",
       "position": {
         "x": -23.006,
-        "y": 0.0,
+        "y": 0,
         "z": -14.711
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.469,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.074,
@@ -747,13 +747,13 @@
       "name": "scrapFoundry-dressing-region-10",
       "position": {
         "x": -23.019,
-        "y": 0.0,
+        "y": 0,
         "z": -14.695
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.395,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -782,13 +782,13 @@
       "name": "scrapFoundry-dressing-region-11",
       "position": {
         "x": -23.786,
-        "y": 0.0,
+        "y": 0,
         "z": -13.406
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.394,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -817,13 +817,13 @@
       "name": "scrapFoundry-dressing-region-12",
       "position": {
         "x": -23.654,
-        "y": 0.0,
+        "y": 0,
         "z": -13.355
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.319,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -852,13 +852,13 @@
       "name": "scrapFoundry-dressing-region-13",
       "position": {
         "x": -23.652,
-        "y": 0.0,
+        "y": 0,
         "z": -13.358
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.32,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -887,13 +887,13 @@
       "name": "scrapFoundry-dressing-region-14",
       "position": {
         "x": -24.375,
-        "y": 0.0,
+        "y": 0,
         "z": -11.997
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.822,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -922,13 +922,13 @@
       "name": "scrapFoundry-dressing-region-15",
       "position": {
         "x": -24.246,
-        "y": 0.0,
+        "y": 0,
         "z": -11.929
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.822,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.142,
@@ -956,19 +956,19 @@
       "model": "external_pipe",
       "name": "scrapFoundry-external-pipes EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 2.0,
-        "z": 18.0
+        "x": 0,
+        "y": 2,
+        "z": 18
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 1.571
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -977,33 +977,45 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 52,
+        "z": 0.75
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 51.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-landmark",
       "model": "furnace-stack",
       "name": "Landmark furnace-stack EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1011,33 +1023,42 @@
         "furnace-stack"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8,
+        "z": 8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 1.75
+        }
+      ]
     },
     {
       "id": "scrapFoundry-loading-gantry",
       "model": "gantry_crane",
       "name": "scrapFoundry-loading-gantry EDITABLE",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": 15.0
+        "x": 14,
+        "y": 0,
+        "z": 15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1047,33 +1068,55 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 16.5,
-        "z": 15.5
+        "x": 16,
+        "z": 2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        },
+        {
+          "center": {
+            "x": 7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-main-workshop",
       "model": "warehouse",
       "name": "scrapFoundry-main-workshop EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 3.0
+        "x": -10,
+        "y": 0,
+        "z": 3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1083,28 +1126,50 @@
         "loot-space"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 18,
+        "z": 13
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 17,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -6.2
+          },
+          "size": {
+            "x": 7,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-module-1",
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15.0,
+        "x": 15,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1118,14 +1183,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "scrapFoundry-module-2",
@@ -1137,14 +1211,14 @@
         "z": 14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1153,14 +1227,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-module-3",
@@ -1172,14 +1258,14 @@
         "z": 8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1188,14 +1274,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-module-4",
@@ -1207,14 +1305,14 @@
         "z": -8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1223,14 +1321,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-module-5",
@@ -1242,9 +1352,9 @@
         "z": -14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1258,33 +1368,42 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "scrapFoundry-process-stack",
       "model": "blast_furnace",
       "name": "scrapFoundry-process-stack EDITABLE",
       "position": {
-        "x": -23.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": -23,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1294,33 +1413,52 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5,
+        "z": 7.7
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 2.385
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -5
+          },
+          "size": {
+            "x": 3,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "scrapFoundry-region-rail",
       "model": "railway",
       "name": "scrapFoundry-region-rail EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.05,
-        "z": -27.0
+        "z": -27
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1329,7 +1467,7 @@
         "transport"
       ],
       "footprint": {
-        "x": 2.0,
+        "x": 2,
         "z": 58.182
       },
       "vision": {
@@ -1343,19 +1481,19 @@
       "model": "terrain_mound",
       "name": "scrapFoundry-region-slag-0 EDITABLE",
       "position": {
-        "x": -27.0,
-        "y": 0.0,
-        "z": 28.0
+        "x": -27,
+        "y": 0,
+        "z": 28
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1364,33 +1502,42 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8,
+        "z": 8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 3.947
+        }
+      ]
     },
     {
       "id": "scrapFoundry-region-slag-1",
       "model": "terrain_mound",
       "name": "scrapFoundry-region-slag-1 EDITABLE",
       "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": 24.0
+        "x": -9,
+        "y": 0,
+        "z": 24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1399,33 +1546,42 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8,
+        "z": 8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 3.935
+        }
+      ]
     },
     {
       "id": "scrapFoundry-region-slag-2",
       "model": "terrain_mound",
       "name": "scrapFoundry-region-slag-2 EDITABLE",
       "position": {
-        "x": 9.0,
-        "y": 0.0,
-        "z": 28.0
+        "x": 9,
+        "y": 0,
+        "z": 28
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1434,33 +1590,42 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8,
+        "z": 8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 3.922
+        }
+      ]
     },
     {
       "id": "scrapFoundry-region-slag-3",
       "model": "terrain_mound",
       "name": "scrapFoundry-region-slag-3 EDITABLE",
       "position": {
-        "x": 27.0,
-        "y": 0.0,
-        "z": 24.0
+        "x": 27,
+        "y": 0,
+        "z": 24
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1469,33 +1634,42 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8,
+        "z": 8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 3.908
+        }
+      ]
     },
     {
       "id": "scrapFoundry-service-bay",
       "model": "modular_workshop",
       "name": "scrapFoundry-service-bay EDITABLE",
       "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": -9.0
+        "x": 16,
+        "y": 0,
+        "z": -9
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1505,14 +1679,36 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 13,
+        "z": 9
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 12,
+            "z": 8
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5,
+            "z": 0.4
+          }
+        }
+      ]
     }
   ],
   "worldRevision": "kromka-1",
@@ -1525,59 +1721,59 @@
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "foundry-loading-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "scrapFoundry-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

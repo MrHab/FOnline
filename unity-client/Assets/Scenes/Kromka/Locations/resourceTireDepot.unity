@@ -610,8 +610,9 @@ MonoBehaviour:
   - cover
   - chemicals
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &194715827
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5470,8 +5471,9 @@ MonoBehaviour:
   - resource
   - oil
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1553026228
 GameObject:
   m_ObjectHideFlags: 0
@@ -6216,8 +6218,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1672050754
 GameObject:
   m_ObjectHideFlags: 0

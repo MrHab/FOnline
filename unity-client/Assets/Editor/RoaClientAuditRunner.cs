@@ -36,6 +36,12 @@ namespace RealmOfAshes.EditorTools
             // Читаемость на настольном и мобильном альбомном экране: панели
             // обрезают текст молча, поэтому раскладка меряется отдельно.
             typeof(RoaMobileLayoutProbe),
+            // Описание перка пишут в каталоге прогрессии, далеко от карточки, и лишняя
+            // строка вылезает из неё молча: меряется настоящий экран создания персонажа.
+            typeof(RoaCreatorCardLayoutProbe),
+            // Вход, регистрация и выбор персонажа — первое, что видит игрок: тот же экран,
+            // те же размеры и проверки, плюс длинная ошибка сервера и длинный список.
+            typeof(RoaAuthStepsLayoutProbe),
             typeof(RoaUiPrefabProbe),
             typeof(RoaLightingProbe),
             typeof(RoaCameraProbe),

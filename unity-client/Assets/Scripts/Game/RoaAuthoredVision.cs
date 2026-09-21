@@ -120,8 +120,11 @@ namespace RealmOfAshes.Game
             return Kind.Clear;
         }
 
-        /// <summary>visionKindFromConfig(), 02a:1889.</summary>
-        private static Kind FromConfig(JObject vision)
+        /// <summary>
+        /// visionKindFromConfig(), 02a:1889. Открыт для импорта в Unity-сцены:
+        /// сборщик обязан понимать vision.mode, а не только vision.blocks.
+        /// </summary>
+        public static Kind FromConfig(JObject vision)
         {
             if (vision == null) return Kind.Unknown;
 

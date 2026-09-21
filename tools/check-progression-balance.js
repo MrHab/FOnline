@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { normalizeItemCatalog, itemCatalogIndexes } = require('../src/server/kromka-items');
 const { loadWorldEconomy } = require('../src/server/world-economy');
+const { harvestBonusChance } = require('../src/server/harvest-bonus');
+const { buildTutorialSupplies } = require('../src/server/starting-loadout');
 
 const root = path.resolve(__dirname, '..');
 const progressionCatalog = JSON.parse(fs.readFileSync(
@@ -126,18 +128,18 @@ function explosiveRadius({ throwing = 20, grenadier = 0, base = 4.2 }) {
   return Math.max(1.5, Number(base || 4.2)) + skillNorm(throwing) * 0.45 + Number(grenadier || 0) * 0.2;
 }
 
-function harvestBonusChance({ int = 5, luck = 5, craftsman = false, repair = 20, engineer = 0, recycler = 0 }) {
-  return clamp(
-    0.18 +
-      Math.max(0, Number(int || 5) - 5) * 0.025 +
-      Math.max(0, Number(luck || 5) - 5) * 0.01 +
-      (craftsman ? 0.18 : 0) +
-      skillNorm(repair) * 0.08 +
-      Number(engineer || 0) * 0.025 +
-      Number(recycler || 0) * 0.02,
-    0.05,
-    0.78
-  );
+// Сбор — настоящая функция server.js в песочнице: она читает персонажа и отдаёт
+// его числа формуле из src/server/harvest-bonus.js. Заглушки различают «сырое» и
+// действующее значение, чтобы обход serverStatValue (перки «+1») был заметен.
+function serverHarvestChance(source) {
+  const stubs = {
+    harvestBonusChance,
+    serverStatValue: (p, key) => Number(p.effective?.[key] ?? 5),
+    serverSkillNorm: (p, id) => skillNorm(p.skills?.[id]),
+    serverTalentLevel: (p, id) => Number(p.talentRanks?.[id] || 0)
+  };
+  return new Function(...Object.keys(stubs), `${serverDeclaration(source, 'function serverHarvestBonusChance(')}
+return serverHarvestBonusChance;`)(...Object.values(stubs));
 }
 
 function crouchDetectionMultiplier({ stealth = 20, ghost = 0 }) {
@@ -265,6 +267,57 @@ for (const id of tradeItemIds) {
   }
 }
 
+// «На старте» значит одно: набор снабжения. Новый персонаж появляется с пустыми
+// руками и получает вещи только из buildTutorialSupplies — этот список выдают и
+// ящик Сборного двора, и пропуск обучения. Черта меняет старт ровно настолько,
+// насколько набор с ней отличается от набора без неё.
+const startingSupplies = traits => Object.fromEntries(buildTutorialSupplies({ traits }).map(row => [row.id, row.qty]));
+
+// «Барыга»: описание называет ровно то, что делает сервер, — как «Падальщик» в
+// check-loot-perks.js. Надбавка — разница настоящих цен скупки с чертой и без неё,
+// марки — разница настоящих наборов снабжения.
+{
+  const text = progressionCatalog.startTraits.items.find(row => row.id === 'traderStart').description;
+  const indifferent = { stock: [], buyInterests: [], refusedCategories };
+  const sells = (prices, id, traderTrait) => prices.serverTradeSellPrice(id, indifferent, { ...novice, traderTrait });
+  // Процент меряется на вещи такой цены, что округления до целой марки не видно.
+  const dear = serverTradePricing(serverSource,
+    { basePrices: { probe: 1e6 }, categories: { probe: 'misc' }, byId: { probe: {} } }, worldEconomy);
+  const sellPct = Math.round((sells(dear, 'probe', true) / sells(dear, 'probe', false) - 1) * 1000) / 10;
+  if (!(sellPct > 0) || !text.includes(`+${String(sellPct).replace('.', ',')}% к цене продажи`)) {
+    fail(`traderStart adds +${sellPct}% to the NPC sell price and must say so: ${text}`);
+  }
+  // На вещах каталога надбавка та же с точностью до марки: цена скупки целая.
+  for (const id of tradeItemIds) {
+    if (refusedCategories.includes(itemIndexes.categories[id])) continue;
+    const plain = sells(pricing, id, false);
+    const gain = sells(pricing, id, true) - plain;
+    if (Math.abs(gain - plain * sellPct / 100) > 1) {
+      fail(`traderStart promises +${sellPct}% to the sell price, but a novice sells ${id} for ${plain} without the trait and for ${plain + gain} with it`);
+    }
+  }
+  const withTrait = startingSupplies(['traderStart']);
+  const without = startingSupplies([]);
+  const extra = id => Number(withTrait[id] || 0) - Number(without[id] || 0);
+  const marks = extra('silver');
+  if (!(marks > 0) || !new RegExp(`\\+${marks} мар(?:ка|ки|ок) на старте`).test(text)) {
+    fail(`traderStart starts with ${marks} extra marks and must say so: ${text}`);
+  }
+  const otherItems = Object.keys({ ...withTrait, ...without }).filter(id => id !== 'silver' && extra(id) !== 0);
+  if (otherItems.length) fail(`traderStart changes the starting supplies beyond marks (${otherItems.join(', ')}), so its description must name them: ${text}`);
+  // Обещанная вещь ищется по точному названию из каталога предметов.
+  for (const [id, item] of Object.entries(itemIndexes.byId)) {
+    if (!item.name || extra(id) > 0) continue;
+    const name = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(?<![\\p{L}\\p{N}])${name}(?![\\p{L}\\p{N}])`, 'iu').test(text)) {
+      fail(`traderStart promises «${item.name}», but the starting supplies have no extra ${id}: ${text}`);
+    }
+  }
+  const numbers = (text.match(/\d+(?:[.,]\d+)?/g) || []).map(number => Number(number.replace(',', '.')));
+  const stray = numbers.filter(number => number !== sellPct && number !== marks);
+  if (stray.length) fail(`traderStart names ${stray.join(', ')}, a number the server does not apply: ${text}`);
+}
+
 const lockLow = securityLockChance({ skill: 20, agi: 5, luck: 5, quickHands: 0, difficulty: 'hard' });
 const lockHigh = securityLockChance({ skill: 100, agi: 15, luck: 15, quickHands: 3, difficulty: 'hard' });
 if (lockLow !== 0.03 || lockHigh > 0.92) fail(`Lockpick chance out of balance: low=${lockLow}, high=${lockHigh}`);
@@ -283,15 +336,63 @@ if (doctorMax > 0.98) fail(`Doctor chance too high: ${doctorMax}`);
 const rocketRadiusMax = explosiveRadius({ throwing: 100, grenadier: 2 });
 if (rocketRadiusMax > 5.2) fail(`Explosive radius too high: ${rocketRadiusMax}`);
 
-const harvestLow = harvestBonusChance({ int: 5, luck: 5, craftsman: false, repair: 20, engineer: 0, recycler: 0 });
-const harvestHigh = harvestBonusChance({ int: 15, luck: 15, craftsman: true, repair: 100, engineer: 2, recycler: 2 });
-if (harvestLow < 0.05 || harvestHigh > 0.78) fail(`Harvest bonus chance out of balance: low=${harvestLow}, high=${harvestHigh}`);
-for (const snippet of ["serverSkillNorm(p, 'repair') * 0.08", "serverTalentLevel(p, 'engineer') * 0.025", "serverTalentLevel(p, 'recycler') * 0.02"]) {
-  if (!serverSource.includes(snippet)) fail(`Server harvest formula missing: ${snippet}`);
+// Сбор: шанс второй единицы ресурса. Новичок начинает с базовых 18%, потолок — 78%.
+const harvestChance = serverHarvestChance(serverSource);
+const gatherNovice = { effective: { int: 5, luck: 5 }, skills: { wanderer: 20, repair: 20 }, talentRanks: {}, traits: [] };
+const harvestLow = harvestChance(gatherNovice);
+const harvestHigh = harvestChance({
+  effective: { int: 15, luck: 15 }, skills: { wanderer: 100, repair: 100 },
+  talentRanks: { engineer: 2, recycler: 2 }, traits: ['craftsmanStart']
+});
+if (harvestLow !== 0.18 || harvestHigh !== 0.78) fail(`Harvest bonus chance out of balance: low=${harvestLow}, high=${harvestHigh}`);
+// Каждый источник по отдельности: прибавка к шансу новичка в процентных пунктах.
+const gatherGain = build => Math.round((harvestChance({ ...gatherNovice, ...build }) - harvestLow) * 1000) / 10;
+for (const [source, build, expected] of [
+  ['Intelligence 6', { effective: { int: 6, luck: 5 } }, 2.5],
+  ['Luck 6', { effective: { int: 5, luck: 6 } }, 1],
+  ['Intelligence and Luck below 5', { effective: { int: 1, luck: 1 } }, 0],
+  ['wanderer 100%', { skills: { wanderer: 100, repair: 20 } }, 12],
+  ['repair 100%', { skills: { wanderer: 20, repair: 100 } }, 8],
+  ['engineer rank 1', { talentRanks: { engineer: 1 } }, 2.5],
+  ['recycler rank 1', { talentRanks: { recycler: 1 } }, 2]
+]) {
+  if (gatherGain(build) !== expected) fail(`Harvest bonus from ${source}: expected +${expected} p.p., got +${gatherGain(build)}`);
 }
-for (const snippet of ["const intVal = serverStatValue(p, 'int')", "const luckVal = serverStatValue(p, 'luck')"]) {
-  if (!serverSource.includes(snippet)) fail(`Server harvest SPECIAL formula must include perk-adjusted stats: ${snippet}`);
+
+// «Ремесленник»: описание называет ровно то, что делает сервер, — как «Падальщик»
+// в check-loot-perks.js. Прибавка — разница настоящего шанса с чертой и без неё,
+// стартовые предметы — разница настоящих наборов снабжения. Кирку и топор набор
+// выдаёт каждому, так что преимуществом черты они не считаются.
+{
+  const text = progressionCatalog.startTraits.items.find(row => row.id === 'craftsmanStart').description;
+  const points = gatherGain({ traits: ['craftsmanStart'] });
+  if (!(points > 0) || !text.includes(`+${String(points).replace('.', ',')} п.п.`)) {
+    fail(`craftsmanStart adds +${points} p.p. to the chance of an extra gathered resource and must say so: ${text}`);
+  }
+  const withTrait = startingSupplies(['craftsmanStart']);
+  const without = startingSupplies([]);
+  const extra = id => Number(withTrait[id] || 0) - Number(without[id] || 0);
+  const numbers = (text.match(/\d+(?:[.,]\d+)?/g) || []).map(number => Number(number.replace(',', '.')));
+  for (const [id, item] of Object.entries(itemIndexes.byId)) {
+    if (!item.name) continue;
+    const name = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const named = new RegExp(`(?<![\\p{L}\\p{N}])${name}(?![\\p{L}\\p{N}])`, 'iu').test(text);
+    if (extra(id) > 0 && (!named || (extra(id) > 1 && !numbers.includes(extra(id))))) {
+      fail(`craftsmanStart starts with ${extra(id)} extra ${id} («${item.name}») and must say so: ${text}`);
+    }
+    if (named && extra(id) <= 0) fail(`craftsmanStart promises «${item.name}», but the starting supplies have no extra ${id}: ${text}`);
+  }
+  // Название из каталога ловит «кирка», но не «кирку»: пока набор с чертой тот же,
+  // описание не обещает ничего «на старте» ни в каком падеже.
+  const sameSupplies = Object.keys({ ...withTrait, ...without }).every(id => extra(id) === 0);
+  if (sameSupplies && /на старте|стартов/i.test(text)) {
+    fail(`craftsmanStart leaves the starting supplies as they are, so its description must not promise a start bonus: ${text}`);
+  }
+  const applied = [points, ...Object.keys(withTrait).map(extra).filter(qty => qty > 0)];
+  const stray = numbers.filter(number => !applied.includes(number));
+  if (stray.length) fail(`craftsmanStart names ${stray.join(', ')}, a number the server does not apply: ${text}`);
 }
+
 if (!serverSource.includes("30 + serverStatValue(p, 'str') * 8")) {
   fail('Carry capacity must use perk-adjusted Strength on the server');
 }

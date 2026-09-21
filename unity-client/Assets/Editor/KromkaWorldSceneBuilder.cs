@@ -100,7 +100,9 @@ namespace Kromka.EditorTools
                 Transform arrival = Child(dynamicAnchors, "PlayerArrival");
                 Transform migration = Child(dynamicAnchors, "MigrationArrival_SAFE");
                 arrival.localPosition = new Vector3(0f, 0.1f, -18f);
-                migration.localPosition = new Vector3(-4f, 0.1f, -19f);
+                // Свободно во всех раскладках: у населённых сцен модуль 7 кольца модулей
+                // (радиус 22 м) накрывал прежнюю точку (-4, -19).
+                migration.localPosition = new Vector3(-2f, 0.1f, -21f);
                 arrival.gameObject.AddComponent<KromkaSpawnAuthoring>().Configure(
                     id + "-arrival", KromkaSpawnKind.PlayerArrival, string.Empty, 2f);
                 migration.gameObject.AddComponent<KromkaSpawnAuthoring>().Configure(
@@ -139,7 +141,7 @@ namespace Kromka.EditorTools
                     BuildLocationModules(staticContent, id, Text(location, "locationType"), regionColor);
                     KromkaLocationSceneComposer.Compose(staticContent, location);
                     KromkaLocationDressing.Compose(staticContent, id,
-                        Text(location, "locationType"), regionId);
+                        Text(location, "locationType"), regionId, location["territory"] != null);
                 }
                 BuildImportedGameplayObjects(importedContent, id);
                 BuildAnomalyFields(dynamicAnchors, location);
@@ -223,6 +225,53 @@ namespace Kromka.EditorTools
         }
 
         /// <summary>
+        /// Строки data, которые написали руками или генератором уже после сборки сцены
+        /// (сюжетные цели, аварийные шлюзы лабораторий), получают объект в сцене. Без него
+        /// у строки нет вида на клиенте: сцена Кромки заменяет статическую геометрию data
+        /// (ReplaceServerStaticGeometry), а interaction-цель строится из data, так что
+        /// игрок нажимал «использовать» на пустом месте. Экспортируются только эти строки.
+        /// </summary>
+        [MenuItem("Кромка/Авторинг/Дополнить сцены маркерами строк data")]
+        public static void ImportUnmarkedRows()
+        {
+            RefuseDirtyOpenScenes();
+            Scene original = SceneManager.GetActiveScene();
+            string originalPath = original.IsValid() ? original.path : string.Empty;
+            JObject catalog = ReadProjectJson("data/kromka/locations.json");
+            var report = new List<string>();
+            foreach (JObject location in ((JArray)catalog["locations"]).OfType<JObject>())
+            {
+                string id = Text(location, "id");
+                string scenePath = KromkaLocationSceneCatalog.ScenePath(id);
+                if (!SceneAssetExists(scenePath)) continue;
+                JObject definition = ReadProjectJson("data/locations/" + id + ".json");
+                if (!(definition?["objects"] is JArray rows)) continue;
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                var marked = new HashSet<string>(scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                    .Select(marker => marker.StableObjectId), StringComparer.Ordinal);
+                string[] missing = rows.OfType<JObject>()
+                    .Where(row => !IsLiveObject(row) && !string.IsNullOrWhiteSpace(Text(row, "id"))
+                                  && !marked.Contains(Text(row, "id")))
+                    .Select(row => Text(row, "id")).ToArray();
+                if (missing.Length == 0) continue;
+                int added = ImportGameplayObjects(scene, id, missing);
+                if (added != missing.Length)
+                    throw new InvalidOperationException(id + ": в сцену внесено " + added + " из " + missing.Length
+                        + " строк (" + string.Join(", ", missing) + "). Остальные импорт отбрасывает: у строки нет"
+                        + " роли, тегов геймплея или это снятый вид Старого Клима — дайте ей роль или удалите её.");
+                EditorSceneManager.SaveScene(scene);
+                KromkaWorldSceneExporter.ExportPlacedObjects(scene, missing);
+                report.Add(id + ": " + string.Join(", ", missing));
+            }
+            if (!string.IsNullOrWhiteSpace(originalPath) && SceneAssetExists(originalPath))
+                EditorSceneManager.OpenScene(originalPath, OpenSceneMode.Single);
+            AssetDatabase.Refresh();
+            Debug.Log("[KROMKA] Маркеры строк data: " + (report.Count == 0 ? "все статические строки уже в сценах."
+                : "внесено в " + report.Count + " сцен — " + string.Join("; ", report)));
+        }
+
+        /// <summary>
         /// Дописывает в уже собранную сцену маркеры перечисленных строк
         /// data/locations/&lt;id&gt;.json, не трогая остальное содержимое.
         /// Возвращает число добавленных маркеров.
@@ -287,13 +336,26 @@ namespace Kromka.EditorTools
                 string[] tags = row["tags"] is JArray tagRows
                     ? tagRows.Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).ToArray()
                     : Array.Empty<string>();
-                bool blocksMovement = !string.Equals(Text(row, "collision"), "none", StringComparison.OrdinalIgnoreCase);
-                bool blocksVision = row["vision"]?["blocks"]?.Value<bool>() ?? blocksMovement;
+                // Сервер пропускает игрока сквозь строку с collision "none" (и "cover"),
+                // поэтому её куб-прокси не должен останавливать его и на клиенте.
+                bool blocksMovement = KromkaWorldSceneExporter.CollisionBlocksMovement(Text(row, "collision"));
+                if (!blocksMovement)
+                    foreach (Collider collider in instance.GetComponentsInChildren<Collider>(true))
+                        collider.enabled = false;
+                // Старые строки пишут vision.mode ("cover", "none"), а не vision.blocks.
+                // Если читать только blocks, укрытие молча становится стеной через
+                // запасной blocksMovement — так при переносе в Кромку (33a20ffd)
+                // бочки, верстаки, лом и грядки стали перекрывать обзор.
+                RoaAuthoredVision.Kind vision = RoaAuthoredVision.FromConfig(row["vision"] as JObject);
+                bool blocksVision = vision == RoaAuthoredVision.Kind.Unknown
+                    ? blocksMovement
+                    : vision == RoaAuthoredVision.Kind.Block;
+                bool lowCover = vision == RoaAuthoredVision.Kind.Cover;
                 string role = Text(row, "role");
                 if (string.IsNullOrWhiteSpace(role) && row["entity"]?["kind"] != null)
                     role = row["entity"]["kind"].Value<string>();
                 instance.AddComponent<KromkaPlacedObjectAuthoring>().Configure(
-                    id, Text(row, "model"), role, tags, true, blocksMovement, blocksVision);
+                    id, Text(row, "model"), role, tags, true, blocksMovement, blocksVision, lowCover);
                 Bridge(instance, id);
                 existingIds.Add(id);
             }

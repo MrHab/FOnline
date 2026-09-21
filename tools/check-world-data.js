@@ -27,8 +27,6 @@ const warnings = [];
 let explicitStaticVisionCount = 0;
 let wastelandSim = null;
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const locationEditorFile = path.join(root, 'public', 'dev-location-editor.html');
-const locationEditorSource = fs.existsSync(locationEditorFile) ? fs.readFileSync(locationEditorFile, 'utf8') : '';
 const authoredDataFiles = new Set([
   'encounters.json',
   'global-map.json',
@@ -185,6 +183,15 @@ function objectIsStorage(row = {}) {
     || tags.includes('container');
 }
 
+// Кандидат в узлы добычи по правилу сервера (locationObjectResourceType) и клиента
+// (RoaInteraction.IsResourceObject).
+function objectIsHarvestNode(row = {}) {
+  const tags = objectTags(row);
+  return !!String(row.resourceType || row.resource || '').trim()
+    || String(row.collision || '').trim().toLowerCase() === 'resource'
+    || tags.includes('resource') || tags.includes('harvestable') || tags.includes('resource-node');
+}
+
 function objectResourceType(row = {}) {
   const tags = objectTags(row);
   const model = objectModel(row);
@@ -299,7 +306,7 @@ const UNITY_AUTHORED_GLOBAL_MAP_MODEL_KEYS = new Set([
   'traderAwning', 'scrapWatchTower', 'relayAntenna',
   'brahminPen', 'storageLeanTo', 'wastelandShack', 'watchPost'
 ]);
-const LOCATION_EDITOR_MODEL_ALIASES = {
+const LOCATION_MODEL_ALIASES = {
   rustBarrel: 'barrel'
 };
 const GLOBAL_MAP_WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
@@ -322,9 +329,9 @@ function checkGlobalMapModelKey(value, label, rel) {
   }
 }
 
-function resolveLocationEditorModelKey(value) {
+function resolveLocationModelKey(value) {
   const key = safeId(value);
-  return LOCATION_EDITOR_MODEL_ALIASES[key] || key;
+  return LOCATION_MODEL_ALIASES[key] || key;
 }
 
 function globalMapPointCellForMap(globalMap, x = 0, y = 0) {
@@ -360,31 +367,6 @@ function nearestGlobalMapRoad(point = {}, roads = []) {
     if (!nearest || distance < nearest.distance) nearest = { road, distance };
   }
   return nearest;
-}
-
-function readGlobalMapEditorModels() {
-  const file = path.join(root, 'public', 'dev-global-map-editor.html');
-  if (!fs.existsSync(file)) return [];
-  const source = fs.readFileSync(file, 'utf8');
-  const match = source.match(/const\s+GLOBAL_MODEL_LIBRARY\s*=\s*\[([\s\S]*?)\]\.map/);
-  if (!match) return [];
-  const rows = [];
-  const re = /\{\s*key:\s*'([^']+)'\s*,\s*file:\s*'([^']+)'/g;
-  let next;
-  while ((next = re.exec(match[1]))) rows.push({ key: next[1], file: next[2] });
-  return rows;
-}
-
-function readLocationEditorModels() {
-  const source = locationEditorSource;
-  if (!source) return [];
-  const match = source.match(/const\s+MODEL_LIBRARY\s*=\s*\[([\s\S]*?)\]\.map/);
-  if (!match) return [];
-  const rows = [];
-  const re = /\{\s*key:\s*'([^']+)'\s*,\s*file:\s*'([^']+)'/g;
-  let next;
-  while ((next = re.exec(match[1]))) rows.push({ key: next[1], file: next[2] });
-  return rows;
 }
 
 const ENCOUNTER_MODEL_BY_TYPE_INDEX = [
@@ -573,8 +555,6 @@ function checkActorRoleModelCompatibility(row = {}, modelKey = '', label = 'acto
 
 const itemIds = readServerItemIds();
 const staticModelKeys = readStaticModelKeys();
-const globalMapEditorModels = readGlobalMapEditorModels();
-const locationEditorModels = readLocationEditorModels();
 const traderProfiles = new Set();
 const questIds = new Set();
 const encounterDefs = new Set();
@@ -647,131 +627,6 @@ if (!serverSource.includes('worldSiteOwner: String(controllingSite?.owner')) {
 if (!serverSource.includes('SERVER_ENEMY_MODEL_KEY_BY_VISUAL') || !serverSource.includes('serverEnemyModelKeyForType')) {
   errors.push('server.js: missing explicit enemy visual/model-key fallback map');
 }
-
-const REQUIRED_LOCATION_EDITOR_NPC_MODELS = [
-  {
-    key: 'traderNpc',
-    ruleTokens: ["role: 'merchant'", "traderProfile: 'oldKlim'"],
-    generationTokens: ["profile: 'oldKlimMerchant'", "equipmentProfile: 'oldKlimMerchant'", "tradeProfile: 'oldKlim'"]
-  },
-  {
-    key: 'caravanMerchant',
-    ruleTokens: ["role: 'merchant'", "traderProfile: 'caravan'"],
-    generationTokens: ["profile: 'caravanMerchant'", "equipmentProfile: 'caravanMerchant'", "tradeProfile: 'caravan'"]
-  },
-  {
-    key: 'caravanGuard',
-    ruleTokens: ["role: 'guard'", "faction: 'caravan'"],
-    generationTokens: ["profile: 'caravanGuard'", "equipmentProfile: 'caravanGuard'", "tradeProfile: 'guardCaravan'"]
-  },
-  {
-    key: 'klimPatrolGuard',
-    ruleTokens: ["role: 'guard'", "faction: 'klim_patrol'"],
-    generationTokens: ["profile: 'klimPatrolGuard'", "equipmentProfile: 'klimPatrolGuard'", "tradeProfile: 'guardKlimPatrol'"]
-  },
-  {
-    key: 'wastelandSettler',
-    ruleTokens: ["role: 'civilian'", "hostileToPlayer: false"],
-    generationTokens: ["profile: 'wastelandSettler'", "equipmentProfile: 'settler'"]
-  },
-  {
-    key: 'friendlyBrahmin',
-    ruleTokens: ["role: 'animal'", "species: 'brahmin'", 'canDialogue: false'],
-    generationTokens: ["profile: 'brahmin'", "equipmentProfile: 'none'", "lootProfile: 'brahmin'"]
-  },
-  {
-    key: 'enemyMutantAnt',
-    ruleTokens: ["role: 'monster'", "species: 'mutantAnt'", "enemyType: 'mutantAnt'"],
-    generationTokens: ["profile: 'mutantAnt'", "equipmentProfile: 'natural'", "lootProfile: 'mutantAnt'"]
-  },
-  {
-    key: 'enemyRadscorpion',
-    ruleTokens: ["role: 'monster'", "species: 'radScorpion'", "enemyType: 'radScorpion'"],
-    generationTokens: ["profile: 'radscorpion'", "equipmentProfile: 'natural'", "lootProfile: 'radscorpion'"]
-  },
-  {
-    key: 'enemyGecko',
-    ruleTokens: ["role: 'monster'", "species: 'gecko'", "enemyType: 'gecko'"],
-    generationTokens: ["profile: 'gecko'", "equipmentProfile: 'natural'", "lootProfile: 'gecko'"]
-  },
-  {
-    key: 'enemyFireGecko',
-    ruleTokens: ["role: 'monster'", "species: 'fireGecko'", "enemyType: 'fireGecko'"],
-    generationTokens: ["profile: 'fireGecko'", "equipmentProfile: 'natural'", "lootProfile: 'fireGecko'"]
-  }
-];
-
-function objectLiteralBody(source, objectName, key) {
-  const objectStart = source.indexOf(`const ${objectName} = {`);
-  const keyStart = objectStart >= 0 ? source.indexOf(`${key}: {`, objectStart) : -1;
-  if (keyStart < 0) return '';
-  const open = source.indexOf('{', keyStart);
-  if (open < 0) return '';
-  let depth = 0;
-  let quote = '';
-  let escaped = false;
-  for (let i = open; i < source.length; i++) {
-    const ch = source[i];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '\'' || ch === '"' || ch === '`') {
-      quote = ch;
-      continue;
-    }
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) return source.slice(keyStart, i + 1);
-    }
-  }
-  return '';
-}
-
-if (!locationEditorSource) {
-  errors.push('public/dev-location-editor.html: missing location editor');
-} else {
-  REQUIRED_LOCATION_EDITOR_NPC_MODELS.forEach(def => {
-    if (!locationEditorSource.includes(`key: '${def.key}'`)) {
-      errors.push(`public/dev-location-editor.html: missing model library entry for "${def.key}"`);
-    }
-    const ruleBody = objectLiteralBody(locationEditorSource, 'MODEL_ENTITY_RULES', def.key);
-    if (!ruleBody) {
-      errors.push(`public/dev-location-editor.html: missing entity rule for "${def.key}"`);
-    } else {
-      def.ruleTokens.forEach(token => {
-        if (!ruleBody.includes(token)) errors.push(`public/dev-location-editor.html: entity rule "${def.key}" missing ${token}`);
-      });
-    }
-    const generationBody = objectLiteralBody(locationEditorSource, 'NPC_AUTO_GENERATION_PROFILES', def.key);
-    if (!generationBody) {
-      errors.push(`public/dev-location-editor.html: missing auto-generation profile for "${def.key}"`);
-    } else {
-      def.generationTokens.forEach(token => {
-        if (!generationBody.includes(token)) errors.push(`public/dev-location-editor.html: auto-generation profile "${def.key}" missing ${token}`);
-      });
-    }
-  });
-}
-
-globalMapEditorModels.forEach(model => {
-  checkGlobalMapModelKey(model.key, `editor model "${model.key}"`, path.join('public', 'dev-global-map-editor.html'));
-  const url = `/assets/models/wasteland/${model.file}`;
-  if (!publicAssetExists(url)) errors.push(`public/dev-global-map-editor.html: editor model "${model.key}" missing asset ${url}`);
-});
-
-locationEditorModels.forEach(model => {
-  const rel = path.join('public', 'dev-location-editor.html');
-  const url = `/assets/models/wasteland/${model.file}`;
-  if (!publicAssetExists(url)) errors.push(`${rel}: editor model "${model.key}" missing asset ${url}`);
-  const resolved = resolveLocationEditorModelKey(model.key);
-  if (staticModelKeys.size && !staticModelKeys.has(resolved)) {
-    errors.push(`${rel}: editor model "${model.key}" is not registered in SERVER_MODEL_FILE_BY_KEY`);
-  }
-});
 
 function anyTraderProfileExists(...ids) {
   return ids.map(safeId).filter(Boolean).some(id => traderProfiles.has(id));
@@ -1013,7 +868,7 @@ for (const [id, row] of locations) {
       const entity = objectEntity(guide);
       const tags = objectTags(guide);
       if (safeId(guide.id) !== 'irena_versta_belova') errors.push(`${rel}: Irina must use stable object id "irena_versta_belova"`);
-      if (resolveLocationEditorModelKey(guide.model || '') !== 'traderNpc') errors.push(`${rel}: Irina must use the dedicated "traderNpc" model`);
+      if (resolveLocationModelKey(guide.model || '') !== 'traderNpc') errors.push(`${rel}: Irina must use the dedicated "traderNpc" model`);
       if (objectRole(guide) !== 'merchant') errors.push(`${rel}: Irina must have merchant role`);
       if (safeId(entity.faction) !== 'tract_league') errors.push(`${rel}: Irina must belong to faction "tract_league"`);
       if (entity.hostileToPlayer !== false) errors.push(`${rel}: Irina must be friendly to the player`);
@@ -1039,7 +894,7 @@ for (const [id, row] of locations) {
       const gratch = gratchActors[0];
       const entity = objectEntity(gratch);
       if (safeId(gratch.id) !== 'scrap_gratch') errors.push(`${rel}: Gratch must use stable object id "scrap_gratch"`);
-      if (resolveLocationEditorModelKey(gratch.model || '') !== 'traderNpc') errors.push(`${rel}: Gratch must use the dedicated "traderNpc" model`);
+      if (resolveLocationModelKey(gratch.model || '') !== 'traderNpc') errors.push(`${rel}: Gratch must use the dedicated "traderNpc" model`);
       if (objectRole(gratch) !== 'merchant') errors.push(`${rel}: Gratch must have merchant role`);
       if (safeId(entity.faction) !== 'scrap_union') errors.push(`${rel}: Gratch must belong to faction "scrap_union"`);
       if (entity.hostileToPlayer !== false) errors.push(`${rel}: Gratch must be friendly to the player`);
@@ -1090,13 +945,17 @@ for (const [id, row] of locations) {
       }
     }
 
+    // Узел добычи определяют resourceType и теги, а не collision. У моделей прежнего
+    // набора collision всегда "none", поэтому правило, ждавшее collision "resource",
+    // не срабатывало ни на одной строке — и 109 укрытий, ставших стенами при
+    // переносе в Кромку, никто не заметил.
     const model = String(obj.model || '').trim().toLowerCase();
-    const collision = String(obj.collision || '').trim().toLowerCase();
-    if (collision === 'resource' && ['scrapheap', 'oreoutcrop', 'deadtreeb', 'deadwood'].includes(model)
+    const harvestNode = objectIsHarvestNode(obj);
+    if (harvestNode && ['scrapheap', 'oreoutcrop', 'deadtreeb', 'deadwood'].includes(model)
       && visionKind !== 'cover') {
       errors.push(`${rel}: physical resource "${objectId || index}" must provide low cover`);
     }
-    if (collision === 'resource' && model === 'gardenpatch' && visionKind !== 'clear') {
+    if (harvestNode && model === 'gardenpatch' && visionKind !== 'clear') {
       errors.push(`${rel}: low garden patch "${objectId || index}" must keep line of sight clear`);
     }
 
@@ -1108,7 +967,7 @@ for (const [id, row] of locations) {
       warnings.push(`${rel}: resource object "${objectId || index}" has no positive hp/maxHp`);
     }
     const entity = obj.entity && typeof obj.entity === 'object' ? obj.entity : {};
-    const modelKey = resolveLocationEditorModelKey(obj.model || '');
+    const modelKey = resolveLocationModelKey(obj.model || '');
     checkActorRoleModelCompatibility(obj, modelKey, `object "${objectId || index}"`, rel);
     checkNaturalCreatureActor(obj, `object "${objectId || index}"`, rel);
     const tradeProfiles = [entity.tradeProfile, entity.traderProfile].map(safeId).filter(Boolean);

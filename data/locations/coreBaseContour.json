@@ -263,9 +263,9 @@
       "model": "wastelandSettler",
       "name": "Исследователь аномалий",
       "position": {
-        "x": 18,
+        "x": 16.5,
         "y": 0,
-        "z": -10
+        "z": -6
       },
       "rotation": {
         "x": 0,
@@ -380,9 +380,9 @@
       "model": "caravanGuard",
       "name": "Охрана Контура",
       "position": {
-        "x": -6,
+        "x": -2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotation": {
         "x": 0,
@@ -419,9 +419,9 @@
       "model": "caravanGuard",
       "name": "Охрана Контура",
       "position": {
-        "x": 6,
+        "x": 2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotation": {
         "x": 0,
@@ -516,14 +516,36 @@
         "warm-light"
       ],
       "footprint": {
-        "x": 13.5,
-        "z": 15.8
+        "x": 11.0,
+        "z": 8.25
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 11.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 2.4,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-keys-life",
@@ -589,14 +611,56 @@
         "shelter"
       ],
       "footprint": {
-        "x": 6.5,
-        "z": 4.5
+        "x": 10.3,
+        "z": 7.3
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-keys-rail-bridge",
@@ -617,7 +681,7 @@
         "y": 1,
         "z": 1
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "rail",
@@ -625,8 +689,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 16.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
@@ -661,14 +725,56 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 4.45,
+        "z": 4.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-keys-workshops",
@@ -697,14 +803,36 @@
         "craft"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 13.0,
+        "z": 9.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 12.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-landmark",
@@ -731,14 +859,36 @@
         "metro-gate"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-1",
@@ -766,14 +916,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-10",
@@ -801,14 +960,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-2",
@@ -836,14 +1007,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-3",
@@ -871,14 +1054,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-4",
@@ -906,14 +1101,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-5",
@@ -941,14 +1148,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-6",
@@ -976,14 +1192,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-7",
@@ -1011,14 +1239,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-8",
@@ -1046,14 +1286,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseContour-module-9",
@@ -1081,14 +1333,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseContour-region-field-0",
@@ -1466,14 +1727,66 @@
         "editable-perimeter"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 52.8,
+        "z": 48.8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 24.0
+          },
+          "size": {
+            "x": 52.0,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": -26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": 26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": -16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": 16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        }
+      ]
     },
     {
       "id": "gate_left",
@@ -1550,7 +1863,7 @@
       "position": {
         "x": 14,
         "y": 0,
-        "z": -8
+        "z": -6
       },
       "rotation": {
         "x": 0,
@@ -1953,6 +2266,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-01",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-01",
+      "position": {
+        "x": -6.799,
+        "y": 0.0,
+        "z": -33.099
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.675,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.711,
+        "z": 0.714
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-02",
+      "model": "garden_patch",
+      "name": "coreBaseContour-dressing-region-02",
+      "position": {
+        "x": 29.474,
+        "y": 0.0,
+        "z": -14.198
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.881,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.154,
+        "z": 2.179
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-03",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-03",
+      "position": {
+        "x": -14.255,
+        "y": 0.0,
+        "z": 18.704
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.264,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.721,
+        "z": 0.72
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-04",
+      "position": {
+        "x": 31.476,
+        "y": 0.0,
+        "z": -10.505
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.065,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.473,
+        "z": 2.08
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-05",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-05",
+      "position": {
+        "x": 18.055,
+        "y": 0.0,
+        "z": -0.508
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.935,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.147,
+        "y": 1.147,
+        "z": 1.147
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.617,
+        "z": 0.608
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-06",
+      "position": {
+        "x": 31.941,
+        "y": 0.0,
+        "z": -3.472
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.425,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.735,
+        "z": 0.587
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-07",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-07",
+      "position": {
+        "x": 23.708,
+        "y": 0.0,
+        "z": -21.402
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.243,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.553,
+        "z": 0.564
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-08",
+      "model": "garden_patch",
+      "name": "coreBaseContour-dressing-region-08",
+      "position": {
+        "x": -31.271,
+        "y": 0.0,
+        "z": -5.315
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.55,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.199,
+        "z": 2.826
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-09",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-09",
+      "position": {
+        "x": 17.998,
+        "y": 0.0,
+        "z": 5.946
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.418,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.225,
+        "z": 1.415
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-10",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-10",
+      "position": {
+        "x": -31.23,
+        "y": 0.0,
+        "z": 2.055
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.402,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.309,
+        "z": 2.352
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-11",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-11",
+      "position": {
+        "x": -18.226,
+        "y": 0.0,
+        "z": -21.803
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.557,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.143,
+        "y": 1.143,
+        "z": 1.143
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.719,
+        "z": 0.72
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-12",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-12",
+      "position": {
+        "x": 27.558,
+        "y": 0.0,
+        "z": -16.571
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.298,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.576,
+        "z": 0.586
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-13",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-13",
+      "position": {
+        "x": 32.693,
+        "y": 0.0,
+        "z": -7.113
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.785,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.319,
+        "z": 1.32
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-14",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-14",
+      "position": {
+        "x": 24.489,
+        "y": 0.0,
+        "z": -19.773
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.85,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.716,
+        "z": 0.717
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-15",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-15",
+      "position": {
+        "x": -20.094,
+        "y": 0.0,
+        "z": -19.667
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.221,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.945,
+        "z": 1.594
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-16",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-16",
+      "position": {
+        "x": -24.453,
+        "y": 0.0,
+        "z": 6.078
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.164,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.139,
+        "y": 1.139,
+        "z": 1.139
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.7,
+        "z": 0.696
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-17",
+      "model": "utility_pole",
+      "name": "coreBaseContour-dressing-region-17",
+      "position": {
+        "x": -31.913,
+        "y": 0.0,
+        "z": 10.399
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 3.573,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.834,
+        "z": 0.919
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-18",
+      "model": "rubble_rock",
+      "name": "coreBaseContour-dressing-region-18",
+      "position": {
+        "x": -23.466,
+        "y": 0.0,
+        "z": 8.532
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.972,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.494,
+        "z": 1.976
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseContour-dressing-region-19",
+      "model": "dry_bush",
+      "name": "coreBaseContour-dressing-region-19",
+      "position": {
+        "x": 0.527,
+        "y": 0.0,
+        "z": 21.789
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.995,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.266,
+        "y": 1.266,
+        "z": 1.266
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.636,
+        "z": 0.647
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [],
@@ -1992,9 +2970,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },
@@ -2040,9 +3018,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -6,
+        "x": -2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotationY": 0
     },
@@ -2052,9 +3030,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 6,
+        "x": 2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotationY": 0
     },
@@ -2088,9 +3066,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 18,
+        "x": 16.5,
         "y": 0,
-        "z": -10
+        "z": -6
       },
       "rotationY": 0
     },
@@ -2108,11 +3086,11 @@
     }
   ],
   "migrationArrival": {
-    "tx": 17,
-    "tz": 9,
-    "x": -4,
+    "tx": 18,
+    "tz": 8,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "respawn": {

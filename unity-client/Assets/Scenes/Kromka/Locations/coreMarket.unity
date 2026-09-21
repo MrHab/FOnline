@@ -119,6 +119,126 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1001 &3499253
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-19
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1478463
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1478463
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1478463
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 23.579891
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -19.83266
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.91577923
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.40168202
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3499257}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3499256}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &3499254 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 3499253}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3499255 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 3499253}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3499256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3499255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-19
+--- !u!114 &3499257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3499255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-19
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &43819474
 GameObject:
   m_ObjectHideFlags: 0
@@ -231,6 +351,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 43819474}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &73012490
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746415
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746415
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746415
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 18.32577
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.683259
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.40259403
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.91537863
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-04
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 73012494}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 73012493}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &73012491 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 73012490}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &73012492 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 73012490}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &73012493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73012492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-04
+--- !u!114 &73012494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73012492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-04
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &93262847
 GameObject:
   m_ObjectHideFlags: 0
@@ -343,6 +583,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 93262847}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &100889681
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-07
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746967
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746967
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746967
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 10.935835
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -27.795633
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.7520518
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.65910405
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 100889685}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 100889684}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &100889682 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 100889681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &100889683 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 100889681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &100889684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100889683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-07
+--- !u!114 &100889685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100889683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-07
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &117907412
 GameObject:
   m_ObjectHideFlags: 0
@@ -377,6 +737,126 @@ Transform:
   - {fileID: 1776579334}
   m_Father: {fileID: 1295067243}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &123406502
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-05
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746746
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746746
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746746
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 18.14045
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 5.0713525
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.42799237
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.90378237
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 123406506}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 123406505}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &123406503 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 123406502}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &123406504 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 123406502}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &123406505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 123406504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-05
+--- !u!114 &123406506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 123406504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-05
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &203422108
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,6 +1314,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &352489507
 GameObject:
   m_ObjectHideFlags: 0
@@ -1016,6 +1497,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &375174037
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1318,6 +1800,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 418926306}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &434526252
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-03
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746525
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746525
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746525
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.067008
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.39215
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.70868266
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.70552737
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 434526256}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 434526255}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &434526253 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 434526252}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &434526254 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 434526252}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &434526255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434526254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-03
+--- !u!114 &434526256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434526254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-03
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &457534974
 GameObject:
   m_ObjectHideFlags: 0
@@ -1428,6 +2030,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &499464034
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.14241
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.14241
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.14241
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 33.18056
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.2672343
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.9831284
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.1829168
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-12
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 499464038}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 499464037}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &499464035 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 499464034}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &499464036 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 499464034}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &499464037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499464036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-12
+--- !u!114 &499464038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499464036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-12
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &507667171
 GameObject:
   m_ObjectHideFlags: 0
@@ -1833,6 +2556,127 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &628569864
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-13
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1423327
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1423327
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1423327
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -22.945705
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 8.858621
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.99993634
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.0112823555
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 628569868}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 628569867}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &628569865 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 628569864}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &628569866 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 628569864}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &628569867
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 628569866}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-13
+--- !u!114 &628569868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 628569866}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-13
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &635684960
 GameObject:
   m_ObjectHideFlags: 0
@@ -1945,6 +2789,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 635684960}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &696205468
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-17
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1422884
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1422884
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1422884
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -13.764354
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 16.805044
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9474279
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.31996942
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 696205472}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 696205471}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &696205469 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 696205468}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &696205470 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 696205468}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &696205471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696205470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-17
+--- !u!114 &696205472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696205470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-17
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &736435185
 GameObject:
   m_ObjectHideFlags: 0
@@ -2015,6 +2979,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &736435189
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2276,6 +3241,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &768492299
 GameObject:
   m_ObjectHideFlags: 0
@@ -2608,8 +3574,9 @@ MonoBehaviour:
   - bridge
   - top-readable
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &789197815
 GameObject:
   m_ObjectHideFlags: 0
@@ -2841,6 +3808,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &838374395
 GameObject:
   m_ObjectHideFlags: 0
@@ -3172,6 +4140,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &890769028
 GameObject:
   m_ObjectHideFlags: 0
@@ -3198,7 +4167,7 @@ Transform:
   m_GameObject: {fileID: 890769028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4, y: 0.1, z: -19}
+  m_LocalPosition: {x: -2, y: 0.1, z: -21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3220,6 +4189,126 @@ MonoBehaviour:
   _kind: 1
   _targetLocationId: 
   _radius: 3
+--- !u!1001 &924396851
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746193
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746193
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746193
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 31.80193
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 7.090437
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.84081143
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.54132813
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-02
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 924396855}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 924396854}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &924396852 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 924396851}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &924396853 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 924396851}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &924396854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924396853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-02
+--- !u!114 &924396855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924396853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-02
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &939347105
 GameObject:
   m_ObjectHideFlags: 0
@@ -3293,6 +4382,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1009278404
 GameObject:
   m_ObjectHideFlags: 0
@@ -3363,6 +4453,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1009278408
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3513,6 +4604,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1016909703
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3848,6 +4940,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1057985114}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1084553113
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-11
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.142399
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.142399
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.142399
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 33.423927
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -3.4377847
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.9831698
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.18269436
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1084553117}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1084553116}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1084553114 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1084553113}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1084553115 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1084553113}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1084553116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084553115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-11
+--- !u!114 &1084553117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084553115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-11
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1091971492
 GameObject:
   m_ObjectHideFlags: 0
@@ -4142,6 +5354,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1170196074
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4380,6 +5593,126 @@ MonoBehaviour:
   _kind: 3
   _targetLocationId: 
   _radius: 0.8
+--- !u!1001 &1231400296
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.142388
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.142388
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.142388
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.19856493
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 21.87732
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.42948848
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.90307236
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-10
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1231400300}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1231400299}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1231400297 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1231400296}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1231400298 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1231400296}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1231400299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-10
+--- !u!114 &1231400300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-10
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1245661359
 GameObject:
   m_ObjectHideFlags: 0
@@ -4786,6 +6119,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1281791506
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5080,6 +6414,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1337721497
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5267,6 +6602,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1358071400
 GameObject:
   m_ObjectHideFlags: 0
@@ -5455,7 +6791,26 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1758989647}
+  - {fileID: 924396852}
+  - {fileID: 434526253}
+  - {fileID: 73012491}
+  - {fileID: 123406503}
+  - {fileID: 1659475733}
+  - {fileID: 100889682}
+  - {fileID: 1635540953}
+  - {fileID: 1429605436}
+  - {fileID: 1231400297}
+  - {fileID: 1084553114}
+  - {fileID: 499464035}
+  - {fileID: 628569865}
+  - {fileID: 1985995520}
+  - {fileID: 1438719933}
+  - {fileID: 2121850443}
+  - {fileID: 696205469}
+  - {fileID: 1705558706}
+  - {fileID: 3499254}
   m_Father: {fileID: 1779947994}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1397436005
@@ -5528,6 +6883,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1397436009
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5790,6 +7146,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &1429605435
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-09
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1423769
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1423769
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1423769
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -13.459674
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 19.157598
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9792538
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.20263751
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1429605439}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1429605438}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &1429605436 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1429605435}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1429605437 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1429605435}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1429605438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1429605437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-09
+--- !u!114 &1429605439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1429605437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-09
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1431395346
 GameObject:
   m_ObjectHideFlags: 0
@@ -5902,6 +7379,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1431395346}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1438719932
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-15
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1423547
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1423547
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1423547
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 32.69587
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -7.0808597
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.13702227
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.990568
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1438719936}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1438719935}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1438719933 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1438719932}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1438719934 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1438719932}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1438719935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438719934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-15
+--- !u!114 &1438719936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438719934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-15
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1439024425
 GameObject:
   m_ObjectHideFlags: 0
@@ -6163,6 +7760,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1482091349
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6554,6 +8152,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!65 &1575381394
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6672,6 +8271,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1604418222
 GameObject:
   m_ObjectHideFlags: 0
@@ -7015,6 +8615,247 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &1635540952
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746856
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746856
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746856
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.681436
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -28.06423
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.4837144
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8752259
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-08
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1635540956}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1635540955}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1635540953 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1635540952}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1635540954 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1635540952}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1635540955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635540954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-08
+--- !u!114 &1635540956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635540954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-08
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &1659475732
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746635
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746635
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746635
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -10.700281
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -27.206715
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.6577105
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7532708
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-06
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1659475736}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1659475735}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1659475733 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1659475732}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1659475734 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1659475732}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1659475735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1659475734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-06
+--- !u!114 &1659475736
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1659475734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-06
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1675730365
 GameObject:
   m_ObjectHideFlags: 0
@@ -7085,6 +8926,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1675730369
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7279,6 +9121,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1692868879}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1705558705
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1478685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1478685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1478685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.21754912
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -21.977942
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.98524964
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.17112345
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1705558709}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1705558708}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &1705558706 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1705558705}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1705558707 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1705558705}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1705558708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705558707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-18
+--- !u!114 &1705558709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705558707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-18
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1720215999
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7398,6 +9360,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &1758989646
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-01
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1746304
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1746304
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1746304
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.3904037
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.860222
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.68887407
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7248811
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1758989650}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1758989649}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &1758989647 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1758989646}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1758989648 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 1758989646}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1758989649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1758989648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-01
+--- !u!114 &1758989650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1758989648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-01
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1764782210
 GameObject:
   m_ObjectHideFlags: 0
@@ -7777,6 +9860,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1779947993
 GameObject:
   m_ObjectHideFlags: 0
@@ -7892,6 +9976,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1852741861
 GameObject:
   m_ObjectHideFlags: 0
@@ -8123,6 +10208,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1890538704
 GameObject:
   m_ObjectHideFlags: 0
@@ -8203,6 +10289,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1896648934
 GameObject:
   m_ObjectHideFlags: 0
@@ -8867,6 +10954,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1983703995}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1985995519
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1423438
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1423438
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1423438
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 31.46545
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -10.514411
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.67192304
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.740621
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-14
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1985995523}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1985995522}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1985995520 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1985995519}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1985995521 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1985995519}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1985995522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1985995521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-14
+--- !u!114 &1985995523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1985995521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-14
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2018603324
 GameObject:
   m_ObjectHideFlags: 0
@@ -9322,6 +11529,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &2100996535
 GameObject:
   m_ObjectHideFlags: 0
@@ -9434,6 +11642,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2100996535}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &2121850442
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1361763084}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1423658
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.1423658
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1423658
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -22.324198
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 10.631337
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.82326573
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5676562
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreMarket-dressing-region-16
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2121850446}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2121850445}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &2121850443 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 2121850442}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2121850444 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 2121850442}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2121850445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2121850444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreMarket-dressing-region-16
+--- !u!114 &2121850446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2121850444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreMarket-dressing-region-16
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

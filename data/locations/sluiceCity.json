@@ -396,14 +396,76 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 48.0,
+        "z": 5.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 48.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": -16.0,
+            "z": -2.7
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": -8.0,
+            "z": -2.7
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -2.7
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 8.0,
+            "z": -2.7
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.5
+          }
+        },
+        {
+          "center": {
+            "x": 16.0,
+            "z": -2.7
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.5
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-dressing-functional-01",
@@ -1200,14 +1262,36 @@
         "command-dam"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-1",
@@ -1235,14 +1319,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-10",
@@ -1270,14 +1363,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-2",
@@ -1305,14 +1410,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-3",
@@ -1340,14 +1457,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-4",
@@ -1375,14 +1504,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-5",
@@ -1410,14 +1551,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-6",
@@ -1445,14 +1595,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-7",
@@ -1480,14 +1642,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-8",
@@ -1515,14 +1689,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-module-9",
@@ -1550,14 +1736,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "sluiceCity-permit-control",
@@ -1586,14 +1781,36 @@
         "controlled-route"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 16.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-ration-queues",
@@ -1692,14 +1909,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 62.0,
+        "z": 1.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 62.0,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "sluiceCity-region-pylon-0",
@@ -1951,7 +2180,7 @@
       "position": {
         "x": 6,
         "y": 0,
-        "z": -16
+        "z": -18.5
       },
       "rotation": {
         "x": 0,
@@ -2103,11 +2332,11 @@
     "rotationY": 0
   },
   "migrationArrival": {
-    "tx": 16,
-    "tz": 8,
-    "x": -4,
+    "tx": 17,
+    "tz": 7,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "unitySpawns": [
@@ -2117,9 +2346,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },

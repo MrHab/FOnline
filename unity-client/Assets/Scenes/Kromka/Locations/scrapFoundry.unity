@@ -238,6 +238,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &65641243
 GameObject:
   m_ObjectHideFlags: 0
@@ -286,115 +287,6 @@ MonoBehaviour:
   _kind: 0
   _targetLocationId: 
   _radius: 2
---- !u!1001 &88880497
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 781327160}
-    m_Modifications:
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8752414143713454946, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_foundry_ammo_bench
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8752414143713454946, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 88880501}
-    - targetCorrespondingSourceObject: {fileID: 8752414143713454946, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 88880500}
-  m_SourcePrefab: {fileID: 100100000, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
---- !u!4 &88880498 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3722668953956634936, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-  m_PrefabInstance: {fileID: 88880497}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &88880499 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8752414143713454946, guid: b85c268b01f63284f92524b41a1c4c39, type: 3}
-  m_PrefabInstance: {fileID: 88880497}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &88880500
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 88880499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: foundry_ammo_bench
---- !u!114 &88880501
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 88880499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: foundry_ammo_bench
-  _serverArchetypeId: craftStationAmmo
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - ammo_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
 --- !u!1 &97332511
 GameObject:
   m_ObjectHideFlags: 0
@@ -463,6 +355,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &99293608
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -582,6 +475,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &175468461
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -701,6 +595,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &175685381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -820,6 +715,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &178733588
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -939,6 +835,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &202840638
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1058,6 +955,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &229811108
 GameObject:
   m_ObjectHideFlags: 0
@@ -1128,6 +1026,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &229811112
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1398,6 +1297,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &254318116
 GameObject:
   m_ObjectHideFlags: 0
@@ -1662,6 +1562,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &316946385
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1861,6 +1762,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &424509720
 GameObject:
   m_ObjectHideFlags: 0
@@ -1931,6 +1833,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &424509724
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2128,6 +2031,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &432318472
 GameObject:
   m_ObjectHideFlags: 0
@@ -2196,6 +2100,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &468999239
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2315,6 +2220,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &477918073
 GameObject:
   m_ObjectHideFlags: 0
@@ -2499,6 +2405,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &490618397
 GameObject:
   m_ObjectHideFlags: 0
@@ -2791,6 +2698,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &568034587
 GameObject:
   m_ObjectHideFlags: 0
@@ -3022,6 +2930,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &605550489
 GameObject:
   m_ObjectHideFlags: 0
@@ -3242,6 +3151,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &674381548
 GameObject:
   m_ObjectHideFlags: 0
@@ -3604,6 +3514,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &709037154
 GameObject:
   m_ObjectHideFlags: 0
@@ -3675,6 +3586,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &715429795
 GameObject:
   m_ObjectHideFlags: 0
@@ -3745,6 +3657,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &715429799
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3930,8 +3843,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &765898245
 GameObject:
   m_ObjectHideFlags: 0
@@ -4185,12 +4099,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 88880498}
   - {fileID: 2060932906}
-  - {fileID: 1901464469}
   - {fileID: 730920161}
-  - {fileID: 1038631324}
-  - {fileID: 1242050656}
   - {fileID: 623900273}
   m_Father: {fileID: 1994077501}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4265,6 +4175,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &813856720
 GameObject:
   m_ObjectHideFlags: 0
@@ -4371,6 +4282,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &822794601
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4904,6 +4816,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &990058949
 GameObject:
   m_ObjectHideFlags: 0
@@ -5135,6 +5048,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1024819380
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5254,6 +5168,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1025270770
 GameObject:
   m_ObjectHideFlags: 0
@@ -5285,115 +5200,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 306299833}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1038631323
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 781327160}
-    m_Modifications:
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8191908154881972069, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_foundry_tool_bench
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8191908154881972069, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1038631327}
-    - targetCorrespondingSourceObject: {fileID: 8191908154881972069, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1038631326}
-  m_SourcePrefab: {fileID: 100100000, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
---- !u!4 &1038631324 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4534613024479391832, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-  m_PrefabInstance: {fileID: 1038631323}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1038631325 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8191908154881972069, guid: e0d94b43e533c0142afc243ceb9722c4, type: 3}
-  m_PrefabInstance: {fileID: 1038631323}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1038631326
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1038631325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: foundry_tool_bench
---- !u!114 &1038631327
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1038631325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: foundry_tool_bench
-  _serverArchetypeId: craftStationTools
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - tool_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
 --- !u!1001 &1040441442
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5511,8 +5317,9 @@ MonoBehaviour:
   - industrial_site
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1068589785
 GameObject:
   m_ObjectHideFlags: 0
@@ -5851,115 +5658,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1210314178}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1001 &1242050655
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 781327160}
-    m_Modifications:
-    - target: {fileID: 630928064927868020, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_foundry_weapon_bench
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -9
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 630928064927868020, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1242050659}
-    - targetCorrespondingSourceObject: {fileID: 630928064927868020, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1242050658}
-  m_SourcePrefab: {fileID: 100100000, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
---- !u!4 &1242050656 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4591393165919828219, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-  m_PrefabInstance: {fileID: 1242050655}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1242050657 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 630928064927868020, guid: 63bf38647bb98d449ab0dc6a10a22279, type: 3}
-  m_PrefabInstance: {fileID: 1242050655}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1242050658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1242050657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: foundry_weapon_bench
---- !u!114 &1242050659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1242050657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: foundry_weapon_bench
-  _serverArchetypeId: craftStationWeapon
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - weapon_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
 --- !u!1001 &1243876999
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6079,6 +5777,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1278308646
 GameObject:
   m_ObjectHideFlags: 0
@@ -6310,6 +6009,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1300406883
 GameObject:
   m_ObjectHideFlags: 0
@@ -6828,6 +6528,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1403426063
 GameObject:
   m_ObjectHideFlags: 0
@@ -7285,6 +6986,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1494478434
 GameObject:
   m_ObjectHideFlags: 0
@@ -7615,6 +7317,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1654382641
 GameObject:
   m_ObjectHideFlags: 0
@@ -7846,6 +7549,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1678137195
 GameObject:
   m_ObjectHideFlags: 0
@@ -7914,6 +7618,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1711688206
 GameObject:
   m_ObjectHideFlags: 0
@@ -8115,6 +7820,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!65 &1746686684
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8230,6 +7936,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1858214435
 GameObject:
   m_ObjectHideFlags: 0
@@ -8566,115 +8273,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1892890377}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1001 &1901464468
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 781327160}
-    m_Modifications:
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -3
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_foundry_repair_bench
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1901464472}
-    - targetCorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1901464471}
-  m_SourcePrefab: {fileID: 100100000, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
---- !u!4 &1901464469 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-  m_PrefabInstance: {fileID: 1901464468}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1901464470 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-  m_PrefabInstance: {fileID: 1901464468}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1901464471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1901464470}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: foundry_repair_bench
---- !u!114 &1901464472
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1901464470}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: foundry_repair_bench
-  _serverArchetypeId: craftStationRepair
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - repair_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
 --- !u!1 &1994077500
 GameObject:
   m_ObjectHideFlags: 0
@@ -8897,6 +8495,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &2040842117
 GameObject:
   m_ObjectHideFlags: 0
@@ -9113,8 +8712,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &2088035054
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9234,6 +8834,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2125285586
 GameObject:
   m_ObjectHideFlags: 0

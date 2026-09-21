@@ -27,18 +27,18 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "worldZones": [
     {
@@ -110,19 +110,19 @@
       "model": "campfireRest",
       "name": "Место отдыха",
       "position": {
-        "x": 17.0,
-        "y": 0.0,
-        "z": 14.0
+        "x": 17,
+        "y": 0,
+        "z": 14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -153,19 +153,19 @@
       "model": "chime",
       "name": "Anomaly solar-chime-01",
       "position": {
-        "x": 4.0,
+        "x": 4,
         "y": 0.08,
-        "z": 10.0
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "anomaly",
@@ -188,19 +188,19 @@
       "model": "seam",
       "name": "Anomaly solar-seam-01",
       "position": {
-        "x": -8.0,
+        "x": -8,
         "y": 0.08,
-        "z": 12.0
+        "z": 12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "anomaly",
@@ -224,13 +224,13 @@
       "name": "solarArray-dressing-functional-01",
       "position": {
         "x": 11.084,
-        "y": 0.0,
+        "y": 0,
         "z": 6.792
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.021,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -259,13 +259,13 @@
       "name": "solarArray-dressing-functional-02",
       "position": {
         "x": -8.464,
-        "y": 0.0,
+        "y": 0,
         "z": 13.813
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.733,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -294,13 +294,13 @@
       "name": "solarArray-dressing-functional-03",
       "position": {
         "x": -16.541,
-        "y": 0.0,
+        "y": 0,
         "z": -10.136
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.163,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -329,13 +329,13 @@
       "name": "solarArray-dressing-functional-04",
       "position": {
         "x": 6.792,
-        "y": 0.0,
+        "y": 0,
         "z": -11.084
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.592,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -364,13 +364,13 @@
       "name": "solarArray-dressing-region-01",
       "position": {
         "x": 17.442,
-        "y": 0.0,
+        "y": 0,
         "z": 7.663
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.282,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -399,13 +399,13 @@
       "name": "solarArray-dressing-region-02",
       "position": {
         "x": 17.265,
-        "y": 0.0,
+        "y": 0,
         "z": 7.595
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.227,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -434,13 +434,13 @@
       "name": "solarArray-dressing-region-03",
       "position": {
         "x": 17.265,
-        "y": 0.0,
+        "y": 0,
         "z": 7.592
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.227,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -469,13 +469,13 @@
       "name": "solarArray-dressing-region-04",
       "position": {
         "x": 17.795,
-        "y": 0.0,
+        "y": 0,
         "z": 6.265
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.156,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -504,13 +504,13 @@
       "name": "solarArray-dressing-region-05",
       "position": {
         "x": 17.66,
-        "y": 0.0,
+        "y": 0,
         "z": 6.208
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.155,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -539,13 +539,13 @@
       "name": "solarArray-dressing-region-06",
       "position": {
         "x": 17.661,
-        "y": 0.0,
+        "y": 0,
         "z": 6.2
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -574,13 +574,13 @@
       "name": "solarArray-dressing-region-07",
       "position": {
         "x": 17.65,
-        "y": 0.0,
+        "y": 0,
         "z": 6.235
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -609,13 +609,13 @@
       "name": "solarArray-dressing-region-08",
       "position": {
         "x": 17.839,
-        "y": 0.0,
+        "y": 0,
         "z": 5.184
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.044,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -644,13 +644,13 @@
       "name": "solarArray-dressing-region-09",
       "position": {
         "x": 17.843,
-        "y": 0.0,
+        "y": 0,
         "z": 5.171
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.045,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.823,
@@ -679,13 +679,13 @@
       "name": "solarArray-dressing-region-10",
       "position": {
         "x": 17.836,
-        "y": 0.0,
+        "y": 0,
         "z": 5.201
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.272,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -714,13 +714,13 @@
       "name": "solarArray-dressing-region-11",
       "position": {
         "x": 18.106,
-        "y": 0.0,
+        "y": 0,
         "z": 4.17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.271,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -749,13 +749,13 @@
       "name": "solarArray-dressing-region-12",
       "position": {
         "x": 17.924,
-        "y": 0.0,
+        "y": 0,
         "z": 4.142
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.196,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -784,13 +784,13 @@
       "name": "solarArray-dressing-region-13",
       "position": {
         "x": 17.923,
-        "y": 0.0,
+        "y": 0,
         "z": 4.145
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.196,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -819,13 +819,13 @@
       "name": "solarArray-dressing-region-14",
       "position": {
         "x": 18.171,
-        "y": 0.0,
+        "y": 0,
         "z": 2.859
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.414,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -854,13 +854,13 @@
       "name": "solarArray-dressing-region-15",
       "position": {
         "x": 18.033,
-        "y": 0.0,
+        "y": 0,
         "z": 2.834
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.413,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.279,
@@ -888,19 +888,19 @@
       "model": "tilted-panel-field",
       "name": "Landmark tilted-panel-field EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -908,33 +908,55 @@
         "tilted-panel-field"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10,
+        "z": 12
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-lightning-mast",
       "model": "power_pylon",
       "name": "solarArray-lightning-mast EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 22.0
+        "x": 0,
+        "y": 0,
+        "z": 22
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -957,14 +979,14 @@
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15.0,
+        "x": 15,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -978,14 +1000,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "solarArray-module-2",
@@ -997,14 +1028,14 @@
         "z": 14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1013,14 +1044,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-module-3",
@@ -1032,14 +1075,14 @@
         "z": 8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1048,14 +1091,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-module-4",
@@ -1067,14 +1122,14 @@
         "z": -8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1083,14 +1138,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-module-5",
@@ -1102,9 +1169,9 @@
         "z": -14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1118,33 +1185,42 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "solarArray-panel-0-0",
       "model": "solar_panel",
       "name": "solarArray-panel-0-0 EDITABLE",
       "position": {
-        "x": -20.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": -20,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1154,33 +1230,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-0-1",
       "model": "solar_panel",
       "name": "solarArray-panel-0-1 EDITABLE",
       "position": {
-        "x": -20.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": -20,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1190,33 +1278,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-0-2",
       "model": "solar_panel",
       "name": "solarArray-panel-0-2 EDITABLE",
       "position": {
-        "x": -20.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": -20,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1226,33 +1326,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-1-0",
       "model": "solar_panel",
       "name": "solarArray-panel-1-0 EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": -10,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1262,33 +1374,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-1-1",
       "model": "solar_panel",
       "name": "solarArray-panel-1-1 EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": -10,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1298,33 +1422,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-1-2",
       "model": "solar_panel",
       "name": "solarArray-panel-1-2 EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": -10,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1334,33 +1470,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-2-0",
       "model": "solar_panel",
       "name": "solarArray-panel-2-0 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": 0,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1370,33 +1518,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-2-1",
       "model": "solar_panel",
       "name": "solarArray-panel-2-1 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1406,33 +1566,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-2-2",
       "model": "solar_panel",
       "name": "solarArray-panel-2-2 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": 0,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1442,33 +1614,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-3-0",
       "model": "solar_panel",
       "name": "solarArray-panel-3-0 EDITABLE",
       "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": 10,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1478,33 +1662,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-3-1",
       "model": "solar_panel",
       "name": "solarArray-panel-3-1 EDITABLE",
       "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 10,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1514,33 +1710,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-3-2",
       "model": "solar_panel",
       "name": "solarArray-panel-3-2 EDITABLE",
       "position": {
-        "x": 10.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": 10,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1550,33 +1758,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-4-0",
       "model": "solar_panel",
       "name": "solarArray-panel-4-0 EDITABLE",
       "position": {
-        "x": 20.0,
-        "y": 0.0,
-        "z": -10.0
+        "x": 20,
+        "y": 0,
+        "z": -10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1586,33 +1806,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-4-1",
       "model": "solar_panel",
       "name": "solarArray-panel-4-1 EDITABLE",
       "position": {
-        "x": 20.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 20,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1622,33 +1854,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-panel-4-2",
       "model": "solar_panel",
       "name": "solarArray-panel-4-2 EDITABLE",
       "position": {
-        "x": 20.0,
-        "y": 0.0,
-        "z": 10.0
+        "x": 20,
+        "y": 0,
+        "z": 10
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "resource",
@@ -1658,33 +1902,45 @@
         "glasslands"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 6,
+        "z": 2.856
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "solarArray-region-glass-0",
       "model": "fused_glass",
       "name": "solarArray-region-glass-0 EDITABLE",
       "position": {
-        "x": -27.0,
+        "x": -27,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1707,19 +1963,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-1 EDITABLE",
       "position": {
-        "x": -18.0,
+        "x": -18,
         "y": 0.02,
-        "z": 21.0
+        "z": 21
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1742,19 +1998,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-2 EDITABLE",
       "position": {
-        "x": -9.0,
+        "x": -9,
         "y": 0.02,
-        "z": 17.0
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1777,19 +2033,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-3 EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1812,19 +2068,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-4 EDITABLE",
       "position": {
-        "x": 9.0,
+        "x": 9,
         "y": 0.02,
-        "z": 21.0
+        "z": 21
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1847,19 +2103,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-5 EDITABLE",
       "position": {
-        "x": 18.0,
+        "x": 18,
         "y": 0.02,
-        "z": 17.0
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1882,19 +2138,19 @@
       "model": "fused_glass",
       "name": "solarArray-region-glass-6 EDITABLE",
       "position": {
-        "x": 27.0,
+        "x": 27,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1917,19 +2173,19 @@
       "model": "power_pylon",
       "name": "solarArray-region-leaning-pylon-0 EDITABLE",
       "position": {
-        "x": -22.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": -22,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 0.157
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1952,19 +2208,19 @@
       "model": "power_pylon",
       "name": "solarArray-region-leaning-pylon-1 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": 0,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 6.074
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1987,19 +2243,19 @@
       "model": "power_pylon",
       "name": "solarArray-region-leaning-pylon-2 EDITABLE",
       "position": {
-        "x": 22.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": 22,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 0.157
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -2022,26 +2278,26 @@
       "model": "utilityPole",
       "name": "Опора станции",
       "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": -8.0
+        "x": -9,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -2056,26 +2312,26 @@
       "model": "utilityPole",
       "name": "Опора станции",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -8.0
+        "x": 8,
+        "y": 0,
+        "z": -8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -2096,59 +2352,59 @@
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "solar-service-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "solarArray-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

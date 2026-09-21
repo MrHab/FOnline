@@ -343,6 +343,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &75753782
 GameObject:
   m_ObjectHideFlags: 0
@@ -534,10 +535,7 @@ Transform:
   m_Children:
   - {fileID: 834584341}
   - {fileID: 855810886}
-  - {fileID: 2021157026}
-  - {fileID: 1735926755}
   - {fileID: 1927158790}
-  - {fileID: 664634783}
   - {fileID: 2027743333}
   m_Father: {fileID: 222936647}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -996,6 +994,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &182271732
 GameObject:
   m_ObjectHideFlags: 0
@@ -1227,6 +1226,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &211707968
 GameObject:
   m_ObjectHideFlags: 0
@@ -1295,6 +1295,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &222936646
 GameObject:
   m_ObjectHideFlags: 0
@@ -1604,6 +1605,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &286709135
 GameObject:
   m_ObjectHideFlags: 0
@@ -1836,6 +1838,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &329369159
 GameObject:
   m_ObjectHideFlags: 0
@@ -1906,6 +1909,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &329369163
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2215,6 +2219,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &368485751
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2332,8 +2337,9 @@ MonoBehaviour:
   - industrial_site
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &400697183
 GameObject:
   m_ObjectHideFlags: 0
@@ -2402,6 +2408,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &428446691
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2521,6 +2528,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &466577224
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2640,6 +2648,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &539930881
 GameObject:
   m_ObjectHideFlags: 0
@@ -2712,6 +2721,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &558093005
 GameObject:
   m_ObjectHideFlags: 0
@@ -2780,6 +2790,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &562313551
 GameObject:
   m_ObjectHideFlags: 0
@@ -2930,6 +2941,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &591360560
 GameObject:
   m_ObjectHideFlags: 0
@@ -2999,6 +3011,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &600156152
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3118,115 +3131,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
---- !u!1001 &664634782
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 143905370}
-    m_Modifications:
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_relay_repair_bench
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 664634786}
-    - targetCorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 664634785}
-  m_SourcePrefab: {fileID: 100100000, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
---- !u!4 &664634783 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3037946672158911216, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-  m_PrefabInstance: {fileID: 664634782}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &664634784 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4889350359725746632, guid: 3081c035495a2b34b9356ddffbdf71d4, type: 3}
-  m_PrefabInstance: {fileID: 664634782}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &664634785
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664634784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: relay_repair_bench
---- !u!114 &664634786
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664634784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: relay_repair_bench
-  _serverArchetypeId: craftStationRepair
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - repair_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &748458769
 GameObject:
   m_ObjectHideFlags: 0
@@ -3408,6 +3313,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &822031970
 GameObject:
   m_ObjectHideFlags: 0
@@ -3638,8 +3544,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &846135976
 GameObject:
   m_ObjectHideFlags: 0
@@ -3708,6 +3615,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &846807475
 GameObject:
   m_ObjectHideFlags: 0
@@ -3924,8 +3832,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &863821648
 GameObject:
   m_ObjectHideFlags: 0
@@ -4108,6 +4017,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &912477204
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4467,6 +4377,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1056327962
 GameObject:
   m_ObjectHideFlags: 0
@@ -4698,6 +4609,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1098782938
 GameObject:
   m_ObjectHideFlags: 0
@@ -5102,6 +5014,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1158040064
 GameObject:
   m_ObjectHideFlags: 0
@@ -5173,6 +5086,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1202954560
 GameObject:
   m_ObjectHideFlags: 0
@@ -5372,6 +5286,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1305263929
 GameObject:
   m_ObjectHideFlags: 0
@@ -5667,6 +5582,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &1374559755
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5786,6 +5702,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1393220271
 GameObject:
   m_ObjectHideFlags: 0
@@ -6017,6 +5934,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1458597220
 GameObject:
   m_ObjectHideFlags: 0
@@ -6086,6 +6004,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1473359392
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6205,6 +6124,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1506850131
 GameObject:
   m_ObjectHideFlags: 0
@@ -6387,6 +6307,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1524428019
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6759,6 +6680,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1605193721
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6990,6 +6912,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1718478300
 GameObject:
   m_ObjectHideFlags: 0
@@ -7214,115 +7137,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1732042218}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1001 &1735926754
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 143905370}
-    m_Modifications:
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -8
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -6
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5508565233876511746, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_relay_energy_bench
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5508565233876511746, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1735926758}
-    - targetCorrespondingSourceObject: {fileID: 5508565233876511746, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1735926757}
-  m_SourcePrefab: {fileID: 100100000, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
---- !u!4 &1735926755 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 481070555971606104, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-  m_PrefabInstance: {fileID: 1735926754}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1735926756 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5508565233876511746, guid: 01f8c2113526d684e8a275e50d0905e2, type: 3}
-  m_PrefabInstance: {fileID: 1735926754}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1735926757
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1735926756}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: relay_energy_bench
---- !u!114 &1735926758
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1735926756}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: relay_energy_bench
-  _serverArchetypeId: craftStationEnergy
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - energy_bench
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
 --- !u!1 &1735987609
 GameObject:
   m_ObjectHideFlags: 0
@@ -7780,6 +7594,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1854732293
 GameObject:
   m_ObjectHideFlags: 0
@@ -8011,6 +7826,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1897120860
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8130,6 +7946,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1927158789
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8234,8 +8051,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1929550812
 GameObject:
   m_ObjectHideFlags: 0
@@ -8306,6 +8124,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1929550816
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8475,6 +8294,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!65 &1961072234
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8587,6 +8407,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1992518637
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8706,6 +8527,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &2016987787
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8825,115 +8647,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
---- !u!1001 &2021157025
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 143905370}
-    m_Modifications:
-    - target: {fileID: 2414787991913208817, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_Name
-      value: Gameplay_relay_chem_station
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2414787991913208817, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2021157029}
-    - targetCorrespondingSourceObject: {fileID: 2414787991913208817, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2021157028}
-  m_SourcePrefab: {fileID: 100100000, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
---- !u!4 &2021157026 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3121042144869512525, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-  m_PrefabInstance: {fileID: 2021157025}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &2021157027 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2414787991913208817, guid: 02fb7182c80273949af5e380cd81a187, type: 3}
-  m_PrefabInstance: {fileID: 2021157025}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2021157028
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2021157027}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
-  _objectId: relay_chem_station
---- !u!114 &2021157029
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2021157027}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
-  _stableObjectId: relay_chem_station
-  _serverArchetypeId: craftStationChem
-  _role: craftingStation
-  _gameplayTags:
-  - cover
-  - workshop
-  - crafting-station
-  - chem_station
-  _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &2027743332
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9042,6 +8756,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2049869799
 GameObject:
   m_ObjectHideFlags: 0
@@ -9207,6 +8922,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2118976761
 GameObject:
   m_ObjectHideFlags: 0
@@ -9278,6 +8994,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

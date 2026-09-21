@@ -37,10 +37,7 @@ curl -fsS -H 'Accept-Encoding: gzip' -D - -o /dev/null https://rangir.ru/api/was
 `Content-Encoding: gzip`; большой снимок мира больше не должен передаваться как
 несжатый JSON.
 
-Snippet также возвращает `404` для `/api/dev/*`,
-`/dev-location-editor.html` и `/dev-global-map-editor.html`, включая варианты
-регистра и URL-кодирования API/имени файла. Production не должен публиковать
-редакторы через общий API или статический `location`.
+Snippet также возвращает `404` для `/api/dev/*`, включая варианты регистра.
 
 ## Нагрузка фоновой симуляции
 

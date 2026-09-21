@@ -70,20 +70,23 @@ const eyebrowForwardZ = averagePositionZ(characterGlb, 'mesh_character_male_medi
 assert(eyeForwardZ > 0.05 && eyebrowForwardZ > 0.05,
   `character facial geometry no longer proves +Z forward: eyes=${eyeForwardZ}, brows=${eyebrowForwardZ}`);
 
+// Server and Unity share one frame (RoaCoords: identity, north = +Z), so a server
+// angle is the Unity yaw itself.
 const unityCoords = fs.readFileSync(UNITY_COORDS_FILE, 'utf8');
 [
   'public const float ModelYawOffsetDeg = 0f;',
-  '=> 180f - serverAngleRad * Mathf.Rad2Deg + ModelYawOffsetDeg;',
-  '=> (180f - (unityYawDeg - ModelYawOffsetDeg)) * Mathf.Deg2Rad;'
+  '=> new Vector3(serverX, serverY, serverZ);',
+  '=> serverAngleRad * Mathf.Rad2Deg + ModelYawOffsetDeg;',
+  '=> (unityYawDeg - ModelYawOffsetDeg) * Mathf.Deg2Rad;'
 ].forEach(marker => assert(unityCoords.includes(marker), `Unity character facing contract is missing: ${marker}`));
 
 for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-  const unityYaw = Math.PI - angle;
+  const unityYaw = angle;
   const renderedForward = { x: Math.sin(unityYaw), z: Math.cos(unityYaw) };
-  const convertedServerForward = { x: Math.sin(angle), z: -Math.cos(angle) };
-  const dot = renderedForward.x * convertedServerForward.x + renderedForward.z * convertedServerForward.z;
+  const serverForward = { x: Math.sin(angle), z: Math.cos(angle) };
+  const dot = renderedForward.x * serverForward.x + renderedForward.z * serverForward.z;
   assert(dot > 0.999999, `Unity player faces backward for server angle ${angle}`);
-  const roundTrip = Math.PI - unityYaw;
+  const roundTrip = unityYaw;
   assert(Math.abs(roundTrip - angle) < 1e-12, `Unity yaw round-trip drifted for ${angle}`);
 }
 
@@ -92,8 +95,8 @@ assert.deepStrictEqual(MODEL_FORWARD_AXIS_BY_KEY, EXPECTED_ACTOR_MODELS, 'actor 
 const directions = [
   { dx: 1, dz: 0, label: 'east' },
   { dx: -1, dz: 0, label: 'west' },
-  { dx: 0, dz: 1, label: 'south' },
-  { dx: 0, dz: -1, label: 'north' }
+  { dx: 0, dz: 1, label: 'north' },
+  { dx: 0, dz: -1, label: 'south' }
 ];
 
 for (const [modelKey, forwardAxis] of Object.entries(EXPECTED_ACTOR_MODELS)) {

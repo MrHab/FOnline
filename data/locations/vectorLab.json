@@ -25,18 +25,18 @@
   },
   "spawn": {
     "tx": 18,
-    "tz": 7,
+    "tz": 4,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -28.0,
     "rotationY": 0.0
   },
   "entryFromWorld": {
     "tx": 18,
-    "tz": 7,
+    "tz": 4,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -28.0,
     "rotationY": 0.0
   },
   "containers": [
@@ -405,14 +405,56 @@
         "story"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 28.0,
+        "z": 28.35
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 9.0,
+            "z": 28.0
+          }
+        },
+        {
+          "center": {
+            "x": -9.0,
+            "z": 3.0
+          },
+          "size": {
+            "x": 10.0,
+            "z": 9.0
+          }
+        },
+        {
+          "center": {
+            "x": 9.0,
+            "z": -5.0
+          },
+          "size": {
+            "x": 10.0,
+            "z": 9.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -14.0
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.7
+          }
+        }
+      ]
     },
     {
       "id": "vectorLab-dressing-functional-01",
@@ -1139,14 +1181,36 @@
         "impossible-lattice"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "vectorLab-lattice",
@@ -1167,7 +1231,7 @@
         "y": 1.0,
         "z": 1.0
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "vector",
@@ -1210,14 +1274,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "vectorLab-module-2",
@@ -1245,14 +1318,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "vectorLab-module-3",
@@ -1280,14 +1365,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "vectorLab-module-4",
@@ -1315,14 +1412,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "vectorLab-module-5",
@@ -1350,14 +1459,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "vectorLab-region-glass-0",
@@ -1840,34 +1958,34 @@
   "unityScene": "Assets/Scenes/Kromka/Locations/vectorLab.unity",
   "respawn": {
     "tx": 18,
-    "tz": 7,
+    "tz": 4,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -28.0,
     "rotationY": 0.0
   },
   "entry": {
     "tx": 18,
-    "tz": 7,
+    "tz": 4,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -28.0,
     "rotationY": 0.0
   },
   "entryFromWasteland": {
     "tx": 18,
-    "tz": 7,
+    "tz": 4,
     "x": 0.0,
     "y": 0.1,
-    "z": -22.0,
+    "z": -28.0,
     "rotationY": 0.0
   },
   "migrationArrival": {
     "tx": 16,
-    "tz": 8,
+    "tz": 3,
     "x": -4.0,
     "y": 0.1,
-    "z": -19.0,
+    "z": -29.0,
     "rotationY": 0.0
   },
   "unitySpawns": [
@@ -1879,7 +1997,7 @@
       "position": {
         "x": -4.0,
         "y": 0.1,
-        "z": -19.0
+        "z": -29.0
       },
       "rotationY": 0.0
     },
@@ -1891,7 +2009,7 @@
       "position": {
         "x": 0.0,
         "y": 0.1,
-        "z": -22.0
+        "z": -28.0
       },
       "rotationY": 0.0
     }

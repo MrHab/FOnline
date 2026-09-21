@@ -2734,8 +2734,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &750053236
 GameObject:
   m_ObjectHideFlags: 0
@@ -4186,8 +4187,9 @@ MonoBehaviour:
   - resource
   - ore
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1125543256
 GameObject:
   m_ObjectHideFlags: 0
@@ -5341,8 +5343,9 @@ MonoBehaviour:
   - resource
   - ore
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1558029987
 PrefabInstance:
   m_ObjectHideFlags: 0

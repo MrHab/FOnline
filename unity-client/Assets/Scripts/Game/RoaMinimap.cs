@@ -256,16 +256,11 @@ namespace RealmOfAshes.Game
             GUI.Label(new Rect(x, panel.y + 5f, size, 20f), string.IsNullOrEmpty(LocationName) ? "Карта" : LocationName);
             var mapRect = new Rect(x, panel.y + 26f, size, size);
 
-            // Мир Unity зеркалит ось Z относительно серверной (ToUnity: z → −z),
-            // а миникарта строится в серверных тайлах, поэтому без разворота она
-            // выглядит перевёрнутой вверх ногами относительно 3D-вида. Отражаем
-            // карту по вертикали, чтобы верх миникарты совпадал с «от игрока».
-            Matrix4x4 previousMatrix = GUI.matrix;
-            GUIUtility.ScaleAroundPivot(new Vector2(1f, -1f), mapRect.center);
+            // Север (+Z) сверху: верхний ряд текстуры — старший tz, а у IMGUI ось Y
+            // смотрит вниз, поэтому маркеры ставятся от нижнего края (1 − y).
             GUI.DrawTexture(mapRect, _staticTexture, ScaleMode.StretchToFill, false);
             DrawGrid(mapRect);
             for (int i = 0; i < _markers.Count; i++) DrawMarker(mapRect, _markers[i]);
-            GUI.matrix = previousMatrix;
 
             DrawPlayer(mapRect);
 
@@ -321,12 +316,11 @@ namespace RealmOfAshes.Game
             Vector2 p = WorldToMapNormalized(Player.transform.position);
             if (p.x < 0f || p.y < 0f || p.x > 1f || p.y > 1f) return;
             EnsureArrowTexture();
-            // Карта отражена по вертикали (см. OnGUI), поэтому маркер игрока
-            // рисуем с зеркальной координатой Y и зеркальным углом курса.
+            // Ось Y IMGUI смотрит вниз: север (+Z) сверху, поворот по часовой = курс.
             Vector2 center = new Vector2(rect.x + p.x * rect.width,
                 rect.y + (1f - p.y) * rect.height);
             Matrix4x4 previous = GUI.matrix;
-            GUIUtility.RotateAroundPivot(-Player.transform.eulerAngles.y, center);
+            GUIUtility.RotateAroundPivot(Player.transform.eulerAngles.y, center);
             GUI.DrawTexture(new Rect(center.x - 5f, center.y - 7f, 10f, 14f), _arrowTexture);
             GUI.matrix = previous;
         }
@@ -334,7 +328,7 @@ namespace RealmOfAshes.Game
         private static Rect CenteredRect(Rect rect, Vector2 normalized, float size)
         {
             float x = rect.x + normalized.x * rect.width;
-            float y = rect.y + normalized.y * rect.height;
+            float y = rect.y + (1f - normalized.y) * rect.height;
             return new Rect(x - size * 0.5f, y - size * 0.5f, size, size);
         }
 
@@ -360,12 +354,17 @@ namespace RealmOfAshes.Game
                     if (entry == null || entry.Position == null || entry.IsLiveEntity()) continue;
                     Color32 color;
                     if (!TryFeatureColor(entry, out color)) continue;
+                    StaticFeatureCount++;
+                    // Здание сцены Кромки рисуется своими стенами, а не заливкой размаха.
+                    Color32 partColor = color;
+                    if (RoaCollisionParts.ForEachTile(entry, MapWidth, MapDepth,
+                            (x, z) => pixels[z * MapWidth + x] = partColor))
+                        continue;
                     Vector3 world = RoaCoords.ToUnity(entry.Position.X, entry.Position.Y, entry.Position.Z);
                     RoaCoords.WorldToTile(world, MapWidth, MapDepth, out int tx, out int tz);
                     int width = FootprintTiles(entry, true);
                     int depth = FootprintTiles(entry, false);
                     PaintFeature(pixels, tx, tz, width, depth, color);
-                    StaticFeatureCount++;
                 }
             }
 
@@ -387,8 +386,7 @@ namespace RealmOfAshes.Game
                 int edge = Mathf.Min(Mathf.Min(tx, MapWidth - 1 - tx),
                     Mathf.Min(tz, MapDepth - 1 - tz));
                 if (edge >= band) continue;
-                int pixelY = MapDepth - 1 - tz;
-                int index = pixelY * MapWidth + tx;
+                int index = tz * MapWidth + tx;
                 float strength = edge == 0 ? 0.82f : 0.48f;
                 pixels[index] = Color32.Lerp(pixels[index], gold, strength);
             }
@@ -420,8 +418,7 @@ namespace RealmOfAshes.Game
                         case 9: color = new Color32(72, 55, 39, 255); break;
                         default: continue;
                     }
-                    int pixelY = MapDepth - 1 - tz;
-                    pixels[pixelY * MapWidth + tx] = color;
+                    pixels[tz * MapWidth + tx] = color;
                 }
             }
         }
@@ -434,7 +431,7 @@ namespace RealmOfAshes.Game
             {
                 int tileZ = minZ + z;
                 if (tileZ < 0 || tileZ >= MapDepth) continue;
-                int pixelY = MapDepth - 1 - tileZ;
+                int pixelY = tileZ;
                 for (int x = 0; x < width; x++)
                 {
                     int tileX = minX + x;

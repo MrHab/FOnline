@@ -495,6 +495,7 @@ Transform:
   - {fileID: 740861768}
   - {fileID: 1594975194}
   - {fileID: 2050281532}
+  - {fileID: 459209833}
   m_Father: {fileID: 1142052005}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &121544271
@@ -566,6 +567,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &147925028
 GameObject:
   m_ObjectHideFlags: 0
@@ -862,6 +864,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &160121881
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1141,6 +1144,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!65 &250459054
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1381,6 +1385,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &328093143
 GameObject:
   m_ObjectHideFlags: 0
@@ -1429,6 +1434,246 @@ MonoBehaviour:
   _kind: 4
   _targetLocationId: 
   _radius: 0.8
+--- !u!1001 &345724479
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8914367
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8914367
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8914367
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.728794
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18.50825
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.99823904
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.05931947
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 345724483}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 345724482}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &345724480 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 345724479}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &345724481 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 345724479}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &345724482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345724481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-18
+--- !u!114 &345724483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345724481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-18
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &360088303
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9036354
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9036354
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9036354
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 12.447236
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -28.295172
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.27094886
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.96259373
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 360088307}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 360088306}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &360088304 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 360088303}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &360088305 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 360088303}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &360088306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 360088305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-01
+--- !u!114 &360088307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 360088305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-01
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &396506167
 GameObject:
   m_ObjectHideFlags: 0
@@ -1643,6 +1888,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &422346968
 GameObject:
   m_ObjectHideFlags: 0
@@ -1711,6 +1957,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!114 &422346972
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1840,6 +2087,363 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 424964461}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &459209832
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 112133765}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_vent_shaft
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 459209836}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 459209835}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &459209833 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 459209832}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &459209834 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 459209832}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &459209835
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 459209834}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: vent_shaft
+--- !u!114 &459209836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 459209834}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: vent_shaft
+  _serverArchetypeId: cargoStack
+  _role: scenery
+  _gameplayTags:
+  - lab
+  - lab-door
+  - bio
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &486386468
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-14
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.89139247
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.89139247
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.89139247
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5.4931464
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.154602
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9473111
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.32031494
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 486386472}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 486386471}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &486386469 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 486386468}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &486386470 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 486386468}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &486386471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 486386470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-14
+--- !u!114 &486386472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 486386470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-14
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &495013938
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8913483
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8913483
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8913483
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -7.4587
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -28.378632
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.92437094
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.38149497
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 495013942}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 495013941}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &495013939 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 495013938}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &495013940 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 495013938}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &495013941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 495013940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-10
+--- !u!114 &495013942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 495013940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-10
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &545851025
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1955,6 +2559,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &601613600
 GameObject:
   m_ObjectHideFlags: 0
@@ -2067,6 +2672,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 601613600}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &637828128
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90361327
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90361327
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90361327
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -22.842981
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -15.325886
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.6228014
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7823799
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-03
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 637828132}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 637828131}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &637828129 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 637828128}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &637828130 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 637828128}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &637828131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 637828130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-03
+--- !u!114 &637828132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 637828130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-03
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &642541879
 GameObject:
   m_ObjectHideFlags: 0
@@ -2137,6 +2862,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &642541883
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2334,6 +3060,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &680657942
 GameObject:
   m_ObjectHideFlags: 0
@@ -2446,6 +3173,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 680657942}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &700374073
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-06
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9036685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9036685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9036685
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -14.023336
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -25.044407
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.20267993
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.97924507
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700374077}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700374076}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &700374074 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 700374073}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &700374075 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 700374073}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &700374076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700374075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-06
+--- !u!114 &700374077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700374075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-06
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &740861767
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2566,6 +3413,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &741204783
 GameObject:
   m_ObjectHideFlags: 0
@@ -2602,6 +3450,126 @@ Transform:
   - {fileID: 328093144}
   m_Father: {fileID: 1424850243}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &771555480
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.89138144
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.89138144
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.89138144
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.8578024
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.41918
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.70448154
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.70972234
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-17
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 771555484}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 771555483}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &771555481 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 771555480}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &771555482 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 771555480}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &771555483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771555482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-17
+--- !u!114 &771555484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771555482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-17
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &774549304
 GameObject:
   m_ObjectHideFlags: 0
@@ -2829,6 +3797,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &824766838
 GameObject:
   m_ObjectHideFlags: 0
@@ -2877,6 +3846,126 @@ MonoBehaviour:
   _kind: 0
   _targetLocationId: 
   _radius: 2
+--- !u!1001 &832286882
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90367955
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90367955
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90367955
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -10.512096
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -27.244074
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.88482153
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.46593013
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-05
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 832286886}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 832286885}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &832286883 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 832286882}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &832286884 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 832286882}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &832286885
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832286884}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-05
+--- !u!114 &832286886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832286884}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-05
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &909186965
 GameObject:
   m_ObjectHideFlags: 0
@@ -3041,6 +4130,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &976525831
 GameObject:
   m_ObjectHideFlags: 0
@@ -3153,6 +4243,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 976525831}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1042881294
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.90365744
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.90365744
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.90365744
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 8.717941
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.466843
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.24389654
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.96980125
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-07
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1042881298}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1042881297}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1042881295 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1042881294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1042881296 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1042881294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1042881297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1042881296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-07
+--- !u!114 &1042881298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1042881296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-07
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1046075000
 GameObject:
   m_ObjectHideFlags: 0
@@ -3224,6 +4434,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1108853661
 GameObject:
   m_ObjectHideFlags: 0
@@ -3538,6 +4749,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1167104139}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1209664744
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9035469
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9035469
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9035469
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 15.895624
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 11.152314
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.54892975
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8358685
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-09
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1209664748}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1209664747}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1209664745 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1209664744}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1209664746 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1209664744}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1209664747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1209664746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-09
+--- !u!114 &1209664748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1209664746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-09
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1232244568
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3653,6 +4984,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1247764318
 GameObject:
   m_ObjectHideFlags: 0
@@ -3791,7 +5123,7 @@ Transform:
   m_GameObject: {fileID: 1265007563}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 14}
+  m_LocalPosition: {x: -1.25, y: 0, z: 15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4107,6 +5439,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1310890360
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4325,7 +5658,26 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 360088304}
+  - {fileID: 2030318542}
+  - {fileID: 637828129}
+  - {fileID: 1350822998}
+  - {fileID: 832286883}
+  - {fileID: 700374074}
+  - {fileID: 1042881295}
+  - {fileID: 1906445176}
+  - {fileID: 1209664745}
+  - {fileID: 495013939}
+  - {fileID: 1825862152}
+  - {fileID: 2012860172}
+  - {fileID: 1497469412}
+  - {fileID: 486386469}
+  - {fileID: 1385768423}
+  - {fileID: 2093636484}
+  - {fileID: 771555481}
+  - {fileID: 345724480}
+  - {fileID: 1511955553}
   m_Father: {fileID: 1142052005}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1338854129
@@ -4396,6 +5748,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!114 &1338854133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4413,6 +5766,246 @@ MonoBehaviour:
   _radius: 3.2
   _dischargeMilliseconds: 5000
   _trainingField: 0
+--- !u!1001 &1350822997
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-04
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9036906
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9036906
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9036906
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.2015886
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 20.734678
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.8052755
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5929008
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350823001}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350823000}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1350822998 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1350822997}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1350822999 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1350822997}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1350823000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350822999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-04
+--- !u!114 &1350823001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350822999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-04
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &1385768422
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.89140356
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.89140356
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.89140356
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.30535
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.785978
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.11722061
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.99310595
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-15
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1385768426}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1385768425}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1385768423 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1385768422}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1385768424 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1385768422}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1385768425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385768424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-15
+--- !u!114 &1385768426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385768424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-15
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1419512128
 GameObject:
   m_ObjectHideFlags: 0
@@ -4643,6 +6236,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1001 &1481318761
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4758,6 +6352,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1485761735
 GameObject:
   m_ObjectHideFlags: 0
@@ -4838,6 +6433,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1488103145
 GameObject:
   m_ObjectHideFlags: 0
@@ -5047,6 +6643,246 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!1001 &1497469411
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8913373
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8913373
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8913373
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 14.692261
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 13.401355
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.49317202
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.8699319
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-13
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1497469415}
+    - targetCorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1497469414}
+  m_SourcePrefab: {fileID: 100100000, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+--- !u!4 &1497469412 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1838612198019043029, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1497469411}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1497469413 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4192729490432350027, guid: 43c92db0e53a8e0489d744e981758958, type: 3}
+  m_PrefabInstance: {fileID: 1497469411}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1497469414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497469413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-13
+--- !u!114 &1497469415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497469413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-13
+  _serverArchetypeId: cargo_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
+--- !u!1001 &1511955552
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8914477
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8914477
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8914477
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -24.32404
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -12.113745
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.84764373
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5305658
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-19
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1511955556}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1511955555}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1511955553 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1511955552}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1511955554 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1511955552}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1511955555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1511955554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-19
+--- !u!114 &1511955556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1511955554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-19
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1520330177
 GameObject:
   m_ObjectHideFlags: 0
@@ -5341,6 +7177,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &1537828012
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5653,6 +7490,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1636901608
 GameObject:
   m_ObjectHideFlags: 0
@@ -6055,6 +7893,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1811403742}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1825862151
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8913593
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8913593
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8913593
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 6.999364
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -29.631882
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.18241838
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.98322105
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-11
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1825862155}
+    - targetCorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1825862154}
+  m_SourcePrefab: {fileID: 100100000, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+--- !u!4 &1825862152 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3358737611902256472, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1825862151}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1825862153 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6307159383041580832, guid: fcb53f857cb27cd4b8ff18dbdcefb280, type: 3}
+  m_PrefabInstance: {fileID: 1825862151}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1825862154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825862153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-11
+--- !u!114 &1825862155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825862153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-11
+  _serverArchetypeId: tire_stack
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1001 &1842043003
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6170,6 +8128,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
+--- !u!1001 &1906445175
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-08
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.903558
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.903558
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.903558
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3.586205
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 20.794245
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.84129804
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5405716
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1906445179}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1906445178}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &1906445176 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1906445175}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1906445177 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 1906445175}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1906445178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1906445177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-08
+--- !u!114 &1906445179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1906445177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-08
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1909038298
 GameObject:
   m_ObjectHideFlags: 0
@@ -6561,6 +8640,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &1972425898
 GameObject:
   m_ObjectHideFlags: 0
@@ -6673,6 +8753,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1972425898}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &2012860171
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-12
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8913262
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8913262
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8913262
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.8864574
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -21.796976
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.26629052
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9638928
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2012860175}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2012860174}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &2012860172 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 2012860171}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2012860173 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 2012860171}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2012860174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012860173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-12
+--- !u!114 &2012860175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012860173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-12
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2021843981
 GameObject:
   m_ObjectHideFlags: 0
@@ -6785,6 +8985,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2021843981}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &2030318541
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-02
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9036243
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9036243
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9036243
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -28.267302
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6.7492604
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.87242955
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.48873994
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2030318545}
+    - targetCorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2030318544}
+  m_SourcePrefab: {fileID: 100100000, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+--- !u!4 &2030318542 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2654366801944408821, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 2030318541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2030318543 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 258296747975023854, guid: f7ede2f414a4d674eab62559eb4432cc, type: 3}
+  m_PrefabInstance: {fileID: 2030318541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2030318544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030318543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-02
+--- !u!114 &2030318545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030318543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-02
+  _serverArchetypeId: utility_pole
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2034735068
 GameObject:
   m_ObjectHideFlags: 0
@@ -7245,6 +9565,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 1
+  _lowCover: 0
 --- !u!1 &2051930738
 GameObject:
   m_ObjectHideFlags: 0
@@ -7315,6 +9636,7 @@ MonoBehaviour:
   _serverAuthoritative: 0
   _blocksMovement: 1
   _blocksVision: 1
+  _lowCover: 0
 --- !u!23 &2051930742
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7619,6 +9941,126 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2066670045}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &2093636483
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1316493033}
+    m_Modifications:
+    - target: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_Name
+      value: coreLabSprout-dressing-region-16
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8913704
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8913704
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8913704
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -21.033144
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -18.19845
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.2913433
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.95661855
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2093636487}
+    - targetCorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2093636486}
+  m_SourcePrefab: {fileID: 100100000, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+--- !u!4 &2093636484 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5743818840572736088, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 2093636483}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2093636485 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 59230676337642522, guid: fda2b2e8060f1d744bc0f5829b8bbd6c, type: 3}
+  m_PrefabInstance: {fileID: 2093636483}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2093636486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093636485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: coreLabSprout-dressing-region-16
+--- !u!114 &2093636487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093636485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: coreLabSprout-dressing-region-16
+  _serverArchetypeId: perimeter_debris
+  _role: scenery
+  _gameplayTags:
+  - off_map
+  - regional-dressing
+  _serverAuthoritative: 0
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &2134227966
 GameObject:
   m_ObjectHideFlags: 0

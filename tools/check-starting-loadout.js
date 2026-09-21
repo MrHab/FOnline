@@ -8,10 +8,10 @@ const {
   QUICK_START_SKILLS,
   QUICK_START_TRAITS,
   isQuickStartBuild,
-  buildStartingLoadout,
   buildTutorialStartingLoadout,
   buildTutorialSupplies
 } = require('../src/server/starting-loadout');
+const startTraits = require('../data/kromka/character-progression.json').startTraits.items;
 
 const root = path.resolve(__dirname, '..');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -31,39 +31,6 @@ assert.strictEqual(isQuickStartBuild({ ...quick, taggedSkills: ['lightWeapons', 
 assert.strictEqual(isQuickStartBuild({ ...quick, traits: [...quick.traits, 'traderStart'] }), false,
   'A payload with an added trait received the quick-start loadout');
 
-const loadout = buildStartingLoadout(quick, 123456);
-const items = Object.fromEntries(loadout.inventory.map(row => [row.id, row.qty]));
-assert.strictEqual(loadout.quickStart, true);
-assert.strictEqual(loadout.equipment.weapon, 'pistol', 'Quick start does not equip its intended pistol');
-assert.strictEqual(items.pistol, 1, 'Quick start did not receive exactly one pistol');
-assert.strictEqual(items.ammo9, 18, 'Quick start did not receive its authored 18 rounds');
-assert.strictEqual(items.knife, 1, 'Quick start lost the universal backup knife');
-assert.strictEqual(items.scrap, 5, 'Scavenger quick start lost tutorial or trait scrap');
-assert.strictEqual(items.medkit, 1, 'Mercenary preparation requires one first-aid kit');
-assert.strictEqual(items.food, 1, 'Mercenary preparation requires one dry ration');
-assert.strictEqual(items.leather, 1, 'Mercenary preparation requires basic clothing');
-assert.strictEqual(items.boots, 1, 'Mercenary preparation requires basic footwear');
-assert.strictEqual(loadout.equipment.armor, 'leather');
-assert.strictEqual(loadout.equipment.boots, 'boots');
-assert.deepStrictEqual(loadout.itemRuntime.pistol, {
-  baseId: 'pistol', loaded: 1, condition: 100, weaponMods: {}, createdAt: 123456
-}, 'Quick-start pistol does not begin loaded and in full condition');
-
-const custom = buildStartingLoadout({
-  special: quick.special,
-  taggedSkills: ['melee', 'repair'],
-  traits: ['craftsmanStart']
-}, 99);
-const customItems = Object.fromEntries(custom.inventory.map(row => [row.id, row.qty]));
-assert.strictEqual(custom.quickStart, false);
-assert.strictEqual(custom.equipment.weapon, 'fists', 'Custom character was force-equipped with a firearm');
-assert.strictEqual(customItems.pistol, undefined, 'Custom character received a bonus quick-start pistol');
-assert.strictEqual(customItems.ammo9, undefined, 'Custom character received bonus quick-start ammunition');
-assert.strictEqual(customItems.scrap, 2, 'Custom mercenary lost tutorial repair material');
-assert.strictEqual(customItems.pickaxe, 1);
-assert.strictEqual(customItems.axe, 1);
-assert.deepStrictEqual(custom.itemRuntime, {});
-
 assert(unityCreator.includes('JObject preset = catalog["quickStarts"]?.First as JObject;')
   && unityCreator.includes('QuickStartSpecial.Clear();')
   && unityCreator.includes('QuickStartSkills = StringArray(preset["taggedSkills"] as JArray);')
@@ -82,11 +49,21 @@ assert.deepStrictEqual(empty.inventory, []);
 assert.deepStrictEqual(empty.itemRuntime, {});
 assert.equal(empty.equipment.weapon, 'fists');
 assert(Object.entries(empty.equipment).every(([slot, id]) => slot === 'weapon' || !id));
-for (const build of [quick, { traits: [], taggedSkills: ['melee'] }]) {
-  const supplies = Object.fromEntries(buildTutorialSupplies(build).map(row => [row.id, row.qty]));
-  for (const id of ['pistol', 'leather', 'boots', 'pickaxe', 'axe']) assert.equal(supplies[id], 1);
-  assert.equal(supplies.ammo9, 24);
-  assert.equal(supplies.medkit, 2);
-  assert.equal(supplies.scrap, undefined);
+
+// The crate is the whole start, and it holds the same rows for every build: the
+// quick start, a custom melee build, and each start trait. The trader's marks
+// are the only difference, so a trait card may promise nothing else "на старте".
+const crate = build => Object.fromEntries(buildTutorialSupplies(build).map(row => [row.id, row.qty]));
+const standard = {
+  knife: 1, water: 1, food: 1, medkit: 2, leather: 1, boots: 1, silver: 6,
+  pistol: 1, ammo9: 24, pickaxe: 1, axe: 1
+};
+const builds = [quick, { traits: [], taggedSkills: ['melee'] }, { ...quick, traits: ['craftsmanStart', 'scavengerStart'] }];
+for (const build of builds) {
+  assert.deepStrictEqual(crate(build), standard, `The supply crate differs for traits ${JSON.stringify(build.traits)}`);
 }
-console.log('Starting loadout OK: empty tutorial start; all builds collect their practical equipment from the crate');
+for (const { id } of startTraits) {
+  assert.deepStrictEqual(crate({ traits: [id] }), id === 'traderStart' ? { ...standard, silver: 18 } : standard,
+    `Start trait ${id} changes the supply crate: say so on its card and pin the difference here`);
+}
+console.log('Starting loadout OK: empty tutorial start; every build and start trait collects the same crate, only the trader\'s marks differ');

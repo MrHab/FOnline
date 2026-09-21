@@ -3,7 +3,7 @@ const path = require('path');
 const { normalizeItemCatalog, itemCatalogIndexes } = require('../src/server/kromka-items');
 const { loadWorldEconomy } = require('../src/server/world-economy');
 const { harvestBonusChance } = require('../src/server/harvest-bonus');
-const { buildStartingLoadout } = require('../src/server/starting-loadout');
+const { buildTutorialSupplies } = require('../src/server/starting-loadout');
 
 const root = path.resolve(__dirname, '..');
 const progressionCatalog = JSON.parse(fs.readFileSync(
@@ -267,13 +267,16 @@ for (const id of tradeItemIds) {
   }
 }
 
+// «На старте» значит одно: набор снабжения. Новый персонаж появляется с пустыми
+// руками и получает вещи только из buildTutorialSupplies — этот список выдают и
+// ящик Сборного двора, и пропуск обучения. Черта меняет старт ровно настолько,
+// насколько набор с ней отличается от набора без неё.
+const startingSupplies = traits => Object.fromEntries(buildTutorialSupplies({ traits }).map(row => [row.id, row.qty]));
+
 // «Барыга»: описание называет ровно то, что делает сервер, — как «Падальщик» в
 // check-loot-perks.js. Надбавка — разница настоящих цен скупки с чертой и без неё,
-// марки — разница настоящих наборов снабжения: новый персонаж получает вещи только
-// из buildTutorialSupplies (ящик Сборного двора или пропуск обучения), а
-// buildStartingLoadout сервер сам не зовёт.
+// марки — разница настоящих наборов снабжения.
 {
-  const { buildTutorialSupplies } = require('../src/server/starting-loadout');
   const text = progressionCatalog.startTraits.items.find(row => row.id === 'traderStart').description;
   const indifferent = { stock: [], buyInterests: [], refusedCategories };
   const sells = (prices, id, traderTrait) => prices.serverTradeSellPrice(id, indifferent, { ...novice, traderTrait });
@@ -293,9 +296,8 @@ for (const id of tradeItemIds) {
       fail(`traderStart promises +${sellPct}% to the sell price, but a novice sells ${id} for ${plain} without the trait and for ${plain + gain} with it`);
     }
   }
-  const supplies = traits => Object.fromEntries(buildTutorialSupplies({ traits }).map(row => [row.id, row.qty]));
-  const withTrait = supplies(['traderStart']);
-  const without = supplies([]);
+  const withTrait = startingSupplies(['traderStart']);
+  const without = startingSupplies([]);
   const extra = id => Number(withTrait[id] || 0) - Number(without[id] || 0);
   const marks = extra('silver');
   if (!(marks > 0) || !new RegExp(`\\+${marks} мар(?:ка|ки|ок) на старте`).test(text)) {
@@ -359,16 +361,16 @@ for (const [source, build, expected] of [
 
 // «Ремесленник»: описание называет ровно то, что делает сервер, — как «Падальщик»
 // в check-loot-perks.js. Прибавка — разница настоящего шанса с чертой и без неё,
-// стартовые предметы — разница настоящих наборов нового персонажа.
+// стартовые предметы — разница настоящих наборов снабжения. Кирку и топор набор
+// выдаёт каждому, так что преимуществом черты они не считаются.
 {
   const text = progressionCatalog.startTraits.items.find(row => row.id === 'craftsmanStart').description;
   const points = gatherGain({ traits: ['craftsmanStart'] });
   if (!(points > 0) || !text.includes(`+${String(points).replace('.', ',')} п.п.`)) {
     fail(`craftsmanStart adds +${points} p.p. to the chance of an extra gathered resource and must say so: ${text}`);
   }
-  const startingItems = traits => Object.fromEntries(buildStartingLoadout({ traits }).inventory.map(row => [row.id, row.qty]));
-  const withTrait = startingItems(['craftsmanStart']);
-  const without = startingItems([]);
+  const withTrait = startingSupplies(['craftsmanStart']);
+  const without = startingSupplies([]);
   const extra = id => Number(withTrait[id] || 0) - Number(without[id] || 0);
   const numbers = (text.match(/\d+(?:[.,]\d+)?/g) || []).map(number => Number(number.replace(',', '.')));
   for (const [id, item] of Object.entries(itemIndexes.byId)) {
@@ -378,7 +380,13 @@ for (const [source, build, expected] of [
     if (extra(id) > 0 && (!named || (extra(id) > 1 && !numbers.includes(extra(id))))) {
       fail(`craftsmanStart starts with ${extra(id)} extra ${id} («${item.name}») and must say so: ${text}`);
     }
-    if (named && extra(id) <= 0) fail(`craftsmanStart promises «${item.name}», but the starting loadout has no extra ${id}: ${text}`);
+    if (named && extra(id) <= 0) fail(`craftsmanStart promises «${item.name}», but the starting supplies have no extra ${id}: ${text}`);
+  }
+  // Название из каталога ловит «кирка», но не «кирку»: пока набор с чертой тот же,
+  // описание не обещает ничего «на старте» ни в каком падеже.
+  const sameSupplies = Object.keys({ ...withTrait, ...without }).every(id => extra(id) === 0);
+  if (sameSupplies && /на старте|стартов/i.test(text)) {
+    fail(`craftsmanStart leaves the starting supplies as they are, so its description must not promise a start bonus: ${text}`);
   }
   const applied = [points, ...Object.keys(withTrait).map(extra).filter(qty => qty > 0)];
   const stray = numbers.filter(number => !applied.includes(number));

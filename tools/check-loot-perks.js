@@ -233,9 +233,7 @@ assert(text('scavengerStart').includes(percent(config.scavengerTrophyChance)), '
 {
   // Стартовой половины у «Падальщика» нет. Новый персонаж получает вещи только из
   // набора снабжения (buildTutorialSupplies — ящик Сборного двора или пропуск
-  // обучения), и с чертой набор тот же: лом в него не входит вовсе. Прежняя сверка
-  // шла по buildStartingLoadout, который сервер сам не зовёт, и потому верила
-  // «+3 металлолома», которых игрок не получал.
+  // обучения), и с чертой набор тот же: лом в него не входит вовсе.
   const { buildTutorialSupplies } = require('../src/server/starting-loadout');
   const supplies = traits => byId(buildTutorialSupplies({ traits }));
   assert.deepEqual(supplies(['scavengerStart']), supplies([]),

@@ -565,7 +565,9 @@ namespace RealmOfAshes.Game
             // Размеры: редактор внешности 320, сетка блоков 440, действия 56.
             RectTransform panel = Panel("CreatorPanel", 320f + 12f + 440f + 12f + 56f);
             panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
-            Destroy(panel.GetComponent<Outline>());
+            // Экран строит и редакторская проба раскладки: в edit mode Destroy — ошибка в логе.
+            Outline panelOutline = panel.GetComponent<Outline>();
+            if (Application.isPlaying) Destroy(panelOutline); else DestroyImmediate(panelOutline);
 
             // --- .character-appearance-editor: превью (0.9fr) + управление (1.1fr) ---
             RectTransform shell = Child("PreviewShell", panel);

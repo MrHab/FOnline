@@ -231,16 +231,17 @@ assert(text('scrounger').includes(percent(config.remnantSharePerRank)), 'scroung
 assert(text('cacheSense').includes(percent(config.cacheMaterialsPerRank)), 'cacheSense names its real number: ' + text('cacheSense'));
 assert(text('scavengerStart').includes(percent(config.scavengerTrophyChance)), 'scavengerStart names its real number: ' + text('scavengerStart'));
 {
-  // Стартовая половина «Падальщика» — лом, а не патроны: сверяемся с настоящим набором.
-  const { buildStartingLoadout } = require('../src/server/starting-loadout');
-  const qty = (loadout, id) => loadout.inventory.filter(row => row.id === id).reduce((sum, row) => sum + row.qty, 0);
-  const withTrait = buildStartingLoadout({ traits: ['scavengerStart'] });
-  const without = buildStartingLoadout({ traits: [] });
-  const extraScrap = qty(withTrait, 'scrap') - qty(without, 'scrap');
-  assert(extraScrap > 0 && text('scavengerStart').includes(`+${extraScrap} металлолома`),
-    `the trait gives ${extraScrap} scrap at the start and must say so: ` + text('scavengerStart'));
-  assert.equal(qty(withTrait, 'ammo9'), qty(without, 'ammo9'), 'the trait gives no ammunition, so the text must not promise any');
-  assert(!/патрон/i.test(text('scavengerStart')));
+  // Стартовой половины у «Падальщика» нет. Новый персонаж получает вещи только из
+  // набора снабжения (buildTutorialSupplies — ящик Сборного двора или пропуск
+  // обучения), и с чертой набор тот же: лом в него не входит вовсе. Прежняя сверка
+  // шла по buildStartingLoadout, который сервер сам не зовёт, и потому верила
+  // «+3 металлолома», которых игрок не получал.
+  const { buildTutorialSupplies } = require('../src/server/starting-loadout');
+  const supplies = traits => byId(buildTutorialSupplies({ traits }));
+  assert.deepEqual(supplies(['scavengerStart']), supplies([]),
+    'the trait changes the starting supplies, so its description must name what it adds');
+  assert(!/на старте|металлолом|патрон/i.test(text('scavengerStart')),
+    'the trait adds nothing to the starting supplies, so the text must not promise any: ' + text('scavengerStart'));
 }
 
 console.log('Loot perks OK: scrounger raises NPC gear remains by 15% per rank, cacheSense raises cache materials by 25% per rank for the first finder, '

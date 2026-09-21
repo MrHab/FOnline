@@ -261,7 +261,8 @@ function locationWarehouseRows(loc = {}) {
     const role = String(interactive.role || row.role || '').toLowerCase();
     const containerType = String(interactive.containerType || row.containerType || '').toLowerCase();
     const model = String(row.model || row.url || '').toLowerCase();
-    return model.includes('storagechest')
+    const interactiveRow = Object.keys(interactive).length > 0;
+    return (model.includes('storagechest') && interactiveRow)
       || role === 'storage'
       || role === 'factionwarehouse'
       || containerType === 'storage'

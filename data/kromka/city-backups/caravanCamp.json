@@ -1,0 +1,2359 @@
+{
+  "id": "caravanCamp",
+  "name": "Перекрёсток",
+  "seed": 20260847,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "settlement",
+  "city": true,
+  "settlement": true,
+  "respawnAllowed": true,
+  "schema": "realm.location.v1",
+  "version": 1,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Утоптанная караванная стоянка",
+    "texture": "reliefWasteland"
+  },
+  "units": "game-meters",
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 8,
+    "x": 0,
+    "y": 0.1,
+    "z": -22,
+    "rotationY": 0
+  },
+  "exit": {
+    "tx": 19,
+    "tz": 3,
+    "to": "wasteland",
+    "label": "Дороги пустоши",
+    "x": 1,
+    "y": 0,
+    "z": -31,
+    "rotationY": 0
+  },
+  "transitions": [],
+  "worldZones": [],
+  "containers": [
+    {
+      "id": "crossroads_warehouse_crate",
+      "name": "Ящик грузового навеса",
+      "tier": "settlement",
+      "tx": 34,
+      "tz": 23,
+      "x": 30.5,
+      "y": 0.1,
+      "z": 8,
+      "rotationY": 0,
+      "locked": false,
+      "loot": [
+        {
+          "id": "scrap",
+          "qty": 2
+        },
+        {
+          "id": "wood",
+          "qty": 2
+        }
+      ]
+    },
+    {
+      "id": "crossroads_cargo_box",
+      "name": "Короб, забытый погонщиками",
+      "tier": "basic",
+      "tx": 27,
+      "tz": 19,
+      "x": 16,
+      "y": 0.1,
+      "z": 0,
+      "rotationY": 0,
+      "locked": false,
+      "loot": [
+        {
+          "id": "water",
+          "qty": 1
+        },
+        {
+          "id": "food",
+          "qty": 1
+        }
+      ]
+    }
+  ],
+  "pvp": false,
+  "fullDrop": false,
+  "objects": [
+    {
+      "id": "caravan_sayla",
+      "model": "traderNpc",
+      "name": "Караванщица Сайла",
+      "url": "/assets/models/wasteland/trader_npc.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "merchant",
+        "trader",
+        "leader",
+        "unique",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "entity": {
+        "kind": "npc",
+        "npcId": "caravan_sayla",
+        "routineId": "caravan_sayla",
+        "role": "merchant",
+        "faction": "caravans",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "leader": true,
+        "traderProfile": "caravan",
+        "dialogueProfile": "caravan",
+        "quests": [],
+        "profile": "caravanMerchant",
+        "statProfile": "merchantVeteran",
+        "equipmentProfile": "caravanMerchant",
+        "tradeProfile": "caravan",
+        "lootProfile": "merchant"
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "capital_storage_caravans",
+      "model": "storageChest",
+      "name": "Хранилище вольных караванов",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "interactive",
+        "storage",
+        "container",
+        "personal-storage",
+        "capital-storage"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 1.34
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "container",
+        "role": "storage",
+        "containerType": "storage",
+        "storageFaction": "caravans"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-cargo-warehouse",
+      "model": "warehouse",
+      "name": "caravanCamp-cargo-warehouse EDITABLE",
+      "position": {
+        "x": 21,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "warehouse",
+        "industrial",
+        "loot-space"
+      ],
+      "footprint": {
+        "x": 18,
+        "z": 13
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 17,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -6.2
+          },
+          "size": {
+            "x": 7,
+            "z": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-dressing-functional-01",
+      "model": "cargo_stack",
+      "name": "caravanCamp-dressing-functional-01",
+      "position": {
+        "x": 12.614,
+        "y": 0,
+        "z": 3.145
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.326,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.234,
+        "z": 1.606
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-functional-02",
+      "model": "trader_awning",
+      "name": "caravanCamp-dressing-functional-02",
+      "position": {
+        "x": 9.522,
+        "y": 0,
+        "z": 13.106
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.628,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.555,
+        "z": 3.284
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-functional-04",
+      "model": "car_wreck",
+      "name": "caravanCamp-dressing-functional-04",
+      "position": {
+        "x": -9.031,
+        "y": 0,
+        "z": 9.351
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.515,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 4.643,
+        "z": 4.588
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-functional-05",
+      "model": "tire_stack",
+      "name": "caravanCamp-dressing-functional-05",
+      "position": {
+        "x": -16.111,
+        "y": 0,
+        "z": 1.693
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.817,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 1.665,
+        "z": 1.942
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-functional-06",
+      "model": "workshop_bench",
+      "name": "caravanCamp-dressing-functional-06",
+      "position": {
+        "x": -16.083,
+        "y": 0,
+        "z": -10.848
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.119,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.02,
+        "y": 1.02,
+        "z": 1.02
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 2.895,
+        "z": 3.335
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-functional-07",
+      "model": "storage_lean_to",
+      "name": "caravanCamp-dressing-functional-07",
+      "position": {
+        "x": -3.583,
+        "y": 0,
+        "z": -12.496
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.421,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.9,
+        "y": 0.9,
+        "z": 0.9
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "caravan_hub",
+        "functional-dressing"
+      ],
+      "footprint": {
+        "x": 3.042,
+        "z": 2.301
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-01",
+      "model": "car_wreck",
+      "name": "caravanCamp-dressing-region-01",
+      "position": {
+        "x": -19.823,
+        "y": 0,
+        "z": 14.253
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.392,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.636,
+        "z": 4.523
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-02",
+      "model": "tire_stack",
+      "name": "caravanCamp-dressing-region-02",
+      "position": {
+        "x": -19.455,
+        "y": 0,
+        "z": 13.966
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.705,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.305,
+        "z": 2.109
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-03",
+      "model": "highway_sign",
+      "name": "caravanCamp-dressing-region-03",
+      "position": {
+        "x": -19.458,
+        "y": 0,
+        "z": 13.964
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.706,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.698,
+        "z": 1.531
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-04",
+      "model": "dry_bush",
+      "name": "caravanCamp-dressing-region-04",
+      "position": {
+        "x": -16.585,
+        "y": 0,
+        "z": 17.272
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.762,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.805,
+        "z": 1.59
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-05",
+      "model": "car_wreck",
+      "name": "caravanCamp-dressing-region-05",
+      "position": {
+        "x": -16.693,
+        "y": 0,
+        "z": 17.369
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.761,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.832,
+        "z": 3.591
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-06",
+      "model": "tire_stack",
+      "name": "caravanCamp-dressing-region-06",
+      "position": {
+        "x": -16.702,
+        "y": 0,
+        "z": 17.363
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.575,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.355,
+        "z": 2.23
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-07",
+      "model": "highway_sign",
+      "name": "caravanCamp-dressing-region-07",
+      "position": {
+        "x": -16.667,
+        "y": 0,
+        "z": 17.395
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.574,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.012,
+        "y": 1.012,
+        "z": 1.012
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.708,
+        "z": 1.631
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-08",
+      "model": "dry_bush",
+      "name": "caravanCamp-dressing-region-08",
+      "position": {
+        "x": -18.211,
+        "y": 0,
+        "z": 16.966
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.63,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.852,
+        "z": 1.705
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-09",
+      "model": "car_wreck",
+      "name": "caravanCamp-dressing-region-09",
+      "position": {
+        "x": -18.224,
+        "y": 0,
+        "z": 16.952
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.629,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.013,
+        "y": 1.013,
+        "z": 1.013
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 4.838,
+        "z": 3.988
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-10",
+      "model": "tire_stack",
+      "name": "caravanCamp-dressing-region-10",
+      "position": {
+        "x": -18.197,
+        "y": 0,
+        "z": 16.983
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.966,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.092,
+        "z": 2.171
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-11",
+      "model": "highway_sign",
+      "name": "caravanCamp-dressing-region-11",
+      "position": {
+        "x": -22.561,
+        "y": 0,
+        "z": 10.505
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.965,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.317,
+        "z": 1.629
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-12",
+      "model": "dry_bush",
+      "name": "caravanCamp-dressing-region-12",
+      "position": {
+        "x": -22.698,
+        "y": 0,
+        "z": 10.557
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.022,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.577,
+        "z": 1.746
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-13",
+      "model": "car_wreck",
+      "name": "caravanCamp-dressing-region-13",
+      "position": {
+        "x": -22.694,
+        "y": 0,
+        "z": 10.559
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.023,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.632,
+        "z": 4.613
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-14",
+      "model": "tire_stack",
+      "name": "caravanCamp-dressing-region-14",
+      "position": {
+        "x": -23.245,
+        "y": 0,
+        "z": 9.283
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.299,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.109,
+        "z": 1.851
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-dressing-region-15",
+      "model": "highway_sign",
+      "name": "caravanCamp-dressing-region-15",
+      "position": {
+        "x": -22.806,
+        "y": 0,
+        "z": 9.103
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.299,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.964,
+        "y": 0.964,
+        "z": 0.964
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "tract_isthmus",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.51,
+        "z": 1.056
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-landmark",
+      "model": "route-pylon",
+      "name": "Landmark route-pylon EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "route-pylon"
+      ],
+      "footprint": {
+        "x": 10,
+        "z": 12
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-1",
+      "model": "industrial_module",
+      "name": "Module 01",
+      "position": {
+        "x": 22,
+        "y": 1.4,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.571,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-10",
+      "model": "industrial_module",
+      "name": "Module 10",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.199,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.16,
+        "z": 8.602
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-2",
+      "model": "industrial_module",
+      "name": "Module 02",
+      "position": {
+        "x": 17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.942,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.16,
+        "z": 8.602
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-3",
+      "model": "industrial_module",
+      "name": "Module 03",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.314,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.202,
+        "z": 6.918
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-4",
+      "model": "industrial_module",
+      "name": "Module 04",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": 20.923
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.969,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.202,
+        "z": 6.918
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-5",
+      "model": "industrial_module",
+      "name": "Module 05",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": 12.931
+      },
+      "rotation": {
+        "x": 0,
+        "y": 5.341,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-6",
+      "model": "industrial_module",
+      "name": "Module 06",
+      "position": {
+        "x": -22,
+        "y": 1.4,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.712,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 5,
+        "z": 7
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-7",
+      "model": "industrial_module",
+      "name": "Module 07",
+      "position": {
+        "x": -17.798,
+        "y": 1.4,
+        "z": -12.931
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.084,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.16,
+        "z": 8.602
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-8",
+      "model": "industrial_module",
+      "name": "Module 08",
+      "position": {
+        "x": -6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.456,
+        "z": 0
+      },
+      "scale": {
+        "x": 7,
+        "y": 2.8,
+        "z": 5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 8.202,
+        "z": 6.918
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-module-9",
+      "model": "industrial_module",
+      "name": "Module 09",
+      "position": {
+        "x": 6.798,
+        "y": 1.4,
+        "z": -20.923
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.827,
+        "z": 0
+      },
+      "scale": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 2.5
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "caravan_hub",
+        "modular"
+      ],
+      "footprint": {
+        "x": 2.5,
+        "z": 2.5
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-region-culvert-east",
+      "model": "concrete_culvert",
+      "name": "caravanCamp-region-culvert-east EDITABLE",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": -20
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-region-culvert-west",
+      "model": "concrete_culvert",
+      "name": "caravanCamp-region-culvert-west EDITABLE",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": 22
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "dressing",
+      "tags": [
+        "tract",
+        "drainage"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-region-raised-tract",
+      "model": "raised_road",
+      "name": "caravanCamp-region-raised-tract EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0.24,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "raised_road",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-route-market",
+      "model": "market_canopy",
+      "name": "caravanCamp-route-market EDITABLE",
+      "position": {
+        "x": -22,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "canopy",
+        "trade",
+        "shelter"
+      ],
+      "footprint": {
+        "x": 10.3,
+        "z": 7.3
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-route-pylon",
+      "model": "route_pylon",
+      "name": "caravanCamp-route-pylon EDITABLE",
+      "position": {
+        "x": -20,
+        "y": 0,
+        "z": -20
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "landmark",
+      "tags": [
+        "tract-league",
+        "route-sign",
+        "top-readable"
+      ],
+      "footprint": {
+        "x": 0.7,
+        "z": 0.7
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 0.7,
+            "z": 0.7
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravanCamp-traffic-lane-0",
+      "model": "caravan_lane",
+      "name": "caravanCamp-traffic-lane-0 EDITABLE",
+      "position": {
+        "x": -12,
+        "y": 0.03,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "caravan_lane",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-traffic-lane-1",
+      "model": "caravan_lane",
+      "name": "caravanCamp-traffic-lane-1 EDITABLE",
+      "position": {
+        "x": -6,
+        "y": 0.03,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "caravan_lane",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-traffic-lane-2",
+      "model": "caravan_lane",
+      "name": "caravanCamp-traffic-lane-2 EDITABLE",
+      "position": {
+        "x": 0,
+        "y": 0.03,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "caravan_lane",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-traffic-lane-3",
+      "model": "caravan_lane",
+      "name": "caravanCamp-traffic-lane-3 EDITABLE",
+      "position": {
+        "x": 6,
+        "y": 0.03,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "caravan_lane",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-traffic-lane-4",
+      "model": "caravan_lane",
+      "name": "caravanCamp-traffic-lane-4 EDITABLE",
+      "position": {
+        "x": 12,
+        "y": 0.03,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "ground_accent",
+      "tags": [
+        "caravan_lane",
+        "region-language"
+      ],
+      "footprint": {
+        "x": 0.2,
+        "z": 0.2
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravanCamp-wagon-repair",
+      "model": "modular_workshop",
+      "name": "caravanCamp-wagon-repair EDITABLE",
+      "position": {
+        "x": 20,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "role": "structure",
+      "tags": [
+        "workshop",
+        "sheet-metal",
+        "craft"
+      ],
+      "footprint": {
+        "x": 13,
+        "z": 9
+      },
+      "vision": {
+        "blocks": true
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 12,
+            "z": 8
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5,
+            "z": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "caravan_camp_barrel_1",
+      "model": "rustBarrel",
+      "name": "Ржавая бочка",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 1.558,
+        "z": 1.688
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravan_camp_cargo_1",
+      "model": "cargoStack",
+      "name": "Караванный штабель",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": 19
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 1.973,
+        "z": 1.105
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravan_camp_cargo_2",
+      "model": "cargoStack",
+      "name": "Тюки с товаром",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.785,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 2.032,
+        "z": 1.609
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravan_camp_tires_1",
+      "model": "tireStack",
+      "name": "Покрышки",
+      "position": {
+        "x": 13,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 2.08,
+        "z": 1.697
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "caravan_camp_wreck_1",
+      "model": "carWreck",
+      "name": "Остов фургона",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 4.3,
+        "z": 2.1
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "role": "scenery",
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "auctioneer",
+      "model": "wastelandSettler",
+      "name": "Аукционер",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-auction",
+        "auction"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "auction",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "medic",
+      "model": "wastelandSettler",
+      "name": "Медик поселения",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-medic",
+        "medic"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "medic",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "repairman",
+      "model": "wastelandSettler",
+      "name": "Ремонтник",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "friendly",
+        "service",
+        "service-repair",
+        "repair"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "npc",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "stationary": true,
+        "service": "repair",
+        "territoryFactionId": "tract_league"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    }
+  ],
+  "updatedAt": "2026-08-10T00:00:00Z",
+  "worldRevision": "kromka-1",
+  "runtimeMode": "unity-authored",
+  "macroRegion": "tract_isthmus",
+  "kromkaVisualProfile": "crossroads-caravan-yard-v1",
+  "ambientProfile": "busy-caravan-yard",
+  "anomalyDensity": 0.05,
+  "unityScene": "Assets/Scenes/Kromka/Locations/caravanCamp.unity",
+  "migrationArrival": {
+    "tx": 18,
+    "tz": 8,
+    "x": -2,
+    "y": 0.1,
+    "z": -21,
+    "rotationY": 0
+  },
+  "unitySpawns": [
+    {
+      "id": "caravanCamp-arrival",
+      "kind": "PlayerArrival",
+      "targetLocationId": "",
+      "radius": 2,
+      "position": {
+        "x": 0,
+        "y": 0.1,
+        "z": -22
+      },
+      "rotationY": 0
+    },
+    {
+      "id": "caravan_sayla",
+      "kind": "Npc",
+      "targetLocationId": "",
+      "radius": 0.8,
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 3
+      },
+      "rotationY": 0
+    },
+    {
+      "id": "crossroads-yard",
+      "kind": "MigrationArrival",
+      "targetLocationId": "",
+      "radius": 3,
+      "position": {
+        "x": -2,
+        "y": 0.1,
+        "z": -21
+      },
+      "rotationY": 0
+    },
+    {
+      "id": "primary-exit",
+      "kind": "Exit",
+      "targetLocationId": "wasteland",
+      "radius": 3,
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": -31
+      },
+      "rotationY": 0
+    }
+  ]
+}

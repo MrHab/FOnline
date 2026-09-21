@@ -35,9 +35,26 @@ namespace Kromka
             },
             StringComparer.Ordinal);
 
+        /// <summary>
+        /// Сектор мира: `z_CC_RR`. Закреплённый сектор живёт в своей сцене, как
+        /// и всякая авторская локация, и его id не перечисляют поимённо — их 197.
+        /// </summary>
+        public static bool IsZoneId(string locationId)
+        {
+            if (string.IsNullOrWhiteSpace(locationId) || locationId.Length != 7) return false;
+            if (locationId[0] != 'z' || locationId[1] != '_' || locationId[4] != '_') return false;
+            for (int index = 2; index < locationId.Length; index++)
+            {
+                if (index == 4) continue;
+                if (locationId[index] < '0' || locationId[index] > '9') return false;
+            }
+            return true;
+        }
+
         public static bool Contains(string locationId)
         {
-            return !string.IsNullOrWhiteSpace(locationId) && LocationIds.Contains(locationId);
+            return !string.IsNullOrWhiteSpace(locationId)
+                && (LocationIds.Contains(locationId) || IsZoneId(locationId));
         }
 
         public static string SceneName(string locationId)

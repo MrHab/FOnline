@@ -90,8 +90,20 @@ let pairs = 0;
 let blocking = 0;
 let partCount = 0;
 
-for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.json')).sort()) {
-  const definition = JSON.parse(fs.readFileSync(path.join(locationsDir, file), 'utf8'));
+// Секторы мира, закреплённые в своих сценах, — такие же авторские локации,
+// только их определения лежат в data/zones/authored: за ними тот же надзор.
+const zonesDir = path.join(ROOT, 'data', 'zones', 'authored');
+const definitionFiles = [
+  ...fs.readdirSync(locationsDir).filter(name => name.endsWith('.json')).sort()
+    .map(name => path.join(locationsDir, name)),
+  ...(fs.existsSync(zonesDir)
+    ? fs.readdirSync(zonesDir).filter(name => name.endsWith('.json')).sort().map(name => path.join(zonesDir, name))
+    : [])
+];
+
+for (const definitionFile of definitionFiles) {
+  const file = path.basename(definitionFile);
+  const definition = JSON.parse(fs.readFileSync(definitionFile, 'utf8'));
   const scenePath = locationScenePath(definition, ROOT);
   if (!scenePath) continue;
   assert(fs.existsSync(scenePath), `${file}: Unity scene ${definition.unityScene} is missing`);

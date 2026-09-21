@@ -30,11 +30,19 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const city = zoneOfPlace(graph, 'settlement');
 const home = zoneById(graph, city.edges.north.to);
 const east = home.edges.east.to;
-const homeDef = buildZone(zoneRecipe(graph, home.id), catalog);
+// Сектор берётся из своего файла: закреплённый в сцене мир живёт им, а
+// конструктор остаётся первой раскладкой для ещё не закреплённого сектора.
+const sectorDefinition = id => {
+  const file = path.join(root, 'data', 'zones', 'authored', `${id}.json`);
+  return fs.existsSync(file)
+    ? JSON.parse(fs.readFileSync(file, 'utf8'))
+    : buildZone(zoneRecipe(graph, id), catalog);
+};
+const homeDef = sectorDefinition(home.id);
 const cityGate = homeDef.transitions.find(row => row.id === 'gate_south');
 // Место с порталом: «Застава 17» стоит в секторе южнее города.
 const outpostZone = zoneOfPlace(graph, 'roadOutpost');
-const outpostDef = buildZone(zoneRecipe(graph, outpostZone.id), catalog);
+const outpostDef = sectorDefinition(outpostZone.id);
 
 const getJson = route => new Promise((resolve, reject) => {
   http.get(h.baseUrl() + route, res => {
@@ -67,8 +75,13 @@ const getJson = route => new Promise((resolve, reject) => {
     // --- определение зоны отдаётся по одной, общий список без зон ---------------------------
     const one = await getJson(`/api/locations/${home.id}`);
     assert.equal(one.status, 200);
-    assert.equal(one.json.location.generated, true);
-    assert.equal(one.json.location.revision, homeDef.revision, 'the server builds the same zone as the constructor');
+    // Сектор разложен в свою сцену: клиент грузит её, а не собирает объекты
+    // заново, а ревизия идёт от содержимого файла — правка в Unity меняет её
+    // для клиентов.
+    assert.equal(one.json.location.generated, false, 'a sector laid into its scene is not assembled at runtime');
+    assert.equal(one.json.location.unityScene, `Assets/Scenes/Kromka/Locations/${home.id}.unity`,
+      'the sector names its own scene');
+    assert.match(String(one.json.location.revision), /^f-[0-9a-f]{8}$/, 'the sector revision follows its file');
     assert(one.json.location.transitions.some(row => row.id === 'gate_south' && row.targetPvpMode), 'gates carry the rules of the sector behind them');
     const all = await getJson('/api/locations');
     assert(!Object.keys(all.json.locations).some(id => /^z_\d\d_\d\d$/.test(id)), 'the full catalogue does not carry zones');
@@ -100,7 +113,10 @@ const getJson = route => new Promise((resolve, reject) => {
     assert.equal(crossed.self.zone.id, 'settlement');
     assert.equal(crossed.self.zone.title, city.title, 'self.zone names the city');
     const keysDefinition = (await getJson('/api/locations/settlement')).json.location;
-    assert.equal(keysDefinition.generated, true, 'a city is built by the constructor like a zone');
+    // Город тоже разложен в свою сцену; план города при этом остаётся: по нему
+    // живут участки, банк и ворота.
+    assert.equal(keysDefinition.generated, false, 'a city laid into its scene is not assembled at runtime');
+    assert.equal(keysDefinition.cityAuthored, true, 'the city is served from its own file');
     assert(keysDefinition.cityPlan?.bank?.rect, 'the city plan names the bank');
     const landing = zoneWalk.cityWorld('settlement', keysDefinition.entryFromNorth);
     assert(Math.hypot(crossed.x - landing.x, crossed.z - landing.z) < 6,

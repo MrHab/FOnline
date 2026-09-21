@@ -40,12 +40,60 @@ namespace Kromka.EditorTools
                 ExportLocationScene(scene);
             }
 
+            // Закреплённые секторы мира — такие же авторские локации, только их
+            // определения лежат в data/zones/authored: пропусти их экспорт, и
+            // правка сектора в сцене не дошла бы до сервера.
+            int zones = 0;
+            foreach (string zoneId in AuthoredZoneIds())
+            {
+                string path = KromkaLocationSceneCatalog.ScenePath(zoneId);
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) continue;
+                ExportLocationScene(EditorSceneManager.OpenScene(path, OpenSceneMode.Single));
+                zones += 1;
+            }
+
             if (!string.IsNullOrWhiteSpace(originalPath)
                 && AssetDatabase.LoadAssetAtPath<SceneAsset>(originalPath) != null)
                 EditorSceneManager.OpenScene(originalPath, OpenSceneMode.Single);
 
             AssetDatabase.Refresh();
-            Debug.Log("[KROMKA] PASS: пространственные данные " + locations.Count + " локаций экспортированы из Unity.");
+            Debug.Log("[KROMKA] PASS: пространственные данные " + locations.Count + " локаций и "
+                + zones + " секторов экспортированы из Unity.");
+        }
+
+        /// <summary>
+        /// Из консоли: `-executeMethod Kromka.EditorTools.KromkaWorldSceneExporter.ExportBatch`.
+        /// Сцены берутся из ROA_SCENES (через запятую), иначе экспортируются все.
+        /// </summary>
+        public static void ExportBatch()
+        {
+            string list = Environment.GetEnvironmentVariable("ROA_SCENES");
+            if (string.IsNullOrWhiteSpace(list))
+            {
+                ExportAllScenes();
+                return;
+            }
+            int exported = 0;
+            foreach (string id in list.Split(',').Select(row => row.Trim()).Where(row => row.Length > 0))
+            {
+                string path = KromkaLocationSceneCatalog.ScenePath(id);
+                if (path == null || AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
+                    throw new FileNotFoundException("Не найдена Unity-сцена локации " + id, path ?? id);
+                ExportLocationScene(EditorSceneManager.OpenScene(path, OpenSceneMode.Single));
+                exported += 1;
+            }
+            AssetDatabase.Refresh();
+            Debug.Log("[KROMKA] PASS: экспортировано сцен: " + exported);
+        }
+
+        /// <summary>Закреплённые секторы мира: файлы data/zones/authored/.</summary>
+        private static IEnumerable<string> AuthoredZoneIds()
+        {
+            string folder = ProjectPath("data/zones/authored");
+            if (!Directory.Exists(folder)) return Enumerable.Empty<string>();
+            return Directory.GetFiles(folder, "*.json")
+                .Select(Path.GetFileNameWithoutExtension)
+                .OrderBy(row => row, StringComparer.Ordinal);
         }
 
         [MenuItem("Кромка/Авторинг/Экспортировать открытую локацию в data")]
@@ -74,8 +122,7 @@ namespace Kromka.EditorTools
             if (authoring == null || !authoring.Validate(out error))
                 throw new InvalidOperationException("Некорректная Unity-локация: " + error);
 
-            string locationPath = ProjectPath("data/locations/"
-                + authoring.StableLocationId + ".json");
+            string locationPath = DefinitionPath(authoring.StableLocationId);
             JObject definition = ReadJson(locationPath);
             JArray previous = definition["objects"] as JArray ?? new JArray();
             var previousById = previous.OfType<JObject>()
@@ -167,8 +214,7 @@ namespace Kromka.EditorTools
             KromkaLocationAuthoring authoring = FindComponent<KromkaLocationAuthoring>(scene);
             if (authoring == null)
                 throw new InvalidOperationException("Некорректная Unity-локация: нет KromkaLocationAuthoring");
-            string locationPath = ProjectPath("data/locations/"
-                + authoring.StableLocationId + ".json");
+            string locationPath = DefinitionPath(authoring.StableLocationId);
             JObject definition = ReadJson(locationPath);
             JArray objects = definition["objects"] as JArray ?? new JArray();
             int found = 0;
@@ -191,6 +237,17 @@ namespace Kromka.EditorTools
             definition["objects"] = objects;
             WriteJson(locationPath, definition);
             return found;
+        }
+
+        /// <summary>
+        /// Файл определения локации: сектор мира закреплён в data/zones/authored,
+        /// остальные локации лежат в data/locations.
+        /// </summary>
+        private static string DefinitionPath(string locationId)
+        {
+            return KromkaLocationSceneCatalog.IsZoneId(locationId)
+                ? ProjectPath("data/zones/authored/" + locationId + ".json")
+                : ProjectPath("data/locations/" + locationId + ".json");
         }
 
         private static JObject ExportObject(KromkaPlacedObjectAuthoring marker, JObject previous)

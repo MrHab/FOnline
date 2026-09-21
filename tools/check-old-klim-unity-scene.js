@@ -40,9 +40,13 @@ assert.strictEqual(oldKlimActors.length, 0,
 assert(location.objects.some(entry => entry.id === 'irena_versta_belova'
   && entry.name === 'Ирена «Верста» Белова'),
   'Keys must spawn the canonical first guide instead of Old Klim');
-for (const id of ['settlement-keys-water-tower', 'settlement-keys-rail-bridge',
-  'settlement-keys-market', 'settlement-keys-workshops', 'settlement-keys-clinic']) {
-  assert(location.objects.some(entry => entry.id === id), `Kromka settlement landmark is missing: ${id}`);
+// Ключи — город на весь сектор, разложенный в свою сцену: ориентир на площади и
+// кварталы стоят вместо прежних одиночных построек посёлка.
+assert(location.objects.some(entry => entry.id === 'plaza_landmark'),
+  'the city of Keys has no landmark on its plaza');
+for (const district of ['city-bank', 'city-market', 'city-workshop', 'city-homes']) {
+  assert(location.objects.some(entry => (entry.tags || []).includes(district)),
+    `Kromka settlement quarter is missing: ${district}`);
 }
 
 const generator = read('unity-client', 'Assets', 'Editor', 'RoaOldKlimSceneGenerator.cs');

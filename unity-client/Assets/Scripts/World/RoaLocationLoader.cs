@@ -237,8 +237,8 @@ namespace RealmOfAshes.World
             }
 
             RoaUnityLocationScene unityScene = null;
-            // Города собирает конструктор, как и зоны: их старые сцены остались в
-            // проекте, но грузить их нельзя — иначе поверх сборки ляжет второй город.
+            // Сектор, который ещё собирает конструктор, своей сцены не грузит:
+            // иначе поверх сборки лёг бы второй комплект объектов.
             string unitySceneName = definition.Generated ? string.Empty : UnitySceneName(definition.Id);
             if (!string.IsNullOrEmpty(unitySceneName))
             {
@@ -267,17 +267,25 @@ namespace RealmOfAshes.World
             if (unityScene == null)
                 BuildGround(definition, authoritativeMap, _currentRoot.transform);
 
-            if (definition.Generated)
+            // Сектор, разложенный в свою сцену, всё равно сектор: мелкий покров
+            // земли между объектами кладётся и здесь, иначе авторская зона
+            // выглядела бы голее сгенерированной.
+            if (!definition.Generated && definition.Zone != null && unityScene != null) BuildZoneGroundCover(definition);
+
+            // Сектор без сцены в этой сборке клиента собирается из того же
+            // определения набором префабов: его строки и так пишет сцена, так что
+            // мир выходит тот же — а вот пустой сектор был бы дырой в мире.
+            bool assembleSector = definition.Generated || (definition.Zone != null && unityScene == null);
+            if (assembleSector)
             {
-                // Зона мира: сцены Unity нет, объекты — префабы набора из пулов.
+                if (!definition.Generated)
+                    Debug.LogWarning("[ROA] Сцены сектора " + definition.Id
+                        + " нет в сборке — собираю его из определения.");
                 StepText = "Собираю зону...";
                 RoaZoneAssembler assembler = ZoneAssembler;
                 yield return StartCoroutine(assembler.Build(definition, _currentRoot.transform, _objectRoots, _objectEntries,
                     share => Progress = share));
-                // Мелкий покров земли между объектами — инстансингом, без GameObject на экземпляр.
-                var cover = new GameObject("ZoneGroundCover").AddComponent<RoaZoneGroundCover>();
-                cover.transform.SetParent(_currentRoot.transform, false);
-                cover.Build(definition, Application.isMobilePlatform);
+                RoaZoneGroundCover cover = BuildZoneGroundCover(definition);
                 IsLoading = false;
                 string zoneSummary = "Зона " + definition.Id + ": объектов " + assembler.ActiveCount
                     + ", создано новых " + assembler.CreatedCount + ", без префаба " + assembler.MissingPrefabs
@@ -510,6 +518,15 @@ namespace RealmOfAshes.World
         /// приходит отдельно от Node-сервера. RoaLocalTerrain повторяет непрерывную
         /// backplate-композицию браузера и держит плоский физический коллайдер.
         /// </summary>
+        /// <summary>Мелкий покров земли между объектами — инстансингом, без GameObject на экземпляр.</summary>
+        private RoaZoneGroundCover BuildZoneGroundCover(LocationDefinition definition)
+        {
+            var cover = new GameObject("ZoneGroundCover").AddComponent<RoaZoneGroundCover>();
+            cover.transform.SetParent(_currentRoot.transform, false);
+            cover.Build(definition, Application.isMobilePlatform);
+            return cover;
+        }
+
         private void BuildGround(LocationDefinition definition, JArray authoritativeMap, Transform parent)
         {
             var ground = new GameObject("Ground");

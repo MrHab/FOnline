@@ -16,6 +16,10 @@ const root = path.resolve(__dirname, '..');
 const graph = JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'zone-graph.json'), 'utf8'));
 const runtime = createZoneRuntime({ graph, zonesDir: path.join(root, 'data', 'zones'), normalize: row => row });
 const authoredOf = id => JSON.parse(fs.readFileSync(path.join(root, 'data', 'locations', `${id}.json`), 'utf8'));
+// Разложенный в сцену город хранит прежнее авторское содержимое слепком: по нему
+// конструктор и проверяется, иначе с последним городом проверка осталась бы без
+// единого города — а конструктор по-прежнему даёт новому городу первую раскладку.
+const snapshotOf = id => JSON.parse(fs.readFileSync(path.join(root, 'data', 'kromka', 'city-backups', `${id}.json`), 'utf8'));
 const CENTRE = TILES / 2;
 const inside = (rect, tile) => tile.tx >= rect[0] && tile.tx <= rect[2] && tile.tz >= rect[1] && tile.tz <= rect[3];
 
@@ -25,10 +29,15 @@ let objects = 0;
 let carried = 0;
 const handAuthored = [];
 for (const city of cities) {
-  const authored = authoredOf(city.locationId);
-  if (authored.cityAuthored === true) {
+  const live = authoredOf(city.locationId);
+  let authored = live;
+  if (live.cityAuthored === true) {
     handAuthored.push(city.locationId);
-    continue;
+    assert.equal(live.unityScene, `Assets/Scenes/Kromka/Locations/${city.locationId}.unity`,
+      `${city.locationId}: a city laid into a scene must point at it`);
+    assert(fs.existsSync(path.join(root, 'unity-client', live.unityScene)),
+      `${city.locationId}: ${live.unityScene} is missing`);
+    authored = snapshotOf(city.locationId);
   }
   const built = runtime.cityDefinition(city.locationId, authored);
   const again = runtime.cityDefinition(city.locationId, authored);
@@ -129,6 +138,6 @@ for (const city of cities) {
 }
 
 if (handAuthored.length) {
-  console.log(`Города, разложенные в сцены и правимые руками: ${handAuthored.join(', ')}`);
+  console.log(`Города, разложенные в свои сцены и правимые руками: ${handAuthored.join(', ')}`);
 }
-console.log(`City builder OK: ${cities.length - handAuthored.length} cities built twice byte for byte (${objects} objects), each behind its own wall with a gate per open side, vault and auctioneer inside the bank, ${carried} authored objects carried into their districts.`);
+console.log(`City builder OK: ${cities.length} cities built twice byte for byte (${objects} objects), each behind its own wall with a gate per open side, vault and auctioneer inside the bank, ${carried} authored objects carried into their districts.`);

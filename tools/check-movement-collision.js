@@ -138,7 +138,9 @@ assert.strictEqual(settlementLocation.worldRevision, 'kromka-1',
   'active settlement collision must come from the Kromka revision');
 assert.strictEqual(settlementLocation.runtimeMode, 'unity-authored',
   'active settlement collision must be exported from Unity');
-for (const id of ['settlement-keys-water-tower', 'settlement-keys-workshops', 'settlement-keys-clinic']) {
+// Стена банка, ориентир площади и лачуга квартала: преграды города, разложенного
+// в свою сцену, — их экспорт и пишет в данные.
+for (const id of ['bank_w0', 'market_crate_0', 'home_0']) {
   const entry = settlementLocation.objects.find(row => row?.id === id);
   assert(entry && entry.collision === 'solid'
     && Number(entry.footprint?.x) > 0 && Number(entry.footprint?.z) > 0

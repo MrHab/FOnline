@@ -74,7 +74,9 @@ writeJson(path.join(BACKUPS, `${cityId}.json`), authored);
 // Авторские поля, которых конструктор не знает: сцена локации, её точки
 // появления и прежние входы — без них место теряет связь со сценой Unity.
 const carried = {};
-for (const key of ['unityScene', 'unitySpawns', 'city', 'entry', 'entryFromWasteland', 'exit',
+// `exit` сюда не входит: город занимает сектор целиком, и выходят из него краем,
+// а не старой дорогой в пустошь — конструктор её тоже не переносит.
+for (const key of ['unityScene', 'unitySpawns', 'city', 'entry', 'entryFromWasteland',
   'pvp', 'fullDrop', 'updatedAt']) {
   if (authored[key] !== undefined) carried[key] = authored[key];
 }

@@ -185,4 +185,574 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kromka/Locations/coreMarket.unity
     guid: b161f78218f3adb4396c04b84be38708
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_04.unity
+    guid: 287ee02dee409df418488a98a1ddc70c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_01_05.unity
+    guid: 5fdb9c4f2403de745aed53d4c14ac774
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_01_06.unity
+    guid: 6f469420bf2551e48a8113792ea72f07
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_01_07.unity
+    guid: 2421097e76ef3c548ad9cb9694ddc2f3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_01_08.unity
+    guid: 2898583833e2ed9469f389fe8934310c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_01_09.unity
+    guid: 9f5585d53dc3c284fb52426b1e870839
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_03.unity
+    guid: e0c6888851860214c94b2e56f76667a9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_04.unity
+    guid: 4c5b4af367cb3e34cae9a64253d2a0ef
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_05.unity
+    guid: 7f9b3ce68d0053d419861749c00e4dbe
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_06.unity
+    guid: 9ff969c44724b504c86bb7d550a2d0ef
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_07.unity
+    guid: d2b52b05167ef254c9df491e90164baa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_08.unity
+    guid: 72594452112e2cb4fa4d69a6bdb72116
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_09.unity
+    guid: 0dfba89d5daf1ff48bd8f68402861be5
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_10.unity
+    guid: bca05504dad987a4caa5d869684a0c91
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_11.unity
+    guid: 6cc0cb360743af847a32d3df229b13e4
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_02_12.unity
+    guid: ae51e6b47128c33408740b69a9c9a9e0
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_02.unity
+    guid: 5c201f35606a3fb4aae4d284a75245cd
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_03.unity
+    guid: 31516bddf7793ac4daa506d094cba656
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_05.unity
+    guid: a7fa7b6a64717d54abbc24de54a62611
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_06.unity
+    guid: eb0049b36a45f7f4698e959f879e925f
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_07.unity
+    guid: 42f14dee73feda1438fb5d8e63837dac
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_08.unity
+    guid: 956e4a21f92ac0541a0297a4f1a41cf9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_09.unity
+    guid: 36efe479a86bf38448b510c03b6ed645
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_11.unity
+    guid: 4ee695de2d9b166429e5b60ef6306952
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_03_12.unity
+    guid: 6386dcc63699edf4bbd5a501d2d287ba
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_02.unity
+    guid: 1c000f0041aada940a5195a154774735
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_03.unity
+    guid: 3d1e3f2e7d4f60f448ebf2bcdb024ccb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_04.unity
+    guid: fc4f9ca0bc2506845bda300e0a9bdf25
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_05.unity
+    guid: 47c0873b0a0fe4947908d1c98cbce8b7
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_06.unity
+    guid: 1f9fa0ef53a24084cb727b0a406867fc
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_07.unity
+    guid: 57f0ae0e0c9b9954db0c01cd850fe345
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_08.unity
+    guid: be230b968eaf12e4891a27bdee945fd7
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_09.unity
+    guid: ee03c605c6fc0834a93e57f15986c4ff
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_10.unity
+    guid: 4e8d1925a623ea248bf644f8f1732aaa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_11.unity
+    guid: 5e25158148292444996e9017b1c53d46
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_12.unity
+    guid: b008f9e56b0e0654b9263cc4658e1743
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_04_13.unity
+    guid: bdb4ade7a564f84499d46d795cbb079b
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_01.unity
+    guid: 7f0828bd002b58545a3c65349b3006ec
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_02.unity
+    guid: 81b91782e95847f4b8720d8e59d806c2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_03.unity
+    guid: e36316bc85c96d34bbf519f7d5535d6c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_04.unity
+    guid: 6ec0995660036184c8182ecedf0c86e2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_05.unity
+    guid: 6658d406967c18c49b87f95c45a4e2ed
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_06.unity
+    guid: f051f945407c7a7469af307bccd1f9df
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_07.unity
+    guid: f743aea91c365d74f8adb6743e73fc7a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_08.unity
+    guid: 8e3fd563608361d43bdb3ad8a7b8fb35
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_09.unity
+    guid: 693917ae2fd21284aa45bd7137774e41
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_10.unity
+    guid: 104af22abd7bcae46b0dc370e4241961
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_11.unity
+    guid: 8791529140ea09b45a7595b7c10adc7c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_12.unity
+    guid: 70c549ff13ac55c4a961ae450fc1b062
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_05_13.unity
+    guid: b3afcf360c3689b4ba3827f2b9a4ef87
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_01.unity
+    guid: 9146e87d760c1d148ac1b523fa1f7581
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_02.unity
+    guid: a5a851bbff564a449bcc7be85793581f
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_03.unity
+    guid: 3cc7790b25ec5014fba7a770162628c0
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_04.unity
+    guid: ee931788d365e3841a186d3d3048b5d3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_05.unity
+    guid: 96702c49b5faaea4899e5c3c86594dbf
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_06.unity
+    guid: 0b38c85294b656c4986aea1e49bf5a09
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_08.unity
+    guid: e54fc71874ddb2b468c86492964533a3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_09.unity
+    guid: e488535a0bdc24b47a4a677a9c7bdc16
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_10.unity
+    guid: 97449be85c8639a429487552c08d755b
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_11.unity
+    guid: 5ad64a2c1bd8476409d210441c4e4ce1
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_12.unity
+    guid: 3eff2986932fa114fb9e8e6667b92f6a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_06_13.unity
+    guid: f9fe80601178ad445a467477d9398343
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_01.unity
+    guid: 1e1385a5865437c4cbbdc1451a553dd7
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_02.unity
+    guid: a948e60520e88394ba9a5a4e11954701
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_03.unity
+    guid: b0adc2a26bc973f4d9c0a47e8cdb19ad
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_04.unity
+    guid: ccb47928ecd9f8142862aba7ff4ea8be
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_05.unity
+    guid: 37ff9c5ebfe65694d8842143e32507fe
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_06.unity
+    guid: 98f24f834df3db946bd0df7bdb76fe5a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_07.unity
+    guid: cd809d49354b26940b4538b02b74dee2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_08.unity
+    guid: 91dccab741b1baf49a9eda26f24e5805
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_09.unity
+    guid: 791d8a6f22509bd47b0d173b08b686cd
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_10.unity
+    guid: 138c9abe72aa0eb4f83a327bb31504e3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_11.unity
+    guid: fabfe347f6460994eabee35d6c92fa43
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_12.unity
+    guid: 48cf7c7d764ea864f99a466bd59f858d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_07_13.unity
+    guid: 820f0d89c1f8496469e0c0941a92d458
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_01.unity
+    guid: 78a126aca2d54ef4395ce732382488df
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_02.unity
+    guid: ff403d3c63bbb4a4cb8beb81911389cc
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_03.unity
+    guid: 7c25ee1b0165dbc43a11c35ad4dfad16
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_04.unity
+    guid: 28d71d1de2ad3144886fcbefa597d235
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_05.unity
+    guid: 9754917077601304cafea0759bebc4ee
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_06.unity
+    guid: b14dcc6521a5dca48a02e66cad4c82ae
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_07.unity
+    guid: 67b3c5f1c61304942a078434fadbd524
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_08.unity
+    guid: 55844dc31b44dd64aa9d4823cd515474
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_09.unity
+    guid: 4fe35ae3455b3f048a69b15351c324eb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_10.unity
+    guid: 758ba2179ec34364299c1261f502c7a9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_11.unity
+    guid: ba9767f1568bc164da186e2539155672
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_12.unity
+    guid: e0261d53b3be09f47b03f73c19a61ea8
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_13.unity
+    guid: b1f43dae28d793c42995d8090e3b60fa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_08_14.unity
+    guid: 379a3ff49061332469b0734aaca609aa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_01.unity
+    guid: c340d6c96a6d7fa4a9a64f9bf65d017e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_02.unity
+    guid: 9a79ff20a252fb1438fcab29467f35c0
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_03.unity
+    guid: 22bc1837df2c920439b0684a95435df1
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_04.unity
+    guid: 3e03ed2a50a34494ba6386b5cc4d565a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_05.unity
+    guid: 3c4fe0858cab89842b971f397a34ddfa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_06.unity
+    guid: 71a4ea7b4b5305147825ec8ed601c93d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_07.unity
+    guid: 354f0667a74ba0e47b07f9eaf5470349
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_08.unity
+    guid: 80aebd81fadec634183f93ec4791efdb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_09.unity
+    guid: 7c2b8410c1b81914f806515cdcf840a5
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_11.unity
+    guid: 2a19a660e30120148a0529650e5433f4
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_12.unity
+    guid: b702d98b0603aff478ea68919beec52d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_09_14.unity
+    guid: d813f294047941948a6b8830dff11f67
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_00.unity
+    guid: e27aae3b409a8924080ef43512cfb407
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_01.unity
+    guid: 56f83c3702881a5459bd49baad76fbf3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_02.unity
+    guid: 4cf2332ea2715804cbd4b9fc30d496d1
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_03.unity
+    guid: fbaf169379831c94496dbce4b0a6ab66
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_04.unity
+    guid: b4a42a4b24c644c44b3819ac5470c4d2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_05.unity
+    guid: b8dc61baba207984f8c8c1d9da0590a1
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_06.unity
+    guid: b2ca742a1a49a6c45868527ef331ae56
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_07.unity
+    guid: 24a87e93863c9ce43b74f8784443abdf
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_08.unity
+    guid: 06c8a53633686194c968337c1689cf21
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_09.unity
+    guid: ef0db644106cb1c49ba7f22c4f1da99a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_10.unity
+    guid: 548176c225bba7d4a8ca11b979147925
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_11.unity
+    guid: ba069d7b72baaa944952d17a87265a58
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_12.unity
+    guid: e76178e264faef84abca65599f82111a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_13.unity
+    guid: 2e8b2e49f741a9447afef9b3471fbbde
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_10_14.unity
+    guid: e1eec0be642c3c1468d750b76743b9a5
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_01.unity
+    guid: da5c5386dff106642807de3f9666f3f6
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_02.unity
+    guid: f9aa6c15209731749922a0411567961a
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_03.unity
+    guid: eccbfce1bf3d88041994a074c95c2d46
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_04.unity
+    guid: c0b9b92d700f6e74e8f1e321074d0433
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_05.unity
+    guid: 6dbeb478ca4b67a40abca1d1f08d6a88
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_06.unity
+    guid: 13236d216434e6a46b3225786b6245b3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_07.unity
+    guid: 491694ed21508004d99272350bfe98fc
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_08.unity
+    guid: af782c83590a04d448d501828ae89afb
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_09.unity
+    guid: db06a2b750a11ad4aa65abc1aa73e801
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_10.unity
+    guid: 98f9b33de014e104699ad5e747f2479e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_11.unity
+    guid: 32d1e2aa627a21d44944f0789df07938
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_12.unity
+    guid: f30cff3ff63b86d43a5dfd6f4c3ed0b3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_11_13.unity
+    guid: 6ad2b77869200df4892807f1b7b0b942
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_01.unity
+    guid: ef2194dbb013b644f945e03183c29788
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_03.unity
+    guid: d92a33bbd6f539f4eb03cd4f5246fb09
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_04.unity
+    guid: 973718c5aec548144bb2652dd331b3ed
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_05.unity
+    guid: d71c6970dbf94e045b91d1e95d35be32
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_06.unity
+    guid: f96c981ce88e8e24ab52e8a2e1d5de7e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_07.unity
+    guid: 3ff5d73168c1c82419214556ca7e0c20
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_08.unity
+    guid: 62ce2c964a64a374aa0a9507c7ac7cc5
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_09.unity
+    guid: 01db76b5a84d93742a29cb15b5352a96
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_10.unity
+    guid: 19398a98f027c19478b73c46c2c9d45e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_11.unity
+    guid: 91385fb92467e0c488b5be8c89c4b79c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_12.unity
+    guid: 0893e41bb355dbd48942debcab3a1d15
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_12_13.unity
+    guid: 04bd217c0cc96764c87ae3df3474d4a2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_01.unity
+    guid: e2be85a8d9299c14f83488826452b8e3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_02.unity
+    guid: ac4d076d60e71374e9561d22a92bf930
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_03.unity
+    guid: eef11d8953dc7aa45aabf894fc0e4b36
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_04.unity
+    guid: 7265d3eba7281184d9c1c7668ed90c6c
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_05.unity
+    guid: 60f914a542fafb74c90633fd7b60dede
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_06.unity
+    guid: b1651cafacd081c4aad3a5a09ea96e9b
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_07.unity
+    guid: 922ee79f9b746ff4d91795ee3ca3a6ea
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_08.unity
+    guid: 86adc27f76517a54a80290dad6fc0e90
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_09.unity
+    guid: 0cf648d9b2c9ad648a9ab4c6cd150123
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_10.unity
+    guid: 0fdc092ef953d0d46816204fdddd07aa
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_11.unity
+    guid: c6b5eb5c66a35c54c90f4dc11be41ed2
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_12.unity
+    guid: 60b5cf4c1bc43494284113daea3234c9
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_13_13.unity
+    guid: 8eb237426b08aaf46814bdea16ae889d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_01.unity
+    guid: b40de945563d8e14a9715c12f9f2e98e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_02.unity
+    guid: 2973b89da258d0448a08aa2c5a0a9bab
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_03.unity
+    guid: 3727924160c7a854c84fbd33ebbd04f4
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_04.unity
+    guid: f1eea7c56ffaf7f4099bf91a840ed7df
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_06.unity
+    guid: 2f871800351f51746874e5cc56af4c55
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_07.unity
+    guid: 0f59686c4bb291847806d3b82bdea70f
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_08.unity
+    guid: c81e5b59e23af934eb19278a33af62ef
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_10.unity
+    guid: 0f7f10dc04bbcc041bd9d53156b42baf
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_11.unity
+    guid: 1655d21b29116bb47a1787602d2d7880
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_14_12.unity
+    guid: 81548b3cbfba2bf4f89c5c345c1042d0
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_02.unity
+    guid: 4984e0a8dc47450409e413fa44246715
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_03.unity
+    guid: a40f81954186326418ecd9042139856f
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_04.unity
+    guid: 300757e7115d5a344ac0c1248ae9b926
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_05.unity
+    guid: 4b9a92563821b4c4c8587c89aa0fcb0d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_06.unity
+    guid: aa3deed3e5ee36a459ec14efbeec5b33
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_07.unity
+    guid: 24c8768571b4fc64c9b507c08796de1d
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_08.unity
+    guid: e1351a8c68a69be45ac03c038b5cbfee
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_09.unity
+    guid: 574540b363461374e935dc24b4bff858
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_10.unity
+    guid: bc98f04c568ac884d9c0deb5dfcb8391
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_11.unity
+    guid: 116ff3b916033534090df34d49e139c6
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_15_12.unity
+    guid: ea54314c1973b16488f057c9b4077f53
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_03.unity
+    guid: cd0132a6c5796984ab17c0f9943a797e
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_04.unity
+    guid: 0f3c0428ad22c664780bbbdf4d3153d5
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_05.unity
+    guid: f249f9b72d59fbf49963adf3dbb52c93
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_06.unity
+    guid: 02ea560580dc2d647a21a4e05ac176ac
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_07.unity
+    guid: 83eb1ca67c1ee5849925afaea195ef47
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_08.unity
+    guid: f40cd9eddeac0814da81a9dd565228a6
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_09.unity
+    guid: b5f6d73a2767b8445898a63e5e0a9c05
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_10.unity
+    guid: a73643f9ab1a4ff41a72ed06f3e39697
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_16_11.unity
+    guid: dce27175f7fc3134bb54e3a9c7bd1391
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_04.unity
+    guid: f08b309971e46e14790b0d3d0b439312
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_05.unity
+    guid: 4f5d5016b5321c642877077d41a257b1
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_06.unity
+    guid: c389aaecc5bea864c908c5f6f9d6b7a4
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_07.unity
+    guid: 269a7faa78e44e045b8a23580f756ad3
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_08.unity
+    guid: 1955280e6aa97b248bcec3110631f405
+  - enabled: 1
+    path: Assets/Scenes/Kromka/Locations/z_17_09.unity
+    guid: 5a1af27ff125aec4089a63f08ba791a9
   m_configObjects: {}

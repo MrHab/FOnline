@@ -59,10 +59,6 @@ namespace RealmOfAshes.Game
         private float _damageFlashUntil;
         private float _smoothedFrameSeconds = 1f / 60f;
         private Texture2D _playerFrame;
-        private GUIStyle _nameStyle;
-        private GUIStyle _smallStyle;
-        private GUIStyle _chipStyle;
-        private GUIStyle _weaponStyle;
 
         public bool HasState { get { return !string.IsNullOrEmpty(_selfId); } }
         public bool CanvasDriven { get; set; }
@@ -351,105 +347,5 @@ namespace RealmOfAshes.Game
             if (maxAp != null) _maxAp = maxAp.ToObject<int>();
         }
 
-        private void OnGUI()
-        {
-            RoaUiTheme.Apply();
-            if (CanvasDriven) return;
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            if (!HasState) return;
-
-            BuildStyles();
-            float width = Screen.width < 900
-                ? Mathf.Min(Screen.width - 12f, 560f)
-                : Mathf.Clamp(Screen.width * 0.41f, 610f, 820f);
-            float height = width * (724f / 2172f);
-            var area = RoaHudLayout.Resolve("status", new Rect(8f, 8f, width, height));
-
-            if (_playerFrame != null)
-                GUI.DrawTexture(area, _playerFrame, ScaleMode.StretchToFill, true);
-            else
-                GUI.Box(area, GUIContent.none);
-
-            string ping = Socket != null && Socket.PingMs >= 0f
-                ? Mathf.RoundToInt(Socket.PingMs) + "ms"
-                : (Socket != null && Socket.ReconnectAttempt > 0 ? "LINK…" : "OFFLINE");
-            int fps = Mathf.RoundToInt(1f / Mathf.Max(0.001f, _smoothedFrameSeconds));
-            GUI.Label(Relative(area, 0.074f, 0.095f, 0.162f, 0.127f), "FPS " + fps + "  ·  " + ping, _smallStyle);
-
-            string playerName = string.IsNullOrEmpty(_name) ? "СТРАННИК" : _name.ToUpperInvariant();
-            GUI.Label(Relative(area, 0.261f, 0.325f, 0.565f, 0.18f), playerName, _nameStyle);
-
-            bool flash = Time.time < _damageFlashUntil;
-            DrawBar(Relative(area, 0.272f, 0.505f, 0.255f, 0.075f), "HP", _hp, _maxHp,
-                flash ? new Color(1f, 0.35f, 0.3f) : RoaUiTheme.Red);
-            DrawBar(Relative(area, 0.548f, 0.505f, 0.255f, 0.075f), "AP", Mathf.RoundToInt(_ap), _maxAp,
-                RoaUiTheme.Green);
-
-            string chips = "УРОВЕНЬ  <b>" + _level + "</b>     ОПЫТ  <b>" + _xp + "/" + _xpNeeded
-                + "</b>     ПЕРКИ  <b>" + _perkPoints + "</b>     НАВЫКИ  <b>" + _skillPoints + "</b>";
-            GUI.Label(Relative(area, 0.102f, 0.645f, 0.77f, 0.135f), chips, _chipStyle);
-
-            string ammo = _magSize > 0 ? _loaded + "/" + _magSize + "  ·  ЗАПАС " + _reserveAmmo : "—";
-            string weapon = string.IsNullOrEmpty(_weapon) ? "БЕЗ ОРУЖИЯ" : RoaItemData.Name(_weapon).ToUpperInvariant();
-            string condition = _condition < 0.999f ? "  ·  " + Mathf.RoundToInt(_condition * 100f) + "%" : string.Empty;
-            GUI.Label(Relative(area, 0.102f, 0.775f, 0.77f, 0.105f), weapon + "  ·  " + ammo + condition,
-                _weaponStyle);
-
-            if (_dead) GUI.Label(Relative(area, 0.69f, 0.33f, 0.14f, 0.16f), "ПОГИБ", _nameStyle);
-            RoaHudLayout.HandleDrag("status", ref area, "Статус");
-        }
-
-
-        private void BuildStyles()
-        {
-            if (_nameStyle != null) return;
-            _nameStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontStyle = FontStyle.Bold,
-                fontSize = 18,
-                alignment = TextAnchor.MiddleLeft,
-                clipping = TextClipping.Clip
-            };
-            _nameStyle.normal.textColor = new Color(1f, 0.87f, 0.52f);
-            _smallStyle = new GUIStyle(_nameStyle) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
-            _chipStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontStyle = FontStyle.Bold,
-                fontSize = 10,
-                alignment = TextAnchor.MiddleLeft,
-                richText = true,
-                clipping = TextClipping.Clip
-            };
-            _chipStyle.normal.textColor = new Color(0.84f, 0.89f, 0.64f);
-            _weaponStyle = new GUIStyle(_chipStyle) { fontSize = 10 };
-            _weaponStyle.normal.textColor = new Color(0.96f, 0.82f, 0.42f);
-        }
-
-        private static Rect Relative(Rect parent, float x, float y, float width, float height)
-        {
-            return new Rect(parent.x + parent.width * x, parent.y + parent.height * y,
-                parent.width * width, parent.height * height);
-        }
-
-        private void DrawBar(Rect rect, string label, int value, int max, Color color)
-        {
-            GUI.Box(rect, GUIContent.none);
-            float labelWidth = rect.width * 0.18f;
-            GUI.Label(new Rect(rect.x + 4f, rect.y, labelWidth, rect.height), label, _smallStyle);
-            Rect track = new Rect(rect.x + labelWidth, rect.y + rect.height * 0.24f,
-                rect.width - labelWidth - 42f, rect.height * 0.52f);
-            Color old = GUI.color;
-            GUI.color = new Color(0.07f, 0.09f, 0.08f, 0.94f);
-            GUI.DrawTexture(track, Texture2D.whiteTexture);
-            if (max > 0)
-            {
-                GUI.color = color;
-                float fill = Mathf.Clamp01(value / (float)max);
-                GUI.DrawTexture(new Rect(track.x + 1f, track.y + 1f, (track.width - 2f) * fill,
-                    track.height - 2f), Texture2D.whiteTexture);
-            }
-            GUI.color = old;
-            GUI.Label(new Rect(rect.xMax - 42f, rect.y, 40f, rect.height), value + "/" + max, _smallStyle);
-        }
     }
 }

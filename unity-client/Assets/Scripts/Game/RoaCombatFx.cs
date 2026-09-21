@@ -101,7 +101,6 @@ namespace RealmOfAshes.Game
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
         private bool _subscribed;
-        private GUIStyle _speechStyle;
 
         private int _activeTracerCount;
         private int _activeFlashCount;
@@ -459,46 +458,6 @@ namespace RealmOfAshes.Game
                 fx.Light.intensity = 5f * (1f - t);
             }
             Recount();
-        }
-
-        private void OnGUI()
-        {
-            if (CanvasDriven) return;
-            RoaUiTheme.Apply();
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            if (_enemies == null || UnityEngine.Camera.main == null) return;
-            _speech.Clear();
-            _enemies.CollectSpeechBubbles(_speech);
-            if (_speech.Count == 0) return;
-
-            if (_speechStyle == null)
-            {
-                _speechStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    wordWrap = true,
-                    fontStyle = FontStyle.Bold,
-                    fontSize = 13,
-                    normal = { textColor = new Color(0.88f, 1f, 0.9f) }
-                };
-            }
-
-            UnityEngine.Camera camera = UnityEngine.Camera.main;
-            Color previous = GUI.color;
-            for (int i = 0; i < _speech.Count; i++)
-            {
-                SpeechBubble row = _speech[i];
-                Vector3 point = camera.WorldToScreenPoint(row.World);
-                if (point.z <= 0f) continue;
-                const float width = 230f;
-                const float height = 54f;
-                var rect = new Rect(Mathf.Clamp(point.x - width * 0.5f, 6f, Screen.width - width - 6f),
-                                    Mathf.Clamp(Screen.height - point.y - height, 6f, Screen.height - height - 6f),
-                                    width, height);
-                GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp(row.Opacity, 0.18f, 1f));
-                GUI.Box(rect, row.Text, _speechStyle);
-            }
-            GUI.color = previous;
         }
 
         public static WeaponFxProfile ProfileFor(string weaponId)

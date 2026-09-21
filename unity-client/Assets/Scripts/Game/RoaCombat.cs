@@ -135,7 +135,6 @@ namespace RealmOfAshes.Game
         private string _mobileAimTargetId = string.Empty;
         private Vector3 _mobileAimPosition;
         private RoaTargetingFeedback _targetingFeedback;
-        private GUIStyle _targetHintStyle;
 
         /// <summary>Последние строки боевого журнала. Показываются в углу.</summary>
         private readonly List<string> _log = new List<string>();
@@ -1851,42 +1850,6 @@ namespace RealmOfAshes.Game
             return FeedbackCanvas;
         }
 
-        private static void DrawHitConfirmation(Camera camera, HitConfirmation confirmation)
-        {
-            Vector3 screen = camera.WorldToScreenPoint(confirmation.World);
-            if (screen.z <= 0f) return;
-            RoaCombatConfirmation.Frame frame = RoaCombatConfirmation.Evaluate(
-                Time.unscaledTime - confirmation.Started, confirmation.Critical, confirmation.Killed);
-            if (!frame.Visible || frame.Alpha <= 0f) return;
-
-            float x = screen.x;
-            float y = Screen.height - screen.y;
-            float r = frame.Radius;
-            float length = frame.Length;
-            float thickness = frame.Thickness;
-            Color previous = GUI.color;
-            Color color = frame.Color;
-            color.a *= frame.Alpha;
-            GUI.color = color;
-
-            DrawMarkerCorner(x - r, y - r, length, thickness, true, true);
-            DrawMarkerCorner(x + r, y - r, length, thickness, false, true);
-            DrawMarkerCorner(x - r, y + r, length, thickness, true, false);
-            DrawMarkerCorner(x + r, y + r, length, thickness, false, false);
-            GUI.color = previous;
-        }
-
-        private static void DrawMarkerCorner(float x, float y, float length, float thickness,
-                                             bool opensRight, bool opensDown)
-        {
-            float horizontalX = opensRight ? x : x - length;
-            float verticalY = opensDown ? y : y - length;
-            GUI.DrawTexture(new Rect(horizontalX, y - thickness * 0.5f, length, thickness),
-                            Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(x - thickness * 0.5f, verticalY, thickness, length),
-                            Texture2D.whiteTexture);
-        }
-
         /// <summary>Подсказку цели рисует канва (RoaActorNameplates); IMGUI-вариант молчит.</summary>
         public bool TargetHintCanvasDriven { get; set; }
 
@@ -1975,81 +1938,6 @@ namespace RealmOfAshes.Game
             }
             _targetingFeedback.Present(frame, Player.transform.position, _hoverPosition, true);
         }
-        private void DrawTargetHint()
-        {
-            if (TargetHintCanvasDriven) return;
-            if (_hoverTarget == null || Player == null || Socket?.Session?.Self == null) return;
-            RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
-                Socket.Session.Self, Socket.Session.Combat, _hoverTarget, Player, _hoverPosition, _fireMode);
-            bool lineBlocked = preview.InRange && AttackLineBlocked(_hoverPosition,
-                _hoverTarget["scale"]?.ToObject<float>() ?? 1f);
-            if (lineBlocked)
-            {
-                preview.Chance = 0;
-                preview.DamageExpected = 0;
-            }
-            bool awareness = Socket.Session.Self["talentRanks"]?["awareness"]?.ToObject<int>() > 0;
-            bool remote = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true;
-            bool neutral = !remote && _hoverTarget["hostileToPlayer"]?.ToObject<bool>() == false;
-            string personality = _hoverTarget["personality"]?["label"]?.ToString();
-            string schedule = _hoverTarget["scheduleLabel"]?.ToString();
-            string faction = _hoverTarget["wastelandOwnerLabel"]?.ToString();
-            int extraRows = (string.IsNullOrEmpty(personality) ? 0 : 1)
-                + (string.IsNullOrEmpty(schedule) ? 0 : 1)
-                + (string.IsNullOrEmpty(faction) ? 0 : 1);
-            float width = Mathf.Min(380f, Screen.width - 24f);
-            float height = (awareness ? 238f : 188f) + extraRows * 20f;
-            Vector2 mouse = Event.current.mousePosition;
-            float x = Mathf.Clamp(mouse.x + 18f, 12f, Screen.width - width - 12f);
-            float y = Mathf.Clamp(mouse.y + 18f, 12f, Screen.height - height - 12f);
-            GUILayout.BeginArea(new Rect(x, y, width, height), GUI.skin.window);
-            GUILayout.Label("<b>" + Escape(_hoverTarget["name"]?.ToString() ?? (remote ? "Игрок" : "Цель")) + "</b>", TargetHintStyle());
-            GUILayout.Label(remote ? "Игрок" : neutral ? "Нейтральный" : "Враждебный");
-            if (!string.IsNullOrEmpty(faction)) GUILayout.Label("Фракция: " + faction);
-            if (!string.IsNullOrEmpty(personality)) GUILayout.Label("Характер: " + personality);
-            if (!string.IsNullOrEmpty(schedule)) GUILayout.Label("Занят: " + schedule);
-
-            int hp = Mathf.Max(0, _hoverTarget["hp"]?.ToObject<int>() ?? 0);
-            int maxHp = Mathf.Max(1, _hoverTarget["maxHp"]?.ToObject<int>() ?? hp);
-            GUILayout.Label(awareness
-                ? "ОЗ " + hp + "/" + maxHp + " · " + HealthState(hp, maxHp)
-                : "Состояние: " + HealthState(hp, maxHp));
-            Color previous = GUI.contentColor;
-            GUI.contentColor = new Color(1f, 0.36f, 0.30f);
-            GUILayout.Label("Шанс попадания: " + preview.Chance + "%", TargetHintStyle());
-            GUI.contentColor = previous;
-
-            if (awareness && preview.HasDamage)
-            {
-                string range = preview.DamageMin == preview.DamageMax
-                    ? preview.DamageMin.ToString()
-                    : preview.DamageMin + "–" + preview.DamageMax;
-                GUILayout.Label("Предп. урон: " + range + " " + DamageTypeLabel(preview.DamageType)
-                    + " · средний " + preview.DamageAverage + " · с шансом ≈" + preview.DamageExpected,
-                    TargetHintStyle());
-            }
-
-            if (awareness)
-                GUILayout.Label("Защита: порог " + preview.Threshold + " · броня "
-                    + preview.ProtectionPercent + "% · сопротивление "
-                    + preview.ResistancePercent + "%", TargetHintStyle());
-
-            string note = lineBlocked
-                ? "Линия огня перекрыта"
-                : preview.InRange
-                ? preview.ModeLabel + " · " + preview.ApCost + " ОД · " + preview.Distance.ToString("0") + " м"
-                : "Вне дальности · " + preview.Distance.ToString("0") + "/" + preview.Range.ToString("0") + " м";
-            if (preview.InRange && !lineBlocked && preview.CriticalChance > 0)
-                note += " · крит " + preview.CriticalChance + "% (×2)";
-            if (preview.InRange && !lineBlocked && preview.EnergyFailureChance > 0)
-                note += " · риск сбоя " + preview.EnergyFailureChance + "%";
-            if (preview.StrengthMissing > 0)
-                note += " · требуется Мощь " + preview.RequiredStrength
-                    + " (не хватает " + preview.StrengthMissing + ")";
-            GUILayout.Label(note, TargetHintStyle());
-            GUILayout.EndArea();
-        }
-
         private bool AttackLineBlocked(Vector3 target, float targetScale)
         {
             Vector3 start = Player.transform.position + Vector3.up * (Player.Crouching ? 0.62f : 1.16f);
@@ -2074,25 +1962,6 @@ namespace RealmOfAshes.Game
             return false;
         }
 
-        private GUIStyle TargetHintStyle()
-        {
-            if (_targetHintStyle == null)
-                _targetHintStyle = new GUIStyle(GUI.skin.label) { richText = true, wordWrap = true };
-            return _targetHintStyle;
-        }
-
-        private static string HealthState(int hp, int maxHp)
-        {
-            if (hp <= 0) return "при смерти";
-            float ratio = hp / (float)Mathf.Max(1, maxHp);
-            if (hp >= maxHp || ratio >= 0.995f) return "здоров";
-            if (ratio >= 0.8f) return "лёгкое ранение";
-            if (ratio >= 0.5f) return "ранен";
-            if (ratio >= 0.3f) return "сильное ранение";
-            if (ratio >= 0.1f) return "критическое ранение";
-            return "при смерти";
-        }
-
         private static string DamageTypeLabel(string type)
         {
             if (type == "explosive") return "взрывной";
@@ -2105,47 +1974,5 @@ namespace RealmOfAshes.Game
             return "баллистический";
         }
 
-        private static string Escape(string value)
-        {
-            return (value ?? string.Empty).Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
-        }
-
-        private void OnGUI()
-        {
-            RoaUiTheme.Apply();
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            UnityEngine.Camera cam = UnityEngine.Camera.main;
-
-            if (!CanvasDriven && cam != null)
-            {
-                foreach (HitConfirmation confirmation in _hitConfirmations)
-                    DrawHitConfirmation(cam, confirmation);
-
-                foreach (FloatingText item in _floating)
-                {
-                    Vector3 screen = cam.WorldToScreenPoint(item.World);
-                    if (screen.z <= 0f) continue;
-
-                    Color previous = GUI.color;
-                    GUI.color = item.Color;
-                    GUI.Label(new Rect(screen.x - 40f, Screen.height - screen.y - 20f, 80f, 20f), item.Text);
-                    GUI.color = previous;
-                }
-            }
-
-            DrawTargetHint();
-
-            if (CanvasDriven) return;
-
-            if (_log.Count == 0) return;
-
-            var area = RoaHudLayout.Resolve("combatLog", new Rect(Screen.width - 332f, Screen.height - 132f, 320f, 120f));
-            GUILayout.BeginArea(area, GUI.skin.box);
-
-            foreach (string line in _log) GUILayout.Label(line);
-
-            GUILayout.EndArea();
-            RoaHudLayout.HandleDrag("combatLog", ref area, "Боевой журнал");
-        }
     }
 }

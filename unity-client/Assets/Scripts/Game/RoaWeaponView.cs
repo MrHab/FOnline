@@ -176,16 +176,6 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
         private static int _weaponCacheSession;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetWeaponCache()
-        {
-            _weaponCacheSession++;
-            // Enter Play Mode can preserve static C# fields while Unity destroys
-            // native animation clips from the previous session. Never instantiate
-            // that previous session's importer (MissingReferenceException).
-            RoaModelImportLifetime.Clear(WeaponCache);
-        }
-
         /// <summary>
         /// Огнестрел: всё это держится одним и тем же хватом
         /// (APPROVED_FIREARM_GRIP_PROFILES, 04d:21). Ближний бой — knife, axe,

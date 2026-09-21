@@ -359,23 +359,6 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private IEnumerator FlashAmbush()
-        {
-            float elapsed = 0f;
-            const float duration = 0.55f;
-            while (elapsed < duration && !_skipRequested)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float normalized = Mathf.Clamp01(elapsed / duration);
-                float alpha = normalized < 0.25f
-                    ? normalized / 0.25f * 0.38f
-                    : (1f - normalized) / 0.75f * 0.38f;
-                SetImageAlpha(_flash, Mathf.Max(0f, alpha));
-                yield return null;
-            }
-            SetImageAlpha(_flash, 0f);
-        }
-
         private static IEnumerator Fade(Image image, float from, float to, float duration)
         {
             float elapsed = 0f;

@@ -404,55 +404,6 @@ namespace RealmOfAshes.World
             return true;
         }
 
-        private void OnGUI()
-        {
-            bool approaching = _exitAllowed
-                ? PlayerIsApproaching
-                : _distanceToEdge <= ExitBandWidth + 3f;
-            if (!approaching || BannerCanvasDriven || RoaGameBootstrap.BlocksWorldHud) return;
-            RoaUiTheme.Apply();
-            bool mobile = Application.isMobilePlatform;
-            float width = Mathf.Clamp(Screen.width * (mobile ? 0.54f : 0.36f), 310f, 500f);
-            float height = mobile ? 58f : 64f;
-            Rect panel = new Rect((Screen.width - width) * 0.5f, Mathf.Max(12f, Screen.height * 0.085f),
-                width, height);
-            GUI.depth = -30;
-            GUI.Box(panel, GUIContent.none);
-
-            var title = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                fontSize = mobile ? 14 : 16
-            };
-            title.normal.textColor = ExitGold;
-            var detail = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = mobile ? 11 : 12
-            };
-            detail.normal.textColor = new Color(0.92f, 0.88f, 0.75f, 0.92f);
-            if (!_exitAllowed)
-            {
-                title.normal.textColor = LockedAmber;
-                GUI.Label(new Rect(panel.x + 12f, panel.y + 6f, panel.width - 24f, 24f),
-                    "ГРАНИЦА ЛОКАЦИИ", title);
-                GUI.Label(new Rect(panel.x + 12f, panel.y + 31f, panel.width - 24f, 22f),
-                    "Выход закрыт до завершения задания", detail);
-                return;
-            }
-            ParentZoneInfo zone = RoaGameBootstrap.Active?.EdgeExitTarget
-                ?? RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
-            string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 6f, panel.width - 24f, 24f),
-                "ВЫХОД: " + zoneName.ToUpperInvariant(), title);
-            float metres = Mathf.Max(0f, _distanceToEdge - ExitBandWidth);
-            string copy = _distanceToEdge <= ExitBandWidth + 0.25f
-                ? "Переход в зону..."
-                : "Пересеките золотую полосу  •  " + Mathf.CeilToInt(metres) + " м";
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 31f, panel.width - 24f, 22f), copy, detail);
-        }
-
         private void CreateMeshNode(string objectName, Mesh mesh, Material material, int sortingOrder)
         {
             CreateMeshNode(objectName, mesh, material, sortingOrder, _visualRoot.transform);

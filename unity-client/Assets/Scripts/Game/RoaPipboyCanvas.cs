@@ -902,26 +902,6 @@ namespace RealmOfAshes.Game
             return Inventory != null ? Inventory.Marks : 0;
         }
 
-        private void AppendEquipment(System.Text.StringBuilder into)
-        {
-            if (Inventory == null) return;
-            foreach ((string slot, string title) in new[]
-            {
-                ("weapon", "Оружие"), ("offhand", "Втор. рука"), ("armor", "Броня"),
-                ("helmet", "Шлем"), ("boots", "Ботинки"), ("backpack", "Рюкзак"),
-                ("detector", "Детектор"), ("artifactBelt", "Арт-пояс")
-            })
-            {
-                string runtimeId;
-                Inventory.EquipmentSlots.TryGetValue(slot, out runtimeId);
-                string baseId = RoaArmorData.BaseId(runtimeId ?? string.Empty);
-                string name = string.IsNullOrEmpty(baseId) || baseId == "fists"
-                    ? "<color=#557a46>—</color>"
-                    : ItemName(baseId);
-                into.AppendLine(title.PadRight(11) + name);
-            }
-        }
-
         private static string ItemName(string baseId)
         {
             string name = RoaItemData.Name(baseId);
@@ -2217,47 +2197,6 @@ namespace RealmOfAshes.Game
             foreach (GameObject row in rows) Destroy(row);
             rows.Clear();
             fill();
-        }
-
-        private void AddListRow(List<GameObject> rows, RectTransform list, string text,
-                                string description, string buttonCaption, System.Action onClick)
-        {
-            var row = new GameObject("Row", typeof(RectTransform));
-            row.transform.SetParent(list, false);
-            var layout = row.AddComponent<LayoutElement>();
-            layout.preferredHeight = description != null && description.Contains("\n") ? 58f : 44f;
-            var back = row.AddComponent<Image>();
-            back.color = CardBg;
-
-            Text main = Label("Text", (RectTransform)row.transform, 14, TextAnchor.UpperLeft, ScreenInk, FontStyle.Bold);
-            main.rectTransform.anchorMin = new Vector2(0f, 0.45f);
-            main.rectTransform.anchorMax = new Vector2(0.86f, 1f);
-            main.rectTransform.offsetMin = new Vector2(8f, 0f);
-            main.rectTransform.offsetMax = Vector2.zero;
-            main.text = text;
-
-            Text info = Label("Info", (RectTransform)row.transform, 11, TextAnchor.UpperLeft, ScreenInkDim);
-            info.rectTransform.anchorMin = new Vector2(0f, 0f);
-            info.rectTransform.anchorMax = new Vector2(0.86f, 0.5f);
-            info.rectTransform.offsetMin = new Vector2(8f, 2f);
-            info.rectTransform.offsetMax = Vector2.zero;
-            info.text = description ?? string.Empty;
-
-            if (buttonCaption != null)
-            {
-                Button plus = TextButton("Plus", (RectTransform)row.transform, buttonCaption, 14, out Text plusText);
-                var rect = (RectTransform)plus.transform;
-                rect.anchorMin = new Vector2(0.88f, 0.2f);
-                rect.anchorMax = new Vector2(0.99f, 0.8f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-                plus.GetComponent<Image>().color = new Color(0.16f, 0.28f, 0.12f, 0.95f);
-                plusText.color = AccentWarm;
-                plus.interactable = Pipboy == null || !Pipboy.ProgressionPending;
-                plus.onClick.AddListener(() => { onClick(); _refreshAt = Time.unscaledTime + 0.3f; });
-            }
-
-            rows.Add(row);
         }
 
         private void BuildCraftPage(RectTransform parent)

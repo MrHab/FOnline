@@ -55,6 +55,22 @@ namespace RealmOfAshes.Game
         public bool CanvasDriven { get; set; }
         public bool InputEnabled = true;
         public bool IsRadialOpen { get { return _radialOpen || _assignRadial; } }
+
+        // --- Фасад для канва-круга (RoaHudCanvas.QuickRadial). ---
+
+        /// <summary>Канва рисует круг сама; IMGUI-вариант молчит.</summary>
+        public bool RadialCanvasDriven { get; set; }
+        /// <summary>Слот под курсором в открытом круге; −1 — курсор в мёртвой зоне.</summary>
+        public int RadialSelected { get { return _radialSelected; } }
+        /// <summary>Центр круга в экранных пикселях, начало координат — левый верхний угол.</summary>
+        public Vector2 RadialCenter { get { return _radialCenter; } }
+
+        /// <summary>Сколько штук предмета слота в рюкзаке; надетое без стопки — за одно.</summary>
+        public int SlotQuantity(int index)
+        {
+            string item = ValidIndex(index) ? _slots[index] : string.Empty;
+            return !string.IsNullOrEmpty(item) && _inventory != null ? _inventory.QuickItemQuantity(item) : 0;
+        }
         public string CanvasStatus { get { return _saving ? "Saving..." : _status; } }
         public bool CanvasVisible
         {
@@ -365,7 +381,9 @@ namespace RealmOfAshes.Game
 
             if (_radialOpen)
             {
-                DrawRadial();
+                // Круг рисует HUD-канва: у шрифта IMGUI в WebGL нет кириллицы, и
+                // в середине круга вместо имени предмета оставалось «I:».
+                if (!RadialCanvasDriven) DrawRadial();
                 if (CanvasDriven || !IsMobileVisible) return;
             }
             if (CanvasDriven) return;

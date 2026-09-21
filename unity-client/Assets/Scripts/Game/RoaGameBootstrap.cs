@@ -407,6 +407,15 @@ namespace RealmOfAshes.Game
             barter.Inventory = Inventory;
             if (Interaction != null) Interaction.TradeCanvasDriven = true;
 
+            // Окно станка канвой: у встроенного шрифта IMGUI в WebGL нет кириллицы,
+            // и в браузере это окно теряло подписи.
+            var crafting = GetComponent<RoaCraftingCanvas>();
+            if (crafting == null) crafting = gameObject.AddComponent<RoaCraftingCanvas>();
+            crafting.Interaction = Interaction;
+            if (Interaction != null) Interaction.CraftingCanvasDriven = true;
+            // Круг быстрых слотов и баннер выхода рисует HUD-канва — по той же причине.
+            if (Quickbar != null) Quickbar.RadialCanvasDriven = true;
+
             // Лут и хранилище в web-виде поверх той же серверной логики.
             var loot = GetComponent<RoaLootCanvas>();
             if (loot == null) loot = gameObject.AddComponent<RoaLootCanvas>();

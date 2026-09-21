@@ -194,8 +194,10 @@ const dynamicUnityEvents = [
 assert(interaction.includes('string eventName = _panel == PanelKind.Corpse ? "lootEnemy" : "lootWorldContainer";')
   && interaction.includes('Socket.EmitWithAck(eventName, payload'),
   'Unity corpse/container loot must keep a closed two-event dynamic domain');
-assert(interaction.includes('SecurityAction("hackTerminal")')
-  && interaction.includes('SecurityAction("pickLock")')
+const lootCanvas = read('unity-client/Assets/Scripts/Game/RoaLootCanvas.cs');
+assert(lootCanvas.includes('Interaction.LootSecurity("hackTerminal")')
+  && lootCanvas.includes('Interaction.LootSecurity("pickLock")')
+  && interaction.includes('public void LootSecurity(string action) { SecurityAction(action); }')
   && interaction.includes('Socket.EmitWithAck(action, new Dictionary<string, object>'),
   'Unity security action must keep a closed hackTerminal/pickLock event domain');
 assert(interaction.includes('Socket.EmitWithAck("npcTradeExchange", payload')
@@ -546,8 +548,9 @@ for (const marker of [
   'SetLayerRecursively(_modelObject, PreviewLayer);',
   '_view.ApplyAppearance(_wantedAppearance);'
 ]) assert(unityPreview.includes(marker), `Unity live character preview is missing: ${marker}`);
+const unityAuthCanvas = read('unity-client/Assets/Scripts/Game/RoaAuthCanvas.cs');
 assert(unityCharacterView.includes('public bool ApplyAppearance(CharacterAppearance appearance)')
-  && unityBootstrap.includes('_characterPreview.Show(BaseUrl, _creator.Appearance,'),
+  && unityAuthCanvas.includes('preview.Show(Bootstrap.AuthServerUrl, Bootstrap.Creator.Appearance,'),
   'Unity creator must update face/hair variants on the live GLB preview');
 
 // Local camera zoom persists between sessions.

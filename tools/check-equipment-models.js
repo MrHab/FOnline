@@ -77,7 +77,9 @@ assert(!unityEquipmentSource.includes('service_scout_boots'),
   `Unity character/equipment lifecycle integration is missing: ${marker}`));
 assert(unityInventorySource.includes('public bool SubmitEquipmentAction('),
   'Unity inventory no longer exposes the authoritative equipment action path');
-assert(unityInventorySource.includes('Equip(slot, string.Empty);'),
+const unityTerminalSource = fs.readFileSync(
+  path.join(root, "unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs"), 'utf8');
+assert(unityTerminalSource.includes('Inventory.SubmitEquipmentAction(slot, string.Empty, ack =>'),
   'Unity unequip must clear the runtime id so the server can resolve the built-in fists state');
 assert(!unityInventorySource.includes('Equip(slot, slot == "weapon" ? "fists" : string.Empty);'),
   'Unity unequip regressed to requesting a physical fists runtime instance');

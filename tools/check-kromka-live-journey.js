@@ -4,6 +4,8 @@
 const assert = require('assert');
 const http = require('http');
 const { io: createSocketClient } = require('socket.io-client');
+const { createLocationCollision, circleBlockerPenalty } = require('../src/server/location-collision');
+const { locationObjectBlockers } = createLocationCollision({ tile: 2 });
 
 const port = Number(process.env.KROMKA_QA_PORT || 3000);
 const login = String(process.env.KROMKA_QA_LOGIN || '');
@@ -201,46 +203,66 @@ async function connect() {
   });
   const worldToTile = (x, z) => ({ tx: Math.floor(Number(x) / 2 + mapHalf().w), tz: Math.floor(Number(z) / 2 + mapHalf().h) });
   const tileToWorld = (tx, tz) => ({ x: (tx - mapHalf().w + 0.5) * 2, z: (tz - mapHalf().h + 0.5) * 2 });
+  // Обводы места: сервер держит движение по ним, а не по клеткам комнаты.
+  // Проводник берёт их у того же API, что и клиент, и ходит по сетке в метр.
+  const locationBlockers = new Map();
+  const blockersOf = async locationId => {
+    const id = String(locationId || '');
+    if (locationBlockers.has(id)) return locationBlockers.get(id);
+    const rows = [];
+    locationBlockers.set(id, rows);
+    const definition = await definitionOf(id).catch(() => null);
+    for (const row of definition?.objects || []) rows.push(...locationObjectBlockers(row));
+    return rows;
+  };
   const navigationPath = (targetX, targetZ, targetRadius = 0) => {
     if (!Array.isArray(worldMap) || !worldMap.length) return [];
     const height = worldMap.length;
     const width = Math.max(0, ...worldMap.map(row => Array.isArray(row) ? row.length : 0));
-    const start = worldToTile(self?.x, self?.z);
+    const half = mapHalf();
     const blocked = navigationBlocks.get(currentLocationId) || new Set();
     navigationBlocks.set(currentLocationId, blocked);
+    const blockers = locationBlockers.get(currentLocationId) || [];
     const solid = new Set([1, 3, 6, 7, 8]);
-    const key = (tx, tz) => `${tx},${tz}`;
-    const open = (tx, tz) => tx >= 1 && tz >= 1 && tx < width - 1 && tz < height - 1
-      && Array.isArray(worldMap[tz]) && !solid.has(Number(worldMap[tz][tx]))
-      && !blocked.has(key(tx, tz));
-    const closeEnough = node => {
-      const point = tileToWorld(node.tx, node.tz);
-      return Math.hypot(point.x - targetX, point.z - targetZ) <= Math.max(0.72, Number(targetRadius || 0));
+    const key = (gx, gz) => `${gx},${gz}`;
+    // Узел сетки — метр мира; шаг мельче тайла, иначе тонкая стена не видна.
+    const start = { gx: Math.round(Number(self?.x || 0)), gz: Math.round(Number(self?.z || 0)) };
+    const open = (gx, gz) => {
+      if (Math.abs(gx) > half.w * 2 - 2 || Math.abs(gz) > half.h * 2 - 2) return false;
+      const tx = Math.floor(gx / 2 + half.w);
+      const tz = Math.floor(gz / 2 + half.h);
+      if (!(tx >= 1 && tz >= 1 && tx < width - 1 && tz < height - 1)) return false;
+      if (!Array.isArray(worldMap[tz]) || solid.has(Number(worldMap[tz][tx]))) return false;
+      if (blocked.has(key(gx, gz))) return false;
+      return !blockers.some(blocker => circleBlockerPenalty(gx, gz, 0.42, blocker) > 0);
     };
+    const closeEnough = node => Math.hypot(node.gx - targetX, node.gz - targetZ)
+      <= Math.max(0.72, Number(targetRadius || 0));
     const queue = [start];
-    const previous = new Map([[key(start.tx, start.tz), null]]);
+    const previous = new Map([[key(start.gx, start.gz), null]]);
     let reached = null;
     for (let index = 0; index < queue.length; index++) {
       const node = queue[index];
       // A path is planned only after the straight walk from here has failed, so
-      // the tile the character stands on is never the goal, even when its centre
-      // is within reach of the target and the character itself is not.
+      // the point the character stands on is never the goal, even when it is
+      // within reach of the target and the character itself is not.
       if (index > 0 && closeEnough(node)) { reached = node; break; }
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const next = { tx: node.tx + dx, tz: node.tz + dz };
-        const nextKey = key(next.tx, next.tz);
-        if (previous.has(nextKey) || !open(next.tx, next.tz)) continue;
+        const next = { gx: node.gx + dx, gz: node.gz + dz };
+        const nextKey = key(next.gx, next.gz);
+        if (previous.has(nextKey) || !open(next.gx, next.gz)) continue;
         previous.set(nextKey, node);
         queue.push(next);
       }
     }
     if (!reached) return [];
     const reverse = [];
-    for (let node = reached; node; node = previous.get(key(node.tx, node.tz))) reverse.push(node);
+    for (let node = reached; node; node = previous.get(key(node.gx, node.gz))) reverse.push(node);
     return reverse.reverse();
   };
   const moveNear = async (x, z, radius = 1.25, label = 'target') => {
     if (await driveTo(x, z, radius, 90)) return;
+    await blockersOf(currentLocationId);
     // Dynamic actors and doors can vacate a tile between objectives. Keep
     // discovered blocks only for this route so a temporary obstruction does
     // not make a later NPC or exit permanently unreachable in the QA run.
@@ -250,10 +272,9 @@ async function connect() {
       const path = navigationPath(x, z, radius);
       if (!path.length) break;
       let routeBlocked = false;
-      for (const tile of path.slice(1)) {
-        const point = tileToWorld(tile.tx, tile.tz);
-        if (await driveTo(point.x, point.z, 0.72, 40)) continue;
-        blocked.add(`${tile.tx},${tile.tz}`);
+      for (const node of path.slice(1)) {
+        if (await driveTo(node.gx, node.gz, 0.72, 40)) continue;
+        blocked.add(`${node.gx},${node.gz}`);
         routeBlocked = true;
         break;
       }

@@ -1305,7 +1305,7 @@ namespace RealmOfAshes.Game
         private static readonly RoaCharacterCreator.DerivedStats WidestDerived = new RoaCharacterCreator.DerivedStats
         {
             MaxHp = 999, MaxAp = 99, Speed = 9.9f, Carry = 999, Hit = -99, CriticalChance = 10, VisionRadius = 16,
-            ResistAll = 99, Sell = -99, Craft = -99, LuckChecks = 99
+            ResistAll = 99, Sell = -99, GatherBonus = -99, LuckChecks = 99
         };
 
         // --- Навыки и перки: пояснение и прокручиваемый список карточек ---

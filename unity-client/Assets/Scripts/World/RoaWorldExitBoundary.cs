@@ -361,12 +361,55 @@ namespace RealmOfAshes.World
             }
         }
 
+        /// <summary>Граница загруженной локации; в зоне мира её нет.</summary>
+        public static RoaWorldExitBoundary Current { get; private set; }
+
+        /// <summary>Канва рисует баннер сама; IMGUI-вариант молчит.</summary>
+        public bool BannerCanvasDriven { get; set; }
+
+        private void OnEnable()
+        {
+            Current = this;
+            // Границу ставит загрузчик локации, а баннер рисует HUD-канва: пока она
+            // есть, IMGUI-вариант молчит — в WebGL у него нет кириллицы.
+            BannerCanvasDriven = RoaGameBootstrap.Active?.HudCanvas != null;
+        }
+
+        private void OnDisable() { if (Current == this) Current = null; }
+
+        /// <summary>
+        /// Подсказка у края локации для HUD: выход в зону мира или граница,
+        /// закрытая до конца задания. false — игрок ещё далеко от края.
+        /// </summary>
+        public bool TryGetBanner(out string title, out string detail, out bool locked)
+        {
+            locked = !_exitAllowed;
+            title = detail = string.Empty;
+            bool near = _exitAllowed ? PlayerIsApproaching : _distanceToEdge <= ExitBandWidth + 3f;
+            if (!near) return false;
+            if (locked)
+            {
+                title = "ГРАНИЦА ЛОКАЦИИ";
+                detail = "Выход закрыт до завершения задания";
+                return true;
+            }
+            ParentZoneInfo zone = RoaGameBootstrap.Active?.EdgeExitTarget
+                ?? RoaGameBootstrap.Active?.Loader?.Current?.ExitZone;
+            string zoneName = zone != null && !string.IsNullOrEmpty(zone.Title) ? zone.Title : "зона мира";
+            title = "ВЫХОД: " + zoneName.ToUpperInvariant();
+            float remaining = Mathf.Max(0f, _distanceToEdge - ExitBandWidth);
+            detail = _distanceToEdge <= ExitBandWidth + 0.25f
+                ? "Переход в зону..."
+                : "Пересеките золотую полосу  •  " + Mathf.CeilToInt(remaining) + " м";
+            return true;
+        }
+
         private void OnGUI()
         {
             bool approaching = _exitAllowed
                 ? PlayerIsApproaching
                 : _distanceToEdge <= ExitBandWidth + 3f;
-            if (!approaching || RoaGameBootstrap.BlocksWorldHud) return;
+            if (!approaching || BannerCanvasDriven || RoaGameBootstrap.BlocksWorldHud) return;
             RoaUiTheme.Apply();
             bool mobile = Application.isMobilePlatform;
             float width = Mathf.Clamp(Screen.width * (mobile ? 0.54f : 0.36f), 310f, 500f);

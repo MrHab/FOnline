@@ -326,6 +326,7 @@ namespace RealmOfAshes.Game
             AppendOccupiedScreenRect(_compactConsolePanel, output);
             AppendOccupiedScreenRect(_economyRoot, output);
             AppendOccupiedScreenRect(_interactionPrompt, output);
+            AppendOccupiedScreenRect(_exitBanner, output);
             return output.Count - before;
         }
 
@@ -418,6 +419,8 @@ namespace RealmOfAshes.Game
             RefreshSystemStatus(worldHud && !mobile);
             RefreshEconomyFeedback(worldHud);
             RefreshInteractionPrompt(worldHud);
+            RefreshExitBanner(worldHud);
+            RefreshQuickRadial();
             RefreshPlayer();
             RefreshConsole();
             RefreshMinimap();
@@ -433,7 +436,7 @@ namespace RealmOfAshes.Game
                 && _connectionPanel != null && _connectionTitle != null && _connectionDetail != null
                 && _pvpPanel != null && _pvpText != null
                 && _economyRoot != null && _consolePanel != null && _compactConsolePanel != null
-                && _interactionPrompt != null
+                && _interactionPrompt != null && _exitBanner != null && _radialRoot != null
                 && _slotButtons[0] != null && _slotTexts[0] != null;
         }
 
@@ -464,6 +467,8 @@ namespace RealmOfAshes.Game
             BuildCompactWeaponConsole();
             BuildQuickbar();
             BuildInteractionPrompt();
+            BuildExitBanner();
+            BuildQuickRadial(root.transform);
             BuildSystemStatus();
             BuildConnectionStatus();
             BuildPvpStatus();

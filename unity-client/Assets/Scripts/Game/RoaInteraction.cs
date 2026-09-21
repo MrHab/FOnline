@@ -167,6 +167,39 @@ namespace RealmOfAshes.Game
 
         public bool IsPanelOpen { get { return _panel != PanelKind.None; } }
 
+        /// <summary>Канва рисует окно станка сама; IMGUI-вариант молчит.</summary>
+        public bool CraftingCanvasDriven { get; set; }
+
+        // --- Фасад для канва-окна станка (RoaCraftingCanvas). ---
+
+        public bool CraftingOpen { get { return _panel == PanelKind.Crafting; } }
+        public string CraftingTitle { get { return PanelTitle(); } }
+        public string CraftingStatus { get { return Time.unscaledTime <= _statusUntil ? _status : string.Empty; } }
+        /// <summary>Канонический id открытого станка: по нему отбираются рецепты.</summary>
+        public string CraftingStation { get { return _active?["station"]?.ToString() ?? string.Empty; } }
+        /// <summary>Участок поселения под открытым станком; null — станок без участка.</summary>
+        public JObject CraftingPlot { get { return RoaCraftingPlots.ForObject(_active?["id"]?.ToString()); } }
+        /// <summary>Снимок счёта игрока (self.account): премиум и запас фокуса.</summary>
+        public JObject CraftingAccount { get { return _self?["account"] as JObject; } }
+        public bool CraftPending { get { return _craftPending; } }
+        public bool PlotPending { get { return _plotPending; } }
+
+        public bool CanCraft(RoaCraftRecipe recipe) { return HasCraftIngredients(recipe); }
+        public static string CraftCost(RoaCraftRecipe recipe) { return recipe == null ? string.Empty : CraftCostText(recipe); }
+        public void CraftRecipe(RoaCraftRecipe recipe) { Craft(recipe); }
+        public void CraftingClose() { ClosePanel(true); }
+
+        public void PlotBid(int amount)
+        {
+            PlotAction("bid", CraftingPlot, new Dictionary<string, object> { ["amount"] = amount });
+        }
+
+        /// <summary>Плата арендатора за чужие заказы, в целых процентах стоимости изделия.</summary>
+        public void PlotSetFee(int percent)
+        {
+            PlotAction("setFee", CraftingPlot, new Dictionary<string, object> { ["feePct"] = percent / 100d });
+        }
+
         // --- Публичные точки для канва-окна бартера (RoaBarterCanvas). ---
         // Вся торговая логика и серверные запросы остаются здесь; канва
         // это только другой способ их нарисовать.
@@ -3011,7 +3044,7 @@ namespace RealmOfAshes.Game
             if (_panel == PanelKind.Npc) DrawNpc();
             else if (_panel == PanelKind.Trade) DrawTrade();
             else if (_panel == PanelKind.Storage) DrawStorage();
-            else if (_panel == PanelKind.Crafting) DrawCrafting();
+            else if (_panel == PanelKind.Crafting) { if (!CraftingCanvasDriven) DrawCrafting(); }
             else if (_panel == PanelKind.JobBoard) DrawJobBoard();
             else DrawLoot();
             GUILayout.EndScrollView();

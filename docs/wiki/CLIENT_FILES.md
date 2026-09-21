@@ -154,8 +154,10 @@ NPC), `RoaCombatPresentationFx.*`, `RoaCombatConfirmation`,
 `RoaActivityBeacon`, `RoaActivityZoneMarker`, `RoaActivityFeedback`,
 `RoaCaravanStagingCanvas`, `RoaWorldOverlayCanvas`.
 
-**HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.EconomyFeedback`
-и partial-файл `RoaHudInteractionPrompt.cs`), `RoaHudLayout`,
+**HUD и UI-инфраструктура** — `RoaHud`, `RoaHudCanvas` (+`.EconomyFeedback`,
+`.QuickRadial` — круг быстрых слотов по удержанию E, `.ExitBanner` — подсказка у
+края локации, и partial-файл `RoaHudInteractionPrompt.cs`), `RoaCraftingCanvas`
+(окно станка), `RoaHudLayout`,
 `RoaHudDragHandle` (редактор HUD), `RoaSystemCanvas` (меню, графика,
 обучение), `RoaDialogueCanvas`, `RoaBarterCanvas`, `RoaLootCanvas`,
 `RoaStorageCanvas`, `RoaWorkbenchCanvas`, `RoaQuantityCanvas`, `RoaUiTheme`,

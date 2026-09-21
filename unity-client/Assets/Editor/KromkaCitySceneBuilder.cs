@@ -94,10 +94,11 @@ namespace RealmOfAshes.EditorTools
             RoaZoneKitCatalog kit = Resources.Load<RoaZoneKitCatalog>(RoaZoneKitCatalog.ResourcePath);
             if (kit == null) throw new InvalidOperationException("Набор префабов зон не найден: " + RoaZoneKitCatalog.ResourcePath);
 
-            // Старую застройку снимаем целиком: город приходит из данных, а
-            // свет, земля и камеры сцены остаются на месте.
+            // Старую застройку снимаем, но землю оставляем: маркер с ролью
+            // terrain — это пол локации, без него игрок проваливается насквозь.
             foreach (KromkaPlacedObjectAuthoring marker in scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                .Where(marker => marker.Role != "terrain")
                 .ToList())
             {
                 UnityEngine.Object.DestroyImmediate(marker.gameObject);

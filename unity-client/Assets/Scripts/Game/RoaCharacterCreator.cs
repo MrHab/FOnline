@@ -60,7 +60,7 @@ namespace RealmOfAshes.Game
             public int VisionRadius;
             public int ResistAll;
             public int Sell;
-            public int Gather;
+            public int GatherBonus;
             public int LuckChecks;
         }
 
@@ -416,10 +416,9 @@ namespace RealmOfAshes.Game
                 VisionRadius = Mathf.Clamp(Mathf.FloorToInt(5.5f + per * 0.7f + 0.5f), 6, 16),
                 ResistAll = Mathf.Max(0, JsRound(end * 0.7f)),
                 Sell = JsRound((cha - 5) * 4f + (trader ? 15f : 0f)),
-                // Доля характеристик и черты в шансе второго ресурса при сборе
-                // (harvestResource на сервере); на крафт ни Интеллект, ни черта не влияют.
-                Gather = JsRound(Mathf.Max(0, intelligence - 5) * 2.5f + Mathf.Max(0, luck - 5) * 1f
-                                 + (craftsman ? 18f : 0f)),
+                // Прибавка к шансу второго ресурса при сборе: src/server/harvest-bonus.js.
+                GatherBonus = JsRound(Mathf.Max(0, intelligence - 5) * 2.5f + Mathf.Max(0, luck - 5)
+                                      + (craftsman ? 18f : 0f)),
                 LuckChecks = JsRound(Mathf.Max(0, luck - 5) * 2.5f)
             };
         }
@@ -600,7 +599,7 @@ namespace RealmOfAshes.Game
                             + " · вес " + d.Carry);
             GUILayout.Label("Меткость " + Signed(d.Hit) + "% · крит " + d.CriticalChance
                             + "% · обзор " + d.VisionRadius + " кл. · сопротивление " + d.ResistAll + "%");
-            GUILayout.Label("Продажа " + Signed(d.Sell) + "% · доп. ресурс при сборе " + Signed(d.Gather)
+            GUILayout.Label("Продажа " + Signed(d.Sell) + "% · доп. ресурс при сборе " + Signed(d.GatherBonus)
                             + " п.п. · проверки удачи +" + d.LuckChecks + " п.п.");
         }
 

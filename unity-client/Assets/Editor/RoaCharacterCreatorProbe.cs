@@ -55,6 +55,11 @@ namespace RealmOfAshes.EditorTools
                 Require(derived.MaxHp == 109 && derived.MaxAp == 8 && derived.Hit == 9
                         && derived.VisionRadius == 10 && derived.CriticalChance == 6,
                         "производные параметры не совпали с web");
+                // src/server/harvest-bonus.js: +2,5 п.п. за Интеллект и +1 п.п. за Чутьё выше 5, «Ремесленник» +18 п.п.
+                Require(derived.GatherBonus == 4, "прибавка к сбору от Интеллекта 6 и Чутья 6 не совпала с сервером");
+                var craftsman = new RoaCharacterCreator();
+                Require(craftsman.ToggleTrait("craftsmanStart") && craftsman.Derived().GatherBonus == 18,
+                        "«Ремесленник» не показывает серверные +18 п.п. к шансу дополнительного ресурса");
 
                 var request = new JoinRequest
                 {

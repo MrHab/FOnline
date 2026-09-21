@@ -229,7 +229,7 @@ namespace RealmOfAshes.Game
             int qty = ack["qty"]?.Value<int>() ?? 0;
             int fee = ack["fee"]?.Value<int>() ?? 0;
             int shelved = ack["shelvedSilver"]?.Value<int>() ?? 0;
-            string shelfNote = shelved > 0 ? " " + shelved + " марок не влезли в рюкзак и ждут на полке." : string.Empty;
+            string shelfNote = shelved > 0 ? " " + RoaPlural.Marks(shelved) + " не влезли в рюкзак и ждут на полке." : string.Empty;
             switch (ack["action"]?.ToString() ?? string.Empty)
             {
                 case "buyPremium":
@@ -238,7 +238,7 @@ namespace RealmOfAshes.Game
                 {
                     int sold = ack["soldQty"]?.Value<int>() ?? 0;
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
-                    string note = sold > 0 ? "Продано сразу: " + sold + " сини за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    string note = sold > 0 ? "Продано сразу: " + sold + " сини за " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " сини.";
                     return note + " Сбор " + fee + "." + shelfNote;
                 }
@@ -246,14 +246,14 @@ namespace RealmOfAshes.Game
                 {
                     int bought = ack["boughtQty"]?.Value<int>() ?? 0;
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
-                    string note = bought > 0 ? "Куплено сразу: " + bought + " сини за " + (ack["spent"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    string note = bought > 0 ? "Куплено сразу: " + bought + " сини за " + RoaPlural.Marks((ack["spent"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "Ордер на выкуп: " + resting + " сини, заморожено " + (ack["escrow"]?.Value<int>() ?? 0) + ".";
                     return note + " Сбор " + fee + ".";
                 }
-                case "buyNow": return "Куплено " + qty + " сини за " + (ack["cost"]?.Value<int>() ?? 0) + " марок.";
-                case "sellNow": return "Продано " + qty + " сини за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." + shelfNote;
+                case "buyNow": return "Куплено " + qty + " сини за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + ".";
+                case "sellNow": return "Продано " + qty + " сини за " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "." + shelfNote;
                 case "cancel": return "Ордер отменён: синь вернулась на счёт, марки ждут на полке обменника.";
-                case "claim": return "С полки обменника забрано " + (ack["claimedSilver"]?.Value<int>() ?? 0) + " марок.";
+                case "claim": return "С полки обменника забрано " + RoaPlural.Marks((ack["claimedSilver"]?.Value<int>() ?? 0)) + ".";
                 default: return string.Empty;
             }
         }
@@ -285,7 +285,7 @@ namespace RealmOfAshes.Game
                 {
                     int sold = ack["soldQty"]?.Value<int>() ?? 0;
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
-                    string note = sold > 0 ? "Продано сразу: " + sold + " шт за " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    string note = sold > 0 ? "Продано сразу: " + sold + " шт за " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "В книге: " + resting + " шт.";
                     return note + " Сбор " + (ack["setupFee"]?.Value<int>() ?? 0) + ".";
                 }
@@ -293,13 +293,13 @@ namespace RealmOfAshes.Game
                 {
                     int bought = ack["boughtQty"]?.Value<int>() ?? 0;
                     int resting = ack["restingQty"]?.Value<int>() ?? 0;
-                    string note = bought > 0 ? "Куплено сразу: " + bought + " шт за " + (ack["spent"]?.Value<int>() ?? 0) + " марок." : string.Empty;
+                    string note = bought > 0 ? "Куплено сразу: " + bought + " шт за " + RoaPlural.Marks((ack["spent"]?.Value<int>() ?? 0)) + "." : string.Empty;
                     if (resting > 0) note += (note.Length > 0 ? " " : string.Empty) + "Ордер на выкуп: " + resting + " шт, заморожено " + (ack["escrow"]?.Value<int>() ?? 0) + ".";
                     if ((ack["shelved"]?.Value<int>() ?? 0) > 0) note += " Часть не влезла в рюкзак и ждёт на полке.";
                     return note;
                 }
-                case "buyNow": return "Куплено " + qty + " шт за " + (ack["cost"]?.Value<int>() ?? 0) + " марок.";
-                case "sellNow": return "Продано " + qty + " шт, на руки " + (ack["proceeds"]?.Value<int>() ?? 0) + " марок.";
+                case "buyNow": return "Куплено " + qty + " шт за " + RoaPlural.Marks((ack["cost"]?.Value<int>() ?? 0)) + ".";
+                case "sellNow": return "Продано " + qty + " шт, на руки " + RoaPlural.Marks((ack["proceeds"]?.Value<int>() ?? 0)) + ".";
                 case "cancel": return "Ордер отменён, товар и марки ждут на полке.";
                 case "claim": return "Полка забрана.";
                 default: return string.Empty;
@@ -592,10 +592,10 @@ namespace RealmOfAshes.Game
             _title.text = string.IsNullOrEmpty(marketName) ? "РЫНОК ПУСТОШИ" : "РЫНОК · " + marketName.ToUpperInvariant();
             // Налог продавца может быть дробным: премиум и жители базы снижают ставку.
             _terms.text = _tab == Tab.Sin
-                ? "Обменник сини: сбор за ордер " + SinOrderFee + " марок, налога нет · у вас " + Marks
+                ? "Обменник сини: сбор за ордер " + RoaPlural.Marks(SinOrderFee) + ", налога нет · у вас " + Marks
                     + " марок, на счёте " + SinBalance + " сини"
                 : "Налог с продажи " + (TaxPct * 100f).ToString("0.#") + "% · сбор за ордер "
-                    + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + Marks + " марок";
+                    + (SetupFeePct * 100f).ToString("0.#") + "% · у вас " + RoaPlural.Marks(Marks);
             _status.text = string.IsNullOrEmpty(_note)
                 ? (_pending ? "Аукционер сверяет книгу…" : "Купленное, проданное и возвраты ждут на полке у аукционера.")
                 : _note;
@@ -1101,7 +1101,7 @@ namespace RealmOfAshes.Game
 
             Text priceText = Label("Price", rect, 15, TextAnchor.UpperLeft, sell ? Ink : Good, FontStyle.Bold);
             Place(priceText.rectTransform, 0f, 0f, 0.34f, 1f, new Vector2(10f, 20f), new Vector2(-4f, -3f));
-            priceText.text = price + " марок за синь";
+            priceText.text = RoaPlural.Marks(price) + " за синь";
 
             Text qtyText = Label("Qty", rect, 11, TextAnchor.LowerLeft, InkDim);
             Place(qtyText.rectTransform, 0f, 0f, 0.34f, 1f, new Vector2(10f, 4f), new Vector2(-4f, -22f));
@@ -1171,8 +1171,8 @@ namespace RealmOfAshes.Game
                     ? "Дороже всего выкупают по " + best + " — ордер не дороже этой цены продастся сразу."
                     : "Заявок на выкуп нет: ордер будет ждать покупателя.", 11, InkDim, 34f);
                 AddDurationRow(_sinExchange?["durationChoicesHours"] as JArray);
-                AddDetailText("Со счёта уйдёт " + qty + " сини, сбор " + fee + " марок, на руки не меньше "
-                    + (price * qty) + " марок.", 11, qty > SinBalance || fee > Marks ? Warn : InkDim, 40f);
+                AddDetailText("Со счёта уйдёт " + qty + " сини, сбор " + RoaPlural.Marks(fee) + ", на руки не меньше "
+                    + RoaPlural.Marks((price * qty)) + ".", 11, qty > SinBalance || fee > Marks ? Warn : InkDim, 40f);
             }
             else
             {
@@ -1181,7 +1181,7 @@ namespace RealmOfAshes.Game
                     ? "Дешевле всего продают по " + best + " — ордер не дешевле этой цены исполнится сразу."
                     : "Сейчас синь никто не продаёт: ордер будет ждать продавца.", 11, InkDim, 34f);
                 AddDurationRow(_sinExchange?["durationChoicesHours"] as JArray);
-                AddDetailText("Заморозится " + (price * qty) + " марок, сбор " + fee + ". У вас " + Marks + ".",
+                AddDetailText("Заморозится " + RoaPlural.Marks((price * qty)) + ", сбор " + fee + ". У вас " + Marks + ".",
                     11, price * qty + fee > Marks ? Warn : InkDim, 40f);
             }
 
@@ -1323,7 +1323,7 @@ namespace RealmOfAshes.Game
                 ? "Дешевле всего продают по " + best + " — ордер выше этой цены исполнится сразу."
                 : "Сейчас никто не продаёт: ордер будет ждать продавца.", 11, InkDim, 34f);
             AddDurationRow();
-            AddDetailText("Заморозится " + (price * qty) + " марок, сбор за ордер " + fee
+            AddDetailText("Заморозится " + RoaPlural.Marks((price * qty)) + ", сбор за ордер " + fee
                 + ". У вас " + Marks + ".", 11, price * qty + fee > Marks ? Warn : InkDim, 40f);
 
             bool ready = price > 0 && qty > 0 && price * qty + fee <= Marks;

@@ -1725,7 +1725,7 @@ namespace RealmOfAshes.Game
             int reputation = Mathf.Max(0, reward["reputation"]?.ToObject<int>() ?? 0);
             string factionId = reward["reputationFactionId"]?.ToString() ?? string.Empty;
             if (xp > 0) grants.Add("+" + xp + " XP");
-            if (caps > 0) grants.Add("+" + caps + " марок");
+            if (caps > 0) grants.Add("+" + RoaPlural.Marks(caps));
             if (reputation > 0)
                 grants.Add("+" + reputation + " репутации"
                     + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + RoaPipboy.FactionLabel(factionId)));
@@ -1744,7 +1744,7 @@ namespace RealmOfAshes.Game
                 foreach (JToken row in inventory)
                     if (RoaInventory.BaseId(row?["id"]?.ToString()) == "silver")
                         balance += Mathf.Max(0, row?["qty"]?.ToObject<int>() ?? 0);
-                confirmed.Add("баланс " + balance + " марок");
+                confirmed.Add("баланс " + RoaPlural.Marks(balance));
             }
             if (authoritativeSelf?["level"] != null)
                 confirmed.Add("ур. " + Mathf.Max(1, authoritativeSelf["level"].ToObject<int>()));

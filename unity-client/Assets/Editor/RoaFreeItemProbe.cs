@@ -52,21 +52,6 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
-        [InitializeOnLoadMethod]
-        private static void InitializeRecovery()
-        {
-            if(AssetDatabase.IsAssetImportWorkerProcess()) return;
-            EditorApplication.delayCall+=()=>
-            {
-                if(!_running && File.Exists(RecoveryFile) && !EditorApplication.isPlayingOrWillChangePlaymode)
-                    RestoreInterruptedScene();
-            };
-            EditorApplication.playModeStateChanged+=state=>
-            {
-                if(state==PlayModeStateChange.EnteredEditMode && !_running && File.Exists(RecoveryFile)) RestoreInterruptedScene();
-            };
-        }
-
         [MenuItem("Realm of Ashes/Восстановить сцену после проверки предметов")]
         public static void RestoreInterruptedScene()
         {

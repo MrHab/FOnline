@@ -11,12 +11,6 @@ namespace RealmOfAshes.EditorTools
 {
     public static class RoaBoltThrowProbe
     {
-        [MenuItem("Realm of Ashes/Проверить бросок болта из руки")]
-        private static void Run()
-        {
-            RunProbe();
-        }
-
         public static void RunBatch()
         {
             try

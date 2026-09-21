@@ -349,31 +349,6 @@ namespace RealmOfAshes.Game
                 VisualAcceleration, VisualDeceleration, frameDt);
         }
 
-        private void OnControllerColliderHit(ControllerColliderHit hit)
-        {
-            if (hit == null || hit.normal.y > 0.55f) return;
-            // A living actor blocks displacement, but it is not a wall: feeding
-            // this contact into the compression pose bends the pelvis while foot
-            // IK tries to keep both soles planted and can fold a leg upward.
-            if (RoaCharacterView.IsActorCollider(hit.collider, transform))
-            {
-                _actorContact = true;
-                return;
-            }
-            float pressure = RoaLocomotionPresentation.ContactPressure(
-                _requestedVelocity, hit.normal);
-            if (pressure <= 0.001f) return;
-
-            // В углу CharacterController может вернуть несколько стен за кадр.
-            // Для позы и скольжения сохраняем ту, в которую игрок давит сильнее.
-            if (!_colliding || pressure > _collisionPressure)
-            {
-                _colliding = true;
-                _collisionNormal = hit.normal;
-                _collisionPressure = pressure;
-            }
-        }
-
         /// <summary>
         /// Применить авторитетное состояние. Позицию трогаем только когда сервер
         /// прямо об этом просит: обычная сверка сохраняет локальную позицию, иначе

@@ -445,7 +445,7 @@ namespace RealmOfAshes.Game
                     queued > 0 ? RowQueued : (onBody ? RowEquipped : RowBorder), free <= 0 || onBody,
                     () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
                     (onBody ? "Предмет сейчас на персонаже. Снимите его в ПУТНИКЕ, чтобы продать. " : string.Empty)
-                    + (e.Price > 0 ? "Продажа: " + e.Price + " марок за 1 шт." : "Этот покупатель такую вещь не берёт."));
+                    + (e.Price > 0 ? "Продажа: " + RoaPlural.Marks(e.Price) + " за 1 шт." : "Этот покупатель такую вещь не берёт."));
             }
             SetEmpty(_player, index == 0, _player.Category == "all"
                 ? "Нет предметов для продажи."
@@ -485,7 +485,7 @@ namespace RealmOfAshes.Game
                     e.Price + " мар.", queued > 0 ? "в обмене " + queued : null,
                     queued > 0 ? RowQueued : ((weightBlocked || moneyBlocked) ? RowBlocked : RowBorder), stockBlocked,
                     () => Interaction.TradeRequest(captured.RuntimeId, true, capturedAvailable, captured.Price),
-                    "Цена покупки: " + e.Price + " марок" + (moneyBlocked ? " · возможна доплата" : (weightBlocked ? " · возможен перегруз" : string.Empty)));
+                    "Цена покупки: " + RoaPlural.Marks(e.Price) + (moneyBlocked ? " · возможна доплата" : (weightBlocked ? " · возможен перегруз" : string.Empty)));
             }
             SetEmpty(_vendor, index == 0, _vendor.Category == "all"
                 ? "У торговца нет товаров."

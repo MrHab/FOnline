@@ -306,8 +306,8 @@ namespace RealmOfAshes.Game
             {
                 string leader = auction?["leading"]?.ToObject<bool>() == true ? "ваша" : auction?["bidderName"]?.ToString();
                 _plotAuction.text = highest > 0
-                    ? "Торги за участок идут: ставка " + highest + " марок (" + leader + ") · до " + PlotTime(auction["endsAt"])
-                    : "Торги за участок открыты: первая ставка от " + minBid + " марок, торги длятся сутки.";
+                    ? "Торги за участок идут: ставка " + RoaPlural.Marks(highest) + " (" + leader + ") · до " + PlotTime(auction["endsAt"])
+                    : "Торги за участок открыты: первая ставка от " + RoaPlural.Marks(minBid) + ", торги длятся сутки.";
             }
             _bidHint.text = open
                 ? "Ставку делают у таблички участка."
@@ -396,7 +396,7 @@ namespace RealmOfAshes.Game
             bool available = Interaction.CanCraft(recipe);
             bool pending = Interaction.CraftPending;
 
-            card.Cost.text = "Материалы: " + RoaInteraction.CraftCost(recipe) + " · комиссия: " + recipe.Fee + " марок"
+            card.Cost.text = "Материалы: " + RoaInteraction.CraftCost(recipe) + " · комиссия: " + RoaPlural.Marks(recipe.Fee)
                 + (recipe.WorkSeconds > 0 ? " · работа: " + recipe.WorkSeconds + " с" : string.Empty);
 
             bool focus = plot != null && RoaCraftingPlots.WantsFocus(recipe, account);

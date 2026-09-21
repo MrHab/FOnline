@@ -92,19 +92,6 @@ namespace RealmOfAshes.Game
         private static Task<GltfImport> _animationLibraryLoad;
         private static int _modelCacheSession;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetModelCache()
-        {
-            _modelCacheSession++;
-            RoaModelImportLifetime.Clear(ModelCache);
-            RoaModelImportLifetime.Clear(ModelLoads);
-            if (_animationLibrary != null) _animationLibrary.Dispose();
-            else RoaModelImportLifetime.Release(_animationLibraryLoad);
-            _animationLibrary = null;
-            _animationLibraryLoad = null;
-            _animationLibraryTried = false;
-        }
-
         private Animation _animation;
         private readonly HashSet<string> _clips = new HashSet<string>();
         private string _currentClip = string.Empty;

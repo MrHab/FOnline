@@ -70,14 +70,5 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private void AddKromkaQuestButton(string caption, System.Action action)
-        {
-            Button button = TextButton("KromkaQuestAction", _questsList, caption, 12, out Text label);
-            button.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
-            label.color = AccentWarm;
-            button.onClick.AddListener(() => action());
-            _questRows.Add(button.gameObject);
-        }
-
     }
 }

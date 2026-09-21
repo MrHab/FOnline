@@ -108,8 +108,6 @@ namespace RealmOfAshes.Game
         // Вертикальный сдвиг слота каждой плашки на прошлом кадре (по Entry.Key).
         private Dictionary<string, float> _stickySlots = new Dictionary<string, float>();
         private Dictionary<string, float> _nextStickySlots = new Dictionary<string, float>();
-        private GUIStyle _nameStyle;
-        private GUIStyle _healthStyle;
 
         public void Configure(RoaSocketClient socket, RoaEnemies enemies,
                               RoaRemotePlayers remotePlayers, Camera worldCamera)
@@ -427,60 +425,6 @@ namespace RealmOfAshes.Game
             RefreshHint(show);
         }
 
-        private void OnGUI()
-        {
-            if (CanvasDriven) return;
-            RoaUiTheme.Apply();
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            if (Player == null || !Player.gameObject.activeInHierarchy) return;
-            Camera camera = WorldCamera != null ? WorldCamera : Camera.main;
-            if (camera == null) return;
-
-            _entries.Clear();
-            Enemies?.CollectNameplates(_entries, Player.transform.position, MaxDistance);
-            RemotePlayers?.CollectNameplates(_entries, Player.transform.position, MaxDistance);
-            _entries.Sort((a, b) => Vector3.SqrMagnitude(a.World - Player.transform.position)
-                .CompareTo(Vector3.SqrMagnitude(b.World - Player.transform.position)));
-            bool awareness = Socket?.Session?.Self?["talentRanks"]?["awareness"]?.ToObject<int>() > 0;
-
-            EnsureStyles();
-            _occupied.Clear();
-            foreach (Entry entry in _entries)
-            {
-                Vector3 screen = camera.WorldToScreenPoint(entry.World);
-                if (screen.z <= 0f) continue;
-                float x = screen.x;
-                float y = Screen.height - screen.y;
-                if (x < 0f || x > Screen.width || y < 0f || y > Screen.height) continue;
-                if (!TryResolveScreenRect(new Vector2(x, y), _occupied, Screen.width, Screen.height, out Rect rect))
-                    continue;
-                _occupied.Add(rect);
-                float distance = Vector3.Distance(Player.transform.position, entry.World);
-                float alpha = Mathf.Lerp(0.48f, 0.92f, 1f - Mathf.Clamp01(distance / MaxDistance));
-                Color previous = GUI.color;
-                GUI.color = new Color(0.025f, 0.028f, 0.024f, alpha * 0.86f);
-                GUI.DrawTexture(rect, Texture2D.whiteTexture);
-                Color accent = entry.IsPlayer
-                    ? new Color(0.50f, 0.78f, 1f, alpha)
-                    : entry.Hostile ? new Color(1f, 0.48f, 0.36f, alpha)
-                    : new Color(0.67f, 0.90f, 0.56f, alpha);
-                GUI.color = accent;
-                GUI.DrawTexture(new Rect(rect.x, rect.y, 2f, rect.height), Texture2D.whiteTexture);
-                GUI.color = previous;
-
-                string identity = string.IsNullOrEmpty(entry.Name)
-                    ? (entry.IsPlayer ? "Игрок" : entry.Faction)
-                    : (string.IsNullOrEmpty(entry.Faction) ? entry.Name : entry.Name + " · " + entry.Faction);
-                GUI.Label(new Rect(rect.x + 5f, rect.y + 1f, rect.width - 10f, 17f),
-                    string.IsNullOrEmpty(identity) ? "Персонаж" : identity, _nameStyle);
-                _healthStyle.normal.textColor = HealthColor(entry.Hp, entry.MaxHp);
-                string health = awareness
-                    ? Mathf.Max(0, entry.Hp) + "/" + Mathf.Max(1, entry.MaxHp)
-                    : HealthState(entry.Hp, entry.MaxHp);
-                GUI.Label(new Rect(rect.x + 5f, rect.y + 17f, rect.width - 10f, 14f), health, _healthStyle);
-            }
-        }
-
         public static bool TryResolveScreenRect(Vector2 point, IReadOnlyList<Rect> occupied,
                                                 int screenWidth, int screenHeight, out Rect resolved)
         {
@@ -565,36 +509,6 @@ namespace RealmOfAshes.Game
             return false;
         }
 
-        private void EnsureStyles()
-        {
-            if (_nameStyle != null) return;
-            _nameStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                fontSize = Mathf.Max(11, GUI.skin.label.fontSize - 1),
-                clipping = TextClipping.Clip
-            };
-            _healthStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = Mathf.Max(10, GUI.skin.label.fontSize - 1),
-                clipping = TextClipping.Clip
-            };
-        }
-
-        private static string HealthState(int hp, int maxHp)
-        {
-            if (hp <= 0) return "при смерти";
-            float ratio = hp / (float)Mathf.Max(1, maxHp);
-            if (hp >= maxHp || ratio >= 0.995f) return "здоров";
-            if (ratio >= 0.8f) return "лёгкое ранение";
-            if (ratio >= 0.5f) return "ранен";
-            if (ratio >= 0.3f) return "сильное ранение";
-            if (ratio >= 0.1f) return "критическое ранение";
-            return "при смерти";
-        }
-
         private static string CompactHealthState(int hp, int maxHp)
         {
             if (hp <= 0) return "при смерти";
@@ -607,12 +521,5 @@ namespace RealmOfAshes.Game
             return "при смерти";
         }
 
-        private static Color HealthColor(int hp, int maxHp)
-        {
-            float ratio = hp / (float)Mathf.Max(1, maxHp);
-            if (ratio <= 0.34f) return new Color(1f, 0.46f, 0.38f);
-            if (ratio <= 0.72f) return new Color(1f, 0.78f, 0.35f);
-            return new Color(0.82f, 1f, 0.76f);
-        }
     }
 }

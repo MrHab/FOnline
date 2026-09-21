@@ -683,33 +683,6 @@ namespace RealmOfAshes.Game
             _statusUntil = Time.time + 2.5f;
         }
 
-        private void OnGUI()
-        {
-            if (CanvasDriven) return;
-            RoaUiTheme.Apply();
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            UnityEngine.Camera cam = UnityEngine.Camera.main;
-
-            if (cam != null && Player != null)
-            {
-                foreach (GroundItem item in _items.Values)
-                {
-                    Vector3 delta = item.Position - Player.transform.position;
-                    delta.y = 0f;
-                    if (delta.sqrMagnitude > PickupRange * PickupRange) continue;
-
-                    Vector3 screen = cam.WorldToScreenPoint(item.Position + Vector3.up * 0.5f);
-                    if (screen.z <= 0f) continue;
-
-                    string label = item.ItemId + (item.Qty > 1 ? " x" + item.Qty : "") + "   [E]";
-                    GUI.Label(new Rect(screen.x - 70f, Screen.height - screen.y - 18f, 140f, 20f), label);
-                }
-            }
-
-            if (Time.time < _statusUntil && !string.IsNullOrEmpty(_status))
-                GUI.Label(new Rect(Screen.width * 0.5f - 120f, Screen.height - 170f, 240f, 20f), _status);
-        }
-
         private void Remove(string id)
         {
             GroundItem item;

@@ -35,8 +35,6 @@ namespace RealmOfAshes.Game
         private bool _saving;
         private bool _worldActive;
         private int _loadVersion;
-        private GUIStyle _slotStyle;
-        private GUIStyle _hintStyle;
         private bool _eHeld;
         private float _ePressedAt;
         private bool _radialOpen;
@@ -368,73 +366,6 @@ namespace RealmOfAshes.Game
             _saving = false;
         }
 
-        private void OnGUI()
-        {
-            RoaUiTheme.Apply();
-            if (!InputEnabled && !RoaHudLayout.Editing) return;
-            if (!_worldActive && !_radialOpen) return;
-            bool inventoryOpen = _inventory != null && _inventory.IsOpen;
-            bool pipboyOpen = _combat != null && _combat.Pipboy != null && _combat.Pipboy.IsOpen;
-            bool interactionOpen = _interaction != null && _interaction.IsPanelOpen;
-            if ((pipboyOpen || interactionOpen) && !RoaHudLayout.Editing) return;
-            EnsureStyles();
-
-            if (_radialOpen)
-            {
-                // Круг рисует HUD-канва: у шрифта IMGUI в WebGL нет кириллицы, и
-                // в середине круга вместо имени предмета оставалось «I:».
-                if (!RadialCanvasDriven) DrawRadial();
-                if (CanvasDriven || !IsMobileVisible) return;
-            }
-            if (CanvasDriven) return;
-
-            Rect defaultBar = IsMobileVisible
-                ? BarRect(Screen.width, Screen.height)
-                : DesktopBarRect(Screen.width, Screen.height);
-            Rect bar = inventoryOpen && !IsMobileVisible && !RoaHudLayout.Editing
-                ? DesktopInventoryBarRect(Screen.width, Screen.height)
-                : RoaHudLayout.Resolve("quickbar", defaultBar);
-            float gap = 4f;
-            float slotWidth = (bar.width - gap * (SlotCount - 1)) / SlotCount;
-            for (int i = 0; i < SlotCount; i++)
-            {
-                Rect rect = new Rect(bar.x + i * (slotWidth + gap), bar.y, slotWidth, bar.height);
-                string itemId = _slots[i];
-                bool active = !string.IsNullOrEmpty(itemId) && _inventory != null && _inventory.IsEquipped(itemId);
-                bool available = !string.IsNullOrEmpty(itemId) && _inventory != null && _inventory.OwnsItem(itemId);
-                Color old = GUI.backgroundColor;
-                if (!string.IsNullOrEmpty(_assignItem)) GUI.backgroundColor = new Color(0.95f, 0.72f, 0.25f);
-                else if (_clearMode) GUI.backgroundColor = new Color(0.82f, 0.34f, 0.25f);
-                else if (active) GUI.backgroundColor = new Color(0.42f, 0.78f, 0.35f);
-                else if (!available && !string.IsNullOrEmpty(itemId)) GUI.backgroundColor = new Color(0.40f, 0.40f, 0.40f);
-
-                if (RoaHudLayout.Editing) GUI.Box(rect, SlotLabel(i, itemId), _slotStyle);
-                else if (GUI.Button(rect, SlotLabel(i, itemId), _slotStyle))
-                {
-                    if (!string.IsNullOrEmpty(_assignItem)) Assign(i, _assignItem);
-                    else if (_clearMode) ClearSlot(i);
-                    else Activate(i);
-                }
-                GUI.backgroundColor = old;
-            }
-
-            Rect hint = new Rect(bar.x, bar.yMax + 3f, bar.width - 72f, 24f);
-            string hintText = !string.IsNullOrEmpty(_assignItem)
-                ? "Выберите слот для " + RoaItemData.Name(_assignItem)
-                : (_saving ? "Сохранение быстрых слотов…" : _status);
-            if (!string.IsNullOrEmpty(hintText)) GUI.Label(hint, hintText, _hintStyle);
-            if (!RoaHudLayout.Editing && _inventory != null && _inventory.IsOpen)
-            {
-                Rect clear = new Rect(bar.xMax - 68f, bar.yMax + 2f, 68f, 24f);
-                if (GUI.Button(clear, _clearMode ? "Отмена" : "Очистить"))
-                {
-                    _clearMode = !_clearMode;
-                    _assignItem = string.Empty;
-                }
-            }
-            RoaHudLayout.HandleDrag("quickbar", ref bar, "Быстрые слоты");
-        }
-
         private void OpenAssignRadial()
         {
             _assignRadial = true;
@@ -478,56 +409,6 @@ namespace RealmOfAshes.Game
             _radialSelected = RadialSelection(MouseGuiPoint() - _radialCenter, SlotCount);
         }
 
-        private void DrawRadial()
-        {
-            List<int> entries = AllIndices();
-            bool hasAssignedItems = AssignedIndices().Count > 0;
-            float radius = RadialRadius(Screen.width, Screen.height);
-            const float size = 70f;
-            for (int visual = 0; visual < entries.Count; visual++)
-            {
-                int index = entries[visual];
-                float angle = -Mathf.PI * 0.5f + visual * Mathf.PI * 2f / Mathf.Max(1, entries.Count);
-                Vector2 center = _radialCenter + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                Rect rect = new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size);
-                Color old = GUI.backgroundColor;
-                if (_radialSelected == index) GUI.backgroundColor = new Color(0.96f, 0.72f, 0.24f);
-                else if (!_assignRadial && _inventory != null && _inventory.IsEquipped(_slots[index]))
-                    GUI.backgroundColor = new Color(0.42f, 0.78f, 0.35f);
-                else if (string.IsNullOrEmpty(_slots[index]))
-                    GUI.backgroundColor = new Color(0.30f, 0.30f, 0.28f);
-                else if (!_assignRadial && _inventory != null && !_inventory.OwnsItem(_slots[index]))
-                    GUI.backgroundColor = new Color(0.43f, 0.24f, 0.20f);
-                if (GUI.Button(rect, SlotLabel(index, _slots[index]), _slotStyle) && _assignRadial)
-                {
-                    Assign(index, _assignItem);
-                    CloseRadial();
-                }
-                GUI.backgroundColor = old;
-            }
-
-            Rect centerRect = new Rect(_radialCenter.x - 56f, _radialCenter.y - 32f, 112f, 64f);
-            string centerText = _assignRadial
-                ? "выбери\nслот"
-                : (hasAssignedItems ? "выбери\nи отпусти" : "слоты пусты\nI: инвентарь");
-            GUI.Box(centerRect, centerText, _slotStyle);
-        }
-
-        private List<int> AssignedIndices()
-        {
-            var result = new List<int>();
-            for (int i = 0; i < SlotCount; i++)
-                if (!string.IsNullOrEmpty(_slots[i])) result.Add(i);
-            return result;
-        }
-
-        private static List<int> AllIndices()
-        {
-            var result = new List<int>(SlotCount);
-            for (int i = 0; i < SlotCount; i++) result.Add(i);
-            return result;
-        }
-
         private static Vector2 MouseGuiPoint()
         {
             return new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
@@ -561,28 +442,6 @@ namespace RealmOfAshes.Game
             if (baseId.Length > 10) baseId = baseId.Substring(0, 9) + "…";
             int qty = _inventory != null ? _inventory.QuickItemQuantity(itemRuntimeId) : 0;
             return (index + 1) + "\n" + baseId + (qty > 1 ? " ×" + qty : string.Empty);
-        }
-
-        private void EnsureStyles()
-        {
-            if (_slotStyle == null)
-            {
-                _slotStyle = new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    wordWrap = false,
-                    fontStyle = FontStyle.Bold,
-                    fontSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height / 50f), 11, 18)
-                };
-            }
-            if (_hintStyle == null)
-            {
-                _hintStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fontSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height / 58f), 10, 16)
-                };
-            }
         }
 
         private static bool ValidIndex(int index)

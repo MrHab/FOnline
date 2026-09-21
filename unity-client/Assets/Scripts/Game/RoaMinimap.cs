@@ -90,7 +90,6 @@ namespace RealmOfAshes.Game
         private LocationDefinition _location;
         private JArray _worldMap;
         private Texture2D _staticTexture;
-        private Texture2D _arrowTexture;
         private bool _edgeExitAllowed = true;
         private float _nextRefresh;
         private RoaMinimapSnapshot _snapshot;
@@ -193,7 +192,6 @@ namespace RealmOfAshes.Game
         private void OnDestroy()
         {
             DestroyRuntime(_staticTexture);
-            DestroyRuntime(_arrowTexture);
         }
 
         private void Update()
@@ -228,108 +226,6 @@ namespace RealmOfAshes.Game
             GroundItems?.CollectMinimapMarkers(_markers);
             Interaction?.CollectMinimapMarkers(_markers);
             WorldActivity?.CollectMinimapMarkers(_markers);
-        }
-
-        private void OnGUI()
-        {
-            RoaUiTheme.Apply();
-            if (CanvasDriven) return;
-            if (RoaGameBootstrap.BlocksWorldHud) return;
-            if (_location == null || _staticTexture == null || Player == null || !Player.gameObject.activeInHierarchy)
-                return;
-
-            bool mobileLayout = RoaGameBootstrap.Active != null
-                && RoaGameBootstrap.Active.MobileControls != null
-                && RoaGameBootstrap.Active.MobileControls.ControlsEnabled;
-            float size = mobileLayout
-                ? Mathf.Clamp(Screen.height * 0.31f, 100f, 132f)
-                : Mathf.Min(Size, Mathf.Max(120f, Screen.height - 70f));
-            float margin = mobileLayout ? 8f : 12f;
-            float top = mobileLayout ? 78f : 12f;
-            float x = Screen.width - size - margin;
-            Rect defaultPanel = new Rect(x - 6f, top, size + 12f, size + 42f);
-            var panel = mobileLayout && !RoaHudLayout.Editing
-                ? defaultPanel
-                : RoaHudLayout.Resolve("minimap", defaultPanel);
-            x = panel.x + 6f;
-            GUI.Box(panel, GUIContent.none);
-            GUI.Label(new Rect(x, panel.y + 5f, size, 20f), string.IsNullOrEmpty(LocationName) ? "Карта" : LocationName);
-            var mapRect = new Rect(x, panel.y + 26f, size, size);
-
-            // Север (+Z) сверху: верхний ряд текстуры — старший tz, а у IMGUI ось Y
-            // смотрит вниз, поэтому маркеры ставятся от нижнего края (1 − y).
-            GUI.DrawTexture(mapRect, _staticTexture, ScaleMode.StretchToFill, false);
-            DrawGrid(mapRect);
-            for (int i = 0; i < _markers.Count; i++) DrawMarker(mapRect, _markers[i]);
-
-            DrawPlayer(mapRect);
-
-            Vector2 playerPoint = WorldToMapNormalized(Player.transform.position);
-            int tx = Mathf.Clamp(Mathf.FloorToInt(playerPoint.x * MapWidth), 0, MapWidth - 1);
-            int tz = Mathf.Clamp(Mathf.FloorToInt(playerPoint.y * MapDepth), 0, MapDepth - 1);
-            GUI.Label(new Rect(x, mapRect.yMax + 2f, size, 18f), "клетка " + tx + ":" + tz);
-            RoaHudLayout.HandleDrag("minimap", ref panel, "Мини-карта");
-        }
-
-        private static void DrawGrid(Rect rect)
-        {
-            Color previous = GUI.color;
-            GUI.color = new Color(0.89f, 0.76f, 0.43f, 0.22f);
-            for (int i = 1; i < 10; i++)
-            {
-                float x = rect.x + rect.width * i / 10f;
-                float y = rect.y + rect.height * i / 10f;
-                GUI.DrawTexture(new Rect(x, rect.y, 1f, rect.height), Texture2D.whiteTexture);
-                GUI.DrawTexture(new Rect(rect.x, y, rect.width, 1f), Texture2D.whiteTexture);
-            }
-            GUI.color = previous;
-        }
-
-        private void DrawMarker(Rect rect, Marker marker)
-        {
-            Vector2 p = WorldToMapNormalized(marker.Position);
-            if (p.x < 0f || p.y < 0f || p.x > 1f || p.y > 1f) return;
-            Color color;
-            float size;
-            switch (marker.Kind)
-            {
-                case MarkerKind.Enemy: color = new Color(0.88f, 0.31f, 0.22f); size = 4f; break;
-                case MarkerKind.FriendlyNpc: color = new Color(0.46f, 0.75f, 0.62f); size = 4f; break;
-                case MarkerKind.ServiceNpc: color = new Color(0.95f, 0.75f, 0.30f); size = 5f; break;
-                case MarkerKind.RemotePlayer: color = new Color(0.44f, 0.67f, 0.90f); size = 5f; break;
-                case MarkerKind.GroundItem: color = new Color(0.90f, 0.84f, 0.50f); size = 3f; break;
-                case MarkerKind.Container: color = new Color(0.90f, 0.71f, 0.35f); size = 4f; break;
-                case MarkerKind.Objective: color = new Color(0.95f, 0.78f, 0.25f); size = 6f; break;
-                case MarkerKind.Threat: color = new Color(0.96f, 0.24f, 0.16f); size = 8f; break;
-                case MarkerKind.Extraction: color = new Color(0.42f, 0.82f, 0.40f); size = 7f; break;
-                default: color = new Color(0.78f, 0.62f, 0.30f); size = 3f; break;
-            }
-            Rect markerRect = CenteredRect(rect, p, size);
-            Color previous = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(markerRect, Texture2D.whiteTexture);
-            GUI.color = previous;
-        }
-
-        private void DrawPlayer(Rect rect)
-        {
-            Vector2 p = WorldToMapNormalized(Player.transform.position);
-            if (p.x < 0f || p.y < 0f || p.x > 1f || p.y > 1f) return;
-            EnsureArrowTexture();
-            // Ось Y IMGUI смотрит вниз: север (+Z) сверху, поворот по часовой = курс.
-            Vector2 center = new Vector2(rect.x + p.x * rect.width,
-                rect.y + (1f - p.y) * rect.height);
-            Matrix4x4 previous = GUI.matrix;
-            GUIUtility.RotateAroundPivot(Player.transform.eulerAngles.y, center);
-            GUI.DrawTexture(new Rect(center.x - 5f, center.y - 7f, 10f, 14f), _arrowTexture);
-            GUI.matrix = previous;
-        }
-
-        private static Rect CenteredRect(Rect rect, Vector2 normalized, float size)
-        {
-            float x = rect.x + normalized.x * rect.width;
-            float y = rect.y + (1f - normalized.y) * rect.height;
-            return new Rect(x - size * 0.5f, y - size * 0.5f, size, size);
         }
 
         private void BuildStaticTexture(LocationDefinition location)
@@ -498,30 +394,6 @@ namespace RealmOfAshes.Game
                 case "ruinedRoad": return new Color32(63, 59, 49, 230);
                 default: return new Color32(55, 74, 36, 230);
             }
-        }
-
-        private void EnsureArrowTexture()
-        {
-            if (_arrowTexture != null) return;
-            _arrowTexture = new Texture2D(9, 13, TextureFormat.RGBA32, false)
-            {
-                name = "MinimapPlayerArrow",
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            var pixels = new Color32[9 * 13];
-            Color32 clear = new Color32(0, 0, 0, 0);
-            Color32 fill = new Color32(230, 214, 143, 255);
-            for (int i = 0; i < pixels.Length; i++) pixels[i] = clear;
-            for (int y = 0; y < 10; y++)
-            {
-                int half = Mathf.Clamp((9 - y) / 2, 1, 4);
-                for (int x = 4 - half; x <= 4 + half; x++) pixels[(12 - y) * 9 + x] = fill;
-            }
-            for (int y = 0; y < 5; y++)
-                for (int x = 3; x <= 5; x++) pixels[y * 9 + x] = fill;
-            _arrowTexture.SetPixels32(pixels);
-            _arrowTexture.Apply(false, false);
         }
 
         private static void DestroyRuntime(Object target)

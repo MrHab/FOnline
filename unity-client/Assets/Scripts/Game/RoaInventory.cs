@@ -117,11 +117,7 @@ namespace RealmOfAshes.Game
         private string _modifyWeaponRuntimeId = string.Empty;
         private string _modifySlot = "barrel";
         private string _dropPickerItem = string.Empty;
-        private int _dropPickerMax = 1;
-        private int _dropPickerQty = 1;
-        private Vector2 _scroll;
         private string _filter = string.Empty;
-        private InventorySortMode _sortMode;
 
         public bool IsOpen { get { return _open; } }
 
@@ -546,11 +542,6 @@ namespace RealmOfAshes.Game
             });
         }
 
-        private void DropItem(string itemRuntimeId, int qty)
-        {
-            SubmitDropItem(itemRuntimeId, qty);
-        }
-
         /// <summary>Uses the same authoritative drop request as the inventory UI.</summary>
         public bool SubmitDropItem(string itemRuntimeId, int qty, Action<JObject> completed = null)
         {
@@ -717,207 +708,9 @@ namespace RealmOfAshes.Game
             return true;
         }
 
-        private void OnGUI()
-        {
-            if (CanvasDriven) return;
-            LegacyOnGui();
-        }
-
-        private void LegacyOnGui()
-        {
-            RoaUiTheme.Apply();
-            if (!_open) return;
-            if (!string.IsNullOrEmpty(_dropPickerItem))
-            {
-                DrawDropPicker();
-                return;
-            }
-
-            bool mobileLayout = Quickbar != null && Quickbar.IsMobileVisible;
-            float top = mobileLayout ? 104f : 12f;
-            float width = mobileLayout
-                ? Mathf.Min(720f, Screen.width - 24f)
-                : Mathf.Min(500f, Screen.width - 24f);
-            float height = Mathf.Min(500f, Screen.height - top - 12f);
-            float x = mobileLayout ? (Screen.width - width) * 0.5f : Screen.width - width - 12f;
-
-            var area = new Rect(x, top, width, Mathf.Max(120f, height));
-            GUILayout.BeginArea(area, GUI.skin.box);
-
-            GUILayout.Label("<b>Сумка</b>   (Tab — закрыть)", Rich());
-            Color previousColor = GUI.color;
-            if (_carryWeight > _carryCapacity + 0.0001f) GUI.color = new Color(1f, 0.48f, 0.38f);
-            GUILayout.Label("Вес: " + _carryWeight.ToString("0.#") + " / " + _carryCapacity.ToString("0.#") + " кг");
-            GUI.color = previousColor;
-
-            GUILayout.Space(4f);
-            GUILayout.Label("Экипировано:");
-
-            foreach (string slot in SlotOrder)
-            {
-                string equipped;
-                _equipment.TryGetValue(slot, out equipped);
-
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(SlotLabel(slot), GUILayout.Width(80f));
-                GUILayout.Label(string.IsNullOrEmpty(equipped) ? "—" : RoaItemData.Name(equipped));
-
-                // Кулаки — встроенное состояние боя, а не предмет: снимать нечего.
-                bool canClear = !string.IsNullOrEmpty(equipped) && BaseId(equipped) != "fists";
-                if (slot == "weapon" && Firearms.Contains(BaseId(equipped))
-                    && (Socket?.Session?.Combat?["loaded"]?.ToObject<int>() ?? 0) > 0
-                    && GUILayout.Button("разрядить", GUILayout.Width(82f)))
-                    SubmitItemAction("unload", equipped);
-                if (RoaWeaponModificationData.IsFirearm(BaseId(equipped))
-                    && GUILayout.Button("моды", GUILayout.Width(52f)))
-                    SelectWeaponForModification(equipped);
-                if (canClear && GUILayout.Button("снять", GUILayout.Width(56f)))
-                    // The equipment protocol uses an empty runtime id to clear a
-                    // physical item. The server then resolves the right hand to
-                    // its built-in fists state; sending "fists" here incorrectly
-                    // asks it to find a physical fists instance in the inventory.
-                    Equip(slot, string.Empty);
-
-                GUILayout.EndHorizontal();
-            }
-
-            GUILayout.Space(6f);
-            GUILayout.Label("Предметы:");
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Поиск", GUILayout.Width(46f));
-            _filter = GUILayout.TextField(_filter ?? string.Empty, GUILayout.MinWidth(90f));
-            if (GUILayout.Button("Сортировка: " + SortLabel(_sortMode), GUILayout.Width(168f)))
-                _sortMode = (InventorySortMode)(((int)_sortMode + 1) % 3);
-            GUILayout.EndHorizontal();
-
-            _scroll = GUILayout.BeginScrollView(_scroll);
-
-            DrawModificationWorkbench();
-
-            if (_items.Count == 0) GUILayout.Label("пусто");
-
-            foreach (Row row in DisplayItems())
-            {
-                string baseId = BaseId(row.Id);
-                GUILayout.BeginHorizontal();
-                string condition = RepairableItems.Contains(baseId)
-                    ? "  (" + Mathf.RoundToInt(ItemCondition(baseId)) + "%)"
-                    : string.Empty;
-                float rowWeight = RoaItemData.Weight(baseId) * Mathf.Max(0, row.Qty);
-                GUILayout.Label(RoaItemData.Name(baseId) + (row.Qty > 1 ? "  x" + row.Qty : "")
-                    + "  · " + rowWeight.ToString("0.###") + " кг" + condition);
-
-                string slot = SlotFor(baseId);
-                if (slot != null && GUILayout.Button("надеть", GUILayout.Width(62f)))
-                    Equip(slot, row.Id);
-                if (RoaWeaponModificationData.IsFirearm(baseId)
-                    && GUILayout.Button("моды", GUILayout.Width(52f)))
-                    SelectWeaponForModification(row.Id);
-                if (MedicalItems.Contains(baseId) && GUILayout.Button("лечить", GUILayout.Width(62f)))
-                    HealSelf(baseId);
-                if (Quickbar != null && IsQuickAssignable(row.Id)
-                    && GUILayout.Button("быстро", GUILayout.Width(62f)))
-                    Quickbar.BeginAssign(row.Id);
-                if (RepairableItems.Contains(baseId) && ItemCondition(baseId) < 99.995f
-                    && GUILayout.Button("ремонт", GUILayout.Width(62f)))
-                    SubmitItemAction("repair", row.Id);
-                if (SalvageableItems.Contains(baseId) && GUILayout.Button("разобрать", GUILayout.Width(72f)))
-                    SubmitItemAction("salvage", row.Id);
-                if (baseId != "fists" && GUILayout.Button("выбросить", GUILayout.Width(78f)))
-                    DropItem(row.Id, 1);
-                if (baseId != "fists" && row.Qty > 1 && GUILayout.Button("кол-во", GUILayout.Width(62f)))
-                    OpenDropPicker(row.Id, row.Qty);
-
-                GUILayout.EndHorizontal();
-            }
-
-            GUILayout.EndScrollView();
-
-            if (!string.IsNullOrEmpty(_status)) GUILayout.Label(_status);
-
-            GUILayout.EndArea();
-        }
-
-        private List<Row> DisplayItems()
-        {
-            string query = (_filter ?? string.Empty).Trim();
-            var rows = new List<Row>();
-            foreach (Row row in _items)
-            {
-                string baseId = BaseId(row.Id);
-                if (query.Length > 0
-                    && RoaItemData.Name(baseId).IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0
-                    && baseId.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                rows.Add(row);
-            }
-            rows.Sort((a, b) =>
-            {
-                if (_sortMode == InventorySortMode.Weight)
-                {
-                    int byWeight = (RoaItemData.Weight(b.Id) * b.Qty).CompareTo(RoaItemData.Weight(a.Id) * a.Qty);
-                    if (byWeight != 0) return byWeight;
-                }
-                else if (_sortMode == InventorySortMode.Quantity)
-                {
-                    int byQty = b.Qty.CompareTo(a.Qty);
-                    if (byQty != 0) return byQty;
-                }
-                return string.Compare(RoaItemData.Name(a.Id), RoaItemData.Name(b.Id), StringComparison.CurrentCultureIgnoreCase);
-            });
-            return rows;
-        }
-
-        private static string SortLabel(InventorySortMode mode)
-        {
-            if (mode == InventorySortMode.Weight) return "по весу";
-            if (mode == InventorySortMode.Quantity) return "по количеству";
-            return "по имени";
-        }
-
-        private void OpenDropPicker(string itemRuntimeId, int max)
-        {
-            if (string.IsNullOrEmpty(itemRuntimeId) || max <= 1) return;
-            _dropPickerItem = itemRuntimeId;
-            _dropPickerMax = Mathf.Max(1, max);
-            _dropPickerQty = 1;
-        }
-
         private void CloseDropPicker()
         {
             _dropPickerItem = string.Empty;
-            _dropPickerMax = 1;
-            _dropPickerQty = 1;
-        }
-
-        private void DrawDropPicker()
-        {
-            float width = Mathf.Min(420f, Screen.width - 24f);
-            float height = 210f;
-            Rect area = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f,
-                                 width, height);
-            GUILayout.BeginArea(area, GUI.skin.window);
-            GUILayout.Label("<b>Выбросить: " + RoaItemData.Name(_dropPickerItem) + "</b>", Rich());
-            GUILayout.Label("В рюкзаке: " + _dropPickerMax + " · выбрано: " + _dropPickerQty);
-            _dropPickerQty = Mathf.Clamp(Mathf.RoundToInt(GUILayout.HorizontalSlider(
-                _dropPickerQty, 1f, _dropPickerMax, GUILayout.Height(28f))), 1, _dropPickerMax);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("−")) _dropPickerQty = Mathf.Max(1, _dropPickerQty - 1);
-            if (GUILayout.Button("Половина")) _dropPickerQty = Mathf.Max(1, Mathf.CeilToInt(_dropPickerMax * 0.5f));
-            if (GUILayout.Button("Всё")) _dropPickerQty = _dropPickerMax;
-            if (GUILayout.Button("+")) _dropPickerQty = Mathf.Min(_dropPickerMax, _dropPickerQty + 1);
-            GUILayout.EndHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Отмена", GUILayout.Height(34f))) CloseDropPicker();
-            if (GUILayout.Button("Выбросить", GUILayout.Height(34f)))
-            {
-                string itemId = _dropPickerItem;
-                int qty = _dropPickerQty;
-                CloseDropPicker();
-                DropItem(itemId, qty);
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
         }
 
         // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
@@ -985,74 +778,6 @@ namespace RealmOfAshes.Game
             _status = string.Empty;
         }
 
-        private void DrawModificationWorkbench()
-        {
-            if (string.IsNullOrEmpty(_modifyWeaponRuntimeId)) return;
-            string weaponId = BaseId(_modifyWeaponRuntimeId);
-            if (!RoaWeaponModificationData.IsFirearm(weaponId))
-            {
-                _modifyWeaponRuntimeId = string.Empty;
-                return;
-            }
-
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("<b>Оружейная мастерская: " + RoaItemData.Name(weaponId) + "</b>", Rich());
-            if (GUILayout.Button("закрыть", GUILayout.Width(62f)))
-            {
-                _modifyWeaponRuntimeId = string.Empty;
-                GUILayout.EndHorizontal();
-                GUILayout.EndVertical();
-                return;
-            }
-            GUILayout.EndHorizontal();
-
-            string[] slots = RoaWeaponModificationData.SlotsFor(weaponId);
-            GUILayout.BeginHorizontal();
-            foreach (string slot in slots)
-            {
-                bool selected = slot == _modifySlot;
-                string label = (selected ? "[" : string.Empty)
-                    + RoaWeaponModificationData.SlotLabel(slot)
-                    + (selected ? "]" : string.Empty);
-                if (GUILayout.Button(label)) _modifySlot = slot;
-            }
-            GUILayout.EndHorizontal();
-
-            JObject installedMods = InstalledMods(_modifyWeaponRuntimeId);
-            string installedId = installedMods?[_modifySlot]?.ToString() ?? string.Empty;
-            RoaWeaponModificationData.Definition installed = RoaWeaponModificationData.Find(installedId);
-            GUILayout.Label("Установлено: " + (installed != null ? installed.Name : "базовая деталь"));
-            if (installed != null)
-            {
-                bool oldEnabled = GUI.enabled;
-                GUI.enabled = oldEnabled && !_actionPending;
-                if (GUILayout.Button("Снять " + RoaWeaponModificationData.SlotLabel(_modifySlot)))
-                    SubmitWeaponModification(_modifyWeaponRuntimeId, _modifySlot, string.Empty);
-                GUI.enabled = oldEnabled;
-            }
-
-            foreach (RoaWeaponModificationData.Definition definition in RoaWeaponModificationData.All)
-            {
-                if (definition.Slot != _modifySlot
-                    || !RoaWeaponModificationData.Compatible(definition, weaponId)) continue;
-
-                GUILayout.BeginVertical(GUI.skin.box);
-                GUILayout.Label("<b>" + definition.Name + "</b> — " + definition.Effect, Rich());
-                GUILayout.Label("Материалы: " + CostText(definition.Cost));
-
-                bool isInstalled = installedId == definition.Id;
-                bool oldEnabled = GUI.enabled;
-                GUI.enabled = oldEnabled && !_actionPending && !isInstalled && CanAfford(definition.Cost);
-                if (GUILayout.Button(isInstalled ? "установлено" : "установить"))
-                    SubmitWeaponModification(_modifyWeaponRuntimeId, definition.Slot, definition.Id);
-                GUI.enabled = oldEnabled;
-                GUILayout.EndVertical();
-            }
-            GUILayout.EndVertical();
-            GUILayout.Space(6f);
-        }
-
         private JObject InstalledMods(string runtimeId)
         {
             if (_weaponModifications.TryGetValue(runtimeId ?? string.Empty, out JObject mods)) return mods;
@@ -1077,14 +802,6 @@ namespace RealmOfAshes.Game
             return total;
         }
 
-        private string CostText(Dictionary<string, int> cost)
-        {
-            var parts = new List<string>();
-            foreach (KeyValuePair<string, int> entry in cost)
-                parts.Add(RoaItemData.Name(entry.Key) + " " + InventoryQty(entry.Key) + "/" + entry.Value);
-            return string.Join(", ", parts);
-        }
-
         private static string SlotLabel(string slot)
         {
             if (slot == "weapon") return "оружие";
@@ -1107,11 +824,5 @@ namespace RealmOfAshes.Game
             return parts.Length == 4 ? parts[1] : runtimeId;
         }
 
-        private static GUIStyle Rich()
-        {
-            var style = new GUIStyle(GUI.skin.label);
-            style.richText = true;
-            return style;
-        }
     }
 }

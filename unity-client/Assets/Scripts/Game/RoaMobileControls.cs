@@ -53,19 +53,6 @@ namespace RealmOfAshes.Game
         private bool _lastEnabled;
         private float _targetRefreshAt;
 
-        private GUIStyle _buttonStyle;
-        private GUIStyle _iconButtonStyle;
-        private Texture2D _inventoryIcon;
-        private Texture2D _mapIcon;
-        private Texture2D _pipboyIcon;
-        private Texture2D _menuIcon;
-        private Texture2D _fireIcon;
-        private Texture2D _interactIcon;
-        private Texture2D _targetIcon;
-        private Texture2D _crouchIcon;
-        private Texture2D _reloadIcon;
-        private Texture2D _modeIcon;
-        private Texture2D _playerIcon;
 
         public bool ControlsEnabled { get { return Application.isMobilePlatform || ForceVisible; } }
         public bool CanvasDriven { get; set; }
@@ -439,56 +426,6 @@ namespace RealmOfAshes.Game
             // desktop and mobile therefore preview the exact same shot line.
             _combat?.SetMobileAimTarget(_selectedId, position);
         }
-        private void OnGUI()
-        {
-            if (CanvasDriven) return;
-            RoaUiTheme.Apply();
-            if (!ControlsEnabled || _player == null || !_player.gameObject.activeInHierarchy) return;
-            // PIP-Boy owns the whole landscape viewport and has its own close
-            // button. Keeping the mobile shortcut row here would cover its title
-            // and first tab row on short screens.
-            if (_pipboy != null && _pipboy.IsOpen) return;
-            EnsureStyles();
-
-            float railSize = Mathf.Clamp(Screen.height * 0.12f, 46f, 58f);
-            Rect inventory = new Rect(12f, 12f, railSize, railSize);
-            Rect map = new Rect(12f, 18f + railSize, railSize, railSize);
-            Rect pip = new Rect(12f, 24f + railSize * 2f, railSize, railSize);
-            Rect menu = new Rect(12f, 30f + railSize * 3f, railSize, railSize);
-            if (IconButton(menu, InputSuppressed ? "Закрыть" : "Меню", _menuIcon))
-                TriggerMenu();
-            if (InputSuppressed) return;
-            if (IconButton(inventory, _inventory != null && _inventory.IsOpen ? "Закрыть" : "Сумка",
-                           _inventoryIcon)) TriggerInventory();
-            if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "ПУТНИК",
-                           _pipboyIcon)) TriggerPipboy();
-            if (IconButton(map, "Карта", _mapIcon)) TriggerMap();
-
-            if (IsPanelOpen()) return;
-
-            Rect fire = FireRect(Screen.width, Screen.height);
-            if (Event.current.isMouse && IconButton(fire, FireLabel, _fireIcon, true)) Fire();
-            else IconButton(fire, FireLabel, _fireIcon);
-
-            Rect interact = ActionRect(Screen.width, Screen.height, 1);
-            Rect target = ActionRect(Screen.width, Screen.height, 2);
-            Rect crouch = ActionRect(Screen.width, Screen.height, 3);
-            Rect reload = ActionRect(Screen.width, Screen.height, 4);
-            Rect mode = ActionRect(Screen.width, Screen.height, 5);
-            Rect player = ActionRect(Screen.width, Screen.height, 6);
-            if (IconButton(interact, "Действие", _interactIcon)) TriggerInteract();
-            if (IconButton(target, string.IsNullOrEmpty(_selectedId) ? "Цель" : "Цель выбрана",
-                           _targetIcon)) TriggerTargetCycle();
-            if (IconButton(crouch, _crouching ? "Встать" : "Присесть", _crouchIcon))
-                TriggerCrouch();
-            if (IconButton(reload, "Перезарядить", _reloadIcon)) TriggerReload();
-            if (IconButton(mode, RoaMobileControlsCanvas.FireModeLabel(CurrentFireMode), _modeIcon))
-                TriggerFireMode();
-            if (IconButton(player, "Игрок", _playerIcon)) TriggerPlayerPanel();
-
-            DrawJoystick();
-        }
-
         public bool TryGetJoystickVisual(out Vector2 guiBase, out Vector2 guiPoint,
                                          out float radius)
         {
@@ -591,78 +528,6 @@ namespace RealmOfAshes.Game
             _artifacts = artifacts;
         }
 
-        private void DrawJoystick()
-        {
-            if (_joystickFinger < 0) return;
-            float outer = _joystickRadius * 1.28f;
-            GUI.color = new Color(0.22f, 0.32f, 0.24f, 0.62f);
-            GUI.Box(new Rect(_joystickBase.x - outer, _joystickBase.y - outer,
-                             outer * 2f, outer * 2f), string.Empty);
-            Vector2 delta = Vector2.ClampMagnitude(_joystickPoint - _joystickBase, _joystickRadius);
-            const float knob = 34f;
-            GUI.color = new Color(0.72f, 0.83f, 0.67f, 0.88f);
-            GUI.Box(new Rect(_joystickBase.x + delta.x - knob,
-                             _joystickBase.y + delta.y - knob, knob * 2f, knob * 2f), string.Empty);
-            GUI.color = Color.white;
-        }
-
-        private void EnsureStyles()
-        {
-            if (_buttonStyle == null)
-            {
-                _buttonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    wordWrap = true,
-                    fontStyle = FontStyle.Bold,
-                    fontSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height / 55f), 13, 22)
-                };
-                _iconButtonStyle = new GUIStyle(_buttonStyle);
-                ClearBackgrounds(_iconButtonStyle);
-
-                _inventoryIcon = LoadIcon("RealmUi/mobile/left/inventory");
-                _mapIcon = LoadIcon("RealmUi/mobile/left/map");
-                _pipboyIcon = LoadIcon("RealmUi/mobile/left/skills");
-                _menuIcon = LoadIcon("RealmUi/mobile/top/main_menu");
-                _fireIcon = LoadIcon("RealmUi/mobile/right/attack");
-                _interactIcon = LoadIcon("RealmUi/mobile/right/interact");
-                _targetIcon = LoadIcon("RealmUi/mobile/right/target");
-                _crouchIcon = LoadIcon("RealmUi/mobile/left/crouch");
-                _reloadIcon = LoadIcon("RealmUi/mobile/right/reload");
-                _modeIcon = LoadIcon("RealmUi/mobile/right/mode");
-                _playerIcon = LoadIcon("RealmUi/mobile/right/radial_menu");
-            }
-        }
-
-        private bool IconButton(Rect rect, string fallback, Texture2D icon, bool repeat = false)
-        {
-            if (icon == null)
-                return repeat ? GUI.RepeatButton(rect, fallback, _buttonStyle)
-                              : GUI.Button(rect, fallback, _buttonStyle);
-
-            GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit, true);
-            GUIContent content = new GUIContent(string.Empty, fallback);
-            return repeat ? GUI.RepeatButton(rect, content, _iconButtonStyle)
-                          : GUI.Button(rect, content, _iconButtonStyle);
-        }
-
-        private static Texture2D LoadIcon(string path)
-        {
-            return Resources.Load<Texture2D>(path);
-        }
-
-        private static void ClearBackgrounds(GUIStyle style)
-        {
-            style.normal.background = null;
-            style.hover.background = null;
-            style.active.background = null;
-            style.focused.background = null;
-            style.onNormal.background = null;
-            style.onHover.background = null;
-            style.onActive.background = null;
-            style.onFocused.background = null;
-        }
-
         public static Vector2 NormalizeJoystick(Vector2 delta, float radius)
         {
             radius = Mathf.Max(1f, radius);
@@ -699,13 +564,5 @@ namespace RealmOfAshes.Game
             return new Rect(width - size - 18f, height - size - 22f, size, size);
         }
 
-        private static Rect ActionRect(int width, int height, int index)
-        {
-            float size = Mathf.Clamp(Mathf.Min(width, height) * 0.09f, 54f, 76f);
-            float x = width - size - 24f - ((index - 1) % 2) * (size + 10f);
-            float row = Mathf.Floor((index - 1) / 2f);
-            float y = height - FireRect(width, height).height - 34f - (row + 1f) * (size + 8f);
-            return new Rect(x, y, size, size);
-        }
     }
 }

@@ -254,6 +254,12 @@ namespace RealmOfAshes.EditorTools
                         && canvas.ButtonCount == 12 && canvas.ActiveButtonCount == 12
                         && canvas.GameplayButtonsVisible && canvas.JoystickVisible,
                         "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
+                foreach (string id in new[] { "Inventory", "Map", "Pipboy", "Menu", "Fire", "Interact",
+                                              "Target", "Crouch", "Reload", "Mode", "Player", "Bolt" })
+                    Require(canvas.ButtonHasIcon(id),
+                            "mobile Canvas button " + id + " has no icon sprite in Resources/RealmUi/mobile");
+                Require(canvas.ButtonLabel("Pipboy") == "ПУТНИК",
+                        "mobile Canvas field-terminal button is not labelled ПУТНИК");
                 Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ •"
                         && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
                         && canvas.ButtonLabel("Mode") == "ОДИН."

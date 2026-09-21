@@ -841,7 +841,7 @@ namespace RealmOfAshes.Game
                 + "Переносимый вес: <b>" + d.Carry + "</b>" + nl + "Меткость: <b>" + Signed(d.Hit) + "%</b>" + nl
                 + "Критический выстрел: <b>" + d.CriticalChance + "% (x2)</b>" + nl + "Обзор: <b>" + d.VisionRadius + " кл.</b>" + nl
                 + "Сопротивление: <b>" + d.ResistAll + "%</b>" + nl + "Продажа: <b>" + Signed(d.Sell) + "%</b>" + nl
-                + "Крафт/сбор: <b>" + Signed(d.Craft) + "%</b>" + nl + "Проверки удачи: <b>+" + d.LuckChecks + " п.п.</b>";
+                + "Доп. ресурс при сборе: <b>" + Signed(d.Gather) + " п.п.</b>" + nl + "Проверки удачи: <b>+" + d.LuckChecks + " п.п.</b>";
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(_skillsList);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_traitsList);

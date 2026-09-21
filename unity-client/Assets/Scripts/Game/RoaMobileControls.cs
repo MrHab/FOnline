@@ -460,7 +460,7 @@ namespace RealmOfAshes.Game
             if (InputSuppressed) return;
             if (IconButton(inventory, _inventory != null && _inventory.IsOpen ? "Закрыть" : "Сумка",
                            _inventoryIcon)) TriggerInventory();
-            if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "Пип-бой",
+            if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "ПУТНИК",
                            _pipboyIcon)) TriggerPipboy();
             if (IconButton(map, "Карта", _mapIcon)) TriggerMap();
 

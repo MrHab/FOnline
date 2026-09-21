@@ -60,7 +60,7 @@ namespace RealmOfAshes.Game
             public int VisionRadius;
             public int ResistAll;
             public int Sell;
-            public int Craft;
+            public int Gather;
             public int LuckChecks;
         }
 
@@ -88,7 +88,7 @@ namespace RealmOfAshes.Game
             new TraitDef("bruiser", "Тяжёлый удар", "+18 HP и +2 урона в ближнем бою, но немного ниже скорость."),
             new TraitDef("scavengerStart", "Падальщик", "Существо, с которого падают трофеи, с шансом 25% оставляет на 1 больше."),
             new TraitDef("traderStart", "Барыга", "+15% к цене продажи и +12 марок на старте."),
-            new TraitDef("craftsmanStart", "Ремесленник", "Стартовый ремкомплект и бонус к сбору ресурсов."),
+            new TraitDef("craftsmanStart", "Ремесленник", "+18 п.п. к шансу дополнительного ресурса при сборе."),
             new TraitDef("educatedStart", "Образованный", "+5 свободных очков навыков после создания персонажа.")
         };
 
@@ -416,7 +416,10 @@ namespace RealmOfAshes.Game
                 VisionRadius = Mathf.Clamp(Mathf.FloorToInt(5.5f + per * 0.7f + 0.5f), 6, 16),
                 ResistAll = Mathf.Max(0, JsRound(end * 0.7f)),
                 Sell = JsRound((cha - 5) * 4f + (trader ? 15f : 0f)),
-                Craft = JsRound((intelligence - 5) * 3f + (craftsman ? 10f : 0f)),
+                // Доля характеристик и черты в шансе второго ресурса при сборе
+                // (harvestResource на сервере); на крафт ни Интеллект, ни черта не влияют.
+                Gather = JsRound(Mathf.Max(0, intelligence - 5) * 2.5f + Mathf.Max(0, luck - 5) * 1f
+                                 + (craftsman ? 18f : 0f)),
                 LuckChecks = JsRound(Mathf.Max(0, luck - 5) * 2.5f)
             };
         }
@@ -597,8 +600,8 @@ namespace RealmOfAshes.Game
                             + " · вес " + d.Carry);
             GUILayout.Label("Меткость " + Signed(d.Hit) + "% · крит " + d.CriticalChance
                             + "% · обзор " + d.VisionRadius + " кл. · сопротивление " + d.ResistAll + "%");
-            GUILayout.Label("Продажа " + Signed(d.Sell) + "% · крафт/сбор " + Signed(d.Craft)
-                            + "% · проверки удачи +" + d.LuckChecks + " п.п.");
+            GUILayout.Label("Продажа " + Signed(d.Sell) + "% · доп. ресурс при сборе " + Signed(d.Gather)
+                            + " п.п. · проверки удачи +" + d.LuckChecks + " п.п.");
         }
 
         public string ReadinessHint(string name)

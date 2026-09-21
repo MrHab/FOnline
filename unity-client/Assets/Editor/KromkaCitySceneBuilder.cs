@@ -111,6 +111,10 @@ namespace RealmOfAshes.EditorTools
                 .FirstOrDefault();
             if (authoring == null)
                 throw new InvalidOperationException("В сцене нет объекта локации (KromkaLocationAuthoring): экспорт не увидит город.");
+            // Земля лагеря была 76 × 76 м, а город занимает целый сектор: без
+            // растяжки игрок сходит с пола у ворот и проваливается.
+            StretchGround(scene, definition);
+
             var root = new GameObject(CityRoot);
             root.transform.SetParent(authoring.transform, false);
             int placed = 0;
@@ -155,30 +159,62 @@ namespace RealmOfAshes.EditorTools
             if (instance.GetComponentInChildren<Collider>(true) != null) return;
             var parts = row["collisionParts"] as JArray;
             if (parts == null || parts.Count == 0) return;
-            Vector3 scale = instance.transform.lossyScale;
+            // Часть задана в осях объекта — ровно так её читает сервер, — и
+            // коллайдер живёт в них же: масштаб накладывает сам Unity.
+            // Высоту экспорт не пишет (серверу преграда нужна плоской), поэтому
+            // без неё берём высоту модели, иначе объект остался бы без коллайдера.
+            float visual = VisualHeight(instance) / Safe(instance.transform.lossyScale.y);
             int index = 0;
             foreach (JObject part in parts.OfType<JObject>())
             {
                 float width = part["size"]?["x"]?.ToObject<float>() ?? 0f;
                 float depth = part["size"]?["z"]?.ToObject<float>() ?? 0f;
                 float height = part["height"]?.ToObject<float>() ?? 0f;
+                if (height <= 0f) height = visual;
                 if (width <= 0f || depth <= 0f || height <= 0f) continue;
                 var node = new GameObject("Collision" + (++index));
                 node.transform.SetParent(instance.transform, false);
                 node.transform.localPosition = new Vector3(
-                    (part["center"]?["x"]?.ToObject<float>() ?? 0f) / Safe(scale.x),
-                    height * 0.5f / Safe(scale.y),
-                    (part["center"]?["z"]?.ToObject<float>() ?? 0f) / Safe(scale.z));
+                    part["center"]?["x"]?.ToObject<float>() ?? 0f,
+                    height * 0.5f,
+                    part["center"]?["z"]?.ToObject<float>() ?? 0f);
                 node.transform.localRotation = Quaternion.Euler(0f,
                     (part["rotationY"]?.ToObject<float>() ?? 0f) * Mathf.Rad2Deg, 0f);
                 var box = node.AddComponent<BoxCollider>();
-                box.size = new Vector3(width / Safe(scale.x), height / Safe(scale.y), depth / Safe(scale.z));
+                box.size = new Vector3(width, height, depth);
             }
+        }
+
+        /// <summary>Высота объекта по его мешам; без мешей — в рост человека.</summary>
+        private static float VisualHeight(GameObject instance)
+        {
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            float height = 0f;
+            foreach (Renderer renderer in renderers) height = Mathf.Max(height, renderer.bounds.size.y);
+            return height > 0.1f ? height : 2f;
         }
 
         private static float Safe(float value)
         {
             return Mathf.Abs(value) < 0.0001f ? 1f : value;
+        }
+
+        /// <summary>Пол локации по размеру карты города: он же холст для покраски.</summary>
+        private static void StretchGround(Scene scene, JObject definition)
+        {
+            float width = definition["map"]?["width"]?.ToObject<float>() ?? 0f;
+            float depth = definition["map"]?["depth"]?.ToObject<float>() ?? 0f;
+            if (width <= 0f || depth <= 0f) return;
+            KromkaPlacedObjectAuthoring ground = scene.GetRootGameObjects()
+                .SelectMany(item => item.GetComponentsInChildren<KromkaPlacedObjectAuthoring>(true))
+                .FirstOrDefault(marker => marker.Role == "terrain");
+            if (ground == null) return;
+            Transform transform = ground.transform;
+            Vector3 scale = transform.localScale;
+            transform.localScale = new Vector3(width, scale.y <= 0f ? 0.5f : scale.y, depth);
+            Vector3 position = transform.position;
+            transform.position = new Vector3(0f, position.y, 0f);
+            Debug.Log("[ГОРОД] пол растянут до " + width + " × " + depth + " м");
         }
 
         private static bool IsLiveActor(JObject row)

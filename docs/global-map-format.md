@@ -1,5 +1,6 @@
 # Формат географии мира
 
+docs/global-map-editor-format.md
 `data/global-map.json` — география «Кромки»: сетка клеток, места и линии дорог.
 По этому файлу и играбельному контуру `data/kromka/global-map-playable.json`
 собирается граф зон мира `data/kromka/zone-graph.json`
@@ -47,6 +48,7 @@
   четырёх клеток биом (большинство `macroRegion`), сложность (среднее
   `difficulty`) и покров земли (большинство `texture`).
 - `pvpMode` клетки принимает режим зоны (`peaceful`, `pve`, `pvp`, `pvpEvent`,
+docs/global-map-editor-format.md
   `pvpFullDrop`, `pvpBlack`) и псевдонимы вроде `safe`, но цвет зон мира от
   него не зависит. Цвет задают столицы (зона столицы мирная, восемь вокруг —
   синие) и правила `dangerCells` в `data/kromka/economy.json`: чёрные центры,

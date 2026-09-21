@@ -66,8 +66,6 @@ function assertNoDuplicates(label, ids) {
 }
 
 const server = read('server.js');
-const locationEditor = read(path.join('public', 'dev-location-editor.html'));
-const globalMapEditor = read(path.join('public', 'dev-global-map-editor.html'));
 
 const recipeIds = (fieldRecipeCatalog.recipes || []).map(row => row.id);
 const serverSkills = progressionCatalog.skills.items.map(row => row.id);
@@ -314,22 +312,10 @@ if (!publicEnemyBody.includes('canDialogue: naturalCreature ? false')
   || !publicEnemyBody.includes('dialogueProfile: naturalCreature ?')) {
   fail('Public enemy snapshots must expose physical inventory without a shadow caps wallet and strip trade from natural creatures');
 }
-if (!locationEditor.includes('friendlyBrahmin: {')
-  || !locationEditor.includes("role: 'animal'")
-  || !locationEditor.includes('canDialogue: false')
-  || !locationEditor.includes("equipmentProfile: 'none'")) {
-  fail('Location editor must author brahmin as a non-dialogue animal with no equipment profile');
-}
-
 const factionThreatBody = functionSlice(server, 'function chooseFactionCombatPlayerThreat', '\nfunction ');
 if (!factionThreatBody.includes('chooseVisibleEnemyTarget(room, actor, roomPlayers, now)')
   || factionThreatBody.indexOf('chooseVisibleEnemyTarget(room, actor, roomPlayers, now)') > factionThreatBody.indexOf('return sensed.target')) {
   fail('Faction combat AI must still consider visible hostile players while NPC factions are fighting');
-}
-
-if (!globalMapEditor.includes('3.2 : 2.1')
-  || !globalMapEditor.includes('1.65 * scaleInput')) {
-  fail('Global map editor fitted model scale reference is missing');
 }
 
 const harvestServerBody = socketEventSlice(server, 'harvestResource');

@@ -110,7 +110,7 @@ Unity — единственный клиент. Пока WebGL-сборки н�
 | Контент | `data/encounters.json`, `quests.json`, `traders.json`, `loot-tables.json` | проверяется специализированными `check:*` |
 | Runtime | `DATA_DIR/users.json`, `saves.json`, `wasteland-sim.json`, `danger-ecology.json` | не коммитить и не использовать в тестах production-данные |
 | Unity-клиент | `unity-client/Assets/` | C#-код, сцены, префабы и редакторские пробы |
-| Статика и модели | `public/assets/` | GLB/текстуры для Unity и dev-редакторов; отдаются сервером |
+| Статика и модели | `public/assets/` | GLB для Unity; отдаются сервером |
 | Исходные материалы | `source-assets/` | хранить мастера и референсы, не ссылаться на них из клиента |
 | Actor collider-каталог | `public/assets/models/wasteland/model-colliders.json` | только персонажи/существа; генерировать инструментом, не редактировать вручную |
 

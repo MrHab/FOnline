@@ -605,18 +605,17 @@ async function assertWorldDataApis() {
   });
   assertStatus(proxiedLocalDevRequest, 403, 'proxied local dev API request');
 
-  const globalMap = await request('/api/global-map');
-  assertStatus(globalMap, 200, 'GET /api/global-map');
-  const globalMapData = parseJsonResponse(globalMap, 'GET /api/global-map');
-  // Публичная карта не отдаёт скрытые узлы, поэтому узлы релиза сверяются с
-  // авторским файлом, который наследует свежий DATA_DIR.
-  const authoredGlobalNodes = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'global-map.json'), 'utf8')).nodes || [];
-  if (!globalMapData.ok
-    || !globalMapData.map?.grid
-    || !Array.isArray(globalMapData.map?.nodes)
-    || globalMapData.map.nodes.length !== authoredGlobalNodes.filter(node => node?.hidden !== true).length
-    || Object.keys(globalMapData.map?.cells || {}).length < 100) {
-    fail('fresh DATA_DIR did not inherit the bundled global map', globalMap.body.slice(0, 500));
+  // Мир — граф зон: клиент берёт его одним ответом, и свежий DATA_DIR должен
+  // унаследовать все зоны вшитого графа.
+  const worldMap = await request('/api/world-map');
+  assertStatus(worldMap, 200, 'GET /api/world-map');
+  const worldMapData = parseJsonResponse(worldMap, 'GET /api/world-map');
+  const authoredZones = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'kromka', 'zone-graph.json'), 'utf8')).zones || [];
+  if (!worldMapData.ok
+    || !Array.isArray(worldMapData.map?.zones)
+    || worldMapData.map.zones.length !== authoredZones.length
+    || !(worldMapData.map.cols > 0 && worldMapData.map.rows > 0)) {
+    fail('fresh DATA_DIR did not inherit the bundled world zone graph', worldMap.body.slice(0, 500));
   }
 
   const publicLocations = await request('/api/locations');
@@ -707,6 +706,8 @@ async function assertWorldDataApis() {
     ? wastelandData.sim.locationRelease.locationIds.map(value => String(value || '')).filter(Boolean)
     : [];
   const releasedLocationIdSet = new Set(releasedLocationIds);
+  // Список мест берётся из авторской карты мира: релиз локаций сверяется с ним.
+  const authoredGlobalNodes = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'global-map.json'), 'utf8')).nodes || [];
   const globalNodeLocationIds = authoredGlobalNodes
     .map(node => String(node?.locationId || node?.id || ''))
     .filter(Boolean);
@@ -726,7 +727,8 @@ async function assertWorldDataApis() {
   }
   const locationInstances = Object.values(publicLocationsData.locations || {})
     .filter(location => location?.worldSiteInstance);
-  if (globalMapData.map.sitePlacement !== 'unity-authored'
+  const authoredSitePlacement = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'data', 'global-map.json'), 'utf8')).sitePlacement;
+  if (authoredSitePlacement !== 'unity-authored'
     || !worldSites.length || locationInstances.length !== 0
     || worldSites.some(site => site.districtInterest || String(site.id || '').startsWith('district_interest_'))) {
     fail('Kromka must expose authored Unity sites without procedural district instances');

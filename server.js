@@ -2050,9 +2050,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.get('/api/locations', (_, res) => {
   const locations = {};
   for (const loc of Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})) {
-    // Зоны мира не входят в общий список: их почти две сотни по ~65 КБ, клиент
-    // берёт нужную по одной через /api/locations/:id.
-    if (!loc || !loc.id || loc.generated || loc.cityAuthored) continue;
+    // Секторы мира не входят в общий список: их почти две сотни по ~65 КБ, а
+    // закреплённый в своей сцене — и вовсе полмегабайта; клиент берёт нужный по
+    // одному через /api/locations/:id. Признака `generated` тут мало: у сектора
+    // со сценой его нет, как и у города.
+    if (!loc || !loc.id || loc.generated || loc.cityAuthored || ZONE_RUNTIME.isSector(loc.id)) continue;
     locations[loc.id] = kromkaPublicLocationDefinition(loc);
   }
   res.json({

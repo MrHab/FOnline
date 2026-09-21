@@ -395,7 +395,7 @@ namespace Kromka.EditorTools
             }
         }
 
-        private static Vector3 PointFromTile(JObject point, JObject definition, Vector3 fallback)
+        internal static Vector3 PointFromTile(JObject point, JObject definition, Vector3 fallback)
         {
             if (point == null) return fallback;
             if (point["x"] != null && point["z"] != null) return Vector3From(point, fallback);
@@ -513,9 +513,12 @@ namespace Kromka.EditorTools
             paths.AddRange(((JArray)catalog["locations"]).OfType<JObject>()
                 .Select(row => KromkaLocationSceneCatalog.ScenePath(Text(row, "id"))));
             EditorBuildSettings.scenes = paths.Select(path => new EditorBuildSettingsScene(path, true)).ToArray();
+            // Секторы мира перечислены не в каталоге локаций, а своими файлами:
+            // без этого пересборка мира выбросила бы их сцены из сборки клиента.
+            RealmOfAshes.EditorTools.KromkaZoneSceneBuilder.RegisterScenes();
         }
 
-        private static GameObject Primitive(string name, PrimitiveType type, Transform parent,
+        internal static GameObject Primitive(string name, PrimitiveType type, Transform parent,
                                             Vector3 position, Vector3 scale, Material material)
         {
             GameObject result = GameObject.CreatePrimitive(type);
@@ -535,7 +538,7 @@ namespace Kromka.EditorTools
             bridge.Configure(stableObjectId);
         }
 
-        private static void AddSun(Transform parent, float intensity, Color color)
+        internal static void AddSun(Transform parent, float intensity, Color color)
         {
             Transform sun = Child(parent, "Sun_AUTHORED");
             sun.localRotation = Quaternion.Euler(48f, -32f, 0f);
@@ -546,7 +549,7 @@ namespace Kromka.EditorTools
             light.shadows = LightShadows.Soft;
         }
 
-        private static void ConfigureAtmosphere(string id, Color groundColor)
+        internal static void ConfigureAtmosphere(string id, Color groundColor)
         {
             Color fog = Color.Lerp(groundColor, new Color(0.25f, 0.23f, 0.20f), 0.55f);
             RenderSettings.fog = true;
@@ -584,7 +587,7 @@ namespace Kromka.EditorTools
             return child.transform;
         }
 
-        private static Material MaterialFor(string name, Color color)
+        internal static Material MaterialFor(string name, Color color)
         {
             string path = MaterialRoot + "/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -666,7 +669,7 @@ namespace Kromka.EditorTools
             }
         }
 
-        private static Color RegionColor(string id)
+        internal static Color RegionColor(string id)
         {
             return RegionColors.TryGetValue(id ?? string.Empty, out Color color)
                 ? color : new Color(0.34f, 0.31f, 0.24f);

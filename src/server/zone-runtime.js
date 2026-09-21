@@ -12,7 +12,7 @@ const path = require('node:path');
 const { SIDES, zoneById, zoneLocationId, zoneOfLocation, zoneRecipe } = require('./zone-graph');
 const { loadZoneCatalog } = require('./zone-chunks');
 const { TILES, buildZone } = require('./zone-builder');
-const { buildCity } = require('./city-builder');
+const { buildCity, cityStationObjects } = require('./city-builder');
 
 const METRES = TILES * 2;
 const SIDE_ENTRY = Object.freeze({ north: 'entryFromNorth', south: 'entryFromSouth', west: 'entryFromWest', east: 'entryFromEast' });
@@ -50,7 +50,10 @@ function frozenZoneProblems(graph, definition) {
     if (edge.open && !definition[SIDE_ENTRY[side]]) problems.push(`${zone.id}: no ${SIDE_ENTRY[side]} for arrivals from the ${side}`);
   }
   for (const place of zone.places || []) {
-    if (!definition[`entryFromPlace_${place.locationId}`]) problems.push(`${zone.id}: no exit point from ${place.locationId}`);
+    // Ключ входа обрезан до 32 символов — так его пишет конструктор
+    // (zone-builder) и так его читает клиент; ищи полный, и сектор с местом
+    // вроде resourceScrapFields сервер отказался бы открывать.
+    if (!definition[`entryFromPlace_${place.locationId}`.slice(0, 32)]) problems.push(`${zone.id}: no exit point from ${place.locationId}`);
     if (!place.hidden && !(definition.transitions || []).some(row => row.to === place.locationId)) problems.push(`${zone.id}: no portal to ${place.locationId}`);
   }
   return problems;
@@ -142,7 +145,13 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
     // обычная авторская локация: что в сцене — то и в игре, конструктор его
     // больше не трогает (`cityAuthored` ставит tools/bake-city-scene.js).
     if (authored.cityAuthored === true) {
-      return { ...authored, id: locationId, cityZone: true, generated: false };
+      // Кроме построенного игроками: станок на выигранном участке — состояние
+      // торгов, а не содержимое сцены, и его город обязан собрать по-прежнему.
+      if (!catalog) catalog = loadZoneCatalog(zonesDir);
+      const stations = cityStationObjects({ cityId: locationId, plots: authored.cityPlan?.plots },
+        builtStations, catalog.kit);
+      const objects = stations.length ? [...(authored.objects || []), ...stations] : authored.objects;
+      return { ...authored, objects, id: locationId, cityZone: true, generated: false };
     }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
     // Построенное игроками приходит извне: город чистый, а станки на участках —
@@ -184,7 +193,11 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
       // Ревизия закреплённой зоны — от её содержимого: правка файла меняет её для клиентов.
       const { revision, ...content } = authored;
       const hash = crypto.createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 8);
-      return { ...content, generated: true, frozen: true, revision: `f-${hash}` };
+      // Зона со своей сценой Unity — обычная авторская локация: клиент грузит
+      // сцену, а не собирает объекты из определения. Без этого он построил бы
+      // второй комплект поверх сцены.
+      const generated = !content.unityScene;
+      return { ...content, generated, frozen: true, revision: `f-${hash}` };
     }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
     return buildZone(zoneRecipe(graph, id), catalog);

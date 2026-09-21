@@ -107,6 +107,71 @@ function normalizeCityRecipe(recipe = {}) {
   };
 }
 
+// Станки игроков: ключ ремесла → префаб набора. Город своих станков не ставит,
+// они появляются только на выигранном участке.
+const STATION_PREFABS = Object.freeze({
+  ammo_bench: 'craft_station_ammo', weapon_bench: 'craft_station_weapon', tool_bench: 'craft_station_tools',
+  repair_bench: 'craft_station_repair', energy_bench: 'craft_station_energy', chem_station: 'craft_station_chem'
+});
+
+/** Объект города из префаба набора: его же кладут и конструктор, и авторский город. */
+function cityKitObject(kit, cityId, id, prefab, tx, tz, degrees = 0, tags = [], shape = null) {
+  const entry = kit ? kit[prefab] : null;
+  if (!entry) throw new Error(`city ${cityId}: the kit has no prefab ${prefab}`);
+  const base = entry.scale || [1, 1, 1];
+  const scale = shape?.scale ? [base[0] * shape.scale[0], base[1] * shape.scale[1], base[2] * shape.scale[2]] : base;
+  const turn = ((Number(entry.turn) || 0) + degrees) % 360;
+  const width = round2(entry.size[0] * scale[0]);
+  const depth = round2(entry.size[1] * scale[2]);
+  return {
+    id, model: camel(prefab), prefab, name: entry.name,
+    position: { x: round2(tileCentre(tx)), y: round2(Number(shape?.y) || 0), z: round2(tileCentre(tz)) },
+    rotation: { x: 0, y: round2(turn * Math.PI / 180), z: 0 },
+    scale: { x: round2(scale[0]), y: round2(scale[1]), z: round2(scale[2]) },
+    collision: entry.solid ? 'solid' : 'none',
+    // Коробка коллизии — та же, что у зон: по ней клиент ставит коллайдер, а
+    // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
+    // Часть задаётся в осях самого объекта: масштаб на неё накладывает сервер,
+    // и умножь мы здесь ещё раз — преграда встала бы шире постройки.
+    ...(entry.solid ? {
+      collisionParts: [{
+        center: { x: round2(entry.center?.[0] || 0), z: round2(entry.center?.[1] || 0) },
+        size: { x: round2(entry.size[0]), z: round2(entry.size[1]) },
+        height: round2(Math.max(0.4, Number(entry.height) || 1))
+      }]
+    } : {}),
+    collisionSize: { width, depth },
+    footprint: { x: width, z: depth },
+    vision: { blocks: !!entry.vision },
+    role: entry.solid ? 'cover' : 'scenery',
+    tags: [...new Set([...tags, 'city-kit'])],
+    ...(shape?.hover ? { hover: shape.hover } : {})
+  };
+}
+
+/**
+ * Станки, построенные игроками на участках города. Город, разложенный в свою
+ * сцену, конструктор больше не собирает — а станок обязан появиться и там,
+ * иначе выигравший участок хозяин не найдёт своей постройки.
+ */
+function cityStationObjects(plan, built, kit) {
+  const plots = new Map((plan?.plots || []).map(plot => [plot.id, plot]));
+  const rows = [];
+  for (const row of Array.isArray(built) ? built : []) {
+    const plot = plots.get(String(row?.plotId || ''));
+    const prefab = STATION_PREFABS[String(row?.station || '')];
+    if (!plot || !prefab) continue;
+    const station = cityKitObject(kit, plan?.cityId || '', `station_${plot.id}`, prefab, plot.tx, plot.tz, 0,
+      ['city-station', 'crafting-station', row.station, `city-${plot.district}`]);
+    // Участок назван в самом станке: по нему сервер берёт плату и владельца.
+    station.interactive = { kind: 'craftingStation', craftingStations: [row.station],
+                            stationSiteId: plan?.cityId || '', plotId: plot.id };
+    station.role = 'cover';
+    rows.push(station);
+  }
+  return rows;
+}
+
 /** Город из рецепта и набора префабов: обычное определение `realm.location.v1`. */
 function buildCity(recipe, kit) {
   const plan = normalizeCityRecipe(recipe);
@@ -116,37 +181,7 @@ function buildCity(recipe, kit) {
   const open = []; // прямоугольники улиц и площади: в них ничего не ставим
 
   const put = (id, prefab, tx, tz, degrees = 0, tags = [], shape = null) => {
-    const entry = kit[prefab];
-    if (!entry) throw new Error(`city ${plan.cityId}: the kit has no prefab ${prefab}`);
-    const base = entry.scale || [1, 1, 1];
-    const scale = shape?.scale ? [base[0] * shape.scale[0], base[1] * shape.scale[1], base[2] * shape.scale[2]] : base;
-    const turn = ((Number(entry.turn) || 0) + degrees) % 360;
-    const width = round2(entry.size[0] * scale[0]);
-    const depth = round2(entry.size[1] * scale[2]);
-    objects.push({
-      id, model: camel(prefab), prefab, name: entry.name,
-      position: { x: round2(tileCentre(tx)), y: round2(Number(shape?.y) || 0), z: round2(tileCentre(tz)) },
-      rotation: { x: 0, y: round2(turn * Math.PI / 180), z: 0 },
-      scale: { x: round2(scale[0]), y: round2(scale[1]), z: round2(scale[2]) },
-      collision: entry.solid ? 'solid' : 'none',
-      // Коробка коллизии — та же, что у зон: по ней клиент ставит коллайдер, а
-      // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
-      // Часть задаётся в осях самого объекта: масштаб на неё накладывает сервер,
-      // и умножь мы здесь ещё раз — преграда встала бы шире постройки.
-      ...(entry.solid ? {
-        collisionParts: [{
-          center: { x: round2(entry.center?.[0] || 0), z: round2(entry.center?.[1] || 0) },
-          size: { x: round2(entry.size[0]), z: round2(entry.size[1]) },
-          height: round2(Math.max(0.4, Number(entry.height) || 1))
-        }]
-      } : {}),
-      collisionSize: { width, depth },
-      footprint: { x: width, z: depth },
-      vision: { blocks: !!entry.vision },
-      role: entry.solid ? 'cover' : 'scenery',
-      tags: [...new Set([...tags, 'city-kit'])],
-      ...(shape?.hover ? { hover: shape.hover } : {})
-    });
+    objects.push(cityKitObject(kit, plan.cityId, id, prefab, tx, tz, degrees, tags, shape));
     return objects[objects.length - 1];
   };
   const inOpen = (tx, tz) => open.some(box => tx >= box[0] && tx <= box[2] && tz >= box[1] && tz <= box[3]);
@@ -361,23 +396,7 @@ function buildCity(recipe, kit) {
   put('homes_fire', 'campfire_rest', anchors.homes[0].tx + 3, anchors.homes[0].tz, 0, ['city-home', 'rest']);
 
   // --- построенное игроками: станок на выигранном участке ------------------------------------
-  const STATION_PREFABS = Object.freeze({
-    ammo_bench: 'craft_station_ammo', weapon_bench: 'craft_station_weapon', tool_bench: 'craft_station_tools',
-    repair_bench: 'craft_station_repair', energy_bench: 'craft_station_energy', chem_station: 'craft_station_chem'
-  });
-  const plotById = new Map(plots.map(plot => [plot.id, plot]));
-  for (const row of plan.built) {
-    const plot = plotById.get(row.plotId);
-    const prefab = STATION_PREFABS[row.station];
-    if (!plot || !prefab) continue;
-    const station = put(`station_${plot.id}`, prefab, plot.tx, plot.tz, 0,
-      ['city-station', 'crafting-station', row.station, `city-${plot.district}`]);
-
-    // Участок назван в самом станке: по нему сервер берёт плату и владельца.
-    station.interactive = { kind: 'craftingStation', craftingStations: [row.station],
-                            stationSiteId: plan.cityId, plotId: plot.id };
-    station.role = 'cover';
-  }
+  objects.push(...cityStationObjects({ cityId: plan.cityId, plots }, plan.built, kit));
 
   // --- площадь: ориентир, доска работ, диспетчер, лазарет ------------------------------------
   const landmark = plan.mode === 'peaceful' && plan.region === 'northern_sluices' ? 'water_tank' : 'relay_antenna';
@@ -557,4 +576,5 @@ function cityRevision(definition) {
   return `c${CITY_BUILDER_VERSION}-${crypto.createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 8)}`;
 }
 
-module.exports = { CITY_BUILDER_VERSION, DIRECTIONS, TILES, WALL_HALF, buildCity, cityRevision, normalizeCityRecipe };
+module.exports = { CITY_BUILDER_VERSION, DIRECTIONS, TILES, WALL_HALF, buildCity, cityKitObject,
+  cityRevision, cityStationObjects, normalizeCityRecipe };

@@ -68,6 +68,18 @@ for (const name of frozen) {
   const definition = JSON.parse(fs.readFileSync(path.join(authoredDir, name), 'utf8'));
   assert.equal(`${definition.id}.json`, name, `${name} is named after its zone`);
   assert.deepEqual(frozenZoneProblems(graph, definition), [], `${name} fits the graph`);
+  // Сектор правят в Unity, а не в файле: без сцены его нечем открыть, и клиент
+  // снова собирал бы его из определения вместо авторской геометрии.
+  const scene = String(definition.unityScene || '');
+  assert.equal(scene, `Assets/Scenes/Kromka/Locations/${definition.id}.unity`,
+    `${name} must point at its own Unity scene`);
+  assert(fs.existsSync(path.join(root, 'unity-client', scene)), `${name}: ${scene} is missing`);
 }
 
-console.log(`Zone freeze OK: a frozen file replaces the constructor with a content revision, a file that left the graph is refused, ${frozen.length} frozen zones of the game fit the graph.`);
+// Мир Кромки правится руками: каждый сектор графа закреплён в своей сцене, и
+// конструктор зон остаётся только первой раскладкой для нового сектора.
+const sectors = graph.zones.filter(zone => !zone.city).map(zone => zone.id);
+assert.deepEqual(sectors.filter(id => !frozen.includes(`${id}.json`)), [],
+  'sectors still assembled by the constructor; lay them into scenes: node tools/bake-zone-scene.js --all');
+
+console.log(`Zone freeze OK: a frozen file replaces the constructor with a content revision, a file that left the graph is refused, ${frozen.length} frozen sectors of the game fit the graph and carry their own Unity scene.`);

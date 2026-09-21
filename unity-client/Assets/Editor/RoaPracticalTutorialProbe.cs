@@ -94,7 +94,8 @@ namespace RealmOfAshes.EditorTools
                 var cover = markers.Single(marker => marker.StableObjectId == "yard_cover_a");
                 RoaTutorialCoverAuthoring.Validate(cover);
                 Require(authoring.PlayerArrival.localPosition.z == -26f, "Start anchor is not on clear ground");
-                authoring.transform.localScale = new Vector3(1, 1, -1); // Same server-Z reflection as RoaLocationLoader.
+                // Сцена стоит как в игре: сервер и Unity в одной системе координат (RoaCoords),
+                // RoaLocationLoader сцену не отражает.
                 var host = new GameObject("PracticalTutorialAudit");
                 var enemies = host.AddComponent<RoaEnemies>(); enemies.enabled = false; enemies.BaseUrl = "http://127.0.0.1:1";
                 var dummy = new JObject { ["id"] = "qa_target", ["trainingTarget"] = true, ["hostileToPlayer"] = false,
@@ -115,7 +116,8 @@ namespace RealmOfAshes.EditorTools
                 enemies.CollectMobileTargets(RoaCoords.ToUnity(10, 10), 30f, targets, true);
                 Require(targets.Count == 1 && targets[0].Id == "yard_casualty_shurik", "Medical targeting cannot select Shurik");
                 Require(enemies.TryFindTarget(RoaCoords.ToUnity(-10, 22), .8f, out string hitId, out _) && hitId == "qa_target", "Mouse aiming cannot acquire target");
-                Require(enemies.TryFindTargetAlongRay(RoaCoords.ToUnity(-10,16), Vector3.back, 20f,
+                // Мишень севернее (+Z): сервер и сцена Unity в одной системе координат.
+                Require(enemies.TryFindTargetAlongRay(RoaCoords.ToUnity(-10,16), Vector3.forward, 20f,
                     out string rayId, out _, out _, out _) && rayId == "qa_target", "Actual firing ray cannot acquire target");
 
                 var crate = RoaTutorialProps.Build("crate", host.transform); crate.transform.position = RoaCoords.ToUnity(-15, 1);

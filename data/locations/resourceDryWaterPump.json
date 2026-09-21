@@ -765,14 +765,55 @@
         "water"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 13.8,
+        "z": 18.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -6.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 4.0
+          },
+          "size": {
+            "x": 17.78,
+            "z": 0.75
+          },
+          "rotationY": 1.571
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-intake",
@@ -801,14 +842,56 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.45,
+        "z": 4.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-landmark",
@@ -835,14 +918,23 @@
         "intake-tower"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.0,
+        "z": 8.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.75
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-module-1",
@@ -870,14 +962,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-module-2",
@@ -905,14 +1006,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-module-3",
@@ -940,14 +1053,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-module-4",
@@ -975,14 +1100,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-module-5",
@@ -1010,14 +1147,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceDryWaterPump-region-field-0",
@@ -1436,7 +1582,7 @@
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1508,7 +1654,7 @@
       "hp": 7,
       "maxHp": 7,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {

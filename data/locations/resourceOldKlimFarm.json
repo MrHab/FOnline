@@ -120,7 +120,7 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "blocks": true
+        "blocks": false
       },
       "role": "scenery",
       "footprint": {
@@ -158,7 +158,7 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "blocks": true
+        "blocks": false
       },
       "role": "scenery",
       "footprint": {
@@ -192,7 +192,7 @@
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -207,9 +207,9 @@
       "model": "waterTank",
       "name": "Бак с водой",
       "position": {
-        "x": -12.0,
+        "x": -9.5,
         "y": 0.0,
-        "z": 8.0
+        "z": 6.75
       },
       "rotation": {
         "x": 0.0,
@@ -230,7 +230,7 @@
       "hp": 7,
       "maxHp": 7,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1142,14 +1142,56 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.45,
+        "z": 4.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-landmark",
@@ -1176,14 +1218,36 @@
         "irrigation-wheel"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-module-1",
@@ -1211,14 +1275,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-module-2",
@@ -1246,14 +1319,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-module-3",
@@ -1281,14 +1366,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-module-4",
@@ -1316,14 +1413,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-module-5",
@@ -1351,14 +1460,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceOldKlimFarm-region-field-0",

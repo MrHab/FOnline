@@ -6,6 +6,7 @@ const path = require('path');
 const {
   isRetiredEnvironmentModel
 } = require('../src/server/retired-environment-models');
+const { locationScenePath, readPlacedObjectMarkers } = require('./kromka-scene-markers');
 
 const ROOT = path.resolve(__dirname, '..');
 const MODELS_DIR = path.join(ROOT, 'public', 'assets', 'models', 'wasteland');
@@ -68,11 +69,18 @@ for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.j
   const source = fs.readFileSync(path.join(locationsDir, file), 'utf8');
   for (const model of environmentGlbUrls(source)) locationLeaks.push(`${file}: ${model}`);
   const definition = JSON.parse(source);
+  const scenePath = locationScenePath(definition, ROOT);
+  const markers = scenePath && fs.existsSync(scenePath) ? readPlacedObjectMarkers(scenePath) : new Map();
   for (const object of Array.isArray(definition.objects) ? definition.objects : []) {
     if (!isRetiredEnvironmentModel(object?.model)) continue;
     const collision = String(object.collision || '').toLowerCase();
     const hasGeneratedParts = Array.isArray(object.collisionParts) && object.collisionParts.length > 0;
-    if ((collision && collision !== 'none') || hasGeneratedParts || object.collisionSize || object.modelCollision) {
+    // A retired key can also name geometry built in the Unity scene: the oil site's
+    // pump jack is three box colliders under the archetype "oil_pump_jack". Its
+    // collision and collisionParts are exported from the scene, not derived from a GLB.
+    const unityAuthoredBlocker = markers.get(String(object.id || ''))?.blocksMovement === true;
+    if ((collision && collision !== 'none' && !unityAuthoredBlocker)
+      || (hasGeneratedParts && !unityAuthoredBlocker) || object.collisionSize || object.modelCollision) {
       collisionLeaks.push(`${file}: ${object.id || object.model}`);
     }
   }

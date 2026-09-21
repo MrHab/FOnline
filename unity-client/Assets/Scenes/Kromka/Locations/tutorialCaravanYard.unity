@@ -775,6 +775,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &269655289
 GameObject:
   m_ObjectHideFlags: 0
@@ -2678,9 +2679,7 @@ MonoBehaviour:
   _role: tutorial
   _gameplayTags:
   - tutorial
-  - sleep
-  - bed
-  - personal-bed
+  - cot
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
@@ -4427,6 +4426,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2116638818
 GameObject:
   m_ObjectHideFlags: 0

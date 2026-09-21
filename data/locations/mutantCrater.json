@@ -816,14 +816,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 12.1,
+        "z": 12.1
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 5.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 4.619,
+            "z": 1.913
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 3.536,
+            "z": 3.536
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 1.913,
+            "z": 4.619
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 5.0
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -1.913,
+            "z": 4.619
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -3.536,
+            "z": 3.536
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -4.619,
+            "z": 1.913
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -4.619,
+            "z": -1.913
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -3.536,
+            "z": -3.536
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -1.913,
+            "z": -4.619
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -5.0
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 1.913,
+            "z": -4.619
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 3.536,
+            "z": -3.536
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 4.619,
+            "z": -1.913
+          },
+          "size": {
+            "x": 2.1,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "mutantCrater-landmark",
@@ -850,14 +1026,36 @@
         "medical-ring"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "mutantCrater-main-nest",
@@ -885,14 +1083,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 21.78,
+        "z": 21.78
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 9.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 8.315,
+            "z": 3.444
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 6.364,
+            "z": 6.364
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 3.444,
+            "z": 8.315
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 9.0
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -3.444,
+            "z": 8.315
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -6.364,
+            "z": 6.364
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -8.315,
+            "z": 3.444
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -9.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -8.315,
+            "z": -3.444
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -6.364,
+            "z": -6.364
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -3.444,
+            "z": -8.315
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -9.0
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 3.444,
+            "z": -8.315
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 6.364,
+            "z": -6.364
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 8.315,
+            "z": -3.444
+          },
+          "size": {
+            "x": 3.78,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "mutantCrater-medical-containers",
@@ -956,14 +1330,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "mutantCrater-module-2",
@@ -991,14 +1374,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "mutantCrater-module-3",
@@ -1026,14 +1421,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "mutantCrater-module-4",
@@ -1061,14 +1468,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "mutantCrater-module-5",
@@ -1096,14 +1515,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "mutantCrater-outer-trace-0",
@@ -1131,14 +1559,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 4.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.969
+        }
+      ]
     },
     {
       "id": "mutantCrater-outer-trace-1",
@@ -1166,14 +1603,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 4.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.969
+        }
+      ]
     },
     {
       "id": "mutantCrater-outer-trace-2",
@@ -1201,14 +1647,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 4.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.969
+        }
+      ]
     },
     {
       "id": "mutantCrater-outer-trace-3",
@@ -1236,14 +1691,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 4.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.969
+        }
+      ]
     },
     {
       "id": "mutantCrater-outer-trace-4",
@@ -1271,14 +1735,23 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 4.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 1.969
+        }
+      ]
     },
     {
       "id": "mutantCrater-region-glass-0",
@@ -1653,7 +2126,7 @@
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {

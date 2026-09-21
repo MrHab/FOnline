@@ -193,7 +193,19 @@
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 3.2,
+            "z": 0.8
+          }
+        }
+      ]
     },
     {
       "id": "yard_gate_left",
@@ -296,7 +308,7 @@
         "z": 1.64
       },
       "vision": {
-        "blocks": false
+        "mode": "cover"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1",
@@ -378,7 +390,7 @@
         "z": 0.68
       },
       "vision": {
-        "blocks": false
+        "mode": "cover"
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1",

@@ -203,7 +203,7 @@ function baseDefinition(faction, index) {
         footprint: { x: 2, z: 2 }
       }
     }),
-    prop('lab_terminal', 'Терминал стабилизации артефактов', 'workshop_bench.glb', 14, -8, 1.2, ['interactive', 'terminal', 'artifact-lab', 'territory-service'], {
+    prop('lab_terminal', 'Терминал стабилизации артефактов', 'workshop_bench.glb', 14, -6, 1.2, ['interactive', 'terminal', 'artifact-lab', 'territory-service'], {
       vision: { mode: 'cover' },
       fields: { interactive: { kind: 'terminal', role: 'artifactLab', service: 'artifactLab', storageFaction: faction.id } }
     }),
@@ -218,11 +218,13 @@ function baseDefinition(faction, index) {
       role: 'merchant', model: 'traderNpc', tags: ['merchant', 'trader'],
       entity: { traderProfile: faction.traderProfile, tradeProfile: faction.traderProfile, dialogueProfile: faction.traderProfile }
     }),
-    serviceNpc('researcher', 'Исследователь аномалий', faction.id, 'artifactLab', 18, -10, { role: 'npc', tags: ['researcher'] }),
+    serviceNpc('researcher', 'Исследователь аномалий', faction.id, 'artifactLab', 16.5, -6, { role: 'npc', tags: ['researcher'] }),
     guard('guard_gate_a', faction.guardName, faction.id, -6, -27, 3.14),
     guard('guard_gate_b', faction.guardName, faction.id, 6, -27, 3.14),
-    guard('guard_metro_a', faction.guardName, faction.id, -6, 22, 0),
-    guard('guard_metro_b', faction.guardName, faction.id, 6, 22, 0)
+    // Модули базы стоят по кругу 22 м (KromkaWorldSceneBuilder.BuildLocationModules):
+    // дозорные метро — в проходе между третьим и четвёртым, а не внутри них.
+    guard('guard_metro_a', faction.guardName, faction.id, -2, 21, 0),
+    guard('guard_metro_b', faction.guardName, faction.id, 2, 21, 0)
   ];
   return {
     schema: 'realm.location.v1', version: 1, id: faction.baseLocationId, name: faction.baseDisplayName,
@@ -348,7 +350,9 @@ function zoneDefinition() {
     id: `enter_${hub.id}`, type: 'location', label: `${hub.displayName} — спуск`, to: hub.id, entryKey: 'entryFromCore',
     ...point(hub.door.x, hub.door.z, width, depth), radius: 3
   });
-  entries[hub.entryKey] = point(hub.door.x, hub.door.z + 4, width, depth, { rotationY: 0 });
+  // По оси x = 0 идут труба каскада и колонна Регенератора: прибытие — сбоку от
+  // лестницы, в досягаемости её перехода, иначе сервер сдвинул бы игрока прочь от неё.
+  entries[hub.entryKey] = point(hub.door.x + 3, hub.door.z - 1, width, depth, { rotationY: 0 });
   objects.push(prop('center_core', `${c.displayName}: надземный блок`, 'concrete_wall.glb', 0, 0, { x: 4.5, y: 3, z: 4.5 }, ['territory-center', 'landmark', 'central-lab']));
   objects.push(prop('center_antenna', 'Мачта установки', 'relay_antenna.glb', 6, 6, 1.8, ['territory-center', 'landmark']));
   objects.push(prop('center_lift', 'Служебный лифт', 'cargo_stack.glb', 0, -8, { x: 1.6, y: 1.8, z: 1.2 }, ['territory-center', 'lab-door'], {
@@ -358,7 +362,7 @@ function zoneDefinition() {
     id: 'enter_coreLabCenter', type: 'location', label: `${c.displayName} — служебный лифт`, to: c.levels[0].id, entryKey: 'entryFromCore',
     ...point(0, -10, width, depth), radius: 3
   });
-  entries[c.entryKey] = point(0, -14, width, depth, { rotationY: Math.PI });
+  entries[c.entryKey] = point(1.5, -12, width, depth, { rotationY: Math.PI });
 
   for (const ring of territory.anomalyRings) {
     const belt = territory.belts.find(row => row.id === ring.belt);
@@ -444,10 +448,11 @@ function labDefinition(lab, index) {
   const depth = 76;
   const theme = lab.theme;
   const themeEnemies = {
-    bio: [['dustling', -10, 6], ['dustling', 10, 6], ['gari', 0, 14], ['listener', -14, 18], ['listener', 14, 18]],
-    energy: [['listener', -10, 6], ['listener', 10, 6], ['fold', 0, 16], ['burned', -14, 18]],
-    materials: [['fold', -10, 8], ['fold', 10, 8], ['burned', 0, 16], ['rykhlyak', -14, 18], ['rykhlyak', 14, 18]],
-    anomalous: [['mourner', -10, 6], ['mourner', 10, 6], ['burned', 0, 16], ['listener', -14, 18]]
+    // По оси x = 0 зал пересекает труба каскада на высоте роста: стражи стоят сбоку.
+    bio: [['dustling', -10, 6], ['dustling', 10, 6], ['gari', -1.25, 15], ['listener', -14, 18], ['listener', 14, 18]],
+    energy: [['listener', -10, 6], ['listener', 10, 6], ['fold', -1.25, 16], ['burned', -14, 18]],
+    materials: [['fold', -9, 7.5], ['fold', 10, 8], ['burned', -1.25, 16], ['rykhlyak', -14, 18], ['rykhlyak', 14, 18]],
+    anomalous: [['mourner', -10, 6], ['mourner', 10, 6], ['burned', -1.25, 16], ['listener', -14, 18]]
   }[theme];
   const themeFields = {
     bio: [['dew', -20, 20], ['dew', 20, 22]],
@@ -558,7 +563,8 @@ function centralLevelDefinition(level, index) {
     objects.push(prop('store_a', 'Складская стойка', 'storage_lean_to.glb', -14, 6, 1.3, ['central-lab', 'stockpile']));
     objects.push(prop('store_b', 'Складская стойка', 'storage_lean_to.glb', 14, 6, 1.3, ['central-lab', 'stockpile']));
     objects.push(prop('checkpoint', 'Пост охраны', 'watch_post.glb', 0, 12, 1.2, ['central-lab', 'guard-post']));
-    ['burned', 'burned', 'fold', 'listener', 'listener'].forEach((kind, k) => enemies.push(mutant(`service_guard_${k + 1}`, kind, -16 + k * 8, 14 + (k % 2) * 6)));
+    [['burned', -16, 14], ['burned', -8, 20], ['fold', -1.25, 15], ['listener', 8, 20], ['listener', 16, 14]]
+      .forEach(([kind, x, z], k) => enemies.push(mutant(`service_guard_${k + 1}`, kind, x, z)));
     containers.push(container('service_locker_a', 'Складской шкаф', -18, 4, width, depth, 'basic'));
     containers.push(container('service_locker_b', 'Складской шкаф', 18, 4, width, depth, 'rare', { locked: true, lockDifficulty: 'medium' }));
   } else if (level.role === 'research') {
@@ -582,11 +588,12 @@ function centralLevelDefinition(level, index) {
       }));
       void k;
     });
-    enemies.push(mutant('zero_custodian', 'fold', 0, 6, Math.PI, {
+    enemies.push(mutant('zero_custodian', 'fold', 1.25, 6, Math.PI, {
       name: c.worldBoss.displayName,
       entity: { bossId: c.worldBoss.id, worldBoss: true, hp: 1800, atk: 34 }
     }));
-    ['burned', 'burned', 'fold'].forEach((kind, k) => enemies.push(mutant(`custodian_escort_${k + 1}`, kind, -8 + k * 8, 14)));
+    [['burned', -8, 14], ['burned', -1.25, 15], ['fold', 9, 13.75]]
+      .forEach(([kind, x, z], k) => enemies.push(mutant(`custodian_escort_${k + 1}`, kind, x, z)));
     // Победа над Хранителем даёт то, чего не собрать в боковых залах: по
     // компоненту каждой семьи и катализаторы для старших тиров стабилизации.
     containers.push(container('boss_vault_a', 'Контейнер установки', -12, 26, width, depth, 'rare', {

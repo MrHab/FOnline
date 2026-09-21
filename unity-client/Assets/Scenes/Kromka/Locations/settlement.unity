@@ -1171,6 +1171,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &172860060
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1676,8 +1677,9 @@ MonoBehaviour:
   - crafting-station
   - tool_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &284725322
 GameObject:
   m_ObjectHideFlags: 0
@@ -2088,6 +2090,127 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 334765553}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &353105352
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 917139560}
+    m_Modifications:
+    - target: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-keys-filter-feed
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 353105356}
+    - targetCorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 353105355}
+  m_SourcePrefab: {fileID: 100100000, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+--- !u!4 &353105353 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5178939722696032625, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+  m_PrefabInstance: {fileID: 353105352}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &353105354 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 455160741789213690, guid: 53132ed79991fe3408e5849c5384260c, type: 3}
+  m_PrefabInstance: {fileID: 353105352}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &353105355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353105354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-keys-filter-feed
+--- !u!114 &353105356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353105354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-keys-filter-feed
+  _serverArchetypeId: workshopBench
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &360588611
 GameObject:
   m_ObjectHideFlags: 0
@@ -2464,6 +2587,127 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 425756980}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &478425931
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 917139560}
+    m_Modifications:
+    - target: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-keys-filter-defense
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 478425935}
+    - targetCorrespondingSourceObject: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 478425934}
+  m_SourcePrefab: {fileID: 100100000, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+--- !u!4 &478425932 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6733148593648441306, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+  m_PrefabInstance: {fileID: 478425931}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &478425933 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5832172409919202900, guid: e8066f66ba7922144bce621cdb8ff43b, type: 3}
+  m_PrefabInstance: {fileID: 478425931}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &478425934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478425933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-keys-filter-defense
+--- !u!114 &478425935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478425933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-keys-filter-defense
+  _serverArchetypeId: relayAntenna
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &495886167
 GameObject:
   m_ObjectHideFlags: 0
@@ -2795,8 +3039,9 @@ MonoBehaviour:
   - crafting-station
   - chem_station
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &538611270
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3465,7 +3710,7 @@ Transform:
   m_GameObject: {fileID: 591581907}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4, y: 0.1, z: -19}
+  m_LocalPosition: {x: -2, y: 0.1, z: -21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3918,8 +4163,9 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &662510720
 GameObject:
   m_ObjectHideFlags: 0
@@ -5536,8 +5782,9 @@ MonoBehaviour:
   - crafting-station
   - energy_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &851007721
 GameObject:
   m_ObjectHideFlags: 0
@@ -5847,6 +6094,9 @@ Transform:
   - {fileID: 168764782}
   - {fileID: 1363191025}
   - {fileID: 1259033495}
+  - {fileID: 1736694703}
+  - {fileID: 353105353}
+  - {fileID: 478425932}
   m_Father: {fileID: 1420108313}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &931399961
@@ -6188,8 +6438,9 @@ MonoBehaviour:
   - personal-storage
   - capital-storage
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &997777321
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6569,7 +6820,7 @@ MonoBehaviour:
   - bridge
   - top-readable
   _serverAuthoritative: 1
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &1045335838
 GameObject:
@@ -7590,7 +7841,7 @@ MonoBehaviour:
   - settlement
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1213372831
 PrefabInstance:
@@ -8319,8 +8570,9 @@ MonoBehaviour:
   _role: scenery
   _gameplayTags: []
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1271452413
 GameObject:
   m_ObjectHideFlags: 0
@@ -8606,6 +8858,7 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1381499008
 GameObject:
   m_ObjectHideFlags: 0
@@ -9813,7 +10066,7 @@ MonoBehaviour:
   - settlement
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1001 &1667116732
 PrefabInstance:
@@ -9922,8 +10175,9 @@ MonoBehaviour:
   - crafting-station
   - weapon_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1670678530
 GameObject:
   m_ObjectHideFlags: 0
@@ -10507,6 +10761,127 @@ MonoBehaviour:
   _serverAuthoritative: 1
   _blocksMovement: 0
   _blocksVision: 0
+--- !u!1001 &1736694702
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 917139560}
+    m_Modifications:
+    - target: {fileID: 1447705290824856971, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_Name
+      value: Gameplay_story-keys-filter-inspection
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -12
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1447705290824856971, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1736694706}
+    - targetCorrespondingSourceObject: {fileID: 1447705290824856971, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1736694705}
+  m_SourcePrefab: {fileID: 100100000, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+--- !u!4 &1736694703 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+  m_PrefabInstance: {fileID: 1736694702}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1736694704 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1447705290824856971, guid: 03b75d152326b7342805389c874e9f90, type: 3}
+  m_PrefabInstance: {fileID: 1736694702}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1736694705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1736694704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8ab3d95f3ea57319fc35b9a6e74808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaUnityLocationObject
+  _objectId: story-keys-filter-inspection
+--- !u!114 &1736694706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1736694704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da467f951bfa613fd5b8f17562a30404, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kromka.Authoring.KromkaPlacedObjectAuthoring
+  _stableObjectId: story-keys-filter-inspection
+  _serverArchetypeId: waterTank
+  _role: quest
+  _gameplayTags:
+  - quest-object
+  - story-objective
+  - kromka-campaign
+  _serverAuthoritative: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 0
 --- !u!1 &1743534974
 GameObject:
   m_ObjectHideFlags: 0
@@ -11292,8 +11667,9 @@ MonoBehaviour:
   - crafting-station
   - repair_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1868669331
 GameObject:
   m_ObjectHideFlags: 0
@@ -12086,8 +12462,9 @@ MonoBehaviour:
   - crafting-station
   - ammo_bench
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2050359304
 GameObject:
   m_ObjectHideFlags: 0

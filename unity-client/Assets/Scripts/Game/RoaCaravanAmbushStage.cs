@@ -418,6 +418,12 @@ namespace RealmOfAshes.Game
         }
 
         public static bool Crossed(float previous, float now, float cue) { return previous < cue && now >= cue; }
-        private static Vector3 P(float x, float z) { return RoaCoords.ToUnity(x,z); }
+        // Постановка засады и отъезда выверена на глаз в координатах, где z сцены — минус z
+        // записи (так переводил прежний RoaCoords). Это клиентские кадры, а не серверные
+        // точки, поэтому перевод оставлен прежним: картинка не должна сдвинуться.
+        private static Vector3 P(float x, float z) { return new Vector3(x, 0f, -z); }
+
+        /// <summary>Точка постановки ролика в тех же координатах, что и актёры засады.</summary>
+        internal static Vector3 StagePoint(float x, float z) { return P(x, z); }
     }
 }

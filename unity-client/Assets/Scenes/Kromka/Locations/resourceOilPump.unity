@@ -1061,7 +1061,7 @@ MonoBehaviour:
   - resource_site
   - functional-dressing
   _serverAuthoritative: 0
-  _blocksMovement: 1
+  _blocksMovement: 0
   _blocksVision: 1
 --- !u!1 &190788383
 GameObject:
@@ -2525,8 +2525,9 @@ MonoBehaviour:
   - resource
   - oil
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &513536419
 GameObject:
   m_ObjectHideFlags: 0
@@ -4761,8 +4762,9 @@ MonoBehaviour:
   - cover
   - wreck
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &812944681
 GameObject:
   m_ObjectHideFlags: 0
@@ -5473,8 +5475,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1018788835
 GameObject:
   m_ObjectHideFlags: 0
@@ -10686,8 +10689,9 @@ MonoBehaviour:
   - cover
   - fuel-barrels
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &2052210953
 GameObject:
   m_ObjectHideFlags: 0

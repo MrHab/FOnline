@@ -873,8 +873,9 @@ MonoBehaviour:
   - cover
   - wreck
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &168760741
 GameObject:
   m_ObjectHideFlags: 0
@@ -2152,8 +2153,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &364199925
 GameObject:
   m_ObjectHideFlags: 0
@@ -5532,8 +5534,9 @@ MonoBehaviour:
   - resource
   - scrap
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1001 &1439255145
 PrefabInstance:
   m_ObjectHideFlags: 0

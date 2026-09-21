@@ -11,7 +11,7 @@
   тайловая баллистика `roomBlockingDistanceOnRay()` из `server.js`.
 - **Порт** (методы `Port*`) — копия кода `Assets/Scripts/Game/RoaFogOfWar.cs`:
   `MarkRay`, `HasStrictLineOfSight`, `HiddenByLowCover` и
-  `TerrainBlocksBallisticLine` вместе с инверсией оси Z Unity.
+  `TerrainBlocksBallisticLine` (сервер и сцена Unity в одной системе координат, `RoaCoords`).
 
 Исходники клиента программа не читает. После правки этих методов в
 `RoaFogOfWar.cs` копию в `Program.cs` нужно обновить вручную, иначе тест

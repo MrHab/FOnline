@@ -260,6 +260,22 @@ includes(locationDressing, [
   'KromkaPlacedObjectAuthoring',
   'RoaUnityLocationObject'
 ], 'editable regional dressing');
+// Authored data, not source text: thirteen core scenes once shipped without a single
+// dressing prop because the composer skipped missing prefabs silently, and only the
+// Unity batch audit could see it. The practical tutorial yard is bare on purpose.
+for (const location of catalog.locations) {
+  if (location.id === 'tutorialCaravanYard') continue;
+  const definition = JSON.parse(read(`data/locations/${location.id}.json`));
+  const dressing = (definition.objects || []).filter(row => row && Array.isArray(row.tags)
+    && (row.tags.includes('regional-dressing') || row.tags.includes('functional-dressing')));
+  assert(dressing.length >= 19,
+    `${location.id}: only ${dressing.length} editable atmospheric dressing rows`);
+  if (location.territory) {
+    // Core bases have real bunks, boards and stores; mock ones beside them mislead.
+    assert(dressing.every(row => row.collision === 'none' && row.vision?.blocks === false),
+      `${location.id}: core territory dressing must stay atmospheric`);
+  }
+}
 
 includes(exporter, [
   'Экспортировать открытую локацию в data',

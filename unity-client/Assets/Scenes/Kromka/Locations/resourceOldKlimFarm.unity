@@ -4062,7 +4062,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12
+      value: -9.5
       objectReference: {fileID: 0}
     - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4070,7 +4070,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 8
+      value: 6.75
       objectReference: {fileID: 0}
     - target: {fileID: 8679991323893855690, guid: 03b75d152326b7342805389c874e9f90, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4153,8 +4153,9 @@ MonoBehaviour:
   - resource
   - water
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &907777809
 GameObject:
   m_ObjectHideFlags: 0
@@ -7017,8 +7018,8 @@ MonoBehaviour:
   - resource
   - food
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
 --- !u!1 &1832826982
 GameObject:
   m_ObjectHideFlags: 0
@@ -7551,8 +7552,9 @@ MonoBehaviour:
   _gameplayTags:
   - cover
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
+  _lowCover: 1
 --- !u!1 &1959775369
 GameObject:
   m_ObjectHideFlags: 0
@@ -8707,8 +8709,8 @@ MonoBehaviour:
   - resource
   - medicine
   _serverAuthoritative: 1
-  _blocksMovement: 1
-  _blocksVision: 1
+  _blocksMovement: 0
+  _blocksVision: 0
 --- !u!1 &2128012816
 GameObject:
   m_ObjectHideFlags: 0

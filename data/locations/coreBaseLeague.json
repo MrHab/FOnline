@@ -263,9 +263,9 @@
       "model": "wastelandSettler",
       "name": "Исследователь аномалий",
       "position": {
-        "x": 18,
+        "x": 16.5,
         "y": 0,
-        "z": -10
+        "z": -6
       },
       "rotation": {
         "x": 0,
@@ -380,9 +380,9 @@
       "model": "caravanGuard",
       "name": "Конвойный Лиги",
       "position": {
-        "x": -6,
+        "x": -2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotation": {
         "x": 0,
@@ -419,9 +419,9 @@
       "model": "caravanGuard",
       "name": "Конвойный Лиги",
       "position": {
-        "x": 6,
+        "x": 2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotation": {
         "x": 0,
@@ -516,14 +516,36 @@
         "warm-light"
       ],
       "footprint": {
-        "x": 13.5,
-        "z": 15.8
+        "x": 11.0,
+        "z": 8.25
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 11.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 2.4,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-keys-life",
@@ -589,14 +611,56 @@
         "shelter"
       ],
       "footprint": {
-        "x": 6.5,
-        "z": 4.5
+        "x": 10.3,
+        "z": 7.3
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-keys-rail-bridge",
@@ -617,7 +681,7 @@
         "y": 1,
         "z": 1
       },
-      "collision": "solid",
+      "collision": "none",
       "role": "landmark",
       "tags": [
         "rail",
@@ -625,8 +689,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 16.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
@@ -661,14 +725,56 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 4.45,
+        "z": 4.45
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": -2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": -2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        },
+        {
+          "center": {
+            "x": 2.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 0.45,
+            "z": 0.45
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-keys-workshops",
@@ -697,14 +803,36 @@
         "craft"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 13.0,
+        "z": 9.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 12.0,
+            "z": 8.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5.0,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-landmark",
@@ -731,14 +859,36 @@
         "metro-gate"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-1",
@@ -766,14 +916,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-10",
@@ -801,14 +960,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-2",
@@ -836,14 +1007,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-3",
@@ -871,14 +1054,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-4",
@@ -906,14 +1101,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-5",
@@ -941,14 +1148,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-6",
@@ -976,14 +1192,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-7",
@@ -1011,14 +1239,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-8",
@@ -1046,14 +1286,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-module-9",
@@ -1081,14 +1333,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "coreBaseLeague-region-field-0",
@@ -1466,14 +1727,66 @@
         "editable-perimeter"
       ],
       "footprint": {
-        "x": 1,
-        "z": 1
+        "x": 52.8,
+        "z": 48.8
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 24.0
+          },
+          "size": {
+            "x": 52.0,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": -26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": 26.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 48.0
+          }
+        },
+        {
+          "center": {
+            "x": -16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        },
+        {
+          "center": {
+            "x": 16.12,
+            "z": -24.0
+          },
+          "size": {
+            "x": 19.76,
+            "z": 0.8
+          }
+        }
+      ]
     },
     {
       "id": "gate_left",
@@ -1550,7 +1863,7 @@
       "position": {
         "x": 14,
         "y": 0,
-        "z": -8
+        "z": -6
       },
       "rotation": {
         "x": 0,
@@ -1953,6 +2266,671 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-01",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-01",
+      "position": {
+        "x": 32.298,
+        "y": 0.0,
+        "z": -8.328
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.158,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.409,
+        "z": 0.417
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-02",
+      "model": "garden_patch",
+      "name": "coreBaseLeague-dressing-region-02",
+      "position": {
+        "x": 30.152,
+        "y": 0.0,
+        "z": -12.97
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.629,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.309,
+        "z": 2.09
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-03",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-03",
+      "position": {
+        "x": 18.006,
+        "y": 0.0,
+        "z": 3.567
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.028,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.465,
+        "z": 1.248
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-04",
+      "model": "rubble_rock",
+      "name": "coreBaseLeague-dressing-region-04",
+      "position": {
+        "x": 31.765,
+        "y": 0.0,
+        "z": -10.14
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 4.29,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.701,
+        "z": 1.462
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-05",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-05",
+      "position": {
+        "x": 33.032,
+        "y": 0.0,
+        "z": -6.571
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.268,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.371,
+        "z": 0.379
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-06",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-06",
+      "position": {
+        "x": 29.111,
+        "y": 0.0,
+        "z": -14.803
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.623,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.154,
+        "z": 0.698
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-07",
+      "model": "rubble_rock",
+      "name": "coreBaseLeague-dressing-region-07",
+      "position": {
+        "x": -13.881,
+        "y": 0.0,
+        "z": 19.619
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.168,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.117,
+        "z": 1.535
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-08",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-08",
+      "position": {
+        "x": 32.211,
+        "y": 0.0,
+        "z": 5.643
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.849,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 0.829,
+        "y": 0.829,
+        "z": 0.829
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.458,
+        "z": 0.463
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-09",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-09",
+      "position": {
+        "x": 28.056,
+        "y": 0.0,
+        "z": -16.338
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.992,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.222,
+        "y": 1.222,
+        "z": 1.222
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.897,
+        "z": 0.382
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-10",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-10",
+      "position": {
+        "x": -23.086,
+        "y": 0.0,
+        "z": 9.961
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.025,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.222,
+        "y": 1.222,
+        "z": 1.222
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.553,
+        "z": 0.565
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-11",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-11",
+      "position": {
+        "x": 18.157,
+        "y": 0.0,
+        "z": -0.23
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.115,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.222,
+        "y": 1.222,
+        "z": 1.222
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.719,
+        "z": 0.712
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-12",
+      "model": "garden_patch",
+      "name": "coreBaseLeague-dressing-region-12",
+      "position": {
+        "x": -23.302,
+        "y": 0.0,
+        "z": 8.133
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.136,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.222,
+        "y": 1.222,
+        "z": 1.222
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 3.242,
+        "z": 1.987
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-13",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-13",
+      "position": {
+        "x": -30.519,
+        "y": 0.0,
+        "z": 4.101
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.225,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.222,
+        "y": 1.222,
+        "z": 1.222
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.02,
+        "z": 1.708
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-14",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-14",
+      "position": {
+        "x": 27.593,
+        "y": 0.0,
+        "z": -17.61
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.48,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.774,
+        "z": 0.774
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-15",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-15",
+      "position": {
+        "x": 31.771,
+        "y": 0.0,
+        "z": 3.738
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 5.429,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.33,
+        "z": 1.505
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-16",
+      "model": "dry_bush",
+      "name": "coreBaseLeague-dressing-region-16",
+      "position": {
+        "x": 18.162,
+        "y": 0.0,
+        "z": -1.681
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 6.213,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 0.579,
+        "z": 0.59
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-17",
+      "model": "garden_patch",
+      "name": "coreBaseLeague-dressing-region-17",
+      "position": {
+        "x": -28.87,
+        "y": 0.0,
+        "z": -9.815
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 1.568,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.604,
+        "z": 3.071
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-18",
+      "model": "utility_pole",
+      "name": "coreBaseLeague-dressing-region-18",
+      "position": {
+        "x": 22.251,
+        "y": 0.0,
+        "z": -22.704
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 2.818,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 1.843,
+        "z": 0.701
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "coreBaseLeague-dressing-region-19",
+      "model": "rubble_rock",
+      "name": "coreBaseLeague-dressing-region-19",
+      "position": {
+        "x": 31.681,
+        "y": 0.0,
+        "z": -4.039
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.643,
+        "z": 0.0
+      },
+      "scale": {
+        "x": 1.226,
+        "y": 1.226,
+        "z": 1.226
+      },
+      "collision": "none",
+      "role": "scenery",
+      "tags": [
+        "middle_vein",
+        "regional-dressing"
+      ],
+      "footprint": {
+        "x": 2.408,
+        "z": 2.549
+      },
+      "vision": {
+        "blocks": false
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "anomalyFields": [],
@@ -1992,9 +2970,9 @@
       "targetLocationId": "",
       "radius": 3,
       "position": {
-        "x": -4,
+        "x": -2,
         "y": 0.1,
-        "z": -19
+        "z": -21
       },
       "rotationY": 0
     },
@@ -2040,9 +3018,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": -6,
+        "x": -2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotationY": 0
     },
@@ -2052,9 +3030,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 6,
+        "x": 2,
         "y": 0,
-        "z": 22
+        "z": 21
       },
       "rotationY": 0
     },
@@ -2088,9 +3066,9 @@
       "targetLocationId": "",
       "radius": 0.8,
       "position": {
-        "x": 18,
+        "x": 16.5,
         "y": 0,
-        "z": -10
+        "z": -6
       },
       "rotationY": 0
     },
@@ -2108,11 +3086,11 @@
     }
   ],
   "migrationArrival": {
-    "tx": 17,
-    "tz": 9,
-    "x": -4,
+    "tx": 18,
+    "tz": 8,
+    "x": -2,
     "y": 0.1,
-    "z": -19,
+    "z": -21,
     "rotationY": 0
   },
   "respawn": {

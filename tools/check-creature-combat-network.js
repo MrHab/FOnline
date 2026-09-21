@@ -32,6 +32,12 @@ assert(multiAttack.size >= 2, 'в каталоге должно быть хот�
 // (enemyCap 12), поэтому наблюдение ведётся там.
 const OBSERVE_LOCATION = 'wasteland';
 const OBSERVE_MS = Math.max(8000, Number(process.env.CREATURE_OBSERVE_MS || 26000));
+// Атака выбирается по своему cooldownMs (serverCreatureAttackFor): между двумя
+// «заимствованными голосами» плакальщицы (4,8 с) проходит три-четыре нырка,
+// поэтому вид судится после MIN_STRIKES ударов, а окно при нужде продлевается,
+// пока каждый такой вид не покажет обе атаки.
+const MIN_STRIKES = 5;
+const OBSERVE_EXTRA_MS = 30000;
 const BLEED_WAIT_MS = 14000;
 
 const accounts = {};
@@ -51,10 +57,34 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   // Наблюдатель стоит в пустоши с большим запасом здоровья: он должен пережить
   // окно наблюдения, иначе смерть оборвёт сбор ударов.
+  // Здания Кромки закрывают наблюдателя от большей части пустоши, и какой вид
+  // первым выйдет на него, решал случай. Две авторские плакальщицы у точки
+  // прибытия делают бой с двумя атаками обязательным; штатный респаун остаётся.
+  const wasteland = JSON.parse(fs.readFileSync(path.join(root, 'data/locations', `${OBSERVE_LOCATION}.json`), 'utf8'));
+  const arrival = wasteland.entryFromWorld || wasteland.spawn;
+  const mournerTemplate = JSON.parse(fs.readFileSync(path.join(root, 'data/locations/coreLabCenterResearch.json'), 'utf8'))
+    .objects.find(row => row?.entity?.creatureTypeId === 'mourner');
+  assert(mournerTemplate, 'в каталоге локаций нет авторской плакальщицы для образца');
+  for (const [index, dx] of [[1, -3], [2, 3]]) {
+    wasteland.objects.push({
+      ...mournerTemplate,
+      id: `qa_mourner_${index}`,
+      position: { x: Number(arrival.x) + dx, y: 0, z: Number(arrival.z) + 2 }
+    });
+  }
+  fs.mkdirSync(path.join(h.DATA_DIR, 'locations'), { recursive: true });
+  fs.writeFileSync(path.join(h.DATA_DIR, 'locations', `${OBSERVE_LOCATION}.json`), JSON.stringify(wasteland));
+
   const watcherState = stateFor(watcher);
   watcherState.currentLocationId = OBSERVE_LOCATION;
   watcherState.serverLocationContext = { locationId: OBSERVE_LOCATION };
-  watcherState.player = { ...(watcherState.player || {}), hp: 900, maxHp: 900 };
+  watcherState.player = {
+    ...(watcherState.player || {}),
+    x: Number(arrival.x),
+    z: Number(arrival.z),
+    hp: 900,
+    maxHp: 900
+  };
 
   // Кровоточащий получает состояние напрямую: бросок на кровотечение сам по
   // себе проверяется контрактом каталога, а здесь важен сам ход состояния —
@@ -75,6 +105,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   // --- 1: авторские атаки чередуются -----------------------------------
   const { socket: watcherSocket } = await h.connectAndJoin(watcher);
   const attacksBySpecies = new Map();
+  const strikesBySpecies = new Map();
   let meleeEvents = 0;
 
   watcherSocket.on('enemyMelee', payload => {
@@ -82,21 +113,29 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     if (!id || !species.has(id)) return;
     meleeEvents += 1;
     if (!attacksBySpecies.has(id)) attacksBySpecies.set(id, new Set());
-    if (payload.attackId) attacksBySpecies.get(id).add(String(payload.attackId));
+    if (!payload.attackId) return;
+    attacksBySpecies.get(id).add(String(payload.attackId));
+    strikesBySpecies.set(id, (strikesBySpecies.get(id) || 0) + 1);
   });
 
+  const judged = () => [...attacksBySpecies.keys()]
+    .filter(id => multiAttack.has(id) && strikesBySpecies.get(id) >= MIN_STRIKES);
   await delay(OBSERVE_MS);
+  const extendUntil = Date.now() + OBSERVE_EXTRA_MS;
+  while ((!judged().length || judged().some(id => attacksBySpecies.get(id).size < 2)) && Date.now() < extendUntil) {
+    await delay(500);
+  }
   assert(meleeEvents > 0, `за ${OBSERVE_MS} мс в «${OBSERVE_LOCATION}» не случилось ни одного удара твари`);
 
-  const observedMulti = [...attacksBySpecies.keys()].filter(id => multiAttack.has(id));
+  const observedMulti = judged();
   assert(observedMulti.length > 0,
-    `ни один вид с двумя атаками не вступил в бой; наблюдались: ${[...attacksBySpecies.keys()].join(', ') || 'никто'}`);
+    `ни один вид с двумя атаками не ударил ${MIN_STRIKES} раз; наблюдались: ${[...attacksBySpecies.keys()].map(id => `${id}×${strikesBySpecies.get(id) || 0}`).join(', ') || 'никто'}`);
 
   for (const id of observedMulti) {
     const used = attacksBySpecies.get(id);
     const authored = (species.get(id).attacks || []).map(row => String(row.id));
     assert(used.size > 1,
-      `${id}: применил только «${[...used].join(', ')}», хотя в каталоге атак ${authored.length} (${authored.join(', ')}) — сервер снова берёт attacks[0]`);
+      `${id}: за ${strikesBySpecies.get(id)} ударов применил только «${[...used].join(', ')}», хотя в каталоге атак ${authored.length} (${authored.join(', ')}) — сервер снова берёт attacks[0]`);
     for (const attackId of used) {
       assert(authored.includes(attackId), `${id}: применил неизвестную каталогу атаку «${attackId}»`);
     }

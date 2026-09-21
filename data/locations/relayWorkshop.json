@@ -27,18 +27,18 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "worldZones": [
     {
@@ -111,13 +111,13 @@
       "name": "relayWorkshop-dressing-functional-01",
       "position": {
         "x": 12.364,
-        "y": 0.0,
+        "y": 0,
         "z": 4.017
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.257,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -146,13 +146,13 @@
       "name": "relayWorkshop-dressing-functional-02",
       "position": {
         "x": 5.692,
-        "y": 0.0,
+        "y": 0,
         "z": 15.167
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.359,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -181,13 +181,13 @@
       "name": "relayWorkshop-dressing-functional-03",
       "position": {
         "x": -9.95,
-        "y": 0.0,
+        "y": 0,
         "z": 16.654
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.745,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -216,13 +216,13 @@
       "name": "relayWorkshop-dressing-functional-04",
       "position": {
         "x": -12.882,
-        "y": 0.0,
+        "y": 0,
         "z": 1.745
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.847,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -251,13 +251,13 @@
       "name": "relayWorkshop-dressing-functional-05",
       "position": {
         "x": -11.709,
-        "y": 0.0,
+        "y": 0,
         "z": -11.195
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.949,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -286,13 +286,13 @@
       "name": "relayWorkshop-dressing-functional-06",
       "position": {
         "x": 1.739,
-        "y": 0.0,
+        "y": 0,
         "z": -19.322
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.052,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -321,13 +321,13 @@
       "name": "relayWorkshop-dressing-region-01",
       "position": {
         "x": 24.846,
-        "y": 0.0,
+        "y": 0,
         "z": -20.55
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.462,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -356,13 +356,13 @@
       "name": "relayWorkshop-dressing-region-02",
       "position": {
         "x": 24.68,
-        "y": 0.0,
+        "y": 0,
         "z": -20.444
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.887,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -391,13 +391,13 @@
       "name": "relayWorkshop-dressing-region-03",
       "position": {
         "x": 24.678,
-        "y": 0.0,
+        "y": 0,
         "z": -20.449
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.886,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -426,13 +426,13 @@
       "name": "relayWorkshop-dressing-region-04",
       "position": {
         "x": 23.088,
-        "y": 0.0,
+        "y": 0,
         "z": -22.232
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.83,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -461,13 +461,13 @@
       "name": "relayWorkshop-dressing-region-05",
       "position": {
         "x": 22.973,
-        "y": 0.0,
+        "y": 0,
         "z": -22.141
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.831,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -496,13 +496,13 @@
       "name": "relayWorkshop-dressing-region-06",
       "position": {
         "x": 22.99,
-        "y": 0.0,
+        "y": 0,
         "z": -22.125
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.76,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -531,13 +531,13 @@
       "name": "relayWorkshop-dressing-region-07",
       "position": {
         "x": 23.008,
-        "y": 0.0,
+        "y": 0,
         "z": -22.108
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.759,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -566,13 +566,13 @@
       "name": "relayWorkshop-dressing-region-08",
       "position": {
         "x": 22.453,
-        "y": 0.0,
+        "y": 0,
         "z": -24.17
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.704,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -601,13 +601,13 @@
       "name": "relayWorkshop-dressing-region-09",
       "position": {
         "x": 22.464,
-        "y": 0.0,
+        "y": 0,
         "z": -24.16
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.704,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.238,
@@ -636,13 +636,13 @@
       "name": "relayWorkshop-dressing-region-10",
       "position": {
         "x": 22.474,
-        "y": 0.0,
+        "y": 0,
         "z": -24.149
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.125,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -671,13 +671,13 @@
       "name": "relayWorkshop-dressing-region-11",
       "position": {
         "x": 30.428,
-        "y": 0.0,
+        "y": 0,
         "z": -12.753
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.126,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -706,13 +706,13 @@
       "name": "relayWorkshop-dressing-region-12",
       "position": {
         "x": 30.287,
-        "y": 0.0,
+        "y": 0,
         "z": -12.711
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.073,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -741,13 +741,13 @@
       "name": "relayWorkshop-dressing-region-13",
       "position": {
         "x": 30.292,
-        "y": 0.0,
+        "y": 0,
         "z": -12.707
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 6.073,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -776,13 +776,13 @@
       "name": "relayWorkshop-dressing-region-14",
       "position": {
         "x": 29.541,
-        "y": 0.0,
+        "y": 0,
         "z": -14.37
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.196,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -811,13 +811,13 @@
       "name": "relayWorkshop-dressing-region-15",
       "position": {
         "x": 29.374,
-        "y": 0.0,
+        "y": 0,
         "z": -14.294
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.197,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.268,
@@ -845,19 +845,19 @@
       "model": "external_pipe",
       "name": "relayWorkshop-external-pipes EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 2.0,
-        "z": 18.0
+        "x": 0,
+        "y": 2,
+        "z": 18
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 1.571
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -866,33 +866,45 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 52,
+        "z": 0.75
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 51.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-landmark",
       "model": "cable-spire",
       "name": "Landmark cable-spire EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -900,33 +912,55 @@
         "cable-spire"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10,
+        "z": 12
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-loading-gantry",
       "model": "gantry_crane",
       "name": "relayWorkshop-loading-gantry EDITABLE",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": 15.0
+        "x": 14,
+        "y": 0,
+        "z": 15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -936,33 +970,55 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 16.5,
-        "z": 15.5
+        "x": 16,
+        "z": 2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        },
+        {
+          "center": {
+            "x": 7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-main-workshop",
       "model": "warehouse",
       "name": "relayWorkshop-main-workshop EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 3.0
+        "x": -10,
+        "y": 0,
+        "z": 3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -972,28 +1028,50 @@
         "loot-space"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 18,
+        "z": 13
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 17,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -6.2
+          },
+          "size": {
+            "x": 7,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-module-1",
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15.0,
+        "x": 15,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1007,14 +1085,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayWorkshop-module-2",
@@ -1026,14 +1113,14 @@
         "z": 14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1042,14 +1129,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-module-3",
@@ -1061,14 +1160,14 @@
         "z": 8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1077,14 +1176,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-module-4",
@@ -1096,14 +1207,14 @@
         "z": -8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1112,14 +1223,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-module-5",
@@ -1131,9 +1254,9 @@
         "z": -14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1147,33 +1270,42 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "relayWorkshop-process-stack",
       "model": "blast_furnace",
       "name": "relayWorkshop-process-stack EDITABLE",
       "position": {
-        "x": -23.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": -23,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1183,33 +1315,52 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5,
+        "z": 7.7
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 2.385
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -5
+          },
+          "size": {
+            "x": 3,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "relayWorkshop-region-glass-0",
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-0 EDITABLE",
       "position": {
-        "x": -27.0,
+        "x": -27,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1232,19 +1383,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-1 EDITABLE",
       "position": {
-        "x": -18.0,
+        "x": -18,
         "y": 0.02,
-        "z": 21.0
+        "z": 21
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1267,19 +1418,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-2 EDITABLE",
       "position": {
-        "x": -9.0,
+        "x": -9,
         "y": 0.02,
-        "z": 17.0
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1302,19 +1453,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-3 EDITABLE",
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1337,19 +1488,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-4 EDITABLE",
       "position": {
-        "x": 9.0,
+        "x": 9,
         "y": 0.02,
-        "z": 21.0
+        "z": 21
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1372,19 +1523,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-5 EDITABLE",
       "position": {
-        "x": 18.0,
+        "x": 18,
         "y": 0.02,
-        "z": 17.0
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1407,19 +1558,19 @@
       "model": "fused_glass",
       "name": "relayWorkshop-region-glass-6 EDITABLE",
       "position": {
-        "x": 27.0,
+        "x": 27,
         "y": 0.02,
-        "z": 25.0
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1442,19 +1593,19 @@
       "model": "power_pylon",
       "name": "relayWorkshop-region-leaning-pylon-0 EDITABLE",
       "position": {
-        "x": -22.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": -22,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 0.157
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1477,19 +1628,19 @@
       "model": "power_pylon",
       "name": "relayWorkshop-region-leaning-pylon-1 EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": 0,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 6.074
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1512,19 +1663,19 @@
       "model": "power_pylon",
       "name": "relayWorkshop-region-leaning-pylon-2 EDITABLE",
       "position": {
-        "x": 22.0,
-        "y": 0.0,
-        "z": -29.0
+        "x": 22,
+        "y": 0,
+        "z": -29
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 0.157
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1547,19 +1698,19 @@
       "model": "modular_workshop",
       "name": "relayWorkshop-service-bay EDITABLE",
       "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": -9.0
+        "x": 16,
+        "y": 0,
+        "z": -9
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1569,28 +1720,50 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 13,
+        "z": 9
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 12,
+            "z": 8
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "relay_antenna_01",
       "model": "relayAntenna",
       "name": "Малая антенна",
       "position": {
-        "x": 9.0,
-        "y": 0.0,
-        "z": 8.0
+        "x": 9,
+        "y": 0,
+        "z": 8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
         "x": 0.75,
@@ -1602,7 +1775,7 @@
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1617,26 +1790,26 @@
       "model": "cargoStack",
       "name": "Ящики электроники",
       "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": 8.0
+        "x": -9,
+        "y": 0,
+        "z": 8
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1651,26 +1824,26 @@
       "model": "utilityPole",
       "name": "Мачта питания",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -7.0
+        "x": 8,
+        "y": 0,
+        "z": -7
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1685,19 +1858,19 @@
       "model": "campfireRest",
       "name": "Место отдыха",
       "position": {
-        "x": -17.0,
-        "y": 0.0,
-        "z": 14.0
+        "x": -17,
+        "y": 0,
+        "z": 14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -1734,59 +1907,59 @@
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "relayWorkshop-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "workshop-clean-room",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

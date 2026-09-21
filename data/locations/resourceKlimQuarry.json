@@ -102,7 +102,7 @@
       "hp": 7,
       "maxHp": 7,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -140,7 +140,7 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -178,7 +178,7 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -215,14 +215,26 @@
         "industry"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 4.0,
+        "z": 17.731
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": -6.652
+          },
+          "size": {
+            "x": 4.0,
+            "z": 4.428
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-cut-face",
@@ -251,8 +263,8 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 31.0,
+        "z": 13.0
       },
       "vision": {
         "blocks": true
@@ -260,7 +272,49 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": -12.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 7.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": -6.0,
+            "z": 2.0
+          },
+          "size": {
+            "x": 7.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 4.0
+          },
+          "size": {
+            "x": 7.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 6.0
+          },
+          "size": {
+            "x": 7.0,
+            "z": 5.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-dressing-functional-01",
@@ -954,14 +1008,36 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 11.5,
-        "z": 5.5
+        "x": 16.0,
+        "z": 2.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2.0
+          }
+        },
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-landmark",
@@ -988,14 +1064,36 @@
         "bucket-excavator"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-module-1",
@@ -1023,14 +1121,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-module-2",
@@ -1058,14 +1165,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-module-3",
@@ -1093,14 +1212,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-module-4",
@@ -1128,14 +1259,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-module-5",
@@ -1163,14 +1306,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-region-canal",
@@ -1233,14 +1385,26 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 62.0,
+        "z": 1.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 62.0,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "resourceKlimQuarry-region-pylon-0",

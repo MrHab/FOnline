@@ -105,7 +105,7 @@ namespace RealmOfAshes.EditorTools
                     "склонение числа записей");
 
                 radio.SetChannel(RoaRadio.ChannelSafety);
-                Require(radio.Channel == RoaRadio.ChannelSafety && radio.StatusLine == "Канал безопасности"
+                Require(radio.Channel == RoaRadio.ChannelSafety && radio.StatusLine == "Сводка Тракта"
                         && radio.SignalLine == "Настройка на несущую…",
                     "канал безопасности без манифеста должен ждать несущую: " + radio.StatusLine + " / " + radio.SignalLine);
                 Require(PlayerPrefs.GetInt(ChannelPrefsKey, -1) == RoaRadio.ChannelSafety,
@@ -132,11 +132,24 @@ namespace RealmOfAshes.EditorTools
                     "канал безопасности должен показывать только тревожные события");
                 Require(radio.StatusLine.Contains("тревога") && radio.SignalLine.EndsWith("Настройка на несущую…", StringComparison.Ordinal),
                     "статус канала безопасности не отражает угрозу и состояние библиотеки");
+                // Живая сводка называет канал так же, как вкладка: после переименования
+                // каналов она ещё неделю писала «Канал безопасности» под «Сводкой Тракта».
+                Require(radio.StatusLine.StartsWith(RoaPipboy.RadioTitles[RoaRadio.ChannelSafety] + " · ", StringComparison.Ordinal),
+                    "живая сводка называет канал не так, как вкладка: " + radio.StatusLine);
+
+                radio.SetChannel(RoaRadio.ChannelAsh);
+                radio.ApplyWasteland(wasteland);
+                Require(radio.Lines.Count == 1 && radio.Lines[0].Text.StartsWith("Пакет данных: ", StringComparison.Ordinal),
+                    "шумовой канал должен показывать только прочие события");
+                Require(radio.StatusLine.StartsWith(RoaPipboy.RadioTitles[RoaRadio.ChannelAsh] + " · ", StringComparison.Ordinal),
+                    "живая сводка называет канал не так, как вкладка: " + radio.StatusLine);
 
                 radio.SetChannel(RoaRadio.ChannelBeacon);
                 radio.ApplyWasteland(wasteland);
                 Require(radio.Lines.Count == 1 && radio.Lines[0].Text.StartsWith("Маяк: ", StringComparison.Ordinal),
                     "поселенческий маяк должен показывать торговые и поселенческие события");
+                Require(radio.StatusLine.StartsWith(RoaPipboy.RadioTitles[RoaRadio.ChannelBeacon] + " · ", StringComparison.Ordinal),
+                    "живая сводка называет канал не так, как вкладка: " + radio.StatusLine);
                 radio.ApplyWasteland(wasteland);
                 Require(radio.Lines.Count == 1, "повторная сводка продублировала строки эфира");
 

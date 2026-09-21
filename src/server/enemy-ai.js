@@ -187,16 +187,33 @@ function segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius
   const halfZ = Math.max(0.01, Number(blocker.halfZ || 0)) + Math.max(0, Number(radius || 0));
   let tMin = 0;
   let tMax = 1;
-  const clipAxis = (origin, delta, min, max) => {
-    if (Math.abs(delta) < 1e-9) return origin >= min && origin <= max;
-    let near = (min - origin) / delta;
-    let far = (max - origin) / delta;
-    if (near > far) [near, far] = [far, near];
-    tMin = Math.max(tMin, near);
-    tMax = Math.min(tMax, far);
-    return tMin <= tMax;
-  };
-  if (!clipAxis(start.x, dx, -halfX, halfX) || !clipAxis(start.z, dz, -halfZ, halfZ)) return false;
+  if (blocker.round) {
+    // A disc (tank, mound, pillar): the stretch of the segment inside the grown circle.
+    const a = dx * dx + dz * dz;
+    const c = start.x * start.x + start.z * start.z - halfX * halfX;
+    if (a < 1e-18) {
+      if (c > 0) return false;
+    } else {
+      const b = start.x * dx + start.z * dz;
+      const discriminant = b * b - a * c;
+      if (discriminant < 0) return false;
+      const root = Math.sqrt(discriminant);
+      tMin = Math.max(tMin, (-b - root) / a);
+      tMax = Math.min(tMax, (-b + root) / a);
+      if (tMin > tMax) return false;
+    }
+  } else {
+    const clipAxis = (origin, delta, min, max) => {
+      if (Math.abs(delta) < 1e-9) return origin >= min && origin <= max;
+      let near = (min - origin) / delta;
+      let far = (max - origin) / delta;
+      if (near > far) [near, far] = [far, near];
+      tMin = Math.max(tMin, near);
+      tMax = Math.min(tMax, far);
+      return tMin <= tMax;
+    };
+    if (!clipAxis(start.x, dx, -halfX, halfX) || !clipAxis(start.z, dz, -halfZ, halfZ)) return false;
+  }
   const distance = Math.hypot(Number(toX || 0) - Number(fromX || 0), Number(toZ || 0) - Number(fromZ || 0));
   const startPadding = Math.min(0.45, Math.max(0, Number(options.startPadding ?? 0.22)));
   const endPadding = Math.min(0.65, Math.max(0, Number(options.endPadding ?? 0.38)));

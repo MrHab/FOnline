@@ -31,6 +31,8 @@ namespace RealmOfAshes.World
         private float _visualWidth;
         private float _visualDepth;
         private bool _authoredSurface;
+        private bool _mirrorAlbedoX;
+        private bool _mirrorAlbedoZ;
         private int _mapSignature = int.MinValue;
         private GameObject _movementRoot;
         private RoaGroundDressing _groundDressing;
@@ -115,6 +117,7 @@ namespace RealmOfAshes.World
             _visualWidth = location != null ? location.WorldWidth : 76f;
             _visualDepth = location != null ? location.WorldDepth : 76f;
             _textureSize = AlbedoResolution(Application.isMobilePlatform);
+            GroundUvMirror(target, out _mirrorAlbedoX, out _mirrorAlbedoZ);
 
             // Материал — копия авторского: сохраняются шейдер и его настройки, а
             // цвет уходит в белый, иначе URP помножил бы запечённое альбедо на
@@ -172,6 +175,7 @@ namespace RealmOfAshes.World
             if (IsSettlement) PaintSettlementLayers(pixels);
             else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
             PaintAmbientAge(pixels);
+            if (_mirrorAlbedoX || _mirrorAlbedoZ) MirrorPixels(pixels, _textureSize, _mirrorAlbedoX, _mirrorAlbedoZ);
 
             _albedo.SetPixels32(pixels);
             _albedo.Apply(true, false);
@@ -293,22 +297,24 @@ namespace RealmOfAshes.World
                 maxZ = bounds.MaxZ;
             }
 
+            // Края в серверных метрах; север — старший tz (+Z), как у сервера.
             float left = (minX - mapWidth / 2f) * RoaCoords.Tile;
             float right = (maxX + 1f - mapWidth / 2f) * RoaCoords.Tile;
-            float top = (minZ - mapDepth / 2f) * RoaCoords.Tile;
-            float bottom = (maxZ + 1f - mapDepth / 2f) * RoaCoords.Tile;
+            float south = (minZ - mapDepth / 2f) * RoaCoords.Tile;
+            float north = (maxZ + 1f - mapDepth / 2f) * RoaCoords.Tile;
             float width = Mathf.Max(RoaCoords.Tile, right - left);
-            float depth = Mathf.Max(RoaCoords.Tile, bottom - top);
+            float depth = Mathf.Max(RoaCoords.Tile, north - south);
             const float thickness = 0.24f;
             const float height = 3.2f;
+            Vector3 Wall(float serverX, float serverZ) => RoaCoords.ToUnity(serverX, height * 0.5f, serverZ);
 
-            AddBoundaryBox("West", new Vector3(left - thickness * 0.5f, height * 0.5f, -(top + bottom) * 0.5f),
+            AddBoundaryBox("West", Wall(left - thickness * 0.5f, (south + north) * 0.5f),
                 new Vector3(thickness, height, depth));
-            AddBoundaryBox("East", new Vector3(right + thickness * 0.5f, height * 0.5f, -(top + bottom) * 0.5f),
+            AddBoundaryBox("East", Wall(right + thickness * 0.5f, (south + north) * 0.5f),
                 new Vector3(thickness, height, depth));
-            AddBoundaryBox("North", new Vector3((left + right) * 0.5f, height * 0.5f, -(top - thickness * 0.5f)),
+            AddBoundaryBox("North", Wall((left + right) * 0.5f, north + thickness * 0.5f),
                 new Vector3(width, height, thickness));
-            AddBoundaryBox("South", new Vector3((left + right) * 0.5f, height * 0.5f, -(bottom + thickness * 0.5f)),
+            AddBoundaryBox("South", Wall((left + right) * 0.5f, south - thickness * 0.5f),
                 new Vector3(width, height, thickness));
         }
 
@@ -500,8 +506,76 @@ namespace RealmOfAshes.World
         private void PaintServerPatch(Color32[] pixels, float serverX, float serverZ,
             float sizeX, float sizeZ, float serverRotation, int rgb, float opacity, int seed)
         {
-            PaintEllipse(pixels, serverX, -serverZ, sizeX, sizeZ, -serverRotation,
+            Vector3 center = RoaCoords.ToUnity(serverX, serverZ);
+            PaintEllipse(pixels, center.x, center.z, sizeX, sizeZ, serverRotation,
                 Hex(rgb), opacity, seed);
+        }
+
+        /// <summary>
+        /// Альбедо рисуется в мировых осях: столбец растёт с X, строка — с Z. Развёртка
+        /// авторской земли может идти иначе: у встроенного куба Unity верхняя грань
+        /// повёрнута на 180° (u растёт к −X, v — к −Z), и вода, тропы и руда с карты
+        /// сервера легли бы в противоположный угол площадки. Оси берутся из верхней
+        /// грани самого меша.
+        /// </summary>
+        private static void GroundUvMirror(Renderer target, out bool mirrorX, out bool mirrorZ)
+        {
+            mirrorX = false;
+            mirrorZ = false;
+            MeshFilter filter = target != null ? target.GetComponent<MeshFilter>() : null;
+            Mesh mesh = filter != null ? filter.sharedMesh : null;
+            if (mesh == null || !mesh.isReadable) return;
+            Vector3[] vertices = mesh.vertices;
+            Vector2[] uv = mesh.uv;
+            int[] triangles = mesh.triangles;
+            if (uv.Length != vertices.Length) return;
+
+            Transform frame = target.transform;
+            float topHeight = float.NegativeInfinity;
+            for (int i = 0; i + 2 < triangles.Length; i += 3)
+            {
+                Vector3 a = frame.TransformPoint(vertices[triangles[i]]);
+                Vector3 b = frame.TransformPoint(vertices[triangles[i + 1]]);
+                Vector3 c = frame.TransformPoint(vertices[triangles[i + 2]]);
+                Vector3 normal = Vector3.Cross(b - a, c - a);
+                if (normal.sqrMagnitude < 1e-8f || Mathf.Abs(normal.normalized.y) < 0.9f) continue;
+                float height = (a.y + b.y + c.y) / 3f;
+                if (height <= topHeight) continue;
+
+                // uv = M·(x, z) + t на грани: M = F·E⁻¹, столбцы E — рёбра по земле, F — по uv.
+                Vector2 e1 = new Vector2(b.x - a.x, b.z - a.z);
+                Vector2 e2 = new Vector2(c.x - a.x, c.z - a.z);
+                Vector2 f1 = uv[triangles[i + 1]] - uv[triangles[i]];
+                Vector2 f2 = uv[triangles[i + 2]] - uv[triangles[i]];
+                float det = e1.x * e2.y - e1.y * e2.x;
+                if (Mathf.Abs(det) < 1e-8f) continue;
+                float uAlongX = (f1.x * e2.y - f2.x * e1.y) / det;
+                float uAlongZ = (f2.x * e1.x - f1.x * e2.x) / det;
+                float vAlongZ = (f2.y * e1.x - f1.y * e2.x) / det;
+                topHeight = height;
+                if (Mathf.Abs(uAlongZ) > Mathf.Abs(uAlongX))
+                {
+                    // Развёртка повёрнута на 90°: зеркалом это не исправить.
+                    Debug.LogWarning("[ROA] Земля " + target.name + ": u верхней грани идёт вдоль Z, "
+                        + "покраска по карте сервера ляжет со сдвигом.");
+                    mirrorX = false;
+                    mirrorZ = false;
+                    continue;
+                }
+                mirrorX = uAlongX < 0f;
+                mirrorZ = vAlongZ < 0f;
+            }
+        }
+
+        private static void MirrorPixels(Color32[] pixels, int size, bool mirrorX, bool mirrorZ)
+        {
+            var source = (Color32[])pixels.Clone();
+            for (int y = 0; y < size; y++)
+            {
+                int row = (mirrorZ ? size - 1 - y : y) * size;
+                for (int x = 0; x < size; x++)
+                    pixels[y * size + x] = source[row + (mirrorX ? size - 1 - x : x)];
+            }
         }
 
         private void PaintAmbientAge(Color32[] pixels)

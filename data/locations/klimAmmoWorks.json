@@ -27,18 +27,18 @@
   "spawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWorld": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "worldZones": [
     {
@@ -116,9 +116,9 @@
       "id": "ammoyard_reject_box",
       "name": "Короб с браком",
       "tier": "tools",
-      "tx": 21,
+      "tx": 22,
       "tz": 21,
-      "x": 4,
+      "x": 6,
       "y": 0.1,
       "z": 4,
       "rotationY": 0,
@@ -142,13 +142,13 @@
       "name": "klimAmmoWorks-dressing-functional-01",
       "position": {
         "x": 12.364,
-        "y": 0.0,
+        "y": 0,
         "z": 4.017
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.257,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -177,13 +177,13 @@
       "name": "klimAmmoWorks-dressing-functional-02",
       "position": {
         "x": 5.692,
-        "y": 0.0,
+        "y": 0,
         "z": 15.167
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.359,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -212,13 +212,13 @@
       "name": "klimAmmoWorks-dressing-functional-03",
       "position": {
         "x": -9.95,
-        "y": 0.0,
+        "y": 0,
         "z": 16.654
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.745,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -247,13 +247,13 @@
       "name": "klimAmmoWorks-dressing-functional-04",
       "position": {
         "x": -12.882,
-        "y": 0.0,
+        "y": 0,
         "z": 1.745
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.847,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -282,13 +282,13 @@
       "name": "klimAmmoWorks-dressing-functional-05",
       "position": {
         "x": -11.709,
-        "y": 0.0,
+        "y": 0,
         "z": -11.195
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.949,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.9,
@@ -317,13 +317,13 @@
       "name": "klimAmmoWorks-dressing-functional-06",
       "position": {
         "x": 1.739,
-        "y": 0.0,
+        "y": 0,
         "z": -19.322
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 3.052,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 1.02,
@@ -352,13 +352,13 @@
       "name": "klimAmmoWorks-dressing-region-01",
       "position": {
         "x": 1.689,
-        "y": 0.0,
+        "y": 0,
         "z": 21.74
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.367,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -387,13 +387,13 @@
       "name": "klimAmmoWorks-dressing-region-02",
       "position": {
         "x": 1.637,
-        "y": 0.0,
+        "y": 0,
         "z": 21.276
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.68,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -422,13 +422,13 @@
       "name": "klimAmmoWorks-dressing-region-03",
       "position": {
         "x": 1.634,
-        "y": 0.0,
+        "y": 0,
         "z": 21.278
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.681,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -457,13 +457,13 @@
       "name": "klimAmmoWorks-dressing-region-04",
       "position": {
         "x": 5.482,
-        "y": 0.0,
+        "y": 0,
         "z": 20.619
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.737,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -492,13 +492,13 @@
       "name": "klimAmmoWorks-dressing-region-05",
       "position": {
         "x": 5.51,
-        "y": 0.0,
+        "y": 0,
         "z": 20.762
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.736,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -527,13 +527,13 @@
       "name": "klimAmmoWorks-dressing-region-06",
       "position": {
         "x": 5.501,
-        "y": 0.0,
+        "y": 0,
         "z": 20.766
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.55,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -562,13 +562,13 @@
       "name": "klimAmmoWorks-dressing-region-07",
       "position": {
         "x": 5.541,
-        "y": 0.0,
+        "y": 0,
         "z": 20.754
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.549,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -597,13 +597,13 @@
       "name": "klimAmmoWorks-dressing-region-08",
       "position": {
         "x": 4.517,
-        "y": 0.0,
+        "y": 0,
         "z": 21.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.624,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -632,13 +632,13 @@
       "name": "klimAmmoWorks-dressing-region-09",
       "position": {
         "x": 4.501,
-        "y": 0.0,
+        "y": 0,
         "z": 21.82
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.624,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.939,
@@ -667,13 +667,13 @@
       "name": "klimAmmoWorks-dressing-region-10",
       "position": {
         "x": 4.537,
-        "y": 0.0,
+        "y": 0,
         "z": 21.814
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.941,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -702,13 +702,13 @@
       "name": "klimAmmoWorks-dressing-region-11",
       "position": {
         "x": -2.447,
-        "y": 0.0,
+        "y": 0,
         "z": 22.142
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.94,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -737,13 +737,13 @@
       "name": "klimAmmoWorks-dressing-region-12",
       "position": {
         "x": -2.473,
-        "y": 0.0,
+        "y": 0,
         "z": 22.286
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.017,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -772,13 +772,13 @@
       "name": "klimAmmoWorks-dressing-region-13",
       "position": {
         "x": -2.469,
-        "y": 0.0,
+        "y": 0,
         "z": 22.284
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.017,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -807,13 +807,13 @@
       "name": "klimAmmoWorks-dressing-region-14",
       "position": {
         "x": -3.702,
-        "y": 0.0,
+        "y": 0,
         "z": 22.112
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.946,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -842,13 +842,13 @@
       "name": "klimAmmoWorks-dressing-region-15",
       "position": {
         "x": -3.627,
-        "y": 0.0,
+        "y": 0,
         "z": 21.644
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.946,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 0.889,
@@ -876,19 +876,19 @@
       "model": "external_pipe",
       "name": "klimAmmoWorks-external-pipes EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 2.0,
-        "z": 18.0
+        "x": 0,
+        "y": 2,
+        "z": 18
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
+        "x": 0,
+        "y": 0,
         "z": 1.571
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -897,33 +897,45 @@
         "cascade"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 52,
+        "z": 0.75
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 51.645,
+            "z": 0.559
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-landmark",
       "model": "numbered-workshop",
       "name": "Landmark numbered-workshop EDITABLE",
       "position": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -931,33 +943,55 @@
         "numbered-workshop"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10,
+        "z": 12
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 4,
+            "z": 0
+          },
+          "size": {
+            "x": 2,
+            "z": 12
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-loading-gantry",
       "model": "gantry_crane",
       "name": "klimAmmoWorks-loading-gantry EDITABLE",
       "position": {
-        "x": 14.0,
-        "y": 0.0,
-        "z": 15.0
+        "x": 14,
+        "y": 0,
+        "z": 15
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -967,33 +1001,55 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 16.5,
-        "z": 15.5
+        "x": 16,
+        "z": 2
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        },
+        {
+          "center": {
+            "x": 7,
+            "z": 0
+          },
+          "size": {
+            "x": 0.8,
+            "z": 2
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-main-workshop",
       "model": "warehouse",
       "name": "klimAmmoWorks-main-workshop EDITABLE",
       "position": {
-        "x": -10.0,
-        "y": 0.0,
-        "z": 3.0
+        "x": -10,
+        "y": 0,
+        "z": 3
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1003,28 +1059,50 @@
         "loot-space"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 18,
+        "z": 13
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 17,
+            "z": 12
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -6.2
+          },
+          "size": {
+            "x": 7,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-module-1",
       "model": "industrial_module",
       "name": "Module 01",
       "position": {
-        "x": 15.0,
+        "x": 15,
         "y": 1.4,
-        "z": 0.0
+        "z": 0
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 1.571,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1038,14 +1116,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-module-2",
@@ -1057,14 +1144,14 @@
         "z": 14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.314,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1073,14 +1160,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-module-3",
@@ -1092,14 +1191,14 @@
         "z": 8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 5.341,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1108,14 +1207,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-module-4",
@@ -1127,14 +1238,14 @@
         "z": -8.817
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 4.084,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
-        "x": 7.0,
+        "x": 7,
         "y": 2.8,
-        "z": 5.0
+        "z": 5
       },
       "collision": "solid",
       "role": "structure",
@@ -1143,14 +1254,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 1,
+            "z": 1
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-module-5",
@@ -1162,9 +1285,9 @@
         "z": -14.266
       },
       "rotation": {
-        "x": 0.0,
+        "x": 0,
         "y": 2.827,
-        "z": 0.0
+        "z": 0
       },
       "scale": {
         "x": 2.5,
@@ -1178,33 +1301,42 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-process-stack",
       "model": "blast_furnace",
       "name": "klimAmmoWorks-process-stack EDITABLE",
       "position": {
-        "x": -23.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": -23,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "landmark",
@@ -1214,33 +1346,52 @@
         "top-readable"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5,
+        "z": 7.7
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "radius": 2.385
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -5
+          },
+          "size": {
+            "x": 3,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-region-canal",
       "model": "water_channel",
       "name": "klimAmmoWorks-region-canal EDITABLE",
       "position": {
-        "x": -29.0,
+        "x": -29,
         "y": -0.02,
-        "z": 17.0
+        "z": 17
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "ground_accent",
@@ -1263,19 +1414,19 @@
       "model": "wall",
       "name": "klimAmmoWorks-region-dam-bank EDITABLE",
       "position": {
-        "x": -1.0,
+        "x": -1,
         "y": 1.2,
-        "z": 12.0
+        "z": 12
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "cover",
@@ -1284,33 +1435,45 @@
         "cover"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 62,
+        "z": 1.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 62,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "klimAmmoWorks-region-pylon-0",
       "model": "power_pylon",
       "name": "klimAmmoWorks-region-pylon-0 EDITABLE",
       "position": {
-        "x": -24.0,
-        "y": 0.0,
-        "z": 25.0
+        "x": -24,
+        "y": 0,
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1333,19 +1496,19 @@
       "model": "power_pylon",
       "name": "klimAmmoWorks-region-pylon-1 EDITABLE",
       "position": {
-        "x": -8.0,
-        "y": 0.0,
-        "z": 25.0
+        "x": -8,
+        "y": 0,
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1368,19 +1531,19 @@
       "model": "power_pylon",
       "name": "klimAmmoWorks-region-pylon-2 EDITABLE",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": 25.0
+        "x": 8,
+        "y": 0,
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1403,19 +1566,19 @@
       "model": "power_pylon",
       "name": "klimAmmoWorks-region-pylon-3 EDITABLE",
       "position": {
-        "x": 24.0,
-        "y": 0.0,
-        "z": 25.0
+        "x": 24,
+        "y": 0,
+        "z": 25
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "role": "dressing",
@@ -1438,19 +1601,19 @@
       "model": "modular_workshop",
       "name": "klimAmmoWorks-service-bay EDITABLE",
       "position": {
-        "x": 16.0,
-        "y": 0.0,
-        "z": -9.0
+        "x": 16,
+        "y": 0,
+        "z": -9
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "solid",
       "role": "structure",
@@ -1460,33 +1623,55 @@
         "craft"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 13,
+        "z": 9
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "z": 0
+          },
+          "size": {
+            "x": 12,
+            "z": 8
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "z": -4.1
+          },
+          "size": {
+            "x": 5,
+            "z": 0.4
+          }
+        }
+      ]
     },
     {
       "id": "klim_armory_01",
       "model": "armoryRack",
       "name": "Стойка с деталями",
       "position": {
-        "x": 8.0,
-        "y": 0.0,
-        "z": -4.0
+        "x": 8,
+        "y": 0,
+        "z": -4
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -1494,7 +1679,7 @@
         "workshop"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1509,26 +1694,26 @@
       "model": "cargoStack",
       "name": "Ящики патронов",
       "position": {
-        "x": -9.0,
-        "y": 0.0,
-        "z": 7.0
+        "x": -9,
+        "y": 0,
+        "z": 7
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
         "cover"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1543,19 +1728,19 @@
       "model": "campfireRest",
       "name": "Место отдыха",
       "position": {
-        "x": -17.0,
-        "y": 0.0,
-        "z": -14.0
+        "x": -17,
+        "y": 0,
+        "z": -14
       },
       "rotation": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "scale": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "x": 1,
+        "y": 1,
+        "z": 1
       },
       "collision": "none",
       "tags": [
@@ -1592,59 +1777,59 @@
   "respawn": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entry": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "entryFromWasteland": {
     "tx": 19,
     "tz": 8,
-    "x": 0.0,
+    "x": 0,
     "y": 0.1,
-    "z": -22.0,
-    "rotationY": 0.0
+    "z": -22,
+    "rotationY": 0
   },
   "migrationArrival": {
     "tx": 17,
     "tz": 9,
-    "x": -4.0,
+    "x": -4,
     "y": 0.1,
-    "z": -19.0,
-    "rotationY": 0.0
+    "z": -19,
+    "rotationY": 0
   },
   "unitySpawns": [
     {
       "id": "ammo-yard-gate",
       "kind": "MigrationArrival",
       "targetLocationId": "",
-      "radius": 3.0,
+      "radius": 3,
       "position": {
-        "x": -4.0,
+        "x": -4,
         "y": 0.1,
-        "z": -19.0
+        "z": -19
       },
-      "rotationY": 0.0
+      "rotationY": 0
     },
     {
       "id": "klimAmmoWorks-arrival",
       "kind": "PlayerArrival",
       "targetLocationId": "",
-      "radius": 2.0,
+      "radius": 2,
       "position": {
-        "x": 0.0,
+        "x": 0,
         "y": 0.1,
-        "z": -22.0
+        "z": -22
       },
-      "rotationY": 0.0
+      "rotationY": 0
     }
   ]
 }

@@ -11,9 +11,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { circleBlockerPenalty, createLocationCollision } = require('../src/server/location-collision');
 
 const root = path.resolve(__dirname, '..');
 const locationsDir = path.join(root, 'data/locations');
+const { locationObjectBlockers } = createLocationCollision({ tile: 2 });
 
 // Столицы и их фракции — тот же список, что у сервера (SERVER_FACTION_CAPITAL_LOCATIONS).
 const CAPITALS = {
@@ -48,6 +50,9 @@ function occupied(objects, x, z) {
     const scale = Math.max(0.5, Number(row?.scale?.x || 1));
     const distance = Math.hypot(Number(position.x || 0) - x, Number(position.z || 0) - z);
     if (distance < CLEARANCE + scale * 0.5) return true;
+    // Стены зданий сцены (collisionParts): NPC внутри корпуса сервер поставил бы
+    // не на это место, а игрок до него не дошёл бы.
+    if (locationObjectBlockers(row).some(blocker => circleBlockerPenalty(x, z, 0.8, blocker) > 0.001)) return true;
   }
   return false;
 }

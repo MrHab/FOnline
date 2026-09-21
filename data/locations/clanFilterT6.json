@@ -173,14 +173,36 @@
         "controlled-route"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 16.0,
+        "z": 5.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        },
+        {
+          "center": {
+            "x": 6.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 4.0,
+            "z": 5.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-command-core",
@@ -208,14 +230,190 @@
         "readable-from-above"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 16.94,
+        "z": 16.94
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.571
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": 6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": 4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": 2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        },
+        {
+          "center": {
+            "x": -7.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          }
+        },
+        {
+          "center": {
+            "x": -6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.393
+        },
+        {
+          "center": {
+            "x": -4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -0.785
+        },
+        {
+          "center": {
+            "x": -2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.178
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -7.0
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": -1.571
+        },
+        {
+          "center": {
+            "x": 2.679,
+            "z": -6.467
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 1.178
+        },
+        {
+          "center": {
+            "x": 4.95,
+            "z": -4.95
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.785
+        },
+        {
+          "center": {
+            "x": 6.467,
+            "z": -2.679
+          },
+          "size": {
+            "x": 2.94,
+            "z": 0.7
+          },
+          "rotationY": 0.393
+        }
+      ]
     },
     {
       "id": "clanFilterT6-dressing-functional-01",
@@ -977,14 +1175,36 @@
         "filter-tanks"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-1",
@@ -1012,14 +1232,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-10",
@@ -1047,14 +1276,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-2",
@@ -1082,14 +1323,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-3",
@@ -1117,14 +1370,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-4",
@@ -1152,14 +1417,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-5",
@@ -1187,14 +1464,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-6",
@@ -1222,14 +1508,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 5.0,
+        "z": 7.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-7",
@@ -1257,14 +1555,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-8",
@@ -1292,14 +1602,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-9",
@@ -1327,14 +1649,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "clanFilterT6-module-socket-1",
@@ -1923,14 +2254,33 @@
         "objective"
       ],
       "footprint": {
-        "x": 18.5,
-        "z": 3.5
+        "x": 2.0,
+        "z": 2.6
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.35
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -1.5
+          },
+          "size": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-relay-2",
@@ -1959,14 +2309,33 @@
         "objective"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 3.5
+        "x": 2.0,
+        "z": 2.6
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.35
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -1.5
+          },
+          "size": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "clanFilterT6-relay-3",
@@ -1995,14 +2364,33 @@
         "objective"
       ],
       "footprint": {
-        "x": 18.5,
-        "z": 3.5
+        "x": 2.0,
+        "z": 2.6
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.35
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": -1.5
+          },
+          "size": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ]
     },
     {
       "id": "command",
@@ -2498,11 +2886,11 @@
     "rotationY": 0.0
   },
   "migrationArrival": {
-    "tx": 18,
-    "tz": 10,
-    "x": -4.0,
+    "tx": 19,
+    "tz": 9,
+    "x": -2.0,
     "y": 0.1,
-    "z": -19.0,
+    "z": -21.0,
     "rotationY": 0.0
   },
   "unitySpawns": [
@@ -2524,9 +2912,9 @@
       "targetLocationId": "",
       "radius": 3.0,
       "position": {
-        "x": -4.0,
+        "x": -2.0,
         "y": 0.1,
-        "z": -19.0
+        "z": -21.0
       },
       "rotationY": 0.0
     }

@@ -12,6 +12,7 @@ const {
   staticCollisionBlockerBounds
 } = require('../src/server/static-collision-spatial-index');
 const { segmentIntersectsRotatedBlocker } = require('../src/server/enemy-ai');
+const { circleBlockerPenalty } = require('../src/server/location-collision');
 const { isArtifactStunned } = require('../src/server/artifact-runtime');
 
 const ROOT = path.join(__dirname, '..');
@@ -138,6 +139,8 @@ function assertStaticCollisionSpatialBroadPhase() {
   const collisionContext = vm.createContext({
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     segmentIntersectsRotatedBlocker,
+    // server.js берёт штраф из общего модуля преград под этим именем.
+    circleRotatedBlockerPenalty: circleBlockerPenalty,
     roomStaticCollisionCandidates: (_room, minX, minZ, maxX, maxZ) => (
       queryStaticCollisionSpatialIndex(index, minX, minZ, maxX, maxZ)
     )
@@ -145,7 +148,6 @@ function assertStaticCollisionSpatialBroadPhase() {
   vm.runInContext([
     extractFunction(serverSource, 'circleIntersectsRotatedBlocker'),
     extractFunction(serverSource, 'roomStaticCollisionBlocksSegment'),
-    extractFunction(serverSource, 'circleRotatedBlockerPenalty'),
     extractFunction(serverSource, 'roomStaticCollisionPenaltyAt'),
     extractFunction(serverSource, 'roomStaticCollisionBlocksCircle'),
     'this.collision = { roomStaticCollisionBlocksSegment, circleRotatedBlockerPenalty, roomStaticCollisionPenaltyAt, roomStaticCollisionBlocksCircle };'

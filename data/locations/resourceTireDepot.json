@@ -790,14 +790,36 @@
         "collapsed-canopy"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.0,
+        "z": 12.0
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        },
+        {
+          "center": {
+            "x": 4.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 2.0,
+            "z": 12.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-module-1",
@@ -825,14 +847,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-module-2",
@@ -860,14 +891,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.202,
+        "z": 6.918
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-module-3",
@@ -895,14 +938,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-module-4",
@@ -930,14 +985,26 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 8.16,
+        "z": 8.602
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "size": {
+            "x": 1.0,
+            "z": 1.0
+          }
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-module-5",
@@ -965,14 +1032,23 @@
         "modular"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 2.5,
+        "z": 2.5
       },
       "vision": {
         "blocks": true
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.5
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-polymer-canopy",
@@ -1001,14 +1077,56 @@
         "shelter"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 10.3,
+        "z": 7.3
       },
       "vision": {
         "blocks": false
       },
       "unityAuthored": true,
-      "worldRevision": "kromka-1"
+      "worldRevision": "kromka-1",
+      "collisionParts": [
+        {
+          "center": {
+            "x": -5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": -3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": -5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        },
+        {
+          "center": {
+            "x": 5.0,
+            "z": 3.5
+          },
+          "size": {
+            "x": 0.3,
+            "z": 0.3
+          }
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-region-culvert-east",
@@ -1142,8 +1260,8 @@
         "resource"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1.8,
+        "z": 1.8
       },
       "vision": {
         "blocks": false
@@ -1151,7 +1269,30 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.899
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-rubber-bale-1",
@@ -1180,8 +1321,8 @@
         "resource"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1.8,
+        "z": 1.8
       },
       "vision": {
         "blocks": false
@@ -1189,7 +1330,30 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.899
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-rubber-bale-2",
@@ -1218,8 +1382,8 @@
         "resource"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1.8,
+        "z": 1.8
       },
       "vision": {
         "blocks": false
@@ -1227,7 +1391,30 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.899
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-rubber-bale-3",
@@ -1256,8 +1443,8 @@
         "resource"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1.8,
+        "z": 1.8
       },
       "vision": {
         "blocks": false
@@ -1265,7 +1452,30 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.899
+        }
+      ]
     },
     {
       "id": "resourceTireDepot-rubber-bale-4",
@@ -1294,8 +1504,8 @@
         "resource"
       ],
       "footprint": {
-        "x": 1.0,
-        "z": 1.0
+        "x": 1.8,
+        "z": 1.8
       },
       "vision": {
         "blocks": false
@@ -1303,7 +1513,30 @@
       "unityAuthored": true,
       "worldRevision": "kromka-1",
       "hp": 1200,
-      "maxHp": 1200
+      "maxHp": 1200,
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.9
+        },
+        {
+          "center": {
+            "x": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.899
+        }
+      ]
     },
     {
       "id": "rest_campfire_01",
@@ -1373,7 +1606,7 @@
         "chemicals"
       ],
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1411,7 +1644,7 @@
       "hp": 6,
       "maxHp": 6,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {
@@ -1449,7 +1682,7 @@
       "hp": 5,
       "maxHp": 5,
       "vision": {
-        "blocks": true
+        "mode": "cover"
       },
       "role": "scenery",
       "footprint": {

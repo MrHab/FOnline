@@ -63,9 +63,9 @@ namespace RealmOfAshes.EditorTools
                 Vector3 end;
                 Require(RoaCombatFx.TryShotEndpoints(exact, out start, out end),
                         "exact shot endpoints were rejected");
-                Require(Near(start.x, 2f) && Near(start.z, -3f)
-                        && Near(end.x, 8f) && Near(end.z, 4f),
-                        "shot endpoints lost the server-to-Unity Z inversion");
+                Require(Near(start.x, 2f) && Near(start.z, 3f)
+                        && Near(end.x, 8f) && Near(end.z, -4f),
+                        "shot endpoints left the server frame (RoaCoords is the identity)");
                 Require(RoaCombatFx.PayloadHasMuzzleStart(exact),
                         "a player muzzle payload would receive a second forward offset");
                 var enemyExact = (JObject)exact.DeepClone();
@@ -82,7 +82,7 @@ namespace RealmOfAshes.EditorTools
                     ["endDist"] = 5f
                 };
                 Require(RoaCombatFx.TryShotEndpoints(directional, out start, out end)
-                        && Near(end.x, 4f) && Near(end.z, -2f),
+                        && Near(end.x, 4f) && Near(end.z, 2f),
                         "directional shot fallback has an incorrect endpoint");
                 Require(!RoaCombatFx.PayloadHasMuzzleStart(directional),
                         "a legacy directional payload was mistaken for an exact muzzle");

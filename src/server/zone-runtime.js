@@ -138,6 +138,12 @@ function createZoneRuntime({ graph, zonesDir, normalize, validate = () => {}, lo
   function cityDefinition(locationId, authored = {}, builtStations = []) {
     const zone = cityOf(locationId);
     if (!zone) return null;
+    // Город, разложенный в сцену и выправленный руками, дальше живёт как
+    // обычная авторская локация: что в сцене — то и в игре, конструктор его
+    // больше не трогает (`cityAuthored` ставит tools/bake-city-scene.js).
+    if (authored.cityAuthored === true) {
+      return { ...authored, id: locationId, cityZone: true, generated: false };
+    }
     if (!catalog) catalog = loadZoneCatalog(zonesDir);
     // Построенное игроками приходит извне: город чистый, а станки на участках —
     // состояние торгов, которое живёт в сохранениях.

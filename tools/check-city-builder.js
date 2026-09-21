@@ -23,8 +23,13 @@ const cities = runtime.cities();
 assert(cities.length >= 6, `the world has ${cities.length} cities`);
 let objects = 0;
 let carried = 0;
+const handAuthored = [];
 for (const city of cities) {
   const authored = authoredOf(city.locationId);
+  if (authored.cityAuthored === true) {
+    handAuthored.push(city.locationId);
+    continue;
+  }
   const built = runtime.cityDefinition(city.locationId, authored);
   const again = runtime.cityDefinition(city.locationId, authored);
   assert.equal(JSON.stringify(built), JSON.stringify(again), `${city.locationId}: the city is built the same way twice`);
@@ -123,4 +128,7 @@ for (const city of cities) {
 
 }
 
-console.log(`City builder OK: ${cities.length} cities built twice byte for byte (${objects} objects), each behind its own wall with a gate per open side, vault and auctioneer inside the bank, ${carried} authored objects carried into their districts.`);
+if (handAuthored.length) {
+  console.log(`Города, разложенные в сцены и правимые руками: ${handAuthored.join(', ')}`);
+}
+console.log(`City builder OK: ${cities.length - handAuthored.length} cities built twice byte for byte (${objects} objects), each behind its own wall with a gate per open side, vault and auctioneer inside the bank, ${carried} authored objects carried into their districts.`);

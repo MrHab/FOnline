@@ -2052,7 +2052,7 @@ app.get('/api/locations', (_, res) => {
   for (const loc of Object.values(typeof LOCATIONS === 'object' ? LOCATIONS : {})) {
     // Зоны мира не входят в общий список: их почти две сотни по ~65 КБ, клиент
     // берёт нужную по одной через /api/locations/:id.
-    if (!loc || !loc.id || loc.generated) continue;
+    if (!loc || !loc.id || loc.generated || loc.cityAuthored) continue;
     locations[loc.id] = kromkaPublicLocationDefinition(loc);
   }
   res.json({

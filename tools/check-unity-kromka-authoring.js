@@ -266,6 +266,7 @@ includes(locationDressing, [
 for (const location of catalog.locations) {
   if (location.id === 'tutorialCaravanYard') continue;
   const definition = JSON.parse(read(`data/locations/${location.id}.json`));
+  if (definition.cityAuthored === true || definition.cityZone === true) continue;
   const dressing = (definition.objects || []).filter(row => row && Array.isArray(row.tags)
     && (row.tags.includes('regional-dressing') || row.tags.includes('functional-dressing')));
   assert(dressing.length >= 19,

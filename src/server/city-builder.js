@@ -131,11 +131,13 @@ function buildCity(recipe, kit) {
       collision: entry.solid ? 'solid' : 'none',
       // Коробка коллизии — та же, что у зон: по ней клиент ставит коллайдер, а
       // без него игрок проходил бы сквозь стену и курсор не находил бы постройку.
+      // Часть задаётся в осях самого объекта: масштаб на неё накладывает сервер,
+      // и умножь мы здесь ещё раз — преграда встала бы шире постройки.
       ...(entry.solid ? {
         collisionParts: [{
-          center: { x: round2((entry.center?.[0] || 0) * scale[0]), z: round2((entry.center?.[1] || 0) * scale[2]) },
-          size: { x: width, z: depth },
-          height: round2(Math.max(0.4, (Number(entry.height) || 1) * scale[1]))
+          center: { x: round2(entry.center?.[0] || 0), z: round2(entry.center?.[1] || 0) },
+          size: { x: round2(entry.size[0]), z: round2(entry.size[1]) },
+          height: round2(Math.max(0.4, Number(entry.height) || 1))
         }]
       } : {}),
       collisionSize: { width, depth },

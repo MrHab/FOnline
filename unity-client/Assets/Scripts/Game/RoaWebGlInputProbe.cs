@@ -10,6 +10,9 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed class RoaWebGlInputProbe : MonoBehaviour
     {
+        private float _nextAt;
+        private int _frames;
+        private float _frameTime;
 
         private void Update()
         {
@@ -19,6 +22,7 @@ namespace RealmOfAshes.Game
             if (Input.anyKeyDown) Debug.Log("[ROA-input] key down: " + Input.inputString);
             _frames++; _frameTime += Time.unscaledDeltaTime;
             if (Time.unscaledTime < _nextAt) return;
+            _nextAt = Time.unscaledTime + 2f;
             float fps = _frames / Mathf.Max(0.001f, _frameTime); _frames = 0; _frameTime = 0f;
             EventSystem es = EventSystem.current;
             Debug.Log("[ROA-input] fps=" + fps.ToString("0.0") + " mouse=" + Input.mousePosition + " screen=" + Screen.width + "x" + Screen.height

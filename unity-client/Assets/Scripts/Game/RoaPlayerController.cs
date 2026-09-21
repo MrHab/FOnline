@@ -48,6 +48,12 @@ namespace RealmOfAshes.Game
         public const float SafeSpawnSearchStep = 0.65f;
 
         /// <summary>
+        /// На сколько метров ниже пола тело считается провалившимся. Пол локации
+        /// плоский, и дыра в нём означала бы бесконечное падение.
+        /// </summary>
+        private const float FallRecoveryDepth = 3f;
+
+        /// <summary>
         /// The physics root accepts an authoritative correction immediately. The
         /// visible character keeps its previous world position and closes this
         /// presentation offset smoothly, so networking stays authoritative without
@@ -268,6 +274,21 @@ namespace RealmOfAshes.Game
             transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
         }
 
+        /// <summary>
+        /// Возвращает провалившееся тело на поверхность. Серверная поправка правит
+        /// только плоскость — высоту она берёт с текущей, — поэтому без этого
+        /// падение сквозь дыру в полу было бы уже не остановить.
+        /// </summary>
+        private void RecoverFromFall()
+        {
+            float standing = _controller.height * 0.5f;
+            if (transform.position.y > standing - FallRecoveryDepth) return;
+            Vector3 place = transform.position;
+            place.y = standing;
+            TeleportToSafeSpawn(place);
+            Debug.LogWarning("[ROA] Тело ушло под пол локации — возвращено на поверхность.");
+        }
+
         private float FeetY()
         {
             return transform.position.y - _controller.height * 0.5f;
@@ -333,6 +354,7 @@ namespace RealmOfAshes.Game
             Vector3 motion = requestedVelocity * frameDt;
             motion.y = _controller.isGrounded ? -0.05f : -9.81f * frameDt;
             _controller.Move(motion);
+            RecoverFromFall();
 
             // Animation and the network see the displacement that collisions
             // actually allowed. This prevents running in place against walls and

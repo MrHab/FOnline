@@ -82,7 +82,8 @@ function sameWorldShape(shape, blocker) {
 }
 
 const failures = {
-  unexported: [], unmarked: [], collision: [], flag: [], tags: [], parts: [], strayParts: [], footprint: [], rebuilt: []
+  unexported: [], unmarked: [], collision: [], flag: [], tags: [], parts: [], strayParts: [], footprint: [], rebuilt: [],
+  ground: []
 };
 let scenes = 0;
 let pairs = 0;
@@ -106,6 +107,26 @@ for (const file of fs.readdirSync(locationsDir).filter(name => name.endsWith('.j
     .map(row => [String(row.id), row]));
   for (const [id, row] of rows)
     if (!isLiveRow(row) && !markers.has(id)) failures.unmarked.push(`${file}: ${id} (${row.model || row.role || 'no model'})`);
+
+  // The floor is a marker of its own, and a body that walks off its edge falls out
+  // of the world: a camp's 76 m ground under a 160 m city dropped the player at the
+  // gate. The map is the walkable rectangle, so the floor has to cover all of it.
+  const floor = [...markers.values()].filter(marker => marker.role === 'terrain')
+    .flatMap(marker => colliders.get(marker.id) || [])
+    .flatMap(shape => shape.corners || []);
+  const mapWidth = Number(definition.map?.width) || 0;
+  const mapDepth = Number(definition.map?.depth) || 0;
+  if (mapWidth > 0 && mapDepth > 0) {
+    if (!floor.length) failures.ground.push(`${file}: the terrain marker carries no floor collider`);
+    else {
+      const reach = (index, sign) => sign * Math.max(...floor.map(corner => sign * corner[index]));
+      const covered = reach(0, -1) <= -mapWidth / 2 + 0.5 && reach(0, 1) >= mapWidth / 2 - 0.5
+        && reach(2, -1) <= -mapDepth / 2 + 0.5 && reach(2, 1) >= mapDepth / 2 - 0.5;
+      if (!covered)
+        failures.ground.push(`${file}: map ${mapWidth}x${mapDepth} m, floor `
+          + `x ${reach(0, -1).toFixed(1)}..${reach(0, 1).toFixed(1)}, z ${reach(2, -1).toFixed(1)}..${reach(2, 1).toFixed(1)}`);
+    }
+  }
 
   for (const marker of markers.values()) {
     // The exporter skips terrain markers: the ground has no server row.
@@ -176,6 +197,8 @@ assert.deepStrictEqual(failures.footprint, [],
   'data/locations footprint disagrees with the extent of the scene colliders; a scene export would rewrite it');
 assert.deepStrictEqual(failures.rebuilt, [],
   'the server does not rebuild the scene\'s collider shapes from collisionParts');
+assert.deepStrictEqual(failures.ground, [],
+  'the scene floor does not cover the location map: a player walking there falls through the world');
 
 console.log(`Kromka scene parity OK: ${pairs} rows in ${scenes} Unity scenes match their markers in row set, collision and tags; `
   + `${blocking} block movement with ${partCount} collision parts the server rebuilds exactly.`);

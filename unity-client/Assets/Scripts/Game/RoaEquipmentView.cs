@@ -125,6 +125,37 @@ namespace RealmOfAshes.Game
             }
         }
 
+        /// <summary>Вещи слота, у которых есть утверждённая модель: из них собирают наряд НПС в редакторе.</summary>
+        public static string[] ItemIds(string slot)
+        {
+            var ids = new List<string>();
+            foreach (KeyValuePair<string, Definition> pair in Definitions)
+                if (pair.Value.Slot == slot && !string.IsNullOrEmpty(pair.Value.Prefix)) ids.Add(pair.Key);
+            return ids.ToArray();
+        }
+
+        /// <summary>Путь модели вещи для тела — тот же, по которому её грузит игра.</summary>
+        public static bool TryModelPath(string slot, string itemId, string bodyKey, string armorFit, out string path)
+        {
+            path = null;
+            if (string.IsNullOrEmpty(itemId) || !Definitions.TryGetValue(itemId, out Definition definition)
+                || definition.Slot != slot) return false;
+            path = RoaWornUtilityCatalog.TryModelPath(itemId, bodyKey, armorFit, out string utility)
+                ? utility : RoaEquipmentModelCatalog.TryModelPath(itemId, bodyKey, out string replacement)
+                ? replacement : "/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb";
+            return true;
+        }
+
+        /// <summary>
+        /// Перенести скиннинг вещи на кости тела. Открыто для превью НПС в
+        /// редакторе: там вещь берут из префаба проекта, а не из GLB по сети.
+        /// </summary>
+        public static GameObject BindToSkeleton(GameObject sourceRoot, Transform characterRoot,
+                                                Dictionary<string, Transform> bones, string itemId)
+        {
+            return BindSkinnedMeshes(sourceRoot, characterRoot, bones, itemId);
+        }
+
         public async Task Apply(string baseUrl, JObject equipment, string bodyKey,
                                 Transform characterRoot, Dictionary<string, Transform> bones)
         {
@@ -197,9 +228,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            string path = RoaWornUtilityCatalog.TryModelPath(itemId, bodyKey, armorFit, out string utility)
-                ? utility : RoaEquipmentModelCatalog.TryModelPath(itemId, bodyKey, out string replacement)
-                ? replacement : "/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb";
+            TryModelPath(slot, itemId, bodyKey, armorFit, out string path);
             string url = baseUrl.TrimEnd('/') + path;
 
             state.Loading = true;
@@ -328,7 +357,8 @@ namespace RealmOfAshes.Game
                     if (sourceBone == null || !bones.TryGetValue(sourceBone.name, out targetBones[i])
                         || targetBones[i] == null)
                     {
-                        Object.Destroy(output);
+                        if (Application.isPlaying) Object.Destroy(output);
+                        else Object.DestroyImmediate(output);
                         return null;
                     }
                 }

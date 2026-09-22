@@ -129,6 +129,17 @@ const getJson = route => new Promise((resolve, reject) => {
     // Город общий, как и зона: второй персонаж в нём стоит в той же комнате.
     await h.connectAndJoin(accounts.harvest);
     assert.equal(accounts.harvest.join.roomId, crossed.roomId, 'everyone in a city shares one room');
+    // Именного квестового НПС ставит каталог, но место, взгляд, облик и наряд —
+    // из его строки: их правят в сцене Unity, как у любого НПС места.
+    const irenaRow = keysDefinition.objects.find(row => row.id === 'irena_versta_belova');
+    const irena = (accounts.harvest.join.worldState?.enemies || []).find(row => row.name === irenaRow.name);
+    assert(irena, 'the named guide stands in Keys');
+    assert(Math.hypot(irena.x - irenaRow.position.x, irena.z - irenaRow.position.z) < 0.05,
+      `the named guide stands where her row puts her: ${irena.x},${irena.z} vs ${irenaRow.position.x},${irenaRow.position.z}`);
+    assert.deepEqual(irena.appearance, irenaRow.entity.appearance, 'the named guide looks as laid out in the scene');
+    for (const slot of ['weapon', 'armor', 'helmet', 'boots', 'backpack'])
+      assert.equal(irena.equipment?.[slot] || '', irenaRow.entity.equipment[slot] || '', `the named guide wears her row (${slot})`);
+    assert(Math.abs(Number(irena.activityFacing) - Number(irenaRow.rotation.y)) < 1e-3, 'the named guide faces as turned in the scene');
     h.closeSocket(accounts.harvest);
 
     // --- обратно пешком: к северному краю города и назад в зону ---------------------------------

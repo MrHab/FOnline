@@ -253,9 +253,14 @@ namespace RealmOfAshes.EditorTools
                     string path = Path.Combine(directory, profileIds[i] + ".png");
                     CaptureMetrics metrics = Capture(camera, renderTarget, path);
                     profileMetrics[i] = metrics;
-                    Color groundColor = groundRenderer.sharedMaterial.HasProperty("_BaseColor")
-                        ? groundRenderer.sharedMaterial.GetColor("_BaseColor")
-                        : groundRenderer.sharedMaterial.color;
+                    // The tint lives in the renderer's property block, not in the material.
+                    var groundTint = new MaterialPropertyBlock();
+                    groundRenderer.GetPropertyBlock(groundTint, 0);
+                    Color groundColor = groundTint.HasColor("_BaseColor")
+                        ? groundTint.GetColor("_BaseColor")
+                        : groundTint.HasColor("_Color")
+                            ? groundTint.GetColor("_Color")
+                            : groundRenderer.sharedMaterial.color;
                     Debug.Log("[ДЕНЬ/НОЧЬ] кадр " + profileIds[i]
                         + ": contrast=" + metrics.Contrast.ToString("0.000")
                         + ", chroma=" + metrics.AverageChroma.ToString("0.000")

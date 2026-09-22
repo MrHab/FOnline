@@ -81,7 +81,7 @@ namespace RealmOfAshes.Game
                 if (!IsReady || !HasPlayer || MapWidth <= 0 || MapDepth <= 0) return string.Empty;
                 Vector2 p = PlayerMapNormalized;
                 int tx = Mathf.Clamp(Mathf.FloorToInt(p.x * MapWidth), 0, MapWidth - 1);
-                int tz = Mathf.Clamp(Mathf.FloorToInt((1f - p.y) * MapDepth), 0, MapDepth - 1);
+                int tz = Mathf.Clamp(Mathf.FloorToInt(p.y * MapDepth), 0, MapDepth - 1);
                 return "\u043a\u043b\u0435\u0442\u043a\u0430 " + tx + ":" + tz;
             }
         }
@@ -184,9 +184,12 @@ namespace RealmOfAshes.Game
         {
             if (MapWidth <= 0 || MapDepth <= 0) return Vector2.zero;
             RoaCoords.WorldToTile(world, MapWidth, MapDepth, out int tx, out int tz);
-            // Север вверху: тайл tz растёт на юг, поэтому ось v переворачивается —
-            // так маркеры ложатся на подложку, которая тоже рисуется севером вверх.
-            return new Vector2((tx + 0.5f) / MapWidth, 1f - (tz + 0.5f) / MapDepth);
+            // Север вверху: координаты клиента тождественны серверным, север — +Z, а
+            // тайл tz растёт вместе с +Z, то есть на СЕВЕР. Значит ось v ложится на tz
+            // как есть — так же, как снимок камеры сверху (верх кадра — +Z) и схема
+            // подложки (строка пикселей tz). Прежний переворот зеркалил значок игрока
+            // и маркеры относительно картинки. Сверяет RoaMinimapSnapshotProbe.
+            return new Vector2((tx + 0.5f) / MapWidth, (tz + 0.5f) / MapDepth);
         }
 
         private void OnDestroy()

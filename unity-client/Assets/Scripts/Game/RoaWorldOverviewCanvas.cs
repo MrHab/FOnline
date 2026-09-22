@@ -183,6 +183,8 @@ namespace RealmOfAshes.Game
         /// <summary>Открыть карту для состояния игрока (self сервера); пробы подают своё.</summary>
         public void OpenFor(JObject self)
         {
+            // Карта мира — окно: терминал, карта локации и верстак при этом закрываются.
+            RoaGameBootstrap.FocusGameplayWindow(this);
             EnsureBuilt();
             _root.SetActive(true);
             if (_world == null)

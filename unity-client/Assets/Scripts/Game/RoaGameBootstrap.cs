@@ -818,6 +818,26 @@ namespace RealmOfAshes.Game
             ApplyOverlayInputState();
         }
 
+        /// <summary>
+        /// Большие окна мира исключают друг друга: открытое окно закрывает остальные.
+        /// Вызов инвентаря с карты мира — это вызов другого окна, и карта уходит, а не
+        /// копится стопкой под терминалом. Зовётся из Open() каждого окна, поэтому
+        /// сам Close() ничего отсюда не дёргает — иначе была бы рекурсия.
+        /// </summary>
+        public static void FocusGameplayWindow(object opening)
+        {
+            RoaGameBootstrap active = Active;
+            if (active == null) return;
+            if (active.PipboyCanvas != null && !ReferenceEquals(active.PipboyCanvas, opening) && active.PipboyCanvas.IsOpen)
+                active.PipboyCanvas.Close();
+            if (active.MapWindow != null && !ReferenceEquals(active.MapWindow, opening) && active.MapWindow.IsOpen)
+                active.MapWindow.Close();
+            if (active.WorldOverview != null && !ReferenceEquals(active.WorldOverview, opening) && active.WorldOverview.IsOpen)
+                active.WorldOverview.Close();
+            if (active.WorkbenchCanvas != null && !ReferenceEquals(active.WorkbenchCanvas, opening) && active.WorkbenchCanvas.IsOpen)
+                active.Inventory?.CloseWorkbench();
+        }
+
         private bool AnyGameplayPanelOpen()
         {
             return (MapWindow != null && MapWindow.IsOpen)

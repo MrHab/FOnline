@@ -372,7 +372,7 @@ namespace RealmOfAshes.Game
         public string ActivityPresentation { get { return _activityPresentation; } }
         public float ActivityPresentationWeight { get { return _activityPresentationWeight; } }
 
-        /// <summary>Id оружия в руках. Пусто — руки свободны.</summary>
+        /// <summary>Id оружия в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get { return _weapon != null ? _weapon.WeaponId : string.Empty; } }
 
         public void SetGroundingLod(bool active)

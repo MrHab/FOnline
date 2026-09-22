@@ -187,8 +187,8 @@ namespace RealmOfAshes.EditorTools
             Vector3 muzzle = player.transform.position + Vector3.up * 1.05f;
             player.View.TryGetMuzzle(out muzzle);
             Vector3 impact = _target + Vector3.up * 1.02f;
-            string weapon = string.IsNullOrEmpty(player.View.WeaponId)
-                ? "assaultRifle" : player.View.WeaponId;
+            string weapon = RoaWeaponView.IsFirearm(player.View.WeaponId)
+                ? player.View.WeaponId : "assaultRifle";
             game.CombatFx.PlayShot(muzzle, impact, weapon, true);
             game.CombatFx.PlayConfirmedHit(_target, muzzle, weapon, true, false);
 

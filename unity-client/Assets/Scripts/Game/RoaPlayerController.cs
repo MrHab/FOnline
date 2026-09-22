@@ -383,6 +383,7 @@ namespace RealmOfAshes.Game
         /// штрафы травм — те же speedBonus()/injurySpeedMultiplier(), что в web.
         /// </summary>
         private float _artifactStunUntil;
+        private bool _speedLogged;
 
         public void ApplySpecial(JObject self)
         {
@@ -399,6 +400,8 @@ namespace RealmOfAshes.Game
 
             JObject special = self["special"] as JObject;
             var ranks = self["talentRanks"] as JObject;
+            int previousPerception = Perception;
+            int previousVigilance = Vigilance;
 
             // Восприятие с бонусом перка specialPer, как в clientStatValueWithTalentRanks()
             // (04_player_model_visuals.js:397). Радиус обзора считает уже туман.
@@ -444,8 +447,12 @@ namespace RealmOfAshes.Game
 
             if (View != null) View.SetInjuries(injuries);
 
-            if (Mathf.Abs(previousSpeed - Speed) > 0.001f || agiToken != null)
+            // Сверка приходит с каждым серверным снимком: пишем только первый
+            // расчёт и настоящие изменения, иначе лог забивается одной строкой.
+            if (!_speedLogged || Mathf.Abs(previousSpeed - Speed) > 0.001f
+                || Perception != previousPerception || Vigilance != previousVigilance)
             {
+                _speedLogged = true;
                 Debug.Log("[ROA] Скорость: база " + _baseSpeed.ToString("0.00")
                     + (bootBonus > 0f ? " + обувь " + bootBonus.ToString("0.00") : "")
                     + (injuryMultiplier < 1f ? " × травмы " + injuryMultiplier.ToString("0.000") : "")

@@ -194,6 +194,15 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
+        /// Оружие, которое держат в руках моделью. Кулакам и id без профиля
+        /// грузить нечего: для них смена завершена, как только id запомнен.
+        /// </summary>
+        private static bool HasModel(string weaponId)
+        {
+            return weaponId == "medkit" || IsFirearm(weaponId) || RoaMeleeGrip.Get(weaponId) != null;
+        }
+
+        /// <summary>
         /// Куда тянется левая рука при перезарядке и как её доворачивать.
         /// APPROVED_FIREARM_GRIP_PROFILES, 04d:20. Узлы ищутся по порядку:
         /// первый найденный и есть цель; если нет ни одного — берётся fallback,
@@ -264,7 +273,7 @@ namespace RealmOfAshes.Game
             return phase;
         }
 
-        /// <summary>Id оружия, которое сейчас в руках. Пусто — руки свободны.</summary>
+        /// <summary>Id оружия, которое сейчас в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get; private set; }
 
         /// <summary>
@@ -362,7 +371,7 @@ namespace RealmOfAshes.Game
         public async Task Load(string baseUrl, string weaponId, Transform characterRoot,
                                Dictionary<string, Transform> bones)
         {
-            if (WeaponId == weaponId && Ready) return;
+            if (WeaponId == weaponId && (Ready || !HasModel(weaponId))) return;
 
             int request = ++_loadRequest;
             ClearWeapon();
@@ -396,6 +405,9 @@ namespace RealmOfAshes.Game
             if (!IsFirearm(weaponId) && _melee == null)
             {
                 // Кулаки и всё, для чего нет профиля: руки остаются свободными.
+                // Id всё равно запоминаем, иначе каждый серверный снимок видит
+                // «другое» оружие и снова его меняет.
+                WeaponId = weaponId;
                 return;
             }
 

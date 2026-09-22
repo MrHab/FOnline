@@ -20,6 +20,8 @@ namespace RealmOfAshes.Game
     {
         public const float WebFixedWorldHour = 16.2f;
         private const float GameDayRealSeconds = 60f * 60f;
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
 
         [Header("Clock")]
         [Tooltip("Matches the current web client when disabled. When enabled, reads worldHour from /api/wasteland.")]
@@ -70,6 +72,7 @@ namespace RealmOfAshes.Game
         private LocationDefinition _location;
         private JObject _effectiveProfile;
         private Renderer _groundRenderer;
+        private MaterialPropertyBlock _groundTint;
         private Color _groundDayColor = Color.white;
         private bool _localWorldActive;
         private bool _sceneStateCaptured;
@@ -358,7 +361,23 @@ namespace RealmOfAshes.Game
             float dayMix = ProfileNumber(_effectiveProfile, "groundDayMix", 0f, 0f, 0.65f);
             Color day = Color.Lerp(_groundDayColor, profileDay, dayMix);
             Color night = ProfileColor(_effectiveProfile, "groundNight", 0xb79a70);
-            WriteMaterialColor(_groundRenderer.sharedMaterial, Color.Lerp(day, night, mix));
+            WriteGroundTint(Color.Lerp(day, night, mix));
+        }
+
+        /// <summary>
+        /// The tint goes into a property block of the ground renderer, never into its
+        /// material: that material is often a project asset (the scene builders assign
+        /// Kromka_Local_*.mat), and a Play Mode write to it lands in the .mat on disk.
+        /// Only the first material is tinted, as the old sharedMaterial write did.
+        /// </summary>
+        private void WriteGroundTint(Color color)
+        {
+            Material material = _groundRenderer.sharedMaterial;
+            if (_groundTint == null) _groundTint = new MaterialPropertyBlock();
+            _groundRenderer.GetPropertyBlock(_groundTint, 0);
+            if (material.HasProperty(BaseColorId)) _groundTint.SetColor(BaseColorId, color);
+            if (material.HasProperty(ColorId)) _groundTint.SetColor(ColorId, color);
+            _groundRenderer.SetPropertyBlock(_groundTint, 0);
         }
 
         private void ApplyPostProcessing(LightingSample sample)
@@ -416,8 +435,7 @@ namespace RealmOfAshes.Game
 
         private void RestoreGround()
         {
-            if (_groundRenderer != null && _groundRenderer.sharedMaterial != null)
-                WriteMaterialColor(_groundRenderer.sharedMaterial, _groundDayColor);
+            if (_groundRenderer != null) _groundRenderer.SetPropertyBlock(null, 0);
             _groundRenderer = null;
         }
 
@@ -757,13 +775,6 @@ namespace RealmOfAshes.Game
             return material != null && material.HasProperty("_BaseColor")
                 ? material.GetColor("_BaseColor")
                 : (material != null ? material.color : Color.white);
-        }
-
-        private static void WriteMaterialColor(Material material, Color color)
-        {
-            if (material == null) return;
-            material.color = color;
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
         }
 
         private static void DestroyRuntime(Object target)

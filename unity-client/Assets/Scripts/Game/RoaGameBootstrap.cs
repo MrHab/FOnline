@@ -1794,6 +1794,10 @@ namespace RealmOfAshes.Game
             JObject equipment = EquipmentFromSelf(payload);
             _ = _playerView.EquipItems(BaseUrl, equipment);
 
+            // Пока тело грузится, оружие наденет LoadPlayerVisuals: EquipWeapon
+            // до готовности модели ничего не делает, и «смена» была бы ложной.
+            if (!_playerView.Ready) return;
+
             string weaponId = equipment["weapon"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(weaponId)) return;
             if (weaponId == _playerView.WeaponId) return;

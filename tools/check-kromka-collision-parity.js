@@ -22,6 +22,7 @@ const {
   collisionBlocksMovement,
   locationScenePath,
   readMarkerColliders,
+  readNpcPlacements,
   readPlacedObjectMarkers
 } = require('./kromka-scene-markers');
 const { colliderFootprint, colliderShapes, MIN_PART_SIZE, walkCollisionParts } = require('./kromka-walk-collision');
@@ -83,8 +84,18 @@ function sameWorldShape(shape, blocker) {
 
 const failures = {
   unexported: [], unmarked: [], collision: [], flag: [], tags: [], parts: [], strayParts: [], footprint: [], rebuilt: [],
-  ground: []
+  ground: [], npcs: []
 };
+
+// Дружелюбные НПС стоят в сценах префабом KromkaNpc: место, поворот и облик
+// правят там, а экспорт пишет их в строку. Разойдись сцена с данными —
+// сервер поставит НПС не туда, куда его поставили руками.
+const NPC_PREFAB_GUID = (fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Prefabs', 'Kromka', 'KromkaNpc.prefab.meta'), 'utf8')
+  .match(/guid: ([0-9a-f]+)/) || [])[1];
+const friendlyNpc = row => row?.entity?.kind === 'npc' && row.entity.hostileToPlayer !== true
+  && !['monster', 'raider'].includes(String(row.entity.role || ''));
+const angleGap = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+let npcCount = 0;
 let scenes = 0;
 let pairs = 0;
 let blocking = 0;
@@ -128,6 +139,29 @@ for (const definitionFile of definitionFiles) {
     .flatMap(shape => shape.corners || []);
   const mapWidth = Number(definition.map?.width) || 0;
   const mapDepth = Number(definition.map?.depth) || 0;
+  const npcRows = (Array.isArray(definition.objects) ? definition.objects : []).filter(friendlyNpc);
+  const npcPlaced = readNpcPlacements(scenePath, NPC_PREFAB_GUID);
+  const npcById = new Map(npcPlaced.map(npc => [npc.id, npc]));
+  for (const row of npcRows) {
+    npcCount += 1;
+    const placed = npcById.get(String(row.id));
+    if (!placed) {
+      failures.npcs.push(`${file}: ${row.id} has no KromkaNpc in the scene (Кромка → НПС → Расставить НПС во всех сценах)`);
+      continue;
+    }
+    const moved = Math.hypot(placed.x - Number(row.position?.x || 0), placed.z - Number(row.position?.z || 0));
+    if (moved > 0.05) failures.npcs.push(`${file}: ${row.id} stands ${moved.toFixed(2)} m from its row — the scene was not exported`);
+    if (angleGap(placed.yaw, Number(row.rotation?.y || 0)) > 0.02)
+      failures.npcs.push(`${file}: ${row.id} faces another way than its row`);
+    const look = row.entity.appearance || {};
+    const differs = ['sex', 'bodyType', 'faceId', 'hairId', 'hairColorId'].filter(key => look[key] !== placed.appearance[key]);
+    if (differs.length) failures.npcs.push(`${file}: ${row.id} looks different in the scene (${differs.join(', ')})`);
+  }
+  for (const placed of npcPlaced) {
+    if (!npcRows.some(row => String(row.id) === placed.id))
+      failures.npcs.push(`${file}: the scene holds NPC ${placed.id || '(no id)'} the data does not know`);
+  }
+
   if (mapWidth > 0 && mapDepth > 0) {
     if (!floor.length) failures.ground.push(`${file}: the terrain marker carries no floor collider`);
     else {
@@ -209,8 +243,10 @@ assert.deepStrictEqual(failures.footprint, [],
   'data/locations footprint disagrees with the extent of the scene colliders; a scene export would rewrite it');
 assert.deepStrictEqual(failures.rebuilt, [],
   'the server does not rebuild the scene\'s collider shapes from collisionParts');
+assert.deepStrictEqual(failures.npcs, [],
+  'friendly NPCs in the scenes disagree with their rows: export the scene or lay the NPCs out again');
 assert.deepStrictEqual(failures.ground, [],
   'the scene floor does not cover the location map: a player walking there falls through the world');
 
 console.log(`Kromka scene parity OK: ${pairs} rows in ${scenes} Unity scenes match their markers in row set, collision and tags; `
-  + `${blocking} block movement with ${partCount} collision parts the server rebuilds exactly.`);
+  + `${blocking} block movement with ${partCount} collision parts the server rebuilds exactly; ${npcCount} friendly NPCs stand in their scenes as their rows say.`);

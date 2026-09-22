@@ -110,6 +110,15 @@
         }
       },
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_02",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_02"
+        },
         "kind": "npc",
         "npcId": "caravan_sayla",
         "routineId": "caravan_sayla",
@@ -145,7 +154,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -164,6 +173,15 @@
         "city-bank"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -186,7 +204,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -205,6 +223,15 @@
         "city-plaza"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_07"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",
@@ -227,7 +254,7 @@
       },
       "rotation": {
         "x": 0,
-        "y": 180,
+        "y": 3.142,
         "z": 0
       },
       "scale": {
@@ -246,6 +273,15 @@
         "city-workshop"
       ],
       "entity": {
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
         "kind": "npc",
         "role": "npc",
         "faction": "tract_league",

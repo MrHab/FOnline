@@ -10,6 +10,8 @@
 // Правило слияния: сохранённая карта — основа, из поставки добавляются только
 // строки с новыми идентификаторами. Позиции и правки оператора не трогаются.
 
+const { isDeepStrictEqual } = require('util');
+
 const MERGED_COLLECTIONS = Object.freeze([
   'nodes',
   'infrastructure'
@@ -49,8 +51,25 @@ function mergeAuthoredGlobalMap(stored, bundled) {
   return merged;
 }
 
+// Что сервер берёт в память при старте и что пишет обратно в файл карты.
+//
+// Файл поставки (DATA_DIR не задан) — авторский источник, а не копия: сервер
+// его не переписывает. Копия в своём DATA_DIR получает результат слияния как
+// есть и только когда слияние её меняет, чтобы оператор видел в файле то же,
+// что сервер показывает на карте. Нормализация (линии только road или
+// pipeline, ширина дороги от 2 точек, `hidden` только у скрытых узлов) живёт
+// лишь в памяти сервера: записанная в файл, она стирала авторские railway и
+// service_tunnel, ширины и `hidden: false`, а по типу линии граф зон ставит
+// ворота.
+function resolveGlobalMapFile({ stored = null, bundled = null, isBundledFile = false } = {}) {
+  if (isBundledFile) return { map: bundled, persist: null };
+  const map = stored ? mergeAuthoredGlobalMap(stored, bundled) : bundled;
+  return { map, persist: isDeepStrictEqual(stored, map) ? null : map };
+}
+
 module.exports = {
   MERGED_COLLECTIONS,
   authoredVersion,
-  mergeAuthoredGlobalMap
+  mergeAuthoredGlobalMap,
+  resolveGlobalMapFile
 };

@@ -1,6 +1,5 @@
 # Формат географии мира
 
-docs/global-map-editor-format.md
 `data/global-map.json` — география «Кромки»: сетка клеток, места и линии дорог.
 По этому файлу и играбельному контуру `data/kromka/global-map-playable.json`
 собирается граф зон мира `data/kromka/zone-graph.json`
@@ -8,11 +7,13 @@ docs/global-map-editor-format.md
 а не по этой сетке: файл задаёт, из чего зоны состоят. Устройство зон описано в
 [«Локации и мир»](wiki/LOCATIONS_AND_WORLD.md#мир-из-зон).
 
-Схема — `realm.globalMap.v1`. Файл правят вручную. Сервер нормализует его при
-старте (`normalizeGlobalMapConfig` в `server.js`) и переписывает обратно,
-поэтому неизвестные поля не сохраняются. Копия в `DATA_DIR` дополняется
-строками поставки с новыми идентификаторами (`src/server/global-map-merge.js`);
-граф зон сервер всегда читает из поставки.
+Схема — `realm.globalMap.v1`. Файл правят вручную. Сервер нормализует карту при
+старте (`normalizeGlobalMapConfig` в `server.js`) только в памяти и сам файл не
+переписывает: поля, которых сервер не читает, в файле остаются. Копия в
+`DATA_DIR` дополняется строками поставки с новыми идентификаторами и
+переписывается, только когда слияние её меняет, — строки в ней остаются такими,
+как их написал автор (`src/server/global-map-merge.js`); граф зон сервер всегда
+читает из поставки.
 
 - `worldRevision` — ревизия мира; у активной карты `kromka-1`. Из неё
   выводится `sitePlacement: unity-authored`: места заданы авторски, процедурный
@@ -37,18 +38,20 @@ docs/global-map-editor-format.md
   `data/kromka/world-layout.seed.json`; порядок правки — в
   [авторском размещении мест](wiki/authored-world-sites.md).
 - `infrastructure` — линии дорог и трубопроводов
-  (`src/server/global-infrastructure.js`): `id`, `name`, `type` (`road` или
-  `pipeline`), `model`, `walkable`, `travelFactor`, `width`,
-  `allowCrossingsWith` и `points`; точка задаётся координатами или `nodeId`.
-  Где линия пересекает общую сторону двух зон, на ней стоят ворота этой
-  стороны, а обе зоны получают её в список дорог.
+  (`src/server/global-infrastructure.js`): `id`, `name`, `type` (`road`,
+  `railway`, `service_tunnel` или `pipeline`), `model`, `walkable`,
+  `travelFactor`, `width` (в точках карты), `allowCrossingsWith` и `points`;
+  точка задаётся координатами или `nodeId`. Сервер ведёт как дорогу всё, кроме
+  `pipeline`, и держит ширину в пределах 2–18 точек — в памяти, файл остаётся
+  авторским. Где линия пересекает общую сторону двух зон, на ней стоят ворота
+  этой стороны (из нескольких линий — сначала `road`), а обе зоны получают её в
+  список дорог.
 - `cells` — клетки. Ключ имеет вид `x:y`, счёт идёт с нуля; у карты Кромки
   описана каждая из 1140 клеток. Поля клетки: `terrain`, `pvpMode`,
   `difficulty` (1–5), `texture`, `macroRegion`, `fill`. Зона берёт у своих
   четырёх клеток биом (большинство `macroRegion`), сложность (среднее
   `difficulty`) и покров земли (большинство `texture`).
 - `pvpMode` клетки принимает режим зоны (`peaceful`, `pve`, `pvp`, `pvpEvent`,
-docs/global-map-editor-format.md
   `pvpFullDrop`, `pvpBlack`) и псевдонимы вроде `safe`, но цвет зон мира от
   него не зависит. Цвет задают столицы (зона столицы мирная, восемь вокруг —
   синие) и правила `dangerCells` в `data/kromka/economy.json`: чёрные центры,

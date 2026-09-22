@@ -6,7 +6,7 @@
 
 - [`data/global-map.json`](../../data/global-map.json) — география мира: сетка
   клеток, места и линии дорог
-  ([формат](../global-map-editor-format.md));
+  ([формат](../global-map-format.md));
 - [`data/kromka/global-map-playable.json`](../../data/kromka/global-map-playable.json) — играбельный контур мира;
 - [`data/kromka/zone-graph.json`](../../data/kromka/zone-graph.json) — граф зон мира, собранный из двух файлов выше;
 - [`data/zones/`](../../data/zones/) — набор префабов (`kit.json`) и куски

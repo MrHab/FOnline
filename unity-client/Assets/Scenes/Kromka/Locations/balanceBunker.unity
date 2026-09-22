@@ -7359,6 +7359,112 @@ MonoBehaviour:
   _kind: 1
   _targetLocationId: 
   _radius: 3
+--- !u!1001 &1053067940
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1065779337}
+    m_Modifications:
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -17
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.09854348
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9951328
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3578575885922583420, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _spawnId
+      value: nikolai_severov
+      objectReference: {fileID: 0}
+    - target: {fileID: 4950754179804186942, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_Name
+      value: "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u0421\u0435\u0432\u0435\u0440\u043E\u0432"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _sex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _face
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _role
+      value: civilian
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _build
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _hairId
+      value: tied_back
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _faction
+      value: continuity
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _hairColor
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _displayName
+      value: "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u0421\u0435\u0432\u0435\u0440\u043E\u0432"
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+--- !u!4 &1053067941 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+  m_PrefabInstance: {fileID: 1053067940}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1056552556
 GameObject:
   m_ObjectHideFlags: 0
@@ -7480,6 +7586,7 @@ Transform:
   - {fileID: 2007108259}
   - {fileID: 1552251670}
   - {fileID: 2036267920}
+  - {fileID: 1053067941}
   m_Father: {fileID: 1056552557}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1066541110
@@ -10999,6 +11106,14 @@ PrefabInstance:
       value: npc
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _build
       value: 2
       objectReference: {fileID: 0}
@@ -14167,6 +14282,14 @@ PrefabInstance:
       value: npc
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
       value: tied_back
       objectReference: {fileID: 0}
@@ -14369,6 +14492,14 @@ PrefabInstance:
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _role
       value: npc
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _build

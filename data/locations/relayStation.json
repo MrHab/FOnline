@@ -94,6 +94,13 @@
         "city-bank"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -144,6 +151,13 @@
         "city-plaza"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -194,6 +208,13 @@
         "city-workshop"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -16523,6 +16544,69 @@
         "north",
         "city-kit"
       ],
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "timur_arsenyev",
+      "model": "wastelandSettler",
+      "name": "Тимур Арсеньев",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.927,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "timur_arsenyev",
+        "role": "civilian",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }

@@ -1986,6 +1986,14 @@ PrefabInstance:
       value: merchant
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _build
       value: 0
       objectReference: {fileID: 0}
@@ -1994,12 +2002,20 @@ PrefabInstance:
       value: tied_back
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _weapon
+      value: axe
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _faction
       value: neutral
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _service
       value: blackMarket
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _backpack
+      value: backpack
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairColor
@@ -7685,8 +7701,24 @@ PrefabInstance:
       value: guard
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
       value: shaved
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _helmet
+      value: helmet
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _weapon
+      value: axe
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _faction
@@ -10238,12 +10270,28 @@ PrefabInstance:
       value: guard
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _build
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
       value: shaved
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _helmet
+      value: helmet
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _weapon
+      value: axe
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _faction

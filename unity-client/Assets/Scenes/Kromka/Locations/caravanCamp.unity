@@ -1221,6 +1221,7 @@ Transform:
   - {fileID: 1268558227}
   - {fileID: 453876618}
   - {fileID: 380232364}
+  - {fileID: 1800624591}
   m_Father: {fileID: 749600793}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &208088086
@@ -2380,6 +2381,14 @@ PrefabInstance:
       value: npc
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
       value: shaved
       objectReference: {fileID: 0}
@@ -3352,6 +3361,14 @@ PrefabInstance:
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _role
       value: npc
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
@@ -8912,6 +8929,14 @@ PrefabInstance:
       value: npc
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _build
       value: 0
       objectReference: {fileID: 0}
@@ -10296,12 +10321,28 @@ PrefabInstance:
       value: merchant
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: ballisticVest
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: scoutBoots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairId
       value: tied_back
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _weapon
+      value: pistol
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _faction
       value: caravans
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _backpack
+      value: backpack
       objectReference: {fileID: 0}
     - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
       propertyPath: _hairColor
@@ -12844,6 +12885,116 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.4, y: 0.92509496, z: 0.18}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1001 &1800624590
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 203140209}
+    m_Modifications:
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.3826877
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9238778
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3578575885922583420, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _spawnId
+      value: sofia_sych
+      objectReference: {fileID: 0}
+    - target: {fileID: 4950754179804186942, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: m_Name
+      value: "\u0421\u043E\u0444\u044C\u044F \u0421\u044B\u0447"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _sex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _face
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _role
+      value: merchant
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _armor
+      value: leather
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _boots
+      value: boots
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _build
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _hairId
+      value: shaved
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _weapon
+      value: pistol
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _faction
+      value: tract_league
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _hairColor
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530255369943876185, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+      propertyPath: _displayName
+      value: "\u0421\u043E\u0444\u044C\u044F \u0421\u044B\u0447"
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+--- !u!4 &1800624591 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1753834129857245267, guid: 2af3236644f2b1c4f9b17756cfab31b8, type: 3}
+  m_PrefabInstance: {fileID: 1800624590}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1801549333
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,12 @@
+{
+  "schema": "kromka.vehicles.v1",
+  "version": 1,
+  "vehicles": [
+    {
+      "itemId": "motorcycle",
+      "kind": "motorcycle",
+      "speed": 11,
+      "toggleCooldownMs": 700
+    }
+  ]
+}

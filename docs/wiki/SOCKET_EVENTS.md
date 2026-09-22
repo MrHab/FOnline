@@ -109,6 +109,7 @@ reconnect не дублирует награду, приглашение, дру
 | Событие | Ответ | Назначение |
 |---|---|---|
 | `equipmentAction` | `ack` | Атомарно изменить один слот за 1 серверный AP. Запрос содержит `requestId`, `expectedRevision`, слот и runtime-id; ответ возвращает `equipmentRevision` и канонический `self`. |
+| `vehicleAction` | `ack` | Сесть на надетый в слот `vehicle` транспорт или слезть: `action` — `mount`, `dismount` или `toggle`. Сервер проверяет транспорт, сознание, оглушение и паузу стартера; ответ несёт `mounted`, `vehicle` (`itemId`, `kind`, `speed`) и `self`, комнате уходит `playerVehicle`. |
 | `storageTransfer` | `ack` | Перенести предметы между серверным рюкзаком и фракционным хранилищем; оружие сохраняет точный runtime-id, магазин, состояние и модификации. |
 | `inventoryItemAction` | `ack` | `repair` — починить, `salvage` — разобрать предмет, `modifyWeapon` — поставить или снять сменный узел оружия (`modSlot`, `modificationId`), `unload` — разрядить точный экипированный runtime-экземпляр оружия. |
 | `npcQuestAction` | `ack` | Выполнить серверное действие NPC-задания и получить обновлённое состояние. |
@@ -173,6 +174,7 @@ reconnect не дублирует награду, приглашение, дру
 | `labHallState` | Зал боковой лаборатории: шкала угрозы, объявленный удар с отсчётом и горящими секторами, питание охранной машины и готовность узлов. Тот же снимок приходит в состоянии комнаты полем `labHall`. |
 | `artifactState` | Адресный снимок артефактов комнаты: `shift` — состояние сдвига, `detector`, сигналы `artifacts` и `artifactRuntime`. У Mk2/Mk3 к найденному артефакту добавляются тир и цвет тира; вид — только у Mk3. |
 | `boltThrown` | Всей комнате итог броска болта: `playerId`, `from`, `to`, `magnetic`, `hit` и разряженное поле `anomaly` (`id`, `type`, `contact`, `dischargedUntil`, `permanentlyDischarged`). |
+| `playerVehicle` | Всей комнате, включая седока: игрок `id` сел на транспорт (`vehicle` — `itemId`, `kind`, `speed`) или спешился (`vehicle: null`, `reason` — `request`, `hit`, `downed`, `stunned`, `unequipped`, `death`). То же поле `vehicle` есть в публичном состоянии игрока (`snapshot`, `playerJoined`, `self`). |
 | `anomalyState` | Всей комнате снимок аномальных полей после разрядки (`kromka.anomaly-state.v1`): `fields` с `active`, `dischargedUntil`, `permanentlyDischarged` и `revision`, параметры болта `bolt`. Тот же снимок приходит в состоянии комнаты полем `anomalies`. |
 
 ### Личное убежище, кланы и осады

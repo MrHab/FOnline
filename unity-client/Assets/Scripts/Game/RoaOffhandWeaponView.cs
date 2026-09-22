@@ -98,6 +98,15 @@ namespace RealmOfAshes.Game
             Clear();
         }
 
+        /// <summary>Оружие спрятано, но не снято: руки седока держат руль.</summary>
+        public bool Stowed { get; private set; }
+
+        public void SetStowed(bool stowed)
+        {
+            Stowed = stowed;
+            if (_weapon != null && _weapon.gameObject.activeSelf == stowed) _weapon.gameObject.SetActive(!stowed);
+        }
+
         public async Task Load(string baseUrl, string weaponId, Transform characterRoot,
                                Dictionary<string, Transform> bones)
         {
@@ -133,7 +142,7 @@ namespace RealmOfAshes.Game
                 _socketGrip = RoaItemModelCatalog.FindSocket(_weapon, "socket_grip_r");
                 RoaVisibilityGate medicalGate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
                 if (medicalGate != null) { medicalGate.Invalidate(); medicalGate.SetVisible(medicalGate.IsVisible); }
-                medical.SetActive(true);
+                medical.SetActive(!Stowed);
                 WeaponId = weaponId;
                 Ready = true;
                 return;
@@ -188,7 +197,7 @@ namespace RealmOfAshes.Game
             Mount();
             RoaVisibilityGate gate = characterRoot.GetComponentInParent<RoaVisibilityGate>();
             if (gate != null) { gate.Invalidate(); gate.SetVisible(gate.IsVisible); }
-            holder.SetActive(true);
+            holder.SetActive(!Stowed);
             Debug.Log("[ROA] Оружие второй руки " + weaponId + " подключено.");
         }
 
@@ -196,14 +205,14 @@ namespace RealmOfAshes.Game
         public void ApplyReduced()
         {
             if (WeaponId == "medkit") return;
-            if (!Ready || _weapon == null || _leftHand == null) return;
+            if (!Ready || Stowed || _weapon == null || _leftHand == null) return;
             Mount();
         }
 
         public void Apply(Vector3 aimPoint, bool hasAim)
         {
             if (WeaponId == "medkit") return;
-            if (!Ready || _weapon == null || _characterRoot == null) return;
+            if (!Ready || Stowed || _weapon == null || _characterRoot == null) return;
 
             if (WeaponId == "knife")
             {

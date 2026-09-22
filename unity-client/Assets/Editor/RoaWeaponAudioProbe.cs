@@ -48,7 +48,7 @@ namespace RealmOfAshes.EditorTools
                         BindingFlags.Instance | BindingFlags.NonPublic);
                     awake?.Invoke(audio, null);
                 }
-                Require(audio.GeneratedClipCount == 32,
+                Require(audio.GeneratedClipCount == 33 && audio.EngineCueReady,
                     "generated fallback catalog changed unexpectedly");
                 Require(audio.WeaponPilotAudioReady
                     && audio.ExternalWeaponClipCount == ExpectedClips,

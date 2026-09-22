@@ -11,9 +11,11 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// A permanent mercenary tool: B enters throw mode, a ground click chooses the
-    /// endpoint, and the server decides trajectory, range, obstruction and anomaly hit.
-    /// No bolt item is consumed. The magnetic upgrade is also decided by server state.
+    /// A permanent mercenary tool: a mouse-wheel press throws at the ground point
+    /// under the cursor (B belongs to the vehicle); on touch the БОЛТ button enters
+    /// throw mode and a tap chooses the endpoint. The server decides trajectory,
+    /// range, obstruction and anomaly hit. No bolt item is consumed. The magnetic
+    /// upgrade is also decided by server state.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class RoaBoltThrower : MonoBehaviour
@@ -82,9 +84,10 @@ namespace RealmOfAshes.Game
                 RemoveRetiredAimIndicator();
             }
             if (_camera == null) _camera = Camera.main;
-            if (Input.GetKeyDown(KeyCode.B)) ToggleAim();
             if (Input.GetKeyDown(KeyCode.Escape) && _aiming) CancelAim();
 
+            // Колесо мыши (нажатие) — бросок в точку под курсором. B занят транспортом
+            // (RoaVehicleController); режим прицела остался кнопке БОЛТ на телефоне.
             bool quickThrow = Input.GetMouseButtonDown(2);
             if ((_aiming || quickThrow) && CanThrow() && TryReadGroundTarget(out Vector3 rawTarget))
             {
@@ -270,7 +273,7 @@ namespace RealmOfAshes.Game
             {
                 _hint.text = _mobileControls != null && _mobileControls.ControlsEnabled
                     ? "БОЛТ: коснитесь точки броска · повторное нажатие — отмена"
-                    : "БОЛТ: ЛКМ — бросить до " + ThrowRangeMeters.ToString("0.#") + " м · B или Esc — отмена";
+                    : "БОЛТ: ЛКМ или колесо мыши — бросить до " + ThrowRangeMeters.ToString("0.#") + " м · Esc — отмена";
                 _hint.gameObject.SetActive(true);
             }
             else if (Time.realtimeSinceStartup >= _statusUntil) _hint.gameObject.SetActive(false);

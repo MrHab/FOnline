@@ -552,6 +552,17 @@
         "circuitModule": 2,
         "spectrumSample": 1
       }
+    },
+    "motorcycle": {
+      "station": "repair_bench",
+      "workHours": 36,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 30,
+        "ore": 12,
+        "electronics": 8,
+        "oil": 6
+      }
     }
   }
 }

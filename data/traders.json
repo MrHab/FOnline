@@ -88,6 +88,7 @@
       "quests": ["scrapParts"],
       "buyInterests": ["materials", "tools", "weapons", "armor"],
       "stock": [
+        { "id": "motorcycle", "price": 950, "qty": 1 },
         { "id": "repairKit", "price": 18, "qty": 4 },
         { "id": "pickaxe", "price": 16, "qty": 2 },
         { "id": "sawedOffShotgun", "price": 92, "qty": 1 },

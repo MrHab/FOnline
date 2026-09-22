@@ -44,10 +44,17 @@ namespace RealmOfAshes.Game
             return snapshotPosition + networkVelocity * horizon;
         }
 
-        public static float PresentationSpeedLimit(Vector3 networkVelocity)
+        /// <summary>Потолок видимой скорости пешего актёра, м/с.</summary>
+        public const float WalkingSpeedCeiling = 12f;
+
+        /// <summary>Потолок для седока: транспорт едет быстрее пешего (сервер — до 11·1,35 м/с).</summary>
+        public const float RidingSpeedCeiling = 20f;
+
+        public static float PresentationSpeedLimit(Vector3 networkVelocity,
+                                                   float ceiling = WalkingSpeedCeiling)
         {
             networkVelocity.y = 0f;
-            return Mathf.Clamp(networkVelocity.magnitude * 1.35f + 1.5f, 5.5f, 12f);
+            return Mathf.Clamp(networkVelocity.magnitude * 1.35f + 1.5f, 5.5f, Mathf.Max(5.5f, ceiling));
         }
 
         public static float AdaptiveSmoothTime(float baseSmoothTime,
@@ -69,7 +76,8 @@ namespace RealmOfAshes.Game
                                   float baseSmoothTime,
                                   float maxExtrapolationSeconds,
                                   float snapDistance,
-                                  ref Vector3 smoothVelocity)
+                                  ref Vector3 smoothVelocity,
+                                  float speedCeiling = WalkingSpeedCeiling)
         {
             float dt = Mathf.Clamp(frameDt, 0.001f, 0.1f);
             Vector3 predicted = PredictPosition(snapshotPosition, networkVelocity,
@@ -103,7 +111,7 @@ namespace RealmOfAshes.Game
             }
 
             float smoothTime = AdaptiveSmoothTime(baseSmoothTime, error, safeSnapDistance);
-            float speedLimit = PresentationSpeedLimit(networkVelocity);
+            float speedLimit = PresentationSpeedLimit(networkVelocity, speedCeiling);
             Vector3 next = Vector3.SmoothDamp(currentPosition, predicted,
                 ref smoothVelocity, smoothTime, speedLimit, dt);
             Vector3 visibleStep = next - currentPosition;

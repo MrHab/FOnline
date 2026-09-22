@@ -76,9 +76,12 @@ async function main() {
   // Test the authoritative 79-item catalog, not only the frozen legacy subset.
   const existing = ground.slice(ground.indexOf('HashSet<string> LibraryItems'), ground.indexOf('private string _status'));
   const existingIds = new Set([...existing.matchAll(/"([A-Za-z0-9]+)"/g)].map(m => m[1]));
+  // Транспорт лежит на земле своей моделью из RoaVehicleCatalog; файлы проверяет check-ground-item-models.
+  const vehicleIds = new Set([...read('unity-client/Assets/Scripts/Game/RoaVehicleCatalog.cs')
+    .matchAll(/\{ "([A-Za-z0-9]+)", "[^"]+\.glb" \}/g)].map(m => m[1]));
   for (const item of items) {
     if (item.id === 'fists') continue;
-    assert(existingIds.has(item.id) || manifest.files.some(r => r.id === item.id && !r.presentationOnly), `${item.id}: missing ground lookup`);
+    assert(existingIds.has(item.id) || vehicleIds.has(item.id) || manifest.files.some(r => r.id === item.id && !r.presentationOnly), `${item.id}: missing ground lookup`);
   }
   assert(ground.indexOf('RoaItemModelCatalog.Contains(itemId)') < ground.indexOf('if (LibraryItems.Contains(itemId))'), 'New medkit overrides old library');
   for (const type of artifacts) assert(client.includes(`case "${type.id}": return "${type.itemId}"`));

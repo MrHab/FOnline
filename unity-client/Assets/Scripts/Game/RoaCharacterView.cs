@@ -134,6 +134,20 @@ namespace RealmOfAshes.Game
         private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
         private int _equipmentRequest;
+
+        // Транспорт под седоком. Пока _riding, клип — покой, а поверх него поза
+        // седока (RoaRiderPose) с весом _riderWeight; при спешивании вес плавно
+        // уходит, а отпущенный транспорт сам доигрывает уход и удаляется.
+        private const float RiderBlendSeconds = 0.24f;
+        private readonly RoaRiderPose _rider = new RoaRiderPose();
+        private RoaVehicleView _vehicle;
+        private bool _riding;
+        private float _riderWeight;
+        private float _rideSpeed;
+        private float _rideYawRate;
+        private float _rideLastYaw;
+        private bool _rideHasYaw;
+        private Vector3 _modelRootRest;
         private int _loadRequest;
         private string _bodyKey = "male_medium";
         private JObject _appearance;
@@ -314,6 +328,70 @@ namespace RealmOfAshes.Game
 
         /// <summary>Персонаж в приседе. Для диагностики.</summary>
         public bool Crouching { get { return _crouching; } }
+
+        /// <summary>Персонаж сидит на транспорте (или садится на него).</summary>
+        public bool Riding { get { return _riding; } }
+
+        /// <summary>Транспорт под седоком; при спешивании — ещё уезжающий.</summary>
+        public RoaVehicleView Vehicle { get { return _vehicle; } }
+
+        /// <summary>Вес позы седока поверх клипа, 0..1. Для проб.</summary>
+        public float RiderWeight { get { return _riderWeight; } }
+
+        public RoaRiderPose RiderPose { get { return _rider; } }
+
+        /// <summary>
+        /// Посадить персонажа на транспорт по id предмета (пусто — спешить).
+        /// Повторный вызов с тем же id ничего не делает.
+        /// </summary>
+        public void SetVehicle(string baseUrl, string itemId)
+        {
+            itemId = RoaVehicleCatalog.Contains(itemId) ? itemId : string.Empty;
+            if (string.IsNullOrEmpty(itemId))
+            {
+                if (!_riding) return;
+                // Оружие вернётся в руки, когда поза седока уйдёт целиком (LateUpdate).
+                _riding = false;
+                if (_vehicle != null) _vehicle.Dismiss();
+                NotifyVisualChanged();
+                return;
+            }
+            if (_riding && _vehicle != null && !_vehicle.Leaving && _vehicle.ItemId == itemId) return;
+            if (_vehicle != null) Destroy(_vehicle.gameObject);
+            _vehicle = RoaVehicleView.Create(transform, baseUrl, itemId);
+            _vehicle.VisualChanged += NotifyVisualChanged;
+            _riding = true;
+            _rideHasYaw = false;
+            _ = RoaWeaponGrip.Ensure(baseUrl);
+            SetHeldWeaponsStowed(true);
+            NotifyVisualChanged();
+        }
+
+        /// <summary>
+        /// Посадить на уже созданный транспорт (редакторские пробы берут модель из
+        /// импортированного GLB, а не по HTTP).
+        /// </summary>
+        public void AttachVehicle(RoaVehicleView vehicle)
+        {
+            if (vehicle == null) return;
+            if (_vehicle != null && _vehicle != vehicle)
+            {
+                if (Application.isPlaying) Destroy(_vehicle.gameObject);
+                else DestroyImmediate(_vehicle.gameObject);
+            }
+            _vehicle = vehicle;
+            _vehicle.VisualChanged += NotifyVisualChanged;
+            _riding = true;
+            _rideHasYaw = false;
+            SetHeldWeaponsStowed(true);
+            NotifyVisualChanged();
+        }
+
+        private void SetHeldWeaponsStowed(bool stowed)
+        {
+            _weapon?.SetStowed(stowed);
+            _offhandWeapon?.SetStowed(stowed);
+        }
 
         /// <summary>Оружие подключено и смонтировано.</summary>
         public bool WeaponReady { get { return _weapon != null && _weapon.Ready; } }
@@ -635,6 +713,18 @@ namespace RealmOfAshes.Game
             _deathGroundRenderers.Clear();
             if (dead)
             {
+                // Упавший седок падает с земли: транспорт уходит сразу, без плавного спешивания.
+                if (_vehicle != null)
+                {
+                    _vehicle.Dismiss();
+                    _vehicle = null;
+                }
+                if (_riderWeight > 0f && _modelRoot != null) _modelRoot.localPosition = _modelRootRest;
+                _riding = false;
+                _riderWeight = 0f;
+                _rideYawRate = 0f;
+                _rideHasYaw = false;
+                SetHeldWeaponsStowed(false);
                 if (!wasDead)
                 {
                     bool recentImpact = _hasLastImpactDirection
@@ -814,6 +904,7 @@ namespace RealmOfAshes.Game
             if (!Ready || _modelRoot == null) return;
 
             if (_weapon == null) _weapon = new RoaWeaponView();
+            _weapon.SetStowed(_riding);
             await _weapon.Load(baseUrl, weaponId, _modelRoot, _bones);
             UpdateDualWieldState();
             NotifyVisualChanged();
@@ -831,6 +922,7 @@ namespace RealmOfAshes.Game
                 _equipment.VisualChanged += EquipmentVisualChanged;
             }
             if (_offhandWeapon == null) _offhandWeapon = new RoaOffhandWeaponView();
+            _offhandWeapon.SetStowed(_riding);
             string offhandId = BaseItemId(equipment?["offhand"]?.ToString());
             await Task.WhenAll(
                 _equipment.Apply(baseUrl, equipment, _bodyKey, _modelRoot, _bones),
@@ -947,13 +1039,19 @@ namespace RealmOfAshes.Game
             _pose.Bind(transform);
 
             _modelRoot = FindDeep(transform, LibraryRootName) ?? FindDeep(transform, BaseRootName);
+            if (_modelRoot != null) _modelRootRest = _modelRoot.localPosition;
             _groundShadow.Bind(transform);
             _groundShadow.SetActive(_groundingActive);
 
             // Индекс костей по имени: по нему работают поза хвата и доворот корпуса.
             foreach (Transform bone in GetComponentsInChildren<Transform>(true))
+            {
+                // Узлы транспорта (seat, steer…) — не кости тела.
+                if (_vehicle != null && bone.IsChildOf(_vehicle.transform)) continue;
                 if (!_bones.ContainsKey(bone.name)) _bones[bone.name] = bone;
+            }
             _hitReaction.Bind(_modelRoot != null ? _modelRoot : transform);
+            _rider.Bind(_bones);
 
             PrepareAppearance();
             ApplyAppearanceVisuals();
@@ -1192,6 +1290,24 @@ namespace RealmOfAshes.Game
             float speed = new Vector2(velocity.x, velocity.z).magnitude;
             bool actuallyMoving = moving && speed >= 0.05f;
 
+            if (_riding)
+            {
+                // Верхом ноги не шагают: клип — покой, а позу даёт седло (LateUpdate).
+                _rideSpeed = actuallyMoving ? speed : 0f;
+                _locomoting = false;
+                Turning = false;
+                _turnHold = 0f;
+                _backward = false;
+                _crouching = false;
+                if (Time.time >= _hurtUntil && Time.time >= _attackUntil)
+                {
+                    Play("idle");
+                    ApplyTimeScale("idle", false, 0f, 0f, dt);
+                }
+                _pose.Step(false, false, "idle", 0f, 0f, 1f, 0f, false, false, dt, 0f, 0f, 0f);
+                return;
+            }
+
             UpdateTurnInPlace(facingYawDeg, actuallyMoving, dt);
 
             // Направление движения относительно прицела. Формулы совпадают с
@@ -1296,6 +1412,14 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            // Седло — на любом уровне детализации: иначе дальний седок стоял бы
+            // над мотоциклом. Поза седока дешёвая: четыре цепи по две кости.
+            if (UpdateRiding(Mathf.Clamp(Time.deltaTime, 0f, 0.1f)))
+            {
+                UpdateGroundShadow();
+                return;
+            }
+
             if (_presentationTier == RoaActorPresentationTier.Far)
             {
                 // Дальний силуэт получает обычный клип и оружие в руке. Скрутка
@@ -1349,6 +1473,53 @@ namespace RealmOfAshes.Game
             ApplyInjuryPose();
             EndBoneOffsets();
             UpdateGroundShadow();
+        }
+
+        /// <summary>
+        /// Езда за кадр: колёса, руль и крен транспорта, затем поза седока поверх
+        /// клипа. true — кадр отдан седлу, обычная поза не нужна.
+        /// </summary>
+        private bool UpdateRiding(float dt)
+        {
+            bool vehicleAlive = _vehicle != null;
+            float target = _riding && vehicleAlive && _vehicle.Ready ? 1f : 0f;
+            _riderWeight = Mathf.MoveTowards(_riderWeight, target, dt / RiderBlendSeconds);
+            if (!_riding && _riderWeight <= 0.001f)
+            {
+                // Седок спешился целиком: транспорт уже уезжает сам, оружие — в руки.
+                if (vehicleAlive || _riderWeight > 0f)
+                {
+                    _vehicle = null;
+                    _riderWeight = 0f;
+                    _rideYawRate = 0f;
+                    _rideHasYaw = false;
+                    transform.localRotation = Quaternion.identity;
+                    if (_modelRoot != null) _modelRoot.localPosition = _modelRootRest;
+                    SetHeldWeaponsStowed(false);
+                }
+                return false;
+            }
+            if (!vehicleAlive) return false;
+
+            float yaw = transform.parent != null ? transform.parent.eulerAngles.y : transform.eulerAngles.y;
+            float rate = _rideHasYaw && dt > 0.0001f ? Mathf.DeltaAngle(_rideLastYaw, yaw) / dt : 0f;
+            _rideLastYaw = yaw;
+            _rideHasYaw = true;
+            _rideYawRate = Mathf.Lerp(_rideYawRate, Mathf.Clamp(rate, -400f, 400f), 1f - Mathf.Exp(-8f * dt));
+            float speed = _riding ? _rideSpeed : 0f;
+            float lean = _vehicle.Step(speed, _rideYawRate, dt);
+
+            // Крен — всего узла персонажа: седок и транспорт ложатся в вираж вместе,
+            // вокруг линии касания колёс.
+            transform.localRotation = Quaternion.Euler(0f, 0f, lean * _riderWeight);
+            // Корень скелета каждый кадр с места покоя: посадка в седло — сдвиг от него.
+            if (_modelRoot != null) _modelRoot.localPosition = _modelRootRest;
+
+            BeginBoneOffsets();
+            if (_vehicle.TryGetAnchors(out RoaVehicleView.Anchors anchors))
+                _rider.Apply(anchors, _riderWeight, Mathf.InverseLerp(1f, 11f, speed), _modelRoot);
+            EndBoneOffsets();
+            return true;
         }
 
         private void UpdateGroundShadow()

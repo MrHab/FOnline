@@ -74,6 +74,9 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnWorldState;
         public event Action<JObject> OnAnomalyState;
         public event Action<JObject> OnBoltThrown;
+
+        /// <summary>Игрок комнаты (в том числе свой) сел на транспорт или спешился: id, vehicle, reason.</summary>
+        public event Action<JObject> OnPlayerVehicle;
         public event Action<JObject> OnArtifactState;
         public event Action<JObject> OnPersonalBaseState;
         public event Action<JObject> OnKromkaClanState;
@@ -457,6 +460,13 @@ namespace RealmOfAshes.Net
                 var payload = First<JObject>(args);
                 if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
                     OnBoltThrown?.Invoke(payload);
+            }));
+
+            _connection.On("playerVehicle", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null && IsForCurrentRoom(payload["roomId"]?.ToString()))
+                    OnPlayerVehicle?.Invoke(payload);
             }));
 
             _connection.On("artifactState", args => _mainThread.Enqueue(() =>

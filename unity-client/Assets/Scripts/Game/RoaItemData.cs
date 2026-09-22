@@ -256,6 +256,7 @@ namespace RealmOfAshes.Game
             Add(result, "artifactBelt3", "Пояс-контейнер на 3", 1.5f);
             Add(result, "artifactBelt4", "Пояс-контейнер на 4", 1.8f);
             Add(result, "artifactContainer", "Свинцовый контейнер", 2f);
+            Add(result, "motorcycle", "Армейский мотоцикл", 0f);
             Add(result, "artifactSpring", "Артефакт «Пружина»", 0.45f);
             Add(result, "artifactVein", "Артефакт «Жила»", 0.6f);
             Add(result, "artifactNode", "Артефакт «Узел»", 0.7f);

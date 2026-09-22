@@ -30,7 +30,7 @@ function functionSource(name) {
   return source.slice(start, source.indexOf('\n}', start) + 2);
 }
 
-const SLOTS = ['weapon', 'offhand', 'armor', 'helmet', 'boots', 'backpack', 'detector', 'artifactBelt'];
+const SLOTS = ['weapon', 'offhand', 'armor', 'helmet', 'boots', 'backpack', 'detector', 'artifactBelt', 'vehicle'];
 const PRICES = { pistol: 40, leather: 30, medkit: 22, scrap: 3, artifactSpring: 120, artifactBelt2: 60 };
 
 function sandbox(trashChance) {

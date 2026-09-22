@@ -220,22 +220,25 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Анимация езды за кадр. speed — путевая скорость, м/с; yawRateDeg —
-        /// скорость поворота корпуса, град/с (плюс — направо). Возвращает крен.
+        /// Анимация езды за кадр. speed — ход вдоль мотоцикла со знаком, м/с: он
+        /// смотрит на курсор и может катиться назад (колёса крутятся назад) или
+        /// боком (колёса стоят). yawRateDeg — скорость поворота корпуса, град/с
+        /// (плюс — направо). Возвращает крен.
         /// </summary>
         public float Step(float speed, float yawRateDeg, float dt)
         {
             dt = Mathf.Clamp(dt, 0f, 0.1f);
             if (!Ready) return 0f;
 
-            speed = Mathf.Max(0f, speed);
+            float pace = Mathf.Abs(speed);
             _wheelAngle = Mathf.Repeat(_wheelAngle + speed * dt / _wheelRadius * Mathf.Rad2Deg, 360f);
             _wheelFront.localRotation = _wheelFrontBase * Quaternion.AngleAxis(_wheelAngle, Vector3.right);
             _wheelRear.localRotation = _wheelRearBase * Quaternion.AngleAxis(_wheelAngle, Vector3.right);
 
-            // Руль: на малой скорости тот же поворот требует большего угла.
-            float steerGain = Mathf.Lerp(0.2f, 0.045f, Mathf.InverseLerp(0.5f, 11f, speed));
-            float steerTarget = speed > 0.2f ? Mathf.Clamp(yawRateDeg * steerGain, -MaxSteerDeg, MaxSteerDeg) : SteerDeg;
+            // Руль: на малой скорости тот же поворот требует большего угла; задним
+            // ходом руль в поворот встаёт зеркально.
+            float steerGain = Mathf.Lerp(0.2f, 0.045f, Mathf.InverseLerp(0.5f, 11f, pace)) * Mathf.Sign(speed);
+            float steerTarget = pace > 0.2f ? Mathf.Clamp(yawRateDeg * steerGain, -MaxSteerDeg, MaxSteerDeg) : SteerDeg;
             SteerDeg = Mathf.Lerp(SteerDeg, steerTarget, 1f - Mathf.Exp(-9f * dt));
             _steer.localRotation = _steerBase * Quaternion.AngleAxis(SteerDeg, Vector3.up);
 
@@ -246,9 +249,9 @@ namespace RealmOfAshes.Game
 
             // Мотор дрожит на холостых, подвеска покачивается на ходу.
             float t = Time.time;
-            float pace = Mathf.InverseLerp(0.3f, 9f, speed);
-            float idle = (1f - pace) * Mathf.Sin(t * 57f) * 0.0035f;
-            float bump = pace * (Mathf.Sin(t * 8.3f) * 0.006f + Mathf.Sin(t * 13.1f) * 0.003f);
+            float ride = Mathf.InverseLerp(0.3f, 9f, pace);
+            float idle = (1f - ride) * Mathf.Sin(t * 57f) * 0.0035f;
+            float bump = ride * (Mathf.Sin(t * 8.3f) * 0.006f + Mathf.Sin(t * 13.1f) * 0.003f);
             _model.localPosition = _bodyBase + Vector3.up * (idle + bump);
             return LeanDeg;
         }

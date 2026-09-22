@@ -82,8 +82,11 @@ namespace RealmOfAshes.Game
         public const float RideAcceleration = 22f;
         public const float RideBraking = 30f;
 
-        /// <summary>Как быстро транспорт разворачивается по ходу, град/с.</summary>
+        /// <summary>Как быстро транспорт разворачивается к курсору или по ходу, град/с.</summary>
         public const float RideTurnSpeedDeg = 520f;
+
+        /// <summary>Курсор ближе этого к мотоциклу (м) не поворачивает его: иначе он крутится волчком.</summary>
+        public const float VehicleCursorDeadZone = 0.9f;
 
         [Header("Движение")]
         [Tooltip("Скорость из характеристик. Пересчитывается по авторитетному состоянию, вручную не задавать.")]
@@ -228,8 +231,13 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            // Верхом корпус смотрит по ходу транспорта, а не на курсор.
-            if (Mounted) View?.SetAim(transform.position, false);
+            // Верхом оружие убрано, но мотоцикл, как и пеший, поворачивает к курсору;
+            // без мыши (телефон) он смотрит по ходу — это решает ReadInputAndMove.
+            if (Mounted)
+            {
+                View?.SetAim(transform.position, false);
+                if (PointerAimEnabled) SteerVehicleToCursor();
+            }
             else if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
             UpdatePresentationReconciliation();
@@ -263,19 +271,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void AimAtCursor()
         {
-            UnityEngine.Camera cam = UnityEngine.Camera.main;
-            if (cam == null) return;
-
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-
-            // Разворот персонажа берётся с земли — так курсор совпадает с точкой,
-            // куда игрок смотрит на карте.
-            var groundPlane = new Plane(Vector3.up, new Vector3(0f, FeetY(), 0f));
-
-            float distance;
-            if (!groundPlane.Raycast(ray, out distance)) return;
-
-            Vector3 aim = ray.GetPoint(distance);
+            if (!TryCursorGroundPoint(out Ray ray, out Vector3 aim)) return;
 
             // А оружию нужна точка на ВЫСОТЕ СТВОЛА: у наклонной камеры проекции
             // одного и того же курсора на землю и на высоту груди расходятся
@@ -297,14 +293,45 @@ namespace RealmOfAshes.Game
                 View.SetAim(weaponAim, true);
             }
 
-            Vector3 toAim = aim - transform.position;
-            toAim.y = 0f;
-
             // Курсор ровно на персонаже — направление неопределимо, держим прежнее.
-            if (toAim.sqrMagnitude < 0.0004f) return;
+            TurnToward(aim, TurnSpeedDeg, 0.02f);
+        }
 
-            float targetYaw = Mathf.Atan2(toAim.x, toAim.z) * Mathf.Rad2Deg;
-            _yawDeg = Mathf.MoveTowardsAngle(_yawDeg, targetYaw, TurnSpeedDeg * Time.deltaTime);
+        /// <summary>
+        /// Мотоцикл поворачивает к курсору, как пеший персонаж, но со своей
+        /// скоростью разворота. Над самим мотоциклом курсор направления не задаёт.
+        /// </summary>
+        private void SteerVehicleToCursor()
+        {
+            if (TryCursorGroundPoint(out _, out Vector3 point))
+                TurnToward(point, RideTurnSpeedDeg, VehicleCursorDeadZone);
+        }
+
+        /// <summary>
+        /// Точка на земле под курсором. Разворот берётся с плоскости на высоте ног —
+        /// так курсор совпадает с точкой, куда игрок смотрит на карте.
+        /// </summary>
+        private bool TryCursorGroundPoint(out Ray ray, out Vector3 point)
+        {
+            ray = default(Ray);
+            point = Vector3.zero;
+            UnityEngine.Camera cam = UnityEngine.Camera.main;
+            if (cam == null) return false;
+            ray = cam.ScreenPointToRay(Input.mousePosition);
+            var groundPlane = new Plane(Vector3.up, new Vector3(0f, FeetY(), 0f));
+            if (!groundPlane.Raycast(ray, out float distance)) return false;
+            point = ray.GetPoint(distance);
+            return true;
+        }
+
+        /// <summary>Довернуть корпус к точке; ближе deadZone метров к нему — не вертеть.</summary>
+        private void TurnToward(Vector3 point, float degreesPerSecond, float deadZone)
+        {
+            Vector3 to = point - transform.position;
+            to.y = 0f;
+            if (to.sqrMagnitude < deadZone * deadZone) return;
+            float targetYaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+            _yawDeg = Mathf.MoveTowardsAngle(_yawDeg, targetYaw, degreesPerSecond * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0f, _yawDeg, 0f);
         }
 
@@ -419,7 +446,9 @@ namespace RealmOfAshes.Game
                 // теряет ход, а не копит его.
                 Moving = actual.sqrMagnitude > 0.0064f;
                 if (_colliding) _rideVelocity = actual;
-                Vector3 heading = actual.sqrMagnitude > 0.16f ? actual : (requestedMovement ? wish : Vector3.zero);
+                // С мышью мотоцикл смотрит на курсор (SteerVehicleToCursor), без неё — по ходу.
+                Vector3 heading = PointerAimEnabled ? Vector3.zero
+                    : actual.sqrMagnitude > 0.16f ? actual : (requestedMovement ? wish : Vector3.zero);
                 if (heading.sqrMagnitude > 0.0001f)
                 {
                     float targetYaw = Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg;

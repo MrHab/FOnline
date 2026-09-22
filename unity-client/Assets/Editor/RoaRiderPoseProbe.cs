@@ -182,8 +182,20 @@ namespace RealmOfAshes.EditorTools
                     spun += Mathf.Abs(Mathf.DeltaAngle(before, vehicle.WheelAngleDeg));
                     await Task.Yield();
                 }
-                Pose(character, animation, lateUpdate, new Vector3(0f, 0f, 8f), 1);
                 Check(spun > 1f, body + ": wheels do not spin while riding");
+
+                // Задний ход: мотоцикл смотрит на курсор, а игрок жмёт S — колёса
+                // крутятся назад, а не вперёд по модулю скорости.
+                float reversed = 0f;
+                for (int frame = 0; frame < 8; frame++)
+                {
+                    float before = vehicle.WheelAngleDeg;
+                    Pose(character, animation, lateUpdate, new Vector3(0f, 0f, -4f), 1);
+                    reversed += Mathf.DeltaAngle(before, vehicle.WheelAngleDeg);
+                    await Task.Yield();
+                }
+                Check(reversed < -0.5f, body + ": wheels do not roll backward in reverse: " + reversed.ToString("0.00"));
+                Pose(character, animation, lateUpdate, new Vector3(0f, 0f, 8f), 1);
 
                 Check(vehicle.TryGetAnchors(out RoaVehicleView.Anchors anchors), body + ": no rider anchors");
                 Transform pelvis = Bone(character, "pelvis");

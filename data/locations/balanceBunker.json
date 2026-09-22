@@ -94,6 +94,13 @@
         "city-bank"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -142,6 +149,13 @@
         "city-plaza"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -190,6 +204,13 @@
         "city-workshop"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -16637,6 +16658,69 @@
         "north",
         "city-kit"
       ],
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "nikolai_severov",
+      "model": "wastelandSettler",
+      "name": "Николай Северов",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": -17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.339,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "nikolai_severov",
+        "role": "civilian",
+        "faction": "continuity",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_04",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }

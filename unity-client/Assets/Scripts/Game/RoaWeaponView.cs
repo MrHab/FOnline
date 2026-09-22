@@ -276,6 +276,9 @@ namespace RealmOfAshes.Game
         /// <summary>Id оружия, которое сейчас в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get; private set; }
 
+        /// <summary>Id оружия, модель которого сейчас грузится. Пусто — загрузки нет.</summary>
+        public string LoadingId { get; private set; } = string.Empty;
+
         /// <summary>
         /// Высота рукояти в мире. По ней берётся точка прицела: если брать курсор
         /// с земли, а ствол держать на высоте груди, между ними у наклонной камеры
@@ -358,6 +361,7 @@ namespace RealmOfAshes.Game
             _socketGrip = null;
             _socketMuzzle = null;
             WeaponId = string.Empty;
+            LoadingId = string.Empty;
             Ready = false;
             TorsoResidual = 0f;
             WeaponConverge = 0f;
@@ -381,9 +385,20 @@ namespace RealmOfAshes.Game
                                Dictionary<string, Transform> bones)
         {
             if (WeaponId == weaponId && (Ready || !HasModel(weaponId))) return;
+            // Эта модель уже грузится: снимок, пришедший посреди загрузки, её
+            // не перезапускает, иначе частые снимки не дают ей доехать.
+            if (!string.IsNullOrEmpty(LoadingId) && LoadingId == weaponId) return;
 
             int request = ++_loadRequest;
             ClearWeapon();
+            LoadingId = weaponId;
+            try { await LoadModel(request, baseUrl, weaponId, characterRoot, bones); }
+            finally { if (request == _loadRequest) LoadingId = string.Empty; }
+        }
+
+        private async Task LoadModel(int request, string baseUrl, string weaponId, Transform characterRoot,
+                                     Dictionary<string, Transform> bones)
+        {
             _bones = bones;
             _owner = characterRoot != null ? characterRoot.root : null;
 

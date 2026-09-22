@@ -133,8 +133,6 @@ namespace RealmOfAshes.Game
         private RoaWeaponView _weapon;
         private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
-        private int _equipmentRequest;
-
         // Транспорт под седоком. Пока _riding, клип — покой, а поверх него поза
         // седока (RoaRiderPose) с весом _riderWeight; при спешивании вес плавно
         // уходит, а отпущенный транспорт сам доигрывает уход и удаляется.
@@ -452,6 +450,9 @@ namespace RealmOfAshes.Game
 
         /// <summary>Id оружия в руках. Пусто или «fists» — руки свободны.</summary>
         public string WeaponId { get { return _weapon != null ? _weapon.WeaponId : string.Empty; } }
+
+        /// <summary>Id оружия, модель которого сейчас грузится. Пусто — загрузки нет.</summary>
+        public string WeaponLoadingId { get { return _weapon != null ? _weapon.LoadingId : string.Empty; } }
 
         public void SetGroundingLod(bool active)
         {
@@ -915,7 +916,6 @@ namespace RealmOfAshes.Game
         {
             if (!Ready || _modelRoot == null) return;
 
-            int request = ++_equipmentRequest;
             if (_equipment == null)
             {
                 _equipment = new RoaEquipmentView();
@@ -927,7 +927,10 @@ namespace RealmOfAshes.Game
             await Task.WhenAll(
                 _equipment.Apply(baseUrl, equipment, _bodyKey, _modelRoot, _bones),
                 _offhandWeapon.Load(baseUrl, offhandId, _modelRoot, _bones));
-            if (request != _equipmentRequest) return;
+            // Итог пересчитывает любой завершившийся вызов, а не только последний:
+            // повторный снимок посреди загрузки возвращается сразу, и модели
+            // довозит более ранний вызов. Всё ниже читает текущее состояние.
+            if (!Ready || _modelRoot == null) return;
             UpdateDualWieldState();
             ApplyAppearanceVisuals();
             NotifyVisualChanged();

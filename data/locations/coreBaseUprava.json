@@ -126,6 +126,13 @@
         "registrar"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -174,6 +181,13 @@
         "auction"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -222,6 +236,13 @@
         "medic"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -271,6 +292,13 @@
         "trader"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "knife",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": "backpack"
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -322,6 +350,13 @@
         "researcher"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -369,6 +404,13 @@
         "territory-guard"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "knife",
+          "armor": "leather",
+          "helmet": "helmet",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -417,6 +459,13 @@
         "territory-guard"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "knife",
+          "armor": "leather",
+          "helmet": "helmet",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -465,6 +514,13 @@
         "territory-guard"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "pistol",
+          "armor": "leather",
+          "helmet": "helmet",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -513,6 +569,13 @@
         "territory-guard"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "pistol",
+          "armor": "leather",
+          "helmet": "helmet",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -2337,6 +2400,13 @@
         "repair"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",

@@ -317,6 +317,13 @@ function readNpcPlacements(scenePath, prefabGuid) {
         faceId: `${Number(values._sex || 0) === 1 ? 'female' : 'male'}_0${number('_face', 1)}`,
         hairId: values._hairId || 'short_crop',
         hairColorId: `hair_0${number('_hairColor', 3)}`
+      },
+      equipment: {
+        weapon: values._weapon || 'fists',
+        armor: values._armor || '',
+        helmet: values._helmet || '',
+        boots: values._boots || '',
+        backpack: values._backpack || ''
       }
     });
   }

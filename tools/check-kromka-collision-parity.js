@@ -156,6 +156,10 @@ for (const definitionFile of definitionFiles) {
     const look = row.entity.appearance || {};
     const differs = ['sex', 'bodyType', 'faceId', 'hairId', 'hairColorId'].filter(key => look[key] !== placed.appearance[key]);
     if (differs.length) failures.npcs.push(`${file}: ${row.id} looks different in the scene (${differs.join(', ')})`);
+    const outfit = row.entity.equipment || {};
+    const worn = ['weapon', 'armor', 'helmet', 'boots', 'backpack']
+      .filter(slot => (outfit[slot] || (slot === 'weapon' ? 'fists' : '')) !== placed.equipment[slot]);
+    if (worn.length) failures.npcs.push(`${file}: ${row.id} is dressed differently in the scene (${worn.join(', ')})`);
   }
   for (const placed of npcPlaced) {
     if (!npcRows.some(row => String(row.id) === placed.id))
@@ -249,4 +253,4 @@ assert.deepStrictEqual(failures.ground, [],
   'the scene floor does not cover the location map: a player walking there falls through the world');
 
 console.log(`Kromka scene parity OK: ${pairs} rows in ${scenes} Unity scenes match their markers in row set, collision and tags; `
-  + `${blocking} block movement with ${partCount} collision parts the server rebuilds exactly; ${npcCount} friendly NPCs stand in their scenes as their rows say.`);
+  + `${blocking} block movement with ${partCount} collision parts the server rebuilds exactly; ${npcCount} friendly NPCs stand, look and dress in their scenes as their rows say.`);

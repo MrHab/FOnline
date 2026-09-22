@@ -150,6 +150,11 @@ namespace RealmOfAshes.EditorTools
                     npc.ConfigureAppearance(Text(appearance, "sex"), Text(appearance, "bodyType"),
                         Text(appearance, "faceId"), Text(appearance, "hairId"), Text(appearance, "hairColorId"));
                 }
+                if (entity["equipment"] is JObject equipment)
+                {
+                    npc.ConfigureEquipment(Text(equipment, "weapon"), Text(equipment, "armor"),
+                        Text(equipment, "helmet"), Text(equipment, "boots"), Text(equipment, "backpack"));
+                }
                 PrefabUtility.RecordPrefabInstancePropertyModifications(npc);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(root);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(root.transform);

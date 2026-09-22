@@ -110,6 +110,13 @@
         }
       },
       "entity": {
+        "equipment": {
+          "weapon": "pistol",
+          "armor": "ballisticVest",
+          "helmet": "",
+          "boots": "scoutBoots",
+          "backpack": "backpack"
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -173,6 +180,13 @@
         "city-bank"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -223,6 +237,13 @@
         "city-plaza"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -273,6 +294,13 @@
         "city-workshop"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -16567,6 +16595,69 @@
         "north",
         "city-kit"
       ],
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "sofia_sych",
+      "model": "caravanMerchant",
+      "name": "Софья Сыч",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.927,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "sofia_sych",
+        "role": "merchant",
+        "faction": "tract_league",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_03",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
+        "equipment": {
+          "weapon": "pistol",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }

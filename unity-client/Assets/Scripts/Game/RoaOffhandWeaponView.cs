@@ -37,6 +37,7 @@ namespace RealmOfAshes.Game
         private RoaIkChain _leftArm;
         private Dictionary<string, Transform> _bones;
         private int _loadRequest;
+        private string _loadingId = string.Empty;
         private float _obstructedBlend;
         private float _contactBumpStartedAt = -100f;
         private float _reloadStartedAt = -1f;
@@ -112,9 +113,19 @@ namespace RealmOfAshes.Game
         {
             weaponId = CanRender(weaponId) ? weaponId : string.Empty;
             if (WeaponId == weaponId && (string.IsNullOrEmpty(weaponId) || Ready)) return;
+            // Та же модель уже грузится: повторный снимок её не перезапускает.
+            if (!string.IsNullOrEmpty(_loadingId) && _loadingId == weaponId) return;
 
             int request = ++_loadRequest;
             Clear();
+            _loadingId = weaponId;
+            try { await LoadModel(request, baseUrl, weaponId, characterRoot, bones); }
+            finally { if (request == _loadRequest) _loadingId = string.Empty; }
+        }
+
+        private async Task LoadModel(int request, string baseUrl, string weaponId, Transform characterRoot,
+                                     Dictionary<string, Transform> bones)
+        {
             if (string.IsNullOrEmpty(weaponId) || characterRoot == null || bones == null) return;
 
             _characterRoot = characterRoot;
@@ -363,6 +374,7 @@ namespace RealmOfAshes.Game
             _characterRoot = null;
             _owner = null;
             WeaponId = string.Empty;
+            _loadingId = string.Empty;
             Ready = false;
             ArmSolved = false;
             _obstructedBlend = 0f;

@@ -471,6 +471,15 @@ namespace Kromka.EditorTools
                             ["skinToneId"] = "skin_03",
                             ["hairColorId"] = npc.HairColorId
                         };
+                        // Наряд надевается как есть: пустой слот — ничего не надето.
+                        entity["equipment"] = new JObject
+                        {
+                            ["weapon"] = npc.Weapon,
+                            ["armor"] = npc.Armor,
+                            ["helmet"] = npc.Helmet,
+                            ["boots"] = npc.Boots,
+                            ["backpack"] = npc.Backpack
+                        };
                         actor["entity"] = entity;
                     }
                 }

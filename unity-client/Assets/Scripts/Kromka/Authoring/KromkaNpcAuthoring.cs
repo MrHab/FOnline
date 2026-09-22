@@ -46,7 +46,14 @@ namespace Kromka.Authoring
         [SerializeField] private string _hairId = "short_crop";
         [SerializeField, Range(1, 8)] private int _hairColor = 3;
 
-        /// <summary>Облик сменился в инспекторе: превью пора пересобрать.</summary>
+        [Header("Наряд — правится здесь, экспорт пишет в entity.equipment")]
+        [SerializeField] private string _weapon = "fists";
+        [SerializeField] private string _armor = string.Empty;
+        [SerializeField] private string _helmet = string.Empty;
+        [SerializeField] private string _boots = string.Empty;
+        [SerializeField] private string _backpack = string.Empty;
+
+        /// <summary>Облик или наряд сменился в инспекторе: превью пора пересобрать.</summary>
         public static event Action<KromkaNpcAuthoring> AppearanceChanged;
 
         /// <summary>Id строки НПС — тот же, что у якоря, по которому экспорт пишет позицию.</summary>
@@ -71,6 +78,12 @@ namespace Kromka.Authoring
         public string HairId => string.IsNullOrWhiteSpace(_hairId) ? "short_crop" : _hairId;
         public string HairColorId => "hair_0" + Mathf.Clamp(_hairColor, 1, 8);
 
+        public string Weapon => string.IsNullOrWhiteSpace(_weapon) ? "fists" : _weapon;
+        public string Armor => _armor ?? string.Empty;
+        public string Helmet => _helmet ?? string.Empty;
+        public string Boots => _boots ?? string.Empty;
+        public string Backpack => _backpack ?? string.Empty;
+
         /// <summary>Сведения из данных: имя, роль, служба, фракция, квесты.</summary>
         public void ConfigureIdentity(string displayName, string role, string service, string faction, string[] quests)
         {
@@ -91,6 +104,20 @@ namespace Kromka.Authoring
             _face = Suffix(faceId, 1, 4);
             _hairId = string.IsNullOrWhiteSpace(hairId) ? "short_crop" : hairId;
             _hairColor = Suffix(hairColorId, 1, 8);
+            AppearanceChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Наряд: оружие в руках и четыре носимых слота. Его надевают ровно таким —
+        /// пустой слот значит «ничего», а не «что найдётся на складе фракции».
+        /// </summary>
+        public void ConfigureEquipment(string weapon, string armor, string helmet, string boots, string backpack)
+        {
+            _weapon = string.IsNullOrWhiteSpace(weapon) ? "fists" : weapon;
+            _armor = armor ?? string.Empty;
+            _helmet = helmet ?? string.Empty;
+            _boots = boots ?? string.Empty;
+            _backpack = backpack ?? string.Empty;
             AppearanceChanged?.Invoke(this);
         }
 

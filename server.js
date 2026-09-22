@@ -16931,6 +16931,9 @@ function spawnAuthoredLocationActors(room, loc) {
   let count = 0;
   loc.objects.forEach((row, index) => {
     if (!locationDefinitionObjectIsNpc(row)) return;
+    // Именных и учебных НПС ставят их каталоги; строка — только их место и облик.
+    const rowOwner = String(locationDefinitionObjectEntity(row).spawnedBy || '');
+    if (rowOwner === 'named' || rowOwner === 'onboarding') return;
     if (!authoredNpcMatchesWastelandOwner(row, controllingSite, loc)) return;
     const entity = locationDefinitionObjectEntity(row);
     const authoredNpcId = String(entity.npcId || row.id || '').slice(0, 96);
@@ -16979,6 +16982,7 @@ function spawnAuthoredLocationActors(room, loc) {
       appearance: entity.appearance && typeof entity.appearance === 'object'
         ? sanitizeCharacterAppearance(entity.appearance)
         : null,
+      authoredEquipment: entity.equipment && typeof entity.equipment === 'object' ? entity.equipment : null,
       name: row.name || entity.name || (role === 'merchant' ? 'Торговец' : role === 'guard' ? 'Охранник' : 'NPC'),
       role,
       faction,
@@ -17088,6 +17092,48 @@ function serverSpawnFastTravelDispatcher(room, loc) {
   return 1;
 }
 
+/**
+ * Строка локации, по которой ставят именного или учебного НПС. Личность, реплики
+ * и квесты живут в каталоге (npcs.json, onboarding.json), а место, взгляд, облик
+ * и наряд — в строке с тем же id: их правят в сцене Unity, как у любого НПС
+ * места. Такую строку спавнер авторских НПС пропускает (entity.spawnedBy).
+ */
+function kromkaPlacementRow(loc, npcId) {
+  const id = String(npcId || '');
+  if (!id) return null;
+  return (Array.isArray(loc?.objects) ? loc.objects : [])
+    .find(row => String(row?.id || '') === id && locationDefinitionObjectIsNpc(row)) || null;
+}
+
+/** Облик, наряд и взгляд строки — теми же правилами, что у прочих авторских НПС. */
+function kromkaPlacementLook(row) {
+  const entity = row ? locationDefinitionObjectEntity(row) : {};
+  const facing = Number(row?.rotation?.y);
+  return {
+    appearance: entity.appearance && typeof entity.appearance === 'object'
+      ? sanitizeCharacterAppearance(entity.appearance)
+      : null,
+    authoredEquipment: entity.equipment && typeof entity.equipment === 'object' ? entity.equipment : null,
+    facing: row && Number.isFinite(facing) ? facing : null
+  };
+}
+
+/** Точно на место строки, если оно свободно, и лицом туда, куда повернули в сцене. */
+function placeKromkaActorByRow(room, actor, row, look) {
+  if (!actor || !row) return;
+  const placed = locationObjectPosition(row);
+  if (Number.isFinite(placed.x) && Number.isFinite(placed.z) && isEnemyStepOpen(room, actor, placed.x, placed.z, 0.32)) {
+    actor.x = placed.x;
+    actor.z = placed.z;
+    actor.homeX = placed.x;
+    actor.homeZ = placed.z;
+  }
+  if (look?.facing !== null && look?.facing !== undefined) {
+    actor.npcHomeFacing = look.facing;
+    setNpcActivityState(actor, { facing: look.facing });
+  }
+}
+
 function ensureKromkaNamedLocationActors(room, loc) {
   if (!room || !loc || !room.enemies) return 0;
   const guestNpcIds = String(loc.id || '') === 'cascadeRegenerator'
@@ -17106,22 +17152,32 @@ function ensureKromkaNamedLocationActors(room, loc) {
       || String(candidate?.kromkaNamedNpcId || '') === npcId
     ));
     if (!actor) {
+      // Место, взгляд, облик и наряд — из строки локации, если она есть: её
+      // правят в сцене Unity. Без строки НПС встаёт по-старому, у входа.
+      const placement = kromkaPlacementRow(loc, npcId);
+      const look = kromkaPlacementLook(placement);
       const spawn = loc.spawn || loc.entry || { tx: 19, tz: 19 };
-      const dialoguePosition = npc.dialoguePosition && typeof npc.dialoguePosition === 'object'
-        ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0), roomTileDims(room))
-        : null;
       const namedDims = roomTileDims(room);
-      const tx = clamp(dialoguePosition?.tx
-        ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, namedDims.w - 3);
-      const tz = clamp(dialoguePosition?.tz
-        ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, namedDims.h - 3);
-      const reachableTile = findRoomReachableSpawnTile(room, spawn.tx ?? 19, spawn.tz ?? 19, tx, tz, {
-        radius: 0.48,
-        minEnemyDistance: 0.8,
-        minPlayerDistance: 0,
-        requireOriginLineOfSight: true,
-        maxOriginDistance: 5.2
-      });
+      let reachableTile = null;
+      if (placement) {
+        const placed = locationObjectPosition(placement);
+        reachableTile = worldToTile(placed.x, placed.z, namedDims);
+      } else {
+        const dialoguePosition = npc.dialoguePosition && typeof npc.dialoguePosition === 'object'
+          ? worldToTile(Number(npc.dialoguePosition.x || 0), Number(npc.dialoguePosition.z || 0), namedDims)
+          : null;
+        const tx = clamp(dialoguePosition?.tx
+          ?? (Math.round(Number(spawn.tx ?? 19)) + 3 + (index % 3) * 2), 2, namedDims.w - 3);
+        const tz = clamp(dialoguePosition?.tz
+          ?? (Math.round(Number(spawn.tz ?? 19)) + 3 + Math.floor(index / 3) * 2), 2, namedDims.h - 3);
+        reachableTile = findRoomReachableSpawnTile(room, spawn.tx ?? 19, spawn.tz ?? 19, tx, tz, {
+          radius: 0.48,
+          minEnemyDistance: 0.8,
+          minPlayerDistance: 0,
+          requireOriginLineOfSight: true,
+          maxOriginDistance: 5.2
+        });
+      }
       if (!reachableTile) return;
       const faction = canonicalKromkaFactionId(npc.factionId || '') || 'neutral';
       const merchant = npcId === 'irena_versta_belova' || npcId === 'sofia_sych';
@@ -17130,7 +17186,9 @@ function ensureKromkaNamedLocationActors(room, loc) {
         allowSafeLocation: true,
         tx: reachableTile.tx,
         tz: reachableTile.tz,
-        maxSpawnSearchRadius: 0,
+        maxSpawnSearchRadius: placement ? 2 : 0,
+        appearance: look.appearance,
+        authoredEquipment: look.authoredEquipment,
         minEnemyDistance: 0.8,
         minPlayerDistance: 0,
         typeIndex: 0,
@@ -17150,6 +17208,7 @@ function ensureKromkaNamedLocationActors(room, loc) {
         loot: []
       });
       if (!actor) return;
+      placeKromkaActorByRow(room, actor, placement, look);
       actor.authoredLocationId = String(loc.id || '');
       actor.authoredLocationObjectId = `kromka_named:${npcId}`;
       created++;
@@ -17173,8 +17232,12 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
   residents.forEach(npc => {
     const npcId = String(npc?.id || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 96);
     if (!npcId) return;
-    const targetX = Number(npc.x || 0);
-    const targetZ = Number(npc.z || 0);
+    // Точка обучения — из строки локации (её правят в сцене Unity), иначе из каталога.
+    const placement = kromkaPlacementRow(loc, npcId);
+    const look = kromkaPlacementLook(placement);
+    const placed = placement ? locationObjectPosition(placement) : null;
+    const targetX = placed ? Number(placed.x) : Number(npc.x || 0);
+    const targetZ = placed ? Number(placed.z) : Number(npc.z || 0);
     let actor = [...room.enemies.values()].find(candidate => (
       String(candidate?.kromkaOnboardingNpcId || '') === npcId
     ));
@@ -17205,10 +17268,13 @@ function ensureKromkaOnboardingLocationActors(room, loc) {
         stationary: true,
         canDialogue: true,
         equipment: { weapon: 'fists', armor: 'leather', boots: 'boots' },
+        appearance: look.appearance,
+        authoredEquipment: look.authoredEquipment,
         dropEquipment: false,
         loot: []
       });
       if (!actor) return;
+      placeKromkaActorByRow(room, actor, placement, look);
       if (npcId === 'yard_casualty_shurik') {
         actor.kromkaOnboardingWounded = true;
         actor.hp = Math.max(1, Number(actor.maxHp || 100) - 40);
@@ -23804,9 +23870,15 @@ function spawnServerEnemy(room, opts = {}) {
       requested: opts.equipment || {},
       fallback: rolledEquipment
     });
+  // Наряд авторского НПС задан в его строке (его правят в сцене Unity) и
+  // надевается как есть: пустой слот — пусто, а не то, что нашлось на складе
+  // фракции. Иначе службы городов, где запасов нет, стояли в одном белье.
+  const authoredEquipment = !naturalCreature && opts.authoredEquipment && typeof opts.authoredEquipment === 'object'
+    ? sanitizeServerNpcEquipment(opts.authoredEquipment, { weapon: 'fists' })
+    : null;
   const equipment = naturalCreature
     ? serverNaturalCreatureEquipment()
-    : sanitizeServerNpcEquipment(factionEquipment, rolledEquipment);
+    : authoredEquipment || sanitizeServerNpcEquipment(factionEquipment, rolledEquipment);
   let enemyLoot = Array.isArray(opts.loot)
     ? opts.loot.map(x => ({ id: String(x.id || '').slice(0, 64), qty: clamp(Number(x.qty || 1), 1, 9999) }))
     : (naturalCreature ? rollServerNaturalCreatureLoot(room, type, opts) : rollEnemyStartingInventoryServer(room, type));

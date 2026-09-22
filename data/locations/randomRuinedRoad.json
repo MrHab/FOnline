@@ -1523,6 +1523,390 @@
       },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_quartermaster",
+      "model": "wastelandSettler",
+      "name": "Раненый кладовщик",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.061,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_quartermaster",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "medium",
+          "faceId": "male_01",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_medic",
+      "model": "wastelandSettler",
+      "name": "Фельдшер Дина",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.723,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_medic",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_01",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_pathfinder",
+      "model": "wastelandSettler",
+      "name": "Разведчик Ланин",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_pathfinder",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_01"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_radio_operator",
+      "model": "wastelandSettler",
+      "name": "Связист Дан",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.433,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_radio_operator",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "medium",
+          "faceId": "male_01",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_01"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_cargo_master",
+      "model": "wastelandSettler",
+      "name": "Приёмщик Нестор",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.503,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_cargo_master",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "medium",
+          "faceId": "male_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "ambush_guide",
+      "model": "wastelandSettler",
+      "name": "Проводница Ася",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 28
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "ambush_guide",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_03",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_01"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "worldRevision": "kromka-1",

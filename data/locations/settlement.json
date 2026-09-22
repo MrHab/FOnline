@@ -110,6 +110,14 @@
         }
       },
       "entity": {
+        "spawnedBy": "named",
+        "equipment": {
+          "weapon": "knife",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": "backpack"
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -182,6 +190,13 @@
         "city-bank"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -230,6 +245,13 @@
         "city-plaza"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "female",
@@ -278,6 +300,13 @@
         "city-workshop"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -16699,6 +16728,195 @@
         "north",
         "city-kit"
       ],
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "arkady_aktov",
+      "model": "wastelandSettler",
+      "name": "Аркадий Актов",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.146,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "arkady_aktov",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_04",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "rada_menshova",
+      "model": "wastelandSettler",
+      "name": "Доктор Рада Меньшова",
+      "position": {
+        "x": 15,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 4.276,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "rada_menshova",
+        "role": "civilian",
+        "faction": "contour",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "medium",
+          "faceId": "female_01",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_04"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "avenir_key",
+      "model": "wastelandSettler",
+      "name": "Авенир Ключ",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.661,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "avenir_key",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_04",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_08"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }

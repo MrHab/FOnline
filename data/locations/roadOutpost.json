@@ -2038,6 +2038,69 @@
           }
         }
       ]
+    },
+    {
+      "id": "lev_kartsev",
+      "model": "wastelandSettler",
+      "name": "Майор Лев Карцев",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.927,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "lev_kartsev",
+        "role": "civilian",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_03",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_02"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "pvp": true,

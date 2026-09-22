@@ -94,6 +94,13 @@
         "city-bank"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -144,6 +151,13 @@
         "city-plaza"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -194,6 +208,13 @@
         "city-workshop"
       ],
       "entity": {
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        },
         "appearance": {
           "schema": "realm.character-appearance.v1",
           "sex": "male",
@@ -16467,6 +16488,69 @@
         "north",
         "city-kit"
       ],
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "marina_velskaya",
+      "model": "wastelandSettler",
+      "name": "Марина Вельская",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.927,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "named",
+        "npcId": "marina_velskaya",
+        "role": "civilian",
+        "faction": "uprava",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "large",
+          "faceId": "male_04",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_05"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
       "unityAuthored": true,
       "worldRevision": "kromka-1"
     }

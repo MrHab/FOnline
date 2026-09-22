@@ -397,6 +397,454 @@
       "resourceType": "wood",
       "hp": 100,
       "maxHp": 100
+    },
+    {
+      "id": "yard_contract_clerk",
+      "model": "wastelandSettler",
+      "name": "Вера Рубеж",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -20
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_contract_clerk",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_versta_guide",
+      "model": "wastelandSettler",
+      "name": "Ирена «Верста» Белова",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.498,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_versta_guide",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_03",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_02"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_quartermaster",
+      "model": "wastelandSettler",
+      "name": "Снабженец Глеб",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.737,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_quartermaster",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_03",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_06"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_range_instructor",
+      "model": "wastelandSettler",
+      "name": "Инструктор Лада",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.805,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_range_instructor",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "slim",
+          "faceId": "male_01",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_07"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_casualty_shurik",
+      "model": "wastelandSettler",
+      "name": "Грузчик Шурик",
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": 12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.399,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_casualty_shurik",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "large",
+          "faceId": "female_02",
+          "hairId": "tied_back",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_03"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_mechanic",
+      "model": "wastelandSettler",
+      "name": "Механик Влас",
+      "position": {
+        "x": 15,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.633,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_mechanic",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "male",
+          "bodyType": "large",
+          "faceId": "male_03",
+          "hairId": "short_crop",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_07"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
+    },
+    {
+      "id": "yard_dispatcher",
+      "model": "wastelandSettler",
+      "name": "Старший колонны Мирон",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 24
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "unique",
+        "quest_giver",
+        "onboarding"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "entity": {
+        "kind": "npc",
+        "spawnedBy": "onboarding",
+        "npcId": "yard_dispatcher",
+        "role": "civilian",
+        "faction": "neutral",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "appearance": {
+          "schema": "realm.character-appearance.v1",
+          "sex": "female",
+          "bodyType": "slim",
+          "faceId": "female_04",
+          "hairId": "shaved",
+          "skinToneId": "skin_03",
+          "hairColorId": "hair_04"
+        },
+        "equipment": {
+          "weapon": "fists",
+          "armor": "leather",
+          "helmet": "",
+          "boots": "boots",
+          "backpack": ""
+        }
+      },
+      "vision": {
+        "mode": "none"
+      },
+      "unityAuthored": true,
+      "worldRevision": "kromka-1"
     }
   ],
   "visualProfile": {

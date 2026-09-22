@@ -192,6 +192,11 @@ const servicePosition = (locationId, service) => {
     'аукционер выглядит, как его одели в сцене: ' + JSON.stringify(auctioneer.appearance));
   assert(Math.abs(Number(auctioneer.activityFacing) - Number(auctionRow.rotation.y)) < 1e-3,
     `аукционер смотрит, как его повернули в сцене: ${auctioneer.activityFacing} против ${auctionRow.rotation.y}`);
+  // Наряд — тоже из строки и ровно такой: пустой слот не добирается со склада фракции.
+  for (const slot of ['weapon', 'armor', 'helmet', 'boots', 'backpack']) {
+    assert.equal(auctioneer.equipment?.[slot] || '', auctionRow.entity.equipment[slot] || '',
+      `аукционер одет, как в сцене (${slot}): ${JSON.stringify(auctioneer.equipment)}`);
+  }
   assert(scrapActors.filter(row => row.hostileToPlayer === false && row.role === 'guard').every(row => row.tradeOpen === false),
     'охрана столицы не торгует');
   const refused = await send('target', 'syncNpcTradeState', { enemyId: auctioneer.id }, false);

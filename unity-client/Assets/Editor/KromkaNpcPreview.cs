@@ -87,7 +87,8 @@ namespace RealmOfAshes.EditorTools
 
         private static string KeyOf(KromkaNpcAuthoring npc)
         {
-            return npc.SexId + "|" + npc.BodyTypeId + "|" + npc.FaceId + "|" + npc.HairId + "|" + npc.HairColorId;
+            return npc.SexId + "|" + npc.BodyTypeId + "|" + npc.FaceId + "|" + npc.HairId + "|" + npc.HairColorId
+                + "|" + npc.Weapon + "|" + npc.Armor + "|" + npc.Helmet + "|" + npc.Boots + "|" + npc.Backpack;
         }
 
         internal static void Rebuild(KromkaNpcAuthoring npc)
@@ -121,6 +122,7 @@ namespace RealmOfAshes.EditorTools
             preview.Idle = IdleClip();
 
             ApplyAppearance(npc, body, preview);
+            Dress(npc, body, skeleton != null ? skeleton : body.transform);
             SetFlags(holder);
             if (preview.Idle != null) SamplePose(preview, 0.0);
         }
@@ -151,6 +153,90 @@ namespace RealmOfAshes.EditorTools
                     renderer.SetPropertyBlock(block);
                 }
             }
+        }
+
+        /// <summary>
+        /// Наряд — теми же путями моделей и той же привязкой к скелету, что в
+        /// игре (RoaEquipmentView). Оружие ложится в правую руку по точке хвата
+        /// модели; стойки и IK рук, как у живого НПС в бою, здесь не нужны.
+        /// </summary>
+        private static void Dress(KromkaNpcAuthoring npc, GameObject body, Transform skeletonRoot)
+        {
+            var bones = new Dictionary<string, Transform>();
+            foreach (Transform node in body.GetComponentsInChildren<Transform>(true))
+                if (!bones.ContainsKey(node.name)) bones[node.name] = node;
+            string bodyKey = npc.SexId + "_" + npc.BodyTypeId;
+
+            var worn = new Dictionary<string, GameObject>();
+            foreach ((string slot, string itemId) in new[]
+                     { ("armor", npc.Armor), ("helmet", npc.Helmet), ("boots", npc.Boots), ("backpack", npc.Backpack) })
+            {
+                if (string.IsNullOrEmpty(itemId)) continue;
+                if (!RoaEquipmentView.TryModelPath(slot, itemId, bodyKey, "none", out string path))
+                {
+                    Report("[НПС] Нет модели " + slot + " «" + itemId + "» — в сцене она не показана.");
+                    continue;
+                }
+                GameObject source = InstantiateModel(path, skeletonRoot);
+                if (source == null)
+                {
+                    Report("[НПС] Нет префаба " + path + " — " + slot + " в сцене не показан.");
+                    continue;
+                }
+                GameObject bound = RoaEquipmentView.BindToSkeleton(source, skeletonRoot, bones, itemId);
+                Object.DestroyImmediate(source);
+                if (bound == null)
+                {
+                    Report("[НПС] " + itemId + " не садится на кости тела " + bodyKey + ".");
+                    continue;
+                }
+                bound.SetActive(true);
+                worn[slot] = bound;
+            }
+
+            // Как у клиента: шлем и защитный костюм прячут волосы, отдельные
+            // ботинки — встроенную обувь брони.
+            if (worn.ContainsKey("helmet") || npc.Armor == "hazmatSuit")
+                foreach (Transform node in body.GetComponentsInChildren<Transform>(true))
+                    if (node.name.StartsWith("hair_")) node.gameObject.SetActive(false);
+            if (worn.TryGetValue("armor", out GameObject armor) && worn.ContainsKey("boots"))
+                foreach (SkinnedMeshRenderer renderer in armor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    if (renderer.name.Contains(RoaSuitModelCatalog.FootwearLayer)) renderer.gameObject.SetActive(false);
+
+            if (npc.Weapon == "fists" || !bones.TryGetValue("hand_r", out Transform hand)) return;
+            GameObject weapon = InstantiateModel("/assets/models/weapons/weapon_" + npc.Weapon + ".glb", hand);
+            if (weapon == null)
+            {
+                Report("[НПС] Нет модели оружия «" + npc.Weapon + "» — в руке пусто.");
+                return;
+            }
+            Transform grip = FindDeep(weapon.transform, "socket_grip_r");
+            if (grip == null) return;
+            // Точка хвата встаёт в ладонь: сначала поворот, потом сдвиг.
+            weapon.transform.rotation = hand.rotation * Quaternion.Inverse(Quaternion.Inverse(weapon.transform.rotation) * grip.rotation);
+            weapon.transform.position += hand.position - grip.position;
+        }
+
+        /// <summary>Модель по игровому пути: каталог клиента, иначе префаб проекта, иначе сам GLB пакета.</summary>
+        private static GameObject InstantiateModel(string url, Transform parent)
+        {
+            if (RoaModelPrefabCatalog.TryInstantiate(url, parent, out GameObject fromCatalog)) return fromCatalog;
+            // Регистр пути сохраняем: имена префабов в camelCase (weapon_assaultRifle).
+            const string Root = "/assets/models/";
+            int at = url.IndexOf(Root, System.StringComparison.OrdinalIgnoreCase);
+            string relative = at >= 0 ? url.Substring(at + Root.Length) : url.TrimStart('/');
+            // Хвост версии (?v=…) — для кэша браузера, в пути ассета его нет.
+            int query = relative.IndexOfAny(new[] { '?', '#' });
+            if (query >= 0) relative = relative.Substring(0, query);
+            string withoutExtension = relative.EndsWith(".glb") ? relative.Substring(0, relative.Length - 4) : relative;
+            GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Models/" + withoutExtension + ".prefab")
+                ?? AssetDatabase.LoadAssetAtPath<GameObject>("Packages/com.realmofashes.models/" + relative);
+            return asset != null ? (GameObject)Object.Instantiate(asset, parent, false) : null;
+        }
+
+        private static void Report(string message)
+        {
+            if (Reported.Add(message)) Debug.LogWarning(message);
         }
 
         private static Vector3 HeadFactors(string faceId)

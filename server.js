@@ -16976,6 +16976,9 @@ function spawnAuthoredLocationActors(room, loc) {
       service: String(entity.service || '').slice(0, 32),
       territoryFactionId: String(entity.territoryFactionId || '').slice(0, 32),
       canDialogue: authoredNpcCanDialogue(row, role),
+      appearance: entity.appearance && typeof entity.appearance === 'object'
+        ? sanitizeCharacterAppearance(entity.appearance)
+        : null,
       name: row.name || entity.name || (role === 'merchant' ? 'Торговец' : role === 'guard' ? 'Охранник' : 'NPC'),
       role,
       faction,
@@ -17002,6 +17005,14 @@ function spawnAuthoredLocationActors(room, loc) {
     }
     actor.authoredLocationId = loc.id;
     actor.authoredLocationObjectId = String(row.id || `authored_npc_${index + 1}`).slice(0, 64);
+    // Стоящий НПС смотрит туда, куда его повернули в сцене Unity: к стойке, к
+    // воротам, к столу. Угол сервера и поворот сцены совпадают
+    // (RoaCoords.ModelYawOffsetDeg = 0), так что поворот строки и есть взгляд.
+    const authoredFacing = Number(row.rotation?.y);
+    if (authoredNpcStationary(entity, role) && Number.isFinite(authoredFacing)) {
+      actor.npcHomeFacing = authoredFacing;
+      setNpcActivityState(actor, { facing: authoredFacing });
+    }
     const merchantActor = role === 'merchant' || locationDefinitionObjectIsTrader(row);
     const actorTraderKeys = [
       row.id,
@@ -17397,14 +17408,19 @@ function npcRoutineSlotType(value = '') {
 
 function setNpcActivityState(enemy, next = {}) {
   if (!enemy) return false;
+  // Без особого взгляда стоящий авторский НПС смотрит, как его повернули в
+  // сцене: занятие, начатое без направления, не должно разворачивать его от стойки.
+  const homeFacing = Number.isFinite(Number(enemy.npcHomeFacing)) && enemy.npcHomeFacing !== null
+    ? Number(enemy.npcHomeFacing)
+    : null;
   const values = {
     npcRoutinePackageId: String(next.packageId ?? enemy.npcRoutinePackageId ?? '').slice(0, 96),
     npcActivityType: String(next.type ?? enemy.npcActivityType ?? '').slice(0, 32),
     npcActivityPhase: String(next.phase ?? enemy.npcActivityPhase ?? '').slice(0, 24),
     npcActivityVisualAction: String(next.visualAction ?? enemy.npcActivityVisualAction ?? '').slice(0, 32),
     npcActivityFacing: next.facing === null
-      ? null
-      : (Number.isFinite(Number(next.facing ?? enemy.npcActivityFacing)) ? Number(next.facing ?? enemy.npcActivityFacing) : null),
+      ? homeFacing
+      : (Number.isFinite(Number(next.facing ?? enemy.npcActivityFacing)) ? Number(next.facing ?? enemy.npcActivityFacing) : homeFacing),
     npcServiceAvailable: Boolean(next.serviceAvailable ?? enemy.npcServiceAvailable),
     npcActivityInterruptReason: String(next.interruptReason ?? enemy.npcActivityInterruptReason ?? '').slice(0, 32)
   };
@@ -18736,6 +18752,7 @@ function publicEnemy(e, viewer = null) {
     creatureTypeId: String(e.creatureTypeId || '').slice(0, 32),
     classification: String(e.classification || '').slice(0, 32),
     name: e.name,
+    ...(!naturalCreature && e.appearance ? { appearance: e.appearance } : {}),
     visual: String(e.visual || '').slice(0, 32),
     modelKey,
     species: String(e.species || '').slice(0, 32),
@@ -23836,6 +23853,10 @@ function spawnServerEnemy(room, opts = {}) {
     typeIndex,
     creatureTypeId: String(opts.creatureTypeId || type.creatureTypeId || '').slice(0, 32),
     name: opts.name || type.name,
+    // Облик авторского НПС задан в данных (его правят в сцене Unity). Без него
+    // клиент выводил облик из id актёра, а id новый при каждом появлении —
+    // торговец менял пол и причёску после каждого перезапуска сервера.
+    appearance: opts.appearance && typeof opts.appearance === 'object' ? opts.appearance : null,
     visual: resolvedVisual,
     modelKey: resolvedModelKey,
     species: String(opts.species || resolvedVisual || type.lootTier || '').slice(0, 32),

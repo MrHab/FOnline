@@ -184,6 +184,14 @@ const servicePosition = (locationId, service) => {
   const auctioneer = scrapActors.find(row => row.service === 'auction');
   assert(merchant?.tradeOpen === true, 'торговец столицы торгует: ' + JSON.stringify(merchant && { name: merchant.name, tradeOpen: merchant.tradeOpen }));
   assert(auctioneer && auctioneer.tradeOpen === false, 'аукционер «Покажи товары» не предлагает');
+  // Облик и взгляд авторского НПС — из его строки: их задают в сцене Unity, и
+  // клиент получает ровно их, а не выводит облик из id актёра, который новый
+  // при каждом появлении.
+  const auctionRow = locations.scrapTown.objects.find(row => row?.entity?.service === 'auction');
+  assert.deepEqual(auctioneer.appearance, auctionRow.entity.appearance,
+    'аукционер выглядит, как его одели в сцене: ' + JSON.stringify(auctioneer.appearance));
+  assert(Math.abs(Number(auctioneer.activityFacing) - Number(auctionRow.rotation.y)) < 1e-3,
+    `аукционер смотрит, как его повернули в сцене: ${auctioneer.activityFacing} против ${auctionRow.rotation.y}`);
   assert(scrapActors.filter(row => row.hostileToPlayer === false && row.role === 'guard').every(row => row.tradeOpen === false),
     'охрана столицы не торгует');
   const refused = await send('target', 'syncNpcTradeState', { enemyId: auctioneer.id }, false);

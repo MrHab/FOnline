@@ -63,7 +63,9 @@ function serviceNpc(spec, faction, x, z) {
     model: spec.model,
     name: spec.name,
     position: { x: Number(x.toFixed(1)), y: 0.0, z: Number(z.toFixed(1)) },
-    rotation: { x: 0.0, y: 180.0, z: 0.0 },
+    // Поворот в радианах, как у всех строк: 180 здесь читались как 180 радиан,
+    // и стоящий НПС, которого сервер разворачивает по строке, смотрел вкось.
+    rotation: { x: 0.0, y: 3.142, z: 0.0 },
     scale: { x: 1, y: 1, z: 1 },
     collision: 'solid',
     tags: ['npc', 'friendly', 'service', `service-${spec.service}`, spec.service],

@@ -1795,7 +1795,7 @@ namespace RealmOfAshes.Game
 
             string weaponId = equipment["weapon"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(weaponId)) return;
-            if (weaponId == _playerView.WeaponId) return;
+            if (weaponId == _playerView.WeaponId || weaponId == _playerView.WeaponLoadingId) return;
 
             Debug.Log("[ROA] Смена оружия: " + _playerView.WeaponId + " -> " + weaponId);
             _ = _playerView.EquipWeapon(BaseUrl, weaponId);

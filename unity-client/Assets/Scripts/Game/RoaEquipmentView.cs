@@ -37,6 +37,7 @@ namespace RealmOfAshes.Game
             public GameObject Root;
             public float RetryAt;
             public bool RetryScheduled;
+            public bool Loading;
             public string BodyKey = string.Empty;
             public string ArmorFit = string.Empty;
             public Transform CharacterRoot;
@@ -154,6 +155,7 @@ namespace RealmOfAshes.Game
                 state.CharacterRoot = null;
                 state.RetryAt = 0f;
                 state.RetryScheduled = false;
+                state.Loading = false;
             }
             VisualChanged?.Invoke();
         }
@@ -168,8 +170,10 @@ namespace RealmOfAshes.Game
             }
 
             bool sameOwner = state.BodyKey == bodyKey && state.CharacterRoot == characterRoot && state.ArmorFit == armorFit;
+            // Loading: модель этого слота уже грузится, и снимок, пришедший посреди
+            // загрузки, её не перезапускает.
             if (sameOwner && state.ItemId == itemId && (string.IsNullOrEmpty(itemId)
-                || state.Root != null || Time.unscaledTime < state.RetryAt)) return;
+                || state.Root != null || state.Loading || Time.unscaledTime < state.RetryAt)) return;
 
             state.Request++;
             int request = state.Request;
@@ -198,6 +202,7 @@ namespace RealmOfAshes.Game
                 ? replacement : "/assets/models/equipment/" + slot + "/" + definition.Prefix + "_" + bodyKey + ".glb";
             string url = baseUrl.TrimEnd('/') + path;
 
+            state.Loading = true;
             try
             {
                 GltfImport import = await LoadCached(url);
@@ -259,6 +264,10 @@ namespace RealmOfAshes.Game
                 if (Current(state, itemId, request, characterRoot))
                     ScheduleRetry(state, baseUrl, bodyKey, slot, itemId, characterRoot, bones, request);
                 Debug.LogWarning("[ROA] Сбой загрузки экипировки " + itemId + ": " + error.Message);
+            }
+            finally
+            {
+                if (state.Request == request) state.Loading = false;
             }
         }
 

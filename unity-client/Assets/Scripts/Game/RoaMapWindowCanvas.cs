@@ -68,6 +68,8 @@ namespace RealmOfAshes.Game
 
         public void Open()
         {
+            // Карта локации — окно: терминал и карта мира при этом закрываются.
+            RoaGameBootstrap.FocusGameplayWindow(this);
             EnsureBuilt();
             _root.SetActive(true);
             Refresh();
